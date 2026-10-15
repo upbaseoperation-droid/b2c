@@ -8,6 +8,7 @@ import { Presence } from '../../ui';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
+  canEdit?: boolean;
   onChange?: (items: MasterCastTier[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -15,6 +16,7 @@ interface CastTiersMasterViewProps {
 export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   initialTiers,
   onChange,
+  canEdit = true,
   onNotify
 }) => {
   const [localItems, setLocalItems] = useState<MasterCastTier[]>(initialTiers);
@@ -62,6 +64,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   };
 
   const handleOpenAdd = () => {
+    if (!canEdit) return;
     setEditingTier(null);
     setForm({
       tierCode: '',
@@ -95,6 +98,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     if (!form.tierCode.trim()) return;
 
     if (editingTier) {
@@ -182,7 +186,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
 
         <button
           type="button"
-          onClick={handleOpenAdd}
+          onClick={handleOpenAdd} disabled={!canEdit}
           className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -263,7 +267,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
-                      onClick={() => handleOpenEdit(t)}
+                      onClick={() => handleOpenEdit(t)} disabled={!canEdit}
                       className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
                     >
                       Sửa

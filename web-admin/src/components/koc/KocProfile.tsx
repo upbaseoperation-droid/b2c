@@ -851,7 +851,7 @@ function CollaborationHistorySection({
       </div>
 
       {/* BẢNG LỊCH SỬ HỢP TÁC CHI TIẾT */}
-      <Panel title="Danh sách chiến dịch đã hợp tác" description={`${filteredDeals.length} bản ghi hợp tác chi tiết`} flush>
+      <Panel title={`Danh sách chiến dịch đã hợp tác (${filteredDeals.length})`} flush>
         <DataTable
           columns={columns}
           rows={filteredDeals}

@@ -19,7 +19,15 @@ interface BrandProfilesCacheState {
 
 let sharedCache: BrandProfilesCacheState | null = null;
 let inflightPromise: Promise<BrandProfilesCacheState> | null = null;
+let cacheGeneration = 0;
 const listeners = new Set<(state: BrandProfilesCacheState) => void>();
+
+export function clearBrandProfilesCache() {
+  cacheGeneration += 1;
+  sharedCache = null;
+  inflightPromise = null;
+  for (const listener of listeners) listener({ profiles: [] });
+}
 
 function notifyListeners(state: BrandProfilesCacheState) {
   sharedCache = state;
@@ -32,10 +40,12 @@ export async function fetchBrandProfilesShared(force = false): Promise<BrandProf
   if (!force && sharedCache) return sharedCache;
   if (!force && inflightPromise) return inflightPromise;
 
-  inflightPromise = fetch('/api/brands/profiles')
+  const generation = cacheGeneration;
+  inflightPromise = fetch('/api/brands/profiles', { cache: 'no-store' })
     .then(async res => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Không tải được hồ sơ thương hiệu.');
+      if (generation !== cacheGeneration) throw new Error('Phạm vi tài khoản đã thay đổi. Tải lại hồ sơ.');
       const nextState: BrandProfilesCacheState = {
         profiles: Array.isArray(data.profiles) ? data.profiles : [],
         access: data.access,
@@ -44,7 +54,7 @@ export async function fetchBrandProfilesShared(force = false): Promise<BrandProf
       return nextState;
     })
     .finally(() => {
-      inflightPromise = null;
+      if (generation === cacheGeneration) inflightPromise = null;
     });
 
   return inflightPromise;
@@ -57,6 +67,7 @@ export async function saveBrandProfileSectionShared(params: {
   data: unknown;
   summary?: string;
 }): Promise<BrandProfile> {
+  const generation = cacheGeneration;
   const res = await fetch('/api/brands/profiles', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,6 +80,7 @@ export async function saveBrandProfileSectionShared(params: {
     throw err;
   }
   const updated = body.profile as BrandProfile;
+  if (generation !== cacheGeneration) return updated;
   const currentProfiles = sharedCache?.profiles || [];
   const nextProfiles = [...currentProfiles.filter(p => p.key !== updated.key), updated];
   notifyListeners({
@@ -102,6 +114,8 @@ export function useBrandProfiles(userId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setState(null);
+    setLoading(true);
     const handleUpdate = (next: BrandProfilesCacheState) => {
       setState(next);
       setLoading(false);

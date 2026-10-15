@@ -692,7 +692,6 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Thêm Cộng tác viên / VJ"
-        description="Khai báo thông tin định danh ban đầu. Hồ sơ CCCD, hợp đồng và mã QR thanh toán có thể hoàn thiện ngay sau khi tạo."
         size="md"
         footer={
           <>

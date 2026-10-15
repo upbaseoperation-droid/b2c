@@ -50,7 +50,10 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    if (!await effectiveUser(user)) return NextResponse.json({ error: 'Quyền truy cập đã bị thu hồi.' }, { status: 403 });
+    const actor = await effectiveUser(user);
+    if (!actor) return NextResponse.json({ error: 'Quyền truy cập đã bị thu hồi.' }, { status: 403 });
+    // Forward the current server policy to legacy handlers that read the signed session synchronously.
+    if (JSON.stringify(actor) !== JSON.stringify(user)) request.cookies.set(SESSION_COOKIE_NAME, encodeSessionToken(actor));
   } catch { return NextResponse.json({ error: 'Không kiểm tra được quyền. Thử lại sau.' }, { status: 503 }); }
   return await updateSession(request);
 }

@@ -1,12 +1,16 @@
 'use client';
 import type { AccessPolicy } from './server/accessPolicy';
 import { hydrateRbacPolicy } from './rbacData';
+import { clearBrandProfilesCache } from './brands/useBrandProfiles';
+let actorScope = '';
 
 export async function loadAccessPolicy() {
   const response = await fetch('/api/admin/access-policy', { cache: 'no-store' });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || 'Không tải được quyền.');
-  hydrateRbacPolicy(body.data);
+  const nextScope = JSON.stringify(body.user);
+  if (nextScope !== actorScope) { clearBrandProfilesCache(); actorScope = nextScope; }
+  hydrateRbacPolicy(body.data, body.user);
   return body as { revision: number; data: AccessPolicy; user: import('./types').UserProfile };
 }
 export async function saveAccessPolicy(revision: number, data: AccessPolicy) {

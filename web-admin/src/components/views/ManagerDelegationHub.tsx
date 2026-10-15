@@ -760,9 +760,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     theo brand
                   </span>
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Giám đốc Marketing B2C (<strong className="text-ink">Đặng Thị Yến Nhi</strong>) phân bổ nhân sự phụ trách xuyên suốt cấp Brand cho 3 vị trí: <strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong> và <strong className="text-ink">Key Visual / SIS</strong> (định mức khuyến nghị ~5–6 Brand/nhân sự/vị trí).
-                </p>
               </div>
 
               {/* Bộ lọc nhanh theo vị trí gắn theo Brand */}

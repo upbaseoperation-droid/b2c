@@ -145,13 +145,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
     brands ?? []
   );
-  const [syncedBrands, setSyncedBrands] = useState(brands);
-  if (brands !== syncedBrands) {
-    setSyncedBrands(brands);
-    if (brands) {
-      setBrandList(brands);
-    }
-  }
+
   const [brandSearch, setBrandSearch] = useState('');
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState('ALL');
@@ -195,17 +189,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
     stores ?? []
   );
-  const [syncedStores, setSyncedStores] = useState(stores);
-  if (stores !== syncedStores) {
-    setSyncedStores(stores);
-    if (stores) {
-      setStoreList(stores);
-    }
-  }
 
   const handleStoreUpdated = (updated: StorePortfolioItem) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
-    setStoreList(prev => prev.map(s => s.id === updated.id ? updated : s));
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    setStoreList(prev => prev.some(s => s.id === updated.id) ? prev.map(s => s.id === updated.id ? updated : s) : [...prev, updated]);
     // Bản nháp được đẩy sang nguồn dùng chung sau khi lưu.
   };
 
@@ -424,7 +411,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // 1. Tạo nhanh thương hiệu đơn giản (Chỉ cần Tên Brand)
   const handleQuickCreateBrand = (e: React.FormEvent) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     const cleanName = quickBrandName.trim();
     if (!cleanName) return;
@@ -474,7 +461,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // 2. Nhập hàng loạt tên thương hiệu từ Lark Base (Dán danh sách text)
   const handleLarkBulkImport = () => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     if (!larkRawText.trim()) return;
 
     const lines = larkRawText
@@ -545,7 +532,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // 4. Lưu chỉnh sửa thông tin cơ bản của Brand
   const handleSaveEditBrand = (e: React.FormEvent) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     if (!editingBrand) return;
     const cleanName = editBrandName.trim();
@@ -576,7 +563,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     if (isNameChanged) {
       setStoreList(prev => prev.map(s => s.brandName === oldName ? { ...s, brandName: cleanName } : s));
       setProductList(prev => prev.map(p => p.brandName === oldName ? { ...p, brandName: cleanName } : p));
-      if (onNotify) onNotify(`Đã đổi tên thương hiệu sang [${cleanName}] và đồng bộ sang các gian hàng, sản phẩm liên kết!`, 'success');
+      if (onNotify) onNotify(`Bản nháp đổi tên thương hiệu sang [${cleanName}] và đồng bộ sang các gian hàng, sản phẩm liên kết!`, 'success');
     } else {
       if (onNotify) onNotify(`Đã sửa bản nháp: thông tin thương hiệu [${cleanName}]`, 'success');
     }
@@ -587,16 +574,16 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Soft Archive Brand
   const handleArchiveBrand = (brand: BrandDetail) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setBrandList(prev => prev.map(b => b.id === brand.id ? { ...b, status: 'PAUSED' } : b));
-    if (onNotify) onNotify(`Đã chuyển thương hiệu [${brand.name}] sang trạng thái Tạm dừng (Lưu trữ an toàn)`, 'info');
+    if (onNotify) onNotify(`Bản nháp chuyển thương hiệu [${brand.name}] sang trạng thái Tạm dừng (Lưu trữ an toàn)`, 'info');
     setDeletingBrand(null);
     setDeleteConfirmText('');
   };
 
   // Handle Confirm Hard Delete Brand
   const handleConfirmHardDeleteBrand = () => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     if (!deletingBrand) return;
     const deps = getBrandDependencies(deletingBrand.name);
     if (deps.totalCount > 0) {
@@ -611,7 +598,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Add / Edit Master Product
   const handleSaveProduct = (e: React.FormEvent) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     const cleanSku = productForm.sku.trim().toUpperCase();
     const cleanName = productForm.productName.trim();
@@ -671,14 +658,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
   const handleDeleteProduct = (prod: MasterProductItem) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setProductList(prev => prev.filter(p => p.id !== prod.id));
     if (onNotify) onNotify(`Đã đánh dấu xóa trong bản nháp: sản phẩm [${prod.sku}] khỏi danh mục gốc`, 'warning');
     setDeletingProduct(null);
   };
 
   const handleDiscontinueProduct = (prod: MasterProductItem) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setProductList(prev => prev.map(p => p.id === prod.id ? { ...p, status: 'DISCONTINUED' } : p));
     if (onNotify) onNotify(`Đã chuyển sản phẩm [${prod.sku}] sang trạng thái Tạm ngừng`, 'info');
     setDeletingProduct(null);
@@ -686,7 +673,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Add / Edit Master Content Pillar
   const handleSavePillar = (e: React.FormEvent) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     if (!pillarForm.code.trim() || !pillarForm.name.trim()) return;
 
@@ -739,7 +726,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
   const handleTogglePillarStatus = (pillarId: string) => {
-    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
+    if (!canEditCatalog || catalogBusy) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setPillarList(prev => prev.map(p => {
       if (p.id === pillarId) {
         const nextStatus = p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -751,7 +738,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
 
-  const [extraCatalog, setExtraCatalog] = useState({ castTiers: DEFAULT_MASTER_CATALOG.castTiers, niches: DEFAULT_MASTER_CATALOG.niches, formats: DEFAULT_MASTER_CATALOG.formats });
+  const [extraCatalog, setExtraCatalog] = useState<Pick<MasterCatalog, "castTiers" | "niches" | "formats">>({ castTiers: [], niches: [], formats: [] });
   const [catalogRevision, setCatalogRevision] = useState<number | null>(null);
   const [catalogBusy, setCatalogBusy] = useState(false);
   const [catalogError, setCatalogError] = useState('');
@@ -772,7 +759,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
   useEffect(() => {
     let cancelled = false;
-    setBrandList([]); setStoreList([]); setProductList([]); setCatalogRevision(null); setCanEditCatalog(false);
+    setBrandList([]); setStoreList([]); setProductList([]); setExtraCatalog({ castTiers: [], niches: [], formats: [] }); setSavedCatalog(''); setCatalogError(''); setCatalogRevision(null); setCanEditCatalog(false);
     fetch('/api/master-data', { cache: 'no-store' }).then(async res => { const body = await res.json(); if (!res.ok) throw new Error(body.error); if (!cancelled) acceptCatalog(body); }).catch(e => { if (!cancelled) setCatalogError(e.message); });
     return () => { cancelled = true; };
   }, [currentUser.id]);
@@ -794,14 +781,25 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   return (
     <div className="space-y-5">
-      <div role="status" className="rounded-lg border border-line bg-surface p-3 text-sm">
-        <strong>{catalogRevision === null ? 'Đang tải danh mục…' : canEditCatalog ? catalogDirty ? 'Có thay đổi chưa lưu' : 'Danh mục đã lưu' : 'Bạn đang xem danh mục trong phạm vi được giao'}</strong>
-        <p>Brand, gian hàng, sản phẩm, pillar, khung cast, tệp kênh và định dạng được lưu cùng nhau. Các chỉnh sửa là bản nháp cho đến khi chọn “Lưu danh mục”.</p>
-        {catalogError && <p role="alert" className="text-red-600">{catalogError}</p>}
-        {canEditCatalog && <Button onClick={commitCatalog} disabled={catalogBusy || !catalogDirty}>{catalogBusy ? 'Đang lưu…' : 'Lưu danh mục'}</Button>}
-        <Button variant="ghost" disabled={catalogBusy} onClick={() => { if (catalogDirty && !window.confirm('Bỏ bản nháp và tải dữ liệu mới nhất?')) return; reloadCatalog().catch(e => setCatalogError(e.message)); }}>Tải lại</Button>
-        {!canEditCatalog && <p>Chỉ quản trị viên hoặc trưởng phòng B2C có quyền sửa danh mục gốc.</p>}
-      </div>
+      {(catalogDirty || catalogError) && (
+        <div role="status" className="rounded-lg border border-line bg-surface p-3 text-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 font-medium text-ink">
+            {catalogDirty && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+            <span>{catalogDirty ? 'Có thay đổi chưa lưu' : ''}</span>
+            {catalogError && <span role="alert" className="text-critical ml-2">{catalogError}</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            {canEditCatalog && catalogDirty && (
+              <Button size="sm" variant="primary" onClick={commitCatalog} disabled={catalogBusy}>
+                {catalogBusy ? 'Đang lưu…' : 'Lưu danh mục'}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" disabled={catalogBusy} onClick={() => { if (catalogDirty && !window.confirm('Bỏ bản nháp và tải dữ liệu mới nhất?')) return; reloadCatalog().catch(e => setCatalogError(e.message)); }}>
+              Tải lại
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Sub-Tabs Navigation */}
       <Tabs
@@ -811,9 +809,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           { key: 'mindmap', label: 'Sơ đồ phân cấp' },
           { key: 'products', label: 'Sản phẩm', count: productList.length },
           { key: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length },
-          { key: 'cast-tiers', label: 'Bậc cast', count: UPBASE_CAST_TIERS.length },
-          { key: 'koc-niches', label: 'Tệp kênh', count: UPBASE_KOC_NICHES.length },
-          { key: 'video-formats', label: 'Định dạng video', count: UPBASE_VIDEO_FORMATS.length },
+          { key: 'cast-tiers', label: 'Bậc cast', count: extraCatalog.castTiers.length },
+          { key: 'koc-niches', label: 'Tệp kênh', count: extraCatalog.niches.length },
+          { key: 'video-formats', label: 'Định dạng video', count: extraCatalog.formats.length },
           { key: 'kocs', label: 'Danh bạ KOC', count: kocs.length },
           { key: 'ctvs', label: 'Danh sách VJ / CTV', count: contributors.length },
           { key: 'staff', label: 'Nhân sự Booking', count: UPBASE_STAFF_MASTER.length },
@@ -1200,7 +1198,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           brandNames={brandList.map(b => b.name)}
           brands={brandList}
           onNotify={onNotify}
-          onUpdateStore={handleStoreUpdated}
+          onUpdateStore={handleStoreUpdated} onStoresChange={items => { if (canEditCatalog) setStoreList(items); }} canEdit={canEditCatalog}
           onNavigateToBrandProfile={onNavigateToBrandProfile}
           onNavigateToStoreManagement={onNavigateToStoreProfile}
         />
@@ -1760,7 +1758,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: BẬC CAST & PHÂN NHÓM CREATOR */}
       {activeSubTab === 'cast-tiers' && (
         <CastTiersMasterView
-          initialTiers={extraCatalog.castTiers} onChange={items => setExtraCatalog(prev => ({ ...prev, castTiers: items }))}
+          initialTiers={extraCatalog.castTiers} canEdit={canEditCatalog} onChange={items => setExtraCatalog(prev => ({ ...prev, castTiers: items }))}
           onNotify={onNotify}
         />
       )}
@@ -1768,7 +1766,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: TỆP KÊNH & CHUYÊN MỤC KOC */}
       {activeSubTab === 'koc-niches' && (
         <KocNichesMasterView
-          initialNiches={extraCatalog.niches} onChange={items => setExtraCatalog(prev => ({ ...prev, niches: items }))}
+          initialNiches={extraCatalog.niches} canEdit={canEditCatalog} onChange={items => setExtraCatalog(prev => ({ ...prev, niches: items }))}
           onNotify={onNotify}
         />
       )}
@@ -1776,7 +1774,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: PHÂN LOẠI ĐỊNH DẠNG VIDEO */}
       {activeSubTab === 'video-formats' && (
         <VideoFormatsMasterView
-          initialFormats={extraCatalog.formats} onChange={items => setExtraCatalog(prev => ({ ...prev, formats: items }))}
+          initialFormats={extraCatalog.formats} canEdit={canEditCatalog} onChange={items => setExtraCatalog(prev => ({ ...prev, formats: items }))}
           onNotify={onNotify}
         />
       )}
@@ -1822,7 +1820,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         open={isQuickBrandModalOpen}
         onClose={() => setIsQuickBrandModalOpen(false)}
         title="Thêm nhanh thương hiệu"
-        description="Tạo nhanh chỉ bằng tên nhãn hàng. Cấu hình chi tiết thực hiện tại màn hình Hồ sơ thương hiệu."
         size="md"
         footer={
           <>
@@ -1909,7 +1906,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         open={isLarkSyncModalOpen}
         onClose={() => setIsLarkSyncModalOpen(false)}
         title="Đồng bộ danh sách Brand từ Lark Base"
-        description="Nhập nhanh hàng loạt danh sách tên nhãn hàng từ bảng Lark Base 3.5 vào hệ thống"
         size="lg"
         footer={
           <>
@@ -1983,7 +1979,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           setEditingBrand(null);
         }}
         title="Sửa thông tin thương hiệu"
-        description="Chỉnh sửa tên hiển thị, mã định danh và trạng thái"
         size="md"
         footer={
           <>
@@ -2197,7 +2192,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         open={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}
         title={editingProduct ? `Cập nhật sản phẩm: [${editingProduct.sku}]` : 'Thêm sản phẩm vào Master Catalog'}
-        description="Dữ liệu gốc sản phẩm dùng cho phân bổ mẫu thử KOC và gắn giỏ hàng TikTok / Shopee"
         size="lg"
         footer={
           <>
@@ -2442,7 +2436,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         open={isPillarModalOpen}
         onClose={() => setIsPillarModalOpen(false)}
         title={editingPillar ? `Cập nhật trụ cột: ${editingPillar.name}` : 'Thêm trụ cột nội dung mới'}
-        description="Dữ liệu gốc này sẽ được sử dụng chung cho việc lập kế hoạch kênh nội bộ và giao task video cho CTV."
         size="lg"
         footer={
           <>

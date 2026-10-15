@@ -154,11 +154,11 @@ export function ContractDetail({
         <div className="grid gap-6 min-w-0">
           {/* Tiến trình */}
           <section className="grid gap-3">
-            <SectionHeader title="Tiến trình" description="Pháp chế và kế toán duyệt độc lập; chỉ bản đủ duyệt mới được trình ký." />
+            <SectionHeader title="Tiến trình" />
             <ol className="bg-surface border border-line rounded-xl divide-y divide-line">
               <Step title="Soạn hồ sơ" who={record.ownerName} status={record.approval === 'DRAFT' && !record.steps.length ? { label: 'Nháp', tone: 'neutral' } : { label: 'Hoàn tất', tone: 'positive' }} meta={`Phiên bản ${record.version}`} />
               {record.steps.length === 0 ? (
-                <li className="px-4 py-3 text-[13px] text-ink-3">Chưa gửi duyệt.{isOwner && canSubmit ? ' Bấm “Gửi duyệt” và chọn người duyệt.' : ''}</li>
+                <li className="px-4 py-3 text-[13px] text-ink-3">Chưa gửi duyệt.</li>
               ) : (
                 record.steps.map((s, i) => (
                   <Step key={`${s.reviewerId}-${i}`} title={ROLE_LABEL[s.role]} who={s.reviewerName} status={stepStatus(s)} meta={s.decidedAt ? dateTime(s.decidedAt) : undefined} note={s.note} />

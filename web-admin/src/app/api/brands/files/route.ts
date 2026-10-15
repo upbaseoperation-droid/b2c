@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { requireBrandScope } from '@/lib/server/brandAccess';
-import { UPBASE_BRANDS_MASTER } from '@/lib/importedMasterData';
 import { BrandError, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { assertValidBrandFileKey, brandFileStorageMode, deleteBrandFile, MAX_BRAND_FILE_BYTES, readBrandFile, uploadBrandFile } from '@/lib/brands/r2';
 import { listProfiles } from '@/lib/brands/store';
@@ -43,7 +42,7 @@ export async function GET(req: NextRequest) {
         'Content-Type': contentType,
         'Content-Length': String(buffer.byteLength),
         'Content-Disposition': `${disposition}; filename="${fileName.replace(/"/g, '')}"; filename*=UTF-8''${encodedName}`,
-        'Cache-Control': 'private, max-age=3600',
+        'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
       },
     });
@@ -69,12 +68,12 @@ export async function POST(req: NextRequest) {
     const section: BrandSection = rawSection === 'LEGAL' ? 'LEGAL' : 'DOCUMENTS';
 
     const key = brandKey(brandName);
-    const master = UPBASE_BRANDS_MASTER.find(b => brandKey(b.name) === key);
+    const master = await requireBrandScope(user, brandName);
     const all = await listProfiles();
     const current = all.find(p => p.key === key);
     requireBrand(master || current, 'Không tìm thấy nhãn hàng trong Dữ liệu gốc.', 404);
 
-    const allowed = permissionsFor(user, master?.accountPic, master?.name);
+    const allowed = permissionsFor(user, master?.accountPic, master?.name || brandName);
     requireBrand(allowed[section], 'Bạn không có quyền tải tệp lên mục này.', 403);
 
     const fileEntry = formData.get('file');
@@ -114,6 +113,8 @@ export async function DELETE(req: NextRequest) {
     const master = await requireBrandScope(user, brandSlug);
     const allowed = permissionsFor(user, master?.accountPic, master?.name);
     requireBrand(allowed.DOCUMENTS || allowed.LEGAL, 'Bạn không có quyền xóa tệp của nhãn hàng này.', 403);
+    const profiles = await listProfiles();
+    requireBrand(allowed.LEGAL || !profiles.some(p => JSON.stringify(p.legal).includes(key)), 'Không có quyền xóa tệp pháp lý.', 403);
 
     await deleteBrandFile(key);
     return NextResponse.json({ deleted: true, key }, { headers: noStore });

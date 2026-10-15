@@ -3,7 +3,6 @@ import { requestActor } from '@/lib/server/requestActor';
 import { requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
 import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
 import { filterScopedBrands } from '@/lib/rbacScope';
-import { UPBASE_BRANDS_MASTER } from '@/lib/importedMasterData';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { brandStorageMode, listProfiles, saveProfile } from '@/lib/brands/store';
 import { brandFileStorageMode } from '@/lib/brands/r2';

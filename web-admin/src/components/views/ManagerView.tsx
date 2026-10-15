@@ -724,9 +724,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     {currentPlan.status === 'COMPLETED' ? 'Đã khóa sổ lịch sử' : currentPlan.status === 'ACTIVE' ? 'Đang thực hiện' : 'Dự thảo Q4'}
                   </span>
                 </div>
-                <p className="text-xs text-ink-3 mt-1">
-                  Quản lý trần video, ngân sách và đơn giá theo 4 bậc KOC/KOL trước khi phân bổ chi tiết cho 26 chuyên viên
-                </p>
               </div>
 
               <div className="flex items-center gap-2">

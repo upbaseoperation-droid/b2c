@@ -7,6 +7,7 @@ import { Presence } from '../../ui';
 
 interface KocNichesMasterViewProps {
   initialNiches: MasterKocNiche[];
+  canEdit?: boolean;
   onChange?: (items: MasterKocNiche[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -14,6 +15,7 @@ interface KocNichesMasterViewProps {
 export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
   initialNiches,
   onChange,
+  canEdit = true,
   onNotify
 }) => {
   const [localItems, setLocalItems] = useState<MasterKocNiche[]>(initialNiches);
@@ -61,6 +63,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
   };
 
   const handleOpenAdd = () => {
+    if (!canEdit) return;
     setEditingNiche(null);
     setForm({
       nicheName: '',
@@ -86,6 +89,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     if (!form.nicheName.trim()) return;
 
     if (editingNiche) {
@@ -164,7 +168,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
 
         <button
           type="button"
-          onClick={handleOpenAdd}
+          onClick={handleOpenAdd} disabled={!canEdit}
           className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -226,7 +230,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
-                      onClick={() => handleOpenEdit(n)}
+                      onClick={() => handleOpenEdit(n)} disabled={!canEdit}
                       className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
                     >
                       Sửa

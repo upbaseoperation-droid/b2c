@@ -28,7 +28,9 @@ export async function PUT(req: NextRequest) {
     if (!user || !['ADMIN', 'MANAGER'].includes(user.role) || !await actionAllowed(user, 'master_data_brand_stores', 'write')) throw new RecordError('Không có quyền quản lý danh mục gốc.', 403);
     const raw = await req.text();
     if (Buffer.byteLength(raw) > 15_000_000) throw new RecordError('Danh mục quá lớn.', 413);
-    const { data, revision } = JSON.parse(raw) as { data: MasterCatalog; revision: number };
+    let parsed: { data: MasterCatalog; revision: number };
+    try { parsed = JSON.parse(raw); } catch { throw new RecordError('Dữ liệu JSON không hợp lệ.'); }
+    const { data, revision } = parsed;
     const result = await updateRecord('master-catalog', DEFAULT_MASTER_CATALOG, revision, async previous => { await validateCatalog(data, previous); return data; });
     return NextResponse.json({ ...result, canEdit: true }, { headers });
   } catch (e) { return failure(e); }

@@ -1572,7 +1572,6 @@ export function CtvProfileDetail({
                 <div className="px-4 py-3 border-b border-line flex items-center justify-between">
                   <SectionHeader
                     title="Danh sách video kênh Brand đã & đang thực hiện"
-                    description="Chi tiết kịch bản, video và nhật ký chỉnh sửa qua từng vòng."
                   />
                 </div>
                 <DataTable
@@ -1583,7 +1582,6 @@ export function CtvProfileDetail({
                   empty={
                     <EmptyState
                       title="Chưa có video nào được giao cho CTV này"
-                      description="Bấm Giao việc video kênh để phân bổ kịch bản mới cho CTV."
                     />
                   }
                 />
@@ -1727,7 +1725,6 @@ export function CtvProfileDetail({
                 <div className="px-4 py-3 border-b border-line">
                   <SectionHeader
                     title="Lịch sử các đợt quyết toán thù lao (Phiếu DNTT & Khấu trừ thuế TNCN 10%)"
-                    description="Theo dõi toàn bộ các đợt chi trả nhuận bút sản xuất video, khấu trừ thuế TNCN 10% (với đợt chi ≥ 2.000.000 đ) và mã Ủy nhiệm chi (UNC)."
                   />
                 </div>
                 <div className="overflow-x-auto">
@@ -1791,7 +1788,6 @@ export function CtvProfileDetail({
                 <div className="space-y-3 text-xs">
                   <SectionHeader
                     title="Lịch sử Hợp đồng dịch vụ & Điều chỉnh đơn giá (Partnership Log)"
-                    description="Lưu vết quá trình xác thực pháp lý CCCD, ký hợp đồng khung và cập nhật đơn giá với Partnership Leader (Việt Hoàng)."
                   />
                   <div className="divide-y divide-line border border-line rounded-xl overflow-hidden">
                     <div className="p-3 bg-surface flex flex-wrap items-center justify-between gap-2">
@@ -1887,7 +1883,6 @@ export function CtvProfileDetail({
                 <div className="px-4 py-3 border-b border-line">
                   <SectionHeader
                     title={`Lịch sử giao nhận & đối soát hàng mẫu (${sampleShippingHistory.length})`}
-                    description="Theo dõi mã vận đơn gửi hàng mẫu (SLA 48h), ngày nhận và trạng thái tồn mẫu tại nhà CTV."
                   />
                 </div>
                 <div className="overflow-x-auto">
@@ -1939,7 +1934,6 @@ export function CtvProfileDetail({
                 <div className="px-4 py-3 border-b border-line">
                   <SectionHeader
                     title={`Công việc đang triển khai (${runningTasks.length})`}
-                    description="Các video đang ở bước viết kịch bản, chờ duyệt hoặc đang quay dựng."
                   />
                 </div>
                 <DataTable
@@ -1953,7 +1947,6 @@ export function CtvProfileDetail({
                   empty={
                     <EmptyState
                       title="Không có công việc đang chờ xử lý"
-                      description="Tất cả các task giao cho CTV này đã được nghiệm thu."
                     />
                   }
                 />
@@ -1967,7 +1960,6 @@ export function CtvProfileDetail({
               <form onSubmit={handleSaveProfile} className="space-y-5">
                 <SectionHeader
                   title="Cập nhật hồ sơ chuyên sâu CTV / VJ"
-                  description="Chỉnh sửa thông tin pháp lý, hợp đồng, định mức đơn giá, tài khoản ngân hàng và địa chỉ nhận hàng mẫu."
                   actions={
                     <Button type="submit" variant="primary">
                       Lưu thay đổi
@@ -2224,7 +2216,6 @@ export function CtvVietQrModal({ ctv, onClose }: { ctv: Contributor; onClose: ()
       open={true}
       onClose={onClose}
       title={`Mã QR thanh toán — ${ctv.name}`}
-      description="Dùng cho Kế toán đối soát tài khoản nhận thù lao sản xuất video kênh Brand."
       size="sm"
       footer={<Button onClick={onClose}>Đóng</Button>}
     >

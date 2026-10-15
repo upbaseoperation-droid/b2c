@@ -140,7 +140,6 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       <Panel
         flush
         title={`Nhiệm vụ cần xử lý (${displayedTasks.length}/${relevantTasks.length})`}
-        description="Các đầu việc tác nghiệp theo phân công và thời hạn SLA"
         actions={
           <Segmented
             items={[

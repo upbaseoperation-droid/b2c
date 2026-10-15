@@ -1912,7 +1912,6 @@ export function BrandProfileDetail({
           {/* 1. BẢNG LỊCH SỬ HỒ SƠ PLAN & REPORT CỦA THƯƠNG HIỆU QUA CÁC THÁNG */}
           <Panel
             title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
-            description="Doanh số NMV, ngân sách Net và chỉ tiêu video theo từng kỳ tháng."
             flush
           >
             <DataTable
@@ -2068,7 +2067,6 @@ export function BrandProfileDetail({
         <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_360px]">
           <Panel
             title={`Danh mục Sản phẩm chủ lực (${p.products.length} SKU)`}
-            description="Thông tin chi tiết về giá bán chiến dịch, hoa hồng KOC, tồn kho mẫu, điểm nổi bật sản phẩm và lưu ý sử dụng"
             actions={addBtn('products')}
             flush
           >

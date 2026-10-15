@@ -7,6 +7,7 @@ import { MasterVideoFormat } from '../../../lib/types';
 
 interface VideoFormatsMasterViewProps {
   initialFormats: MasterVideoFormat[];
+  canEdit?: boolean;
   onChange?: (items: MasterVideoFormat[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -14,6 +15,7 @@ interface VideoFormatsMasterViewProps {
 export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
   initialFormats,
   onChange,
+  canEdit = true,
   onNotify
 }) => {
   const [localItems, setLocalItems] = useState<MasterVideoFormat[]>(initialFormats);
@@ -43,6 +45,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
   });
 
   const handleOpenAdd = () => {
+    if (!canEdit) return;
     setEditingFormat(null);
     setForm({ name: '', option: '' });
     setIsModalOpen(true);
@@ -56,6 +59,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     if (!form.name.trim()) return;
 
     if (editingFormat) {
@@ -105,7 +109,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
         <Button
           variant="primary"
           icon={Plus}
-          onClick={handleOpenAdd}
+          onClick={handleOpenAdd} disabled={!canEdit}
         >
           Thêm định dạng video
         </Button>
@@ -154,7 +158,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
-                      onClick={() => handleOpenEdit(f)}
+                      onClick={() => handleOpenEdit(f)} disabled={!canEdit}
                       className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
                     >
                       Sửa

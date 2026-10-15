@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import styles from './TaskDelegationView.module.css';
 import {
   ClipboardList,
   Plus,
@@ -16,10 +17,6 @@ import {
   Check,
   X,
   BarChart3,
-  GitBranch,
-  UserCheck,
-  ShieldCheck,
-  AlertCircle,
   Eye,
 } from 'lucide-react';
 import {
@@ -2030,76 +2027,36 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   }, [inspectingStaffMember, computedStaffWorkloads]);
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner & 3-Tab Switcher */}
-      <div className="bg-surface border border-line rounded-xl p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent-soft border border-accent/20 flex items-center justify-center shrink-0">
-            <ClipboardList className="w-5 h-5 text-accent" />
-          </div>
+    <div className={`${styles.workspace} space-y-5 min-w-0`}>
+      <section className="bg-surface border border-line rounded-xl overflow-hidden">
+        <div className="p-5 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-ink">
-              Giao việc &amp; Định mức nhân sự
-            </h2>
+            <h2 className="text-lg font-semibold text-ink">Giao việc &amp; định mức</h2>
+            <p className="mt-1 text-sm text-ink-2">Phân công nhiệm vụ, theo dõi tải nhân sự và quản lý định mức công việc.</p>
           </div>
+          <Button variant="primary" size="sm" icon={Plus} onClick={() => {
+            setFormTaskSource('DIRECTOR_ASSIGNED');
+            setIsAssignModalOpen(true);
+          }}>Giao việc mới</Button>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <div className="inline-flex p-1 rounded-lg bg-canvas border border-line flex-wrap">
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('ASSIGNMENTS')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 ${
-                activeSubTab === 'ASSIGNMENTS'
-                  ? 'bg-surface text-ink shadow-2xs border border-line'
-                  : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              <ClipboardList className="w-3.5 h-3.5 text-accent" />
-              <span>Nhật ký nhiệm vụ ({tasks.length})</span>
+        <nav aria-label="Khu vực giao việc" className="flex gap-1 overflow-x-auto border-t border-line px-4">
+          {([
+            { key: 'ASSIGNMENTS', label: 'Danh sách nhiệm vụ', icon: ClipboardList },
+            { key: 'WORKLOAD_MEASUREMENT', label: 'Tải công việc nhân sự', icon: BarChart3 },
+            { key: 'DIFFICULTY_SETUP', label: 'Cấu hình định mức', icon: Sliders },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <button key={key} type="button" aria-current={activeSubTab === key ? 'page' : undefined}
+              onClick={() => setActiveSubTab(key)}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${activeSubTab === key ? 'border-accent text-accent' : 'border-transparent text-ink-2 hover:text-ink hover:bg-canvas'}`}>
+              <Icon className="h-4 w-4" />{label}
+              {key === 'ASSIGNMENTS' && <span className="rounded-full bg-canvas px-2 py-0.5 text-xs tabular-nums">{tasks.length}</span>}
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('WORKLOAD_MEASUREMENT')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 ${
-                activeSubTab === 'WORKLOAD_MEASUREMENT'
-                  ? 'bg-surface text-ink shadow-2xs border border-line'
-                  : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5 text-positive" />
-              <span>Đo lường định mức nhân sự</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('DIFFICULTY_SETUP')}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 ${
-                activeSubTab === 'DIFFICULTY_SETUP'
-                  ? 'bg-surface text-ink shadow-2xs border border-line'
-                  : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5 text-accent" />
-              <span>Cấu hình độ khó &amp; định mức</span>
-            </button>
-          </div>
-
-          <Button
-            variant="primary"
-            size="sm"
-            icon={Plus}
-            onClick={() => {
-              setFormTaskSource('DIRECTOR_ASSIGNED');
-              setIsAssignModalOpen(true);
-            }}
-          >
-            Giao việc / Ghi nhận Task
-          </Button>
-        </div>
-      </div>
+          ))}
+        </nav>
+      </section>
 
       {/* KPI Row */}
-      <StatRow>
+      {activeSubTab !== 'DIFFICULTY_SETUP' && <StatRow>
         <Stat
           label="Nhiệm vụ theo quy trình"
           value={metrics.workflowTasksCount}
@@ -2119,171 +2076,27 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           value={`${metrics.totalStaffFinalPts} pts`}
           tone="positive"
         />
-      </StatRow>
+      </StatRow>}
 
       {/* ===================================================================== */}
       {/* TAB 1: NHẬT KÝ TASK (LUỒNG QUY TRÌNH HỆ THỐNG & TASK GIÁM ĐỐC GIAO)    */}
       {/* ===================================================================== */}
       {activeSubTab === 'ASSIGNMENTS' && (
         <div className="space-y-4">
-          {/* Two Task Sources Explanation + Quick Action Bar */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <div
-              onClick={() =>
-                setSourceFilter(prev =>
-                  prev === 'WORKFLOW_SYSTEM' ? 'ALL' : 'WORKFLOW_SYSTEM'
-                )
-              }
-              className={`cursor-pointer p-4 rounded-xl border transition flex items-start justify-between gap-3 ${
-                sourceFilter === 'WORKFLOW_SYSTEM'
-                  ? 'bg-accent-soft border-accent/20 shadow-2xs'
-                  : 'bg-surface border-line hover:border-accent/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0 mt-0.5">
-                  <GitBranch className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-ink">
-                      Nhiệm vụ theo quy trình hệ thống
-                    </span>
-                    <span className="text-2xs font-mono font-semibold text-accent">
-                      {metrics.workflowTasksCount} nhiệm vụ
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={e => {
-                  e.stopPropagation();
-                  const bkSow = sowPolicies.find(s => s.stt === 2) || sowPolicies[0];
-                  handleSelectSowPolicy(bkSow);
-                  setFormTaskSource('WORKFLOW_SYSTEM');
-                  setIsAssignModalOpen(true);
-                }}
-              >
-                + Ghi nhận từ Quy trình
-              </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-ink">Danh sách nhiệm vụ</h3>
+              <p className="mt-1 text-xs text-ink-2">Lọc theo nguồn, người phụ trách hoặc trạng thái để tìm công việc cần xử lý.</p>
             </div>
-
-            <div
-              onClick={() =>
-                setSourceFilter(prev =>
-                  prev === 'DIRECTOR_ASSIGNED' ? 'ALL' : 'DIRECTOR_ASSIGNED'
-                )
-              }
-              className={`cursor-pointer p-4 rounded-xl border transition flex items-start justify-between gap-3 ${
-                sourceFilter === 'DIRECTOR_ASSIGNED'
-                  ? 'bg-accent-soft border-accent/20 shadow-2xs'
-                  : 'bg-surface border-line hover:border-accent/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0 mt-0.5">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-ink">
-                      Nhiệm vụ Quản lý giao trực tiếp
-                    </span>
-                    <span className="text-2xs font-mono font-semibold text-accent">
-                      {metrics.directorTasksCount} nhiệm vụ
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={e => {
-                  e.stopPropagation();
-                  const resSow = sowPolicies.find(s => s.stt === 26) || sowPolicies[0];
-                  handleSelectSowPolicy(resSow);
-                  setFormTaskSource('DIRECTOR_ASSIGNED');
-                  setIsAssignModalOpen(true);
-                }}
-              >
-                + Giao việc mới
-              </Button>
-            </div>
+            <Button variant="secondary" size="sm" icon={Plus} onClick={() => {
+              const policy = sowPolicies.find(s => s.stt === 2) || sowPolicies[0];
+              handleSelectSowPolicy(policy);
+              setFormTaskSource('WORKFLOW_SYSTEM');
+              setIsAssignModalOpen(true);
+            }}>Ghi nhận từ quy trình</Button>
           </div>
-
-          {/* Quick Reference Card for Bảng 2b Research */}
-          <div className="bg-surface border border-line rounded-xl p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-              <div>
-                <h3 className="text-xs font-semibold text-ink flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-accent" />
-                  <span>Tra cứu nhanh: {difficultyConfigs[0].tableTitle}</span>
-                </h3>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveSubTab('WORKLOAD_MEASUREMENT')}
-                  className="text-2xs font-semibold text-positive hover:text-positive inline-flex items-center gap-1"
-                >
-                  <BarChart3 className="w-3 h-3" />
-                  <span>Xem bảng định mức</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSetupCategory('RESEARCH');
-                    setSetupSection('TABLE_2B_LEVELS');
-                    setActiveSubTab('DIFFICULTY_SETUP');
-                  }}
-                  className="text-2xs font-semibold text-accent hover:text-accent inline-flex items-center gap-1"
-                >
-                  <Sliders className="w-3 h-3" />
-                  <span>Cấu hình hệ số</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-              {(difficultyConfigs.find(c => c.categoryKey === 'RESEARCH')?.levels || []).map(lvl => (
-                <button
-                  key={lvl.id}
-                  type="button"
-                  onClick={() => {
-                    const resSow = sowPolicies.find(s => s.stt === 26) || sowPolicies[0];
-                    handleSelectSowPolicy(resSow);
-                    setFormCategory('RESEARCH');
-                    setFormTaskSource('DIRECTOR_ASSIGNED');
-                    handleSelectFormLevel(lvl);
-                    setIsAssignModalOpen(true);
-                  }}
-                  className="text-left p-3 rounded-xl border border-line bg-canvas hover:bg-accent-soft hover:border-accent/20 transition group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-ink group-hover:text-accent">
-                        {lvl.levelCode}
-                      </span>
-                      <span className="font-mono text-xs font-semibold text-accent">
-                        {lvl.multiplier.toFixed(2).replace('.', ',')}
-                      </span>
-                    </div>
-                    <p className="text-2xs text-ink-2 mt-1.5 line-clamp-2">
-                      {lvl.scopeDescription}
-                    </p>
-                  </div>
-                  <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between text-2xs text-ink-3">
-                    <span className="truncate">Đầu ra: {lvl.expectedDeliverable || 'Chưa cấu hình'}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Filter Toolbar */}
-          <div className="bg-surface border border-line rounded-xl p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
@@ -2294,7 +2107,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
-                Mọi nguồn ({tasks.length})
+                Tất cả ({tasks.length})
               </button>
               <button
                 type="button"
@@ -2316,7 +2129,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
-                Task GĐ giao ({metrics.directorTasksCount})
+                Quản lý giao ({metrics.directorTasksCount})
               </button>
 
               <span className="text-line mx-1">|</span>
@@ -2336,13 +2149,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="relative min-w-[200px]">
+              <div className="relative min-w-0 w-full sm:w-72">
                 <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Tìm task, nhân viên, SOW..."
+                  aria-label="Tìm nhiệm vụ" placeholder="Tìm nhiệm vụ, nhân viên, loại công việc…"
                   className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20"
                 />
               </div>
@@ -2690,6 +2503,78 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </table>
             </div>
           </div>
+          {/* Quick Reference Card for Bảng 2b Research */}
+          <details className="bg-surface border border-line rounded-xl p-4">
+            <summary className="cursor-pointer text-sm font-medium text-ink">Tra cứu hệ số nghiên cứu</summary>
+            <div className="mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-accent" />
+                  <span>Tra cứu nhanh: {difficultyConfigs[0].tableTitle}</span>
+                </h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('WORKLOAD_MEASUREMENT')}
+                  className="text-2xs font-semibold text-positive hover:text-positive inline-flex items-center gap-1"
+                >
+                  <BarChart3 className="w-3 h-3" />
+                  <span>Xem bảng định mức</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSetupCategory('RESEARCH');
+                    setSetupSection('TABLE_2B_LEVELS');
+                    setActiveSubTab('DIFFICULTY_SETUP');
+                  }}
+                  className="text-2xs font-semibold text-accent hover:text-accent inline-flex items-center gap-1"
+                >
+                  <Sliders className="w-3 h-3" />
+                  <span>Cấu hình hệ số</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+              {(difficultyConfigs.find(c => c.categoryKey === 'RESEARCH')?.levels || []).map(lvl => (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => {
+                    const resSow = sowPolicies.find(s => s.stt === 26) || sowPolicies[0];
+                    handleSelectSowPolicy(resSow);
+                    setFormCategory('RESEARCH');
+                    setFormTaskSource('DIRECTOR_ASSIGNED');
+                    handleSelectFormLevel(lvl);
+                    setIsAssignModalOpen(true);
+                  }}
+                  className="text-left p-3 rounded-xl border border-line bg-canvas hover:bg-accent-soft hover:border-accent/20 transition group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-ink group-hover:text-accent">
+                        {lvl.levelCode}
+                      </span>
+                      <span className="font-mono text-xs font-semibold text-accent">
+                        {lvl.multiplier.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    <p className="text-2xs text-ink-2 mt-1.5 line-clamp-2">
+                      {lvl.scopeDescription}
+                    </p>
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between text-2xs text-ink-3">
+                    <span className="truncate">Đầu ra: {lvl.expectedDeliverable || 'Chưa cấu hình'}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            </div>
+          </details>
+
         </div>
       )}
 
@@ -2699,9 +2584,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {activeSubTab === 'WORKLOAD_MEASUREMENT' && (
         <div className="space-y-5">
           {/* Formula Banner */}
-          <div className="bg-ink text-white rounded-xl p-3.5 px-4 border border-accent/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="bg-surface text-ink rounded-xl p-4 border border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="space-y-0.5">
-              <div className="font-mono text-xs sm:text-sm font-semibold text-warning">
+              <div className="text-sm leading-relaxed font-medium text-ink">
                 Điểm định mức = SL nghiệm thu × Điểm chuẩn × HS phạm vi × HS độ khó × HS tiến độ × HS đa sàn × HS cơ cấu
               </div>
               <p className="text-2xs text-ink-3">
@@ -2725,7 +2610,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           </div>
 
           {/* Filter Bar for Staff Workload Table */}
-          <div className="bg-surface border border-line rounded-xl p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-1.5">
               {['ALL', 'L3', 'L2.5', 'L2', 'L1.5', 'L1', 'L0.5'].map(lvl => (
                 <button
@@ -3064,7 +2949,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           {/* SECTION A: BẢNG 1 (33 LOẠI CÔNG VIỆC SOW) */}
           {setupSection === 'TABLE_1_SOW' && (
             <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-              <div className="px-5 py-3.5 bg-accent-soft border-b border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="px-5 py-4 bg-surface border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-ink">
                     Chính sách điểm theo danh mục công việc (SOW)
@@ -3075,7 +2960,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   onChange={e => setSowGroupFilter(e.target.value)}
                   className="px-3 py-1.5 bg-white border border-accent/20 rounded-lg text-xs font-semibold text-ink"
                 >
-                  <option value="ALL">Tất cả 9 phân nhóm (33 đầu việc)</option>
+                  <option value="ALL">Tất cả nhóm ({sowPolicies.length} đầu việc)</option>
                   {Array.from(new Set(sowPolicies.map(s => s.group))).map(grp => (
                     <option key={grp} value={grp}>
                       {grp}
@@ -3089,9 +2974,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   <thead>
                     <tr className="bg-sunken border-b border-line-strong text-ink font-semibold">
                       <th className="py-2.5 px-3 border-r border-line w-[50px] text-center">STT</th>
-                      <th className="py-2.5 px-3 border-r border-line w-[160px]">Phân nhóm</th>
                       <th className="py-2.5 px-3 border-r border-line min-w-[230px]">Chi tiết loại công việc</th>
-                      <th className="py-2.5 px-3 border-r border-line w-[95px] text-center">Point chuẩn</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[95px] text-center">Điểm chuẩn</th>
                       <th className="py-2.5 px-3 border-r border-line w-[135px] text-center">Độ khó mặc định</th>
                       <th className="py-2.5 px-3 border-r border-line w-[100px] text-center">Cấp tính điểm</th>
                       <th className="py-2.5 px-3 border-r border-line w-[130px] text-center">Nguồn mặc định</th>
@@ -3110,9 +2994,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               {item.stt}
                             </td>
                             <td className="py-2.5 px-3 border-r border-line font-semibold text-ink">
-                              {item.group}
-                            </td>
-                            <td className="py-2.5 px-3 border-r border-line font-semibold text-ink">
                               {isEdit ? (
                                 <input
                                   type="text"
@@ -3123,7 +3004,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   className="w-full px-2 py-1 border border-accent/20 rounded text-xs"
                                 />
                               ) : (
-                                item.name
+                                <div className="space-y-1">
+                                  <div>{item.name}</div>
+                                  <div className="text-xs font-normal text-ink-3">{item.group}</div>
+                                </div>
                               )}
                             </td>
                             <td className="py-2.5 px-3 border-r border-line text-center font-mono font-semibold text-accent">
@@ -3299,7 +3183,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </div>
 
               <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-                <div className="px-5 py-3.5 bg-accent-soft border-b border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="px-5 py-4 bg-surface border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold text-ink">
                       {currentSetupCategoryObj.tableTitle}

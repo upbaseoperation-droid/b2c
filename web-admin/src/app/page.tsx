@@ -181,17 +181,10 @@ export default function App() {
 
   const [, setRbacVersion] = useState(0);
   useEffect(() => {
-    const onRbacUpdated = () => {
+    const onRbacUpdated = (event: Event) => {
       setRbacVersion(v => v + 1);
-      setCurrentUser(prev => {
-        if (!prev) return prev;
-        const staffList = getSavedInternalStaffList();
-        const matchedStaff = staffList.find(s => s.id === prev.id || s.email === prev.email);
-        if (matchedStaff) {
-          return { ...prev, role: matchedStaff.role, roleTitle: matchedStaff.roleTitle, assignedBrands: matchedStaff.picBrands, permissions: Object.entries(matchedStaff.permissions).filter(([, value]) => value).map(([key]) => key) };
-        }
-        return prev;
-      });
+      const actor = (event as CustomEvent<UserProfile | undefined>).detail;
+      if (actor) setCurrentUser(prev => prev?.id === actor.id && JSON.stringify(prev) !== JSON.stringify(actor) ? actor : prev);
     };
     window.addEventListener('upbase-rbac-updated', onRbacUpdated);
     return () => window.removeEventListener('upbase-rbac-updated', onRbacUpdated);
@@ -206,20 +199,26 @@ export default function App() {
     }
   }
 
-  const handleUserChange = useCallback((newUser: UserProfile, isSilent: boolean = false) => {
+  const handleUserChange = useCallback(async (newUser: UserProfile, isSilent: boolean = false) => {
+    if (!isSilent) {
+      setIsLoadingAuth(true);
+      try {
+        if (!newUser.id.startsWith('contract-demo-')) {
+          const partner = !!newUser.partnerType || newUser.role.endsWith('_PARTNER');
+          const known = USERS.some(u => u.id === newUser.id);
+          const res = await fetch(partner ? '/api/auth/partner/login' : '/api/auth/lark/sandbox', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(partner ? { email: newUser.email } : known ? { userId: newUser.id } : { staffIdentifier: newUser.email || newUser.staffCode }),
+          });
+          const body = await res.json(); if (!res.ok) throw new Error(body.error || 'Không chuyển được tài khoản.');
+        }
+        const policy = await loadAccessPolicy();
+        newUser = policy.user;
+      } catch (error) { showToast((error as Error).message, 'error'); setIsLoadingAuth(false); return; }
+      setIsLoadingAuth(false);
+    }
     setCurrentUser(newUser);
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('upbase_selected_user_id', newUser.id);
-    }
-
-    if (!isSilent && USERS.some(u => u.id === newUser.id)) {
-      fetch('/api/auth/lark/sandbox', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: newUser.id }),
-      }).catch(err => console.warn('Sync server session failed:', err));
-    }
+    if (typeof window !== 'undefined') localStorage.setItem('upbase_selected_user_id', newUser.id);
 
     if (newUser.role === 'BRAND_PARTNER') {
       const userBrand = newUser.assignedBrands?.[0] || newUser.linkedEntityName || 'Kutieskin';
@@ -294,6 +293,14 @@ export default function App() {
     loadUser();
   }, [handleUserChange]);
 
+  useEffect(() => {
+    if (!currentUser || isLoadingAuth) return;
+    const refresh = () => { void loadAccessPolicy().catch(error => showToast(error.message, 'error')); };
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 30000);
+    return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
+  }, [currentUser?.id, isLoadingAuth, showToast]);
+
   const handleLogout = async () => {
     try {
       if (typeof window !== 'undefined') {
@@ -310,18 +317,19 @@ export default function App() {
   const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
-  const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
-  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  const [brands, setBrands] = useState<BrandDetail[]>([]);
+  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>([]);
   useEffect(() => {
     let cancelled = false;
     const reload = () => fetch('/api/master-data', { cache: 'no-store' }).then(async res => {
       const body = await res.json(); if (!res.ok) throw new Error(body.error);
       if (!cancelled) { setBrands(body.data.brands); setStorePortfolios(body.data.stores); }
     }).catch(e => { if (!cancelled) showToast(e.message, 'error'); });
-    if (currentUser) void reload();
+    setBrands([]); setStorePortfolios([]);
+    if (currentUser && !isLoadingAuth) void reload();
     window.addEventListener('upbase-master-data-updated', reload);
     return () => { cancelled = true; window.removeEventListener('upbase-master-data-updated', reload); };
-  }, [currentUser?.id, showToast]);
+  }, [currentUser, isLoadingAuth, showToast]);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   // Shared Plan State between Manager & Employees

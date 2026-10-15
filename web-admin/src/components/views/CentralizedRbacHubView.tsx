@@ -425,18 +425,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     };
     void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     setEditingDirectoryStaffId(null);
-    onNotify?.(`Đã lưu phân quyền cho ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'info');
+    onNotify?.(`Đã sửa bản nháp quyền của ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'info');
   };
 
   // Đóng vai bất kỳ nhân sự nào từ danh bạ (nếu nhân sự đó được phép login)
   const handleImpersonateDirectoryStaff = (staff: typeof classifiedDirectory[0]) => {
+    if (policyDirty) { onNotify?.("Lưu hoặc bỏ bản nháp trước khi xem thử tài khoản.", "warning"); return; }
     if (!staff.canLogin) {
       onNotify?.(`Nhân sự ${staff.name} đang bị chặn cổng Login. Hãy cấp quyền trước khi đóng vai!`, 'error');
       return;
     }
     const initials = staff.name.trim().split(/\s+/).map(w => w[0]).slice(-2).join('').toUpperCase();
     const impersonatedProfile: UserProfile = {
-      id: `staff_${staff.id}`,
+      id: `staff-${staff.id}`,
       name: staff.name,
       email: staff.email,
       role: staff.mappedRole,
@@ -448,9 +449,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       managerName: staff.managerName,
       canLogin: true,
       loginProvider: 'SANDBOX',
-      assignedBrands: ['MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'ADMIN'].includes(staff.mappedRole)
-        ? ['Tất cả nhãn hàng', 'Kutieskin', 'ClubClio', 'Fresh', 'Cocoon', 'Senka']
-        : ['Kutieskin', 'ClubClio', 'Fresh']
+      assignedBrands: []
     };
     onImpersonateUser?.(impersonatedProfile);
   };
@@ -504,6 +503,10 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     loadAccessPolicy().then(record => { if (!cancelled) applyPolicy(record); }).catch(e => { if (!cancelled) setPolicyError(e.message); });
     return () => { cancelled = true; };
   }, [currentUser?.id]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => { if (policyDirty) { event.preventDefault(); event.returnValue = ''; } };
+    window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn);
+  }, [policyDirty]);
   const commitPolicy = async () => {
     if (policyRevision === null || !isAdmin || policyBusy) return;
     setPolicyBusy(true); setPolicyError('');
@@ -576,7 +579,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     };
     void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     onNotify?.(
-      `${exists ? 'Đã ẩn màn hình' : 'Đã mở màn hình'} "${screenLabel}" cho vai trò ${ROLE_DISPLAY_NAME[role]}`,
+      `${exists ? 'Bản nháp ẩn màn hình' : 'Bản nháp mở màn hình'} "${screenLabel}" cho vai trò ${ROLE_DISPLAY_NAME[role]}`,
       'success'
     );
   };
@@ -789,6 +792,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   // Đóng vai nhân sự nội bộ (Impersonate Internal Staff)
   const handleImpersonateInternal = (staff: InternalStaffRbacMember) => {
+    if (policyDirty) { onNotify?.("Lưu hoặc bỏ bản nháp trước khi xem thử tài khoản.", "warning"); return; }
     const impersonatedProfile: UserProfile = {
       id: staff.id,
       name: staff.name,
@@ -802,9 +806,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       canLogin: staff.canLogin ?? true,
       loginProvider: 'LARK',
       linkedEntityName: staff.picBrands.join(', '),
-      assignedBrands: staff.picBrands.includes('ALL_BRANDS')
-        ? ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka']
-        : staff.picBrands
+      assignedBrands: staff.picBrands
     };
 
     const newLog: RbacAuditLogItem = {

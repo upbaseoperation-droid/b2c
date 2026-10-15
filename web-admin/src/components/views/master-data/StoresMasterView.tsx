@@ -48,6 +48,8 @@ import { INITIAL_DEALS } from '../../../lib/mockData';
 
 interface StoresMasterViewProps {
   initialStores: StorePortfolioItem[];
+  onStoresChange?: (items: StorePortfolioItem[]) => void;
+  canEdit?: boolean;
   brandNames: string[];
   brands?: BrandDetail[];
   deals?: BookingDealItem[];
@@ -61,6 +63,8 @@ const PAGE_SIZE = 25;
 
 export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   initialStores,
+  onStoresChange,
+  canEdit = true,
   brandNames,
   brands = [],
   deals = INITIAL_DEALS,
@@ -69,12 +73,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   onNavigateToBrandProfile,
   onNavigateToStoreManagement
 }) => {
-  const [stores, setStores] = useState<StorePortfolioItem[]>(initialStores);
-  const [prevInitialStores, setPrevInitialStores] = useState<StorePortfolioItem[]>(initialStores);
-  if (initialStores !== prevInitialStores) {
-    setPrevInitialStores(initialStores);
-    setStores(initialStores);
-  }
+  const [localStores, setLocalStores] = useState(initialStores);
+  const stores = onStoresChange ? initialStores : localStores;
+  const setStores = (update: React.SetStateAction<StorePortfolioItem[]>) => {
+    if (!canEdit) { onNotify?.('Bạn không có quyền sửa danh mục.', 'warning'); return; }
+    const next = typeof update === 'function' ? update(stores) : update;
+    if (onStoresChange) onStoresChange(next); else setLocalStores(next);
+  };
 
   // Filters State
   const [search, setSearch] = useState('');
@@ -253,6 +258,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   };
 
   const handleToggleB2cManaged = (store: StorePortfolioItem) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     const updated: StorePortfolioItem = {
       ...store,
       isB2cManaged: !store.isB2cManaged,
@@ -260,20 +266,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       updatedAt: new Date().toISOString()
     };
     setStores(prev => prev.map(s => s.id === store.id ? updated : s));
-    if (onUpdateStore) onUpdateStore(updated);
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(updated);
     if (onNotify) {
       onNotify(`Đã ${updated.isB2cManaged ? 'bật' : 'tắt'} Marketing B2C phụ trách cho [${store.storeName}]`);
     }
   };
 
   const handleToggleRequiresPlan = (store: StorePortfolioItem) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     const updated: StorePortfolioItem = {
       ...store,
       requiresB2cPlan: !store.requiresB2cPlan,
       updatedAt: new Date().toISOString()
     };
     setStores(prev => prev.map(s => s.id === store.id ? updated : s));
-    if (onUpdateStore) onUpdateStore(updated);
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(updated);
     if (onNotify) {
       onNotify(`Đã ${updated.requiresB2cPlan ? 'yêu cầu' : 'bỏ yêu cầu'} làm Plan cho [${store.storeName}]`);
     }
@@ -320,7 +327,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     reason: string;
   }) => {
     setStores(prev => prev.map(s => s.id === updatedStore.id ? updatedStore : s));
-    if (onUpdateStore) onUpdateStore(updatedStore);
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(updatedStore);
     if (onNotify) {
       onNotify(`Đã lập Lệnh bàn giao [${updatedStore.storeName}] từ [${logEntry.fromPic}] sang [${logEntry.toPic}] (Hiệu lực: ${logEntry.effectiveDate})`, 'success');
     }
@@ -335,6 +342,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   };
 
   const handleQuickAddStore = (e: React.FormEvent) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     e.preventDefault();
     const cleanStoreName = quickStoreName.trim();
     const cleanBrandName = quickBrandName.trim();
@@ -383,9 +391,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     };
 
     setStores(prev => [newStore, ...prev]);
-    if (onUpdateStore) onUpdateStore(newStore);
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(newStore);
     if (onNotify) {
-      onNotify(`Đã thêm gian hàng [${cleanStoreName}] thuộc thương hiệu [${cleanBrandName}] vào Master Data!`, 'success');
+      onNotify(`Đã thêm vào bản nháp gian hàng [${cleanStoreName}] thuộc thương hiệu [${cleanBrandName}] vào Master Data!`, 'success');
     }
     setIsQuickAddModalOpen(false);
     setQuickStoreName('');
@@ -427,6 +435,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   };
 
   const handleSave = (e: React.FormEvent) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     e.preventDefault();
     if (!editingStore || !form.storeName.trim()) return;
 
@@ -469,13 +478,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       updatedAt: new Date().toISOString()
     };
     setStores(prev => prev.map(s => s.id === editingStore.id ? updatedStore : s));
-    if (onUpdateStore) onUpdateStore(updatedStore);
-    if (onNotify) onNotify(`Đã cập nhật gian hàng [${form.storeName}]`, 'success');
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(updatedStore);
+    if (onNotify) onNotify(`Đã sửa bản nháp: gian hàng [${form.storeName}]`, 'success');
     setIsModalOpen(false);
     setEditingStore(null);
   };
 
   const handleOffboardStore = (store: StorePortfolioItem) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     const updated: StorePortfolioItem = {
       ...store,
       operationStatus: 'Off',
@@ -483,14 +493,15 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       updatedAt: new Date().toISOString()
     };
     setStores(prev => prev.map(s => s.id === store.id ? updated : s));
-    if (onUpdateStore) onUpdateStore(updated);
+    if (canEdit && !onStoresChange && onUpdateStore) onUpdateStore(updated);
     if (onNotify) onNotify(`Đã chuyển gian hàng [${store.storeName}] sang trạng thái Offboarded (Lưu trữ an toàn)`, 'info');
     setDeletingStore(null);
   };
 
   const handleHardDeleteStore = (store: StorePortfolioItem) => {
+    if (!canEdit) { onNotify?.("Bạn không có quyền sửa danh mục.", "warning"); return; }
     setStores(prev => prev.filter(s => s.id !== store.id));
-    if (onNotify) onNotify(`Đã xóa vĩnh viễn gian hàng [${store.storeName}] khỏi danh mục`, 'warning');
+    if (onNotify) onNotify(`Đã đánh dấu xóa: vĩnh viễn gian hàng [${store.storeName}] khỏi danh mục`, 'warning');
     setDeletingStore(null);
   };
 

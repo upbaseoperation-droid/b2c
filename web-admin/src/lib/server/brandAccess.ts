@@ -9,7 +9,7 @@ export async function requireBrandScope(user: UserProfile, name: string): Promis
   const { data } = await readMasterCatalog();
   const master = data.brands.find(b => brandKey(b.name) === brandKey(name));
   const partner = !!user.partnerType || user.role.endsWith('_PARTNER');
-  const allowed = partner ? isBrandPartnerForBrand(user, name) : isBrandManagedByUser(master || name, user, data.stores);
+  const allowed = partner ? isBrandPartnerForBrand(user, master?.name || name) : isBrandManagedByUser(master || name, user, data.stores);
   requireBrand(allowed, 'Thương hiệu không thuộc phạm vi được giao.', 403);
   return master;
 }

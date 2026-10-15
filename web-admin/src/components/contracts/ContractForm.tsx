@@ -263,7 +263,7 @@ export function ContractForm({
         </div>
       )}
 
-      <Panel title="Thông tin chung" description={editing ? 'Không đổi được mẫu của hồ sơ đã tạo.' : 'Chọn booking để tự chọn mẫu theo loại hồ sơ của KOC và điền sẵn thông tin.'}>
+      <Panel title="Thông tin chung">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Booking" htmlFor="ct-deal" hint={koc ? `KOC: ${koc.stageName}` : 'Không bắt buộc. Hồ sơ không gắn booking thì tự nhập đối tác.'}>
             <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>

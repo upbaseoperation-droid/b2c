@@ -1,8 +1,12 @@
 import type { AccessPolicy } from './server/accessPolicy';
 let serverPolicy: AccessPolicy | null = null;
-export function hydrateRbacPolicy(policy: AccessPolicy) { serverPolicy = policy; if (typeof window !== 'undefined') window.dispatchEvent(new Event('upbase-rbac-updated')); }
+export function hydrateRbacPolicy(policy: AccessPolicy, user?: UserProfile) {
+  serverPolicy = policy;
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('upbase-rbac-updated', { detail: user }));
+}
 import { 
   UserRole, 
+  UserProfile,
   TabKey,
   SystemDepartmentScope,
   DepartmentAccessRule,
@@ -1997,9 +2001,6 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
   const list = map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'];
-  if (ROLE_ALLOWED_TABS[role]?.includes('task-delegation') && !list.includes('task-delegation')) {
-    return [...list, 'task-delegation'];
-  }
   return list;
 }
 

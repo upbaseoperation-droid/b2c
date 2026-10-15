@@ -2291,7 +2291,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         open={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="Lập kế hoạch tháng mới"
-        description="Thiết lập ngân sách trần và mục tiêu cho chu kỳ tháng"
         size="lg"
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
@@ -2520,7 +2519,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         open={isLarkbaseModalOpen}
         onClose={() => setIsLarkbaseModalOpen(false)}
         title="Đồng bộ Kế hoạch B2C Booking từ Larkbase"
-        description="Đồng bộ các kế hoạch B2C Booking đã được duyệt trên Larkbase về danh sách Kế hoạch tháng."
         size="xl"
         footer={
           <div className="flex flex-wrap items-center justify-between gap-2 w-full">
@@ -2771,7 +2769,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
           ) : 'Nhập Kế hoạch Tháng theo Brand'
         }
-        description="Cập nhật phân bổ nhân sự và chỉ tiêu kế hoạch tháng cho 3 vị trí gắn cấp Brand: Content / Brand main, Plan / Strategy và Key Visual / SIS."
         size="xl"
         footer={
           editingBrandPlan && (

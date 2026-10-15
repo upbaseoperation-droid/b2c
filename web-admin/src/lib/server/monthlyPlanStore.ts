@@ -1,4 +1,5 @@
-import { isPlanManagedByUser } from '../rbacScope';
+import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
+import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
 import { readMasterCatalog } from './masterCatalogStore';
 // Chỉ dùng phía server (API routes) — không import từ component giao diện.
@@ -152,6 +153,19 @@ function sameValue(a: unknown, b: unknown) {
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
   const { data } = await readMasterCatalog();
   if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
+  // A client cannot grant itself another brand by putting its own name into plan.pic.
+  if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
+    const targetStore = plan.storeId || plan.storeName;
+    if (targetStore) {
+      const store = data.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
+      if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
+    }
+    const targetBrand = plan.brandName || plan.parentBrand;
+    if (targetBrand) {
+      const brand = data.brands.find(b => brandKey(b.name) === brandKey(targetBrand));
+      if (!brand || !isBrandManagedByUser(brand, actor, data.stores)) throw new PlanStoreError('FORBIDDEN', 'Thương hiệu không thuộc phạm vi được giao.');
+    }
+  }
 }
 export async function assertPlanIdAccess(id: string, actor: UserProfile, action: 'read' | 'write' = 'read') {
   const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
@@ -186,8 +200,9 @@ async function seedInitialPlans(actor: UserProfile) {
 }
 
 export async function createMonthlyPlan(plan: InputPlanBreakdownState, actor: UserProfile): Promise<StoredMonthlyPlan> {
-  await assertPlanAccess(plan, actor, 'write');
   if (!plan?.id) throw new PlanStoreError('INVALID', 'Thiếu mã kế hoạch.');
+  await assertPlanAccess(plan, actor, 'write');
+  if (plan.isVersionLocked || (plan.status && !['DRAFT', 'PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status)) || plan.versionSnapshots?.length) await assertPlanAccess(plan, actor, 'approve');
   const { working, versionSnapshots, discussions } = splitPlan(plan);
 
   try {
@@ -236,6 +251,9 @@ export async function saveMonthlyPlan(
   const row = await prisma.$transaction(async tx => {
     const existing = await tx.monthlyPlan.findUnique({ where: { id }, include: planInclude });
     if (!existing || existing.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+    const stored = toStored(existing).plan;
+    await assertPlanAccess(stored, actor, 'write');
+    await assertPlanAccess(plan, actor, 'write');
 
     if (existing.revision !== expectedRevision) {
       throw new PlanStoreError(
@@ -245,10 +263,8 @@ export async function saveMonthlyPlan(
       );
     }
 
-    const stored = existing.data as unknown as InputPlanBreakdownState;
-    await assertPlanAccess(stored, actor, 'write');
-    await assertPlanAccess(plan, actor, 'write');
-    if (plan.status !== stored.status || plan.isVersionLocked !== stored.isVersionLocked || plan.currentVersionCode !== stored.currentVersionCode) await assertPlanAccess(stored, actor, 'approve');
+    const protectedStatuses = ['PRE_APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED', 'REVISION_REQUESTED'];
+    if ((plan.status !== stored.status && (protectedStatuses.includes(plan.status || '') || protectedStatuses.includes(stored.status || ''))) || Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0')) await assertPlanAccess(stored, actor, 'approve');
     const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
     if (existing.isVersionLocked && sameVersion) {
       if (!plan.isVersionLocked) {
@@ -272,6 +288,7 @@ export async function saveMonthlyPlan(
     const knownSnapshots = new Set(existing.versionSnapshots.map(s => s.clientId));
     const knownMessages = new Set(existing.discussions.map(d => d.clientId));
     const newSnapshots = versionSnapshots.filter(s => s?.id && !knownSnapshots.has(s.id));
+    if (newSnapshots.length) await assertPlanAccess(stored, actor, 'approve');
     const newMessages = discussions.filter(m => m?.id && !knownMessages.has(m.id));
 
     // updateMany có điều kiện revision để chặn ghi đè trong trường hợp 2 request song song
