@@ -4,7 +4,6 @@ import React, { useState, useMemo, useRef, useDeferredValue, useEffect } from 'r
 import { ConfirmDialog, Tabs, Presence } from '../ui';
 import {
   ShieldCheck,
-  ShieldAlert,
   KeyRound,
   Search,
   CheckCircle2,
@@ -163,9 +162,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [dirEditScope, setDirEditScope] = useState<SystemDepartmentScope>('MARKETING_B2C');
   const [dirEditRole, setDirEditRole] = useState<UserRole>('BOOKING_MEMBER');
   const [dirEditManager, setDirEditManager] = useState<string>('Đặng Thị Yến Nhi');
-
-  // Trình mô phỏng kiểm tra cổng đăng nhập (Login Gatekeeper Simulator)
-  const [simSelectedStaffId, setSimSelectedStaffId] = useState<string>('HN782'); // Mặc định thử 1 nhân sự Livestream bị chặn
 
   // Tự động đồng bộ bộ lọc theo vai trò Trưởng phòng khi đổi tài khoản
   const [prevUserRole, setPrevUserRole] = useState<UserRole | undefined>(currentUser?.role);
@@ -854,10 +850,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     return RBAC_ROLE_DEFINITIONS.filter(r => r.id === roleColumnFilter);
   }, [roleColumnFilter]);
 
-  const simTargetStaff = useMemo(() => {
-    return classifiedDirectory.find(s => s.id === simSelectedStaffId) || classifiedDirectory[0];
-  }, [classifiedDirectory, simSelectedStaffId]);
-
   const editingDirStaffObj = useMemo(() => {
     if (!editingDirectoryStaffId) return null;
     return classifiedDirectory.find(s => s.id === editingDirectoryStaffId) || null;
@@ -1303,115 +1295,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       {/* ========================================================================= */}
       {activeMainTab === 'gatekeeper' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* 4 Cards: 3 Khối Được Vào Hệ Thống + 1 Khối Phòng Ban Khác Bị Chặn */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-            {/* Card 1: Marketing B2C */}
-            <div
-              onClick={() => { setDirScopeFilter('MARKETING_B2C'); setDirPage(1); }}
-              className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                dirScopeFilter === 'MARKETING_B2C'
-                  ? 'bg-accent-soft border-accent/20 shadow-xs'
-                  : 'bg-white border-line hover:border-accent/20'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-2xs font-semibold text-accent -accent/20">
-                  Marketing B2C
-                </span>
-                <span className="text-2xs font-semibold text-positive -positive/20">
-                  Được vào
-                </span>
-              </div>
-              <div className="text-xl font-semibold text-ink">
-                {directoryStats.mktAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.mktTotal} NV</span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-ink">Đặng Thị Yến Nhi</strong></div>
-                <div className="text-ink-3">Team: Booking, Sub-Booking, Content, Brand</div>
-              </div>
-            </div>
-
-            {/* Card 2: Khối Growth */}
-            <div
-              onClick={() => { setDirScopeFilter('GROWTH'); setDirPage(1); }}
-              className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                dirScopeFilter === 'GROWTH'
-                  ? 'bg-positive-soft border-positive/20 shadow-xs'
-                  : 'bg-white border-line hover:border-positive/20'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-2xs font-semibold text-positive -positive/20">
-                  Growth Ecom
-                </span>
-                <span className="text-2xs font-semibold text-positive -positive/20">
-                  Được vào
-                </span>
-              </div>
-              <div className="text-xl font-semibold text-ink">
-                {directoryStats.growthAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.growthTotal} NV</span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-ink">Trần Thị Đỗ Quyên</strong></div>
-                <div className="text-ink-3">Team: Growth 1 - 6, HCM</div>
-              </div>
-            </div>
-
-            {/* Card 3: Khối Media */}
-            <div
-              onClick={() => { setDirScopeFilter('MEDIA'); setDirPage(1); }}
-              className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                dirScopeFilter === 'MEDIA'
-                  ? 'bg-warning-soft border-warning/20 shadow-xs'
-                  : 'bg-white border-line hover:border-warning/20'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-2xs font-semibold text-warning -warning/20">
-                  Media & Ads
-                </span>
-                <span className="text-2xs font-semibold text-positive -positive/20">
-                  Được vào
-                </span>
-              </div>
-              <div className="text-xl font-semibold text-ink">
-                {directoryStats.mediaAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.mediaTotal} NV</span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-ink">Nguyễn Đức Quảng</strong></div>
-                <div className="text-ink-3">Team: Media Omni, Media TikTok</div>
-              </div>
-            </div>
-
-            {/* Card 4: Các Phòng Ban Khác */}
-            <div
-              onClick={() => { if (isAdmin) { setDirScopeFilter('OTHER_BLOCKED'); setDirPage(1); } }}
-              className={`p-3.5 rounded-xl border transition ${
-                isAdmin ? 'cursor-pointer' : 'opacity-75 cursor-not-allowed'
-              } ${
-                dirScopeFilter === 'OTHER_BLOCKED'
-                  ? 'bg-critical-soft border-critical/20 shadow-xs'
-                  : 'bg-white border-line hover:border-critical/20'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-2xs font-semibold text-ink-2 -line-strong">
-                  Phòng ban khác
-                </span>
-                <span className="text-2xs font-semibold text-critical -critical/20">
-                  Chặn Login
-                </span>
-              </div>
-              <div className="text-xl font-semibold text-ink">
-                {directoryStats.otherTotal - directoryStats.otherAllowed} <span className="text-xs font-normal text-ink-3">bị chặn / {directoryStats.otherTotal} NV</span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
-                <div>Ngoại lệ: <strong className="text-positive">{directoryStats.otherAllowed} người</strong></div>
-                <div className="text-ink-3">Fulfillment, Kho, HCNS, Tech...</div>
-              </div>
-            </div>
-          </div>
-
           {/* Bảng Quy Tắc Cấp Quyền Tự Động Theo Phòng Ban (Admin Gatekeeper Rules) */}
           {isAdmin && (
             <div className="bg-white rounded-xl border border-line shadow-xs overflow-hidden">
@@ -1489,63 +1372,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </div>
             </div>
           )}
-
-          {/* Thanh Mô Phỏng Kiểm Tra Cổng Đăng Nhập (Login Gatekeeper Simulator) */}
-          <div className="bg-ink text-white rounded-xl p-3.5 border border-line-strong flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-warning shrink-0">
-              <ShieldAlert className="w-4 h-4" />
-              <span>Kiểm tra cổng đăng nhập Lark</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5 flex-1 justify-end">
-              <select
-                value={simSelectedStaffId}
-                onChange={(e) => setSimSelectedStaffId(e.target.value)}
-                className="text-xs h-8 px-2.5 rounded-lg bg-ink border border-line-strong text-white font-medium focus:outline-none focus:border-accent/20 max-w-xs w-full"
-              >
-                <optgroup label="Nhân sự ngoài phạm vi (Test Chặn Login)">
-                  <option value="HN782">HN782 - Dương Quỳnh Anh (Livestream - CTV)</option>
-                  <option value="HN223">HN223 - Nhân sự Fulfillment / Kho vận</option>
-                  {classifiedDirectory.filter(s => !s.canLogin).slice(0, 6).map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.staffCode || s.id} - {s.name} ({s.department || s.team || 'Phòng khác'})
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Nhân sự thuộc MKT B2C / Growth / Media (Test Cho Phép)">
-                  {classifiedDirectory.filter(s => s.canLogin).slice(0, 10).map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.staffCode || s.id} - {s.name} ({SCOPE_LABELS[s.classifiedScope].label})
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-
-              {simTargetStaff && (
-                <div className={`px-3 py-1.5 rounded-lg border text-2xs flex items-center gap-2 ${
-                  simTargetStaff.canLogin
-                    ? 'bg-positive/90 border-positive/20/50 text-positive'
-                    : 'bg-critical/90 border-critical/20/50 text-critical'
-                }`}>
-                  {simTargetStaff.canLogin ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-positive shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-3.5 h-3.5 text-critical shrink-0" />
-                  )}
-                  <div>
-                    <span className="font-semibold">
-                      {simTargetStaff.canLogin
-                        ? `CHO PHÉP → ${ROLE_DISPLAY_NAME[simTargetStaff.mappedRole]}`
-                        : `CHẶN (403 ACCESS DENIED)`}
-                    </span>
-                    <span className="opacity-80 ml-1.5">
-                      · Quản lý: <strong>{simTargetStaff.managerName}</strong>
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Bộ Lọc Danh Bạ 1.011 Nhân Sự & Quản Lý Theo Trưởng Phòng */}
           <div className="bg-white p-3.5 rounded-xl border border-line shadow-xs space-y-3">

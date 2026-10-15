@@ -790,7 +790,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           { key: 'video-formats', label: 'Định dạng video', count: extraCatalog.formats.length },
           { key: 'kocs', label: 'Danh bạ KOC', count: kocs.length },
           { key: 'ctvs', label: 'Danh sách VJ / CTV', count: contributors.length },
-          { key: 'staff', label: 'Nhân sự Booking', count: UPBASE_STAFF_MASTER.length },
+          { key: 'staff', label: 'Danh sách nhân sự', count: UPBASE_STAFF_MASTER.length },
           { key: 'sla-kpi', label: 'Chuẩn SLA & KPI', count: UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length },
         ]}
         value={activeSubTab}

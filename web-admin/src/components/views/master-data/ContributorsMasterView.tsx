@@ -361,18 +361,27 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
   const columns: Column<Contributor>[] = [
     {
       key: 'ctv',
-      header: 'CTV / VJ',
-      width: 220,
+      header: 'Họ tên CTV / VJ',
+      width: 180,
       render: (c) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[270px]">
-          <Avatar name={c.name} src={c.avatar} size={32} />
-          <div className="min-w-0 leading-tight">
-            <span className="block truncate font-medium text-ink">{c.name}</span>
-            <span className="block truncate text-2xs text-ink-3">
-              <span className="font-mono">{c.code || c.id.toUpperCase()}</span>
-              {c.phone ? ` · ${c.phone}` : ''}
-            </span>
-          </div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar name={c.name} src={c.avatar} size={30} />
+          <span className="truncate font-semibold text-ink text-xs">{c.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'contact',
+      header: 'Mã & Số điện thoại',
+      width: 150,
+      render: (c) => (
+        <div className="leading-tight text-xs">
+          <span className="block font-mono font-medium text-ink">
+            {c.code || c.id.toUpperCase()}
+          </span>
+          <span className="block text-2xs text-ink-3 mt-0.5">
+            {c.phone || '—'}
+          </span>
         </div>
       ),
     },
@@ -392,16 +401,11 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
     {
       key: 'niche',
       header: 'Ngành hàng thế mạnh',
-      width: 160,
+      width: 150,
       render: (c) => (
-        <div className="leading-tight min-w-0">
-          <span className="block truncate text-ink">
-            {c.nicheSpecialty.join(' · ') || '—'}
-          </span>
-          <span className="block truncate text-2xs text-ink-3">
-            {c.shippingAddress ? 'Có địa chỉ nhận mẫu' : 'Chưa có địa chỉ mẫu'}
-          </span>
-        </div>
+        <span className="block truncate text-ink text-xs">
+          {c.nicheSpecialty.join(', ') || '—'}
+        </span>
       ),
     },
     {
@@ -453,7 +457,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
       key: 'rate',
       header: 'Định mức / video',
       align: 'right',
-      width: 120,
+      width: 130,
       render: (c) => {
         const mainRate =
           c.role === 'VIDEO_EDITOR'
@@ -462,12 +466,9 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               ? c.unitRateScriptOnly || 350000
               : c.unitRateAllInOne || 1500000;
         return (
-          <div className="leading-tight tabular-nums">
-            <span className="block font-medium text-ink">{formatVndShort(mainRate)}</span>
-            <span className="block text-2xs text-ink-3">
-              Đã chi: {formatVndShort(c.totalPaidAmount || 0)}
-            </span>
-          </div>
+          <span className="font-semibold text-ink tabular-nums font-mono text-xs">
+            {formatVndShort(mainRate)}
+          </span>
         );
       },
     },
