@@ -579,7 +579,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               { key: 'DELEGATION', label: '1. Phân công Gian hàng & Nhãn hàng' },
               { key: 'ALLOCATION', label: '2. Giao Hạn mức 4 Bậc & Duyệt Plan' },
               { key: 'SLA_MANAGEMENT', label: '3. Xử lý Vi phạm SLA & Khóa sổ', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
-              { key: 'MINDMAP', label: '4. Sơ đồ Tổ chức & Phụ trách' },
+              { key: 'MINDMAP', label: '4. Sơ đồ phân cấp & Phụ trách' },
             ]}
           />
 

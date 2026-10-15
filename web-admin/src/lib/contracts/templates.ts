@@ -173,6 +173,14 @@ export interface CatalogOverride {
   active: boolean;
   defaultReviewRoles: ('LEGAL' | 'FINANCE' | 'LEAD')[];
   exemptLegalReview?: boolean;
+  scope?: 'GLOBAL' | 'KOC_CUSTOM';
+  kocId?: string;
+  kocName?: string;
+  approvedByLegal?: string;
+  approvedAt?: string;
+  originalContractId?: string;
+  customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
+  legalNotes?: string;
   customFile?: string;
   updatedAt: string;
   updatedBy: string;
@@ -379,6 +387,14 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
   const active = override?.active !== undefined ? override.active : true;
   const defaultReviewRoles = override?.defaultReviewRoles?.length ? override.defaultReviewRoles : defaultReviewRolesFor(kind);
   const exemptLegalReview = override?.exemptLegalReview !== undefined ? override.exemptLegalReview : true;
+  const scope = override?.scope || 'GLOBAL';
+  const kocId = override?.kocId;
+  const kocName = override?.kocName;
+  const approvedByLegal = override?.approvedByLegal;
+  const approvedAt = override?.approvedAt;
+  const originalContractId = override?.originalContractId;
+  const customType = override?.customType;
+  const legalNotes = override?.legalNotes;
   const updatedAt = override?.updatedAt || '2026-05-01T08:00:00.000Z';
   const updatedBy = override?.updatedBy || 'Phòng Pháp chế';
 
@@ -439,6 +455,14 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
       active,
       defaultReviewRoles,
       exemptLegalReview,
+      scope,
+      kocId,
+      kocName,
+      approvedByLegal,
+      approvedAt,
+      originalContractId,
+      customType,
+      legalNotes,
       updatedAt,
       updatedBy,
       fieldCount: fields.length,
@@ -474,6 +498,14 @@ export async function saveTemplateMeta(
     active?: boolean;
     defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
     exemptLegalReview?: boolean;
+    scope?: 'GLOBAL' | 'KOC_CUSTOM';
+    kocId?: string;
+    kocName?: string;
+    approvedByLegal?: string;
+    approvedAt?: string;
+    originalContractId?: string;
+    customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
+    legalNotes?: string;
   },
 ): Promise<LegalTemplate> {
   const { template } = await loadTemplate(id);
@@ -508,6 +540,14 @@ export async function saveTemplateMeta(
     active: input.active !== undefined ? input.active : (template.active ?? true),
     defaultReviewRoles: input.defaultReviewRoles?.length ? input.defaultReviewRoles : (template.defaultReviewRoles || defaultReviewRolesFor(template.kind)),
     exemptLegalReview: input.exemptLegalReview !== undefined ? input.exemptLegalReview : (template.exemptLegalReview ?? true),
+    scope: input.scope || prev?.scope || template.scope || 'GLOBAL',
+    kocId: input.kocId !== undefined ? input.kocId : (prev?.kocId || template.kocId),
+    kocName: input.kocName !== undefined ? input.kocName : (prev?.kocName || template.kocName),
+    approvedByLegal: input.approvedByLegal !== undefined ? input.approvedByLegal : (prev?.approvedByLegal || template.approvedByLegal),
+    approvedAt: input.approvedAt !== undefined ? input.approvedAt : (prev?.approvedAt || template.approvedAt),
+    originalContractId: input.originalContractId !== undefined ? input.originalContractId : (prev?.originalContractId || template.originalContractId),
+    customType: input.customType !== undefined ? input.customType : (prev?.customType || template.customType),
+    legalNotes: input.legalNotes !== undefined ? input.legalNotes : (prev?.legalNotes || template.legalNotes),
     customFile: prev?.customFile,
     updatedAt: now,
     updatedBy: actorName,
@@ -561,6 +601,14 @@ export async function uploadTemplateDocx(
     description?: string;
     defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
     exemptLegalReview?: boolean;
+    scope?: 'GLOBAL' | 'KOC_CUSTOM';
+    kocId?: string;
+    kocName?: string;
+    approvedByLegal?: string;
+    approvedAt?: string;
+    originalContractId?: string;
+    customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
+    legalNotes?: string;
     note?: string;
   },
 ): Promise<LegalTemplate> {
@@ -639,6 +687,14 @@ export async function uploadTemplateDocx(
     active: prev?.active ?? true,
     defaultReviewRoles,
     exemptLegalReview: input.exemptLegalReview !== undefined ? input.exemptLegalReview : (existingTemplate?.exemptLegalReview ?? true),
+    scope: input.scope || prev?.scope || existingTemplate?.scope || 'GLOBAL',
+    kocId: input.kocId !== undefined ? input.kocId : (prev?.kocId || existingTemplate?.kocId),
+    kocName: input.kocName !== undefined ? input.kocName : (prev?.kocName || existingTemplate?.kocName),
+    approvedByLegal: input.approvedByLegal !== undefined ? input.approvedByLegal : (prev?.approvedByLegal || existingTemplate?.approvedByLegal),
+    approvedAt: input.approvedAt !== undefined ? input.approvedAt : (prev?.approvedAt || existingTemplate?.approvedAt),
+    originalContractId: input.originalContractId !== undefined ? input.originalContractId : (prev?.originalContractId || existingTemplate?.originalContractId),
+    customType: input.customType !== undefined ? input.customType : (prev?.customType || existingTemplate?.customType),
+    legalNotes: input.legalNotes !== undefined ? input.legalNotes : (prev?.legalNotes || existingTemplate?.legalNotes),
     customFile: customFilename,
     updatedAt: now,
     updatedBy: actorName,

@@ -315,7 +315,7 @@ export async function saveMonthlyPlan(
     }
 
     return tx.monthlyPlan.findUniqueOrThrow({ where: { id }, include: planInclude });
-  });
+  }, { timeout: 20000, maxWait: 15000 });
 
   // Phát tín hiệu sau khi transaction đã commit; hàm không bao giờ ném lỗi
   if (insertedMessages > 0) await notifyPlanMessages(id);

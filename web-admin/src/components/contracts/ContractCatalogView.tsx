@@ -80,6 +80,7 @@ export function ContractCatalogView({
   const canCreateContract = data.actor.roles.includes('CREATOR');
 
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | ContractCategory>('ALL');
+  const [scopeFilter, setScopeFilter] = useState<'ALL' | 'GLOBAL' | 'KOC_CUSTOM'>('ALL');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string>(data.templates[0]?.id || '');
   const [loadedTemplate, setLoadedTemplate] = useState<LegalTemplate | null>(null);
@@ -98,6 +99,11 @@ export function ContractCatalogView({
   const [editActive, setEditActive] = useState(true);
   const [editRoles, setEditRoles] = useState<('LEGAL' | 'FINANCE' | 'LEAD')[]>(['LEGAL', 'FINANCE']);
   const [editExemptLegalReview, setEditExemptLegalReview] = useState(true);
+  const [editScope, setEditScope] = useState<'GLOBAL' | 'KOC_CUSTOM'>('GLOBAL');
+  const [editKocId, setEditKocId] = useState('');
+  const [editKocName, setEditKocName] = useState('');
+  const [editCustomType, setEditCustomType] = useState<'UPBASE_AMENDED' | 'KOC_FORM'>('UPBASE_AMENDED');
+  const [editLegalNotes, setEditLegalNotes] = useState('');
 
   // Modal tải file .docx (cập nhật phiên bản hoặc thêm mẫu mới)
   const [uploadModalMode, setUploadModalMode] = useState<null | 'NEW' | 'UPDATE'>(null);
@@ -111,6 +117,11 @@ export function ContractCatalogView({
   const [uploadNote, setUploadNote] = useState('');
   const [uploadRoles, setUploadRoles] = useState<('LEGAL' | 'FINANCE' | 'LEAD')[]>(['LEGAL', 'FINANCE']);
   const [uploadExemptLegalReview, setUploadExemptLegalReview] = useState(true);
+  const [uploadScope, setUploadScope] = useState<'GLOBAL' | 'KOC_CUSTOM'>('GLOBAL');
+  const [uploadKocId, setUploadKocId] = useState('');
+  const [uploadKocName, setUploadKocName] = useState('');
+  const [uploadCustomType, setUploadCustomType] = useState<'UPBASE_AMENDED' | 'KOC_FORM'>('UPBASE_AMENDED');
+  const [uploadLegalNotes, setUploadLegalNotes] = useState('');
   const [uploadFile, setUploadFile] = useState<{ name: string; base64: string } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -118,12 +129,14 @@ export function ContractCatalogView({
   const filteredTemplates = useMemo(() => {
     const q = search.trim().toLowerCase();
     return data.templates.filter(t => {
+      const scope = t.scope || 'GLOBAL';
+      if (scopeFilter !== 'ALL' && scope !== scopeFilter) return false;
       const cat = t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
       if (categoryFilter !== 'ALL' && cat !== categoryFilter) return false;
       if (!q) return true;
-      return `${t.id} ${t.name} ${t.subject} ${t.version} ${t.filename} ${t.description || ''}`.toLowerCase().includes(q);
+      return `${t.id} ${t.name} ${t.subject} ${t.version} ${t.filename} ${t.description || ''} ${t.kocName || ''} ${t.kocId || ''} ${t.legalNotes || ''}`.toLowerCase().includes(q);
     });
-  }, [data.templates, categoryFilter, search]);
+  }, [data.templates, categoryFilter, scopeFilter, search]);
 
   if (!filteredTemplates.some(t => t.id === selectedId) && filteredTemplates[0] && selectedId !== filteredTemplates[0].id) {
     setSelectedId(filteredTemplates[0].id);
@@ -150,6 +163,12 @@ export function ContractCatalogView({
     };
   }, [selectedId, onNotify]);
 
+  const scopeChips = useMemo(() => [
+    { key: 'ALL' as const, label: 'Tất cả nguồn', count: data.templates.length },
+    { key: 'GLOBAL' as const, label: 'Mẫu chuẩn Upbase', count: data.templates.filter(t => (t.scope || 'GLOBAL') === 'GLOBAL').length },
+    { key: 'KOC_CUSTOM' as const, label: 'Mẫu duyệt theo KOC', count: data.templates.filter(t => t.scope === 'KOC_CUSTOM').length },
+  ], [data.templates]);
+
   const categoryChips = useMemo(() => {
     const getCat = (t: LegalTemplate): ContractCategory =>
       t.category || (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
@@ -172,6 +191,11 @@ export function ContractCatalogView({
     setEditActive(tpl.active !== false);
     setEditRoles(tpl.defaultReviewRoles?.length ? tpl.defaultReviewRoles : tpl.kind === 'ACCEPTANCE' ? ['FINANCE', 'LEAD'] : ['LEGAL', 'FINANCE']);
     setEditExemptLegalReview(tpl.exemptLegalReview !== false);
+    setEditScope(tpl.scope || 'GLOBAL');
+    setEditKocId(tpl.kocId || '');
+    setEditKocName(tpl.kocName || '');
+    setEditCustomType(tpl.customType || 'UPBASE_AMENDED');
+    setEditLegalNotes(tpl.legalNotes || '');
     setEditModalOpen(true);
   };
 
@@ -188,6 +212,11 @@ export function ContractCatalogView({
       setUploadDescription(tpl.description || '');
       setUploadRoles(tpl.defaultReviewRoles?.length ? tpl.defaultReviewRoles : ['LEGAL', 'FINANCE']);
       setUploadExemptLegalReview(tpl.exemptLegalReview !== false);
+      setUploadScope(tpl.scope || 'GLOBAL');
+      setUploadKocId(tpl.kocId || '');
+      setUploadKocName(tpl.kocName || '');
+      setUploadCustomType(tpl.customType || 'UPBASE_AMENDED');
+      setUploadLegalNotes(tpl.legalNotes || '');
       setUploadNote('Cập nhật biểu mẫu theo quy định pháp chế mới');
     } else {
       setNewCode('LIV-HD');
@@ -199,6 +228,11 @@ export function ContractCatalogView({
       setUploadDescription('Mẫu hợp đồng áp dụng cho phiên phát sóng trực tiếp (Livestream) trên sàn TMĐT.');
       setUploadRoles(['LEGAL', 'FINANCE', 'LEAD']);
       setUploadExemptLegalReview(true);
+      setUploadScope('GLOBAL');
+      setUploadKocId('');
+      setUploadKocName('');
+      setUploadCustomType('UPBASE_AMENDED');
+      setUploadLegalNotes('');
       setUploadNote('Ban hành biểu mẫu mới vào danh mục chuẩn');
     }
   };
@@ -234,6 +268,11 @@ export function ContractCatalogView({
         active: editActive,
         defaultReviewRoles: editRoles,
         exemptLegalReview: editExemptLegalReview,
+        scope: editScope,
+        kocId: editScope === 'KOC_CUSTOM' ? editKocId.trim() : undefined,
+        kocName: editScope === 'KOC_CUSTOM' ? editKocName.trim() : undefined,
+        customType: editScope === 'KOC_CUSTOM' ? editCustomType : undefined,
+        legalNotes: editScope === 'KOC_CUSTOM' ? editLegalNotes.trim() : undefined,
       });
       setLoadedTemplate(res.template);
       setEditModalOpen(false);
@@ -296,6 +335,11 @@ export function ContractCatalogView({
         description: uploadDescription,
         defaultReviewRoles: uploadRoles,
         exemptLegalReview: uploadExemptLegalReview,
+        scope: uploadScope,
+        kocId: uploadScope === 'KOC_CUSTOM' ? uploadKocId.trim() : undefined,
+        kocName: uploadScope === 'KOC_CUSTOM' ? uploadKocName.trim() : undefined,
+        customType: uploadScope === 'KOC_CUSTOM' ? uploadCustomType : undefined,
+        legalNotes: uploadScope === 'KOC_CUSTOM' ? uploadLegalNotes.trim() : undefined,
         note: uploadNote,
       });
       setUploadModalMode(null);
@@ -383,7 +427,12 @@ export function ContractCatalogView({
                 onChange: setSearch,
                 placeholder: 'Tìm theo tên mẫu, mã mẫu (IND-HD, COM-HD...), đối tượng, phiên bản...',
               }}
-              chips={<Chips items={categoryChips} value={categoryFilter} onChange={setCategoryFilter} />}
+              chips={
+                <div className="flex flex-col gap-2 w-full">
+                  <Chips items={scopeChips} value={scopeFilter} onChange={setScopeFilter} />
+                  <Chips items={categoryChips} value={categoryFilter} onChange={setCategoryFilter} />
+                </div>
+              }
             />
           </div>
           {canManageCatalog && (
@@ -437,6 +486,23 @@ export function ContractCatalogView({
                         {isActive ? 'Đang áp dụng' : 'Ngừng áp dụng'}
                       </Status>
                     </div>
+
+                    {t.scope === 'KOC_CUSTOM' ? (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center rounded bg-accent-soft px-1.5 py-0.5 text-2xs font-semibold text-accent">
+                          ⭐ Mẫu riêng KOC: {t.kocName || t.kocId}
+                        </span>
+                        <span className="text-2xs text-ink-3">
+                          ({t.customType === 'KOC_FORM' ? 'Form KOC' : 'Sửa Upbase'})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-2xs text-ink-3">
+                        <span className="inline-flex items-center rounded bg-sunken px-1.5 py-0.5 font-medium">
+                          Mẫu chuẩn Upbase
+                        </span>
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-2">
                       <span className="font-medium text-ink">{CATEGORY_LABELS[cat]}</span>
@@ -498,6 +564,28 @@ export function ContractCatalogView({
                       {loadedTemplate.description ||
                         `Biểu mẫu ${loadedTemplate.kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'} áp dụng cho đối tác ${loadedTemplate.subject}.`}
                     </p>
+
+                    {loadedTemplate.scope === 'KOC_CUSTOM' && (
+                      <div className="rounded-lg border border-accent/40 bg-accent-soft/40 p-3 space-y-1.5 mt-2">
+                        <div className="font-semibold text-accent text-xs flex items-center justify-between">
+                          <span>⭐ Mẫu hợp đồng duyệt riêng cho KOC: {loadedTemplate.kocName || loadedTemplate.kocId}</span>
+                          <span className="text-2xs font-normal bg-surface border border-accent/20 px-1.5 py-0.5 rounded text-ink-2">
+                            {loadedTemplate.customType === 'KOC_FORM' ? 'Form riêng của KOC / Agency' : 'Chỉnh sửa từ mẫu Upbase'}
+                          </span>
+                        </div>
+                        {loadedTemplate.legalNotes && (
+                          <div className="text-xs text-ink bg-surface/90 p-2.5 rounded border border-accent/20 whitespace-pre-wrap leading-relaxed">
+                            <span className="font-medium text-accent block mb-0.5">Lưu ý & Thỏa thuận của Pháp chế:</span>
+                            {loadedTemplate.legalNotes}
+                          </div>
+                        )}
+                        <div className="text-2xs text-ink-3 flex flex-wrap items-center gap-2 pt-0.5">
+                          <span>Duyệt bởi: <strong>{loadedTemplate.approvedByLegal || 'Pháp chế'}</strong></span>
+                          {loadedTemplate.approvedAt && <span>· Ngày duyệt: {formatDate(loadedTemplate.approvedAt)}</span>}
+                          {loadedTemplate.originalContractId && <span>· Căn cứ HĐ gốc: <span className="font-code">{loadedTemplate.originalContractId}</span></span>}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -794,6 +882,44 @@ export function ContractCatalogView({
               ]}
             />
           </Field>
+          <Field label="Phạm vi áp dụng">
+            <Segmented
+              value={editScope}
+              onChange={v => setEditScope(v as 'GLOBAL' | 'KOC_CUSTOM')}
+              items={[
+                { key: 'GLOBAL', label: 'Mẫu chuẩn Upbase (dùng chung)' },
+                { key: 'KOC_CUSTOM', label: 'Mẫu riêng theo KOC/KOL' },
+              ]}
+            />
+          </Field>
+
+          {editScope === 'KOC_CUSTOM' && (
+            <div className="rounded-lg border border-accent/30 bg-accent-soft/30 p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Mã KOC / ID kênh *">
+                  <Input value={editKocId} onChange={e => setEditKocId(e.target.value)} placeholder="VD: koc-1 hoặc tên kênh" required />
+                </Field>
+                <Field label="Tên KOC / Đối tác *">
+                  <Input value={editKocName} onChange={e => setEditKocName(e.target.value)} placeholder="VD: Phạm Ngọc Hiếu An (Uri)" required />
+                </Field>
+              </div>
+              <Field label="Loại điều khoản chỉnh sửa">
+                <Select value={editCustomType} onChange={e => setEditCustomType(e.target.value as 'UPBASE_AMENDED' | 'KOC_FORM')}>
+                  <option value="UPBASE_AMENDED">Chỉnh sửa điều khoản trên mẫu Upbase</option>
+                  <option value="KOC_FORM">Sử dụng form mẫu riêng của KOC / Agency</option>
+                </Select>
+              </Field>
+              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này" hint="Lưu ý hiển thị cho chuyên viên khi làm hợp đồng cho KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)">
+                <Textarea
+                  rows={2}
+                  value={editLegalNotes}
+                  onChange={e => setEditLegalNotes(e.target.value)}
+                  placeholder="VD: KOC chỉ đồng ý thanh toán trong 7 ngày; thời hạn cấp quyền Spark Ads tối đa 60 ngày..."
+                />
+              </Field>
+            </div>
+          )}
+
           <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input
@@ -804,10 +930,12 @@ export function ContractCatalogView({
               />
               <div>
                 <span className="font-medium text-[13px] text-ink block">
-                  Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế
+                  {editScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
                 <span className="text-2xs text-ink-3 block">
-                  Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.
+                  {editScope === 'KOC_CUSTOM'
+                    ? 'Hồ sơ áp dụng đúng mẫu đã duyệt của KOC này sẽ được chuyển thẳng Kế toán duyệt ngân sách.'
+                    : 'Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.'}
                 </span>
               </div>
             </label>
@@ -898,6 +1026,44 @@ export function ContractCatalogView({
             </div>
           </Field>
 
+          <Field label="Phạm vi áp dụng">
+            <Segmented
+              value={uploadScope}
+              onChange={v => setUploadScope(v as 'GLOBAL' | 'KOC_CUSTOM')}
+              items={[
+                { key: 'GLOBAL', label: 'Mẫu chuẩn Upbase (dùng chung)' },
+                { key: 'KOC_CUSTOM', label: 'Mẫu riêng theo KOC/KOL' },
+              ]}
+            />
+          </Field>
+
+          {uploadScope === 'KOC_CUSTOM' && (
+            <div className="rounded-lg border border-accent/30 bg-accent-soft/30 p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Mã KOC / ID kênh *">
+                  <Input value={uploadKocId} onChange={e => setUploadKocId(e.target.value)} placeholder="VD: koc-1 hoặc tên kênh" required />
+                </Field>
+                <Field label="Tên KOC / Đối tác *">
+                  <Input value={uploadKocName} onChange={e => setUploadKocName(e.target.value)} placeholder="VD: Phạm Ngọc Hiếu An (Uri)" required />
+                </Field>
+              </div>
+              <Field label="Loại điều khoản chỉnh sửa">
+                <Select value={uploadCustomType} onChange={e => setUploadCustomType(e.target.value as 'UPBASE_AMENDED' | 'KOC_FORM')}>
+                  <option value="UPBASE_AMENDED">Chỉnh sửa điều khoản trên mẫu Upbase</option>
+                  <option value="KOC_FORM">Sử dụng form mẫu riêng của KOC / Agency</option>
+                </Select>
+              </Field>
+              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này" hint="Lưu ý hiển thị cho chuyên viên khi làm hợp đồng cho KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)">
+                <Textarea
+                  rows={2}
+                  value={uploadLegalNotes}
+                  onChange={e => setUploadLegalNotes(e.target.value)}
+                  placeholder="VD: KOC chỉ đồng ý thanh toán trong 7 ngày; thời hạn cấp quyền Spark Ads tối đa 60 ngày..."
+                />
+              </Field>
+            </div>
+          )}
+
           <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input
@@ -908,10 +1074,12 @@ export function ContractCatalogView({
               />
               <div>
                 <span className="font-medium text-[13px] text-ink block">
-                  Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế
+                  {uploadScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
                 <span className="text-2xs text-ink-3 block">
-                  Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.
+                  {uploadScope === 'KOC_CUSTOM'
+                    ? 'Hồ sơ áp dụng đúng mẫu đã duyệt của KOC này sẽ được chuyển thẳng Kế toán duyệt ngân sách.'
+                    : 'Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.'}
                 </span>
               </div>
             </label>

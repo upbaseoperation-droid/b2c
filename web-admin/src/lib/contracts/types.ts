@@ -61,6 +61,22 @@ export interface LegalTemplate {
   history?: TemplateVersionHistoryItem[];
   /** Mẫu chuẩn: hồ sơ không có điều khoản ngoại lệ được miễn bước duyệt của Pháp chế. */
   exemptLegalReview?: boolean;
+  /** Phạm vi áp dụng: Dùng chung (GLOBAL) hoặc mẫu riêng đã duyệt theo KOC/KOL (KOC_CUSTOM). */
+  scope?: 'GLOBAL' | 'KOC_CUSTOM';
+  /** Mã KOC gắn với mẫu này. */
+  kocId?: string;
+  /** Tên KOC / Đối tác. */
+  kocName?: string;
+  /** Người đại diện Pháp chế phê duyệt mẫu này. */
+  approvedByLegal?: string;
+  /** Thời điểm Pháp chế phê duyệt. */
+  approvedAt?: string;
+  /** Mã hợp đồng gốc đã phát sinh và được duyệt mẫu này. */
+  originalContractId?: string;
+  /** Loại mẫu tùy chỉnh: Sửa trên mẫu Upbase hoặc dùng Form riêng của KOC. */
+  customType?: 'UPBASE_AMENDED' | 'KOC_FORM';
+  /** Ghi chú và lưu ý nghiệp vụ của Pháp chế cho KOC. */
+  legalNotes?: string;
 }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }

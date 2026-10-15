@@ -59,6 +59,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
           ? (body.defaultReviewRoles.filter(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(String(r))) as ('LEGAL' | 'FINANCE' | 'LEAD')[])
           : undefined,
         exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined,
+        scope: body.scope === 'KOC_CUSTOM' ? 'KOC_CUSTOM' : body.scope === 'GLOBAL' ? 'GLOBAL' : undefined,
+        kocId: typeof body.kocId === 'string' ? body.kocId : undefined,
+        kocName: typeof body.kocName === 'string' ? body.kocName : undefined,
+        approvedByLegal: typeof body.approvedByLegal === 'string' ? body.approvedByLegal : undefined,
+        approvedAt: typeof body.approvedAt === 'string' ? body.approvedAt : undefined,
+        originalContractId: typeof body.originalContractId === 'string' ? body.originalContractId : undefined,
+        customType: body.customType === 'UPBASE_AMENDED' || body.customType === 'KOC_FORM' ? body.customType : undefined,
+        legalNotes: typeof body.legalNotes === 'string' ? body.legalNotes : undefined,
       });
       return NextResponse.json({ template });
     }
@@ -79,6 +87,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
           ? (body.defaultReviewRoles.filter(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(String(r))) as ('LEGAL' | 'FINANCE' | 'LEAD')[])
           : undefined,
         exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined,
+        scope: body.scope === 'KOC_CUSTOM' ? 'KOC_CUSTOM' : body.scope === 'GLOBAL' ? 'GLOBAL' : undefined,
+        kocId: typeof body.kocId === 'string' ? body.kocId : undefined,
+        kocName: typeof body.kocName === 'string' ? body.kocName : undefined,
+        approvedByLegal: typeof body.approvedByLegal === 'string' ? body.approvedByLegal : undefined,
+        approvedAt: typeof body.approvedAt === 'string' ? body.approvedAt : undefined,
+        originalContractId: typeof body.originalContractId === 'string' ? body.originalContractId : undefined,
+        customType: body.customType === 'UPBASE_AMENDED' || body.customType === 'KOC_FORM' ? body.customType : undefined,
+        legalNotes: typeof body.legalNotes === 'string' ? body.legalNotes : undefined,
         note: typeof body.note === 'string' ? body.note : undefined,
       });
       return NextResponse.json({ template });

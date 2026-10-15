@@ -81,6 +81,12 @@ export function ContractForm({
 
   const deal = deals.find(d => d.id === dealId);
   const koc = findKoc(kocs, deal);
+  const targetKocId = koc?.id || deal?.kocId || record?.kocId;
+  const kocTemplates = data.templates.filter(
+    t => (t.scope === 'KOC_CUSTOM' && t.kocId === targetKocId) || (t.kocId && t.kocId === targetKocId),
+  );
+  const primaryKocTemplate = kocTemplates[0];
+  const kocLegalNotes = primaryKocTemplate?.legalNotes;
 
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
   useEffect(() => {
@@ -300,6 +306,46 @@ export function ContractForm({
         </div>
       )}
 
+      {(kocLegalNotes || primaryKocTemplate) && (
+        <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3.5 space-y-2 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-warning-strong flex items-center gap-1.5">
+              ⚖️ Lưu ý của Pháp chế cho KOC {koc?.stageName || partner || 'này'}:
+            </span>
+            {primaryKocTemplate && templateId !== primaryKocTemplate.id && !editing && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setTemplate(null);
+                  setValues({});
+                  setTemplateId(primaryKocTemplate.id);
+                  setHasCustomTerms(false);
+                }}
+              >
+                Dùng mẫu đã duyệt của KOC ({primaryKocTemplate.name})
+              </Button>
+            )}
+          </div>
+          {kocLegalNotes && (
+            <div className="bg-surface/90 rounded-lg p-2.5 text-ink border border-warning/30 whitespace-pre-wrap leading-relaxed">
+              {kocLegalNotes}
+            </div>
+          )}
+          {primaryKocTemplate && (
+            <div className="text-2xs text-ink-2 flex flex-wrap items-center gap-2">
+              <span>Mẫu riêng: <strong>{primaryKocTemplate.name}</strong></span>
+              <span>· Duyệt bởi: {primaryKocTemplate.approvedByLegal || 'Pháp chế'}</span>
+              {templateId === primaryKocTemplate.id ? (
+                <span className="text-positive font-semibold">✓ Đang áp dụng mẫu này (Miễn duyệt Pháp chế)</span>
+              ) : (
+                <span className="text-ink-3">· Áp dụng mẫu này để hưởng luồng duyệt nhanh</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <Panel title="Thông tin chung">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Booking" htmlFor="ct-deal" hint={koc ? `KOC: ${koc.stageName}` : 'Không bắt buộc. Hồ sơ không gắn booking thì tự nhập đối tác.'}>
@@ -320,7 +366,20 @@ export function ContractForm({
           <Field label="Mẫu pháp chế" htmlFor="ct-template" hint={koc && !editing ? 'Chọn theo loại hồ sơ pháp lý của KOC. Đổi nếu cần.' : undefined}>
             <Select id="ct-template" required value={templateId} disabled={editing} onChange={e => { setTemplate(null); setValues({}); setTemplateId(e.target.value); }}>
               <option value="">Chọn mẫu</option>
-              {(editing ? data.templates : templates).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {kocTemplates.length > 0 && (
+                <optgroup label={`Mẫu đã duyệt riêng cho KOC (${kocTemplates.length})`}>
+                  {kocTemplates.map(t => (
+                    <option key={t.id} value={t.id}>
+                      ⭐ {t.name} ({t.version})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Mẫu chuẩn Upbase">
+                {(editing ? data.templates : templates)
+                  .filter(t => !kocTemplates.some(kt => kt.id === t.id))
+                  .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </optgroup>
             </Select>
           </Field>
           <Field label="Tên hồ sơ" htmlFor="ct-title">

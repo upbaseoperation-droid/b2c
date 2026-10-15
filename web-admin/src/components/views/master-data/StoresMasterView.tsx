@@ -14,6 +14,7 @@ import {
   Archive, 
   AlertTriangle,
   CheckCircle2,
+  Check,
   UserCheck,
   ShieldAlert,
   ShieldCheck,
@@ -538,18 +539,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   const columns: Column<StorePortfolioItem>[] = [
     {
       key: 'store',
-      header: 'Gian hàng & Mã',
+      header: 'Gian hàng',
       width: 220,
       render: (s) => (
         <div className="leading-tight min-w-0">
-          <span className="font-medium text-ink block truncate group-hover:text-primary transition-colors">
+          <span className="font-semibold text-ink block truncate group-hover:text-primary transition-colors text-xs">
             {s.storeName}
           </span>
-          <div className="flex items-center gap-1.5 mt-0.5 text-2xs font-mono text-ink-3">
-            <span className="font-semibold text-ink-2">{s.storeOperationId || s.id}</span>
-            <span>•</span>
-            <span>{s.servicePackage || 'E2E-S'}</span>
-          </div>
         </div>
       ),
     },
@@ -577,9 +573,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     {
       key: 'brand',
       header: 'Thương hiệu',
-      width: 160,
+      width: 150,
       render: (s) => (
-        <div className="leading-tight min-w-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => {
@@ -588,129 +584,70 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-1.5 text-xs cursor-pointer truncate"
             title="Xem hồ sơ thương hiệu"
           >
-            <BrandAvatar brandName={s.brandName} brandId={s.brandId} size={20} />
+            <BrandAvatar brandName={s.brandName} brandId={s.brandId} size={22} rounded="md" />
             <span className="truncate">{s.brandName}</span>
           </button>
-          <div className="text-2xs text-ink-3 mt-0.5 truncate">{s.category || 'Tiêu dùng'}</div>
         </div>
       ),
     },
     {
-      key: 'budget',
-      header: 'Hạn mức Net',
-      align: 'right',
-      width: 140,
-      render: (s) => {
-        const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
-        const spent = getStoreActualSpent(s);
-        const isStoreOverbudget = bNet > 0 && spent > bNet;
-        const burnPct = bNet > 0 ? (spent / bNet) * 100 : 0;
-        return (
-          <div className="leading-tight tabular-nums">
-            <span className="font-medium text-ink block">{formatVndShort(bNet)}</span>
-            {bNet > 0 ? (
-              <div className="mt-1">
-                <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      isStoreOverbudget ? 'bg-critical' : burnPct > 80 ? 'bg-warning' : 'bg-positive'
-                    }`}
-                    style={{ width: `${Math.min(100, burnPct)}%` }}
-                  />
-                </div>
-                <div className="text-2xs text-ink-3 mt-0.5 font-mono">
-                  Đã duyệt: {formatVndShort(spent)} ({burnPct.toFixed(0)}%)
-                </div>
-              </div>
-            ) : (
-              <span className="text-2xs text-ink-3">FOC (0đ)</span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'video',
-      header: 'Chỉ tiêu Video',
-      align: 'center',
-      width: 115,
+      key: 'category',
+      header: 'Ngành hàng',
+      width: 130,
       render: (s) => (
-        <div className="leading-tight font-mono">
-          <span className="font-medium text-ink block">
-            {(s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0)}
-          </span>
-          <span className="text-2xs text-ink-3 block">
-            {s.targetAffiliateContents || 0} Aff • {s.targetSelfChannelContents || 0} Self
-          </span>
-        </div>
+        <span className="text-ink text-xs block truncate">{s.category || 'Tiêu dùng'}</span>
       ),
     },
     {
       key: 'pic',
       header: 'Đội ngũ phụ trách',
-      width: 175,
+      width: 170,
       render: (s) => {
         const hasLeaderTeam = s.hasBookingLeader && !!s.bookingLeader;
         return (
-          <div className="space-y-0.5 leading-tight">
+          <div className="space-y-0.5 leading-tight text-xs">
             <div className="flex items-center gap-1.5">
               <span className="text-2xs text-ink-3">PIC:</span>
-              <span className="font-medium text-ink text-xs">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
+              <span className="font-medium text-ink">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
             </div>
-            <span className="block text-2xs text-ink-3">
-              {hasLeaderTeam ? `Leader: ${s.bookingLeader}` : 'Trực tiếp Lead B2C'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xs text-ink-3">Leader:</span>
+              <span className="text-ink-2 font-medium">
+                {hasLeaderTeam ? s.bookingLeader : '—'}
+              </span>
+            </div>
           </div>
         );
       },
     },
     {
-      key: 'financialAlert',
-      header: 'Tài chính',
-      align: 'center',
-      width: 110,
-      render: (s) => {
-        const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
-        const spent = getStoreActualSpent(s);
-        const isStoreOverbudget = bNet > 0 && spent > bNet;
-        const isStoreUnbudgeted = bNet === 0 && spent > 0;
-        if (isStoreOverbudget) return <span className="text-xs font-medium text-critical">Bội chi</span>;
-        if (isStoreUnbudgeted) return <span className="text-xs font-medium text-warning">Chi ngoài KH</span>;
-        if (bNet === 0) return <span className="text-xs text-ink-3">Chỉ gửi mẫu</span>;
-        return <span className="text-xs text-ink-3">Đúng hạn mức</span>;
-      },
-    },
-    {
       key: 'b2cPlan',
-      header: 'B2C & Plan',
+      header: 'Cần Plan',
       align: 'center',
-      width: 105,
-      render: (s) => (
-        <div className="flex flex-col items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => handleToggleB2cManaged(s)}
-            className={`text-2xs transition cursor-pointer ${
-              s.isB2cManaged !== false
-                ? 'font-medium text-accent hover:underline'
-                : 'text-ink-3 hover:text-ink'
-            }`}
-          >
-            {s.isB2cManaged !== false ? 'B2C Quản lý' : 'Bỏ qua'}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleToggleRequiresPlan(s)}
-            className={`text-2xs transition cursor-pointer ${
-              s.requiresB2cPlan !== false
-                ? 'font-medium text-ink-2 hover:underline'
-                : 'text-ink-3 hover:text-ink'
-            }`}
-          >
-            {s.requiresB2cPlan !== false ? 'Cần Plan' : 'Miễn Plan'}
-          </button>
-        </div>
-      ),
+      width: 90,
+      render: (s) => {
+        const needsPlan = s.requiresB2cPlan !== false;
+        return (
+          <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => handleToggleRequiresPlan(s)}
+              className={`p-1 rounded transition-colors cursor-pointer ${
+                needsPlan
+                  ? 'text-positive hover:bg-positive-soft'
+                  : 'text-ink-4 hover:text-ink hover:bg-sunken'
+              }`}
+              title={needsPlan ? 'Cần lập Plan tháng (nhấn để đổi)' : 'Miễn làm Plan (nhấn để đổi)'}
+            >
+              {needsPlan ? (
+                <Check className="w-4 h-4 stroke-[2.5]" />
+              ) : (
+                <span className="text-xs font-normal select-none">—</span>
+              )}
+            </button>
+          </div>
+        );
+      },
     },
     {
       key: 'status',

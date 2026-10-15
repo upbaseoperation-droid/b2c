@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Plus, X, RotateCcw } from 'lucide-react';
+import { Edit3, Plus } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
 import { formatVnd } from '../../../lib/format';
-import { Presence } from '../../ui';
+import { 
+  ActionMenu, 
+  Button, 
+  Chips, 
+  DataTable, 
+  EmptyState, 
+  FilterBar, 
+  Modal, 
+  PageActions, 
+  Panel 
+} from '../../ui';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
@@ -137,290 +147,282 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Action & Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-1 flex-wrap">
-          <div className="relative min-w-[200px] max-w-xs flex-1">
-            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm mã bậc (KL1, KL2...), khoảng giá..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line focus:outline-none focus:ring-1 focus:ring-line-strong bg-surface text-ink"
+    <div className="space-y-4">
+      <PageActions>
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={handleOpenAdd}
+          disabled={!canEdit}
+        >
+          Thêm bậc cast
+        </Button>
+      </PageActions>
+
+      <Panel flush>
+        <div className="p-4 border-b border-line grid gap-2.5">
+          <FilterBar
+            search={{
+              value: search,
+              onChange: (v) => setSearch(v),
+              placeholder: 'Tìm mã bậc cast (KL1, KL2...), khoảng giá, phân nhóm...',
+            }}
+            filters={
+              isTierFiltered ? (
+                <Button variant="ghost" onClick={handleResetTierFilters}>
+                  Xóa bộ lọc
+                </Button>
+              ) : undefined
+            }
+            resultCount={isTierFiltered ? filteredTiers.length : undefined}
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <Chips
+              label="Phân nhóm"
+              items={[
+                { key: 'ALL', label: 'Tất cả phân nhóm', count: tiers.length },
+                { key: 'Massive Creator', label: 'Massive Creator', count: tiers.filter(t => t.creatorGroup === 'Massive Creator').length },
+                { key: 'Mid Creator', label: 'Mid Creator', count: tiers.filter(t => t.creatorGroup === 'Mid Creator').length },
+                { key: 'Key Creator', label: 'Key Creator', count: tiers.filter(t => t.creatorGroup === 'Key Creator').length },
+                { key: 'Top Creator', label: 'Top Creator', count: tiers.filter(t => t.creatorGroup === 'Top Creator').length },
+              ]}
+              value={selectedGroup}
+              onChange={(k) => setSelectedGroup(k)}
             />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
-
-          <select
-            value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
-            className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none shrink-0"
-          >
-            <option value="ALL">Mọi phân nhóm</option>
-            <option value="Massive Creator">Massive Creator</option>
-            <option value="Mid Creator">Mid Creator</option>
-            <option value="Key Creator">Key Creator</option>
-            <option value="Top Creator">Top Creator</option>
-          </select>
-
-          {isTierFiltered && (
-            <button
-              type="button"
-              onClick={handleResetTierFilters}
-              className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Đặt lại</span>
-            </button>
-          )}
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAdd} disabled={!canEdit}
-          className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Thêm bậc cast
-        </button>
-      </div>
-
-      {/* Master Cast Tier Table */}
-      <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
-            <tr>
-              <th className="py-3 px-4 w-[140px]">Mã bậc cast</th>
-              <th className="py-3 px-4 w-[140px]">Phân nhóm</th>
-              <th className="py-3 px-4 w-[130px]">Khoảng giá</th>
-              <th className="py-3 px-4 text-right w-[140px]">Min - Max cast</th>
-              <th className="py-3 px-4 text-right w-[130px]">Base trung bình</th>
-              <th className="py-3 px-4 text-center w-[120px]">Quyền chạy Ads</th>
-              <th className="py-3 px-4 text-center w-[120px]">Quyền SDHA</th>
-              <th className="py-3 px-4 min-w-[200px]">Ghi chú chiến lược</th>
-              <th className="py-3 px-4 text-right w-[80px]">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {filteredTiers.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-ink-3">
-                  Không tìm thấy bậc cast phù hợp
-                </td>
-              </tr>
-            ) : (
-              filteredTiers.map(t => (
-                <tr key={t.id} className="hover:bg-canvas transition-colors">
-                  <td className="py-3 px-4">
-                    <span className="font-code font-semibold text-ink text-xs">
-                      {t.tierCode}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs font-medium text-ink-2">
-                      {t.creatorGroup}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 font-medium text-ink-2">
-                    {t.priceRange}
-                  </td>
-                  <td className="py-3 px-4 text-right font-code text-ink">
-                    {t.minCast === 0 && t.maxCast <= 1 ? (
-                      <span className="text-ink-3">0 đ (FOC / TAP)</span>
-                    ) : (
-                      `${formatVnd(t.minCast)} - ${t.maxCast > 30000000 ? '>30M' : formatVnd(t.maxCast)}`
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right font-code font-semibold text-ink">
-                    {t.baseAverage === 0 ? '0 đ' : formatVnd(t.baseAverage)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`text-xs font-medium ${
-                      t.adsCost === 'Không mất' 
-                        ? 'text-positive' 
-                        : 'text-warning'
-                    }`}>
+        <DataTable<MasterCastTier>
+          columns={[
+            {
+              key: 'tierCode',
+              header: 'Mã bậc & Phân nhóm',
+              render: (t: MasterCastTier) => (
+                <div>
+                  <div className="font-semibold text-ink font-mono text-xs">{t.tierCode}</div>
+                  <div className="text-2xs text-ink-3">{t.creatorGroup}</div>
+                </div>
+              )
+            },
+            {
+              key: 'priceRange',
+              header: 'Khoảng giá định mức',
+              render: (t: MasterCastTier) => (
+                <span className="text-xs text-ink-2 font-medium">{t.priceRange}</span>
+              )
+            },
+            {
+              key: 'minMax',
+              header: 'Định mức Min - Max',
+              align: 'right',
+              render: (t: MasterCastTier) => (
+                <div className="font-mono text-xs text-ink">
+                  {t.minCast === 0 && t.maxCast <= 1 ? (
+                    <span className="text-ink-3">0 đ (FOC / TAP)</span>
+                  ) : (
+                    `${formatVnd(t.minCast)} - ${t.maxCast > 30000000 ? '>30M' : formatVnd(t.maxCast)}`
+                  )}
+                </div>
+              )
+            },
+            {
+              key: 'baseAverage',
+              header: 'Base trung bình',
+              align: 'right',
+              render: (t: MasterCastTier) => (
+                <div className="font-mono text-xs font-semibold text-ink">
+                  {t.baseAverage === 0 ? '0 đ' : formatVnd(t.baseAverage)}
+                </div>
+              )
+            },
+            {
+              key: 'rights',
+              header: 'Quyền khai thác',
+              render: (t: MasterCastTier) => (
+                <div className="space-y-0.5 text-2xs">
+                  <div className="text-ink-2">
+                    <span className="text-ink-3">Ads:</span>{' '}
+                    <span className={t.adsCost === 'Không mất' ? 'text-positive font-medium' : 'text-warning font-medium'}>
                       {t.adsCost}
                     </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`text-xs font-medium ${
-                      t.usageImageCost === 'Không mất' 
-                        ? 'text-positive' 
-                        : 'text-warning'
-                    }`}>
+                  </div>
+                  <div className="text-ink-2">
+                    <span className="text-ink-3">SDHA:</span>{' '}
+                    <span className={t.usageImageCost === 'Không mất' ? 'text-positive font-medium' : 'text-warning font-medium'}>
                       {t.usageImageCost}
                     </span>
-                  </td>
-                  <td className="py-3 px-4 text-ink-2 text-2xs leading-relaxed">
-                    {t.note || '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(t)} disabled={!canEdit}
-                      className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
-                    >
-                      Sửa
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              key: 'note',
+              header: 'Ghi chú chiến lược',
+              render: (t: MasterCastTier) => (
+                <p className="text-ink-2 text-xs leading-relaxed max-w-sm line-clamp-2">
+                  {t.note || '—'}
+                </p>
+              )
+            },
+            {
+              key: 'actions',
+              header: 'Thao tác',
+              align: 'right',
+              render: (t: MasterCastTier) => (
+                <ActionMenu
+                  items={[
+                    {
+                      label: 'Chỉnh sửa',
+                      icon: Edit3,
+                      onSelect: () => handleOpenEdit(t),
+                      disabled: !canEdit,
+                    }
+                  ]}
+                />
+              )
+            }
+          ]}
+          rows={filteredTiers}
+          rowKey={(t) => t.id}
+          stickyLast
+          empty={
+            <EmptyState
+              title="Không tìm thấy bậc cast phù hợp"
+              description="Thử đổi từ khóa tìm kiếm hoặc lọc theo phân nhóm khác..."
+            />
+          }
+        />
+      </Panel>
 
       {/* Modal Add / Edit Cast Tier */}
-      <Presence show={!!isModalOpen}>
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-surface rounded-xl shadow-xl border border-line max-w-md w-full p-5 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-line">
-              <h3 className="font-semibold text-sm text-ink">
-                {editingTier ? `Cập nhật bậc cast [${editingTier.tierCode}]` : 'Thêm bậc cast mới'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-ink-3 hover:text-ink"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingTier ? `Cập nhật bậc cast [${editingTier.tierCode}]` : 'Thêm bậc cast mới'}
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              form="cast-tier-form"
+              variant="primary"
+            >
+              Lưu bậc cast
+            </Button>
+          </>
+        }
+      >
+        <form id="cast-tier-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Mã bậc (Tier Code) *</label>
+              <input
+                type="text"
+                required
+                placeholder="VD: KL8, TAP..."
+                value={form.tierCode}
+                onChange={(e) => setForm(prev => ({ ...prev, tierCode: e.target.value.toUpperCase() }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+              />
             </div>
-
-            <form onSubmit={handleSave} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Mã bậc (Tier Code) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="VD: KL8, TAP..."
-                    value={form.tierCode}
-                    onChange={(e) => setForm(prev => ({ ...prev, tierCode: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-code bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Khoảng giá text</label>
-                  <input
-                    type="text"
-                    placeholder="VD: 500k - 1.5M"
-                    value={form.priceRange}
-                    onChange={(e) => setForm(prev => ({ ...prev, priceRange: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-ink-2 font-medium mb-1">Phân nhóm Creator</label>
-                <select
-                  value={form.creatorGroup}
-                  onChange={(e) => setForm(prev => ({ ...prev, creatorGroup: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                >
-                  <option value="Massive Creator">Massive Creator (Phủ số lượng lớn)</option>
-                  <option value="Mid Creator">Mid Creator (Tầm trung)</option>
-                  <option value="Key Creator">Key Creator (Chủ lực)</option>
-                  <option value="Top Creator">Top Creator (Ngôi sao / KOL)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Min Cast (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={form.minCast}
-                    onChange={(e) => setForm(prev => ({ ...prev, minCast: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-code bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Max Cast (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={form.maxCast}
-                    onChange={(e) => setForm(prev => ({ ...prev, maxCast: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-code bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Base TB (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={form.baseAverage}
-                    onChange={(e) => setForm(prev => ({ ...prev, baseAverage: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg font-code bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Chi phí quyền Ads</label>
-                  <input
-                    type="text"
-                    placeholder="Không mất / Thương lượng"
-                    value={form.adsCost}
-                    onChange={(e) => setForm(prev => ({ ...prev, adsCost: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-                <div>
-                  <label className="block text-ink-2 font-medium mb-1">Chi phí quyền SDHA</label>
-                  <input
-                    type="text"
-                    placeholder="Không mất / Thương lượng"
-                    value={form.usageImageCost}
-                    onChange={(e) => setForm(prev => ({ ...prev, usageImageCost: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-ink-2 font-medium mb-1">Ghi chú chiến lược</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi chú về hiệu suất, mục tiêu sử dụng nhóm..."
-                  value={form.note}
-                  onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 border border-line rounded-lg text-ink-2 hover:bg-canvas transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition"
-                >
-                  Lưu bậc cast
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Khoảng giá hiển thị</label>
+              <input
+                type="text"
+                placeholder="VD: 500k - 1.5M"
+                value={form.priceRange}
+                onChange={(e) => setForm(prev => ({ ...prev, priceRange: e.target.value }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div>
+            <label className="block text-ink-2 font-medium mb-1">Phân nhóm Creator</label>
+            <select
+              value={form.creatorGroup}
+              onChange={(e) => setForm(prev => ({ ...prev, creatorGroup: e.target.value }))}
+              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+            >
+              <option value="Massive Creator">Massive Creator (Phủ số lượng lớn)</option>
+              <option value="Mid Creator">Mid Creator (Tầm trung)</option>
+              <option value="Key Creator">Key Creator (Chủ lực)</option>
+              <option value="Top Creator">Top Creator (Ngôi sao / KOL)</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Min Cast (VNĐ)</label>
+              <input
+                type="number"
+                value={form.minCast}
+                onChange={(e) => setForm(prev => ({ ...prev, minCast: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Max Cast (VNĐ)</label>
+              <input
+                type="number"
+                value={form.maxCast}
+                onChange={(e) => setForm(prev => ({ ...prev, maxCast: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Base TB (VNĐ)</label>
+              <input
+                type="number"
+                value={form.baseAverage}
+                onChange={(e) => setForm(prev => ({ ...prev, baseAverage: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Chi phí quyền Ads</label>
+              <input
+                type="text"
+                placeholder="Không mất / Thương lượng"
+                value={form.adsCost}
+                onChange={(e) => setForm(prev => ({ ...prev, adsCost: e.target.value }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Chi phí quyền SDHA</label>
+              <input
+                type="text"
+                placeholder="Không mất / Thương lượng"
+                value={form.usageImageCost}
+                onChange={(e) => setForm(prev => ({ ...prev, usageImageCost: e.target.value }))}
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-ink-2 font-medium mb-1">Ghi chú chiến lược</label>
+            <textarea
+              rows={2}
+              placeholder="Ghi chú về hiệu suất, mục tiêu sử dụng nhóm..."
+              value={form.note}
+              onChange={(e) => setForm(prev => ({ ...prev, note: e.target.value }))}
+              className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

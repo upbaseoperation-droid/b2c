@@ -114,3 +114,8 @@ Tự đánh giá theo skill agent-self-evaluation: chính xác 4/5 (đã xác mi
 4. **Màn hình Quản lý mẫu biểu (CRUD) cho Pháp chế:**
    - Cung cấp đầy đủ giao diện quản lý mẫu biểu tại tab **Mẫu biểu**: Cho phép Pháp chế upload mẫu Word mới (`.docx`), chỉnh sửa cấu hình metadata, cấu hình cờ *"Mẫu chuẩn: Miễn duyệt Pháp chế"*.
    - Hỗ trợ thao tác xóa mẫu custom hoặc ngừng kích hoạt mẫu built-in, đi kèm cơ chế kiểm tra an toàn: Tuyệt đối chặn xóa các mẫu đã phát sinh hồ sơ hợp đồng thực tế.
+5. **Quản lý Mẫu hợp đồng đã duyệt theo KOC & Sổ tay lưu ý của Pháp chế:**
+   - **Mẫu đã duyệt theo KOC (`scope: 'KOC_CUSTOM'`):** Xử lý cả hai trường hợp KOC yêu cầu sửa đổi (sửa trên mẫu Upbase hoặc dùng form Word riêng của KOC). Sau khi Pháp chế phê duyệt hợp đồng ở lần đầu, hệ thống hỗ trợ lưu hợp đồng thành mẫu duyệt riêng cho KOC đó (`UPBASE_AMENDED` hoặc `KOC_FORM`). Các booking tiếp theo của KOC này được chọn nhanh mẫu đã duyệt và hưởng cơ chế miễn duyệt lại Pháp chế.
+   - **Sổ tay lưu ý / Nhận xét của Pháp chế (`legalNotes`):** Cho phép Pháp chế ghi nhận trực tiếp các nguyên tắc pháp lý, điều khoản ngoại lệ hoặc lưu ý đàm phán riêng với từng KOC ngay tại màn hình phê duyệt hoặc chi tiết hồ sơ. Form tạo hợp đồng tự động hiển thị thẻ cảnh báo "Lưu ý của Pháp chế cho KOC" giúp chuyên viên nắm rõ trước khi soạn thảo, xóa bỏ hoàn toàn tình trạng hỏi đi hỏi lại và ping-pong qua các phòng ban.
+   - **Phân loại danh mục mẫu:** Danh mục mẫu biểu bổ sung bộ lọc theo nguồn (Tất cả nguồn / Mẫu chuẩn Upbase / Mẫu duyệt theo KOC), hiển thị rõ huy hiệu KOC, người duyệt, ngày duyệt và ghi chú của Pháp chế.
+

@@ -60,7 +60,6 @@ import {
   StaffMasterView,
   ContributorsMasterView
 } from './master-data';
-import { MasterDataMindmapView } from './MasterDataMindmapView';
 import {
   UPBASE_MASTER_SLA_CONFIG,
   UPBASE_MASTER_KPI_DEFINITIONS
@@ -69,7 +68,6 @@ import {
 export type MasterDataSubTab = 
   | 'brands' 
   | 'stores' 
-  | 'mindmap'
   | 'products' 
   | 'pillars' 
   | 'cast-tiers' 
@@ -153,7 +151,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState('ALL');
   const [selectedBrandPic, setSelectedBrandPic] = useState('ALL');
-  const [selectedBrandBudgetTier, setSelectedBrandBudgetTier] = useState('ALL');
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 25;
 
@@ -237,9 +234,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   // Master Content Pillars state (15 Trụ cột nội dung chuẩn Upbase Master Data 5.5)
   const [pillarList, setPillarList] = useState<MasterContentPillar[]>(UPBASE_MASTER_PILLARS);
   const [pillarSearch, setPillarSearch] = useState('');
-  const [selectedPillarNiche, setSelectedPillarNiche] = useState('ALL');
   const [selectedPillarStatus, setSelectedPillarStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
-  const [selectedPillarCostTier, setSelectedPillarCostTier] = useState('ALL');
   const [isPillarModalOpen, setIsPillarModalOpen] = useState(false);
   const [editingPillar, setEditingPillar] = useState<MasterContentPillar | null>(null);
   const [pillarForm, setPillarForm] = useState({
@@ -271,13 +266,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                          (b.bookingPicLead && b.bookingPicLead.includes(selectedBrandPic));
         if (!matchPic) return false;
       }
-      if (selectedBrandBudgetTier !== 'ALL') {
-        const budget = b.planBudget || 0;
-        if (selectedBrandBudgetTier === 'TIER_TOP' && budget < 100000000) return false;
-        if (selectedBrandBudgetTier === 'TIER_MID' && (budget < 50000000 || budget >= 100000000)) return false;
-        if (selectedBrandBudgetTier === 'TIER_LOW' && (budget === 0 || budget >= 50000000)) return false;
-        if (selectedBrandBudgetTier === 'TIER_ZERO' && budget > 0) return false;
-      }
       if (brandSearch.trim()) {
         const q = brandSearch.toLowerCase();
         return (
@@ -291,16 +279,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       }
       return true;
     });
-  }, [brandList, selectedBrandCategory, selectedBrandStatus, selectedBrandPic, selectedBrandBudgetTier, brandSearch]);
+  }, [brandList, selectedBrandCategory, selectedBrandStatus, selectedBrandPic, brandSearch]);
 
-  const isBrandFiltered = brandSearch.trim() !== '' || selectedBrandCategory !== 'ALL' || selectedBrandStatus !== 'ALL' || selectedBrandPic !== 'ALL' || selectedBrandBudgetTier !== 'ALL';
+  const isBrandFiltered = brandSearch.trim() !== '' || selectedBrandCategory !== 'ALL' || selectedBrandStatus !== 'ALL' || selectedBrandPic !== 'ALL';
 
   const handleResetBrandFilters = () => {
     setBrandSearch('');
     setSelectedBrandCategory('ALL');
     setSelectedBrandStatus('ALL');
     setSelectedBrandPic('ALL');
-    setSelectedBrandBudgetTier('ALL');
     setBrandPage(1);
   };
 
@@ -350,35 +337,22 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return filteredProducts.slice(start, start + productPageSize);
   }, [filteredProducts, productPage, productPageSize]);
 
-  // Filtered Content Pillars with Multi-dimensions
+  // Filtered Content Pillars
   const filteredPillars = useMemo(() => {
     return pillarList.filter(p => {
       if (selectedPillarStatus !== 'ALL' && p.status !== selectedPillarStatus) return false;
-      if (selectedPillarNiche !== 'ALL') {
-        const matchNiche = p.applicableNiches.some(n => 
-          n.toLowerCase().includes(selectedPillarNiche.toLowerCase()) || n === 'Toàn ngành'
-        );
-        if (!matchNiche) return false;
-      }
-      if (selectedPillarCostTier !== 'ALL') {
-        const cost = p.benchmarkUnitCost || 0;
-        if (selectedPillarCostTier === 'UNDER_1M' && cost >= 1000000) return false;
-        if (selectedPillarCostTier === '1M_2M' && (cost < 1000000 || cost > 2000000)) return false;
-        if (selectedPillarCostTier === 'OVER_2M' && cost <= 2000000) return false;
-      }
       if (pillarSearch.trim()) {
         const q = pillarSearch.toLowerCase();
         return (
           p.name.toLowerCase().includes(q) || 
           p.code.toLowerCase().includes(q) || 
           p.description.toLowerCase().includes(q) ||
-          p.keyObjectives.toLowerCase().includes(q) ||
           p.applicableNiches.some(n => n.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [pillarList, selectedPillarStatus, selectedPillarNiche, selectedPillarCostTier, pillarSearch]);
+  }, [pillarList, selectedPillarStatus, pillarSearch]);
 
   const paginatedPillars = useMemo(() => {
     const start = (pillarPage - 1) * pillarPageSize;
@@ -392,13 +366,11 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   useFlipList(productsBodyRef, paginatedProducts.map(p => p.id).join('|'));
   useFlipList(pillarsBodyRef, paginatedPillars.map(p => p.id).join('|'));
 
-  const isPillarFiltered = pillarSearch.trim() !== '' || selectedPillarNiche !== 'ALL' || selectedPillarStatus !== 'ALL' || selectedPillarCostTier !== 'ALL';
+  const isPillarFiltered = pillarSearch.trim() !== '' || selectedPillarStatus !== 'ALL';
 
   const handleResetPillarFilters = () => {
     setPillarSearch('');
-    setSelectedPillarNiche('ALL');
     setSelectedPillarStatus('ALL');
-    setSelectedPillarCostTier('ALL');
     setPillarPage(1);
   };
 
@@ -811,7 +783,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         items={[
           { key: 'brands', label: 'Thương hiệu', count: brandList.length },
           { key: 'stores', label: 'Gian hàng', count: storeList.length },
-          { key: 'mindmap', label: 'Sơ đồ phân cấp' },
           { key: 'products', label: 'Sản phẩm', count: productList.length },
           { key: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length },
           { key: 'cast-tiers', label: 'Bậc cast', count: extraCatalog.castTiers.length },
@@ -825,16 +796,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         value={activeSubTab}
         onChange={setActiveSubTab}
       />
-
-      {/* SUB-TAB: SƠ ĐỒ MINDMAP (BRAND → GIAN HÀNG → PIC → SKU) */}
-      {activeSubTab === 'mindmap' && (
-        <MasterDataMindmapView
-          currentUser={currentUser}
-          brands={brandList}
-          storePortfolios={storeList}
-          onNotify={(msg) => onNotify?.(msg)}
-        />
-      )}
 
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (() => {
@@ -895,8 +856,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         const brandColumns: Column<BrandDetail>[] = [
           {
             key: 'brand',
-            header: 'Thương hiệu & Mã',
-            width: 210,
+            header: 'Thương hiệu',
+            width: 200,
             render: (b) => {
               const initials = b.name.substring(0, 2).toUpperCase();
               return (
@@ -922,9 +883,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   <div className="leading-tight min-w-0">
                     <span className="font-semibold text-ink block truncate group-hover:text-primary transition-colors text-xs">
                       {b.name}
-                    </span>
-                    <span className="text-2xs font-mono font-medium text-ink-3 block mt-0.5">
-                      {b.code || b.id.replace('brand-b2c-', '').toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -1134,7 +1092,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       setBrandSearch(v);
                       setBrandPage(1);
                     },
-                    placeholder: 'Tìm thương hiệu, mã, ngành hàng, PIC...',
+                    placeholder: 'Tìm thương hiệu, ngành hàng, PIC...',
                   }}
                   filters={
                     <>
@@ -1167,22 +1125,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                         <option value="ALL">Mọi trạng thái</option>
                         <option value="ACTIVE">Đang hợp tác</option>
                         <option value="PAUSED">Tạm dừng</option>
-                      </Select>
-
-                      <Select
-                        value={selectedBrandBudgetTier}
-                        onChange={(e) => {
-                          setSelectedBrandBudgetTier(e.target.value);
-                          setBrandPage(1);
-                        }}
-                        aria-label="Quy mô ngân sách"
-                        className="w-auto"
-                      >
-                        <option value="ALL">Mọi quy mô ngân sách</option>
-                        <option value="TIER_TOP">Trọng điểm (&gt; 100M)</option>
-                        <option value="TIER_MID">Trung bình (50M - 100M)</option>
-                        <option value="TIER_LOW">Khởi tạo (&lt; 50M)</option>
-                        <option value="TIER_ZERO">Chưa có ngân sách (0đ)</option>
                       </Select>
 
                       {isBrandFiltered && (
@@ -1612,49 +1554,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     setPillarSearch(v);
                     setPillarPage(1);
                   },
-                  placeholder: 'Tìm mã, tên trụ cột, định hướng...',
+                  placeholder: 'Tìm tên, mã trụ cột hoặc định hướng nội dung...',
                 }}
                 filters={
-                  <>
-                    <Select
-                      value={selectedPillarNiche}
-                      onChange={(e) => {
-                        setSelectedPillarNiche(e.target.value);
-                        setPillarPage(1);
-                      }}
-                      aria-label="Ngành hàng áp dụng"
-                      className="w-auto"
-                    >
-                      <option value="ALL">Mọi ngành hàng</option>
-                      <option value="Mẹ & Bé">Mẹ & Bé</option>
-                      <option value="Chăm Sóc Da">Chăm Sóc Da</option>
-                      <option value="Sức Khỏe">Sức Khỏe</option>
-                      <option value="Gia Dụng">Gia Dụng</option>
-                      <option value="F&B">F&B</option>
-                      <option value="Toàn ngành">Toàn ngành</option>
-                    </Select>
-
-                    <Select
-                      value={selectedPillarCostTier}
-                      onChange={(e) => {
-                        setSelectedPillarCostTier(e.target.value);
-                        setPillarPage(1);
-                      }}
-                      aria-label="Mức chi phí"
-                      className="w-auto"
-                    >
-                      <option value="ALL">Mọi mức chi phí</option>
-                      <option value="UNDER_1M">&lt; 1.000.000đ</option>
-                      <option value="1M_2M">1M - 2.000.000đ</option>
-                      <option value="OVER_2M">&gt; 2.000.000đ</option>
-                    </Select>
-
-                    {isPillarFiltered && (
-                      <Button variant="ghost" onClick={handleResetPillarFilters}>
-                        Xóa bộ lọc
-                      </Button>
-                    )}
-                  </>
+                  isPillarFiltered ? (
+                    <Button variant="ghost" onClick={handleResetPillarFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                  ) : undefined
                 }
                 resultCount={isPillarFiltered ? filteredPillars.length : undefined}
               />
@@ -1680,93 +1587,71 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               columns={[
                 {
                   key: 'code',
-                  header: 'Trụ cột & Mã chuẩn',
+                  header: 'Trụ cột nội dung',
                   render: (p: MasterContentPillar) => (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <span 
-                          className="w-2 h-2 rounded-full shrink-0" 
-                          style={{ backgroundColor: p.colorTag || '#4F46E5' }} 
-                        />
-                        <span className="font-semibold text-ink text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <span 
+                        className="w-2.5 h-2.5 rounded-full shrink-0" 
+                        style={{ backgroundColor: p.colorTag || '#4F46E5' }} 
+                        title={`Màu nhận diện: ${p.colorTag || '#4F46E5'}`}
+                      />
+                      <div>
+                        <div className="font-semibold text-ink text-xs">
                           {p.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono text-2xs font-semibold text-ink-2">
+                        </div>
+                        <div className="font-mono text-2xs text-ink-3">
                           {p.code}
-                        </span>
-                        {p.tagPillar && (
-                          <span className="text-2xs font-medium text-accent">
-                            · Tag: {p.tagPillar}
-                          </span>
-                        )}
+                        </div>
                       </div>
-                      {p.targetAudience && (
-                        <p className="text-2xs text-ink-3 line-clamp-1">
-                          Tệp: {p.targetAudience}
-                        </p>
-                      )}
                     </div>
                   )
                 },
                 {
                   key: 'description',
-                  header: 'Định hướng sáng tạo & Mục tiêu',
-                  render: (p: MasterContentPillar) => (
-                    <div className="space-y-1.5 max-w-lg">
-                      <p className="text-ink-2 text-xs leading-relaxed">
-                        {p.description}
+                  header: 'Định hướng nội dung',
+                  render: (p: MasterContentPillar) => {
+                    const desc = p.description || (p.code === 'LIVESTREAM_HIGHLIGHT' ? 'Nội dung phát sóng trực tiếp, tương tác hai chiều và thúc đẩy doanh số phiên live.' : '—');
+                    return (
+                      <p className="text-ink-2 text-xs leading-relaxed max-w-xl">
+                        {desc}
                       </p>
-                      {p.keyObjectives && (
-                        <div className="flex items-start gap-1 text-2xs text-ink-3 bg-sunken p-1.5 rounded-lg border border-line">
-                          <span className="font-medium text-ink shrink-0">Mục tiêu:</span>
-                          <span className="line-clamp-2">{p.keyObjectives}</span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                },
-                {
-                  key: 'niches',
-                  header: 'Ngành hàng áp dụng',
-                  render: (p: MasterContentPillar) => (
-                    <div className="text-xs text-ink-2">
-                      {p.applicableNiches.join(', ')}
-                    </div>
-                  )
+                    );
+                  }
                 },
                 {
                   key: 'formats',
-                  header: 'Format video gợi ý',
-                  render: (p: MasterContentPillar) => (
-                    <div className="space-y-1">
-                      {p.suggestedFormats.map((fmt, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 text-2xs text-ink-2">
-                          <span className="w-1 h-1 rounded-full bg-ink-3 shrink-0" />
-                          <span className="line-clamp-1">{fmt}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )
+                  header: 'Định dạng gợi ý',
+                  render: (p: MasterContentPillar) => {
+                    const formats = (p.suggestedFormats || [])
+                      .map(f => f.replace(/Video AI/gi, 'Video đồ họa').trim())
+                      .filter(Boolean);
+                    if (formats.length === 0) return <span className="text-ink-3 text-xs">—</span>;
+                    return (
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {formats.map((fmt, idx) => (
+                          <span 
+                            key={idx} 
+                            className="inline-block px-1.5 py-0.5 rounded text-2xs bg-surface-subtle border border-line text-ink-2 font-medium"
+                          >
+                            {fmt}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  }
                 },
                 {
                   key: 'cost',
                   header: 'Định mức tham chiếu',
                   align: 'right',
                   render: (p: MasterContentPillar) => (
-                    <div className="space-y-0.5">
-                      <div className="font-semibold text-ink font-mono">
+                    <div>
+                      <div className="font-semibold text-ink font-mono text-xs">
                         {formatVnd(p.benchmarkUnitCost)}
                       </div>
                       <div className="text-2xs text-ink-3">
-                        / video CTV
+                        / video
                       </div>
-                      {p.activeBrandsCount !== undefined && (
-                        <div className="text-2xs text-ink-3">
-                          {p.activeBrandsCount} brand áp dụng
-                        </div>
-                      )}
                     </div>
                   )
                 },
@@ -1823,7 +1708,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               empty={
                 <EmptyState
                   title="Không tìm thấy trụ cột nội dung"
-                  description="Thử đổi từ khóa tìm kiếm hoặc điều kiện lọc ngành hàng, chi phí..."
+                  description="Thử đổi từ khóa tìm kiếm tên hoặc mã trụ cột..."
                 />
               }
             />
@@ -2147,22 +2032,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <option value="UPCOMING">Sắp triển khai (Upcoming)</option>
                 <option value="PAUSED">Tạm dừng (Paused)</option>
               </select>
-            </div>
-
-            <div className="p-2.5 rounded-lg bg-canvas border border-line text-2xs text-ink-2 flex items-center justify-between">
-              <span>Cần thiết lập Guidelines hay trần thù lao?</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditBrandModalOpen(false);
-                  if (onNavigateToBrandProfile) {
-                    onNavigateToBrandProfile(editingBrand.name);
-                  }
-                }}
-                className="font-semibold text-accent underline hover:text-ink cursor-pointer"
-              >
-                Mở Hồ sơ thương hiệu →
-              </button>
             </div>
           </form>
         )}

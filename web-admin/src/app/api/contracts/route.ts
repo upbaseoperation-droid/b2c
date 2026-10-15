@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { actorFromRequest, configuredActors, checkOrigin, DEMO_ACTORS } from '@/lib/contracts/access';
 import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope, signingChanged } from '@/lib/contracts/domain';
 import { listContracts, getContract, saveContract, storageMode } from '@/lib/contracts/store';
-import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate } from '@/lib/contracts/templates';
+import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate, saveTemplateMeta } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
 import type { ContractRecord, ReviewStep } from '@/lib/contracts/types';
@@ -68,6 +68,45 @@ export async function POST(req: NextRequest) {
     } else if (body.action === 'DECIDE') {
       requireCondition(typeof body.note === 'string' && body.note.length <= 4000, 'Nhận xét không hợp lệ.');
       next = decideContract(record, actor, body.decision as ReviewStep['status'], body.note);
+      const isLegal = actor.roles.includes('LEGAL') || record.steps.find(s => s.reviewerId === actor.id)?.role === 'LEGAL';
+      if (isLegal && body.decision === 'APPROVED') {
+        const kocId = record.kocId || (typeof body.kocId === 'string' ? body.kocId : undefined);
+        const kocLegalNotes = typeof body.kocLegalNotes === 'string' ? body.kocLegalNotes.trim() : undefined;
+        if (body.saveAsKocTemplate === true && kocId) {
+          const customTplId = `KOC-${kocId.toUpperCase().replace(/[^A-Z0-9_-]/g, '')}`;
+          try {
+            const currentTpl = await loadTemplate(record.templateId, record.templateHash);
+            await saveTemplateMeta(customTplId, actor.name, {
+              name: `Mẫu duyệt riêng · ${record.partner || kocId}`,
+              subject: currentTpl.template.subject,
+              kind: currentTpl.template.kind,
+              category: currentTpl.template.category,
+              version: `${currentTpl.template.version}-KOC`,
+              description: `Mẫu hợp đồng đã được Pháp chế (${actor.name}) phê duyệt riêng cho KOC ${record.partner}.`,
+              exemptLegalReview: true,
+              scope: 'KOC_CUSTOM',
+              kocId,
+              kocName: record.partner,
+              approvedByLegal: actor.name,
+              approvedAt: new Date().toISOString(),
+              originalContractId: record.id,
+              customType: record.hasCustomTerms ? 'UPBASE_AMENDED' : 'KOC_FORM',
+              legalNotes: kocLegalNotes || body.note,
+            });
+            event(next, actor, 'NOTE', `Pháp chế đã lưu mẫu này thành Mẫu đã duyệt cho KOC ${record.partner || kocId}. Các booking sau sẽ được miễn duyệt lại điều khoản.`);
+          } catch {
+            // Không làm gián đoạn luồng duyệt chính nếu việc lưu mẫu bổ sung gặp lỗi
+          }
+        } else if (kocLegalNotes) {
+          event(next, actor, 'NOTE', `Lưu ý của Pháp chế cho KOC: ${kocLegalNotes}`);
+        }
+      }
+    } else if (body.action === 'UPDATE_LEGAL_NOTES') {
+      requireCondition(actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)), 'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật lưu ý pháp lý.', 403);
+      requireCondition(typeof body.legalNotes === 'string' && body.legalNotes.length <= 4000, 'Nội dung lưu ý không hợp lệ.');
+      const notes = (body.legalNotes as string).trim();
+      next.internalNotes = notes;
+      event(next, actor, 'NOTE', `Cập nhật lưu ý Pháp chế: ${notes}`);
     } else if (body.action === 'WITHDRAW') {
       requireCondition(actor.id === record.ownerId && ['IN_REVIEW', 'APPROVED'].includes(record.approval), 'Không thể thu hồi hồ sơ.', 403);
       requireCondition(!record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status)), 'Hồ sơ đã trình ký không thể thu hồi nội bộ.');

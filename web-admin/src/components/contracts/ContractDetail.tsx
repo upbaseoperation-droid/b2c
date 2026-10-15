@@ -9,8 +9,9 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, ScanSearch } from 'lucide-react';
 import type { BookingDealItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
-import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status } from '../ui';
+import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status, Textarea } from '../ui';
 import type { ActionMenuItem, StatusTone } from '../ui';
+import { formatDate } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
@@ -49,6 +50,10 @@ export function ContractDetail({
   const me = data.actor;
   const status = contractStatus(record);
   const template = data.templates.find(t => t.id === record.templateId);
+  const kocTemplate = data.templates.find(
+    t => (t.kocId === record.kocId && t.scope === 'KOC_CUSTOM') || (t.kocId && t.kocId === record.kocId),
+  );
+  const legalNotes = template?.legalNotes || kocTemplate?.legalNotes || record.internalNotes;
   const signing = record.signing.at(-1);
   const activeSigning = record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
   const isOwner = record.ownerId === me.id;
@@ -447,6 +452,32 @@ export function ContractDetail({
               ))}
             </ul>
           </AsideSection>
+          {(legalNotes || kocTemplate) && (
+            <AsideSection title="Lưu ý của Pháp chế">
+              <div className="rounded-lg bg-warning-soft/70 border border-warning/30 p-2.5 text-xs text-ink space-y-1.5">
+                <div className="font-semibold text-warning-strong flex items-center justify-between gap-1">
+                  <span>⚖️ Lưu ý cho {record.partner}</span>
+                  {kocTemplate && (
+                    <span className="text-2xs font-normal px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2">
+                      Mẫu đã duyệt
+                    </span>
+                  )}
+                </div>
+                {legalNotes && (
+                  <p className="text-xs text-ink whitespace-pre-wrap leading-relaxed">
+                    {legalNotes}
+                  </p>
+                )}
+                {kocTemplate && (
+                  <div className="text-2xs text-ink-3 pt-1 border-t border-line/60">
+                    Mẫu: {kocTemplate.name}
+                    {kocTemplate.approvedByLegal && ` · ${kocTemplate.approvedByLegal}`}
+                    {kocTemplate.approvedAt && ` · ${formatDate(kocTemplate.approvedAt)}`}
+                  </div>
+                )}
+              </div>
+            </AsideSection>
+          )}
           <DiscussionAndHistory
             record={record}
             onAddNote={note => onAction({ action: 'ADD_NOTE', note }, 'Đã lưu ghi chú đàm phán')}
@@ -464,15 +495,30 @@ export function ContractDetail({
         onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, 'Đã gửi duyệt').then(r => r && setDialog(null))}
       />
       <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
-      <ConfirmDialog
-        open={dialog === 'approve'}
-        title="Duyệt hồ sơ"
-        description={`Duyệt phiên bản ${record.version} với vai trò ${myStep ? ROLE_LABEL[myStep.role as ContractRole].toLowerCase() : ''}.`}
-        confirmLabel="Duyệt"
-        reason={{ label: 'Nhận xét (không bắt buộc)' }}
-        onConfirm={note => onAction({ action: 'DECIDE', decision: 'APPROVED', note: note || '' }, 'Đã duyệt hồ sơ')}
-        onOpenChange={o => !o && setDialog(null)}
-      />
+      {myStep?.role === 'LEGAL' ? (
+        <LegalApproveDialog
+          open={dialog === 'approve'}
+          record={record}
+          busy={busy}
+          onClose={() => setDialog(null)}
+          onSubmit={(note, saveAsKocTemplate, kocLegalNotes) =>
+            onAction(
+              { action: 'DECIDE', decision: 'APPROVED', note: note || '', saveAsKocTemplate, kocLegalNotes },
+              'Đã duyệt hồ sơ',
+            ).then(r => r && setDialog(null))
+          }
+        />
+      ) : (
+        <ConfirmDialog
+          open={dialog === 'approve'}
+          title="Duyệt hồ sơ"
+          description={`Duyệt phiên bản ${record.version} với vai trò ${myStep ? ROLE_LABEL[myStep.role as ContractRole].toLowerCase() : ''}.`}
+          confirmLabel="Duyệt"
+          reason={{ label: 'Nhận xét (không bắt buộc)' }}
+          onConfirm={note => onAction({ action: 'DECIDE', decision: 'APPROVED', note: note || '' }, 'Đã duyệt hồ sơ')}
+          onOpenChange={o => !o && setDialog(null)}
+        />
+      )}
       <ConfirmDialog
         open={dialog === 'changes'}
         title="Yêu cầu sửa"
@@ -772,6 +818,90 @@ function LinkDialog({ open, version, busy, onClose, onSubmit }: { open: boolean;
         <input type="checkbox" className="mt-0.5" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
         Tôi đã đối chiếu tài liệu và người ký trên weSign với đúng bản duyệt phiên bản {version}.
       </label>
+    </Modal>
+  );
+}
+
+function LegalApproveDialog({
+  open,
+  record,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  record: ContractRecord;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (note: string, saveAsKocTemplate: boolean, kocLegalNotes: string) => Promise<unknown>;
+}) {
+  const [note, setNote] = useState('');
+  const [saveAsKocTemplate, setSaveAsKocTemplate] = useState(Boolean(record.hasCustomTerms));
+  const [kocLegalNotes, setKocLegalNotes] = useState(record.customTermsSummary || record.internalNotes || '');
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Duyệt hồ sơ (Pháp chế)"
+      description={`Phê duyệt phiên bản ${record.version} cho đối tác ${record.partner}.`}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>Hủy</Button>
+          <Button
+            variant="primary"
+            disabled={busy}
+            onClick={() => onSubmit(note, saveAsKocTemplate, kocLegalNotes)}
+          >
+            Xác nhận duyệt
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <Field label="Nhận xét phê duyệt" htmlFor="legal-note" hint="Nhận xét được lưu vào lịch sử phê duyệt của hồ sơ.">
+          <Textarea
+            id="legal-note"
+            rows={2}
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Ví dụ: Đồng ý duyệt các điều khoản sửa đổi theo đề xuất..."
+          />
+        </Field>
+
+        <div className="rounded-lg border border-line bg-surface p-3 space-y-3">
+          <label className="flex items-start gap-2.5 text-xs font-medium text-ink cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 rounded border-line text-accent"
+              checked={saveAsKocTemplate}
+              onChange={e => setSaveAsKocTemplate(e.target.checked)}
+            />
+            <div>
+              <span>Lưu làm Mẫu hợp đồng đã duyệt cho KOC ({record.partner})</span>
+              <p className="text-2xs font-normal text-ink-3 mt-0.5">
+                Các lần booking tiếp theo của KOC này sẽ được chọn ngay mẫu này và miễn bước thẩm định lại của Pháp chế.
+              </p>
+            </div>
+          </label>
+
+          {saveAsKocTemplate && (
+            <Field
+              label="Lưu ý của Pháp chế cho KOC này"
+              htmlFor="koc-legal-notes"
+              hint="Hiển thị cho chuyên viên khi tạo các hợp đồng sau này của KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)"
+            >
+              <Textarea
+                id="koc-legal-notes"
+                rows={3}
+                value={kocLegalNotes}
+                onChange={e => setKocLegalNotes(e.target.value)}
+                placeholder="Ví dụ: KOC chỉ đồng ý thanh toán trong 7 ngày; thời hạn cấp quyền Spark Ads tối đa 60 ngày..."
+              />
+            </Field>
+          )}
+        </div>
+      </div>
     </Modal>
   );
 }
