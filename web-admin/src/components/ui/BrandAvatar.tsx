@@ -5,12 +5,15 @@ import { getBrandLogoUrl } from '../../lib/brandLogos';
 import { Avatar } from './data';
 
 export interface BrandAvatarProps {
-  name: string;
+  name?: string;
+  brandName?: string;
   id?: string;
+  brandId?: string;
   code?: string;
   size?: number;
   className?: string;
   rounded?: 'full' | 'md' | 'lg' | 'sm';
+  fallback?: React.ReactNode;
 }
 
 /**
@@ -19,14 +22,19 @@ export interface BrandAvatarProps {
  */
 export function BrandAvatar({
   name,
+  brandName,
   id,
+  brandId,
   code,
   size = 28,
   className = '',
   rounded = 'md',
+  fallback,
 }: BrandAvatarProps) {
+  const displayName = brandName || name || 'Brand';
+  const lookupKey = brandId || id || code || displayName;
   const [hasError, setHasError] = useState(false);
-  const logoUrl = getBrandLogoUrl(id || code || name);
+  const logoUrl = getBrandLogoUrl(lookupKey);
 
   const roundedClass = {
     full: 'rounded-full',
@@ -36,7 +44,8 @@ export function BrandAvatar({
   }[rounded];
 
   if (!logoUrl || hasError) {
-    return <Avatar name={name} size={size} className={className} />;
+    if (fallback) return <>{fallback}</>;
+    return <Avatar name={displayName} size={size} className={className} />;
   }
 
   return (

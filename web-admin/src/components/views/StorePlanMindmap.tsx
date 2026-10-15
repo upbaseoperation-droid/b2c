@@ -583,7 +583,6 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         <div className="sticky top-0 z-20 bg-surface text-ink border border-line rounded-xl px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <BrandAvatar
-              brandId={planState.brandId}
               brandName={planState.brandName || planState.storeName}
               size={32}
               fallback={
