@@ -435,6 +435,14 @@ export interface KocItem {
   avgViews: number; // View trung bình
   rateCardVideo: number; // Giá net video
   bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'; // Định dạng booking
+
+  // Nền tảng mạng xã hội hoạt động (TikTok, Shopee, Facebook, Instagram, Threads)
+  platforms?: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[];
+  tiktokChannel?: string;
+  shopeeChannel?: string;
+  facebookChannel?: string;
+  instagramChannel?: string;
+  threadsChannel?: string;
   
   // Thông tin liên hệ & Hậu cần nhận hàng gửi mẫu (Sample Shipping - Rất quan trọng cho Booking)
   phone: string;

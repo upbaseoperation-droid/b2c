@@ -94,6 +94,7 @@ Mở trình duyệt tại `http://localhost:3000`.
   - Tinh giản số lượng cột trên các bảng nghiệp vụ trọng điểm (`KocListingBatchHubView`, `BookingView`, `SampleTrackerView`, `ManagerView`...) từ 8-10 cột xuống 5-6 cột logic có cấu trúc thông tin đa tầng (multi-line).
   - Gộp các trường dữ liệu có liên kết nghiệp vụ trực tiếp (như KOC + Gian hàng/Kênh; Tiến trình + Trách nhiệm + Cảnh báo SLA; Nghiệm thu kỹ thuật gồm Link Video + Giỏ hàng + Mã Ads) giúp người dùng nắm bắt trọn vẹn thông tin mà không cần kéo ngang màn hình trên mọi độ phân giải laptop từ 1280px đến 1920px.
 - **Bàn làm việc nhân sự (`CockpitView`):** Thêm biểu tượng trực quan cho các ô chỉ số (Khẩn cấp, Trong ngày, Hoàn tất, Tổng đầu việc), tích hợp bộ điều khiển phân đoạn `Segmented` để lọc nhanh danh sách nhiệm vụ.
+- **Tinh giản phân hệ Phân quyền (`CentralizedRbacHubView`):** Loại bỏ các thanh thông báo, card KPI thừa thãi và đoạn giải thích dài dòng; loại bỏ hoàn toàn các nút đóng vai (impersonate) nội bộ và đối tác; danh sách màn hình phân quyền theo Role hiển thị 2 cột tinh gọn, trực quan hóa trạng thái cấu hình.
 
 ---
 

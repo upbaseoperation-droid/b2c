@@ -430,15 +430,6 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     <td className="py-2.5 px-3 pr-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => handleImpersonate(acc)}
-                          className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1 shadow-xs cursor-pointer"
-                          title="Đăng nhập thử với tư cách đối tác này để kiểm tra view"
-                        >
-                          <Eye className="w-3 h-3" />
-                          <span>Xem Thử</span>
-                        </button>
-
-                        <button
                           onClick={() => handleOpenEditModal(acc)}
                           className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken"
                           title="Chỉnh sửa phân quyền"

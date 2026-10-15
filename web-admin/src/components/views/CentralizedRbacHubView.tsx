@@ -424,32 +424,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     onNotify?.(`Đã sửa bản nháp quyền của ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'info');
   };
 
-  // Đóng vai bất kỳ nhân sự nào từ danh bạ (nếu nhân sự đó được phép login)
-  const handleImpersonateDirectoryStaff = (staff: typeof classifiedDirectory[0]) => {
-    if (policyDirty) { onNotify?.("Lưu hoặc bỏ bản nháp trước khi xem thử tài khoản.", "warning"); return; }
-    if (!staff.canLogin) {
-      onNotify?.(`Nhân sự ${staff.name} đang bị chặn cổng Login. Hãy cấp quyền trước khi đóng vai!`, 'error');
-      return;
-    }
-    const initials = staff.name.trim().split(/\s+/).map(w => w[0]).slice(-2).join('').toUpperCase();
-    const impersonatedProfile: UserProfile = {
-      id: `staff-${staff.id}`,
-      name: staff.name,
-      email: staff.email,
-      role: staff.mappedRole,
-      roleTitle: `${staff.mappedRoleTitle} (${SCOPE_LABELS[staff.classifiedScope].label})`,
-      avatar: initials || 'NV',
-      staffCode: staff.staffCode,
-      departmentScope: staff.classifiedScope,
-      departmentName: staff.department || staff.team,
-      managerName: staff.managerName,
-      canLogin: true,
-      loginProvider: 'SANDBOX',
-      assignedBrands: []
-    };
-    onImpersonateUser?.(impersonatedProfile);
-  };
-
   // --- STATE TAB 1: MA TRẬN PHÂN QUYỀN ---
   const [matrixItems, setMatrixItems] = useState<PermissionMatrixItem[]>(INITIAL_PERMISSION_MATRIX);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -786,47 +760,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     if (onNotify) onNotify(`Đã sửa bản nháp: phân quyền và nhãn phụ trách cho ${editingStaff.name}!`, 'info');
   };
 
-  // Đóng vai nhân sự nội bộ (Impersonate Internal Staff)
-  const handleImpersonateInternal = (staff: InternalStaffRbacMember) => {
-    if (policyDirty) { onNotify?.("Lưu hoặc bỏ bản nháp trước khi xem thử tài khoản.", "warning"); return; }
-    const impersonatedProfile: UserProfile = {
-      id: staff.id,
-      name: staff.name,
-      email: staff.email,
-      role: staff.role,
-      roleTitle: `${staff.roleTitle} (Xem thử)`,
-      avatar: staff.avatar,
-      departmentScope: staff.departmentScope,
-      departmentName: staff.department,
-      managerName: staff.managerName,
-      canLogin: staff.canLogin ?? true,
-      loginProvider: 'LARK',
-      linkedEntityName: staff.picBrands.join(', '),
-      assignedBrands: staff.picBrands
-    };
-
-    const newLog: RbacAuditLogItem = {
-      id: `log-${++logCounterRef.current}`,
-      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
-      actorName: currentUser?.name || 'Đỗ Văn Giang',
-      actorEmail: currentUser?.email || 'giangdv@upbase.vn',
-      actorRole: currentUser?.role || 'ADMIN',
-      actionType: 'IMPERSONATE',
-      targetUserOrEntity: `${staff.name} (${staff.role})`,
-      description: `Đóng vai nhân sự ${staff.name} để kiểm tra giao diện phân quyền.`,
-      ipAddress: 'Bản nháp',
-      deviceInfo: 'Chưa áp dụng',
-      status: 'SUCCESS'
-    };
-    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
-
-    if (onImpersonateUser) {
-      onImpersonateUser(impersonatedProfile);
-    } else if (onImpersonatePartner) {
-      onImpersonatePartner(impersonatedProfile);
-    }
-  };
-
   // Lọc Audit Logs
   const filteredAuditLogs = useMemo(() => {
     return auditLogs.filter(log => {
@@ -884,39 +817,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           </div>
         </div>
       )}
-
-      {/* Top Bar: Trạng thái Cổng truy cập & Thao tác nhanh */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-line">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 .5 text-2xs font-semibold text-accent -accent/20">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>
-              {isAdmin
-                ? 'Quyền Quản trị viên (Admin)'
-                : isGrowthManager
-                ? 'Trưởng phòng Growth'
-                : isMediaManager
-                ? 'Trưởng phòng Media'
-                : 'Giám đốc Marketing B2C'}
-            </span>
-          </span>
-          <span className="text-2xs text-ink-2">
-            Cổng truy cập Lark: <strong className="text-positive">{directoryStats.totalAllowed}</strong>/{directoryStats.totalStaff} nhân sự được mở
-          </span>
-        </div>
-
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={handleResetMatrix}
-            className="px-2.5 py-1 rounded-lg bg-canvas hover:bg-sunken text-ink-2 text-2xs font-medium border border-line transition flex items-center gap-1.5"
-            title="Khôi phục ma trận phân quyền về mặc định"
-          >
-            <RefreshCw className="w-3 h-3 text-ink-3" />
-            <span>Khôi phục mặc định</span>
-          </button>
-        )}
-      </div>
 
       <Tabs
         items={[
@@ -1030,12 +930,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       ({selectedRoleDef.scopeType === 'INTERNAL' ? 'Nhân sự nội bộ' : 'Đối tác ngoài'})
                     </span>
                   </div>
-                  <p className="text-xs text-ink-2">
-                    {selectedRoleDef.description}
-                  </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleResetSingleRoleScreens(selectedRoleKey)}
@@ -1044,34 +941,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   >
                     <RefreshCw className="w-3.5 h-3.5 text-ink-3" />
                     <span>Đặt lại mặc định</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sampleStaff = internalStaff.find((s) => s.role === selectedRoleKey);
-                      if (sampleStaff) {
-                        handleImpersonateInternal(sampleStaff);
-                      } else {
-                        const syntheticProfile: UserProfile = {
-                          id: `role_preview_${selectedRoleKey.toLowerCase()}`,
-                          name: `Tài khoản kiểm thử (${selectedRoleDef.name})`,
-                          email: `${selectedRoleKey.toLowerCase()}@upbase.vn`,
-                          role: selectedRoleKey,
-                          roleTitle: `${selectedRoleDef.name} (Kiểm thử Role)`,
-                          avatar: selectedRoleKey.slice(0, 2),
-                          departmentScope: 'MARKETING_B2C',
-                          canLogin: true,
-                          loginProvider: 'SANDBOX',
-                          assignedBrands: ['Kutieskin', 'ClubClio'],
-                        };
-                        onImpersonateUser?.(syntheticProfile);
-                      }
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Đóng vai kiểm thử</span>
                   </button>
                 </div>
               </div>
@@ -1163,7 +1032,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             return (
                               <label
                                 key={scr.key}
-                                className={`p-2 rounded-lg border cursor-pointer transition flex items-start gap-2.5 ${
+                                className={`p-2 rounded-lg border cursor-pointer transition flex items-center gap-2.5 ${
                                   isAllowed
                                     ? 'bg-accent-soft border-accent/20 shadow-2xs'
                                     : 'bg-white border-line opacity-60 hover:opacity-100 hover:bg-canvas'
@@ -1173,22 +1042,17 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   type="checkbox"
                                   checked={isAllowed}
                                   onChange={() => handleToggleRoleScreen(selectedRoleKey, scr.key)}
-                                  className="mt-0.5 w-4 h-4 rounded text-accent focus:ring-0 shrink-0"
+                                  className="w-4 h-4 rounded text-accent focus:ring-0 shrink-0"
                                 />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center justify-between gap-1.5">
-                                    <span className={`text-xs font-semibold leading-snug ${isAllowed ? 'text-ink' : 'text-ink-2'}`}>
-                                      {scr.label}
+                                <div className="min-w-0 flex-1 flex items-center justify-between gap-1.5">
+                                  <span className={`text-xs font-medium leading-snug ${isAllowed ? 'text-ink font-semibold' : 'text-ink-2'}`}>
+                                    {scr.label}
+                                  </span>
+                                  {isDefaultLanding && isAllowed && (
+                                    <span className="px-1.5 py-0.5 rounded text-2xs font-semibold text-positive border border-positive/20 shrink-0">
+                                      Mặc định
                                     </span>
-                                    {isDefaultLanding && isAllowed && (
-                                      <span className=".5 py-0.2 text-2xs font-semibold text-positive -positive/20 shrink-0">
-                                        Mặc định
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-2xs text-ink-3 line-clamp-1 mt-0.5">
-                                    {scr.description}
-                                  </p>
+                                  )}
                                 </div>
                               </label>
                             );
@@ -1266,16 +1130,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => handleImpersonateInternal(staff)}
-                            className="px-2 py-1 rounded-md bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold transition flex items-center gap-1"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>Đóng vai</span>
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => handleOpenEditStaff(staff)}
-                            className="px-2 py-1 rounded-md bg-sunken hover:bg-sunken text-ink-2 text-2xs font-medium transition flex items-center gap-1"
+                            className="px-2.5 py-1 rounded-md bg-sunken hover:bg-sunken text-ink-2 text-2xs font-medium transition flex items-center gap-1"
                           >
                             <Edit3 className="w-3 h-3" />
                             <span>Đổi Role</span>
@@ -1551,17 +1407,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             </td>
                             <td className="py-2.5 px-3 text-center">
                               <div className="flex items-center justify-center gap-1.5">
-                                {staff.canLogin && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleImpersonateDirectoryStaff(staff)}
-                                    className="px-2 py-1 rounded-lg bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold flex items-center gap-1"
-                                    title="Đóng vai nhân viên này để kiểm tra giao diện"
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    <span>Đóng vai</span>
-                                  </button>
-                                )}
                                 {isAdmin && (
                                   <button
                                     type="button"
@@ -1795,14 +1640,27 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </select>
             </div>
 
-            {/* Quick Badge Legend */}
-            <div className="flex items-center gap-2 text-2xs text-ink-2 bg-canvas px-3 py-1.5 rounded-lg border border-line">
-              <span className="font-semibold text-ink-2">Chú giải:</span>
-              <span className="inline-flex items-center text-positive font-semibold">ALL</span>
-              <span className="inline-flex items-center text-accent font-semibold">SCOPED</span>
-              <span className="inline-flex items-center text-warning font-semibold">VIEW</span>
-              <span className="inline-flex items-center text-accent font-semibold">APPROVE</span>
-              <span className="inline-flex items-center text-ink-3 font-medium">DENIED</span>
+            {/* Quick Badge Legend & Reset */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 text-2xs text-ink-2 bg-canvas px-3 py-1.5 rounded-lg border border-line">
+                <span className="font-semibold text-ink-2">Chú giải:</span>
+                <span className="inline-flex items-center text-positive font-semibold">ALL</span>
+                <span className="inline-flex items-center text-accent font-semibold">SCOPED</span>
+                <span className="inline-flex items-center text-warning font-semibold">VIEW</span>
+                <span className="inline-flex items-center text-accent font-semibold">APPROVE</span>
+                <span className="inline-flex items-center text-ink-3 font-medium">DENIED</span>
+              </div>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleResetMatrix}
+                  className="px-2.5 py-1.5 rounded-lg bg-surface hover:bg-sunken text-ink-2 text-2xs font-medium border border-line transition flex items-center gap-1.5"
+                  title="Khôi phục ma trận phân quyền về mặc định"
+                >
+                  <RefreshCw className="w-3 h-3 text-ink-3" />
+                  <span>Khôi phục mặc định</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -2129,15 +1987,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       {/* Action Buttons */}
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleImpersonateInternal(staff)}
-                            className="px-2.5 py-1.5 rounded-lg bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold transition flex items-center gap-1 shadow-2xs"
-                            title="Xem trước giao diện nhân sự này"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-accent" />
-                            <span>Đóng vai</span>
-                          </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditStaff(staff)}
