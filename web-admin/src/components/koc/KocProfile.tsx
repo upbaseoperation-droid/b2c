@@ -84,7 +84,7 @@ export interface KocProfileProps {
 }
 
 export function classificationOf(k: KocItem): string {
-  return [k.salaryGrade, k.segment, k.tepKenh || k.creatorCategory, k.kocCategory, k.location, k.isWinnerTop20 && 'Nhóm top 20 GMV', 'TikTok Seller']
+  return [k.salaryGrade, k.tepKenh || k.creatorCategory, k.kocCategory, k.location, k.isWinnerTop20 && 'Nhóm top 20 GMV', 'TikTok Seller']
     .filter(Boolean)
     .join(' · ');
 }
@@ -182,11 +182,15 @@ export function KocProfile({
               {isPage && <span className="text-ink-3"> · {classificationOf(koc)}</span>}
             </p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
-              <span className="font-medium text-ink">{koc.brandName || 'Chưa gán nhãn hàng'}</span>
-              {koc.bookingPic ? (
-                <Person name={koc.bookingPic} sub="PIC phụ trách" size={20} />
-              ) : (
-                <span className="text-ink-3">Chưa có PIC</span>
+              {koc.phone && (
+                <span className="font-mono text-ink text-xs">
+                  SĐT: {koc.phone}
+                </span>
+              )}
+              {koc.location && (
+                <span className="text-ink-3 text-xs">
+                  {koc.location}
+                </span>
               )}
               {stats.avgRatingScore > 0 && (
                 <span className="inline-flex items-center gap-1 text-2xs font-medium text-warning">

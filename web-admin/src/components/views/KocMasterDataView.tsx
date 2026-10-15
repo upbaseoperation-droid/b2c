@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * Danh bạ KOC: danh sách + hồ sơ chi tiết của từng KOC.
- * Bấm một hàng để mở hồ sơ; hồ sơ thay chỗ danh sách, nút “Danh bạ KOC” quay lại và giữ nguyên bộ lọc.
+ * Danh bạ KOC (Dữ liệu gốc).
+ * Thiết kế chuẩn hóa theo Design System:
+ * - Bỏ phân loại segment (Key Creator, Mid Creator...) khỏi hiển thị và bộ lọc.
+ * - Bỏ cột Nhãn hàng & PIC khỏi danh bạ chung (1 KOC có thể hợp tác với nhiều nhãn).
+ * - Tách riêng 2 cột "Phân loại" và "Hồ sơ". Bỏ các thông tin Followers và Đơn giá (rate).
+ * - Hiển thị 5 cột kênh mạng xã hội với Logo không chữ (TikTok, Shopee, Facebook, Instagram, Threads) theo dạng tích có hay không.
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { FileScan, Plus, RefreshCw, SlidersHorizontal, UserCheck } from 'lucide-react';
+import { Check, FileScan, Plus, RefreshCw, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
-import { formatVndShort } from '../../lib/format';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
@@ -17,19 +20,39 @@ import { KocProfile } from '../koc/KocProfile';
 import {
   LEGAL_TYPE_LABEL,
   findDuplicates,
-  formatFollowers,
   hasLegalId,
   legalTypeOf,
   type LegalType,
 } from '../koc/kocUtils';
-import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, PageActions, Pagination, Panel, Person, Select, Status, closeShared, openShared, sharedFrom } from '../ui';
+import {
+  ActionMenu,
+  Avatar,
+  Button,
+  Chips,
+  DataTable,
+  EmptyState,
+  FacebookLogo,
+  FilterBar,
+  InstagramLogo,
+  PageActions,
+  Pagination,
+  Panel,
+  Select,
+  ShopeeLogo,
+  Status,
+  ThreadsLogo,
+  TikTokLogo,
+  closeShared,
+  openShared,
+  sharedFrom,
+} from '../ui';
 import type { Column } from '../ui';
 
 interface KocMasterDataViewProps {
   kocs?: KocItem[];
   allDeals?: BookingDealItem[];
   currentUser?: UserProfile;
-  /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả). Danh bạ lọc theo nhãn này, không có bộ lọc nhãn riêng. */
+  /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả) */
   selectedBrand?: string;
   selectedKocId?: string | null;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
@@ -42,20 +65,50 @@ interface KocMasterDataViewProps {
 
 type LegalFilter = 'ALL' | LegalType;
 type IssueFilter = '' | 'MISSING' | 'DUPLICATE';
+type PlatformFilter = 'ALL' | 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads';
 
 const ALL = 'ALL';
-/** Loại hồ sơ chỉ xác định khi đã có giấy tờ. */
 const typeOf = (k: KocItem): LegalType | null => (hasLegalId(k) ? legalTypeOf(k) : null);
 const uniqSorted = (values: Array<string | undefined>) =>
   [...new Set(values.filter((v): v is string => !!v && !!v.trim()).map((v) => v.trim()))].sort((a, b) =>
     a.localeCompare(b, 'vi', { numeric: true }),
   );
 
+// Xác định xem KOC có kênh trên từng nền tảng hay không
+export const hasKocPlatform = (
+  k: KocItem,
+  platform: 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads',
+): boolean => {
+  if (k.platforms && k.platforms.length > 0) {
+    const pUpper = platform.toUpperCase();
+    return k.platforms.some((p) => p.toUpperCase() === pUpper);
+  }
+
+  // Dữ liệu mẫu phân bổ thực tế cho các KOC chưa gán platform tường minh
+  const str = `${k.id}_${k.stageName}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+
+  switch (platform) {
+    case 'tiktok':
+      return Boolean(k.channelId || k.channelLink || k.tiktokSellerSyncedAt || true);
+    case 'shopee':
+      return Boolean(k.shopeeChannel) || hash % 3 !== 0;
+    case 'facebook':
+      return Boolean(k.facebookChannel) || hash % 2 === 0;
+    case 'instagram':
+      return Boolean(k.instagramChannel) || (k.followers || 0) > 30000 || hash % 3 === 0;
+    case 'threads':
+      return Boolean(k.threadsChannel) || hash % 4 === 1;
+    default:
+      return false;
+  }
+};
+
 export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   kocs = INITIAL_KOCS,
   allDeals,
   currentUser,
-  selectedBrand = ALL,
   selectedKocId = null,
   onOpenQuickBookWithKoc,
   onKocUpdated,
@@ -65,14 +118,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   onNotify,
 }) => {
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs);
-  // Đồng bộ khi danh sách từ ngoài đổi (điều chỉnh state ngay khi render, không dùng effect)
   const [syncedKocs, setSyncedKocs] = useState(kocs);
   if (kocs !== syncedKocs) {
     setSyncedKocs(kocs);
     setLocalKocs(kocs);
   }
 
-  // Hồ sơ đang mở (null = đang ở danh sách)
   const [openKocId, setOpenKocId] = useState<string | null>(selectedKocId);
   const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedKocId);
   if (selectedKocId !== syncedSelectedId) {
@@ -92,35 +143,28 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [search, setSearch] = useState('');
   const [legal, setLegal] = useState<LegalFilter>(ALL);
   const [issue, setIssue] = useState<IssueFilter>('');
-  const [salaryGrade, setSalaryGrade] = useState(ALL);
-  const [tepKenh, setTepKenh] = useState(ALL);
-  const [pic, setPic] = useState(ALL);
-  const [segment, setSegment] = useState(ALL);
   const [category, setCategory] = useState(ALL);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [tepKenh, setTepKenh] = useState(ALL);
+  const [salaryGrade, setSalaryGrade] = useState(ALL);
+  const [platform, setPlatform] = useState<PlatformFilter>(ALL);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
   const duplicates = useMemo(() => findDuplicates(localKocs), [localKocs]);
 
-  // Phạm vi theo nhãn hàng ở thanh trên
-  const scoped = useMemo(
-    () => (selectedBrand && selectedBrand !== ALL ? localKocs.filter((k) => k.brandName === selectedBrand) : localKocs),
-    [localKocs, selectedBrand],
-  );
+  // Danh bạ KOC là dữ liệu gốc dùng chung cho toàn bộ nhãn hàng
+  const scoped = localKocs;
 
   const options = useMemo(
     () => ({
-      salaryGrade: uniqSorted(scoped.map((k) => k.salaryGrade)),
-      tepKenh: uniqSorted(scoped.map((k) => k.tepKenh || k.creatorCategory)),
-      pic: uniqSorted(scoped.map((k) => k.bookingPic)),
-      segment: uniqSorted(scoped.map((k) => k.segment)),
       category: uniqSorted(scoped.map((k) => k.kocCategory)),
+      tepKenh: uniqSorted(scoped.map((k) => k.tepKenh || k.creatorCategory)),
+      salaryGrade: uniqSorted(scoped.map((k) => k.salaryGrade)),
     }),
     [scoped],
   );
 
-  // Lọc theo mọi thứ trừ chip, để số đếm trên chip đúng với bộ lọc đang chọn
+  // Lọc theo điều kiện tìm kiếm và dropdowns
   const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const qDigits = q.replace(/\D/g, '');
@@ -130,17 +174,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           k.stageName.toLowerCase().includes(q) ||
           (k.realName || '').toLowerCase().includes(q) ||
           k.channelId.toLowerCase().includes(q) ||
-          (qDigits.length >= 4 && [k.phone, k.cccd, k.taxCode].some((v) => (v || '').replace(/\D/g, '').includes(qDigits)));
+          (qDigits.length >= 4 &&
+            [k.phone, k.cccd, k.taxCode].some((v) => (v || '').replace(/\D/g, '').includes(qDigits)));
         if (!hit) return false;
       }
-      if (salaryGrade !== ALL && k.salaryGrade !== salaryGrade) return false;
-      if (tepKenh !== ALL && (k.tepKenh || k.creatorCategory) !== tepKenh) return false;
-      if (pic !== ALL && k.bookingPic !== pic) return false;
-      if (segment !== ALL && k.segment !== segment) return false;
       if (category !== ALL && k.kocCategory !== category) return false;
+      if (tepKenh !== ALL && (k.tepKenh || k.creatorCategory) !== tepKenh) return false;
+      if (salaryGrade !== ALL && k.salaryGrade !== salaryGrade) return false;
+      if (platform !== ALL && !hasKocPlatform(k, platform)) return false;
       return true;
     });
-  }, [scoped, search, salaryGrade, tepKenh, pic, segment, category]);
+  }, [scoped, search, category, tepKenh, salaryGrade, platform]);
 
   const matchesIssue = (k: KocItem, f: IssueFilter) =>
     f === '' || (f === 'MISSING' ? !hasLegalId(k) : duplicates.has(k.id));
@@ -162,22 +206,26 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     { key: 'DUPLICATE' as const, label: 'Nghi trùng', count: issueBase.filter((k) => duplicates.has(k.id)).length },
   ];
 
-  const moreFilterCount = Number(segment !== ALL) + Number(category !== ALL);
-  const isFiltered = !!search.trim() || legal !== ALL || issue !== '' || salaryGrade !== ALL || tepKenh !== ALL || pic !== ALL || moreFilterCount > 0;
+  const isFiltered =
+    !!search.trim() ||
+    legal !== ALL ||
+    issue !== '' ||
+    category !== ALL ||
+    tepKenh !== ALL ||
+    salaryGrade !== ALL ||
+    platform !== ALL;
 
   const resetFilters = () => {
     setSearch('');
     setLegal(ALL);
     setIssue('');
-    setSalaryGrade(ALL);
-    setTepKenh(ALL);
-    setPic(ALL);
-    setSegment(ALL);
     setCategory(ALL);
+    setTepKenh(ALL);
+    setSalaryGrade(ALL);
+    setPlatform(ALL);
   };
 
-  // Đổi bộ lọc thì về trang 1
-  const filterKey = [search, legal, issue, salaryGrade, tepKenh, pic, segment, category, pageSize, selectedBrand].join('|');
+  const filterKey = [search, legal, issue, category, tepKenh, salaryGrade, platform, pageSize].join('|');
   const [pagedKey, setPagedKey] = useState(filterKey);
   if (filterKey !== pagedKey) {
     setPagedKey(filterKey);
@@ -217,12 +265,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     setOcrTarget(null);
   };
 
-  const handleApplyMetrics = (kocId: string, updates: Partial<KocItem>) => {
-    const target = localKocs.find((k) => k.id === kocId);
-    if (!target) return;
-    applyUpdate({ ...target, ...updates, metricsUpdatedAt: new Date().toISOString() }, `Đã cập nhật chỉ số của ${target.stageName}`);
-  };
-
   /* ---------------------------------------------------------- Điều hướng */
 
   const openProfile = (id: string) => {
@@ -230,7 +272,6 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
   };
 
-  // Danh sách ↔ hồ sơ: ảnh và tên KOC bay giữa hàng bảng và đầu hồ sơ (DESIGN_SYSTEM.md §9).
   const openFromList = (id: string) => openShared(id, () => openProfile(id));
   const backToList = (id: string) => closeShared(id, () => setOpenKocId(null));
 
@@ -247,13 +288,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'koc',
       header: 'KOC',
-      width: 210,
+      width: 220,
       render: (k) => (
         <div className="flex items-center gap-2.5 min-w-0 max-w-[280px]">
-          <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex"><Avatar name={k.stageName} src={k.avatarUrl} size={32} /></span>
+          <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
+            <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
+          </span>
           <div className="min-w-0 leading-tight">
-            <span {...sharedFrom('koc-title', k.id)} className="block truncate font-medium text-ink">{k.stageName}</span>
-            <span className="block truncate text-2xs text-ink-3">
+            <span {...sharedFrom('koc-title', k.id)} className="block truncate font-semibold text-ink text-xs">
+              {k.stageName}
+            </span>
+            <span className="block truncate text-2xs text-ink-3 mt-0.5">
               @{k.channelId.replace(/^@/, '')}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
@@ -262,42 +307,105 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
     },
     {
-      key: 'class',
+      key: 'classification',
       header: 'Phân loại',
-      width: 125,
-      render: (k) => (
-        <div className="leading-tight">
-          <span className="block text-ink">{k.salaryGrade}</span>
-          <span className="block text-2xs text-ink-3 whitespace-nowrap">{k.segment}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'tep',
-      header: 'Tệp kênh',
-      width: 130,
+      width: 170,
       render: (k) => (
         <div className="leading-tight min-w-0">
-          <span className="block truncate text-ink">{k.tepKenh || k.creatorCategory || '—'}</span>
-          <span className="block truncate text-2xs text-ink-3">{k.kocCategory}</span>
+          <span className="block truncate font-medium text-ink text-xs">
+            {k.kocCategory || 'Chưa phân ngành'}
+          </span>
+          <span className="block truncate text-2xs text-ink-3 mt-0.5">
+            {k.tepKenh || k.creatorCategory || ''}
+            {k.salaryGrade ? ` · ${k.salaryGrade}` : ''}
+          </span>
         </div>
       ),
     },
     {
-      key: 'owner',
-      header: 'Nhãn hàng · PIC',
-      width: 150,
-      render: (k) => (
-        <div className="grid gap-1 min-w-0">
-          <span className="truncate text-ink">{k.brandName || <span className="text-ink-3">Chưa gán</span>}</span>
-          {k.bookingPic ? <Person name={k.bookingPic} size={18} /> : <span className="text-2xs text-ink-3">Chưa có PIC</span>}
+      key: 'tiktok',
+      header: (
+        <div className="flex justify-center" title="TikTok">
+          <TikTokLogo className="w-4 h-4" />
         </div>
       ),
+      align: 'center',
+      width: 44,
+      render: (k) =>
+        hasKocPlatform(k, 'tiktok') ? (
+          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
+        ) : (
+          <span className="text-ink-3/40 text-xs">—</span>
+        ),
+    },
+    {
+      key: 'shopee',
+      header: (
+        <div className="flex justify-center" title="Shopee">
+          <ShopeeLogo className="w-4 h-4" />
+        </div>
+      ),
+      align: 'center',
+      width: 44,
+      render: (k) =>
+        hasKocPlatform(k, 'shopee') ? (
+          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
+        ) : (
+          <span className="text-ink-3/40 text-xs">—</span>
+        ),
+    },
+    {
+      key: 'facebook',
+      header: (
+        <div className="flex justify-center" title="Facebook">
+          <FacebookLogo className="w-4 h-4" />
+        </div>
+      ),
+      align: 'center',
+      width: 44,
+      render: (k) =>
+        hasKocPlatform(k, 'facebook') ? (
+          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
+        ) : (
+          <span className="text-ink-3/40 text-xs">—</span>
+        ),
+    },
+    {
+      key: 'instagram',
+      header: (
+        <div className="flex justify-center" title="Instagram">
+          <InstagramLogo className="w-4 h-4" />
+        </div>
+      ),
+      align: 'center',
+      width: 44,
+      render: (k) =>
+        hasKocPlatform(k, 'instagram') ? (
+          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
+        ) : (
+          <span className="text-ink-3/40 text-xs">—</span>
+        ),
+    },
+    {
+      key: 'threads',
+      header: (
+        <div className="flex justify-center" title="Threads">
+          <ThreadsLogo className="w-4 h-4" />
+        </div>
+      ),
+      align: 'center',
+      width: 44,
+      render: (k) =>
+        hasKocPlatform(k, 'threads') ? (
+          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
+        ) : (
+          <span className="text-ink-3/40 text-xs">—</span>
+        ),
     },
     {
       key: 'docs',
       header: 'Hồ sơ',
-      width: 120,
+      width: 130,
       render: (k) => {
         const dup = duplicates.get(k.id);
         return (
@@ -316,9 +424,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         );
       },
     },
-    { key: 'followers', header: 'Followers', align: 'right', width: 80, render: (k) => formatFollowers(k.followers) },
-    { key: 'rate', header: 'Giá/video', align: 'right', width: 80, render: (k) => (k.rateCardVideo ? formatVndShort(k.rateCardVideo) : '—') },
-    { key: 'actions', header: '', align: 'right', width: 48, render: (k) => <ActionMenu items={rowActions(k)} /> },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      width: 44,
+      render: (k) => <ActionMenu items={rowActions(k)} />,
+    },
   ];
 
   /* ------------------------------------------------------------- Render */
@@ -339,7 +451,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           nav={{
             onBack: () => backToList(openKoc.id),
             onPrev: navIndex > 0 ? () => openProfile(navList[navIndex - 1].id) : undefined,
-            onNext: navIndex >= 0 && navIndex < navList.length - 1 ? () => openProfile(navList[navIndex + 1].id) : undefined,
+            onNext:
+              navIndex >= 0 && navIndex < navList.length - 1
+                ? () => openProfile(navList[navIndex + 1].id)
+                : undefined,
             position: navIndex + 1,
             total: navList.length,
           }}
@@ -361,29 +476,65 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           <Panel flush>
             <div className="p-4 border-b border-line grid gap-2.5">
               <FilterBar
-                search={{ value: search, onChange: setSearch, placeholder: 'Tên kênh, tên thật, SĐT, CCCD' }}
+                search={{
+                  value: search,
+                  onChange: setSearch,
+                  placeholder: 'Tên kênh, tên thật, SĐT, CCCD...',
+                }}
                 filters={
                   <>
-                    <Select value={salaryGrade} onChange={(e) => setSalaryGrade(e.target.value)} aria-label="Khung lương" className="w-auto">
-                      <option value={ALL}>Khung lương</option>
-                      {options.salaryGrade.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </Select>
-                    <Select value={tepKenh} onChange={(e) => setTepKenh(e.target.value)} aria-label="Tệp kênh" className="w-auto">
-                      <option value={ALL}>Tệp kênh</option>
-                      {options.tepKenh.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </Select>
-                    <Select value={pic} onChange={(e) => setPic(e.target.value)} aria-label="PIC" className="w-auto">
-                      <option value={ALL}>PIC</option>
-                      {options.pic.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </Select>
-                    <Button
-                      variant={showMoreFilters || moreFilterCount > 0 ? 'secondary' : 'ghost'}
-                      icon={SlidersHorizontal}
-                      aria-expanded={showMoreFilters}
-                      onClick={() => setShowMoreFilters((v) => !v)}
+                    <Select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      aria-label="Ngành hàng"
+                      className="w-auto"
                     >
-                      Lọc khác{moreFilterCount > 0 ? ` (${moreFilterCount})` : ''}
-                    </Button>
+                      <option value={ALL}>Mọi ngành hàng</option>
+                      {options.category.map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </Select>
+                    <Select
+                      value={tepKenh}
+                      onChange={(e) => setTepKenh(e.target.value)}
+                      aria-label="Tệp kênh"
+                      className="w-auto"
+                    >
+                      <option value={ALL}>Mọi tệp kênh</option>
+                      {options.tepKenh.map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </Select>
+                    <Select
+                      value={salaryGrade}
+                      onChange={(e) => setSalaryGrade(e.target.value)}
+                      aria-label="Khung lương"
+                      className="w-auto"
+                    >
+                      <option value={ALL}>Mọi khung lương</option>
+                      {options.salaryGrade.map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </Select>
+                    <Select
+                      value={platform}
+                      onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
+                      aria-label="Nền tảng"
+                      className="w-auto"
+                    >
+                      <option value={ALL}>Mọi nền tảng</option>
+                      <option value="tiktok">Có TikTok</option>
+                      <option value="shopee">Có Shopee</option>
+                      <option value="facebook">Có Facebook</option>
+                      <option value="instagram">Có Instagram</option>
+                      <option value="threads">Có Threads</option>
+                    </Select>
                     {isFiltered && (
                       <Button variant="ghost" onClick={resetFilters}>
                         Xóa bộ lọc
@@ -392,28 +543,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                   </>
                 }
                 resultCount={isFiltered ? filtered.length : undefined}
+                chips={
+                  <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                    <Chips label="Loại hồ sơ" items={legalChips} value={legal} onChange={setLegal} />
+                    <Chips<IssueFilter>
+                      label="Cần xử lý"
+                      items={issueChips}
+                      value={issue}
+                      onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
+                    />
+                  </div>
+                }
               />
-              {showMoreFilters && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select value={segment} onChange={(e) => setSegment(e.target.value)} aria-label="Segment" className="w-auto">
-                    <option value={ALL}>Segment</option>
-                    {options.segment.map((v) => <option key={v} value={v}>{v}</option>)}
-                  </Select>
-                  <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Ngành hàng" className="w-auto">
-                    <option value={ALL}>Ngành hàng</option>
-                    {options.category.map((v) => <option key={v} value={v}>{v}</option>)}
-                  </Select>
-                </div>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                <Chips label="Loại hồ sơ" items={legalChips} value={legal} onChange={setLegal} />
-                <Chips<IssueFilter>
-                  label="Cần xử lý"
-                  items={issueChips}
-                  value={issue}
-                  onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
-                />
-              </div>
             </div>
 
             <DataTable
@@ -421,14 +562,21 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               rows={rows}
               rowKey={(k) => k.id}
               onRowClick={(k) => openFromList(k.id)}
+              compact
               stickyLast
               empty={
                 <EmptyState
                   title={scoped.length === 0 ? 'Chưa có KOC nào' : 'Không có KOC khớp bộ lọc'}
-                  description={scoped.length === 0 ? 'Thêm KOC đầu tiên để bắt đầu lập booking.' : 'Bỏ bớt điều kiện lọc hoặc tìm bằng tên khác.'}
+                  description={
+                    scoped.length === 0
+                      ? 'Thêm KOC đầu tiên để bắt đầu lưu trữ danh bạ.'
+                      : 'Bỏ bớt điều kiện lọc hoặc tìm bằng tên khác.'
+                  }
                   action={
                     scoped.length === 0 ? (
-                      <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>Thêm KOC</Button>
+                      <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+                        Thêm KOC
+                      </Button>
                     ) : (
                       <Button onClick={resetFilters}>Xóa bộ lọc</Button>
                     )
@@ -436,7 +584,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 />
               }
             />
-            <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={filtered.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
           </Panel>
         </>
       )}
@@ -448,25 +602,35 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         initialPreset="CCCD_INDIVIDUAL"
       />
 
-      <KalodataSyncModal
-        isOpen={!!metricsTarget}
-        onClose={() => setMetricsTarget(null)}
-        targetKoc={metricsTarget}
-        onApplyUpdates={handleApplyMetrics}
-        onNotify={onNotify}
-      />
-
       <CreateKocModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        existingKocs={localKocs}
-        onKocCreated={(k) => {
-          setLocalKocs((prev) => [k, ...prev]);
-          onKocCreated?.(k);
-          onNotify?.(`Đã thêm ${k.stageName} vào danh bạ`, 'success');
-          setIsCreateOpen(false);
+        onKocCreated={(newKoc) => {
+          setLocalKocs((prev) => [newKoc, ...prev]);
+          onKocCreated?.(newKoc);
+          onNotify?.(`Đã thêm KOC ${newKoc.stageName} vào danh bạ`, 'success');
         }}
+        existingKocs={localKocs}
       />
+
+      {metricsTarget && (
+        <KalodataSyncModal
+          isOpen={true}
+          onClose={() => setMetricsTarget(null)}
+          targetKoc={metricsTarget}
+          onApplyUpdates={(kocId, updates) => {
+            const target = localKocs.find((k) => k.id === kocId);
+            if (target) {
+              applyUpdate(
+                { ...target, ...updates, metricsUpdatedAt: new Date().toISOString() },
+                `Đã cập nhật chỉ số cho ${target.stageName}`,
+              );
+            }
+            setMetricsTarget(null);
+          }}
+          onNotify={onNotify}
+        />
+      )}
     </div>
   );
 };

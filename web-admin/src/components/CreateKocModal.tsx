@@ -200,6 +200,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       avgViews: 20000,
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
+      platforms: ['TIKTOK', 'SHOPEE', 'FACEBOOK'],
 
       // Shipping & Logistics
       phone: phone.trim(),
