@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="hc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#15803d"/>
+      <stop offset="100%" stopColor="#166534"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#hc-grad)"/>
+  <!-- Leaf icon -->
+  <path d="M100 45 C75 55 75 85 100 95 C125 85 125 55 100 45 Z" fill="#bbf7d0"/>
+  <path d="M100 48 L100 92" stroke="#166534" stroke-width="2"/>
+  <text x="100" y="126" font-family="Georgia, serif" font-size="18" font-weight="bold" letter-spacing="1" fill="#ffffff" text-anchor="middle">HERBAL CARE</text>
+  <text x="100" y="148" font-family="system-ui, sans-serif" font-size="10" font-weight="500" letter-spacing="2" fill="#86efac" text-anchor="middle">FARMONA POLAND</text>
+</svg>

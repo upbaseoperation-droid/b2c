@@ -13,8 +13,10 @@ import { NumberRoll, SlidingIndicator, deltaPercent, useActiveBox } from './moti
 
 export { Avatar, Person, initialsOf, CHANNELS, channelOf, ChannelTag, ChannelBar, Progress, Sparkline } from './data';
 export type { ChannelKey } from './data';
-export { PlatformLogo, FacebookLogo, ThreadsLogo, InstagramLogo, ShopeeLogo, TikTokLogo } from './PlatformLogos';
-export type { PlatformKey } from './PlatformLogos';
+export { BrandAvatar } from './BrandAvatar';
+export type { BrandAvatarProps } from './BrandAvatar';
+export { PlatformLogo, FacebookLogo, ThreadsLogo, InstagramLogo, ShopeeLogo, TikTokLogo, LazadaLogo, LiveLogo, SelfChannelLogo, PlatformBadge, getPlatformShortLabel } from './PlatformLogos';
+export type { PlatformKey, PlatformBadgeProps } from './PlatformLogos';
 export { Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination, PageActions, PageActionsSlot, PageActiveContext } from './blocks';
 export type { Column, ChipOption, ActionMenuItem } from './blocks';
 export { MOTION, NumberRoll, deltaPercent, useActiveBox, SlidingIndicator, useFlipList, StepMark, ChangeFlash, usePresence, Presence, withViewTransition, tagShared, sharedFrom, sharedTo, openShared, closeShared, Skeleton, SkeletonRows, useReducedMotion } from './motion';

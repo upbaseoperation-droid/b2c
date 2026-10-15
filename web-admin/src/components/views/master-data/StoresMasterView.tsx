@@ -36,7 +36,8 @@ import {
   Person,
   Presence,
   Select,
-  Status
+  Status,
+  BrandAvatar
 } from '../../ui';
 import type { Column } from '../../ui';
 import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
@@ -584,10 +585,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             onClick={() => {
               if (onNavigateToBrandProfile) onNavigateToBrandProfile(s.brandName);
             }}
-            className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-1 text-xs cursor-pointer truncate"
+            className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-1.5 text-xs cursor-pointer truncate"
             title="Xem hồ sơ thương hiệu"
           >
-            <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+            <BrandAvatar brandName={s.brandName} brandId={s.brandId} size={20} />
             <span className="truncate">{s.brandName}</span>
           </button>
           <div className="text-2xs text-ink-3 mt-0.5 truncate">{s.category || 'Tiêu dùng'}</div>

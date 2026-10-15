@@ -1682,6 +1682,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'manager',
     'task-delegation',
+    'workload-3d',
     'sample-tracker',
     'performance-p3',
     'leaderboard',
@@ -1720,6 +1721,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'manager',
     'task-delegation',
+    'workload-3d',
     'sample-tracker',
     'performance-p3',
     'leaderboard',
@@ -1734,6 +1736,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'manager',
     'task-delegation',
+    'workload-3d',
     'input-plan',
     'overview',
     'dashboard-bi',
@@ -1760,6 +1763,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'manager',
     'task-delegation',
+    'workload-3d',
     'input-plan',
     'ads-report',
     'sample-tracker',
@@ -1797,6 +1801,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'manager',
     'task-delegation',
+    'workload-3d',
     'input-plan',
     'koc-listing',
     'self-channel-hub',
@@ -1818,6 +1823,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BOOKING_MEMBER: [
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
@@ -1841,6 +1847,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   CONTENT_MEMBER: [
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'dashboard-bi',
     'dashboard-video',
     'dashboard-air-sync',
@@ -1861,6 +1868,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BRAND_MEMBER: [
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-air-sync',
@@ -1882,6 +1890,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   MEMBER: [
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
@@ -1906,6 +1915,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'overview',
     'dashboard-bi',
     'dashboard-brand',
@@ -1927,6 +1937,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'cockpit',
     'task-delegation',
+    'workload-3d',
     'overview',
     'dashboard-bi',
     'dashboard-brand',
@@ -1989,7 +2000,7 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 };
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
-  if (tab === 'task-delegation' && ROLE_ALLOWED_TABS[role]?.includes('task-delegation')) {
+  if ((tab === 'task-delegation' || tab === 'workload-3d') && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
     return true;
   }
   const map = getSavedRoleAllowedTabs();
@@ -2000,7 +2011,10 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
 
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
-  const list = map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'];
+  const list = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
+  if (ROLE_ALLOWED_TABS[role]?.includes('workload-3d') && !list.includes('workload-3d')) {
+    list.push('workload-3d');
+  }
   return list;
 }
 
@@ -2034,6 +2048,7 @@ export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
   { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
   { key: 'task-delegation', label: 'Giao việc & Định mức Task', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Giao việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research.' },
+  { key: 'workload-3d', label: 'Bản đồ 3D & Workload', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Trực quan hóa không gian 3D phân bổ Nhân sự, Thương hiệu, Gian hàng và Cột tải trọng công việc (Workload Point).' },
   { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
   { key: 'push-products', label: 'Sản phẩm đẩy (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực, USP và tồn kho hàng mẫu.' },
   { key: 'booking', label: 'Quản lý Booking KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, chốt đơn giá, duyệt KOC và theo dõi tiến độ air.' },

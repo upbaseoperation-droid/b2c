@@ -26,6 +26,7 @@ import {
 import {
   PlatformLogo,
   TikTokLogo,
+  BrandAvatar,
 } from '../ui';
 import type { PlatformKey } from '../ui';
 
@@ -69,6 +70,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     id: 'SELF_CHANNEL',
     label: 'Kênh tự xây',
     shortLabel: 'Tự xây',
+    platformKey: 'SELF_CHANNEL',
     shortDesc: 'Sản xuất video kênh thương hiệu (Voice, Nhạc text, Remix, POV...)',
     unitLabel: 'Định dạng video kênh thương hiệu',
     colorClass: 'border-emerald-300 text-emerald-950',
@@ -580,9 +582,16 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       {isFullscreen && (
         <div className="sticky top-0 z-20 bg-surface text-ink border border-line rounded-xl px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line flex items-center justify-center shrink-0">
-              <Store className="w-4 h-4 text-accent" />
-            </div>
+            <BrandAvatar
+              brandId={planState.brandId}
+              brandName={planState.brandName || planState.storeName}
+              size={32}
+              fallback={
+                <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line flex items-center justify-center shrink-0">
+                  <Store className="w-4 h-4 text-accent" />
+                </div>
+              }
+            />
             <div className="min-w-0">
               <div className="text-2xs text-ink-3 font-medium">
                 Sơ đồ phân rã toàn màn hình · PIC: {planState.pic}

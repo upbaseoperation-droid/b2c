@@ -49,6 +49,7 @@ import {
   Status,
   Tabs,
   sharedTo,
+  BrandAvatar,
 } from '../ui';
 import type { Column } from '../ui';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
@@ -750,9 +751,17 @@ export function StoreProfile({
         {/* Định danh cố định của Gian hàng (Không gắn cứng NMV hay Ngân sách vào định danh tĩnh) */}
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-lg bg-sunken border border-line flex items-center justify-center text-ink shrink-0 mt-0.5">
-              <Store className="w-5 h-5 text-ink-2" />
-            </div>
+            <BrandAvatar
+              brandName={store.brandName}
+              brandId={store.brandId}
+              size={40}
+              rounded="lg"
+              fallback={
+                <div className="w-10 h-10 rounded-lg bg-sunken border border-line flex items-center justify-center text-ink shrink-0 mt-0.5">
+                  <Store className="w-5 h-5 text-ink-2" />
+                </div>
+              }
+            />
 
             <div className="min-w-0 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">

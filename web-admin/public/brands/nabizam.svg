@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="nz-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#38bdf8"/>
+      <stop offset="100%" stopColor="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#nz-grad)"/>
+  <!-- Cute Butterfly wings -->
+  <path d="M100 68 C85 50 65 60 75 78 C65 95 85 100 100 82 C115 100 135 95 125 78 C135 60 115 50 100 68 Z" fill="#ffffff" opacity="0.95"/>
+  <circle cx="100" cy="74" r="4" fill="#0284c7"/>
+  <text x="100" y="128" font-family="system-ui, sans-serif" font-size="22" font-weight="900" letter-spacing="2" fill="#ffffff" text-anchor="middle">NABIZAM</text>
+  <text x="100" y="150" font-family="system-ui, sans-serif" font-size="10" font-weight="500" letter-spacing="3" fill="#e0f2fe" text-anchor="middle">KOREAN BABY DIAPER</text>
+</svg>

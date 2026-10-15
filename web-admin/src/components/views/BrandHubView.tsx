@@ -39,7 +39,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA, INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, Presence, Status } from '../ui';
+import { BrandAvatar, ChannelTag, Presence, Status } from '../ui';
 import { useBrandProfiles } from '../../lib/brands/useBrandProfiles';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
 import {
@@ -626,9 +626,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-semibold flex items-center justify-center text-sm shadow-xs shrink-0">
-                {activePortal.brandLogoText.slice(0, 3)}
-              </div>
+              <BrandAvatar name={activePortal.brandName} size={44} rounded="lg" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base font-semibold text-slate-900 tracking-tight">
@@ -780,9 +778,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                       <tr key={p.id} className="hover:bg-slate-50/70 transition">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-lg bg-slate-900 text-white font-semibold flex items-center justify-center text-xs shrink-0">
-                              {p.brandLogoText.slice(0, 3)}
-                            </div>
+                            <BrandAvatar name={p.brandName} size={36} rounded="md" />
                             <div>
                               <span className="font-semibold text-slate-900 block">{p.brandName}</span>
                               <span className="text-2xs text-slate-500 font-mono">{p.campaignCode}</span>

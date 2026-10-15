@@ -21,6 +21,7 @@ import {
 } from '../../lib/monthlyProfileMetrics';
 import {
   Avatar,
+  BrandAvatar,
   Button,
   ChannelTag,
   Chips,
@@ -345,7 +346,9 @@ export function BrandProfilesView({
         const count = rep?.storeCount || r.master?.storeCount || 0;
         return (
           <div className="min-w-0 max-w-[200px] leading-tight flex items-start gap-2">
-            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex"><Avatar name={r.name} size={24} /></span>
+            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex">
+              <BrandAvatar name={r.name} id={r.master?.id} code={r.master?.code} size={28} />
+            </span>
             <div className="min-w-0">
               <div className="flex items-center gap-1 flex-wrap">
                 <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink text-xs">{r.name}</span>

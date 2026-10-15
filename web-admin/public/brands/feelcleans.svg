@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="fc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#059669"/>
+      <stop offset="100%" stopColor="#047857"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#fc-grad)"/>
+  <!-- Water drop + leaf -->
+  <path d="M100 48 C85 68 82 82 100 92 C118 82 115 68 100 48 Z" fill="#ffffff"/>
+  <path d="M100 62 L100 88" stroke="#059669" stroke-width="2"/>
+  <text x="100" y="126" font-family="system-ui, sans-serif" font-size="20" font-weight="800" letter-spacing="1" fill="#ffffff" text-anchor="middle">FeelCleans</text>
+  <text x="100" y="148" font-family="system-ui, sans-serif" font-size="9" font-weight="500" letter-spacing="2" fill="#a7f3d0" text-anchor="middle">NATURAL CLEANSER</text>
+</svg>

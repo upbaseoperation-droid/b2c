@@ -51,6 +51,7 @@ export type TabKey =
   | 'contracts'
   | 'manager'
   | 'task-delegation'
+  | 'workload-3d'
   | 'sample-tracker'
   | 'performance-p3'
   | 'leaderboard'
@@ -1657,6 +1658,7 @@ export interface BrandDetail {
   category: string;
   color: string;
   status: 'ACTIVE' | 'PAUSED' | 'UPCOMING';
+  logoUrl?: string;
   
   // Ngân sách & Mục tiêu
   planBudget: number;

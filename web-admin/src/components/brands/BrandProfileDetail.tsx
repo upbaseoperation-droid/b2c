@@ -45,6 +45,7 @@ import {
 import {
   ActionMenu,
   Avatar,
+  BrandAvatar,
   Button,
   ChannelTag,
   Chips,
@@ -845,7 +846,9 @@ export function BrandProfileDetail({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3.5 min-w-0">
           {/* Tên chuyển cảnh khớp với hàng trong BrandProfilesView */}
-          <span className="shrink-0 inline-flex" style={sharedTo('brand-avatar')}><Avatar name={row.name} size={44} /></span>
+          <span className="shrink-0 inline-flex" style={sharedTo('brand-avatar')}>
+            <BrandAvatar name={row.name} id={row.master?.id} code={row.master?.code} size={48} rounded="lg" />
+          </span>
           <div className="min-w-0 grid gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-ink" style={sharedTo('brand-title')}>{row.name}</h2>

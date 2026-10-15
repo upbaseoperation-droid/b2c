@@ -108,6 +108,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
@@ -169,6 +170,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'manager', label: 'Quản lý Nhân sự Growth', icon: Split },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
@@ -213,6 +215,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'manager', label: 'Quản lý Nhân sự Media', icon: Split },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'sample-tracker', label: 'Hàng mẫu & Ads', icon: Package },
@@ -257,6 +260,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
@@ -309,6 +313,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
@@ -352,6 +357,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Sáng tạo & Kịch bản',
           items: [
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
             { key: 'content-angles', label: 'Góc nội dung', icon: Compass },
             { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
@@ -400,6 +406,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
           ],
@@ -447,6 +454,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
           ],
@@ -487,6 +495,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
           ],
         },
@@ -524,6 +533,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
+            { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
           ],
         },
         {

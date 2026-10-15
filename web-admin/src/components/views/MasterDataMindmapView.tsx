@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, channelOf, Presence } from '../ui';
+import { ChannelTag, channelOf, Presence, BrandAvatar } from '../ui';
 import {
   Building2,
   Store,
@@ -715,8 +715,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               className="bg-canvas border border-line text-ink-2 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
             >
               <option value="ALL">Tất cả sàn</option>
-              <option value="TIKTOK_SHOP">TikTok Shop</option>
-              <option value="SHOPEE_MALL">Shopee Mall</option>
+              <option value="TIKTOK_SHOP">TikTok</option>
+              <option value="SHOPEE_MALL">Shopee</option>
               <option value="LAZADA">Lazada</option>
             </select>
 
@@ -911,9 +911,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                             </div>
 
                             <div className="mt-2 flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-sunken flex items-center justify-center font-semibold text-ink-2 text-xs border border-line shrink-0">
-                                {brand.name.substring(0, 2).toUpperCase()}
-                              </div>
+                              <BrandAvatar brandId={brand.id} brandName={brand.name} size={32} />
                               <div className="min-w-0">
                                 <h4 className="text-xs font-semibold text-ink truncate">{brand.name}</h4>
                                 <div className="text-2xs text-ink-3 truncate">{brand.category}</div>
@@ -1245,8 +1243,9 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <h3 className="text-sm font-semibold text-ink mt-1.5">
                       {selectedNode.data.storeName}
                     </h3>
-                    <div className="text-2xs text-ink-3">
-                      Thuộc Brand: <strong className="text-ink">{selectedNode.data.brandName}</strong>
+                    <div className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3">
+                      <BrandAvatar brandId={selectedNode.data.brandId} brandName={selectedNode.data.brandName} size={18} />
+                      <span>Thuộc Brand: <strong className="text-ink">{selectedNode.data.brandName}</strong></span>
                     </div>
                   </div>
 

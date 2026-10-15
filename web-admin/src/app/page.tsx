@@ -67,6 +67,7 @@ const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
+const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
 const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
@@ -866,6 +867,7 @@ export default function App() {
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
     manager: { title: 'Phân bổ & điều phối', subtitle: '' },
     'task-delegation': { title: 'Giao việc & định mức', subtitle: '' },
+    'workload-3d': { title: 'Bản đồ 3D & Workload', subtitle: '' },
     'sample-tracker': { title: 'Hàng mẫu & Ads', subtitle: '' },
     'performance-p3': { title: 'Đánh giá 4P', subtitle: '' },
     leaderboard: { title: 'Bảng xếp hạng', subtitle: '' },
@@ -1396,6 +1398,34 @@ export default function App() {
               onUpdateTask={handleUpdateTask}
               onPingStaff={handlePingStaffNotification}
               onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="workload-3d" currentTab={activeTab}>
+            <Workload3dMapView
+              currentUser={currentUser}
+              brands={scopedBrands}
+              storePortfolios={scopedStores}
+              tasks={tasks}
+              deals={scopedDeals}
+              onUpdateBrand={handleUpdateBrand}
+              onUpdateStore={handleUpdateStore}
+              onAddTask={handleAddTask}
+              onPingStaff={handlePingStaffNotification}
+              onNotify={showToast}
+              onNavigateToTab={(tabKey) => setActiveTab(tabKey)}
+              onNavigateToBrandProfile={(brandName) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
+              onNavigateToStoreProfile={(storeName) => {
+                if (storeName) {
+                  setSelectedStoreContext(storeName);
+                }
+                setActiveTab('stores');
+              }}
             />
           </KeepAliveTab>
 

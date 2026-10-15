@@ -4,6 +4,7 @@
 // =========================================================================
 
 import { BrandDetail } from './types';
+import { getBrandLogoUrl } from './brandLogos';
 
 const RAW_B2C_42_BRANDS: BrandDetail[] = [
   {
@@ -3037,6 +3038,7 @@ export const REAL_B2C_42_BRANDS: BrandDetail[] = RAW_B2C_42_BRANDS.map((brand, i
 
   return {
     ...brand,
+    logoUrl: getBrandLogoUrl(brand.id) || getBrandLogoUrl(brand.name) || undefined,
     contentBrandMainPic: defaultContentMain,
     planStrategyPic: defaultPlanStrategy,
     keyVisualSisPic: defaultKvSis,

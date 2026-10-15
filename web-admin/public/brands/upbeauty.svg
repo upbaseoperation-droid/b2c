@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ub-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#7c3aed"/>
+      <stop offset="100%" stopColor="#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#ub-grad)"/>
+  <!-- Up arrow + star -->
+  <path d="M100 45 L118 72 L108 72 L108 88 L92 88 L92 72 L82 72 Z" fill="#ffffff"/>
+  <circle cx="126" cy="52" r="4" fill="#fbbf24"/>
+  <text x="100" y="128" font-family="system-ui, sans-serif" font-size="22" font-weight="800" letter-spacing="1" fill="#ffffff" text-anchor="middle">UpBeauty</text>
+  <text x="100" y="150" font-family="system-ui, sans-serif" font-size="9" font-weight="500" letter-spacing="3" fill="#ddd6fe" text-anchor="middle">COSMETICS LAB</text>
+</svg>

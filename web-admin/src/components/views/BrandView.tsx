@@ -60,6 +60,7 @@ import {
   getBrandRatecardCeiling,
   brandProfileToKnowledgeBase,
 } from '../../lib/brands/useBrandProfiles';
+import { BrandAvatar } from '../ui';
 
 interface BrandViewProps {
   campaigns?: CampaignItem[];
@@ -1043,12 +1044,13 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <button
                     key={g.id}
                     onClick={() => setSelectedBrandName(g.brandName)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 shrink-0 ${
                       selectedBrandName === g.brandName
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
                     }`}
                   >
+                    <BrandAvatar name={g.brandName} size={18} rounded="sm" />
                     <span>{g.brandName}</span>
                     <span className={`text-2xs ${
                       selectedBrandName === g.brandName ? 'text-blue-100' : 'text-slate-500'
@@ -1063,19 +1065,22 @@ export const BrandView: React.FC<BrandViewProps> = ({
           {/* Active Brand Profile Header */}
           <div className="card-enterprise p-5 bg-blue-50/50 border-blue-100">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-lg font-semibold text-slate-900">{currentGuideline.brandName}</h2>
-                  <span className="text-xs font-medium text-blue-700">
-                    · {currentGuideline.category}
-                  </span>
+              <div className="flex items-start gap-3.5">
+                <BrandAvatar name={currentGuideline.brandName} size={48} rounded="lg" />
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-semibold text-slate-900">{currentGuideline.brandName}</h2>
+                    <span className="text-xs font-medium text-blue-700">
+                      · {currentGuideline.category}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 max-w-3xl">
+                    <strong>Định vị &amp; giọng văn:</strong> {currentGuideline.toneOfVoice}
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    <strong>Khuyến cáo pháp lý / Nhận diện:</strong> {currentGuideline.logoRules}
+                  </p>
                 </div>
-                <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-                  <strong>Định vị &amp; giọng văn:</strong> {currentGuideline.toneOfVoice}
-                </p>
-                <p className="text-xs text-slate-600 mt-1">
-                  <strong>Khuyến cáo pháp lý / Nhận diện:</strong> {currentGuideline.logoRules}
-                </p>
               </div>
 
               <div className="flex items-center gap-2 self-start md:self-auto shrink-0">

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="cb-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#ec4899"/>
+      <stop offset="100%" stopColor="#be185d"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="40" fill="url(#cb-grad)"/>
+  <circle cx="100" cy="70" r="28" fill="none" stroke="#fdf2f8" stroke-width="2.5" opacity="0.6"/>
+  <path d="M100 50 C95 62 82 70 100 88 C118 70 105 62 100 50 Z" fill="#ffffff"/>
+  <text x="100" y="125" font-family="Georgia, serif" font-size="20" font-weight="bold" letter-spacing="2" fill="#ffffff" text-anchor="middle">CINDY BLOOM</text>
+  <text x="100" y="148" font-family="system-ui, sans-serif" font-size="10" font-weight="400" letter-spacing="3" fill="#fbcfe8" text-anchor="middle">PARFUM DE FRANCE</text>
+</svg>

@@ -45,7 +45,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { formatDate, formatVnd } from '../../lib/format';
-import { Button, ChannelTag, PageActions, Presence } from '../ui';
+import { Button, ChannelTag, PageActions, Presence, ShopeeLogo, TikTokLogo, LazadaLogo } from '../ui';
 
 interface PushProductsViewProps {
   currentUser: UserProfile;
@@ -1036,20 +1036,29 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <button
               type="button"
               onClick={() => setSelectedPlatform('SHOPEE_MALL')}
-              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1 ${
-                selectedPlatform === 'SHOPEE_MALL' ? 'bg-primary text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1.5 ${
+                selectedPlatform === 'SHOPEE_MALL' ? 'bg-orange-600 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <ShoppingBag className="w-3 h-3" /> Shopee
+              <ShopeeLogo className="w-3.5 h-3.5" /> Shopee
             </button>
             <button
               type="button"
               onClick={() => setSelectedPlatform('TIKTOK_SHOP')}
-              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1 ${
-                selectedPlatform === 'TIKTOK_SHOP' ? 'bg-primary text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1.5 ${
+                selectedPlatform === 'TIKTOK_SHOP' ? 'bg-zinc-900 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              TikTok
+              <TikTokLogo className="w-3.5 h-3.5" /> TikTok
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedPlatform('LAZADA')}
+              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1.5 ${
+                selectedPlatform === 'LAZADA' ? 'bg-indigo-700 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LazadaLogo className="w-3.5 h-3.5" /> Lazada
             </button>
           </div>
         </div>

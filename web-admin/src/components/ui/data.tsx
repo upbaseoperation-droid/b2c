@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { PlatformBadge } from './PlatformLogos';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
@@ -92,14 +93,23 @@ export function channelOf(raw?: string): ChannelKey {
   return 'other';
 }
 
-/** Chấm màu + tên kênh. Thay cho chuỗi thô như “TIKTOK_SHOP”. */
-export function ChannelTag({ channel, className }: { channel: string; className?: string }) {
-  const c = CHANNELS[channelOf(channel)];
+/** Hiển thị logo sàn/kênh kết hợp nhãn ngắn gọn, tinh tế. Ưu tiên biểu tượng nhận diện (Shopee, TikTok, Lazada...). */
+export function ChannelTag({
+  channel,
+  className,
+  iconOnly = false,
+}: {
+  channel: string;
+  className?: string;
+  iconOnly?: boolean;
+}) {
   return (
-    <span className={cx('inline-flex items-center gap-1.5 text-2xs text-ink-2 whitespace-nowrap', className)}>
-      <span className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: c.color }} aria-hidden="true" />
-      {c.label}
-    </span>
+    <PlatformBadge
+      platform={channel}
+      variant={iconOnly ? 'icon-only' : 'badge'}
+      showLabel={!iconOnly}
+      className={className}
+    />
   );
 }
 

@@ -36,6 +36,7 @@ import {
   closeShared,
   openShared,
   sharedFrom,
+  BrandAvatar,
 } from '../ui';
 import type { Column } from '../ui';
 import { formatNumber, formatPercent, formatVndShort } from '../../lib/format';
@@ -428,8 +429,13 @@ export function StoreManagementView({
     {
       key: 'brandName',
       header: 'Thương hiệu',
-      width: 110,
-      render: s => <span className="truncate font-medium text-ink-2 text-xs">{s.brandName}</span>,
+      width: 140,
+      render: s => (
+        <div className="flex items-center gap-1.5 min-w-0">
+          <BrandAvatar brandName={s.brandName} brandId={s.brandId} size={20} />
+          <span className="truncate font-medium text-ink-2 text-xs">{s.brandName}</span>
+        </div>
+      ),
     },
     {
       key: 'pic',
