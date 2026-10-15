@@ -6,7 +6,6 @@ import {
   Users,
   Building2,
   Store,
-  Layers,
   Search,
   ZoomIn,
   ZoomOut,
@@ -20,15 +19,12 @@ import {
   Send,
   ExternalLink,
   Sliders,
-  Eye,
   Sparkles,
-  BarChart3,
   X,
-  ChevronRight,
   Flame,
-  ShieldCheck,
   Target,
   Activity,
+  Eye,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -41,7 +37,7 @@ import {
   normalizeStoreCoefficient,
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
-import { Button, ChannelTag, Status } from '../ui';
+import { Button, Status } from '../ui';
 import {
   B2C_28_STAFF_WORKLOAD_ROSTER,
   STAFF_LEVEL_TABLE_4,
@@ -64,15 +60,23 @@ interface Workload3dMapViewProps {
   onNavigateToStoreProfile?: (storeName: string) => void;
 }
 
-type SpatialLayoutMode = 'WORKLOAD_TOWERS' | 'LAYERED_3D' | 'FOCUS_ORBIT';
+type SpatialLayoutMode = 'WORKLOAD_TOWERS' | 'FOCUS_ORBIT' | 'LAYERED_3D';
 type WorkloadLoadStatus = 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD';
-type RoleFilterGroup = 'ALL' | 'LEADER' | 'BOOKING' | 'CONTENT_BRAND' | 'PLAN_STRATEGY' | 'KEY_VISUAL' | 'FOC_SAMPLE';
+type RoleFilterGroup =
+  | 'ALL'
+  | 'LEADER'
+  | 'BOOKING'
+  | 'CONTENT_BRAND'
+  | 'PLAN_STRATEGY'
+  | 'KEY_VISUAL'
+  | 'FOC_SAMPLE';
 type LoadFilterMode = 'ALL' | 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD' | 'HARD_RATIO_LOW';
 
 interface StaffComputedWorkload {
   id: string;
   staffCode: string;
   name: string;
+  shortName: string;
   level: string;
   roleGroup: string;
   roleFilterCategory: RoleFilterGroup;
@@ -108,21 +112,20 @@ interface Node3D {
   id: string;
   kind: 'STAFF' | 'BRAND' | 'STORE';
   label: string;
+  shortLabel: string;
   subLabel: string;
-  // Target 3D coordinates
+  roleTag?: string;
   tx: number;
   ty: number;
   tz: number;
-  // Current interpolated 3D coordinates
-  x: number;
-  y: number;
-  z: number;
   radius: number;
   towerHeight: number;
-  colorPrimary: string;
-  colorSecondary: string;
-  glowColor: string;
-  // Metadata
+  targetCapHeight: number;
+  colorTop: string;
+  colorLeft: string;
+  colorRight: string;
+  strokeColor: string;
+  badgeTextColor: string;
   staffData?: StaffComputedWorkload;
   brandData?: BrandDetail;
   storeData?: StorePortfolioItem;
@@ -158,6 +161,12 @@ function getTargetCapacityByLevel(level: string): number {
   }
 }
 
+function getShortVietnameseName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 2) return fullName;
+  return `${parts[parts.length - 2]} ${parts[parts.length - 1]}`;
+}
+
 function classifyStaffRoleCategory(roleGroup: string): RoleFilterGroup {
   const lower = roleGroup.toLowerCase();
   if (lower.includes('trưởng nhóm') || lower.includes('lead')) return 'LEADER';
@@ -170,7 +179,6 @@ function classifyStaffRoleCategory(roleGroup: string): RoleFilterGroup {
 }
 
 export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
-  currentUser,
   brands,
   storePortfolios,
   tasks,
@@ -188,14 +196,12 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   const [roleFilter, setRoleFilter] = useState<RoleFilterGroup>('ALL');
   const [loadFilter, setLoadFilter] = useState<LoadFilterMode>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showStoresLayer, setShowStoresLayer] = useState<boolean>(true);
-  const [showBrandsLayer, setShowBrandsLayer] = useState<boolean>(true);
-  const [autoRotate, setAutoRotate] = useState<boolean>(true);
+  const [onlyFocusedNetwork, setOnlyFocusedNetwork] = useState<boolean>(true);
+  const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [showParticles, setShowParticles] = useState<boolean>(true);
 
-  // Selected entity in 3D space
+  // Selected entity in 3D space (defaults to top overloaded leader/staff)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>('staff-HN206');
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   // Quick Task creation state inside side panel
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
@@ -213,7 +219,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   // 2. Compute comprehensive Staff Workload from Roster + Live Brand/Store assignments + Tasks
   const staffWorkloads = useMemo<StaffComputedWorkload[]>(() => {
     return B2C_28_STAFF_WORKLOAD_ROSTER.map(roster => {
-      // Find brands assigned to this staff member
       const assignedBrands: StaffComputedWorkload['assignedBrands'] = [];
       brands.forEach(b => {
         const roles: string[] = [];
@@ -236,7 +241,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         }
       });
 
-      // Find stores assigned to this staff member
       const assignedStores: StaffComputedWorkload['assignedStores'] = [];
       b2cStores.forEach(s => {
         const matchOwner =
@@ -255,8 +259,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         if (matchOwner || matchLeader || matchContent || matchLive) {
           const roleLabels: string[] = [];
           if (matchOwner) roleLabels.push('PIC Gian hàng');
-          if (matchLeader) roleLabels.push('Trưởng nhóm duyệt');
-          if (matchContent) roleLabels.push('Content Kênh');
+          if (matchLeader) roleLabels.push('Trưởng nhóm');
+          if (matchContent) roleLabels.push('Content');
           if (matchLive) roleLabels.push('Livestream');
 
           assignedStores.push({
@@ -271,7 +275,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         }
       });
 
-      // If sample stores from roster aren't yet linked in b2cStores state, synthesize virtual store links from keyStoresSample so the 3D graph is 100% connected
       if (assignedStores.length === 0 && roster.keyStoresSample) {
         const sampleTokens = roster.keyStoresSample
           .split(',')
@@ -289,7 +292,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               storeName: matchedStore.storeName,
               brandName: matchedStore.brandName,
               platform: matchedStore.platform,
-              coef: normalizeStoreCoefficient(matchedStore.difficultyTier, matchedStore.difficultyMultiplier).multiplier,
+              coef: normalizeStoreCoefficient(
+                matchedStore.difficultyTier,
+                matchedStore.difficultyMultiplier
+              ).multiplier,
               budgetNet: matchedStore.budgetNet || matchedStore.monthlyBudget || 0,
               roleLabel: 'PIC Phối hợp',
             });
@@ -297,10 +303,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           const matchedBrand = brands.find(br =>
             br.name.toLowerCase().includes(token.toLowerCase())
           );
-          if (
-            matchedBrand &&
-            !assignedBrands.some(ab => ab.brandId === matchedBrand.id)
-          ) {
+          if (matchedBrand && !assignedBrands.some(ab => ab.brandId === matchedBrand.id)) {
             assignedBrands.push({
               brandId: matchedBrand.id,
               brandName: matchedBrand.name,
@@ -310,7 +313,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         });
       }
 
-      // Active tasks assigned to this staff member
       const staffTasks = tasks.filter(
         t => t.pic && t.pic.toLowerCase() === roster.name.toLowerCase() && t.urgency !== 'done'
       );
@@ -327,7 +329,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         0
       );
 
-      // Adjust workload dynamically when stores/brands are reassigned compared to baseline
       const storeDeltaPts =
         (assignedStores.length - Math.min(assignedStores.length, roster.assignedStoresCount)) * 6.5;
       const brandDeltaPts = assignedBrands.length * 3.5;
@@ -360,6 +361,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         id: `staff-${roster.staffCode}`,
         staffCode: roster.staffCode,
         name: roster.name,
+        shortName: getShortVietnameseName(roster.name),
         level: roster.level,
         roleGroup: roster.roleGroup,
         roleFilterCategory: classifyStaffRoleCategory(roster.roleGroup),
@@ -381,26 +383,28 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     });
   }, [brands, b2cStores, tasks]);
 
-  // Filtered staff list
+  // Filtered staff list (sorted by loadPct descending so high-load pillars are easy to compare)
   const filteredStaff = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return staffWorkloads.filter(st => {
-      if (roleFilter !== 'ALL' && st.roleFilterCategory !== roleFilter) return false;
-      if (loadFilter === 'OVERLOAD' && st.loadStatus !== 'OVERLOAD') return false;
-      if (loadFilter === 'OPTIMAL' && st.loadStatus !== 'OPTIMAL') return false;
-      if (loadFilter === 'UNDERLOAD' && st.loadStatus !== 'UNDERLOAD') return false;
-      if (loadFilter === 'HARD_RATIO_LOW' && st.isHardRatioPass) return false;
-      if (q) {
-        const matchStaff =
-          st.name.toLowerCase().includes(q) ||
-          st.staffCode.toLowerCase().includes(q) ||
-          st.roleGroup.toLowerCase().includes(q);
-        const matchBrand = st.assignedBrands.some(b => b.brandName.toLowerCase().includes(q));
-        const matchStore = st.assignedStores.some(s => s.storeName.toLowerCase().includes(q));
-        if (!matchStaff && !matchBrand && !matchStore) return false;
-      }
-      return true;
-    });
+    return staffWorkloads
+      .filter(st => {
+        if (roleFilter !== 'ALL' && st.roleFilterCategory !== roleFilter) return false;
+        if (loadFilter === 'OVERLOAD' && st.loadStatus !== 'OVERLOAD') return false;
+        if (loadFilter === 'OPTIMAL' && st.loadStatus !== 'OPTIMAL') return false;
+        if (loadFilter === 'UNDERLOAD' && st.loadStatus !== 'UNDERLOAD') return false;
+        if (loadFilter === 'HARD_RATIO_LOW' && st.isHardRatioPass) return false;
+        if (q) {
+          const matchStaff =
+            st.name.toLowerCase().includes(q) ||
+            st.staffCode.toLowerCase().includes(q) ||
+            st.roleGroup.toLowerCase().includes(q);
+          const matchBrand = st.assignedBrands.some(b => b.brandName.toLowerCase().includes(q));
+          const matchStore = st.assignedStores.some(s => s.storeName.toLowerCase().includes(q));
+          if (!matchStaff && !matchBrand && !matchStore) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => b.loadPct - a.loadPct);
   }, [staffWorkloads, roleFilter, loadFilter, searchQuery]);
 
   // Summary KPIs
@@ -423,120 +427,171 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     };
   }, [staffWorkloads]);
 
-  // 3. Build 3D Graph (Nodes & Links) with target coordinates per layoutMode
+  // 3. Build Structured, Anti-Clutter 3D Graph
   const { graphNodes, graphLinks } = useMemo(() => {
     const nodes: Node3D[] = [];
     const links: Link3D[] = [];
 
-    const visibleStaffIds = new Set(filteredStaff.map(s => s.id));
+    // Determine which Staff/Brand/Store are actively in focus
+    const focusedStaff = selectedNodeId?.startsWith('staff-')
+      ? filteredStaff.find(s => s.id === selectedNodeId) || filteredStaff[0]
+      : null;
+
+    const focusedBrandId = selectedNodeId?.startsWith('brand-')
+      ? selectedNodeId.replace('brand-', '')
+      : null;
+
+    const focusedStoreId = selectedNodeId?.startsWith('store-')
+      ? selectedNodeId.replace('store-', '')
+      : null;
+
     const activeBrandIds = new Set<string>();
     const activeStoreIds = new Set<string>();
+    const brandRoleMap = new Map<string, string>();
+    const storeRoleMap = new Map<string, string>();
 
-    filteredStaff.forEach(st => {
-      st.assignedBrands.forEach(b => activeBrandIds.add(b.brandId));
-      st.assignedStores.forEach(s => activeStoreIds.add(s.storeId));
-    });
+    if (onlyFocusedNetwork && (focusedStaff || focusedBrandId || focusedStoreId)) {
+      if (focusedStaff) {
+        focusedStaff.assignedBrands.forEach(ab => {
+          activeBrandIds.add(ab.brandId);
+          brandRoleMap.set(ab.brandId, ab.roles.join(' · '));
+        });
+        focusedStaff.assignedStores.forEach(as => {
+          activeStoreIds.add(as.storeId);
+          storeRoleMap.set(as.storeId, as.roleLabel);
+        });
+        // Also add brands of those assigned stores so the 3-tier hierarchy is complete
+        focusedStaff.assignedStores.forEach(as => {
+          const parentBrand = brands.find(
+            b => b.name.toLowerCase() === as.brandName.toLowerCase()
+          );
+          if (parentBrand) activeBrandIds.add(parentBrand.id);
+        });
+      } else if (focusedBrandId) {
+        activeBrandIds.add(focusedBrandId);
+        const fBrand = brands.find(b => b.id === focusedBrandId);
+        b2cStores.forEach(s => {
+          if (
+            s.brandId === focusedBrandId ||
+            (fBrand && s.brandName.toLowerCase() === fBrand.name.toLowerCase())
+          ) {
+            activeStoreIds.add(s.id);
+          }
+        });
+      } else if (focusedStoreId) {
+        activeStoreIds.add(focusedStoreId);
+        const fStore = b2cStores.find(s => s.id === focusedStoreId);
+        if (fStore) {
+          const parentBrand = brands.find(
+            b =>
+              b.id === fStore.brandId ||
+              b.name.toLowerCase() === fStore.brandName.toLowerCase()
+          );
+          if (parentBrand) activeBrandIds.add(parentBrand.id);
+        }
+      }
+    } else {
+      // Show top connected brands & stores
+      filteredStaff.slice(0, 12).forEach(st => {
+        st.assignedBrands.forEach(b => activeBrandIds.add(b.brandId));
+        st.assignedStores.slice(0, 3).forEach(s => activeStoreIds.add(s.storeId));
+      });
+    }
 
-    // Include up to 24 active brands and 36 stores for crisp 3D performance + any searched/selected brand/store
-    const visibleBrands = brands.filter(
-      (b, idx) =>
-        showBrandsLayer &&
-        (activeBrandIds.has(b.id) ||
-          selectedNodeId === `brand-${b.id}` ||
-          (searchQuery.trim() &&
-            b.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) ||
-          idx < 18)
-    );
+    const visibleBrands = brands.filter(b => activeBrandIds.has(b.id));
+    const visibleStores = b2cStores.filter(s => activeStoreIds.has(s.id));
 
-    const visibleStores = b2cStores.filter(
-      (s, idx) =>
-        showStoresLayer &&
-        (activeStoreIds.has(s.id) ||
-          selectedNodeId === `store-${s.id}` ||
-          (searchQuery.trim() &&
-            s.storeName.toLowerCase().includes(searchQuery.trim().toLowerCase())) ||
-          idx < 28)
-    );
+    // A. Position Staff Nodes
+    const staffToRender =
+      layoutMode === 'FOCUS_ORBIT' && focusedStaff
+        ? [focusedStaff]
+        : filteredStaff;
 
-    // Position calculation helper based on layoutMode
-    const staffCount = Math.max(1, filteredStaff.length);
-    filteredStaff.forEach((st, idx) => {
+    const cols = layoutMode === 'LAYERED_3D' ? 7 : 7;
+    const spacingX = 112;
+    const spacingZ = 104;
+
+    staffToRender.forEach((st, idx) => {
       let tx = 0;
       let ty = 0;
       let tz = 0;
 
-      // Tower height proportional to totalPts (range 35 to 175 in 3D space)
-      const towerHeight = Math.max(36, Math.min(185, st.totalPts * 0.88));
+      const towerHeight = Math.max(32, Math.min(165, st.totalPts * 0.82));
+      const targetCapHeight = Math.max(28, Math.min(155, st.targetCapacityPts * 0.82));
 
       if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Two concentric rings on the 3D ground plane (y = 80 is ground)
-        const isInner = idx < 10;
-        const ringCount = isInner ? Math.min(10, staffCount) : Math.max(1, staffCount - 10);
-        const ringIdx = isInner ? idx : idx - 10;
-        const angle = (ringIdx / ringCount) * Math.PI * 2;
-        const radius = isInner ? 210 : 370;
-        tx = Math.cos(angle) * radius;
-        tz = Math.sin(angle) * radius;
-        ty = 95; // Ground floor base
-      } else if (layoutMode === 'LAYERED_3D') {
-        // Top tier (y = -170): Staff arranged in a 3D grid/ellipse
-        const angle = (idx / staffCount) * Math.PI * 2;
-        const radiusX = 340;
-        const radiusZ = 240;
-        tx = Math.cos(angle) * radiusX;
-        tz = Math.sin(angle) * radiusZ;
-        ty = -165;
-      } else {
-        // FOCUS_ORBIT
-        if (selectedNodeId === st.id) {
+        // Structured 3D Isometric Podium Grid (7 columns x 4 rows) -> Zero overlap!
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const totalRows = Math.ceil(staffToRender.length / cols);
+        tx = (col - (cols - 1) / 2) * spacingX;
+        tz = (row - (totalRows - 1) / 2) * spacingZ + 30;
+        ty = 115; // 3D Floor level
+      } else if (layoutMode === 'FOCUS_ORBIT') {
+        if (focusedStaff && st.id === focusedStaff.id) {
           tx = 0;
-          ty = 20;
+          ty = 95;
           tz = 0;
         } else {
-          const angle = (idx / staffCount) * Math.PI * 2;
-          const radius = 380;
-          tx = Math.cos(angle) * radius;
-          tz = Math.sin(angle) * radius;
+          const angle = (idx / Math.max(1, staffToRender.length)) * Math.PI * 2;
+          tx = Math.cos(angle) * 280;
+          tz = Math.sin(angle) * 280;
           ty = 110;
         }
+      } else {
+        // LAYERED_3D: Top Plane (y = -135)
+        const col = idx % cols;
+        const row = Math.floor(idx / cols);
+        const totalRows = Math.ceil(staffToRender.length / cols);
+        tx = (col - (cols - 1) / 2) * 105;
+        tz = (row - (totalRows - 1) / 2) * 88;
+        ty = -125;
       }
 
-      let colorPrimary = '#10b981'; // Optimal emerald
-      let colorSecondary = '#059669';
-      let glowColor = 'rgba(16, 185, 129, 0.45)';
+      // 3-Face Isometric Lighting Colors
+      let colorTop = '#34d399';
+      let colorLeft = '#10b981';
+      let colorRight = '#047857';
+      let strokeColor = '#6ee7b7';
+      let badgeTextColor = '#6ee7b7';
 
       if (st.loadStatus === 'OVERLOAD') {
-        colorPrimary = '#f43f5e'; // Rose/Red overload
-        colorSecondary = '#e11d48';
-        glowColor = 'rgba(244, 63, 94, 0.65)';
+        colorTop = '#fb7185';
+        colorLeft = '#f43f5e';
+        colorRight = '#be123c';
+        strokeColor = '#fda4af';
+        badgeTextColor = '#fda4af';
       } else if (st.loadStatus === 'UNDERLOAD') {
-        colorPrimary = '#6366f1'; // Indigo underload
-        colorSecondary = '#4f46e5';
-        glowColor = 'rgba(99, 102, 241, 0.45)';
+        colorTop = '#818cf8';
+        colorLeft = '#6366f1';
+        colorRight = '#4338ca';
+        strokeColor = '#a5b4fc';
+        badgeTextColor = '#a5b4fc';
       }
 
       nodes.push({
         id: st.id,
         kind: 'STAFF',
-        label: st.name,
-        subLabel: `${st.level} · ${st.totalPts.toFixed(0)} pt (${st.loadPct}%)`,
+        label: `${st.name} (${st.level})`,
+        shortLabel: st.shortName,
+        subLabel: `${st.totalPts.toFixed(0)}pt · ${st.loadPct}%`,
         tx,
         ty,
         tz,
-        x: tx,
-        y: ty,
-        z: tz,
-        radius: st.loadStatus === 'OVERLOAD' ? 16 : 13,
+        radius: 14,
         towerHeight,
-        colorPrimary,
-        colorSecondary,
-        glowColor,
+        targetCapHeight,
+        colorTop,
+        colorLeft,
+        colorRight,
+        strokeColor,
+        badgeTextColor,
         staffData: st,
       });
     });
 
-    // Position Brands
-    const brandCount = Math.max(1, visibleBrands.length);
+    // B. Position Brand Nodes
+    const bCount = Math.max(1, visibleBrands.length);
     visibleBrands.forEach((b, idx) => {
       const nodeId = `brand-${b.id}`;
       let tx = 0;
@@ -544,56 +599,55 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       let tz = 0;
 
       if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Floating sky ring above the workload towers
-        const angle = (idx / brandCount) * Math.PI * 2 + 0.25;
-        const radius = 280;
-        tx = Math.cos(angle) * radius;
-        tz = Math.sin(angle) * radius;
-        ty = -115 - (idx % 3) * 28;
-      } else if (layoutMode === 'LAYERED_3D') {
-        // Middle tier (y = 0)
-        const angle = (idx / brandCount) * Math.PI * 2;
-        const radius = 290;
-        tx = Math.cos(angle) * radius;
-        tz = Math.sin(angle) * radius;
-        ty = 5;
-      } else {
-        // FOCUS_ORBIT
-        if (selectedNodeId === nodeId) {
+        // Clean elevated arc above the floor
+        const spread = Math.min(560, bCount * 125);
+        tx = bCount === 1 ? 0 : -spread / 2 + (idx / (bCount - 1)) * spread;
+        tz = -110 - Math.sin((idx / Math.max(1, bCount - 1)) * Math.PI) * 55;
+        ty = -95;
+      } else if (layoutMode === 'FOCUS_ORBIT') {
+        if (focusedBrandId === b.id) {
           tx = 0;
-          ty = 0;
+          ty = 20;
           tz = 0;
         } else {
-          const angle = (idx / brandCount) * Math.PI * 2;
-          const radius = 230;
-          tx = Math.cos(angle) * radius;
-          tz = Math.sin(angle) * radius;
-          ty = -70;
+          const angle = (idx / bCount) * Math.PI * 2 - Math.PI / 2;
+          const r = 195;
+          tx = Math.cos(angle) * r;
+          tz = Math.sin(angle) * r;
+          ty = -10;
         }
+      } else {
+        // LAYERED_3D: Middle Plane (y = 15)
+        const spread = Math.min(620, bCount * 115);
+        tx = bCount === 1 ? 0 : -spread / 2 + (idx / (bCount - 1)) * spread;
+        tz = (idx % 2 === 0 ? -1 : 1) * 45;
+        ty = 15;
       }
 
       nodes.push({
         id: nodeId,
         kind: 'BRAND',
         label: b.name,
+        shortLabel: b.name,
         subLabel: formatVndShort(b.planBudget || b.monthlyBudget || 150000000),
+        roleTag: brandRoleMap.get(b.id),
         tx,
         ty,
         tz,
-        x: tx,
-        y: ty,
-        z: tz,
-        radius: 12,
+        radius: 13,
         towerHeight: 0,
-        colorPrimary: '#f59e0b', // Amber/Gold for Brand
-        colorSecondary: '#d97706',
-        glowColor: 'rgba(245, 158, 11, 0.45)',
+        targetCapHeight: 0,
+        colorTop: '#fcd34d',
+        colorLeft: '#f59e0b',
+        colorRight: '#b45309',
+        strokeColor: '#fde68a',
+        badgeTextColor: '#fde68a',
         brandData: b,
       });
     });
 
-    // Position Stores
-    const storeCount = Math.max(1, visibleStores.length);
+    // C. Position Store Nodes
+    const sCount = Math.max(1, visibleStores.length);
     visibleStores.forEach((s, idx) => {
       const nodeId = `store-${s.id}`;
       let tx = 0;
@@ -601,32 +655,29 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       let tz = 0;
 
       if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Outer high satellite ring
-        const angle = (idx / storeCount) * Math.PI * 2;
-        const radius = 445;
-        tx = Math.cos(angle) * radius;
-        tz = Math.sin(angle) * radius;
-        ty = -45 + (idx % 2 === 0 ? -25 : 25);
-      } else if (layoutMode === 'LAYERED_3D') {
-        // Bottom tier (y = 175)
-        const angle = (idx / storeCount) * Math.PI * 2;
-        const radius = 390;
-        tx = Math.cos(angle) * radius;
-        tz = Math.sin(angle) * radius;
-        ty = 175;
-      } else {
-        // FOCUS_ORBIT
-        if (selectedNodeId === nodeId) {
+        // Upper satellite arc
+        const spread = Math.min(660, sCount * 115);
+        tx = sCount === 1 ? 0 : -spread / 2 + (idx / (sCount - 1)) * spread;
+        tz = -175 - Math.sin((idx / Math.max(1, sCount - 1)) * Math.PI) * 65;
+        ty = -175;
+      } else if (layoutMode === 'FOCUS_ORBIT') {
+        if (focusedStoreId === s.id) {
           tx = 0;
-          ty = 0;
+          ty = 20;
           tz = 0;
         } else {
-          const angle = (idx / storeCount) * Math.PI * 2;
-          const radius = 330;
-          tx = Math.cos(angle) * radius;
-          tz = Math.sin(angle) * radius;
-          ty = -140;
+          const angle = (idx / sCount) * Math.PI * 2 - Math.PI / 4;
+          const r = 340;
+          tx = Math.cos(angle) * r;
+          tz = Math.sin(angle) * r;
+          ty = -75;
         }
+      } else {
+        // LAYERED_3D: Bottom Plane (y = 145)
+        const spread = Math.min(680, sCount * 105);
+        tx = sCount === 1 ? 0 : -spread / 2 + (idx / (sCount - 1)) * spread;
+        tz = (idx % 2 === 0 ? -1 : 1) * 65;
+        ty = 145;
       }
 
       const isTikTok = s.platform === 'TikTok Shop';
@@ -636,27 +687,29 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         id: nodeId,
         kind: 'STORE',
         label: s.storeName,
-        subLabel: `${isTikTok ? 'TTS' : 'Shopee'} · HS ×${coef.toFixed(2)}`,
+        shortLabel: s.storeName,
+        subLabel: `${isTikTok ? 'TikTok' : 'Shopee'} · ×${coef.toFixed(2)}`,
+        roleTag: storeRoleMap.get(s.id),
         tx,
         ty,
         tz,
-        x: tx,
-        y: ty,
-        z: tz,
-        radius: coef >= 1.25 ? 9.5 : 7.5,
+        radius: 10.5,
         towerHeight: 0,
-        colorPrimary: isTikTok ? '#06b6d4' : '#f97316',
-        colorSecondary: isTikTok ? '#0891b2' : '#ea580c',
-        glowColor: isTikTok ? 'rgba(6, 182, 212, 0.4)' : 'rgba(249, 115, 22, 0.4)',
+        targetCapHeight: 0,
+        colorTop: isTikTok ? '#67e8f9' : '#fdba74',
+        colorLeft: isTikTok ? '#06b6d4' : '#f97316',
+        colorRight: isTikTok ? '#0e7490' : '#c2410c',
+        strokeColor: isTikTok ? '#a5f3fc' : '#fed7aa',
+        badgeTextColor: isTikTok ? '#67e8f9' : '#fdba74',
         storeData: s,
       });
     });
 
     const nodeIdSet = new Set(nodes.map(n => n.id));
 
-    // Create Links: Staff -> Brand & Staff -> Store
-    filteredStaff.forEach(st => {
-      if (! visibleStaffIds.has(st.id)) return;
+    // Create Links
+    staffToRender.forEach(st => {
+      if (!nodeIdSet.has(st.id)) return;
       st.assignedBrands.forEach(ab => {
         const targetId = `brand-${ab.brandId}`;
         if (nodeIdSet.has(targetId)) {
@@ -664,11 +717,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             id: `link-${st.id}-${targetId}`,
             sourceId: st.id,
             targetId,
-            roleLabel: ab.roles.join(', '),
+            roleLabel: ab.roles[0] || 'Brand PIC',
             linkType: 'STAFF_TO_BRAND',
-            color: st.loadStatus === 'OVERLOAD' ? '#fb7185' : '#fbbf24',
-            weight: st.loadStatus === 'OVERLOAD' ? 2.2 : 1.5,
-            particleSpeed: st.loadStatus === 'OVERLOAD' ? 0.0085 : 0.005,
+            color: '#fbbf24',
+            weight: 2.0,
+            particleSpeed: 0.0055,
           });
         }
       });
@@ -682,21 +735,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             targetId,
             roleLabel: as.roleLabel,
             linkType: 'STAFF_TO_STORE',
-            color: st.loadStatus === 'OVERLOAD' ? '#f43f5e' : '#38bdf8',
-            weight: as.coef >= 1.25 ? 1.8 : 1.2,
-            particleSpeed: as.coef >= 1.25 ? 0.0075 : 0.0045,
+            color: '#38bdf8',
+            weight: 1.8,
+            particleSpeed: 0.005,
           });
         }
       });
     });
 
-    // Create Links: Brand -> Store
     visibleStores.forEach(s => {
       const storeNodeId = `store-${s.id}`;
       const matchedBrand = visibleBrands.find(
-        b =>
-          b.id === s.brandId ||
-          b.name.toLowerCase() === (s.brandName || '').toLowerCase()
+        b => b.id === s.brandId || b.name.toLowerCase() === (s.brandName || '').toLowerCase()
       );
       if (matchedBrand) {
         const brandNodeId = `brand-${matchedBrand.id}`;
@@ -707,42 +757,65 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             targetId: storeNodeId,
             roleLabel: s.platform,
             linkType: 'BRAND_TO_STORE',
-            color: 'rgba(148, 163, 184, 0.35)',
-            weight: 1.0,
-            particleSpeed: 0.0035,
+            color: 'rgba(251, 191, 36, 0.5)',
+            weight: 1.4,
+            particleSpeed: 0.004,
           });
         }
       }
     });
 
     return { graphNodes: nodes, graphLinks: links };
-  }, [filteredStaff, brands, b2cStores, showBrandsLayer, showStoresLayer, layoutMode, selectedNodeId, searchQuery]);
+  }, [filteredStaff, brands, b2cStores, onlyFocusedNetwork, layoutMode, selectedNodeId]);
 
-  // Connected neighbor set for the currently selected or hovered node
-  const activeHighlightId = hoveredNodeId || selectedNodeId;
+  // Connected neighbor set for the currently selected node
   const connectedNodeIds = useMemo(() => {
     const set = new Set<string>();
-    if (!activeHighlightId) return set;
-    set.add(activeHighlightId);
+    if (!selectedNodeId) return set;
+    set.add(selectedNodeId);
     graphLinks.forEach(l => {
-      if (l.sourceId === activeHighlightId) set.add(l.targetId);
-      if (l.targetId === activeHighlightId) set.add(l.sourceId);
+      if (l.sourceId === selectedNodeId) set.add(l.targetId);
+      if (l.targetId === selectedNodeId) set.add(l.sourceId);
     });
-    // Also if a Staff is selected, include stores belonging to their assigned brands
-    if (activeHighlightId.startsWith('staff-')) {
+    if (selectedNodeId.startsWith('staff-')) {
       const brandNodes = Array.from(set).filter(id => id.startsWith('brand-'));
       graphLinks.forEach(l => {
         if (brandNodes.includes(l.sourceId)) set.add(l.targetId);
       });
     }
     return set;
-  }, [activeHighlightId, graphLinks]);
+  }, [selectedNodeId, graphLinks]);
 
-  // Selected entity objects for the Inspector Panel
-  const selectedNode = useMemo(
-    () => graphNodes.find(n => n.id === selectedNodeId) || null,
-    [graphNodes, selectedNodeId]
-  );
+  // Selected entity for the Right Inspector Panel
+  const selectedNode = useMemo(() => {
+    const inGraph = graphNodes.find(n => n.id === selectedNodeId);
+    if (inGraph) return inGraph;
+    if (selectedNodeId?.startsWith('staff-')) {
+      const st = staffWorkloads.find(s => s.id === selectedNodeId);
+      if (st) {
+        return {
+          id: st.id,
+          kind: 'STAFF' as const,
+          label: st.name,
+          shortLabel: st.shortName,
+          subLabel: '',
+          tx: 0,
+          ty: 0,
+          tz: 0,
+          radius: 14,
+          towerHeight: 80,
+          targetCapHeight: 80,
+          colorTop: '#10b981',
+          colorLeft: '#059669',
+          colorRight: '#047857',
+          strokeColor: '#6ee7b7',
+          badgeTextColor: '#6ee7b7',
+          staffData: st,
+        };
+      }
+    }
+    return null;
+  }, [graphNodes, selectedNodeId, staffWorkloads]);
 
   // Underloaded staff suggestions for rebalancing workload
   const underloadedStaffCandidates = useMemo(() => {
@@ -753,64 +826,93 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   }, [staffWorkloads]);
 
   // ============================================================================
-  // 4. INTERACTIVE 3D CANVAS ENGINE (Perspective Projection + Camera Fly-To)
+  // 4. HIGH-PERFORMANCE ZERO-REFLOW 3D CANVAS ENGINE (60FPS LOCKED)
   // ============================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const liveNodesRef = useRef<Map<string, { x: number; y: number; z: number; th: number }>>(new Map());
+  const canvasSizeRef = useRef({ width: 900, height: 540, dpr: 1 });
+  const hoveredNodeIdRef = useRef<string | null>(null);
+  const liveNodesRef = useRef<
+    Map<string, { x: number; y: number; z: number; th: number; capH: number }>
+  >(new Map());
+
   const cameraRef = useRef({
-    yaw: 0.45,
-    pitch: 0.36,
-    zoom: 0.92,
-    targetYaw: 0.45,
-    targetPitch: 0.36,
-    targetZoom: 0.92,
-    // Camera 3D look-at focus point
+    yaw: -0.38,
+    pitch: 0.44,
+    zoom: 0.96,
+    targetYaw: -0.38,
+    targetPitch: 0.44,
+    targetZoom: 0.96,
     fx: 0,
-    fy: 0,
+    fy: 10,
     fz: 0,
     targetFx: 0,
-    targetFy: 0,
+    targetFy: 10,
     targetFz: 0,
   });
-  const dragRef = useRef<{
-    isDragging: boolean;
-    startX: number;
-    startY: number;
-    moved: boolean;
-  }>({
+
+  const dragRef = useRef({
     isDragging: false,
     startX: 0,
     startY: 0,
     moved: false,
   });
+
   const projectedScreenNodesRef = useRef<
     { id: string; sx: number; sy: number; sr: number; topY: number; depth: number }[]
   >([]);
+
+  // Sync latest React state into a mutable ref so the rAF loop NEVER restarts on hover/click
+  const sceneStateRef = useRef({
+    graphNodes,
+    graphLinks,
+    selectedNodeId,
+    connectedNodeIds,
+    autoRotate,
+    showParticles,
+    layoutMode,
+  });
+
+  useEffect(() => {
+    sceneStateRef.current = {
+      graphNodes,
+      graphLinks,
+      selectedNodeId,
+      connectedNodeIds,
+      autoRotate,
+      showParticles,
+      layoutMode,
+    };
+  }, [
+    graphNodes,
+    graphLinks,
+    selectedNodeId,
+    connectedNodeIds,
+    autoRotate,
+    showParticles,
+    layoutMode,
+  ]);
 
   // Fly-To helper when selecting a node
   const flyToNode = useCallback(
     (nodeId: string | null, resetView = false) => {
       if (resetView || !nodeId) {
         cameraRef.current.targetFx = 0;
-        cameraRef.current.targetFy = 0;
+        cameraRef.current.targetFy = 10;
         cameraRef.current.targetFz = 0;
-        cameraRef.current.targetZoom = 0.92;
-        cameraRef.current.targetPitch = 0.36;
+        cameraRef.current.targetYaw = -0.38;
+        cameraRef.current.targetPitch = 0.44;
+        cameraRef.current.targetZoom = 0.96;
         return;
       }
-      const target = graphNodes.find(n => n.id === nodeId);
+      const target = sceneStateRef.current.graphNodes.find(n => n.id === nodeId);
       if (target) {
-        const live = liveNodesRef.current.get(nodeId);
-        const nx = live ? live.x : target.tx;
-        const ny = live ? live.y - (target.kind === 'STAFF' ? target.towerHeight * 0.5 : 0) : target.ty;
-        const nz = live ? live.z : target.tz;
-        cameraRef.current.targetFx = nx * 0.65;
-        cameraRef.current.targetFy = ny * 0.65;
-        cameraRef.current.targetFz = nz * 0.65;
-        cameraRef.current.targetZoom = Math.max(cameraRef.current.targetZoom, 1.15);
+        cameraRef.current.targetFx = target.tx * 0.45;
+        cameraRef.current.targetFy = (target.ty - target.towerHeight * 0.4) * 0.35;
+        cameraRef.current.targetFz = target.tz * 0.45;
+        cameraRef.current.targetZoom = Math.max(cameraRef.current.targetZoom, 1.04);
       }
     },
-    [graphNodes]
+    []
   );
 
   const handleSelectAndFly = useCallback(
@@ -821,69 +923,138 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     [flyToNode]
   );
 
-  // Main 60fps 3D Render Loop
+  // ResizeObserver once on mount -> Zero layout thrashing during animation!
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+
+    const updateSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(300, Math.floor(rect.width));
+      const h = Math.max(300, Math.floor(rect.height));
+      canvasSizeRef.current = { width: w, height: h, dpr };
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    };
+
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
+
+  // Single Persistent 60fps 3D Render Loop (Never tears down on state change)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
     let animationFrameId: number;
     let time = 0;
 
+    // Helper: draw a true 3-face 3D Isometric Prism (Left face, Right face, Top Rhombus face)
+    const drawIsometricPrism = (
+      baseX: number,
+      baseY: number,
+      topX: number,
+      topY: number,
+      halfW: number,
+      depthH: number,
+      colorTop: string,
+      colorLeft: string,
+      colorRight: string,
+      strokeColor: string,
+      isHighlighted: boolean
+    ) => {
+      // Left 3D face
+      ctx.beginPath();
+      ctx.moveTo(topX - halfW, topY);
+      ctx.lineTo(topX, topY + depthH);
+      ctx.lineTo(baseX, baseY + depthH);
+      ctx.lineTo(baseX - halfW, baseY);
+      ctx.closePath();
+      ctx.fillStyle = colorLeft;
+      ctx.fill();
+
+      // Right 3D face (shaded darker for 3D depth)
+      ctx.beginPath();
+      ctx.moveTo(topX, topY + depthH);
+      ctx.lineTo(topX + halfW, topY);
+      ctx.lineTo(baseX + halfW, baseY);
+      ctx.lineTo(baseX, baseY + depthH);
+      ctx.closePath();
+      ctx.fillStyle = colorRight;
+      ctx.fill();
+
+      // Top 3D Rhombus Cap (brightest face)
+      ctx.beginPath();
+      ctx.moveTo(topX, topY - depthH);
+      ctx.lineTo(topX + halfW, topY);
+      ctx.lineTo(topX, topY + depthH);
+      ctx.lineTo(topX - halfW, topY);
+      ctx.closePath();
+      ctx.fillStyle = colorTop;
+      ctx.fill();
+
+      // Crisp 3D wireframe edges
+      ctx.strokeStyle = isHighlighted ? '#ffffff' : strokeColor;
+      ctx.lineWidth = isHighlighted ? 1.8 : 0.9;
+      ctx.stroke();
+    };
+
     const render = () => {
       time += 1;
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
-        canvas.width = Math.floor(rect.width * dpr);
-        canvas.height = Math.floor(rect.height * dpr);
-      }
+      const { width, height, dpr } = canvasSizeRef.current;
+      const {
+        graphNodes: nodes,
+        graphLinks: links,
+        selectedNodeId: selId,
+        connectedNodeIds: connSet,
+        autoRotate: isAutoRot,
+        showParticles: isParticles,
+        layoutMode: mode,
+      } = sceneStateRef.current;
+      const hovId = hoveredNodeIdRef.current;
+      const activeId = hovId || selId;
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      const width = rect.width;
-      const height = rect.height;
-      const cx = width / 2;
-      const cy = height / 2 + 15;
 
-      // 1. Deep space 3D background gradient
-      const bgGrad = ctx.createRadialGradient(cx, cy - 40, 40, cx, cy, Math.max(width, height) * 0.75);
-      bgGrad.addColorStop(0, '#0f172a');
-      bgGrad.addColorStop(0.55, '#090f1f');
-      bgGrad.addColorStop(1, '#040814');
-      ctx.fillStyle = bgGrad;
+      // 1. Fast solid dark slate background (Zero per-frame radial gradient allocation)
+      ctx.fillStyle = '#070d19';
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Smoothly interpolate camera state
+      const cx = width * 0.5;
+      const cy = height * 0.54;
+
+      // 2. Smoothly interpolate 3D camera
       const cam = cameraRef.current;
-      if (autoRotate && !dragRef.current.isDragging) {
-        cam.targetYaw += 0.0022;
+      if (isAutoRot && !dragRef.current.isDragging && !hovId) {
+        cam.targetYaw += 0.0018;
       }
-      cam.yaw += (cam.targetYaw - cam.yaw) * 0.09;
-      cam.pitch += (cam.targetPitch - cam.pitch) * 0.09;
-      cam.zoom += (cam.targetZoom - cam.zoom) * 0.09;
-      cam.fx += (cam.targetFx - cam.fx) * 0.08;
-      cam.fy += (cam.targetFy - cam.fy) * 0.08;
-      cam.fz += (cam.targetFz - cam.fz) * 0.08;
+      cam.yaw += (cam.targetYaw - cam.yaw) * 0.12;
+      cam.pitch += (cam.targetPitch - cam.pitch) * 0.12;
+      cam.zoom += (cam.targetZoom - cam.zoom) * 0.12;
+      cam.fx += (cam.targetFx - cam.fx) * 0.1;
+      cam.fy += (cam.targetFy - cam.fy) * 0.1;
+      cam.fz += (cam.targetFz - cam.fz) * 0.1;
 
       const cosY = Math.cos(cam.yaw);
       const sinY = Math.sin(cam.yaw);
       const cosP = Math.cos(cam.pitch);
       const sinP = Math.sin(cam.pitch);
-      const fov = 780 * cam.zoom;
-      const cameraDist = 920;
+      const fov = 840 * cam.zoom;
+      const cameraDist = 960;
 
-      // 3D Point projection function
       const project3D = (wx: number, wy: number, wz: number) => {
         const rx = wx - cam.fx;
         const ry = wy - cam.fy;
         const rz = wz - cam.fz;
 
-        // Rotate around Y axis (Yaw)
         const x1 = rx * cosY - rz * sinY;
         const z1 = rz * cosY + rx * sinY;
-        // Rotate around X axis (Pitch)
         const y2 = ry * cosP - z1 * sinP;
         const z2 = z1 * cosP + ry * sinP;
 
@@ -897,56 +1068,49 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         };
       };
 
-      // 3. Draw 3D Perspective Floor Grid & Concentric Radar Rings
-      const floorY = layoutMode === 'LAYERED_3D' ? 185 : 95;
+      // 3. Draw Clean 3D Perspective Floor Platform
+      const floorY = mode === 'LAYERED_3D' ? 155 : 115;
       ctx.lineWidth = 1;
-      [160, 260, 370, 480].forEach((ringR, rIdx) => {
-        ctx.beginPath();
-        const segments = 64;
-        for (let i = 0; i <= segments; i++) {
-          const ang = (i / segments) * Math.PI * 2;
-          const px = Math.cos(ang) * ringR;
-          const pz = Math.sin(ang) * ringR;
-          const p = project3D(px, floorY, pz);
-          if (i === 0) ctx.moveTo(p.sx, p.sy);
-          else ctx.lineTo(p.sx, p.sy);
-        }
-        ctx.strokeStyle =
-          rIdx === 1 || rIdx === 2
-            ? 'rgba(56, 189, 248, 0.16)'
-            : 'rgba(148, 163, 184, 0.08)';
-        ctx.stroke();
-      });
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.42)';
 
-      // Radial floor spokes in 3D
-      for (let i = 0; i < 12; i++) {
-        const ang = (i / 12) * Math.PI * 2;
-        const p1 = project3D(Math.cos(ang) * 70, floorY, Math.sin(ang) * 70);
-        const p2 = project3D(Math.cos(ang) * 480, floorY, Math.sin(ang) * 480);
-        ctx.beginPath();
-        ctx.moveTo(p1.sx, p1.sy);
-        ctx.lineTo(p2.sx, p2.sy);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
-        ctx.stroke();
-      }
-
-      // If LAYERED_3D mode, draw subtle middle & upper layer rings
-      if (layoutMode === 'LAYERED_3D') {
-        [-165, 5].forEach((layerY, idx) => {
+      if (mode === 'WORKLOAD_TOWERS' || mode === 'LAYERED_3D') {
+        // Draw crisp 3D isometric floor grid lines
+        const gridW = 420;
+        const gridZ = 240;
+        for (let gx = -gridW; gx <= gridW; gx += 105) {
+          const p1 = project3D(gx, floorY, -gridZ);
+          const p2 = project3D(gx, floorY, gridZ);
           ctx.beginPath();
-          const r = idx === 0 ? 340 : 290;
-          for (let i = 0; i <= 56; i++) {
-            const ang = (i / 56) * Math.PI * 2;
-            const p = project3D(Math.cos(ang) * r, layerY, Math.sin(ang) * (idx === 0 ? 240 : 290));
+          ctx.moveTo(p1.sx, p1.sy);
+          ctx.lineTo(p2.sx, p2.sy);
+          ctx.stroke();
+        }
+        for (let gz = -gridZ; gz <= gridZ; gz += 80) {
+          const p1 = project3D(-gridW, floorY, gz);
+          const p2 = project3D(gridW, floorY, gz);
+          ctx.beginPath();
+          ctx.moveTo(p1.sx, p1.sy);
+          ctx.lineTo(p2.sx, p2.sy);
+          ctx.stroke();
+        }
+      } else {
+        // FOCUS_ORBIT concentric rings
+        [195, 340].forEach((r, idx) => {
+          ctx.beginPath();
+          const ry = idx === 0 ? -10 : -75;
+          for (let i = 0; i <= 48; i++) {
+            const ang = (i / 48) * Math.PI * 2;
+            const p = project3D(Math.cos(ang) * r, ry, Math.sin(ang) * r);
             if (i === 0) ctx.moveTo(p.sx, p.sy);
             else ctx.lineTo(p.sx, p.sy);
           }
-          ctx.strokeStyle = idx === 0 ? 'rgba(16, 185, 129, 0.18)' : 'rgba(245, 158, 11, 0.18)';
+          ctx.strokeStyle =
+            idx === 0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.22)';
           ctx.stroke();
         });
       }
 
-      // 4. Interpolate node 3D positions & project
+      // 4. Interpolate & Project Nodes
       const projectedMap = new Map<
         string,
         {
@@ -955,33 +1119,40 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           sy: number;
           topSx: number;
           topSy: number;
+          capSx: number;
+          capSy: number;
           scale: number;
           depth: number;
         }
       >();
 
-      graphNodes.forEach(n => {
+      nodes.forEach(n => {
         let live = liveNodesRef.current.get(n.id);
         if (!live) {
-          live = { x: n.tx, y: n.ty, z: n.tz, th: n.towerHeight };
+          live = {
+            x: n.tx,
+            y: n.ty,
+            z: n.tz,
+            th: n.towerHeight,
+            capH: n.targetCapHeight,
+          };
           liveNodesRef.current.set(n.id, live);
         } else {
-          live.x += (n.tx - live.x) * 0.085;
-          live.y += (n.ty - live.y) * 0.085;
-          live.z += (n.tz - live.z) * 0.085;
-          live.th += (n.towerHeight - live.th) * 0.085;
+          live.x += (n.tx - live.x) * 0.14;
+          live.y += (n.ty - live.y) * 0.14;
+          live.z += (n.tz - live.z) * 0.14;
+          live.th += (n.towerHeight - live.th) * 0.14;
+          live.capH += (n.targetCapHeight - live.capH) * 0.14;
         }
 
-        // Gentle floating bobbing for Brand & Store nodes
-        const floatOffset =
-          n.kind === 'STAFF'
-            ? 0
-            : Math.sin(time * 0.03 + (n.tx + n.tz) * 0.01) * 4.5;
-
-        const baseProj = project3D(live.x, live.y + floatOffset, live.z);
+        const baseProj = project3D(live.x, live.y, live.z);
         const topProj =
           n.kind === 'STAFF'
             ? project3D(live.x, live.y - live.th, live.z)
+            : baseProj;
+        const capProj =
+          n.kind === 'STAFF'
+            ? project3D(live.x, live.y - live.capH, live.z)
             : baseProj;
 
         projectedMap.set(n.id, {
@@ -990,76 +1161,59 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           sy: baseProj.sy,
           topSx: topProj.sx,
           topSy: topProj.sy,
+          capSx: capProj.sx,
+          capSy: capProj.sy,
           scale: topProj.scale,
           depth: topProj.depth,
         });
       });
 
-      // 5. Draw 3D Bezier Links & Animated Flowing Particles
-      graphLinks.forEach(link => {
+      // 5. Draw 3D Arched Links & Particles
+      links.forEach(link => {
         const src = projectedMap.get(link.sourceId);
         const tgt = projectedMap.get(link.targetId);
         if (!src || !tgt) return;
 
         const isHighlighted =
-          activeHighlightId &&
-          (link.sourceId === activeHighlightId || link.targetId === activeHighlightId);
-        const isDimmed =
-          activeHighlightId &&
-          !connectedNodeIds.has(link.sourceId) &&
-          !connectedNodeIds.has(link.targetId);
-
-        if (isDimmed && link.linkType === 'BRAND_TO_STORE') return;
+          activeId &&
+          (link.sourceId === activeId ||
+            link.targetId === activeId ||
+            (connSet.has(link.sourceId) && connSet.has(link.targetId)));
 
         const x1 = src.topSx;
         const y1 = src.topSy;
         const x2 = tgt.topSx;
         const y2 = tgt.topSy;
-
-        // Control point arched upward in 3D screen space
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2 - (isHighlighted ? 42 : 24) * ((src.scale + tgt.scale) * 0.5);
+        const midX = (x1 + x2) * 0.5;
+        const midY = (y1 + y2) * 0.5 - 28 * ((src.scale + tgt.scale) * 0.5);
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.quadraticCurveTo(midX, midY, x2, y2);
-
-        if (isHighlighted) {
-          ctx.strokeStyle = link.color;
-          ctx.lineWidth = Math.max(1.6, link.weight * 1.4);
-          ctx.globalAlpha = 0.92;
-        } else if (isDimmed) {
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
-          ctx.lineWidth = 0.8;
-          ctx.globalAlpha = 0.25;
-        } else {
-          ctx.strokeStyle = link.color;
-          ctx.lineWidth = link.weight;
-          ctx.globalAlpha = link.linkType === 'BRAND_TO_STORE' ? 0.28 : 0.48;
-        }
+        ctx.strokeStyle = link.color;
+        ctx.lineWidth = isHighlighted ? link.weight * 1.25 : link.weight * 0.75;
+        ctx.globalAlpha = isHighlighted ? 0.88 : 0.25;
         ctx.stroke();
 
-        // Flowing particles along quadratic bezier curve
-        if (showParticles && (!isDimmed || isHighlighted)) {
-          const particleCount = isHighlighted ? 3 : 1;
-          for (let pIdx = 0; pIdx < particleCount; pIdx++) {
-            const t = ((time * link.particleSpeed * 60 + pIdx * (1 / particleCount)) % 1 + 1) % 1;
+        if (isParticles && isHighlighted) {
+          for (let pIdx = 0; pIdx < 2; pIdx++) {
+            const t = ((time * link.particleSpeed + pIdx * 0.5) % 1 + 1) % 1;
             const invT = 1 - t;
             const px = invT * invT * x1 + 2 * invT * t * midX + t * t * x2;
             const py = invT * invT * y1 + 2 * invT * t * midY + t * t * y2;
 
             ctx.beginPath();
-            ctx.arc(px, py, isHighlighted ? 3.2 : 2.1, 0, Math.PI * 2);
-            ctx.fillStyle = isHighlighted ? '#ffffff' : link.color;
-            ctx.globalAlpha = isHighlighted ? 0.98 : 0.75;
+            ctx.arc(px, py, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 0.95;
             ctx.fill();
           }
         }
         ctx.globalAlpha = 1;
       });
 
-      // 6. Sort Nodes back-to-front (Painter's Algorithm by 3D depth)
-      const sortedProjected = Array.from(projectedMap.values()).sort(
+      // 6. Sort Nodes Back-to-Front for 3D Geometry Painting
+      const sortedBackToFront = Array.from(projectedMap.values()).sort(
         (a, b) => b.depth - a.depth
       );
 
@@ -1072,216 +1226,187 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         depth: number;
       }[] = [];
 
-      sortedProjected.forEach(item => {
-        const { node, sx, sy, topSx, topSy, scale, depth } = item;
-        const isSelected = selectedNodeId === node.id;
-        const isHovered = hoveredNodeId === node.id;
-        const isConnected = connectedNodeIds.has(node.id);
-        const isDimmed = Boolean(activeHighlightId && !isConnected);
+      sortedBackToFront.forEach(item => {
+        const { node, sx, sy, topSx, topSy, capSx, capSy, scale, depth } = item;
+        const isSelected = selId === node.id;
+        const isHovered = hovId === node.id;
+        const isConnected = connSet.has(node.id);
+        const isDimmed = Boolean(activeId && !isConnected && node.kind !== 'STAFF');
 
-        ctx.globalAlpha = isDimmed ? 0.22 : 1.0;
+        ctx.globalAlpha = isDimmed ? 0.25 : 1.0;
 
         if (node.kind === 'STAFF' && node.staffData) {
-          const st = node.staffData;
-          const pillarWidth = Math.max(8, 17 * scale);
-          const halfW = pillarWidth / 2;
+          const halfW = Math.max(9, 16 * scale);
+          const depthH = halfW * 0.48;
 
-          // 6a. Overload pulsing shockwave ring on the 3D floor
-          if (st.loadStatus === 'OVERLOAD' && !isDimmed) {
-            const pulse = ((time * 0.025) % 1);
-            const pulseR = (18 + pulse * 30) * scale;
-            ctx.beginPath();
-            ctx.ellipse(sx, sy, pulseR, pulseR * 0.45, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(244, 63, 94, ${0.75 * (1 - pulse)})`;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-          }
-
-          // Base shadow ellipse on floor
+          // Floor tile under prism
           ctx.beginPath();
-          ctx.ellipse(sx, sy, halfW * 1.45, halfW * 0.65, 0, 0, Math.PI * 2);
-          ctx.fillStyle = isSelected ? 'rgba(56, 189, 248, 0.45)' : 'rgba(15, 23, 42, 0.75)';
-          ctx.strokeStyle = node.colorPrimary;
-          ctx.lineWidth = isSelected ? 2 : 1;
-          ctx.fill();
-          ctx.stroke();
-
-          // 6b. 3D Volumetric Cylinder Pillar (from floor `sy` up to `topSy`)
-          const pillarGrad = ctx.createLinearGradient(sx - halfW, sy, topSx + halfW, topSy);
-          pillarGrad.addColorStop(0, 'rgba(15, 23, 42, 0.85)');
-          pillarGrad.addColorStop(0.35, node.colorSecondary);
-          pillarGrad.addColorStop(1, node.colorPrimary);
-
-          ctx.beginPath();
-          ctx.moveTo(sx - halfW, sy);
-          ctx.lineTo(topSx - halfW, topSy);
-          ctx.lineTo(topSx + halfW, topSy);
-          ctx.lineTo(sx + halfW, sy);
+          ctx.moveTo(sx, sy - depthH * 1.45);
+          ctx.lineTo(sx + halfW * 1.45, sy);
+          ctx.lineTo(sx, sy + depthH * 1.45);
+          ctx.lineTo(sx - halfW * 1.45, sy);
           ctx.closePath();
-          ctx.fillStyle = pillarGrad;
+          ctx.fillStyle = isSelected || isHovered
+            ? 'rgba(56, 189, 248, 0.35)'
+            : 'rgba(15, 23, 42, 0.85)';
+          ctx.strokeStyle = isSelected || isHovered
+            ? '#38bdf8'
+            : 'rgba(148, 163, 184, 0.28)';
+          ctx.lineWidth = isSelected || isHovered ? 2 : 1;
           ctx.fill();
-
-          // Highlight edge on 3D cylinder
-          ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : 'rgba(255,255,255,0.28)';
-          ctx.lineWidth = isSelected || isHovered ? 1.8 : 0.8;
           ctx.stroke();
 
-          // 6c. Target Capacity Ring (100% Level Benchmark Ring on the 3D Tower)
-          const live = liveNodesRef.current.get(node.id);
-          if (live) {
-            const capHeight = Math.max(32, Math.min(180, st.targetCapacityPts * 0.88));
-            const capProj = project3D(live.x, live.y - capHeight, live.z);
-            ctx.beginPath();
-            ctx.ellipse(
-              capProj.sx,
-              capProj.sy,
-              halfW * 1.35,
-              halfW * 0.52,
-              0,
-              0,
-              Math.PI * 2
-            );
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-            ctx.setLineDash([2, 2]);
-            ctx.lineWidth = 1.1;
-            ctx.stroke();
-            ctx.setLineDash([]);
-          }
-
-          // 6d. Top glowing 3D Energy Cap / Sphere of the Staff Tower
-          const orbR = Math.max(6, node.radius * scale);
-          const orbGrad = ctx.createRadialGradient(
-            topSx - orbR * 0.3,
-            topSy - orbR * 0.3,
-            orbR * 0.1,
+          // True 3-Face 3D Isometric Prism Bar
+          drawIsometricPrism(
+            sx,
+            sy,
             topSx,
             topSy,
-            orbR * 1.35
+            halfW,
+            depthH,
+            node.colorTop,
+            node.colorLeft,
+            node.colorRight,
+            node.strokeColor,
+            isSelected || isHovered
           );
-          orbGrad.addColorStop(0, '#ffffff');
-          orbGrad.addColorStop(0.45, node.colorPrimary);
-          orbGrad.addColorStop(1, node.colorSecondary);
 
+          // 100% Level Benchmark Ring on the 3D Prism
           ctx.beginPath();
-          ctx.arc(topSx, topSy, orbR, 0, Math.PI * 2);
-          ctx.fillStyle = orbGrad;
-          ctx.fill();
-
-          if (isSelected || isHovered) {
-            ctx.beginPath();
-            ctx.arc(topSx, topSy, orbR + 4, 0, Math.PI * 2);
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 2.2;
-            ctx.stroke();
-          }
-
-          // 6e. Crisp Floating 3D Label above Staff Tower
-          if (!isDimmed || scale > 0.72) {
-            const labelY = topSy - orbR - 12;
-            ctx.font = `${isSelected || isHovered ? '700' : '600'} ${Math.max(10, Math.round(11.5 * scale))}px Inter, system-ui, sans-serif`;
-            const nameText = `${st.name} (${st.level})`;
-            const metricText = `${st.totalPts.toFixed(0)}pt · ${st.loadPct}%`;
-            const badgeW = Math.max(ctx.measureText(nameText).width, ctx.measureText(metricText).width) + 14;
-            const badgeH = 30 * Math.max(0.82, scale);
-
-            ctx.fillStyle = isSelected
-              ? 'rgba(15, 23, 42, 0.96)'
-              : 'rgba(15, 23, 42, 0.84)';
-            ctx.beginPath();
-            ctx.roundRect(topSx - badgeW / 2, labelY - badgeH, badgeW, badgeH, 6);
-            ctx.fill();
-            ctx.strokeStyle = isSelected
-              ? '#38bdf8'
-              : st.loadStatus === 'OVERLOAD'
-                ? 'rgba(244, 63, 94, 0.75)'
-                : 'rgba(148, 163, 184, 0.32)';
-            ctx.lineWidth = isSelected ? 1.6 : 1;
-            ctx.stroke();
-
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillText(nameText, topSx, labelY - badgeH * 0.54);
-
-            ctx.font = `700 ${Math.max(9, Math.round(10 * scale))}px Inter, system-ui, sans-serif`;
-            ctx.fillStyle =
-              st.loadStatus === 'OVERLOAD'
-                ? '#fda4af'
-                : st.loadStatus === 'UNDERLOAD'
-                  ? '#a5b4fc'
-                  : '#6ee7b7';
-            ctx.fillText(metricText, topSx, labelY - badgeH * 0.16);
-          }
+          ctx.moveTo(capSx - halfW * 1.15, capSy);
+          ctx.lineTo(capSx, capSy + depthH * 1.15);
+          ctx.lineTo(capSx + halfW * 1.15, capSy);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
 
           nextHitRegions.push({
             id: node.id,
             sx: topSx,
-            sy: (topSy + sy) / 2,
-            sr: Math.max(18, orbR * 1.6),
+            sy: (topSy + sy) * 0.5,
+            sr: Math.max(20, halfW * 1.5),
             topY: topSy,
             depth,
           });
         } else if (node.kind === 'BRAND') {
-          // 6f. 3D Brand Hexagon / Diamond Node
-          const r = Math.max(6, node.radius * scale);
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const ang = (i / 6) * Math.PI * 2 - Math.PI / 6;
-            const hx = topSx + Math.cos(ang) * r;
-            const hy = topSy + Math.sin(ang) * r;
-            if (i === 0) ctx.moveTo(hx, hy);
-            else ctx.lineTo(hx, hy);
-          }
-          ctx.closePath();
-          ctx.fillStyle = node.colorPrimary;
-          ctx.fill();
-          ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : '#fef3c7';
-          ctx.lineWidth = isSelected || isHovered ? 2.2 : 1.2;
-          ctx.stroke();
-
-          if (!isDimmed && (scale > 0.65 || isConnected || isSelected || isHovered)) {
-            ctx.font = `600 ${Math.max(9, Math.round(10.5 * scale))}px Inter, system-ui, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#fde68a';
-            ctx.fillText(node.label, topSx, topSy - r - 5);
-          }
+          // 3D Brand Isometric Cube / Gem
+          const halfW = Math.max(10, 15 * scale);
+          const depthH = halfW * 0.52;
+          const cubeH = halfW * 0.9;
+          drawIsometricPrism(
+            topSx,
+            topSy + cubeH * 0.5,
+            topSx,
+            topSy - cubeH * 0.5,
+            halfW,
+            depthH,
+            node.colorTop,
+            node.colorLeft,
+            node.colorRight,
+            node.strokeColor,
+            isSelected || isHovered
+          );
 
           nextHitRegions.push({
             id: node.id,
             sx: topSx,
             sy: topSy,
-            sr: Math.max(14, r * 1.5),
+            sr: Math.max(18, halfW * 1.5),
             topY: topSy,
             depth,
           });
         } else {
-          // 6g. 3D Store Satellite Orb
-          const r = Math.max(4.5, node.radius * scale);
+          // 3D Store Node
+          const r = Math.max(7, node.radius * scale);
           ctx.beginPath();
           ctx.arc(topSx, topSy, r, 0, Math.PI * 2);
-          ctx.fillStyle = node.colorPrimary;
+          ctx.fillStyle = node.colorLeft;
           ctx.fill();
-          ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : 'rgba(255,255,255,0.5)';
-          ctx.lineWidth = isSelected || isHovered ? 2 : 1;
+          ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : node.strokeColor;
+          ctx.lineWidth = isSelected || isHovered ? 2.2 : 1.2;
           ctx.stroke();
-
-          if ((isConnected && activeHighlightId) || isSelected || isHovered) {
-            ctx.font = `500 ${Math.max(9, Math.round(10 * scale))}px Inter, system-ui, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillText(`${node.label} (${node.subLabel})`, topSx, topSy - r - 5);
-          }
 
           nextHitRegions.push({
             id: node.id,
             sx: topSx,
             sy: topSy,
-            sr: Math.max(12, r * 1.6),
+            sr: Math.max(15, r * 1.6),
             topY: topSy,
             depth,
           });
         }
 
         ctx.globalAlpha = 1.0;
+      });
+
+      // 7. Anti-Overlap Label Pass (Sorted Front-to-Back so Foreground/Selected Labels NEVER get covered!)
+      const occupiedBoxes: { x1: number; y1: number; x2: number; y2: number }[] = [];
+      const sortedFrontToBack = sortedBackToFront.slice().reverse();
+
+      // Ensure Selected & Hovered nodes get label priority first
+      sortedFrontToBack.sort((a, b) => {
+        const aPri = a.node.id === hovId ? 3 : a.node.id === selId ? 2 : connSet.has(a.node.id) ? 1 : 0;
+        const bPri = b.node.id === hovId ? 3 : b.node.id === selId ? 2 : connSet.has(b.node.id) ? 1 : 0;
+        if (aPri !== bPri) return bPri - aPri;
+        return a.depth - b.depth;
+      });
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      sortedFrontToBack.forEach(item => {
+        const { node, topSx, topSy, scale } = item;
+        const isSelected = selId === node.id;
+        const isHovered = hovId === node.id;
+        const isPriority = isSelected || isHovered;
+
+        const titleText = isPriority ? node.label : node.shortLabel;
+        const subText = node.roleTag ? `${node.subLabel} · ${node.roleTag}` : node.subLabel;
+
+        const boxW = Math.max(titleText.length * 6.6, subText.length * 5.8) + 16;
+        const boxH = isPriority || node.kind !== 'STAFF' ? 32 : 26;
+        const bx1 = topSx - boxW * 0.5;
+        const by1 = topSy - 14 - boxH;
+        const bx2 = topSx + boxW * 0.5;
+        const by2 = topSy - 14;
+
+        // Check collision against higher-priority labels
+        if (!isPriority) {
+          const collides = occupiedBoxes.some(
+            b => !(bx2 < b.x1 + 4 || bx1 > b.x2 - 4 || by2 < b.y1 + 2 || by1 > b.y2 - 2)
+          );
+          if (collides) return;
+        }
+
+        occupiedBoxes.push({ x1: bx1, y1: by1, x2: bx2, y2: by2 });
+
+        // Draw crisp label pill
+        ctx.fillStyle = isPriority
+          ? 'rgba(15, 23, 42, 0.96)'
+          : 'rgba(15, 23, 42, 0.86)';
+        ctx.beginPath();
+        ctx.roundRect(bx1, by1, boxW, boxH, 6);
+        ctx.fill();
+
+        ctx.strokeStyle = isPriority
+          ? '#38bdf8'
+          : node.kind === 'BRAND'
+            ? 'rgba(245, 158, 11, 0.65)'
+            : node.kind === 'STORE'
+              ? 'rgba(56, 189, 248, 0.55)'
+              : 'rgba(148, 163, 184, 0.32)';
+        ctx.lineWidth = isPriority ? 1.8 : 1;
+        ctx.stroke();
+
+        // Line 1: Name
+        ctx.font = `${isPriority ? '700' : '600'} ${Math.max(10, Math.round(11 * Math.min(1.1, scale)))}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(titleText, topSx, by1 + boxH * 0.34);
+
+        // Line 2: Metric / Role
+        ctx.font = `700 ${Math.max(9, Math.round(9.5 * Math.min(1.1, scale)))}px Inter, system-ui, sans-serif`;
+        ctx.fillStyle = node.badgeTextColor;
+        ctx.fillText(subText, topSx, by1 + boxH * 0.74);
       });
 
       projectedScreenNodesRef.current = nextHitRegions;
@@ -1291,19 +1416,9 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
     animationFrameId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [
-    graphNodes,
-    graphLinks,
-    autoRotate,
-    showParticles,
-    selectedNodeId,
-    hoveredNodeId,
-    activeHighlightId,
-    connectedNodeIds,
-    layoutMode,
-  ]);
+  }, []);
 
-  // Canvas Mouse & Wheel Interaction Handlers
+  // Hit-test helper using cached canvas bounds
   const findHitNodeAt = (clientX: number, clientY: number): string | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -1311,7 +1426,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     const mx = clientX - rect.left;
     const my = clientY - rect.top;
 
-    // Check front-to-back (reverse of back-to-front sorted array)
     const regions = projectedScreenNodesRef.current;
     for (let i = regions.length - 1; i >= 0; i--) {
       const reg = regions[i];
@@ -1320,7 +1434,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       const dyMid = my - reg.sy;
       if (
         Math.hypot(dx, dyTop) <= reg.sr ||
-        (Math.abs(dx) <= reg.sr * 0.85 && Math.abs(dyMid) <= reg.sr * 1.4)
+        (Math.abs(dx) <= reg.sr * 0.9 && Math.abs(dyMid) <= reg.sr * 1.45)
       ) {
         return reg.id;
       }
@@ -1344,17 +1458,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         dragRef.current.moved = true;
       }
-      cameraRef.current.targetYaw += dx * 0.0065;
+      cameraRef.current.targetYaw += dx * 0.006;
       cameraRef.current.targetPitch = Math.max(
-        -0.35,
-        Math.min(1.05, cameraRef.current.targetPitch + dy * 0.0055)
+        0.12,
+        Math.min(0.95, cameraRef.current.targetPitch + dy * 0.005)
       );
       dragRef.current.startX = e.clientX;
       dragRef.current.startY = e.clientY;
     } else {
       const hitId = findHitNodeAt(e.clientX, e.clientY);
-      if (hitId !== hoveredNodeId) {
-        setHoveredNodeId(hitId);
+      hoveredNodeIdRef.current = hitId;
+      if (canvasRef.current) {
+        canvasRef.current.style.cursor = hitId ? 'pointer' : 'grab';
       }
     }
   };
@@ -1374,8 +1489,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.1 : 0.91;
     cameraRef.current.targetZoom = Math.max(
-      0.52,
-      Math.min(2.3, cameraRef.current.targetZoom * factor)
+      0.55,
+      Math.min(2.1, cameraRef.current.targetZoom * factor)
     );
   };
 
@@ -1391,7 +1506,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ...foundBrand,
       [roleField]: newStaffName,
     });
-    onNotify?.(`Đã điều chuyển vị trí trên thương hiệu ${foundBrand.name} sang ${newStaffName}`, 'success');
+    onNotify?.(
+      `Đã điều chuyển vị trí trên thương hiệu ${foundBrand.name} sang ${newStaffName}`,
+      'success'
+    );
   };
 
   // Reassign Store PIC handler
@@ -1416,7 +1534,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       difficultyMultiplier: newCoef,
       difficultyTier: getStoreTierByCoefficient(newCoef),
     });
-    onNotify?.(`Đã cập nhật Hệ số gian hàng ${foundStore.storeName} thành ×${newCoef.toFixed(2)}`, 'success');
+    onNotify?.(
+      `Đã cập nhật Hệ số gian hàng ${foundStore.storeName} thành ×${newCoef.toFixed(2)}`,
+      'success'
+    );
   };
 
   // Submit Quick Task for selected staff
@@ -1591,7 +1712,21 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              Trụ Tải Trọng 3D
+              Sàn 3D Cột Tải (28 Nhân sự)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLayoutMode('FOCUS_ORBIT');
+                flyToNode(null, true);
+              }}
+              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+                layoutMode === 'FOCUS_ORBIT'
+                  ? 'bg-surface text-ink shadow-2xs'
+                  : 'text-ink-2 hover:text-ink'
+              }`}
+            >
+              Cây Phân Việc 3D (Tâm điểm)
             </button>
             <button
               type="button"
@@ -1605,21 +1740,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              Phân Tầng 3D (Nhân sự → Brand → Gian)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLayoutMode('FOCUS_ORBIT');
-                if (selectedNodeId) flyToNode(selectedNodeId);
-              }}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                layoutMode === 'FOCUS_ORBIT'
-                  ? 'bg-surface text-ink shadow-2xs'
-                  : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              Quỹ Đạo Tâm Điểm
+              3 Tầng: Nhân sự → Brand → Gian
             </button>
           </div>
 
@@ -1638,25 +1759,20 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <option value="FOC_SAMPLE">Điều phối FOC & Mẫu</option>
           </select>
 
-          {/* Layer visibility toggles */}
-          <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sunken border border-line text-xs text-ink-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showBrandsLayer}
-              onChange={e => setShowBrandsLayer(e.target.checked)}
-              className="rounded border-line"
-            />
-            <span>Tầng Brand</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sunken border border-line text-xs text-ink-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showStoresLayer}
-              onChange={e => setShowStoresLayer(e.target.checked)}
-              className="rounded border-line"
-            />
-            <span>Tầng Gian hàng</span>
-          </label>
+          {/* Anti-clutter Focus Toggle */}
+          <button
+            type="button"
+            onClick={() => setOnlyFocusedNetwork(prev => !prev)}
+            className={`h-8 px-2.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition cursor-pointer ${
+              onlyFocusedNetwork
+                ? 'bg-accent-soft text-accent border-accent/40'
+                : 'bg-sunken text-ink-2 border-line hover:text-ink'
+            }`}
+            title="Khi bật: chỉ hiện các Brand & Gian hàng của nhân sự đang chọn để sơ đồ luôn thoáng, không bị rối dây"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>{onlyFocusedNetwork ? 'Chế độ gọn: Chỉ hiện nhánh đang chọn' : 'Đang hiện mọi nhánh'}</span>
+          </button>
         </div>
 
         {/* Search & Quick Navigation */}
@@ -1668,7 +1784,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Tìm nhân sự, Brand, gian hàng..."
-              className="h-8 pl-8 pr-7 rounded-lg bg-sunken border border-line text-xs text-ink placeholder:text-ink-3 w-56 focus:outline-none focus:border-accent"
+              className="h-8 pl-8 pr-7 rounded-lg bg-sunken border border-line text-xs text-ink placeholder:text-ink-3 w-52 focus:outline-none focus:border-accent"
             />
             {searchQuery && (
               <button
@@ -1697,29 +1813,29 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       {/* 3. Main 3D Viewport + Side Inspector Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left/Center: 3D Interactive Space (8 cols) */}
-        <div className="lg:col-span-8 bg-[#070d1d] border border-slate-800 rounded-2xl overflow-hidden relative shadow-lg">
+        <div className="lg:col-span-8 bg-[#070d19] border border-slate-800 rounded-2xl overflow-hidden relative shadow-lg">
           {/* Top-left 3D Legend Overlay */}
           <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
-            <div className="px-2.5 py-1.5 rounded-lg bg-slate-900/85 backdrop-blur border border-slate-700/80 text-[11px] text-slate-200 flex items-center gap-3">
+            <div className="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-[11px] text-slate-200 flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block shadow-[0_0_8px_#f43f5e]" />
-                <span>Trụ Đỏ: Quá tải (≥115%)</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-rose-500 inline-block" />
+                <span>Cột Đỏ: Quá tải (≥115%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block shadow-[0_0_8px_#10b981]" />
-                <span>Trụ Xanh: Đủ tải (85–114%)</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block" />
+                <span>Cột Xanh: Đủ tải (85–114%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block shadow-[0_0_8px_#6366f1]" />
-                <span>Trụ Tím: Dư công suất (&lt;85%)</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-indigo-500 inline-block" />
+                <span>Cột Tím: Dư tải (&lt;85%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-                <span>Brand</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-amber-400 inline-block" />
+                <span>Khối Vàng: Brand</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
-                <span>TikTok / Shopee</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
+                <span>Gian hàng (TikTok / Shopee)</span>
               </span>
             </div>
           </div>
@@ -1733,7 +1849,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
                 autoRotate
                   ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                  : 'bg-slate-900/85 text-slate-300 border-slate-700 hover:bg-slate-800'
+                  : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
               }`}
             >
               {autoRotate ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -1747,7 +1863,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
                 showParticles
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-slate-900/85 text-slate-300 border-slate-700 hover:bg-slate-800'
+                  : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -1757,10 +1873,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <button
               type="button"
               onClick={() => {
-                cameraRef.current.targetZoom = Math.min(2.2, cameraRef.current.targetZoom * 1.2);
+                cameraRef.current.targetZoom = Math.min(2.1, cameraRef.current.targetZoom * 1.18);
               }}
-              title="Phóng to không gian 3D"
-              className="w-8 h-8 rounded-lg bg-slate-900/85 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
+              title="Phóng to"
+              className="w-8 h-8 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
             >
               <ZoomIn className="w-4 h-4" />
             </button>
@@ -1768,25 +1884,22 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <button
               type="button"
               onClick={() => {
-                cameraRef.current.targetZoom = Math.max(0.55, cameraRef.current.targetZoom * 0.82);
+                cameraRef.current.targetZoom = Math.max(0.55, cameraRef.current.targetZoom * 0.84);
               }}
-              title="Thu nhỏ không gian 3D"
-              className="w-8 h-8 rounded-lg bg-slate-900/85 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
+              title="Thu nhỏ"
+              className="w-8 h-8 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
             >
               <ZoomOut className="w-4 h-4" />
             </button>
 
             <button
               type="button"
-              onClick={() => {
-                setSelectedNodeId(null);
-                flyToNode(null, true);
-              }}
-              title="Đặt lại góc nhìn 3D toàn cảnh"
-              className="h-8 px-2.5 rounded-lg bg-slate-900/85 border border-slate-700 text-slate-200 hover:bg-slate-800 text-xs font-medium flex items-center gap-1 cursor-pointer"
+              onClick={() => flyToNode(null, true)}
+              title="Đặt lại góc nhìn chuẩn"
+              className="h-8 px-2.5 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 text-xs font-medium flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Toàn cảnh</span>
+              <span className="hidden sm:inline">Góc chuẩn</span>
             </button>
           </div>
 
@@ -1797,49 +1910,46 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onWheel={handleWheel}
-            className="w-full h-[560px] block cursor-grab active:cursor-grabbing select-none"
+            className="w-full h-[540px] block select-none"
           />
 
-          {/* Bottom-left Quick Staff Workload Bar inside 3D Viewport */}
-          <div className="bg-slate-950/95 border-t border-slate-800 px-3 py-2.5">
+          {/* Bottom Quick Staff Workload Strip inside 3D Viewport */}
+          <div className="bg-slate-950 border-t border-slate-800 px-3 py-2.5">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">
-                Click chọn nhanh Nhân sự để bay (Fly-To) tới Trụ Tải Trọng 3D · Kéo chuột để xoay 360°
+              <span className="text-[11px] font-semibold text-slate-300">
+                Chọn Nhân sự để xem nhánh Brand & Gian hàng trên không gian 3D (Sắp xếp từ tải cao → thấp):
               </span>
-              <span className="text-[11px] text-slate-400">
-                Vòng nét đứt trắng trên trụ = Định mức chuẩn 100% theo Level
+              <span className="text-[11px] text-slate-400 hidden sm:inline">
+                Vạch trắng trên cột 3D = Mức chuẩn 100% theo Level
               </span>
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              {filteredStaff
-                .slice()
-                .sort((a, b) => b.loadPct - a.loadPct)
-                .map(st => {
-                  const isActive = selectedNodeId === st.id;
-                  const badgeTone =
-                    st.loadStatus === 'OVERLOAD'
-                      ? 'border-rose-500/50 bg-rose-500/15 text-rose-200'
-                      : st.loadStatus === 'UNDERLOAD'
-                        ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-200'
-                        : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200';
-                  return (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => handleSelectAndFly(st.id)}
-                      className={`shrink-0 px-2.5 py-1 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
-                        isActive
-                          ? 'ring-2 ring-sky-400 bg-sky-500/25 text-white border-sky-400'
-                          : `${badgeTone} hover:brightness-125`
-                      }`}
-                    >
-                      <span className="truncate max-w-[115px]">{st.name}</span>
-                      <span className="text-[10px] font-bold px-1 py-0.2 rounded bg-black/30 tabular-nums">
-                        {st.loadPct}%
-                      </span>
-                    </button>
-                  );
-                })}
+              {filteredStaff.map(st => {
+                const isActive = selectedNodeId === st.id;
+                const badgeTone =
+                  st.loadStatus === 'OVERLOAD'
+                    ? 'border-rose-500/50 bg-rose-500/15 text-rose-200'
+                    : st.loadStatus === 'UNDERLOAD'
+                      ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-200'
+                      : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200';
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => handleSelectAndFly(st.id)}
+                    className={`shrink-0 px-2.5 py-1 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
+                      isActive
+                        ? 'ring-2 ring-sky-400 bg-sky-500/25 text-white border-sky-400'
+                        : `${badgeTone} hover:brightness-125`
+                    }`}
+                  >
+                    <span className="truncate max-w-[115px]">{st.shortName}</span>
+                    <span className="text-[10px] font-bold px-1 py-0.2 rounded bg-black/30 tabular-nums">
+                      {st.loadPct}%
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1856,7 +1966,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   Chọn 1 Nhân sự, Brand hoặc Gian hàng trên không gian 3D
                 </h3>
                 <p className="text-xs text-ink-3 leading-relaxed">
-                  Click trực tiếp vào trụ tải trọng 3D hoặc thanh nhân sự phía dưới để camera tự động bay đến, làm sáng toàn bộ nhánh phụ trách và mở bảng điều phối chi tiết.
+                  Click trực tiếp vào cột 3D hoặc thanh nhân sự phía dưới để xem nhánh Brand, Gian hàng phụ trách và điều phối công việc.
                 </p>
               </div>
             </div>
@@ -1865,7 +1975,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             (() => {
               const st = selectedNode.staffData;
               return (
-                <div className="divide-y divide-line max-h-[640px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
                   {/* Header */}
                   <div className="p-4 bg-sunken/40 space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
@@ -1930,7 +2040,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             width: `${Math.min(100, Math.round((st.directorPts / Math.max(st.totalPts, st.targetCapacityPts)) * 100))}%`,
                           }}
                           className="bg-amber-500 h-full"
-                          title={`Điểm GĐ giao & Brand: ${st.directorPts.toFixed(1)} pt`}
+                          title={`Điểm Quản lý giao & Brand: ${st.directorPts.toFixed(1)} pt`}
                         />
                       </div>
                       <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
@@ -1972,6 +2082,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                       >
                         <Plus className="w-3.5 h-3.5 mr-1" />
                         Giao thêm việc
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setLayoutMode(prev =>
+                            prev === 'FOCUS_ORBIT' ? 'WORKLOAD_TOWERS' : 'FOCUS_ORBIT'
+                          )
+                        }
+                      >
+                        <Compass className="w-3.5 h-3.5 mr-1" />
+                        {layoutMode === 'FOCUS_ORBIT' ? 'Về sàn 28 cột' : 'Tách riêng cây 3D'}
                       </Button>
                       {onPingStaff && (
                         <Button
@@ -2072,7 +2194,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             onClick={() => handleSelectAndFly(cand.id)}
                             className="px-2 py-1 rounded-md bg-surface border border-line text-2xs font-medium text-ink hover:border-accent flex items-center gap-1 cursor-pointer"
                           >
-                            <span>{cand.name}</span>
+                            <span>{cand.shortName}</span>
                             <span className="text-accent font-bold">({cand.loadPct}%)</span>
                           </button>
                         ))}
@@ -2200,7 +2322,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               );
 
               return (
-                <div className="divide-y divide-line max-h-[640px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -2237,7 +2359,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     </div>
                   </div>
 
-                  {/* 3 Brand-level Positions */}
+                  {/* 4 Brand-level Positions */}
                   <div className="p-4 space-y-2.5">
                     <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
                       Đội ngũ phụ trách cấp Brand (Điều phối trực tiếp)
@@ -2247,91 +2369,73 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         {
                           label: 'Content / Brand Main',
                           field: 'contentBrandMainPic' as const,
-                          current: contentMain,
+                          val: contentMain,
                         },
                         {
                           label: 'Plan / Strategy',
                           field: 'planStrategyPic' as const,
-                          current: planStrat,
+                          val: planStrat,
                         },
                         {
                           label: 'Key Visual / SIS',
                           field: 'keyVisualSisPic' as const,
-                          current: kvSis,
+                          val: kvSis,
                         },
                         {
                           label: 'Booking Lead',
                           field: 'bookingPicLead' as const,
-                          current: bookingLead,
+                          val: bookingLead,
                         },
                       ]
-                    ).map(roleItem => {
-                      const matchedStaff = staffWorkloads.find(
-                        sw => sw.name.toLowerCase() === roleItem.current.toLowerCase()
-                      );
-                      return (
-                        <div
-                          key={roleItem.field}
-                          className="p-2.5 rounded-xl bg-sunken/50 border border-line space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between text-2xs">
-                            <span className="font-semibold text-ink-2">{roleItem.label}</span>
-                            {matchedStaff && (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectAndFly(matchedStaff.id)}
-                                className={`font-bold cursor-pointer ${
-                                  matchedStaff.loadStatus === 'OVERLOAD'
-                                    ? 'text-critical'
-                                    : 'text-positive'
-                                }`}
-                              >
-                                Tải: {matchedStaff.loadPct}% ({matchedStaff.totalPts.toFixed(0)} pt)
-                              </button>
-                            )}
-                          </div>
-                          <select
-                            value={roleItem.current}
-                            onChange={e =>
-                              handleReassignBrandRole(b.id, roleItem.field, e.target.value)
-                            }
-                            className="w-full h-8 px-2 rounded-lg bg-surface border border-line text-xs text-ink font-medium"
-                          >
-                            {staffWorkloads.map(sw => (
-                              <option key={sw.id} value={sw.name}>
-                                {sw.name} ({sw.level} · Tải {sw.loadPct}%)
-                              </option>
-                            ))}
-                          </select>
+                    ).map(pos => (
+                      <div
+                        key={pos.field}
+                        className="p-2.5 rounded-xl bg-sunken/50 border border-line flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-2xs text-ink-3">{pos.label}</div>
+                          <div className="text-xs font-semibold text-ink truncate">{pos.val}</div>
                         </div>
-                      );
-                    })}
+                        <select
+                          value={pos.val}
+                          onChange={e => handleReassignBrandRole(b.id, pos.field, e.target.value)}
+                          className="h-7 px-2 rounded bg-surface border border-line text-2xs text-ink shrink-0"
+                        >
+                          {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
+                            <option key={m.staffCode} value={m.name}>
+                              {m.name} ({m.level})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* Stores of this Brand */}
-                  <div className="p-4 space-y-2">
+                  {/* Stores under this Brand */}
+                  <div className="p-4 space-y-2.5">
                     <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
                       Gian hàng thuộc Brand ({brandStores.length})
                     </h4>
-                    {brandStores.map(st => (
+                    {brandStores.map(bs => (
                       <div
-                        key={st.id}
-                        className="p-2.5 rounded-xl bg-sunken/40 border border-line flex items-center justify-between gap-2"
+                        key={bs.id}
+                        className="p-2.5 rounded-xl bg-sunken/50 border border-line flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
                           <button
                             type="button"
-                            onClick={() => handleSelectAndFly(`store-${st.id}`)}
+                            onClick={() => handleSelectAndFly(`store-${bs.id}`)}
                             className="text-xs font-semibold text-ink hover:text-accent truncate block cursor-pointer"
                           >
-                            {st.storeName}
+                            {bs.storeName}
                           </button>
                           <div className="text-2xs text-ink-3">
-                            PIC: <strong className="text-ink-2">{st.b2cOwnerName}</strong> · HS ×
-                            {normalizeStoreCoefficient(st.difficultyTier, st.difficultyMultiplier).multiplier.toFixed(2)}
+                            {bs.platform} · PIC: {bs.b2cOwnerName || bs.assignedStaff}
                           </div>
                         </div>
-                        <ChannelTag channel={st.platform} />
+                        <span className="text-2xs font-bold text-ink-2">
+                          {formatVndShort(bs.budgetNet || bs.monthlyBudget || 0)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -2342,13 +2446,17 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             /* ==================== STORE INSPECTOR ==================== */
             (() => {
               const s = selectedNode.storeData;
-              const coef = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier;
+              const coefInfo = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
+              const currentPic = s.b2cOwnerName || s.assignedStaff || 'Chưa gán';
+
               return (
-                <div className="divide-y divide-line max-h-[640px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <ChannelTag channel={s.platform} />
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-600 text-2xs font-bold">
+                          Gian hàng · {s.platform}
+                        </span>
                         <h3 className="text-base font-bold text-ink mt-1">{s.storeName}</h3>
                         <p className="text-xs text-ink-3">Thương hiệu: {s.brandName}</p>
                       </div>
@@ -2363,34 +2471,22 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         </Button>
                       )}
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                      <div className="p-2 rounded-lg bg-surface border border-line">
-                        <div className="text-2xs text-ink-3">Ngân sách Order Net</div>
-                        <div className="font-bold text-ink">
-                          {formatVndShort(s.budgetNet || s.monthlyBudget || 0)}
-                        </div>
-                      </div>
-                      <div className="p-2 rounded-lg bg-surface border border-line">
-                        <div className="text-2xs text-ink-3">Hệ số độ khó (Bảng 2)</div>
-                        <div className="font-bold text-accent">×{coef.toFixed(2)}</div>
-                      </div>
-                    </div>
                   </div>
 
+                  {/* Store Coefficient & PIC Controls */}
                   <div className="p-4 space-y-3">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-ink block">
-                        Chuyên viên PIC Gian hàng (B2C Owner)
+                        Chuyên viên phụ trách (PIC Gian hàng)
                       </label>
                       <select
-                        value={s.b2cOwnerName}
+                        value={currentPic}
                         onChange={e => handleReassignStorePic(s.id, e.target.value)}
                         className="w-full h-8 px-2.5 rounded-lg bg-surface border border-line text-xs text-ink font-medium"
                       >
-                        {staffWorkloads.map(sw => (
-                          <option key={sw.id} value={sw.name}>
-                            {sw.name} ({sw.level} · Tải {sw.loadPct}%)
+                        {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
+                          <option key={m.staffCode} value={m.name}>
+                            {m.name} ({m.level} · {m.roleGroup})
                           </option>
                         ))}
                       </select>
@@ -2398,24 +2494,43 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-ink block">
-                        Điều chỉnh Hệ số phạm vi Gian hàng (Bảng 2)
+                        Hệ số quy mô Gian hàng (Bảng 2): ×{coefInfo.multiplier.toFixed(2)}
                       </label>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {STORE_SCOPE_TABLE_2.map(item => (
-                          <button
-                            key={item.code}
-                            type="button"
-                            onClick={() => handleChangeStoreCoef(s.id, item.coef)}
-                            className={`p-2 rounded-lg border text-center transition cursor-pointer ${
-                              Math.abs(coef - item.coef) < 0.02
-                                ? 'bg-accent-soft border-accent text-accent font-bold'
-                                : 'bg-surface border-line text-ink-2 hover:bg-sunken'
-                            }`}
-                          >
-                            <div className="text-xs">×{item.coef.toFixed(2)}</div>
-                            <div className="text-[10px] text-ink-3">{item.label}</div>
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {STORE_SCOPE_TABLE_2.map(tier => {
+                          const active = Math.abs(coefInfo.multiplier - tier.coef) < 0.03;
+                          return (
+                            <button
+                              key={tier.code}
+                              type="button"
+                              onClick={() => handleChangeStoreCoef(s.id, tier.coef)}
+                              className={`py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                                active
+                                  ? 'bg-accent text-white border-accent'
+                                  : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                              }`}
+                            >
+                              ×{tier.coef.toFixed(2)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-sunken/50 border border-line space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-ink-3">Trưởng nhóm duyệt:</span>
+                        <strong className="text-ink">
+                          {s.hasBookingLeader && s.bookingLeader
+                            ? s.bookingLeader
+                            : 'Không có Leader (Trình thẳng GĐ MKT)'}
+                        </strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-ink-3">Hạn mức Order Net:</span>
+                        <strong className="text-ink">
+                          {formatVndShort(s.budgetNet || s.monthlyBudget || 0)}
+                        </strong>
                       </div>
                     </div>
                   </div>
