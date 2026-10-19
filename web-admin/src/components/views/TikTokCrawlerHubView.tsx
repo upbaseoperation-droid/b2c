@@ -5,7 +5,6 @@ import {
   Check,
   Download,
   ExternalLink,
-  FileCheck2,
   Flame,
   Hash,
   MessageSquare,
@@ -14,8 +13,6 @@ import {
   RefreshCw,
   Search,
   Square,
-  Store,
-  ThumbsUp,
   UserPlus,
   Users,
   Video,
@@ -48,8 +45,6 @@ import {
   FilterBar,
   Panel,
   Segmented,
-  Stat,
-  StatRow,
   Status,
 } from '../ui';
 import type { Column } from '../ui';
@@ -129,7 +124,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   onNavigateToKocMaster,
 }) => {
   const [activeTab, setActiveTab] = useState<CrawlerTabKey>('COMPETITOR_KOCS');
-  const [period, setPeriod] = useState<PeriodKey>('30d');
+  const period: PeriodKey = '30d';
 
   // --- State Tab 1: Quét KOC của Đối thủ ---
   const [competitorInput, setCompetitorInput] = useState('@larocheposayvn');
@@ -712,8 +707,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const competitorColumns: Column<TikTokCompetitorKocResult>[] = [
     {
       key: 'koc',
-      header: 'Kênh KOC & Liên hệ (Bio)',
-      width: 240,
+      header: 'Kênh KOC & Liên hệ',
+      width: 230,
       render: (r) => {
         const p = r.channelProfile;
         const isExisting =
@@ -734,14 +729,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   <ExternalLink className="w-3 h-3 text-ink-3" />
                 </a>
                 <Status tone={isExisting ? 'neutral' : 'positive'}>
-                  {isExisting ? 'Đã có tại UpBase' : 'KOC Mới'}
+                  {isExisting ? 'Đã có' : 'KOC Mới'}
                 </Status>
               </div>
               <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
-              <span className="text-2xs text-ink-3 inline-flex items-center gap-1 tabular-nums">
-                <Phone className="w-3 h-3 text-ink-3 shrink-0" />
-                <span>{p.extractedPhone || 'Chưa gắn SĐT'}</span>
-              </span>
+              {p.extractedPhone && (
+                <span className="text-2xs text-ink font-code inline-flex items-center gap-1 tabular-nums">
+                  <Phone className="w-3 h-3 text-ink-3 shrink-0" />
+                  <span>{p.extractedPhone}</span>
+                </span>
+              )}
             </div>
           </div>
         );
@@ -749,12 +746,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'collab',
-      header: 'Hợp tác với Đối thủ & Sản phẩm',
-      width: 250,
+      header: 'Hình thức & Sản phẩm',
+      width: 230,
       render: (r) => {
         const c = r.competitorCollaboration;
         return (
-          <div className="grid gap-1 min-w-0 max-w-[270px]">
+          <div className="grid gap-1 min-w-0 max-w-[250px]">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Status
                 tone={
@@ -772,13 +769,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </span>
             </div>
             <span
-              className="text-xs font-medium text-ink truncate"
+              className="text-xs text-ink-2 truncate"
               title={c.competitorProductPromoted}
             >
               {c.competitorProductPromoted}
-            </span>
-            <span className="text-2xs text-ink-3 truncate">
-              Đối thủ: @{c.competitorHandle} ({c.competitorBrandName})
             </span>
           </div>
         );
@@ -786,12 +780,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'video',
-      header: 'Video làm cho đối thủ gần nhất',
-      width: 270,
+      header: 'Video hợp tác gần nhất',
+      width: 280,
       render: (r) => {
         const c = r.competitorCollaboration;
         return (
-          <div className="grid gap-1 min-w-0 max-w-[290px]">
+          <div className="grid gap-1 min-w-0 max-w-[300px]">
             <a
               href={c.latestCollabVideoUrl}
               target="_blank"
@@ -803,7 +797,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
             </a>
             <div className="flex items-center gap-2 text-2xs text-ink-3 tabular-nums">
-              <span>Đăng ngày: {formatDate(c.latestCollabPublishedAt)}</span>
+              <span>{formatDate(c.latestCollabPublishedAt)}</span>
+              <span>·</span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -814,7 +809,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 }}
                 className="text-accent hover:underline font-medium"
               >
-                Cào bình luận
+                Xem bình luận
               </button>
             </div>
           </div>
@@ -823,9 +818,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'compPerf',
-      header: 'Lượt xem & Tương tác',
+      header: 'Hiệu quả video',
       align: 'right',
-      width: 170,
+      width: 155,
       render: (r) => {
         const c = r.competitorCollaboration;
         const e = r.engagementMetrics;
@@ -834,11 +829,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             <span className="text-xs font-semibold text-ink tabular-nums">
               {formatNumber(c.latestCollabViews)} view
             </span>
-            <span className="text-2xs text-ink-2 tabular-nums">
-              View TB kênh: {formatNumber(e.avgViews)}
-            </span>
             <span className="text-2xs text-positive font-semibold tabular-nums">
-              ER {e.engagementRate}% · {formatNumber(e.avgLikes)} tim TB
+              ER {e.engagementRate}% · {formatNumber(e.avgLikes)} tim
             </span>
           </div>
         );
@@ -848,7 +840,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelAction',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 220,
+      width: 215,
       render: (r) => {
         const p = r.channelProfile;
         const isExisting = existingByHandle.has(r.handle);
@@ -856,12 +848,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <div className="grid gap-1 justify-items-end">
             <div className="text-xs text-ink tabular-nums">
               <span className="font-semibold">{formatFollowers(p.followers)}</span> flw ·{' '}
-              <span className="font-semibold">{formatFollowers(p.totalLikes)}</span> tim
+              <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </div>
-            <div className="text-2xs text-ink-3 tabular-nums">
-              Tổng {formatNumber(p.videoCount)} video trên kênh
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
                 variant="ghost"
@@ -871,7 +860,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   setScraperModalOpen(true);
                 }}
               >
-                Chi tiết kênh
+                Chi tiết
               </Button>
               <Button
                 size="sm"
@@ -894,7 +883,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const hashtagColumns: Column<TikTokHashtagKocResult>[] = [
     {
       key: 'koc',
-      header: 'Kênh KOC & Liên hệ (Bio)',
+      header: 'Kênh KOC & Liên hệ',
       width: 230,
       render: (r) => {
         const p = r.channelProfile;
@@ -914,13 +903,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   <ExternalLink className="w-3 h-3 text-ink-3" />
                 </a>
                 <Status tone={isExisting ? 'neutral' : 'positive'}>
-                  {isExisting ? 'Đã có' : 'Mới'}
+                  {isExisting ? 'Đã có' : 'KOC Mới'}
                 </Status>
               </div>
               <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
-              <span className="text-2xs text-ink-3 tabular-nums">
-                SĐT/Zalo: {p.extractedPhone || 'Chưa gắn Bio'}
-              </span>
+              {p.extractedPhone && (
+                <span className="text-2xs text-ink font-code tabular-nums">
+                  SĐT: {p.extractedPhone}
+                </span>
+              )}
             </div>
           </div>
         );
@@ -928,12 +919,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'video',
-      header: 'Video gắn Hashtag phát hiện',
-      width: 300,
+      header: 'Video gắn Hashtag',
+      width: 310,
       render: (r) => {
         const v = r.matchedHashtagVideo;
         return (
-          <div className="grid gap-1 min-w-0 max-w-[320px]">
+          <div className="grid gap-1 min-w-0 max-w-[330px]">
             <a
               href={v.videoUrl}
               target="_blank"
@@ -943,18 +934,31 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span>{v.captionSnippet}</span>
               <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
             </a>
-            <span className="text-2xs text-ink-3 tabular-nums">
-              Đăng ngày: {formatDate(v.publishedAt)} · Hashtag: <strong className="text-ink-2">{v.hashtag}</strong>
-            </span>
+            <div className="flex items-center gap-2 text-2xs text-ink-3 tabular-nums">
+              <span>{formatDate(v.publishedAt)}</span>
+              <span>·</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVideoCommentUrl(v.videoUrl);
+                  setActiveTab('COMMENTS_AND_TRENDING');
+                  void runVideoCommentsCrawl(v.videoUrl);
+                }}
+                className="text-accent hover:underline font-medium"
+              >
+                Xem bình luận
+              </button>
+            </div>
           </div>
         );
       },
     },
     {
       key: 'breakout',
-      header: 'Lượt xem Video & Tương tác',
+      header: 'Hiệu quả video',
       align: 'right',
-      width: 180,
+      width: 175,
       render: (r) => {
         const v = r.matchedHashtagVideo;
         return (
@@ -963,7 +967,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               {formatNumber(v.views)} view · {formatNumber(v.likes)} tim
             </span>
             <span className="text-2xs text-positive font-semibold tabular-nums">
-              Tỷ lệ View/Flw: {v.breakoutRatio}x · ER {r.engagementMetrics.engagementRate}%
+              View/Flw {v.breakoutRatio}x · ER {r.engagementMetrics.engagementRate}%
             </span>
           </div>
         );
@@ -971,29 +975,38 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'channelStats',
-      header: 'Quy mô kênh & Lưu Danh bạ',
+      header: 'Quy mô kênh & Thao tác',
       align: 'right',
       width: 210,
       render: (r) => {
         const p = r.channelProfile;
-        const e = r.engagementMetrics;
         const isExisting = existingByHandle.has(r.handle);
         return (
           <div className="grid gap-1 justify-items-end">
-            <span className="text-xs font-semibold text-ink tabular-nums">
-              {formatFollowers(p.followers)} flw · {formatFollowers(p.totalLikes)} tim
+            <span className="text-xs text-ink tabular-nums">
+              <span className="font-semibold">{formatFollowers(p.followers)}</span> flw ·{' '}
+              <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </span>
-            <span className="text-2xs text-ink-2 tabular-nums">
-              View TB kênh: {formatNumber(e.avgViews)} · {formatNumber(p.videoCount)} video
-            </span>
-            <Button
-              size="sm"
-              variant={isExisting ? 'secondary' : 'primary'}
-              icon={isExisting ? Check : UserPlus}
-              onClick={() => handleSaveSingleKoc(r)}
-            >
-              {isExisting ? 'Cập nhật hồ sơ' : 'Lưu vào Danh bạ'}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setScraperInitialHandle(`@${r.handle}`);
+                  setScraperModalOpen(true);
+                }}
+              >
+                Chi tiết
+              </Button>
+              <Button
+                size="sm"
+                variant={isExisting ? 'secondary' : 'primary'}
+                icon={isExisting ? Check : UserPlus}
+                onClick={() => handleSaveSingleKoc(r)}
+              >
+                {isExisting ? 'Cập nhật' : 'Lưu KOC'}
+              </Button>
+            </div>
           </div>
         );
       },
@@ -1025,8 +1038,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'intent',
-      header: 'Phân loại nhu cầu',
-      width: 190,
+      header: 'Nhóm nhu cầu',
+      width: 180,
       render: (c) => (
         <div className="grid gap-0.5">
           <Status
@@ -1048,15 +1061,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'text',
-      header: 'Nội dung bình luận thực tế',
-      width: 360,
+      header: 'Nội dung bình luận',
+      width: 370,
       render: (c) => (
         <p className="text-xs text-ink leading-snug break-words">{c.text}</p>
       ),
     },
     {
       key: 'stats',
-      header: 'Lượt thích & Phản hồi',
+      header: 'Tương tác & Thời gian',
       align: 'right',
       width: 160,
       render: (c) => (
@@ -1075,7 +1088,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const trendingColumns: Column<TikTokTrendingCreatorItem>[] = [
     {
       key: 'creator',
-      header: 'Kênh Creator Thịnh hành',
+      header: 'Kênh KOC xu hướng',
       width: 240,
       render: (c) => {
         const isExisting = existingByHandle.has(c.handle.toLowerCase());
@@ -1104,10 +1117,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'bio',
-      header: 'Tiểu sử (Bio) & Liên hệ',
-      width: 300,
+      header: 'Tiểu sử & Liên hệ',
+      width: 310,
       render: (c) => (
-        <div className="grid gap-0.5 min-w-0 max-w-[320px]">
+        <div className="grid gap-0.5 min-w-0 max-w-[330px]">
           <span className="text-xs text-ink line-clamp-2">{c.bio || '—'}</span>
           {(c.extractedPhone || c.extractedEmail) && (
             <span className="text-2xs text-ink-3 font-code">
@@ -1120,16 +1133,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'scale',
-      header: 'Lượt theo dõi & Tổng lượt thích',
+      header: 'Quy mô kênh',
       align: 'right',
-      width: 200,
+      width: 190,
       render: (c) => (
         <div className="grid gap-0.5 tabular-nums">
           <span className="text-xs font-semibold text-ink">
-            {formatFollowers(c.followers)} người theo dõi
+            {formatFollowers(c.followers)} flw · {formatFollowers(c.totalLikes)} tim
           </span>
           <span className="text-2xs text-ink-3">
-            {formatFollowers(c.totalLikes)} lượt thích · {formatNumber(c.videoCount)} video
+            {formatNumber(c.videoCount)} video trên kênh
           </span>
         </div>
       ),
@@ -1138,7 +1151,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'action',
       header: 'Thao tác',
       align: 'right',
-      width: 170,
+      width: 160,
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
           <Button
@@ -1158,62 +1171,71 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   ];
 
   return (
-    <div className="space-y-5">
-      {/* Thanh điều hướng 4 công cụ Crawler */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface p-3.5 rounded-xl border border-line">
-        <div className="flex flex-wrap items-center gap-3">
-          <Segmented<CrawlerTabKey>
-            items={[
-              {
-                key: 'COMPETITOR_KOCS',
-                label: '1. Quét KOC làm cho Đối thủ',
-              },
-              {
-                key: 'HASHTAG_DISCOVERY',
-                label: '2. Tìm KOC theo #Hashtag',
-              },
-              {
-                key: 'COMMENTS_AND_TRENDING',
-                label: '3. Cào Bình luận Video & KOC Xu hướng',
-              },
-              {
-                key: 'CHANNEL_AND_VIDEO_TOOLS',
-                label: '4. Cào Kênh hàng loạt & Nghiệm thu Video',
-              },
-            ]}
-            value={activeTab}
-            onChange={(t) => {
-              setActiveTab(t);
-              if (t === 'HASHTAG_DISCOVERY' && tagResults.length === 0) {
-                void runHashtagCrawl(hashtagInput, period);
-              }
-              if (t === 'COMMENTS_AND_TRENDING') {
-                if (!commentData) {
-                  void runVideoCommentsCrawl(videoCommentUrl);
-                }
-                if (trendingCreators.length === 0) {
-                  void runTrendingCreatorsCrawl();
-                }
-              }
-            }}
-          />
-        </div>
+    <div className="space-y-4">
+      {/* Thanh điều hướng gọn nhẹ, không bọc khung thừa */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented<CrawlerTabKey>
+          items={[
+            {
+              key: 'COMPETITOR_KOCS',
+              label: 'KOC của đối thủ',
+            },
+            {
+              key: 'HASHTAG_DISCOVERY',
+              label: 'KOC theo #Hashtag',
+            },
+            {
+              key: 'COMMENTS_AND_TRENDING',
+              label: 'Bình luận video',
+            },
+            {
+              key: 'CHANNEL_AND_VIDEO_TOOLS',
+              label: 'KOC xu hướng',
+            },
+          ]}
+          value={activeTab}
+          onChange={(t) => {
+            setActiveTab(t);
+            if (t === 'HASHTAG_DISCOVERY' && tagResults.length === 0) {
+              void runHashtagCrawl(hashtagInput, period);
+            }
+            if (t === 'COMMENTS_AND_TRENDING' && !commentData) {
+              void runVideoCommentsCrawl(videoCommentUrl);
+            }
+            if (t === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length === 0) {
+              void runTrendingCreatorsCrawl();
+            }
+          }}
+        />
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
+            size="sm"
+            variant="secondary"
+            icon={Search}
+            onClick={() => {
+              setScraperInitialHandle('');
+              setScraperModalOpen(true);
+            }}
+          >
+            Cào kênh theo @handle
+          </Button>
+          <Button
+            size="sm"
             variant="secondary"
             icon={Video}
             onClick={() => setVideoInspectorOpen(true)}
           >
-            Nghiệm thu Link Video KOC
+            Nghiệm thu link video
           </Button>
           {onNavigateToKocMaster && (
             <Button
+              size="sm"
               variant="ghost"
               icon={Users}
               onClick={onNavigateToKocMaster}
             >
-              Mở Danh bạ KOC ({kocs.length})
+              Danh bạ KOC ({kocs.length})
             </Button>
           )}
         </div>
@@ -1222,13 +1244,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {/* TAB 1: QUÉT KOC LÀM VIỆC CHO ĐỐI THỦ */}
       {activeTab === 'COMPETITOR_KOCS' && (
         <div className="space-y-4">
-          <Panel
-            title="Quét danh sách KOC đang đăng video / gắn giỏ hàng cho Đối thủ (0đ)"
-          >
+          <Panel title="Quét danh sách KOC hợp tác với thương hiệu đối thủ">
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
                 <Field
-                  label="Kênh TikTok hoặc Tên thương hiệu Đối thủ"
+                  label="Kênh TikTok hoặc tên thương hiệu đối thủ"
                   htmlFor="competitor-channel-input"
                   error={compError || undefined}
                 >
@@ -1244,7 +1264,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
-                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng KOC:</span>
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng:</span>
                     {KOC_COUNT_PRESETS.map((n) => (
                       <button
                         key={n}
@@ -1270,26 +1290,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                           Math.min(120, Math.max(1, Number(e.target.value) || 12))
                         )
                       }
-                      title="Nhập số lượng KOC muốn quét (hệ thống tự chia thành từng đợt 12 KOC)"
+                      title="Nhập số lượng KOC cần quét (tối đa 120 KOC, chia đợt 12 KOC/lần)"
                       className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
-                    <span className="text-2xs text-ink-3 whitespace-nowrap">
-                      ({Math.max(1, Math.ceil(compTargetCount / KOC_BATCH_SIZE))} đợt)
-                    </span>
                   </div>
 
-                  <Segmented<PeriodKey>
-                    items={[
-                      { key: '7d', label: '7 ngày' },
-                      { key: '30d', label: '30 ngày' },
-                      { key: '90d', label: '90 ngày' },
-                    ]}
-                    value={period}
-                    onChange={(p) => {
-                      setPeriod(p);
-                      void runCompetitorCrawl(competitorInput, p);
-                    }}
-                  />
                   <Button
                     variant="primary"
                     icon={compLoading ? RefreshCw : Search}
@@ -1303,8 +1308,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     {compLoading
                       ? compBatchProgress
                         ? `Đang quét đợt ${compBatchProgress.currentBatch}/${compBatchProgress.totalBatches} (${compBatchProgress.collectedCount}/${compBatchProgress.targetCount})...`
-                        : 'Đang quét KOC đối thủ...'
-                      : `Quét ${compTargetCount} KOC đối thủ`}
+                        : 'Đang quét...'
+                      : 'Quét KOC đối thủ'}
                   </Button>
                   {compLoading && (
                     <Button
@@ -1320,27 +1325,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              {compBatchProgress && (
-                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="text-ink font-medium">
-                    Hệ thống đang chia đợt quét tự động:{' '}
-                    <strong>
-                      Đợt {compBatchProgress.currentBatch}/{compBatchProgress.totalBatches}
-                    </strong>{' '}
-                    ({KOC_BATCH_SIZE} KOC/đợt) — Đã thu thập{' '}
-                    <strong>
-                      {compBatchProgress.collectedCount}/{compBatchProgress.targetCount}
-                    </strong>{' '}
-                    KOC thực tế
-                  </span>
-                  <span className="text-2xs text-ink-2">
-                    Dữ liệu từng đợt được cộng dồn trực tiếp vào bảng bên dưới
-                  </span>
-                </div>
-              )}
-
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn nhanh kênh đối thủ mẫu:</span>
+                <span>Chọn nhanh:</span>
                 {COMPETITOR_SAMPLES.map((s) => (
                   <button
                     key={s.handle}
@@ -1365,90 +1351,61 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           </Panel>
 
-          {/* Tóm tắt kênh đối thủ & 4 KPI */}
+          {/* Thanh tóm tắt gọn nhẹ thông tin kênh đối thủ + tổng lượt xem KOC hợp tác */}
           {compProfile && (
-            <>
-              <div className="p-4 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar name={compProfile.brandName} size={44} />
-                  <div className="grid gap-0.5 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-ink">
-                        Đối thủ: {compProfile.brandName}
-                      </span>
-                      <a
-                        href={compProfile.channelUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs font-code text-accent hover:underline inline-flex items-center gap-1"
-                      >
-                        <span>@{compProfile.handle}</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                      <Status tone="neutral">{compProfile.category}</Status>
-                    </div>
-                    <span className="text-xs text-ink-2 truncate max-w-2xl">
+            <div className="px-4 py-3 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar name={compProfile.brandName} size={38} />
+                <div className="grid gap-0.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-ink">
+                      {compProfile.brandName}
+                    </span>
+                    <a
+                      href={compProfile.channelUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-code text-accent hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>@{compProfile.handle}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <Status tone="neutral">{compProfile.category}</Status>
+                  </div>
+                  {compProfile.bio && (
+                    <span className="text-2xs text-ink-2 truncate max-w-xl">
                       {compProfile.bio}
                     </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-5 text-xs">
-                  <div>
-                    <span className="text-ink-3 block text-2xs">Follower kênh đối thủ</span>
-                    <strong className="text-ink tabular-nums">
-                      {formatNumber(compProfile.followers)}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-ink-3 block text-2xs">Tổng lượt thích</span>
-                    <strong className="text-ink tabular-nums">
-                      {formatNumber(compProfile.totalLikes)}
-                    </strong>
-                  </div>
-                  <div>
-                    <span className="text-ink-3 block text-2xs">Tổng số video</span>
-                    <strong className="text-ink tabular-nums">
-                      {formatNumber(compProfile.videoCount)}
-                    </strong>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              <StatRow>
-                <Stat
-                  label="Tổng KOC làm cho đối thủ"
-                  value={formatNumber(compStats.total)}
-                  note={`Đã quét trên kênh @${compProfile.handle}`}
-                  icon={Users}
-                />
-                <Stat
-                  label="KOC Mới (Chưa có tại UpBase)"
-                  value={formatNumber(compStats.newCount)}
-                  note="Chưa có trong Danh bạ KOC UpBase"
-                  tone="positive"
-                  icon={UserPlus}
-                />
-                <Stat
-                  label="Đã có trong Danh bạ UpBase"
-                  value={formatNumber(compStats.existingCount)}
-                  note="Đang có hồ sơ tại UpBase"
-                  icon={Store}
-                />
-                <Stat
-                  label="Tổng video KOC đăng cho đối thủ"
-                  value={`${formatNumber(compStats.totalCompVideos)} video`}
-                  note={`Tổng lượt xem video gần nhất: ${formatNumber(compStats.totalCompViews)} view`}
-                  tone="positive"
-                  icon={Video}
-                />
-              </StatRow>
-            </>
+              <div className="flex flex-wrap items-center gap-5 text-xs tabular-nums">
+                <div>
+                  <span className="text-ink-3 block text-2xs">Follower kênh</span>
+                  <strong className="text-ink">
+                    {formatNumber(compProfile.followers)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-ink-3 block text-2xs">Video trên kênh</span>
+                  <strong className="text-ink">
+                    {formatNumber(compProfile.videoCount)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-ink-3 block text-2xs">Tổng view KOC hợp tác</span>
+                  <strong className="text-positive">
+                    {formatNumber(compStats.totalCompViews)}
+                  </strong>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Bảng danh sách KOC của đối thủ */}
           <Panel
-            title={`Danh sách KOC đang hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length})`}
+            title={`KOC hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length})`}
             flush
             actions={
               <div className="flex flex-wrap items-center gap-2">
@@ -1473,7 +1430,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   disabled={filteredCompResults.length === 0}
                   onClick={handleExportCompetitorCsv}
                 >
-                  Xuất CSV ({filteredCompResults.length})
+                  Xuất CSV
                 </Button>
                 <Button
                   size="sm"
@@ -1482,7 +1439,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   disabled={filteredCompResults.length === 0}
                   onClick={() => handleSaveBulkKocs(filteredCompResults)}
                 >
-                  Lưu tất cả vào Danh bạ KOC
+                  Lưu tất cả vào Danh bạ
                 </Button>
               </div>
             }
@@ -1499,7 +1456,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     { key: 'ALL', label: 'Tất cả', count: compResults.length },
                     {
                       key: 'NEW_OPPORTUNITY',
-                      label: 'KOC Mới (Chưa có tại UpBase)',
+                      label: 'KOC Mới',
                       count: compStats.newCount,
                     },
                     {
@@ -1516,7 +1473,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     },
                     {
                       key: 'AFFILIATE_CART',
-                      label: 'Tự gắn giỏ Affiliate',
+                      label: 'Gắn giỏ Affiliate',
                       count: compResults.filter(
                         (r) => r.competitorCollaboration.collaborationType === 'AFFILIATE_CART'
                       ).length,
@@ -1542,13 +1499,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {/* TAB 2: TÌM KOC THEO #HASHTAG / TỪ KHÓA */}
       {activeTab === 'HASHTAG_DISCOVERY' && (
         <div className="space-y-4">
-          <Panel
-            title="Tìm kiếm KOC đang có video lên xu hướng theo #Hashtag / Từ khóa ngách (0đ)"
-          >
+          <Panel title="Tìm kiếm KOC có video nổi bật theo #Hashtag hoặc từ khóa ngách">
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
                 <Field
-                  label="Hashtag hoặc Từ khóa ngách trên TikTok"
+                  label="Hashtag hoặc từ khóa ngách trên TikTok"
                   htmlFor="crawler-hashtag-input"
                   error={tagError || undefined}
                 >
@@ -1564,7 +1519,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
-                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng KOC:</span>
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng:</span>
                     {KOC_COUNT_PRESETS.map((n) => (
                       <button
                         key={n}
@@ -1590,26 +1545,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                           Math.min(120, Math.max(1, Number(e.target.value) || 12))
                         )
                       }
-                      title="Nhập số lượng KOC muốn quét theo Hashtag (hệ thống tự chia thành từng đợt 12 KOC)"
+                      title="Nhập số lượng KOC cần quét theo Hashtag (tối đa 120 KOC, chia đợt 12 KOC/lần)"
                       className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
-                    <span className="text-2xs text-ink-3 whitespace-nowrap">
-                      ({Math.max(1, Math.ceil(tagTargetCount / KOC_BATCH_SIZE))} đợt)
-                    </span>
                   </div>
 
-                  <Segmented<PeriodKey>
-                    items={[
-                      { key: '7d', label: '7 ngày' },
-                      { key: '30d', label: '30 ngày' },
-                      { key: '90d', label: '90 ngày' },
-                    ]}
-                    value={period}
-                    onChange={(p) => {
-                      setPeriod(p);
-                      void runHashtagCrawl(hashtagInput, p);
-                    }}
-                  />
                   <Button
                     variant="primary"
                     icon={tagLoading ? RefreshCw : Hash}
@@ -1623,8 +1563,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     {tagLoading
                       ? tagBatchProgress
                         ? `Đang quét đợt ${tagBatchProgress.currentBatch}/${tagBatchProgress.totalBatches} (${tagBatchProgress.collectedCount}/${tagBatchProgress.targetCount})...`
-                        : 'Đang quét hashtag...'
-                      : `Quét ${tagTargetCount} KOC theo Hashtag`}
+                        : 'Đang quét...'
+                      : 'Quét theo Hashtag'}
                   </Button>
                   {tagLoading && (
                     <Button
@@ -1640,27 +1580,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              {tagBatchProgress && (
-                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="text-ink font-medium">
-                    Hệ thống đang chia đợt quét Hashtag tự động:{' '}
-                    <strong>
-                      Đợt {tagBatchProgress.currentBatch}/{tagBatchProgress.totalBatches}
-                    </strong>{' '}
-                    ({KOC_BATCH_SIZE} KOC/đợt) — Đã thu thập{' '}
-                    <strong>
-                      {tagBatchProgress.collectedCount}/{tagBatchProgress.targetCount}
-                    </strong>{' '}
-                    KOC thực tế
-                  </span>
-                  <span className="text-2xs text-ink-2">
-                    Dữ liệu từng đợt được cộng dồn trực tiếp vào bảng bên dưới
-                  </span>
-                </div>
-              )}
-
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn nhanh hashtag ngách:</span>
+                <span>Chọn nhanh:</span>
                 {HASHTAG_SAMPLES.map((tag) => (
                   <button
                     key={tag}
@@ -1685,7 +1606,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           </Panel>
 
           <Panel
-            title={`Danh sách KOC phát hiện từ ${hashtagInput} (${filteredTagResults.length})`}
+            title={`KOC theo ${hashtagInput} (${filteredTagResults.length})`}
             flush
             actions={
               <div className="flex flex-wrap items-center gap-2">
@@ -1710,7 +1631,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   disabled={filteredTagResults.length === 0}
                   onClick={handleExportHashtagCsv}
                 >
-                  Xuất CSV ({filteredTagResults.length})
+                  Xuất CSV
                 </Button>
                 <Button
                   size="sm"
@@ -1719,7 +1640,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   disabled={filteredTagResults.length === 0}
                   onClick={() => handleSaveBulkKocs(filteredTagResults)}
                 >
-                  Lưu tất cả vào Danh bạ KOC
+                  Lưu tất cả vào Danh bạ
                 </Button>
               </div>
             }
@@ -1737,22 +1658,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               columns={hashtagColumns}
               rowKey={(r) => r.handle}
               fitContainer
-              empty="Chưa có dữ liệu KOC theo hashtag. Nhập #hashtag (ví dụ #kemchongnang) và bấm Quét KOC theo Hashtag."
+              empty="Chưa có dữ liệu KOC theo hashtag. Nhập #hashtag (ví dụ #kemchongnang) và bấm Quét theo Hashtag."
             />
           </Panel>
         </div>
       )}
 
-      {/* TAB 3: CÀO BÌNH LUẬN VIDEO & KOC XU HƯỚNG */}
+      {/* TAB 3: BÌNH LUẬN VIDEO */}
       {activeTab === 'COMMENTS_AND_TRENDING' && (
         <div className="space-y-4">
-          <Panel
-            title="Cào Bình luận thực tế của Video TikTok & Lọc khách hỏi mua hàng"
-          >
+          <Panel title="Cào bình luận video TikTok & lọc khách hỏi mua hàng">
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
                 <Field
-                  label="Đường dẫn Video TikTok cần cào bình luận"
+                  label="Đường dẫn video TikTok"
                   htmlFor="video-comment-url-input"
                   error={commentError || undefined}
                 >
@@ -1768,7 +1687,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
-                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số bình luận:</span>
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng:</span>
                     {COMMENT_COUNT_PRESETS.map((n) => (
                       <button
                         key={n}
@@ -1794,7 +1713,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                           Math.min(300, Math.max(10, Number(e.target.value) || 40))
                         )
                       }
-                      title="Nhập số lượng bình luận muốn lấy (hệ thống tự chia đợt 40 bình luận/đợt)"
+                      title="Nhập số lượng bình luận muốn lấy (tối đa 300, chia đợt 40 bình luận/lần)"
                       className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
                   </div>
@@ -1812,8 +1731,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     {commentLoading
                       ? commentBatchProgress
                         ? `Đang cào đợt ${commentBatchProgress.currentBatch}/${commentBatchProgress.totalBatches} (${commentBatchProgress.collectedCount}/${commentBatchProgress.targetCount})...`
-                        : 'Đang tải bình luận...'
-                      : `Cào ${commentTargetCount} bình luận Video`}
+                        : 'Đang tải...'
+                      : 'Cào bình luận'}
                   </Button>
                   {commentLoading && (
                     <Button
@@ -1829,24 +1748,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              {commentBatchProgress && (
-                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="text-ink font-medium">
-                    Hệ thống đang chia đợt cào bình luận:{' '}
-                    <strong>
-                      Đợt {commentBatchProgress.currentBatch}/{commentBatchProgress.totalBatches}
-                    </strong>{' '}
-                    — Đã lấy{' '}
-                    <strong>
-                      {commentBatchProgress.collectedCount}/{commentBatchProgress.targetCount}
-                    </strong>{' '}
-                    bình luận thực tế
-                  </span>
-                </div>
-              )}
-
               <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
-                <span>Thử nhanh link video mẫu:</span>
+                <span>Chọn nhanh video mẫu:</span>
                 {SAMPLE_VIDEO_URLS.map((item) => (
                   <button
                     key={item.url}
@@ -1868,15 +1771,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
           {commentData && (
             <>
-              <div className="p-4 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-4">
-                <div className="space-y-1 min-w-0 max-w-2xl">
+              <div className="px-4 py-3 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-4">
+                <div className="space-y-0.5 min-w-0 max-w-2xl">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-semibold text-ink">
                       Kênh đăng: @{commentData.videoInfo.authorHandle}
                     </span>
-                    <Status tone="positive">{commentData.engineUsed}</Status>
                     <span className="text-2xs text-ink-3 tabular-nums">
-                      Ngày đăng: {formatDate(commentData.videoInfo.publishedAt)}
+                      · Ngày đăng: {formatDate(commentData.videoInfo.publishedAt)}
                     </span>
                   </div>
                   <p className="text-xs text-ink-2 truncate">
@@ -1904,45 +1806,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     </strong>
                   </div>
                   <div>
-                    <span className="text-ink-3 block text-2xs">Chia sẻ / Tải về</span>
-                    <strong className="text-ink">
-                      {formatNumber(commentData.videoInfo.sharesCount)} /{' '}
-                      {formatNumber(commentData.videoInfo.downloadsCount)}
+                    <span className="text-ink-3 block text-2xs">Tỷ lệ hỏi mua</span>
+                    <strong className="text-positive">
+                      {commentData.summary.buyingIntentRate}%
                     </strong>
                   </div>
                 </div>
               </div>
 
-              <StatRow>
-                <Stat
-                  label="Số bình luận đã bóc tách"
-                  value={formatNumber(commentData.summary.totalFetched)}
-                  note="Lấy trực tiếp từ /api/comment/list/"
-                  icon={MessageSquare}
-                />
-                <Stat
-                  label="Bình luận hỏi mua hàng / tư vấn"
-                  value={formatNumber(commentData.summary.buyingIntentCount)}
-                  note={`Chiếm ${commentData.summary.buyingIntentRate}% số bình luận`}
-                  tone="positive"
-                  icon={Phone}
-                />
-                <Stat
-                  label="Phản hồi trải nghiệm sản phẩm"
-                  value={formatNumber(commentData.summary.feedbackCount)}
-                  note="Nhận xét chất lượng / hiệu quả sử dụng"
-                  icon={Check}
-                />
-                <Stat
-                  label="Tổng lượt thích trên bình luận"
-                  value={formatNumber(commentData.summary.totalLikesOnComments)}
-                  note="Mức độ đồng tình của người xem"
-                  icon={ThumbsUp}
-                />
-              </StatRow>
-
               <Panel
-                title={`Danh sách bình luận thực tế (${filteredComments.length})`}
+                title={`Danh sách bình luận (${filteredComments.length})`}
                 flush
                 actions={
                   <div className="flex flex-wrap items-center gap-2">
@@ -1967,7 +1840,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       disabled={filteredComments.length === 0}
                       onClick={handleExportCommentsCsv}
                     >
-                      Xuất CSV Bình luận ({filteredComments.length})
+                      Xuất CSV
                     </Button>
                   </div>
                 }
@@ -1983,12 +1856,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       items={[
                         {
                           key: 'ALL',
-                          label: 'Tất cả bình luận',
+                          label: 'Tất cả',
                           count: commentData.comments.length,
                         },
                         {
                           key: 'BUYING_INTENT',
-                          label: 'Hỏi mua hàng / Xin tư vấn',
+                          label: 'Hỏi mua / Tư vấn',
                           count: commentData.summary.buyingIntentCount,
                         },
                         {
@@ -2021,76 +1894,42 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </Panel>
             </>
           )}
-
-          {/* Bảng 30 Kênh Creator đang thịnh hành thực tế trên TikTok */}
-          <Panel
-            title={`Danh sách Creator đang thịnh hành thực tế trên TikTok (${filteredTrendingCreators.length})`}
-            flush
-            actions={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={trendingLoading ? RefreshCw : Flame}
-                disabled={trendingLoading}
-                onClick={runTrendingCreatorsCrawl}
-              >
-                {trendingLoading ? 'Đang làm mới...' : 'Làm mới danh sách Xu hướng'}
-              </Button>
-            }
-          >
-            <FilterBar
-              search={{
-                value: trendingSearch,
-                onChange: setTrendingSearch,
-                placeholder: 'Tìm kiếm theo @handle, tên kênh hoặc nội dung Bio...',
-              }}
-            />
-
-            <DataTable
-              rows={filteredTrendingCreators}
-              columns={trendingColumns}
-              rowKey={(c) => c.handle}
-              fitContainer
-              empty="Nhấn Làm mới danh sách Xu hướng để lấy danh sách Creator đang thịnh hành trên TikTok."
-            />
-          </Panel>
         </div>
       )}
 
-      {/* TAB 4: CÀO HỒ SƠ KÊNH HÀNG LOẠT & NGHIỆM THU VIDEO KOC */}
+      {/* TAB 4: DANH SÁCH KOC XU HƯỚNG TRÊN TIKTOK */}
       {activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && (
-        <div className="grid lg:grid-cols-2 gap-4">
-          <Panel
-            title="Cào hồ sơ & chỉ số hàng loạt Kênh KOC theo @handle"
-          >
-            <div>
-              <Button
-                variant="primary"
-                icon={Search}
-                onClick={() => {
-                  setScraperInitialHandle('');
-                  setScraperModalOpen(true);
-                }}
-              >
-                Mở bảng Cào Kênh KOC theo @handle
-              </Button>
-            </div>
-          </Panel>
+        <Panel
+          title={`KOC đang thịnh hành trên TikTok (${filteredTrendingCreators.length})`}
+          flush
+          actions={
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={trendingLoading ? RefreshCw : Flame}
+              disabled={trendingLoading}
+              onClick={runTrendingCreatorsCrawl}
+            >
+              {trendingLoading ? 'Đang làm mới...' : 'Làm mới danh sách'}
+            </Button>
+          }
+        >
+          <FilterBar
+            search={{
+              value: trendingSearch,
+              onChange: setTrendingSearch,
+              placeholder: 'Tìm theo @handle, tên kênh hoặc nội dung tiểu sử...',
+            }}
+          />
 
-          <Panel
-            title="Nghiệm thu hàng loạt Link Video KOC gửi (6 lớp kiểm tra)"
-          >
-            <div>
-              <Button
-                variant="primary"
-                icon={FileCheck2}
-                onClick={() => setVideoInspectorOpen(true)}
-              >
-                Mở bảng Nghiệm thu Link Video KOC
-              </Button>
-            </div>
-          </Panel>
-        </div>
+          <DataTable
+            rows={filteredTrendingCreators}
+            columns={trendingColumns}
+            rowKey={(c) => c.handle}
+            fitContainer
+            empty="Nhấn Làm mới danh sách để tải các kênh KOC đang thịnh hành trên TikTok."
+          />
+        </Panel>
       )}
 
       <TikTokKocScraperModal
