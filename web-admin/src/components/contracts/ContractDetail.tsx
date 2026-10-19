@@ -229,7 +229,6 @@ export function ContractDetail({
           <section className="grid gap-3">
             <SectionHeader
               title="Kiểm tra nội dung"
-              description={data.config.ai ? 'Gợi ý để người duyệt xem xét; không tự sửa hay duyệt hồ sơ.' : 'Kiểm tra các ô bắt buộc đã điền.'}
               actions={canCheck && <Button size="sm" icon={ScanSearch} disabled={busy} onClick={() => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung')}>Kiểm tra</Button>}
             />
             <div className="bg-surface border border-line rounded-xl px-4 py-3">
@@ -280,7 +279,6 @@ export function ContractDetail({
               <section className="grid gap-3">
                 <SectionHeader
                   title="Đối soát tài chính & Hạn mức Booking"
-                  description="Đối chiếu giá trị trên hợp đồng với hạn mức Deal Booking, thuế khấu trừ tại nguồn và đợt thanh toán."
                   actions={
                     dealValue > 0 && parsedContractValue > 0 ? (
                       <Status tone={diff === 0 ? 'positive' : diff > 0 ? 'critical' : 'warning'}>
@@ -350,7 +348,6 @@ export function ContractDetail({
           <section className="grid gap-3">
             <SectionHeader
               title="Văn bản hợp đồng trực tiếp"
-              description="Xem và kiểm tra trực tiếp trên giao diện trang A4. Các vị trí thông tin đã điền và mục còn trống được đánh dấu màu để rà soát nhanh."
             />
             {previewError && <p role="alert" className="text-[13px] text-critical">{previewError}</p>}
             {previewLoading && !previewData ? (

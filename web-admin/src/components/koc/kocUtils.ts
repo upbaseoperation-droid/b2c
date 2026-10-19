@@ -19,6 +19,12 @@ export const LEGAL_TYPE_LABEL: Record<LegalType, string> = {
 export function legalTypeOf(k: KocItem): LegalType {
   if (k.ocrDocumentType === 'BUSINESS_LICENSE') return 'COMPANY';
   if (k.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HOUSEHOLD';
+  if (k.taxAccountType?.toLowerCase().includes('doanh nghiệp') || /CONG TY|CTY|TNHH|CO PHAN/i.test(k.companyName || k.realName || '')) {
+    return 'COMPANY';
+  }
+  if (k.taxAccountType?.toLowerCase().includes('hộ kinh doanh')) {
+    return 'HOUSEHOLD';
+  }
   return 'INDIVIDUAL';
 }
 
@@ -27,7 +33,8 @@ export function legalIdOf(k: KocItem): string {
   const digits = (s?: string) => (s || '').replace(/\D/g, '');
   if (legalTypeOf(k) !== 'INDIVIDUAL' && digits(k.taxCode).length >= 7) return k.taxCode!.trim();
   const cccd = digits(k.cccd);
-  if (cccd.length >= 9 && !/^0+$/.test(cccd)) return k.cccd.trim();
+  if (cccd.length >= 9 && !/^0+$/.test(cccd)) return (k.cccd || '').trim();
+  if (digits(k.taxCode).length >= 7 && !/^0+$/.test(digits(k.taxCode))) return k.taxCode!.trim();
   return '';
 }
 
@@ -65,7 +72,7 @@ export function findDuplicates(kocs: KocItem[]): Map<string, DuplicateMatch[]> {
     ['kênh', (k) => { const v = (k.channelId || '').trim().toLowerCase().replace(/^@/, ''); return v.length > 2 ? v : ''; }],
     ['SĐT', (k) => { const v = (k.phone || '').replace(/\D/g, ''); return v.length >= 9 ? v : ''; }],
     ['CCCD', (k) => { const v = (k.cccd || '').replace(/\D/g, ''); return v.length >= 9 && !/^0+$/.test(v) ? v : ''; }],
-    ['MST', (k) => { const v = (k.taxCode || '').trim(); return v.length >= 7 ? v : ''; }],
+    ['MST', (k) => { const v = (k.taxCode || '').trim(); return v.length >= 7 && !/^chưa/i.test(v) ? v : ''; }],
   ];
   const byId = new Map(kocs.map((k) => [k.id, k]));
   const result = new Map<string, Map<string, DuplicateMatch>>();
@@ -184,18 +191,23 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
   const runningDeals = kocDeals.filter(isDealOpen);
   const cancelledDeals = kocDeals.filter((d) => d.status === 'CANCELLED');
 
-  const paidDealsCount = validDeals.filter((d) => (d.totalValue || 0) > 0).length;
-  const focDealsCount = validDeals.filter((d) => (d.totalValue || 0) === 0).length;
+  const dealsPaidCount = validDeals.filter((d) => (d.totalValue || 0) > 0).length;
+  const dealsFocCount = validDeals.filter((d) => (d.totalValue || 0) === 0).length;
+  const paidDealsCount = Math.max(dealsPaidCount, koc.totalPaidVideos || 0);
+  const focDealsCount = Math.max(dealsFocCount, koc.totalFocVideos || 0);
 
-  const totalSpentNet = validDeals.reduce((s, d) => s + (d.totalValue || 0), 0);
+  const dealsSpentNet = validDeals.reduce((s, d) => s + (d.totalValue || 0), 0);
+  const totalSpentNet = Math.max(dealsSpentNet, koc.totalPastCost || 0);
   const totalFocCost = validDeals.reduce((s, d) => s + (d.focSampleCost || 0), 0);
   const totalAdsBudget = validDeals.reduce((s, d) => s + (d.sparkAdsBudget || 0), 0);
   const totalInvestment = totalSpentNet + totalFocCost + totalAdsBudget;
 
-  const totalGmv = validDeals.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
+  const dealsGmv = validDeals.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
+  const totalGmv = Math.max(dealsGmv, koc.totalPastGmv || 0);
   const overallRoi = totalSpentNet > 0 ? totalGmv / totalSpentNet : (koc.historicalRoi || 0);
 
-  const totalOrders = validDeals.reduce((s, d) => s + (d.ordersCount || (d.gmv30 ? Math.round(d.gmv30 / (koc.aov || 250000)) : 0)), 0);
+  const dealsOrders = validDeals.reduce((s, d) => s + (d.ordersCount || (d.gmv30 ? Math.round(d.gmv30 / (koc.aov || 250000)) : 0)), 0);
+  const totalOrders = Math.max(dealsOrders, koc.itemsSold || 0);
   const avgCpo = totalOrders > 0 ? Math.round(totalSpentNet / totalOrders) : 0;
 
   const totalCollabViews = validDeals.reduce((s, d) => s + (d.viewsCount || 0), 0);
@@ -228,12 +240,15 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
     ? Number((dealsWithRating.reduce((s, d) => s + (d.ratingScore || 0), 0) / dealsWithRating.length).toFixed(1))
     : 4.8;
 
-  const uniqueBrands = Array.from(new Set(validDeals.map((d) => d.brandName).filter(Boolean)));
+  const uniqueBrands = Array.from(new Set([...validDeals.map((d) => d.brandName), koc.brandName].filter((x): x is string => Boolean(x))));
   const uniqueStores = Array.from(new Set(validDeals.map((d) => d.storeName).filter(Boolean) as string[]));
 
+  const totalDealsCount = Math.max(kocDeals.length, koc.totalPastDeals || 0);
+  const completedDealsCount = Math.max(completedDeals.length, Math.max(0, totalDealsCount - runningDeals.length - cancelledDeals.length));
+
   return {
-    totalDeals: kocDeals.length,
-    completedDeals: completedDeals.length,
+    totalDeals: totalDealsCount,
+    completedDeals: completedDealsCount,
     runningDeals: runningDeals.length,
     cancelledDeals: cancelledDeals.length,
     paidDealsCount,

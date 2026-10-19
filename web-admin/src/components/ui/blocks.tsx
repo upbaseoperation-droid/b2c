@@ -47,11 +47,10 @@ export function Panel({
 }) {
   return (
     <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden shadow-2xs', className)}>
-      {(title || description || actions) && (
+      {(title || actions) && (
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line bg-surface">
           <div className="min-w-0">
             {title && <h3 className="text-sm font-semibold text-ink leading-tight">{title}</h3>}
-            {description && <p className="text-2xs text-ink-3 mt-0.5 leading-normal">{description}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
@@ -413,12 +412,12 @@ export function ConfirmDialog({
 /* -------------------------------------------------------------------- Form */
 
 /** Nhãn ở trên, luôn hiện. Lỗi nói rõ sai gì và sửa thế nào. */
-export function Field({ label, hint, error, htmlFor, children, className }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string }) {
+export function Field({ label, error, htmlFor, children, className }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={cx('grid gap-1.5 min-w-0', className)}>
       <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink">{label}</label>
       {children}
-      {error ? <p className="text-2xs text-critical">{error}</p> : hint ? <p className="text-2xs text-ink-3">{hint}</p> : null}
+      {error ? <p className="text-2xs text-critical">{error}</p> : null}
     </div>
   );
 }

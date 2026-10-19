@@ -48,6 +48,7 @@ import {
 import { LIVE_STORE_PORTFOLIOS_MASTER } from './liveStoresData';
 import { UPBASE_STORES_MASTER } from './importedMasterData';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
+import { REAL_KOC_COOPERATION_DEALS } from './realKocMasterData';
 import { REAL_B2C_69_STORES, REAL_BOOKING_TEAMS_STRUCTURE } from './realB2cPlanData';
 import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
 
@@ -1791,7 +1792,8 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     isBreakEven: true,
     remainingSlaHours: 72,
     isSlaWarning: false
-  }
+  },
+  ...REAL_KOC_COOPERATION_DEALS
 ];
 
 export const INITIAL_TASKS: SlaTask[] = [

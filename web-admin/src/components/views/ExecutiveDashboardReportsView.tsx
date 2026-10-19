@@ -1776,9 +1776,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <div className="text-lg font-semibold text-positive font-mono">
                   642 Đơn · 2,14 Tỷ VNĐ
                 </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  Video đã lên sóng đạt chuẩn yêu cầu thương hiệu, hoàn tất biên bản nghiệm thu và thanh lý kế toán.
-                </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-warning/20 bg-warning-soft">
@@ -1789,9 +1786,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <div className="text-lg font-semibold text-warning font-mono">
                   104 Đơn · 376 Triệu VNĐ
                 </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  KOC đã nhận tạm ứng đợt 1 và sản phẩm mẫu; chuyên viên đang giám sát lịch quay để lên sóng đúng hạn.
-                </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-line bg-canvas">
@@ -1802,9 +1796,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <div className="text-lg font-semibold text-ink font-mono">
                   212 Suất · 0đ Cát-xê
                 </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  Suất mẫu sản phẩm miễn phí cho KOC liên kết Affiliate (Trần Thị Hảo phụ trách), không phát sinh tiền mặt chi ra.
-                </p>
               </div>
             </div>
           </div>
@@ -2977,9 +2968,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         8 Gian hàng
                       </span>
                     </div>
-                    <p className="text-2xs text-ink-2 mt-1">
-                      ClubClio (TT/SP), Cindy Bloom, Mine, EUPC, L&apos;Occitane, Bye Bye Blemish, Rejuran
-                    </p>
                     <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20/70 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
@@ -3006,9 +2994,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         61 Gian hàng
                       </span>
                     </div>
-                    <p className="text-2xs text-ink-2 mt-1">
-                      Toàn bộ 29 gian Shopee còn lại &amp; 32 gian TikTok 1 PIC (<code className="text-2xs">bookingLeader: undefined</code>)
-                    </p>
                     <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20/70 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>

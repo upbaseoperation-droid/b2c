@@ -10,13 +10,13 @@ import {
   FileSpreadsheet, 
   Sparkles, 
   Search, 
-  ShieldCheck, 
   Check, 
   Layers, 
   Award,
   Zap,
   Database,
-  FileText
+  FileText,
+  ShieldCheck
 } from 'lucide-react';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { 
@@ -602,11 +602,6 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                   Đã khớp danh bạ ({activeReportData.matchedKocCount})
                 </button>
               </div>
-            </div>
-
-            <div className="text-xs text-ink-3 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-positive" />
-              <span>Tiêu chuẩn nhóm hiệu quả: ROAS ≥ 4.0 và doanh thu ≥ 3.000.000 đ</span>
             </div>
           </div>
 

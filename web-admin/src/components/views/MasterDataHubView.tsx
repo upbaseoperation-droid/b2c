@@ -36,7 +36,6 @@ import {
   Trash2,
   Archive,
   AlertCircle,
-  BookOpen,
   RefreshCw,
   CloudDownload,
   Edit3
@@ -1828,9 +1827,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               onChange={(e) => setQuickBrandName(e.target.value)}
               className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface font-medium text-ink text-sm"
             />
-            <span className="text-2xs text-ink-3 mt-1 block">
-              Chỉ cần nhập tên thương hiệu để khởi tạo và đưa vào danh sách vận hành.
-            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-1">
@@ -1865,13 +1861,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               />
             </div>
           </div>
-
-          <div className="p-2.5 rounded-lg bg-accent-soft border border-line text-2xs text-accent flex items-start gap-2">
-            <BookOpen className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-            <span>
-              Sau khi tạo, thương hiệu sẽ sẵn sàng để liên kết gian hàng. Bạn có thể mở <strong>Hồ sơ thương hiệu</strong> bất cứ khi nào cần cấu hình Brand Guidelines và trần thù lao KOC.
-            </span>
-          </div>
         </form>
       </Modal>
 
@@ -1905,9 +1894,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           <div className="p-3.5 bg-canvas rounded-lg border border-line flex items-center justify-between gap-3">
             <div>
               <p className="font-semibold text-ink">Đồng bộ tự động từ Bảng 3.5 Lark Base</p>
-              <p className="text-2xs text-ink-3 mt-0.5">
-                Tự động kéo các thương hiệu mới nhất trong Lark Base B2C về danh sách
-              </p>
             </div>
             <Button
               variant="secondary"

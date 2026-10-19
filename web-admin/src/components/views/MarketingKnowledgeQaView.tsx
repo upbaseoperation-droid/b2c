@@ -698,12 +698,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
             >
               <div className="space-y-4">
                 {/* Gợi ý câu hỏi nhanh theo chủ đề */}
-                <div className="space-y-2 pb-3 border-b border-line">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-2xs font-medium text-ink-3">
-                      Câu hỏi nghiệp vụ thường gặp (Bấm để tra cứu ngay):
-                    </span>
-                  </div>
+                <div className="pb-3 border-b border-line">
                   <div className="flex flex-wrap gap-1.5">
                     {ROLE_SUGGESTED_QUESTIONS.map((item, idx) => (
                       <button

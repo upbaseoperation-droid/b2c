@@ -1241,10 +1241,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 )}
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
-                <span>
-                  Đồng bộ trực tiếp với Danh mục Gian hàng B2C.
-                </span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end text-2xs text-slate-500">
                 <button
                   type="button"
                   onClick={() => {
@@ -2113,10 +2110,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Vui lòng nhập định hướng quý nhãn hàng muốn điều chỉnh (ví dụ: tăng phân bổ cho Micro KOC, giảm Celeb, hoặc đổi tệp sáng tạo).
-            </p>
-
             <textarea
               rows={4}
               value={planRevisionNotes}
@@ -2172,10 +2165,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Chọn lý do quý nhãn hàng chưa đồng ý KOC này để Upbase đề xuất Creator phù hợp hơn:
-            </p>
 
             <div className="space-y-2 text-xs">
               {[

@@ -825,7 +825,6 @@ export function StoreProfile({
           {/* 2.1 Bảng tổng hợp Lịch sử Plan & Report qua các tháng */}
           <Panel
             title="Hồ sơ Kế hoạch &amp; Báo cáo thực thi theo tháng"
-            description="Doanh số NMV, ngân sách Net/Gross và sản lượng video theo từng chu kỳ tháng."
             flush
           >
             <DataTable
@@ -1010,7 +1009,6 @@ export function StoreProfile({
             <div className="space-y-6">
               <Panel
                 title={`Cơ cấu phân bổ Ngân sách & Chỉ tiêu Plan (${currentMonthReport.monthLabel})`}
-                description="Tách bạch 3 luồng sản xuất nội dung B2C (KOC trả phí, Kênh tự xây, Gửi mẫu FOC 0đ) và gói ngân sách Ads"
                 actions={
                   <div className="flex items-center gap-2">
                     {onDrilldownToListing && (
@@ -1060,9 +1058,6 @@ export function StoreProfile({
                     <div className="text-2xs text-ink-2">
                       Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planAffVideos)}</strong> video
                     </div>
-                    <p className="text-2xs text-ink-3">
-                      Phân bổ theo khung lương KL1–KL7.
-                    </p>
                   </div>
 
                   <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
@@ -1073,9 +1068,6 @@ export function StoreProfile({
                     <div className="text-2xs text-ink-2">
                       Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planSelfVideos)}</strong> video
                     </div>
-                    <p className="text-2xs text-ink-3">
-                      Sản xuất qua mạng lưới CTV / VJ kênh hãng.
-                    </p>
                   </div>
 
                   <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
@@ -1084,9 +1076,6 @@ export function StoreProfile({
                     <div className="text-2xs text-ink-2">
                       Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planFocVideos)}</strong> suất
                     </div>
-                    <p className="text-2xs text-ink-3">
-                      Điều phối gửi mẫu: <strong className="text-ink">{focSpecialist}</strong>.
-                    </p>
                   </div>
 
                   <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
@@ -1097,16 +1086,12 @@ export function StoreProfile({
                     <div className="text-2xs text-ink-2">
                       Thực chi Ads: <strong className="tabular-nums">{formatVndShort(currentMonthReport.adsCost)}</strong>
                     </div>
-                    <p className="text-2xs text-ink-3">
-                      Vít Spark Ads &amp; chiến dịch PGM/LGM sàn.
-                    </p>
                   </div>
                 </div>
               </Panel>
 
               <Panel
                 title={`Bảng phân rã hạng mục Plan theo khung lương (${currentMonthReport.monthLabel})`}
-                description="Chi tiết định mức số lượng video, đơn giá và mục tiêu doanh số từng dòng trong Plan tháng"
                 flush
               >
                 {currentMonthReport.planItems.length === 0 ? (
@@ -1148,7 +1133,6 @@ export function StoreProfile({
           {detailTab === 'BOOKING_REPORT' && (
             <Panel
               title={`Danh sách Deal Booking & Báo cáo Video (${currentMonthReport.monthLabel})`}
-              description="Chi tiết kết quả video, doanh thu và hợp đồng của từng lượt booking."
               actions={
                 onDrilldownToBooking && (
                   <Button
@@ -1191,7 +1175,6 @@ export function StoreProfile({
               {currentMonthReport.adsCampaigns.length > 0 && (
                 <Panel
                   title={`Báo cáo Chiến dịch Quảng cáo TikTok Seller (${currentMonthReport.adsCampaigns.length} chiến dịch)`}
-                  description="Hiệu quả thực tế từ báo cáo TikTok Shop Seller Center của gian hàng"
                   flush
                 >
                   <DataTable
@@ -1243,7 +1226,6 @@ export function StoreProfile({
 
               <Panel
                 title="Sản phẩm chủ lực & kho mẫu FOC của gian hàng"
-                description="Danh mục SKU trọng tâm phục vụ lên kịch bản và gửi mẫu cho KOC"
                 flush
               >
                 {storeProducts.length === 0 ? (
@@ -1264,7 +1246,6 @@ export function StoreProfile({
           {/* Đội ngũ phụ trách */}
           <Panel
             title="Đội ngũ phụ trách"
-            description="Phân bổ nhân sự theo quy chuẩn 2 tầng B2C"
             actions={
               onOpenHandover && (
                 <Button size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>

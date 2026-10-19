@@ -1331,7 +1331,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span>B1. Chỉ tiêu Kế hoạch</span>
               <span className="font-mono text-blue-700">{stats.totalTasks}/{stats.targetVideos}</span>
             </div>
-            <p className="text-slate-500 mt-0.5 truncate">Nhận hạn mức &amp; chia Pillar</p>
           </button>
 
           <button
@@ -1346,7 +1345,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span>B2. Duyệt VJ &amp; Góc quay</span>
               <span className="font-mono text-amber-700">{stats.orientationPendingTasks} chờ</span>
             </div>
-            <p className="text-slate-500 mt-0.5 truncate">SLA Brand 48h / Ủy quyền</p>
           </button>
 
           <button
@@ -1361,7 +1359,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span>B3. Gửi mẫu &amp; Kịch bản</span>
               <span className="font-mono text-amber-700">{stats.scriptPendingTasks} kịch bản</span>
             </div>
-            <p className="text-slate-500 mt-0.5 truncate">Ship mẫu 48h &amp; Check &lt;5 ngày</p>
           </button>
 
           <button
@@ -1375,7 +1372,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 {stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ
               </span>
             </div>
-            <p className="text-slate-500 mt-0.5 truncate">Drive gian hàng &amp; Link Air</p>
           </button>
 
           <button
@@ -1387,7 +1383,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span>B5. Lập DNTT &amp; Thuế 10%</span>
               <span className="font-mono text-emerald-700">{formatVnd(stats.pendingPayment)}</span>
             </div>
-            <p className="text-slate-500 mt-0.5 truncate">Check CCCD/HĐ &amp; Giải ngân</p>
           </button>
         </div>
       </div>
@@ -1848,9 +1843,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </span>
                 <span className="text-2xs text-emerald-600 font-medium">Đã chi: {formatVnd(stats.paidTotal)}</span>
               </div>
-              <span className="text-2xs text-slate-400 mt-0.5 block">
-                Kiểm tra CCCD &amp; Hợp đồng CTV trước khi giải ngân
-              </span>
             </div>
           </div>
 

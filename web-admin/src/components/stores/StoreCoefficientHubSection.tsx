@@ -1126,7 +1126,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               TB: {stats.avgMultiplier.toFixed(2).replace('.', ',')}
             </span>
           </div>
-          <div className="text-2xs text-ink-3 mt-0.5">1 store = 1 hệ số trong cùng kỳ</div>
         </button>
 
         <button
@@ -1149,7 +1148,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
           <div className="mt-1 text-lg font-semibold text-positive font-mono">
             {stats.countApprovedStart} / {stats.total}
           </div>
-          <div className="text-2xs text-ink-3 mt-0.5">Quản lý duyệt chốt đầu kỳ</div>
         </button>
 
         <button
@@ -1172,7 +1170,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
           <div className="mt-1 text-lg font-semibold text-accent font-mono">
             {stats.countAdjustedPlan} store
           </div>
-          <div className="text-2xs text-ink-3 mt-0.5">Thay đổi scope lớn có Plan duyệt</div>
         </button>
 
         <button
@@ -1195,7 +1192,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
           <div className="mt-1 text-lg font-semibold text-warning font-mono">
             {stats.countPending} store
           </div>
-          <div className="text-2xs text-ink-3 mt-0.5">Cần Đặng Thị Yến Nhi chốt đầu kỳ</div>
         </button>
 
         <div className="p-3 rounded-xl border border-line bg-surface flex flex-col justify-between">
@@ -1625,17 +1621,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
           }
         >
           <form onSubmit={handleSaveStoreCoefficient} className="space-y-4">
-            {/* Thông báo nguyên tắc Bảng 2 */}
-            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 space-y-1">
-              <div className="font-semibold flex items-center gap-1.5">
-                <Info className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>Nguyên tắc quản trị Hệ số gian hàng (Bảng 2):</span>
-              </div>
-              <p className="text-2xs leading-relaxed text-amber-900">
-                {STORE_COEFFICIENT_TABLE_2.principle}
-              </p>
-            </div>
-
             {editingStore.hasCompletedPeriodResult && (
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 flex items-start gap-2">
                 <Lock className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
@@ -1669,9 +1654,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                   }`}
                 >
                   <div className="text-xs font-semibold text-ink">1. Duyệt hệ số đầu tháng</div>
-                  <div className="text-2xs text-ink-3 mt-0.5">
-                    Quản lý phê duyệt hệ số cố định cho store vào đầu kỳ kế hoạch ({activeMonth}).
-                  </div>
                 </button>
 
                 <button
@@ -1688,9 +1670,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                 >
                   <div className="text-xs font-semibold text-ink">
                     2. Thay đổi scope lớn trong tháng (Có Plan điều chỉnh)
-                  </div>
-                  <div className="text-2xs text-ink-3 mt-0.5">
-                    Áp dụng khi mở rộng scope/ngành hàng lớn giữa tháng và đã có Plan điều chỉnh được duyệt.
                   </div>
                 </button>
               </div>
@@ -1725,7 +1704,6 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         </span>
                       </div>
                       <p className="text-2xs text-ink mt-1.5 leading-snug">{row.definition}</p>
-                      <p className="text-2xs text-ink-3 mt-1 italic">VD: {row.example}</p>
                     </button>
                   );
                 })}

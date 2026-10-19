@@ -984,9 +984,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-line-strong text-xs bg-canvas"
                   autoFocus
                 />
-                <p className="text-2xs text-ink-3 mt-1">
-                  Định danh chính xác gian hàng trên sàn để liên kết đối soát hợp đồng và booking.
-                </p>
               </div>
 
               <div>
@@ -1002,9 +999,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
-                <p className="text-2xs text-ink-3 mt-1">
-                  Gian hàng sẽ được gắn vào nhãn hàng để quản lý hạn mức ngân sách và quy chuẩn nội dung.
-                </p>
               </div>
 
               <div>
@@ -1314,9 +1308,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       <option value="">Không có leader (Chuyên viên làm việc trực tiếp Trưởng phòng)</option>
                       <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm 8 gian)</option>
                     </select>
-                    <p className="text-2xs text-ink-3 mt-0.5">
-                      Theo quy chuẩn B2C: Chỉ có 8 gian hàng có Trưởng nhóm sơ duyệt, các gian còn lại làm việc trực tiếp Trưởng phòng.
-                    </p>
                   </div>
 
                   <StaffSearchSelect
@@ -1423,7 +1414,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             </div>
 
             <div className="space-y-2 text-xs text-ink-2">
-              <p>Khuyến nghị an toàn từ hệ thống Upbase:</p>
               <button
                 type="button"
                 onClick={() => handleOffboardStore(deletingStore)}
@@ -1432,9 +1422,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <Archive className="w-3.5 h-3.5 text-accent" />
                 <span>Chuyển sang &quot;Off / Dừng hợp tác&quot; (Khuyên dùng)</span>
               </button>
-              <p className="text-2xs text-ink-3">
-                Lưu trữ gian hàng giữ toàn bộ dữ liệu báo cáo GMV và lịch sử booking của nhãn hàng.
-              </p>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">

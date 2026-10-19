@@ -685,9 +685,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     <span className="font-semibold text-emerald-800">
                       Thương hiệu ĐANG CÓ Campaign ({brandCoverageForMonth.targetMonth})
                     </span>
-                    <span className="text-2xs text-emerald-600 font-semibold">
-                      Đồng bộ KV &amp; Mốc Sale xuống Gian hàng
-                    </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {brandCoverageForMonth.withCampaign.map(({ brandName, campaign }) => {
@@ -886,9 +883,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <div className="bg-accent-soft px-3 py-1.5 border-b border-line flex items-center justify-between">
                           <span className="font-semibold text-ink text-2xs">
                             Phân kỳ triển khai theo từng tháng ({c.monthlyPhases.length} tháng)
-                          </span>
-                          <span className="text-2xs text-accent font-semibold">
-                            Tự động đồng bộ vào Kế hoạch tháng của Gian hàng
                           </span>
                         </div>
                         <div className="divide-y divide-slate-100 bg-white">
@@ -1419,10 +1413,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   </span>
                 )}
               </button>
-            </div>
-
-            <div className="text-xs text-slate-500">
-              SLA phản hồi nhãn hàng: <strong className="text-blue-700">24h – 48h</strong>
             </div>
           </div>
 

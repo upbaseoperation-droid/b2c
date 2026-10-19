@@ -928,10 +928,6 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   <div className="text-2xs text-slate-400 mt-0.5">Chi phí: 35.000.000đ</div>
                 </div>
               </div>
-
-              <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs text-blue-900">
-                <span className="font-semibold text-blue-800">Quy chuẩn SLA Livestream:</span> Phiên live Inhouse phải setup trước 30 phút, kiểm tra đường truyền và voucher sàn độc quyền. Nếu rớt live quá 15 phút, PIC livestream phải lập biên bản bù giờ.
-              </div>
             </div>
           )}
 

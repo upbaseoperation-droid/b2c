@@ -163,14 +163,14 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 |---|---|---|
 | `Toolbar` | Hàng ngay dưới tiêu đề trang, khi có bộ chọn kỳ hoặc lọc nhanh | Trái: chọn kỳ, bộ lọc nhanh. Phải: thao tác phụ. Không dùng Toolbar chỉ để chứa một nút — nút chính đưa lên thanh trên bằng `PageActions` |
 | `PageActions` | Nút chính của màn (Thêm KOC, Tạo booking…) | Đưa nút lên cuối thanh trên, cạnh tiêu đề trang. Chỉ hiện khi màn đang mở. Tối đa một `primary` |
-| `Panel` | Khung chứa bảng, form | Tiêu đề + mô tả một dòng + thao tác. `flush` cho bảng |
+| `Panel` | Khung chứa bảng, form | Tiêu đề + thao tác (không hiển thị dòng phụ đề xám giải thích dưới tiêu đề). `flush` cho bảng |
 | `FilterBar`, `SearchInput`, `Chips` | Lọc một bảng | Đặt ngay trên bảng, trong `Panel`. Ô tìm kiếm trái, ô chọn phải, chip trạng thái hàng dưới, số kết quả cuối hàng. Chip có số đếm |
 | `ActionMenu` | Thao tác phụ của một hàng | Nút “⋯” mở danh sách thao tác. Tự chặn lan sự kiện nên dùng được cùng `onRowClick` |
 | `Pagination` | Chân bảng có phân trang | Vị trí đang xem, số dòng mỗi trang, trang trước/sau. Chỉ đặt cuối bảng |
 | `DataTable` | Mọi bảng dữ liệu | Khai báo cột (`header`, `render`, `align`, `width`). Số căn phải. Có `empty` (dùng `EmptyState`). `stickyLast` khi cột cuối là thao tác. `onRowClick` khi cả hàng mở chi tiết |
 | `Modal` | Tác vụ ngắn: sửa một bản ghi, bàn giao | Đóng bằng Esc/X/bấm ngoài. Chân: “Hủy” (ghost) rồi nút chính. Tiêu đề là động từ + đối tượng (“Cập nhật job BO…”) |
 | `ConfirmDialog` | Thao tác không hoàn tác được, hoặc cần lý do | Thay cho `alert`, `confirm`, `prompt` (ESLint chặn ở màn đã chuyển). `tone="danger"` cho từ chối, xóa, hủy |
-| `Field`, `Input`, `Select`, `Textarea` | Mọi form | Nhãn ở trên. `hint` giải thích, `error` nói cách sửa. Lựa chọn ≤ 3 dùng `Segmented`, nhiều hơn dùng `Select` |
+| `Field`, `Input`, `Select`, `Textarea` | Mọi form | Nhãn ở trên, `error` nói cách sửa (không hiển thị dòng `hint` xám dư thừa). Lựa chọn ≤ 3 dùng `Segmented`, nhiều hơn dùng `Select` |
 
 Toast: dùng `showToast(message, type)` trong `app/page.tsx` (hàng đợi `useToastQueue` + `ToastStack` trong `ui/toast.tsx`). Nền `ink`, chữ trắng, icon theo loại. Nhiều thông báo xếp chồng, không đè nhau.
 

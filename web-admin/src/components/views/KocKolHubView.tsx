@@ -2286,9 +2286,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <h3 className="text-sm font-semibold text-slate-900">
                       Danh Sách Hợp Đồng Dịch Vụ, Phụ Lục &amp; Tiến Độ Duyệt Chi ({currentKocDeals.filter(d => d.status !== 'CANCELLED').length})
                     </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
-                      Liên thông trực tiếp với phân hệ Hợp đồng &amp; Thanh toán — hỗ trợ xem toàn văn hợp đồng, ký xác nhận điện tử và tra cứu mã duyệt chi Lark
-                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -2715,9 +2712,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <h3 className="text-sm font-semibold text-slate-900">
                       2. Bóc Tách Doanh Số Tự Nhiên (Organic) &amp; Quảng Cáo (Spark Ads) Theo Video
                     </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
-                      Đối soát trực tiếp với dữ liệu TikTok Shop Seller tại phân hệ Báo cáo Ads tuần
-                    </p>
                   </div>
                 </div>
 
@@ -3001,12 +2995,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
                 <div className="text-2xs text-slate-500">
-                  {previewContractDeal.contractCreatedAt ? (
+                  {previewContractDeal.contractCreatedAt && (
                     <span className="text-emerald-700 font-semibold">
                       Đã xác nhận hợp đồng ngày {previewContractDeal.contractCreatedAt}
                     </span>
-                  ) : (
-                    <span>Bấm &quot;Ký xác nhận hợp đồng&quot; để đồng bộ sang phân hệ Hợp đồng &amp; Kế toán</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -3326,10 +3318,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
 
               <div className="space-y-3 text-xs">
-                <p className="text-slate-600">
-                  Chọn lý do để Upbase cập nhật hồ sơ và không gửi job tương tự làm phiền bạn:
-                </p>
-
                 <select
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
@@ -3399,7 +3387,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     onChange={(e) => setSubmissionForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
-                  <span className="text-2xs text-slate-400 mt-0.5 block">Mã sinh từ mục Video Setting / Ad Authorization trên TikTok.</span>
                 </div>
 
                 <div>

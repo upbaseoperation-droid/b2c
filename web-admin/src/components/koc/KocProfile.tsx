@@ -446,9 +446,13 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
             <span className="text-xs font-medium text-ink truncate max-w-[190px] ml-auto" title={v.productName}>
               {v.productName || 'Sản phẩm gắn giỏ'}
             </span>
-            <span className="text-2xs text-positive tabular-nums">
-              GMV {formatVndShort(v.estimatedGmv || 0)} · {formatNumber(v.itemsSold || 0)} đơn
-            </span>
+            {v.estimatedGmv && v.estimatedGmv > 0 ? (
+              <span className="text-2xs text-positive tabular-nums">
+                GMV {formatVndShort(v.estimatedGmv)} · {formatNumber(v.itemsSold || 0)} đơn
+              </span>
+            ) : (
+              <span className="text-2xs text-positive">Có gắn giỏ TikTok Shop</span>
+            )}
           </div>
         ) : (
           <span className="text-2xs text-ink-3">Không gắn giỏ</span>
@@ -672,7 +676,6 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       <Panel
         flush
         title="Danh sách video & nội dung gần nhất trên kênh"
-        description="Theo dõi caption, hashtag, nhạc nền, tỷ lệ tương tác (ER%) và hiệu quả giỏ hàng Affiliate của các video mới đăng"
         actions={
           <Button
             size="sm"
@@ -947,7 +950,6 @@ function CollaborationHistorySection({
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <SectionHeader
             title="Tổng hợp hiệu quả hợp tác tích lũy"
-            description={`Đã hợp tác qua ${stats.totalDeals} chiến dịch với ${stats.uniqueBrands.length || 1} nhãn hàng Upbase B2C`}
           />
           {stats.overallRoi >= 3 && (
             <span className="text-xs font-medium text-positive flex items-center gap-1">
@@ -1331,12 +1333,20 @@ function LegalPaymentPanel({
       ) : (
         <dl className="grid gap-3 text-xs">
           <InfoRow label="Loại hồ sơ">{LEGAL_TYPE_LABEL[type]}</InfoRow>
-          <InfoRow label={type === 'INDIVIDUAL' ? 'Họ tên' : 'Tên đơn vị'}>
+          {koc.taxAccountType && (
+            <InfoRow label="Chế độ khấu trừ thuế">{koc.taxAccountType}</InfoRow>
+          )}
+          <InfoRow label={type === 'INDIVIDUAL' ? 'Họ tên chủ TK' : 'Tên đơn vị thụ hưởng'}>
             {type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName}
           </InfoRow>
-          <InfoRow label={type === 'INDIVIDUAL' ? 'Số CCCD' : 'Mã số thuế'}>
+          <InfoRow label={type === 'INDIVIDUAL' ? 'Số CCCD / ĐD' : 'Mã số thuế'}>
             <SensitiveValue value={show(legalId)} copyValue={revealed ? legalId : undefined} />
           </InfoRow>
+          {type === 'INDIVIDUAL' && koc.taxCode && koc.taxCode !== 'Chưa có' && koc.taxCode !== legalId && (
+            <InfoRow label="Mã số thuế cá nhân">
+              <SensitiveValue value={show(koc.taxCode)} copyValue={revealed ? koc.taxCode : undefined} />
+            </InfoRow>
+          )}
           {type === 'INDIVIDUAL' && (koc.issueDate || koc.issuePlace) && (
             <InfoRow label="Ngày cấp, nơi cấp">{[koc.issueDate, koc.issuePlace].filter(Boolean).join(' · ')}</InfoRow>
           )}
@@ -1365,6 +1375,23 @@ function LegalPaymentPanel({
               '—'
             )}
           </InfoRow>
+          {koc.sharedMcnInfo && (
+            <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
+          )}
+          {koc.contractDriveUrl && (
+            <InfoRow label="Hồ sơ hợp đồng">
+              <a
+                href={koc.contractDriveUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-accent hover:underline font-medium"
+              >
+                <FileText className="w-3 h-3" />
+                Mở thư mục hợp đồng
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </InfoRow>
+          )}
         </dl>
       )}
 
@@ -1391,8 +1418,10 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
     koc.brandRejectReason && { label: 'Lý do nhãn hàng từ chối trước đó', text: koc.brandRejectReason },
   ].filter((n): n is { label: string; text: string } => !!n);
 
+  const hasRateRange = Boolean((koc.minRate && koc.minRate > 0) || (koc.maxRate && koc.maxRate > 0));
+
   return (
-    <AsideSection title="Đánh giá & Ghi chú">
+    <AsideSection title="Đánh giá & Đầu mối vận hành">
       <div className="space-y-3 text-xs">
         <div className="p-3 rounded-lg bg-sunken/40 border border-line flex items-center justify-between">
           <div>
@@ -1406,10 +1435,33 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
           </span>
         </div>
 
-        {notes.length === 0 ? (
-          <p className="text-xs text-ink-3">Chưa có ghi chú vận hành riêng cho KOC này.</p>
-        ) : (
-          <dl className="grid gap-3">
+        <dl className="grid gap-2.5">
+          {koc.collabGroupLabel && (
+            <InfoRow label="Nhóm hợp tác">{koc.collabGroupLabel}</InfoRow>
+          )}
+          {hasRateRange && (
+            <InfoRow label="Biên độ đơn giá lịch sử">
+              <span className="num font-medium text-ink">
+                {formatVndShort(koc.minRate || koc.rateCardVideo)} – {formatVndShort(koc.maxRate || koc.rateCardVideo)}
+              </span>
+            </InfoRow>
+          )}
+          {(koc.latestBookMonth || koc.latestBoCode) && (
+            <InfoRow label="Đợt book gần nhất">
+              <span className="text-ink-2">
+                {[koc.latestBookMonth, koc.latestBoCode, koc.brandName].filter(Boolean).join(' · ')}
+              </span>
+            </InfoRow>
+          )}
+          {koc.workedPicsList && (
+            <InfoRow label={`PIC từng làm việc (${koc.workedPicsCount || 1})`}>
+              <span className="text-ink-2 leading-relaxed">{koc.workedPicsList}</span>
+            </InfoRow>
+          )}
+        </dl>
+
+        {notes.length > 0 && (
+          <dl className="grid gap-3 pt-2 border-t border-line">
             {notes.map((n) => (
               <InfoRow key={n.label} label={n.label}>
                 <span className="text-ink-2 leading-relaxed">{n.text}</span>

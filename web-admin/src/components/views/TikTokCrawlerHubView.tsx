@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useContext, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   Download,

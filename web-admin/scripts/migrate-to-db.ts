@@ -271,11 +271,11 @@ async function main() {
   console.log(`✅ Đã lưu ${snapCount}/8 bản mẫu Word gốc vào ContractTemplateSnapshot trong DB.`);
 
   // =========================================================================
-  // 6. KOC PROFILES & BOOKING DEALS
+  // 6. KOC PROFILES & BOOKING DEALS (274 KOC Chủ Lực & 930+ Lịch sử hợp tác)
   // =========================================================================
-  console.log('\n--- 6. Đồng bộ KOC Profiles & Deals mẫu vào PostgreSQL ---');
+  console.log('\n--- 6. Đồng bộ Danh bạ KOC Chủ lực & Lịch sử hợp tác vào PostgreSQL ---');
   let kocCount = 0;
-  for (const koc of INITIAL_KOCS.slice(0, 30)) {
+  for (const koc of INITIAL_KOCS) {
     const anyKoc = koc as any;
     const channelId = anyKoc.channelId || anyKoc.channel || `@koc_${koc.id}`;
     const stageName = anyKoc.stageName || anyKoc.name || anyKoc.kocName || 'Creator';
@@ -289,11 +289,11 @@ async function main() {
           : CreatorSegment.MASSIVE_CREATOR;
 
     const catRaw = String(anyKoc.category || anyKoc.kocCategory || '');
-    const kocCategory: KocCategory = /mẹ|bé/i.test(catRaw)
+    const kocCategory: KocCategory = /mẹ|bé|mom/i.test(catRaw)
       ? KocCategory.MOM_AND_BABY
       : /fashion|thời trang/i.test(catRaw)
         ? KocCategory.FASHION
-        : /fb|ẩm thực|ăn/i.test(catRaw)
+        : /fb|ẩm thực|ăn|f&b/i.test(catRaw)
           ? KocCategory.FB
           : /lifestyle|đời sống/i.test(catRaw)
             ? KocCategory.LIFESTYLE
@@ -309,11 +309,36 @@ async function main() {
       : /kl5/i.test(salaryRaw) ? SalaryGrade.KL5
       : /kl6/i.test(salaryRaw) ? SalaryGrade.KL6
       : /kl7/i.test(salaryRaw) ? SalaryGrade.KL7
-      : SalaryGrade.KL3;
+      : /ngoài/i.test(salaryRaw) ? SalaryGrade.TAP_EXTERNAL
+      : SalaryGrade.TAP_UPAFFILIATE;
 
     await prisma.kocProfile.upsert({
       where: { channelId },
-      update: {},
+      update: {
+        stageName,
+        realName: anyKoc.realName || stageName,
+        tier: (anyKoc.tier as any) || 'TIER_3_MICRO',
+        salaryGrade,
+        segment,
+        tepKenh: anyKoc.tepKenh || 'Review Nữ',
+        kocCategory,
+        channelUrl: anyKoc.channelLink || anyKoc.channelUrl || `https://www.tiktok.com/@${channelId.replace('@', '')}`,
+        followersCount: anyKoc.followers || anyKoc.followersCount || 50000,
+        avgViews: anyKoc.avgViews || 15000,
+        rateCardVideo: anyKoc.rateCardVideo || 0,
+        phone: anyKoc.phone || null,
+        zalo: anyKoc.zalo || anyKoc.phone || null,
+        email: anyKoc.email || null,
+        cccdNumber: anyKoc.cccd || null,
+        taxCode: anyKoc.taxCode || null,
+        bankName: anyKoc.bankName || null,
+        bankAccount: anyKoc.bankAccount || null,
+        bankHolderName: anyKoc.companyName || anyKoc.realName || null,
+        isOcrVerified: Boolean(anyKoc.isOcrVerified),
+        totalDeals: anyKoc.totalPastDeals || 0,
+        avgRoi: anyKoc.historicalRoi || 0,
+        reliabilityScore: anyKoc.reliabilityScore || 9.0,
+      },
       create: {
         channelId,
         stageName,
@@ -324,18 +349,34 @@ async function main() {
         tepKenh: anyKoc.tepKenh || 'Review Nữ',
         kocCategory,
         mainChannel: anyKoc.platform || anyKoc.mainChannel || 'TIKTOK',
-        channelUrl: anyKoc.channelUrl || `https://tiktok.com/@${channelId.replace('@', '')}`,
-        followersCount: anyKoc.followers || anyKoc.followersCount || 100000,
+        channelUrl: anyKoc.channelLink || anyKoc.channelUrl || `https://www.tiktok.com/@${channelId.replace('@', '')}`,
+        followersCount: anyKoc.followers || anyKoc.followersCount || 50000,
         avgViews: anyKoc.avgViews || 15000,
-        phone: anyKoc.phone || '0901234567',
-        zalo: anyKoc.zalo || anyKoc.phone || '0901234567',
-        bankName: anyKoc.bankName || 'Techcombank',
-        bankAccount: anyKoc.bankAccount || '1903000000',
+        rateCardVideo: anyKoc.rateCardVideo || 0,
+        phone: anyKoc.phone || null,
+        zalo: anyKoc.zalo || anyKoc.phone || null,
+        email: anyKoc.email || null,
+        cccdNumber: anyKoc.cccd || null,
+        taxCode: anyKoc.taxCode || null,
+        bankName: anyKoc.bankName || null,
+        bankAccount: anyKoc.bankAccount || null,
+        bankHolderName: anyKoc.companyName || anyKoc.realName || null,
+        isOcrVerified: Boolean(anyKoc.isOcrVerified),
+        totalDeals: anyKoc.totalPastDeals || 0,
+        avgRoi: anyKoc.historicalRoi || 0,
+        reliabilityScore: anyKoc.reliabilityScore || 9.0,
       },
     });
     kocCount++;
   }
-  console.log(`✅ Đã lưu ${kocCount} KOC Profiles mẫu vào PostgreSQL.`);
+  console.log(`✅ Đã đồng bộ ${kocCount} hồ sơ KOC chủ lực vào bảng KocProfile.`);
+
+  await prisma.$executeRaw`
+    INSERT INTO "AppSharedRecord" (key, revision, data)
+    VALUES ('koc-master-dataset', 1, ${JSON.stringify({ totalKocs: INITIAL_KOCS.length, totalDeals: INITIAL_DEALS.length, updatedAt: new Date().toISOString() })}::jsonb)
+    ON CONFLICT (key) DO UPDATE SET data = ${JSON.stringify({ totalKocs: INITIAL_KOCS.length, totalDeals: INITIAL_DEALS.length, updatedAt: new Date().toISOString() })}::jsonb, revision = "AppSharedRecord".revision + 1
+  `;
+  console.log(`✅ Đã đồng bộ metadata KOC (${INITIAL_KOCS.length} KOC & ${INITIAL_DEALS.length} Deal lịch sử hợp tác) vào PostgreSQL.`);
 
   console.log('\n=============================================');
   console.log('🎉 CHUYỂN ĐỔI SANG SUPABASE POSTGRESQL HOÀN TẤT!');

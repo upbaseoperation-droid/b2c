@@ -61,7 +61,8 @@ export type TabKey =
   | 'api-settings'
   | 'knowledge-qa'
   | 'audit-trail'
-  | 'tiktok-crawler';
+  | 'tiktok-crawler'
+  | 'market-research';
 
 export interface UserProfile {
   id: string;
@@ -446,17 +447,17 @@ export interface KocItem {
   threadsChannel?: string;
   
   // Thông tin liên hệ & Hậu cần nhận hàng gửi mẫu (Sample Shipping - Rất quan trọng cho Booking)
-  phone: string;
-  zalo: string;
+  phone?: string;
+  zalo?: string;
   email?: string;
   shippingAddress?: string; // Thông tin nhận hàng (Địa chỉ, người nhận, SĐT)
   location?: string; // Khu vực (Hà Nội, TP.HCM, Miền Bắc, Miền Nam...)
   otherContactMethod?: string;
 
   // Pháp lý & Thanh toán (Hợp đồng & VietQR)
-  cccd: string;
-  bankName: string;
-  bankAccount: string;
+  cccd?: string;
+  bankName?: string;
+  bankAccount?: string;
   avatarUrl?: string;
 
   // Pháp lý & Xác thực OCR CCCD / ĐKKD
@@ -529,13 +530,25 @@ export interface KocItem {
   contentNote?: string; // Content note / Đề xuất từ UpBase
   accountComment?: string; // Leader/Growth/Account comment
 
-  // Lịch sử booking tại Upbase
+  // Lịch sử booking tại Upbase (Chuẩn hóa từ Danh bạ Master KOC & File 3.2)
   reliabilityScore: number;
   totalPastDeals?: number;
+  totalPaidVideos?: number; // Tổng Video Paid lịch sử
+  totalFocVideos?: number; // Tổng Video FOC lịch sử
   totalPastGmv?: number;
   totalPastCost?: number;
   historicalRoi?: number;
   isWinnerTop20?: boolean;
+  minRate?: number; // Đơn giá thấp nhất lịch sử (VNĐ)
+  maxRate?: number; // Đơn giá cao nhất lịch sử (VNĐ)
+  taxAccountType?: string; // Loại tài khoản thuế: (VAT 8%) Tài khoản doanh nghiệp / (Thuế TNCN 10%) Tài khoản cá nhân
+  collabGroupLabel?: string; // Nhóm hợp tác: Paid + FOC / KOC Trả phí (Paid) / KOC Miễn phí (FOC)
+  latestBookMonth?: string; // Tháng / Ngày book gần nhất (VD: 2026/10)
+  latestBoCode?: string; // Mã BO gần nhất (VD: BO260961606)
+  workedPicsCount?: number; // Số PIC từng làm việc
+  workedPicsList?: string; // Danh sách các PIC từng làm việc
+  sharedMcnInfo?: string; // MCN / Danh sách các kênh dùng chung CCCD-MST
+  contractDriveUrl?: string; // Link thư mục Hợp đồng Google Drive
 
   // Mở rộng chỉ số kênh & nhân khẩu học cho KocKolHubView
   rateCardLive?: number;
@@ -764,6 +777,7 @@ export interface BookingDealItem {
   views30?: number;
   isOnTimePost?: boolean;
   contentFormat?: string;
+  signedContractUrl?: string;
 }
 
 export interface MasterTierQuota {

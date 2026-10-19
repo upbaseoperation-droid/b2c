@@ -174,20 +174,6 @@ export default function PerformanceP3View({
 
       {activeTab === 'CALC' ? (
         <div className="space-y-4">
-          {/* Formula Callout */}
-          <div className="bg-canvas border border-line rounded-xl p-3 text-xs text-ink-2 flex items-start gap-2.5">
-            <HelpCircle className="w-4 h-4 text-ink-3 mt-0.5 shrink-0" />
-            <div>
-              <span className="font-semibold text-ink">Công thức tính điểm P3 chuẩn (4P Marketing B2C — Áp dụng Bảng 2):</span>
-              <div className="font-mono text-ink-2 mt-1 bg-surface px-2.5 py-1.5 rounded border border-line inline-block">
-                Điểm khối lượng việc = Số ca hoàn thành × Hệ số gian hàng Bảng 2 (0,80 | 1,00 | 1,25 | 1,50) × Hệ số chất lượng (0.9 - 1.15) × Hệ số SLA (0.8 - 1.2)
-              </div>
-              <p className="text-2xs text-ink-3 mt-1">
-                Tiền thưởng = Điểm khối lượng việc × Đơn giá điểm theo bậc ({formatVnd(30000)}, {formatVnd(35000)}, {formatVnd(40000)}). Hệ số gian hàng áp dụng theo store (không theo brand), được quản lý duyệt đầu tháng.
-              </p>
-            </div>
-          </div>
-
           {/* Role Filter */}
           <div className="flex items-center justify-between gap-3 bg-surface p-3 border border-line rounded-xl">
             <div className="flex items-center gap-2">
@@ -329,27 +315,6 @@ export default function PerformanceP3View({
       ) : (
         /* Store Matrix Tab */
         <div className="space-y-4">
-          <div className="bg-canvas border border-line rounded-xl p-3.5 text-xs text-ink-2 space-y-2.5">
-            <div>
-              <span className="font-semibold text-ink">Bảng 2. Hệ số gian hàng (HS phạm vi cho việc cấp Sàn và cấp Brand):</span>
-              <p className="text-2xs text-ink-3 mt-0.5">
-                <strong>Nguyên tắc:</strong> Hệ số gian hàng được quản lý duyệt đầu tháng. Một store chỉ áp dụng một hệ số trong cùng kỳ. Nếu thay đổi scope lớn trong tháng, phải có Plan điều chỉnh được duyệt. Không tự nâng hệ số sau khi đã có kết quả. <strong>Áp dụng:</strong> Áp dụng theo store, không theo brand.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              {STORE_COEFFICIENT_TABLE_2.rows.map((rule) => (
-                <div key={rule.tier} className="bg-surface p-2.5 border border-line rounded-md">
-                  <div className="flex items-center justify-between">
-                    <span className={`font-semibold ${rule.tier === 'Khó' ? 'text-critical' : 'text-ink'}`}>{rule.tier}</span>
-                    <span className="font-mono font-semibold text-ink-2 tabular-nums">{rule.multiplierLabel}</span>
-                  </div>
-                  <div className="text-2xs text-ink-2 mt-1">{rule.definition}</div>
-                  <div className="text-2xs text-ink-3 mt-0.5">VD: {rule.example}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Store Table */}
           <div className="bg-surface border border-line rounded-xl overflow-hidden">
             <table className="w-full text-left text-xs">

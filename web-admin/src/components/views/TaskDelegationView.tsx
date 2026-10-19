@@ -1356,7 +1356,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {activeSubTab === 'WORKLOAD_MEASUREMENT' && (
         <Panel
           title="Bảng đo lường tải công việc 28 nhân sự B2C"
-          description="Tổng hợp tự động từ điểm Luồng quy trình + điểm Quản lý giao và đối chiếu tỷ lệ việc khó tối thiểu theo Cấp bậc (Bảng 4)."
           flush
         >
           <div className="p-3 border-b border-line">
@@ -1780,7 +1779,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         open={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
         title="Giao việc mới & Phân bổ điểm công việc"
-        description="Chọn hạng mục SOW chuẩn, cấp độ phạm vi và phân công nhân sự phụ trách (tổng tỷ trọng 100%)."
         size="xl"
         footer={
           <div className="flex items-center justify-between w-full">
@@ -2122,9 +2120,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   <h4 className="text-sm font-semibold text-ink">
                     Phân bổ nhân sự & Tỷ trọng
                   </h4>
-                  <p className="text-xs text-ink-3">
-                    Tổng tỷ trọng các thành viên trong cùng đầu việc phải bằng 100%.
-                  </p>
                 </div>
                 <Status tone={isWeightValid ? 'positive' : 'critical'}>
                   Tổng: {totalContributionWeight}%

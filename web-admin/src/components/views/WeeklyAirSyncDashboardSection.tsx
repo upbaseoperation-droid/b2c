@@ -408,27 +408,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               />
             </div>
 
-            {/* Hộp Chú giải màu sắc rõ ràng ngay đầu biểu đồ tuần */}
-            <div className="mt-3 p-2.5 rounded-lg bg-canvas border border-line flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
-              <span className="font-semibold text-ink">Chú giải màu:</span>
-              <span className="inline-flex items-center gap-1.5 text-ink-2">
-                <span className="w-3.5 h-2.5 rounded-sm bg-ink-3/35 border border-ink-3/60 inline-block" />
-                Thanh Kế hoạch giao
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-ink-2">
-                <span className="w-3.5 h-2.5 rounded-sm bg-positive inline-block" />
-                Thực tế đạt ≥70%
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-ink-2">
-                <span className="w-3.5 h-2.5 rounded-sm bg-warning inline-block" />
-                Thực tế đạt 30–69%
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-ink-2">
-                <span className="w-3.5 h-2.5 rounded-sm bg-critical inline-block" />
-                Chậm lịch (&lt;30%)
-              </span>
-            </div>
-
             {/* Danh sách 6 Tuần W40 -> W45 */}
             <div className="mt-3 space-y-2.5">
               {weeklyChartRows.map((wk) => {
@@ -543,29 +522,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               </div>
             </div>
 
-            {/* HỘP CHÚ GIẢI MÀU SẮC TRỰC QUAN NGAY ĐẦU BIỂU ĐỒ NGÀY */}
-            <div className="mt-3 p-3 rounded-lg bg-canvas border border-line space-y-2">
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-                <span className="font-semibold text-ink">Chú giải cột biểu đồ:</span>
-                <span className="inline-flex items-center gap-1.5 text-ink">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-ink-3/30 border border-dashed border-ink-2 inline-block" />
-                  <span><strong>Cột Xám (Trái):</strong> Số video Kế hoạch hẹn air</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-ink">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-positive inline-block" />
-                  <span><strong>Cột Xanh lá (Phải):</strong> Thực tế Air đạt lịch / Nổ đồng loạt (06–10/10)</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-ink">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-critical inline-block" />
-                  <span><strong>Cột Đỏ (Phải):</strong> Thực tế Air bị hụt nặng so với kế hoạch (Vỡ lịch)</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-ink">
-                  <span className="w-3.5 h-3.5 rounded-sm bg-accent inline-block" />
-                  <span><strong>Cột Xanh lam (Phải):</strong> Thực tế Air ngày thường / Gom sóng 30/10</span>
-                </span>
-              </div>
-            </div>
-
             {/* 3 Thẻ Tóm tắt 3 Đợt Sóng Chiến Dịch lớn trong tháng (Bấm để nhảy tới ngày đó) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
               <div
@@ -583,9 +539,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 <div className="mt-1 text-xs font-semibold font-code text-critical">
                   Thực tế 29 / Kế hoạch 91 video
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Hẹn 91 video ngày 01/10 nhưng chỉ lên 29 video (trễ 62 video tràn sang 02–08/10)
-                </p>
               </div>
 
               <div
@@ -603,9 +556,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 <div className="mt-1 text-xs font-semibold font-code text-positive">
                   Thực tế 413 / Kế hoạch 296 video
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Nổ đồng loạt 5 ngày sát Mega Sale 10.10 (Đỉnh ngày 09/10 đạt 128 video/ngày)
-                </p>
               </div>
 
               <div
@@ -623,9 +573,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 <div className="mt-1 text-xs font-semibold font-code text-accent">
                   Ngày 30/10: Thực tế 31 / KH 27 video
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  ClubClio Shopee gom cụm 31 video ngày 30/10; 36 đơn khác chờ lên sóng
-                </p>
               </div>
             </div>
 
@@ -890,35 +837,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 Xóa bộ lọc
               </Button>
             )}
-          </div>
-
-          {/* Chú giải màu sắc cho các ô Tuần (W40 -> W45) trong bảng */}
-          <div className="pt-2 border-t border-line flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
-            <span className="font-semibold text-ink">Chú giải ô tuần (Thực air / Kế hoạch):</span>
-            <span className="inline-flex items-center gap-1.5 text-ink-2">
-              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-positive-soft/70 border border-positive/30 text-positive">
-                18/20
-              </span>
-              <span><strong>Ô Xanh lá:</strong> Đạt ≥70% kế hoạch tuần</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-ink-2">
-              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-warning-soft/70 border border-warning/30 text-warning">
-                5/15
-              </span>
-              <span><strong>Ô Vàng:</strong> Mới đạt &lt;70% kế hoạch tuần</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-ink-2">
-              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-critical-soft/60 border border-critical/30 text-critical">
-                0/10
-              </span>
-              <span><strong>Ô Đỏ:</strong> Có lịch kế hoạch nhưng chưa lên video nào</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-ink-2">
-              <span className="px-1.5 py-0.5 rounded font-code text-2xs bg-canvas border border-line text-ink-3">
-                0/0
-              </span>
-              <span><strong>Ô Xám:</strong> Không giao lịch tuần đó</span>
-            </span>
           </div>
         </div>
 

@@ -576,14 +576,6 @@ export function BrandProfilesView({
 
   return (
     <div className="space-y-4">
-      {!isStaffGlobalAdminOrManager(currentUser) && (
-        <div className="flex items-center gap-2 p-3 text-xs bg-canvas border border-line rounded-xl text-ink-2">
-          <span className="font-semibold text-ink">Phạm vi phân quyền:</span>
-          <span>
-            Hệ thống đang hiển thị {rows.length} thương hiệu thuộc quyền quản lý của chuyên viên <strong>{currentUser?.name || ''}</strong>.
-          </span>
-        </div>
-      )}
       <StatRow>
         <Stat
           label={`Doanh số NMV (${activeMonthLabel})`}

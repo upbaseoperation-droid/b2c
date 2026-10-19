@@ -483,9 +483,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   <div className="text-xs font-semibold text-slate-900">
                     Thiết lập góc tiếp cận theo từng sản phẩm
                   </div>
-                  <div className="text-2xs text-slate-600">
-                    Cấu hình ma trận kịch bản theo sản phẩm, gợi ý mở đầu 3 giây và kết nối trực tiếp vào luồng booking.
-                  </div>
                 </div>
               </div>
               {onNavigateToAngles && (

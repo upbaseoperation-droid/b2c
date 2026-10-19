@@ -386,7 +386,6 @@ export function ContractCatalogView({
             <FolderKanban className="w-4 h-4 text-accent" />
           </div>
           <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{data.templates.length} mẫu</p>
-          <p className="text-2xs text-ink-3 mt-0.5">Chuẩn hóa bởi Phòng Pháp chế</p>
         </div>
 
         <div className="bg-surface border border-line rounded-xl px-4 py-3">
@@ -395,7 +394,6 @@ export function ContractCatalogView({
             <CheckCircle2 className="w-4 h-4 text-positive" />
           </div>
           <p className="text-xl font-semibold text-positive mt-1 tabular-nums">{activeCount}/{data.templates.length}</p>
-          <p className="text-2xs text-ink-3 mt-0.5">Cho phép chuyên viên tạo mới</p>
         </div>
 
         <div className="bg-surface border border-line rounded-xl px-4 py-3">
@@ -404,7 +402,6 @@ export function ContractCatalogView({
             <FileText className="w-4 h-4 text-info" />
           </div>
           <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{contractCount} mẫu</p>
-          <p className="text-2xs text-ink-3 mt-0.5">Cá nhân, HKD, Công ty, CTV tháng</p>
         </div>
 
         <div className="bg-surface border border-line rounded-xl px-4 py-3">
@@ -413,7 +410,6 @@ export function ContractCatalogView({
             <ShieldCheck className="w-4 h-4 text-warning" />
           </div>
           <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{acceptanceCount} mẫu</p>
-          <p className="text-2xs text-ink-3 mt-0.5">Đối chiếu nghiệm thu & tất toán</p>
         </div>
       </div>
 
@@ -560,10 +556,6 @@ export function ContractCatalogView({
                         · {loadedTemplate.id} · {loadedTemplate.version}
                       </span>
                     </div>
-                    <p className="text-xs text-ink-2">
-                      {loadedTemplate.description ||
-                        `Biểu mẫu ${loadedTemplate.kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'} áp dụng cho đối tác ${loadedTemplate.subject}.`}
-                    </p>
 
                     {loadedTemplate.scope === 'KOC_CUSTOM' && (
                       <div className="rounded-lg border border-accent/40 bg-accent-soft/40 p-3 space-y-1.5 mt-2">
@@ -672,9 +664,6 @@ export function ContractCatalogView({
                       <span>
                         <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
                       </span>
-                      <span className="text-2xs text-ink-3">
-                        Tự động điền theo thông tin Booking / KOC
-                      </span>
                     </div>
 
                     {GROUP_ORDER.map(g => {
@@ -769,7 +758,6 @@ export function ContractCatalogView({
                           <History className="w-4 h-4 text-accent" />
                           <span>Lịch sử phiên bản biểu mẫu</span>
                         </div>
-                        <span className="text-2xs text-ink-3">Hợp đồng cũ luôn giữ nguyên bản mẫu lúc tạo</span>
                       </div>
                       <ul className="divide-y divide-line text-xs">
                         {(loadedTemplate.history || []).map((h, i) => (

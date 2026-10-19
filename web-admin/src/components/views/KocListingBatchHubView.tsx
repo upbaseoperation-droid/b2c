@@ -1657,16 +1657,6 @@ export function KocListingBatchHubView({
             <div>
               Hiển thị <strong>{filteredListings.length}</strong> hồ sơ KOC trong đợt.
             </div>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Chốt duyệt khi: Nhãn hàng đã duyệt + KOC đã chốt điều khoản
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                KOC không đạt: Hoàn trả 1 suất khả dụng về đúng khung lương KL của Plan tháng
-              </span>
-            </div>
           </div>
         </div>
       ) : (

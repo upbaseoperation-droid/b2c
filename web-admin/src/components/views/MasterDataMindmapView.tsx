@@ -996,9 +996,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                 {store.primaryPic}
                                               </span>
                                             </div>
-                                            <div className="text-2xs text-warning mt-0.5">
-                                              Chủ trì lập kế hoạch & phân bổ ngân sách
-                                            </div>
                                           </div>
 
                                           <div className="mt-2 pt-2 border-t border-line grid grid-cols-2 gap-1.5 text-2xs">
@@ -1211,9 +1208,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <h4 className="text-xs font-semibold text-ink">
                     Bảng điều khiển Master Data
                   </h4>
-                  <div className="text-2xs text-ink-3">
-                    Chi tiết thực thể đang chọn
-                  </div>
                 </div>
               </div>
 
@@ -1300,10 +1294,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                         ))}
                       </div>
                     </div>
-
-                    <p className="text-2xs text-ink-2 mt-2 italic bg-white p-2 rounded border border-line">
-                      <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
-                    </p>
                   </div>
 
                   {/* Financial Targets */}
@@ -1470,19 +1460,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               )}
             </div>
           </div>
-
-          {/* Quick Legend & Guidelines */}
-          <div className="bg-white border border-line rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
-            <h5 className="font-semibold text-ink text-2xs flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-              Quy Chuẩn Master Data B2C
-            </h5>
-            <ul className="space-y-1.5 text-2xs text-ink-2 list-disc list-inside">
-              <li>Mỗi Gian hàng chỉ có đúng <strong>1 PIC Chính</strong> chịu trách nhiệm KPI và số cuối.</li>
-              <li>Mỗi sản phẩm có <strong>1 Master SKU</strong> ở Brand nhưng có các <strong>Store Product ID khác nhau</strong> trên mỗi sàn.</li>
-              <li>Khi làm <strong>Plan</strong>, PIC chính phân rã ngân sách xuống từng nhân sự theo đúng Store Product ID của shop.</li>
-            </ul>
-          </div>
         </div>
       </div>
 
@@ -1509,9 +1486,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <h3 className="text-sm font-semibold text-ink">
                     Phân công PIC chính & đội ngũ gian hàng
                   </h3>
-                  <div className="text-2xs text-ink-3">
-                    Chỉ định 1 PIC chính chủ trì lập kế hoạch & các nhân sự phối hợp
-                  </div>
                 </div>
               </div>
               <button
@@ -1552,9 +1526,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
                   ))}
                 </select>
-                <p className="text-2xs text-warning mt-1">
-                  Nhân sự này sẽ có thẩm quyền lập, phân bổ ngân sách và giao việc cho các thành viên trong gian hàng này.
-                </p>
               </div>
 
               {/* Nhân sự phối hợp (Multi-select) */}

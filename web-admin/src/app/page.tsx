@@ -70,6 +70,7 @@ const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegat
 const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
 const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
+const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { loadAccessPolicy } from '../lib/policyClient';
@@ -171,6 +172,13 @@ export default function App() {
     return true;
   });
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
+  const [crawlerResetKey, setCrawlerResetKey] = useState<number>(0);
+  const handleSelectTab = (tab: TabKey) => {
+    if (tab === 'tiktok-crawler') {
+      setCrawlerResetKey((prev) => prev + 1);
+    }
+    setActiveTab(tab);
+  };
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
@@ -887,6 +895,7 @@ export default function App() {
     'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: '' },
     'audit-trail': { title: 'Nhật ký kiểm toán', subtitle: '' },
     'tiktok-crawler': { title: 'Crawler KOC & Đối thủ', subtitle: '' },
+    'market-research': { title: 'Nghiên cứu Brand & Đối thủ', subtitle: '' },
   };
 
   if (isLoadingAuth || !currentUser) {
@@ -920,7 +929,7 @@ export default function App() {
       {/* Sidebar Navigation (with Mobile Drawer & Desktop Collapse Support) */}
       <Sidebar
         activeTab={activeTab}
-        onTabSelect={setActiveTab}
+        onTabSelect={handleSelectTab}
         currentUser={currentUser}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -945,7 +954,7 @@ export default function App() {
           title={titles[activeTab]?.title ?? 'Bàn điều phối vận hành'}
           subtitle={titles[activeTab]?.subtitle ?? ''}
           activeTab={activeTab}
-          onNavigateTab={setActiveTab}
+          onNavigateTab={handleSelectTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebarCollapse={handleToggleSidebarCollapse}
@@ -1548,9 +1557,39 @@ export default function App() {
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="tiktok-crawler" currentTab={activeTab}>
-            <TikTokCrawlerHubView
+          {activeTab === 'tiktok-crawler' && (
+            <div className="workspace-view space-y-6">
+              <PageActiveContext.Provider value={true}>
+                <ErrorBoundary fallbackTitle="Lỗi tải màn hình (tiktok-crawler)">
+                  <TikTokCrawlerHubView
+                    key={crawlerResetKey}
+                    kocs={kocs}
+                    onSaveScrapedKocs={({ created, updated }) => {
+                      if (created.length > 0 || updated.length > 0) {
+                        setKocs((prev) => {
+                          const updatedMap = new Map(updated.map((u) => [u.id, u]));
+                          const next = prev.map((item) => updatedMap.get(item.id) || item);
+                          return [...created, ...next];
+                        });
+                        showToast(
+                          `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
+                          'success'
+                        );
+                      }
+                    }}
+                    onNotify={showToast}
+                    onNavigateToKocMaster={() => handleSelectTab('koc-master')}
+                  />
+                </ErrorBoundary>
+              </PageActiveContext.Provider>
+            </div>
+          )}
+
+          <KeepAliveTab tabKey="market-research" currentTab={activeTab}>
+            <BrandMarketResearchHubView
+              brands={scopedBrands}
               kocs={kocs}
+              selectedBrand={selectedBrandContext}
               onSaveScrapedKocs={({ created, updated }) => {
                 if (created.length > 0 || updated.length > 0) {
                   setKocs((prev) => {
@@ -1564,8 +1603,14 @@ export default function App() {
                   );
                 }
               }}
+              onNavigateToBrandProfile={(brandName) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
+              onNavigateToContentAngles={() => setActiveTab('content-angles')}
               onNotify={showToast}
-              onNavigateToKocMaster={() => setActiveTab('koc-master')}
             />
           </KeepAliveTab>
             </>

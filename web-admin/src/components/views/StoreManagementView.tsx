@@ -602,14 +602,6 @@ export function StoreManagementView({
 
   return (
     <div className="space-y-4">
-      {!isStaffGlobalAdminOrManager(currentUser) && (
-        <div className="flex items-center gap-2 p-3 text-xs bg-canvas border border-line rounded-xl text-ink-2">
-          <span className="font-semibold text-ink">Phạm vi phân quyền:</span>
-          <span>
-            Hệ thống đang hiển thị {storeList.length} gian hàng thuộc quyền quản lý trực tiếp của chuyên viên <strong>{currentUser?.name || ''}</strong>.
-          </span>
-        </div>
-      )}
       {/* Thanh chuyển đổi giữa Danh bạ Gian hàng & Màn hình Setup Hệ số Gian hàng Hàng loạt theo Tháng */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-line rounded-xl p-2.5 shadow-2xs">
         <div className="inline-flex items-center gap-1 p-1 bg-sunken rounded-lg border border-line">
@@ -636,10 +628,6 @@ export function StoreManagementView({
             <Sliders className="w-3.5 h-3.5" />
             <span>Setup Hệ số Gian hàng theo Tháng (Bảng 2 — Setup hàng loạt)</span>
           </button>
-        </div>
-
-        <div className="text-2xs text-ink-3">
-          Giám đốc Marketing thiết lập hàng loạt hệ số 0,80 · 1,00 · 1,25 · 1,50 đầu kỳ theo từng Store
         </div>
       </div>
 

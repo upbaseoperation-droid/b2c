@@ -1,7 +1,8 @@
 import { KocItem } from './types';
+import { REAL_FLAGSHIP_KOCS } from './realKocMasterData';
 
-// Danh sách 120+ KOC / KOL chuẩn hóa cho hệ thống UpBase B2C
-// Bao phủ đầy đủ 4 Tier, 7 Khung lương KL1-KL7, 25 Tệp kênh và các nhãn hàng chủ lực
+// Danh bạ KOC / KOL chủ lực chuẩn hóa cho hệ thống UpBase B2C
+// Kết hợp 20 KOC hạt nhân + 254 KOC chủ lực chuẩn hóa từ Danh_Ba_Chuan_Hoa_Master_KOC_KOL_B2C_2026.xlsx & File 3.4 / 3.2
 export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
   // --- TIER 1 & 2: MEGA / MACRO CREATORS (KL6 - KL7, TOP CREATORS) ---
   {
@@ -76,11 +77,22 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
     bookingPic: 'Khánh Vy',
-    totalPastDeals: 6,
+    totalPastDeals: 11,
+    totalPaidVideos: 10,
+    totalFocVideos: 1,
     historicalRoi: 5.6,
     totalPastGmv: 420000000,
     totalPastCost: 75000000,
     isWinnerTop20: true,
+    minRate: 1888889,
+    maxRate: 15000000,
+    taxAccountType: 'TK cá nhân tính thuế TNCN 10%',
+    collabGroupLabel: 'Paid + FOC (Cả 2 hình thức)',
+    latestBookMonth: '2026/09',
+    latestBoCode: 'BO260952684',
+    workedPicsCount: 3,
+    workedPicsList: 'Khánh Vy, Hoàng Hải Long, Trần Hải Phượng',
+    contractDriveUrl: 'https://drive.google.com/drive/folders/1cL3f32-5G9w0xA9k4b7n9X',
   },
   {
     id: 'koc-2',
@@ -866,134 +878,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     historicalRoi: 3.8
   },
 
-  // --- HÀNG LOẠT KOC ĐA DẠNG CÁC TỈNH THÀNH, ĐỦ TIER VÀ KHUNG LƯƠNG TỪ 21 ĐẾN 120 ---
-  ...generateExtendedKocs(21, 125)
+  // --- 254 KOC CHỦ LỰC CHUẨN HÓA TỪ DANH BẠ MASTER KOC B2C 2026 & FILE 3.4 / 3.2 ---
+  ...REAL_FLAGSHIP_KOCS
 ];
 
-// Hàm sinh danh bạ hàng trăm KOC chuẩn hóa
-function generateExtendedKocs(startIdx: number, endIdx: number): KocItem[] {
-  const result: KocItem[] = [];
-
-  const firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Vũ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
-  const middleFemales = ['Thị', 'Thanh', 'Ngọc', 'Phương', 'Mai', 'Thùy', 'Hồng', 'Bích', 'Quỳnh', 'Thu', 'Diệu'];
-  const lastFemales = ['Linh', 'Trang', 'Hương', 'Hà', 'Anh', 'Chi', 'Yến', 'My', 'Vy', 'Nhi', 'Ngân', 'Thảo', 'Trâm', 'Chanh', 'Duyên'];
-
-  const niches = [
-    { niche: 'Mẹ Bỉm Nuôi Con, Trị Hăm & Dị Ứng Da Cho Bé', tep: 'Mẹ bé (bầu)' as const, cat: 'Mom and baby' as const, brand: 'Kutieskin' },
-    { niche: 'Dược Sĩ Da Liễu Khuyên Dùng Cho Trẻ Nhỏ', tep: 'Bác sỹ/chuyên gia' as const, cat: 'Mom and baby' as const, brand: 'Kutieskin' },
-    { niche: 'Bác Sĩ Dinh Dưỡng, Sữa Hoàng Gia Tăng Cân Cao Lớn', tep: 'Bác sỹ/chuyên gia' as const, cat: 'Mom and baby' as const, brand: 'Royal Ausnz' },
-    { niche: 'Skincare Nhẹ Dịu Cho Da Nhạy Cảm & treatment', tep: 'Beauty' as const, cat: 'Personal care' as const, brand: 'La Roche-Posay' },
-    { niche: 'Review Mỹ Phẩm Sinh Viên & Nước Tẩy Trang', tep: 'Review Nữ' as const, cat: 'Personal care' as const, brand: 'Senka' },
-    { niche: 'Chăm Sóc Vệ Sinh Phụ Nữ & Sức Khỏe Gia Đình', tep: 'Review Nữ' as const, cat: 'Personal care' as const, brand: 'pHCare' },
-    { niche: 'Review Đồ Mẹ Bé Đời Thực, Chia Sẻ Kinh Nghiệm Bầu', tep: 'Mẹ bé (bầu)' as const, cat: 'Mom and baby' as const, brand: 'Kutieskin' },
-    { niche: 'Dưỡng Ẩm Chống Nẻ & Phục Hồi Chàm Sữa Sơ Sinh', tep: 'Mẹ bé (bầu)' as const, cat: 'Mom and baby' as const, brand: 'Kutieskin' },
-    { niche: 'Beauty Blogger Test Kem Chống Nắng Thực Tế', tep: 'Beauty' as const, cat: 'Personal care' as const, brand: 'Mega Uri' },
-    { niche: 'Bác Sĩ Nhi Khoa Hướng Dẫn Tăng Sức Đề Kháng', tep: 'Bác sỹ/chuyên gia' as const, cat: 'Mom and baby' as const, brand: 'Royal Ausnz' }
-  ];
-
-  const pics = ['Khánh Vy', 'Lê Phương Thảo', 'Lê Thị Thùy Linh', 'Nguyễn Anh', 'Nguyễn Thu Trang'];
-  const locations = ['Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Bình Dương', 'Đồng Nai', 'Nghệ An'];
-  const banks = ['Vietcombank', 'Techcombank', 'MB Bank', 'VPBank', 'BIDV', 'VietinBank', 'TPBank', 'ACB'];
-
-  for (let i = startIdx; i <= endIdx; i++) {
-    const fn = firstNames[i % firstNames.length];
-    const mn = middleFemales[i % middleFemales.length];
-    const ln = lastFemales[i % lastFemales.length];
-    const realName = `${fn} ${mn} ${ln}`;
-    
-    const nicheObj = niches[i % niches.length];
-    const stagePrefix = nicheObj.tep === 'Bác sỹ/chuyên gia' ? 'BS.' : (nicheObj.tep === 'Mẹ bé (bầu)' ? 'Mẹ ' : '');
-    const stageName = `${stagePrefix}${ln} ${nicheObj.tep === 'Mẹ bé (bầu)' ? 'Chăm Con' : (nicheObj.tep === 'Beauty' ? 'Beauty' : 'Daily')} (KOC #${i})`;
-    const channelId = `${ln.toLowerCase()}_${i}_upbase`;
-    const pic = pics[i % pics.length];
-    const loc = locations[i % locations.length];
-    const bank = banks[i % banks.length];
-
-    // Determine Tier & Salary Grade
-    let tier: KocItem['tier'] = 'TIER_4_AFFILIATE';
-    let tierLabel = 'Tier 4 (Nano)';
-    let salaryGrade: KocItem['salaryGrade'] = 'KL2';
-    let segment: KocItem['segment'] = 'Massive Creator';
-    let followers = 15000 + (i * 3500) % 95000;
-    let avgViews = Math.round(followers * 0.35);
-    let rateCard = 1200000;
-
-    if (i % 12 === 0) {
-      tier = 'TIER_2_MACRO';
-      tierLabel = 'Tier 2 (Macro)';
-      salaryGrade = 'KL6';
-      segment = 'Key Creator';
-      followers = 280000 + (i * 7000) % 350000;
-      avgViews = Math.round(followers * 0.28);
-      rateCard = 12000000 + (i % 5) * 1500000;
-    } else if (i % 6 === 0) {
-      tier = 'TIER_3_MICRO';
-      tierLabel = 'Tier 3 (Micro)';
-      salaryGrade = 'KL4';
-      segment = 'Mid Creator';
-      followers = 85000 + (i * 4000) % 95000;
-      avgViews = Math.round(followers * 0.32);
-      rateCard = 3500000 + (i % 4) * 800000;
-    } else if (i % 4 === 0) {
-      tier = 'TIER_3_MICRO';
-      tierLabel = 'Tier 3 (Micro)';
-      salaryGrade = 'KL3';
-      segment = 'Mid Creator';
-      followers = 50000 + (i * 3000) % 40000;
-      avgViews = Math.round(followers * 0.3);
-      rateCard = 2200000 + (i % 3) * 500000;
-    } else if (i % 3 === 0) {
-      tier = 'TIER_4_AFFILIATE';
-      tierLabel = 'Tier 4 (Nano)';
-      salaryGrade = 'KL1';
-      segment = 'Massive Creator';
-      followers = 12000 + (i * 1200) % 25000;
-      avgViews = Math.round(followers * 0.4);
-      rateCard = 800000 + (i % 2) * 200000;
-    }
-
-    const isVerified = (i % 5 !== 0); // 80% KOC đã OCR xác minh
-    const cccd = isVerified ? `0${(10000000000 + i * 837461) % 90000000000}` : 'Chưa có';
-    const taxCode = isVerified ? `8${(100000000 + i * 39281) % 900000000}` : 'Chưa có';
-
-    result.push({
-      id: `koc-${i}`,
-      channelId,
-      channelLink: `https://www.tiktok.com/@${channelId}`,
-      stageName,
-      realName,
-      tier,
-      tierLabel,
-      salaryGrade,
-      segment,
-      tepKenh: nicheObj.tep,
-      kocCategory: nicheObj.cat,
-      niche: nicheObj.niche,
-      followers,
-      avgViews,
-      rateCardVideo: rateCard,
-      bookingFormat: 'Booking Video KOC',
-      reliabilityScore: +(8.5 + ((i % 15) * 0.1)).toFixed(1),
-      phone: `09${String(10000000 + i * 7391).slice(0, 8)}`,
-      zalo: `09${String(10000000 + i * 7391).slice(0, 8)}`,
-      email: `${channelId}@gmail.com`,
-      shippingAddress: `Số ${i * 3}, Đường ${i % 2 === 0 ? 'Giải Phóng' : 'Cộng Hòa'}, ${loc}`,
-      location: loc,
-      cccd,
-      bankName: bank,
-      bankAccount: `${String(1000000000 + i * 92831)}`,
-      isOcrVerified: isVerified,
-      taxCode,
-      gmvBestCase: Math.round(rateCard * (8 + (i % 12))),
-      recentRevenue: Math.round(rateCard * (4 + (i % 8))),
-      brandName: nicheObj.brand,
-      brandApprovalStatus: (i % 7 === 0) ? 'CHỜ_DUYỆT' : 'ĐÃ_DUYỆT',
-      statusKoc: (i % 10 === 0) ? 'ĐANG_LIÊN_HỆ' : 'SẴN_SÀNG',
-      bookingPic: pic,
-      totalPastDeals: (i % 6) + 1,
-      historicalRoi: +(2.5 + (i % 35) * 0.1).toFixed(1)
-    });
-  }
-
-  return result;
-}

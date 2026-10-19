@@ -3,7 +3,7 @@
 // Nguồn đối soát: File 4.1 Plan order tổng & 69 gian hàng B2C
 // =========================================================================
 
-import { BrandDetail } from './types';
+import type { BrandDetail } from './types';
 import { getBrandLogoUrl } from './brandLogos';
 
 const RAW_B2C_42_BRANDS: BrandDetail[] = [

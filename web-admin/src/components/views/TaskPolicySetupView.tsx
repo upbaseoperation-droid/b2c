@@ -429,9 +429,6 @@ export function TaskPolicySetupView({
                 {canManageSetup ? 'Quyền chỉnh sửa' : 'Chế độ tra cứu'}
               </Status>
             </div>
-            <p className="text-2xs text-ink-3">
-              Thiết lập điểm chuẩn 33 đầu việc SOW, cấp độ nghiên cứu Bảng 2b và ma trận hệ số Bảng 2–7
-            </p>
           </div>
         </div>
 

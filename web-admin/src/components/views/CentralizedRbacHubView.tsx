@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react';
 import { ConfirmDialog, Tabs, Presence } from '../ui';
 import {
-  ShieldCheck,
   KeyRound,
   Search,
   CheckCircle2,
@@ -1484,7 +1483,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   <div className="p-3 rounded-xl bg-canvas border border-line flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-ink">Cho phép đăng nhập hệ thống B2C</div>
-                      <div className="text-2xs text-ink-3">Nếu tắt, nhân viên này sẽ bị chặn ở màn hình Login.</div>
                     </div>
                     <input
                       type="checkbox"
@@ -1750,19 +1748,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 </tbody>
               </table>
             </div>
-
-            {/* Matrix Footer Info */}
-            <div className="p-4 bg-canvas border-t border-line flex flex-wrap items-center justify-between text-2xs text-ink-3 gap-3">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-positive" />
-                <span>
-                  Ma trận đang kiểm soát <strong>{matrixItems.length} quyền hạn</strong> trên <strong>9 vai trò</strong> (bao gồm Trưởng phòng Growth & Trưởng phòng Media).
-                </span>
-              </div>
-              <span className="text-ink-3">
-                Chính sách áp dụng theo thời gian thực
-              </span>
-            </div>
           </div>
 
           {/* Quick Edit Permission Modal Popup */}
@@ -1877,10 +1862,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <option value="FINANCE">Kế Toán (FINANCE)</option>
                 <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
               </select>
-            </div>
-
-            <div className="text-2xs text-ink-3">
-              Đồng bộ tự động từ <strong>Lark Base Nhân sự</strong>
             </div>
           </div>
 
@@ -2198,11 +2179,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <option value="PERMISSION_TOGGLE">Đổi cấp độ quyền (PERMISSION_TOGGLE)</option>
                 <option value="INVITE_PARTNER">Cấp quyền Gmail mới (INVITE_PARTNER)</option>
               </select>
-            </div>
-
-            <div className="text-2xs text-ink-3 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-positive" />
-              <span>Ghi nhận bất biến (Immutable Security Log)</span>
             </div>
           </div>
 

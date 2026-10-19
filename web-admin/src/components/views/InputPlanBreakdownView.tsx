@@ -4194,9 +4194,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-semibold">Phân bổ kế hoạch cho Team booking</h3>
-                  <p className="text-xs text-ink-2 mt-0.5">
-                    Thương hiệu: <strong className="text-ink">{planState.brandName.split('_')[0]}</strong> · {planState.month} - {planState.week} · Tổng {totalAllocatedContents} video ({formatVndShort(totalAllocatedBudget)}) · Trưởng nhóm: <strong className="text-ink">{planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : 'Không có leader')}</strong> · PIC chính: <strong className="text-ink">{planState.primaryPic || planState.pic}</strong>
-                  </p>
                 </div>
               </div>
               <button

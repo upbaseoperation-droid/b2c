@@ -373,7 +373,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       (koc.tepKenh && koc.tepKenh.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (koc.kocCategory && koc.kocCategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (koc.segment && koc.segment.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      koc.phone.includes(searchTerm);
+      (koc.phone || '').includes(searchTerm);
     return matchKL && matchSegment && matchKocCat && matchTep && matchSearch;
   });
 
@@ -993,7 +993,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
           </>
         }
       >
-        <p className="text-[13px] text-ink-2">Growth dùng mã Spark Ads để chạy quảng cáo trên video đã lên sóng và chốt ngân sách Ads với khách hàng.</p>
         <Field label="Mã Spark Ads" htmlFor="handoff-spark">
           <Input id="handoff-spark" className="font-code" value={handoffForm.sparkAdsCode} onChange={e => setHandoffForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))} placeholder="SPARK-TT-…" />
         </Field>

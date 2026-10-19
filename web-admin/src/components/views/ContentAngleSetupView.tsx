@@ -915,7 +915,6 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     <Flame className="w-4 h-4 text-amber-500" />
                     <span>Mở đầu 3 giây (thu hút giữ chân người xem) *</span>
                   </label>
-                  <span className="text-2xs text-accent font-semibold">Tỷ lệ giữ chân quyết định GMV</span>
                 </div>
                 <textarea
                   value={formHookIdea}
@@ -1138,7 +1137,6 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <div className="space-y-3">
                 <div className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                   <span>3 hướng tiếp cận đề xuất cho sản phẩm này:</span>
-                  <span className="text-2xs text-accent font-semibold">Theo cấu trúc kịch bản TikTok Shop</span>
                 </div>
 
                 {aiSuggestions.map((sugg, sIdx) => (

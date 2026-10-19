@@ -114,9 +114,6 @@ export const LeaderboardView: React.FC = () => {
             { key: 'WEEK', label: 'Tuần này' },
           ]}
         />
-        <span className="text-2xs text-ink-3">
-          Tính điểm: 30% SLA + 40% sản lượng + 30% GMV
-        </span>
       </Toolbar>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

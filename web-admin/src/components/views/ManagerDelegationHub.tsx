@@ -875,10 +875,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   </button>
                 )}
               </div>
-
-              <div className="text-2xs text-ink-3">
-                Phân bổ trực tiếp 3 vị trí gắn theo Brand (<strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong>, <strong className="text-ink">Key Visual / SIS</strong>) cho <strong className="text-ink font-semibold">{displayedBrands.length}</strong> thương hiệu
-              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -1094,11 +1090,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </span>
                         <span className="text-xs font-semibold text-ink truncate">{team.leaderName}</span>
                       </div>
-                      <p className="text-2xs text-ink-3 mt-0.5 truncate">
-                        {isLeaderGroup
-                          ? 'Sơ duyệt kịch bản/plan cho 8 gian hàng trước khi trình Trưởng phòng'
-                          : 'Chuyên viên chủ động lập phân rã & trình duyệt thẳng Trưởng phòng Đặng Thị Yến Nhi'}
-                      </p>
                     </div>
                   </div>
                   <div className="text-right shrink-0 pl-2 border-l border-line">
@@ -1172,7 +1163,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               <div className="text-2xs text-ink-3">
-                Hiển thị <strong className="text-ink font-semibold">{displayedStores.length}</strong> gian hàng · Đổi chuyên viên tự động lưu vết bàn giao
+                Hiển thị <strong className="text-ink font-semibold">{displayedStores.length}</strong> gian hàng
               </div>
             </div>
 
@@ -2629,7 +2620,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <div className="p-3 bg-canvas border border-line rounded-lg flex items-center justify-between">
                 <div>
                   <span className="font-semibold text-ink text-xs block">Thuộc diện B2C làm Kế hoạch tháng</span>
-                  <p className="text-2xs text-ink-3 mt-0.5">Bật để đưa gian hàng vào danh sách lập kế hoạch và phân bổ ngân sách KOC</p>
                 </div>
                 <input
                   type="checkbox"

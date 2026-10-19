@@ -608,7 +608,6 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Thêm Cộng tác viên / VJ mới"
-        description="Khai báo hồ sơ CTV sản xuất video kênh Brand. Có thể đọc ảnh CCCD sau khi tạo."
         size="md"
         footer={
           <>
@@ -1533,7 +1532,6 @@ export function CtvProfileDetail({
                   <div className="space-y-3">
                     <SectionHeader
                       title="Lịch sử hợp tác theo Nhãn hàng (Brand History)"
-                      description="Tổng hợp số lượng video, định dạng sở trường và thù lao của CTV trên từng Brand."
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {brandHistoryStats.map((b) => (
@@ -1834,7 +1832,6 @@ export function CtvProfileDetail({
                 <div className="space-y-3">
                   <SectionHeader
                     title="Sản phẩm mẫu CTV đang cầm sẵn tại nhà"
-                    description="Theo quy định SLA: Chỉ nhận làm video kênh mới dưới 5 ngày trước ngày air nếu VJ/CTV đã có sẵn sản phẩm này tại nhà."
                   />
 
                   <div className="flex flex-wrap items-center gap-2 pt-1">

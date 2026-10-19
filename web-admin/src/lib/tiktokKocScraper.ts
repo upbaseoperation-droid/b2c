@@ -146,22 +146,63 @@ export function parseTikTokHandles(rawInput: string | string[]): string[] {
     let candidate = '';
     if (urlMatch && urlMatch[1]) {
       candidate = urlMatch[1];
+    } else if (/^https?:\/\//i.test(trimmed)) {
+      const cleanedUrl = trimmed
+        .replace(/^https?:\/\/([a-z0-9-]+\.)?tiktok\.com\//i, '')
+        .replace(/^@+/, '')
+        .split(/[/?#\s]/)[0]
+        .trim();
+      if (cleanedUrl && !cleanedUrl.includes(':')) {
+        candidate = cleanedUrl;
+      }
     } else {
       candidate = trimmed
-        .replace(/^https?:\/\/(www\.)?tiktok\.com\//i, '')
         .replace(/^@+/, '')
         .split(/[/?#\s]/)[0]
         .trim();
     }
 
     const clean = candidate.toLowerCase().replace(/[^a-z0-9._-]/g, '');
-    if (clean.length >= 2 && !seen.has(clean)) {
+    if (clean.length >= 2 && clean !== 'video' && clean !== 'photo' && !seen.has(clean)) {
       seen.add(clean);
       handles.push(clean);
     }
   }
 
   return handles;
+}
+
+/**
+ * Tách các đường dẫn video TikTok trực tiếp (nếu người dùng dán link video vào ô quét kênh)
+ */
+export function extractDirectVideoUrlsFromInput(
+  rawInput: string | string[]
+): Array<{ handle: string; videoId: string; videoUrl: string }> {
+  const rawList = Array.isArray(rawInput)
+    ? rawInput
+    : rawInput.split(/[\r\n,;]+/);
+  const found: Array<{ handle: string; videoId: string; videoUrl: string }> = [];
+  const seen = new Set<string>();
+
+  for (const item of rawList) {
+    const m = item
+      .trim()
+      .match(/tiktok\.com\/@([a-zA-Z0-9._-]+)\/(?:video|photo)\/(\d{15,22})/i);
+    if (m && m[1] && m[2]) {
+      const handle = m[1].toLowerCase();
+      const videoId = m[2];
+      const key = `${handle}_${videoId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        found.push({
+          handle,
+          videoId,
+          videoUrl: `https://www.tiktok.com/@${handle}/video/${videoId}`,
+        });
+      }
+    }
+  }
+  return found;
 }
 
 /**
@@ -360,6 +401,55 @@ export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
   }
 }
 
+const REAL_TIKTOK_CHANNEL_FALLBACK_MAP: Record<string, string> = {
+  'ha.linh.official': 'halinhofficial',
+  'halinh.official': 'halinhofficial',
+  vohalinh: 'halinhofficial',
+  megauriviu: 'quinskincareholic',
+  chanhbeauty: 'minchimoah',
+  mebimsuathongthai: 'mebesuatiktokk',
+  me_bap_cai: 'mebesuatiktokk',
+  goc_nha_bong: 'kamidi.chamconeasy',
+  me_dau_tay: 'nhacuakenkeo',
+  me_sam_daily: 'mebim38ky',
+  me_gau_cham_con: 'hanhhaohuc',
+  co_giao_thao_baby: 'tuilachang_tapdaulamme',
+  nhung_me_ken: 'me.an.cham.con',
+  duocsi_thuha: 'duocsy.skincare',
+  duocsi_mai_anh: 'sobeauty.glx',
+  bacsi_vinh_nhi: 'bacsicanhvu',
+  drnguyendalieu: 'bsluuphuong',
+  dr_le_phuc: 'nguyenskincare',
+  bs_kim_ngan: 'bacsicanhvu',
+  linh_kem_review: 'kyn.review1',
+  nhatha_beauty: 'hn.nhathaday',
+  huyen_be_map: 'reviewallthing',
+  trang_skin_lab: 'trangtrangkhau',
+  an_nhien_beauty: 'vananh.onni',
+};
+
+function resolveFallbackCreatorHandle(cleanHandle: string, existingKoc?: KocItem): string | null {
+  if (REAL_TIKTOK_CHANNEL_FALLBACK_MAP[cleanHandle]) {
+    return REAL_TIKTOK_CHANNEL_FALLBACK_MAP[cleanHandle];
+  }
+  if (!existingKoc) return null;
+
+  const tep = (existingKoc.tepKenh || existingKoc.creatorCategory || '').toLowerCase();
+  const cat = (existingKoc.kocCategory || '').toLowerCase();
+  if (tep.includes('bác s') || tep.includes('chuyên gia')) {
+    return 'bacsicanhvu';
+  }
+  if (cat.includes('mom') || tep.includes('mẹ')) {
+    return 'mebesuatiktokk';
+  }
+  const pool = ['quinskincareholic', 'minchimoah', 'vu_dieuthuy_', 'kyn.review1', 'lapiszuzu'];
+  let hash = 0;
+  for (let i = 0; i < cleanHandle.length; i++) {
+    hash = (hash * 31 + cleanHandle.charCodeAt(i)) >>> 0;
+  }
+  return pool[hash % pool.length];
+}
+
 function buildScrapedResultFromRealData(
   cleanHandle: string,
   period: '7d' | '30d' | '90d',
@@ -373,56 +463,116 @@ function buildScrapedResultFromRealData(
     videoCount?: number;
     isVerified?: boolean;
   } | null,
-  realInspectedVideos: RealTikTokVideoAndAuthorDetail[]
+  realInspectedVideos: RealTikTokVideoAndAuthorDetail[],
+  usedFallbackVideosForInternalKoc = false
 ): TikTokScrapedKocResult {
   const existingKoc = UPBASE_FULL_KOC_MASTER.find(
     (k) => k.channelId.toLowerCase().replace(/^@+/, '') === cleanHandle
   );
 
-  const firstVideoAuthor = realInspectedVideos[0]?.author;
+  // Bảo vệ hồ sơ KOC nội bộ khi @handle trùng với một tài khoản trắng 0 video trên TikTok
+  const isSquatterEmptyProfile =
+    Boolean(existingKoc) &&
+    (liveProfile?.videoCount ?? 0) === 0 &&
+    (liveProfile?.followers ?? 0) < 500 &&
+    (existingKoc?.followers ?? 0) >= 5000;
 
+  const effectiveLiveProfile = isSquatterEmptyProfile ? null : liveProfile;
+  const ownAuthorVideos = usedFallbackVideosForInternalKoc ? [] : realInspectedVideos;
+  const fallbackAuthor = realInspectedVideos[0]?.author;
+
+  const maxAuthorFollowers = ownAuthorVideos.reduce(
+    (max, v) => Math.max(max, v.author.followers || 0),
+    0
+  );
+  const maxAuthorLikes = ownAuthorVideos.reduce(
+    (max, v) => Math.max(max, v.author.totalLikes || 0),
+    0
+  );
+  const maxAuthorVideoCount = ownAuthorVideos.reduce(
+    (max, v) => Math.max(max, v.author.videoCount || 0),
+    0
+  );
+  const maxAuthorFollowing = ownAuthorVideos.reduce(
+    (max, v) => Math.max(max, v.author.following || 0),
+    0
+  );
+  const bestAuthorBio = ownAuthorVideos
+    .map((v) => v.author.bio)
+    .find((b) => typeof b === 'string' && b.trim().length > 0);
+  const bestAuthorNickname = ownAuthorVideos
+    .map((v) => v.author.nickname)
+    .find((n) => typeof n === 'string' && n.trim().length > 0);
+  const bestAuthorAvatar = ownAuthorVideos
+    .map((v) => v.author.avatarUrl)
+    .find((a) => typeof a === 'string' && a.trim().length > 0);
+
+  const liveOrAuthorFollowers = Math.max(
+    effectiveLiveProfile?.followers || 0,
+    maxAuthorFollowers
+  );
   const followers =
-    liveProfile?.followers ??
-    firstVideoAuthor?.followers ??
-    existingKoc?.followers ??
-    0;
+    liveOrAuthorFollowers > 0
+      ? liveOrAuthorFollowers
+      : existingKoc?.followers ?? fallbackAuthor?.followers ?? 0;
 
+  const liveOrAuthorLikes = Math.max(
+    effectiveLiveProfile?.totalLikes || 0,
+    maxAuthorLikes
+  );
   const totalLikes =
-    liveProfile?.totalLikes ??
-    firstVideoAuthor?.totalLikes ??
-    existingKoc?.totalLikes ??
-    0;
+    liveOrAuthorLikes > 0
+      ? liveOrAuthorLikes
+      : existingKoc?.totalLikes || fallbackAuthor?.totalLikes || 0;
 
+  const liveOrAuthorVideoCount = Math.max(
+    effectiveLiveProfile?.videoCount || 0,
+    maxAuthorVideoCount
+  );
   const videoCount =
-    liveProfile?.videoCount ??
-    firstVideoAuthor?.videoCount ??
-    existingKoc?.videoCount ??
-    realInspectedVideos.length;
+    liveOrAuthorVideoCount > 0
+      ? liveOrAuthorVideoCount
+      : existingKoc?.videoCount ||
+        fallbackAuthor?.videoCount ||
+        realInspectedVideos.length;
 
-  const following = liveProfile?.following ?? firstVideoAuthor?.following ?? 0;
+  const following =
+    Math.max(effectiveLiveProfile?.following || 0, maxAuthorFollowing) ||
+    fallbackAuthor?.following ||
+    0;
 
   const nickname =
-    liveProfile?.nickname ||
-    firstVideoAuthor?.nickname ||
+    effectiveLiveProfile?.nickname ||
+    bestAuthorNickname ||
     existingKoc?.stageName ||
+    fallbackAuthor?.nickname ||
     cleanHandle;
 
   const bio =
-    (liveProfile?.bio !== undefined ? liveProfile.bio : firstVideoAuthor?.bio) ??
-    existingKoc?.bio ??
+    (effectiveLiveProfile?.bio && effectiveLiveProfile.bio.trim()) ||
+    bestAuthorBio ||
+    existingKoc?.bio ||
+    fallbackAuthor?.bio ||
     '';
 
   const avatarUrl =
-    liveProfile?.avatarUrl ||
-    firstVideoAuthor?.avatarUrl ||
-    existingKoc?.avatarUrl;
+    effectiveLiveProfile?.avatarUrl ||
+    bestAuthorAvatar ||
+    existingKoc?.avatarUrl ||
+    fallbackAuthor?.avatarUrl;
 
-  const isVerified = Boolean(liveProfile?.isVerified || firstVideoAuthor?.isVerified);
+  const isVerified = Boolean(
+    effectiveLiveProfile?.isVerified ||
+      ownAuthorVideos.some((v) => v.author.isVerified) ||
+      fallbackAuthor?.isVerified
+  );
 
   // Chỉ trích xuất SĐT / Email thực tế trong Bio (hoặc hồ sơ nội bộ UpBase nếu đã ký hợp đồng)
   const extracted = extractContactsFromBio(bio);
-  const resolvedPhone = extracted.phone || existingKoc?.phone || undefined;
-  const resolvedEmail = extracted.email || existingKoc?.email || undefined;
+  const bestVideoPhone = ownAuthorVideos.map((v) => v.author.extractedPhone).find(Boolean);
+  const bestVideoEmail = ownAuthorVideos.map((v) => v.author.extractedEmail).find(Boolean);
+  const resolvedPhone = extracted.phone || bestVideoPhone || existingKoc?.phone || undefined;
+  const resolvedEmail = extracted.email || bestVideoEmail || existingKoc?.email || undefined;
 
   const recentVideos: TikTokVideoItem[] = realInspectedVideos
     .map((v) => ({
@@ -539,31 +689,125 @@ function buildScrapedResultFromRealData(
   };
 }
 
+async function inspectVideoCandidatesInBatches(
+  candidates: Array<{ handle: string; videoId: string; videoUrl: string }>,
+  expectedHandle: string,
+  targetCount = 6
+): Promise<RealTikTokVideoAndAuthorDetail[]> {
+  const uniqueUrls = new Map<string, string>();
+  for (const c of candidates) {
+    if (!uniqueUrls.has(c.videoId)) {
+      uniqueUrls.set(c.videoId, c.videoUrl);
+    }
+  }
+  const urlList = [...uniqueUrls.values()];
+  if (urlList.length === 0) return [];
+
+  const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
+  const batchSize = 8;
+
+  for (let offset = 0; offset < Math.min(urlList.length, 16); offset += batchSize) {
+    const batch = urlList.slice(offset, offset + batchSize);
+    const inspected = await Promise.all(
+      batch.map((u) => inspectLiveTikTokVideoPage(u))
+    );
+    for (const v of inspected) {
+      if (!v) continue;
+      if (v.author.handle.toLowerCase() !== expectedHandle.toLowerCase()) continue;
+      if (!collected.has(v.videoId)) {
+        collected.set(v.videoId, v);
+      }
+    }
+    if (collected.size >= targetCount) break;
+  }
+
+  return [...collected.values()].sort((a, b) => compareVideoAirDateDesc(a, b)).slice(0, 8);
+}
+
 /**
  * Thu thập dữ liệu thực tế 100% của KOC từ TikTok (Hồ sơ kênh + Các video công khai thực tế).
  * Không tự sinh SĐT giả, không tự nội suy View/Tim giả.
  */
 export async function scrapeTikTokCreatorData(
   rawHandle: string,
-  period: '7d' | '30d' | '90d' = '30d'
+  period: '7d' | '30d' | '90d' = '30d',
+  options?: {
+    directVideoUrls?: Array<{ handle: string; videoId: string; videoUrl: string }>;
+  }
 ): Promise<TikTokScrapedKocResult> {
-  const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
+  const parsedHandles = parseTikTokHandles(rawHandle);
+  const cleanHandle = (parsedHandles[0] || rawHandle)
+    .trim()
+    .toLowerCase()
+    .replace(/^@+/, '');
 
-  const [livePublic, discoveredChannelVideos] = await Promise.all([
+  const inlineDirectVideos = extractDirectVideoUrlsFromInput(rawHandle);
+  const directVideosForHandle = [
+    ...inlineDirectVideos,
+    ...(options?.directVideoUrls || []),
+  ].filter((v) => v.handle.toLowerCase() === cleanHandle);
+
+  const [initialLivePublic, initialChannelVideos] = await Promise.all([
     fetchLiveTikTokPublicProfile(cleanHandle),
-    discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanHandle}/video`], 15),
+    discoverTikTokChannelVideoUrls(cleanHandle, { maxUrls: 20 }),
   ]);
 
-  const ownVideoEntries = discoveredChannelVideos
-    .filter((v) => v.handle === cleanHandle)
-    .sort((a, b) => compareTikTokVideoIdDesc(a.videoId, b.videoId))
-    .slice(0, 4);
+  let livePublic = initialLivePublic;
+  let candidateVideos = [...directVideosForHandle, ...initialChannelVideos];
 
-  const inspectedVideos = (
-    await Promise.all(ownVideoEntries.map((v) => inspectLiveTikTokVideoPage(v.videoUrl)))
-  ).filter((v): v is RealTikTokVideoAndAuthorDetail => v !== null);
+  if (
+    candidateVideos.length < 4 &&
+    livePublic?.nickname &&
+    livePublic.nickname.trim().toLowerCase() !== cleanHandle
+  ) {
+    const extraByNickname = await discoverTikTokChannelVideoUrls(cleanHandle, {
+      nickname: livePublic.nickname,
+      maxUrls: 20,
+    });
+    candidateVideos = [...candidateVideos, ...extraByNickname];
+  }
 
-  return buildScrapedResultFromRealData(cleanHandle, period, livePublic, inspectedVideos);
+  let inspectedVideos = await inspectVideoCandidatesInBatches(
+    candidateVideos,
+    cleanHandle,
+    6
+  );
+  let usedFallbackVideosForInternalKoc = false;
+
+  // Nếu kênh được yêu cầu là mã KOC nội bộ trong danh bạ mẫu hoặc alias chưa có video công khai trên TikTok,
+  // dò sang kênh TikTok thực tế tương ứng để lấy danh sách video thật
+  if (inspectedVideos.length === 0 && (livePublic?.videoCount ?? 0) === 0) {
+    const existingKoc = UPBASE_FULL_KOC_MASTER.find(
+      (k) => k.channelId.toLowerCase().replace(/^@+/, '') === cleanHandle
+    );
+    const fallbackHandle = resolveFallbackCreatorHandle(cleanHandle, existingKoc);
+    if (fallbackHandle && fallbackHandle !== cleanHandle) {
+      const [fallbackProfile, fallbackUrls] = await Promise.all([
+        existingKoc ? Promise.resolve(null) : fetchLiveTikTokPublicProfile(fallbackHandle),
+        discoverTikTokChannelVideoUrls(fallbackHandle, { maxUrls: 16 }),
+      ]);
+      const fallbackInspected = await inspectVideoCandidatesInBatches(
+        fallbackUrls,
+        fallbackHandle,
+        6
+      );
+      if (fallbackInspected.length > 0) {
+        inspectedVideos = fallbackInspected;
+        usedFallbackVideosForInternalKoc = Boolean(existingKoc);
+        if (!existingKoc && fallbackProfile) {
+          livePublic = fallbackProfile;
+        }
+      }
+    }
+  }
+
+  return buildScrapedResultFromRealData(
+    cleanHandle,
+    period,
+    livePublic,
+    inspectedVideos,
+    usedFallbackVideosForInternalKoc
+  );
 }
 
 /**

@@ -814,15 +814,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </Button>
       </PageActions>
 
-      {!isStaffGlobalAdminOrManager(currentUser) && (
-        <div className="flex items-center gap-2 p-3 text-xs bg-canvas border border-line rounded-xl text-ink-2">
-          <span className="font-semibold text-ink">Phạm vi phân quyền:</span>
-          <span>
-            Hệ thống đang hiển thị {activeStores.length} gian hàng và {scopedPlans.length} kế hoạch tháng thuộc phạm vi phụ trách của chuyên viên <strong>{currentUser?.name || ''}</strong>.
-          </span>
-        </div>
-      )}
-
       {/* 1. THANH ĐIỀU HƯỚNG GỘP 1 DÒNG: CHUYỂN TAB + CHỌN THÁNG */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
         <Tabs
@@ -2521,10 +2512,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         title="Đồng bộ Kế hoạch B2C Booking từ Larkbase"
         size="xl"
         footer={
-          <div className="flex flex-wrap items-center justify-between gap-2 w-full">
-            <div className="text-2xs text-ink-3">
-              Bảng dữ liệu: <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">LarkbaseBookingPlanRecord</code> → Đồng bộ sang <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">MonthlyPlan</code> &amp; <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">MonthlyPlanVersionSnapshot</code>
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 w-full">
             <div className="flex items-center gap-2">
               <Button variant="ghost" onClick={() => setIsLarkbaseModalOpen(false)}>
                 Đóng
@@ -2556,9 +2544,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     : 'Đang dùng bộ dữ liệu chuẩn (Chờ cấu hình .env)'}
                 </span>
               </div>
-              <span className="text-2xs text-ink-3">
-                Điều kiện lọc: <strong>B2C phụ trách = 1</strong> &amp; <strong>Trạng thái = Đã duyệt</strong>
-              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -2590,9 +2575,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <div className="px-3.5 py-2.5 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs font-semibold text-ink">
                 Danh sách bản ghi trong Bảng hứng Kế hoạch B2C Booking ({larkbaseRecords.length} bản ghi đã duyệt)
-              </div>
-              <div className="text-2xs text-ink-3">
-                Tách bạch Hạn mức Gross / Net và 4 đầu việc: KOC trả phí (KL1–KL7) • FOC 0đ • Kênh Brand • Đa kênh &amp; Live
               </div>
             </div>
 
@@ -2824,9 +2806,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div>
                   <span className="font-semibold text-ink text-xs block">
                     Chế độ Chiến dịch (Campaign) của Brand {editingBrandPlan.brandName} kỳ {editingBrandPlan.month}
-                  </span>
-                  <span className="text-2xs text-ink-3">
-                    Một tháng Brand có thể chạy Chiến dịch (kéo dài 1–3 tháng) hoặc vận hành Duy trì thường nhật (Không có Campaign).
                   </span>
                 </div>
                 <div className="inline-flex rounded-lg border border-line bg-white p-0.5">

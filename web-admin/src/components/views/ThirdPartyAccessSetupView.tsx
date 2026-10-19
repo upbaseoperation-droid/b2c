@@ -218,20 +218,14 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       {/* 1. HEADER & METRICS */}
       {/* ========================================================================= */}
       <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="text-xs text-muted">
-            Quản trị phân quyền truy cập Gmail theo từng vai trò đối tác.
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={handleOpenCreateModal}
-              className="px-4 py-2 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white transition flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Cấp quyền Gmail mới</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-end gap-2.5">
+          <button
+            onClick={handleOpenCreateModal}
+            className="px-4 py-2 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white transition flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Cấp quyền Gmail mới</span>
+          </button>
         </div>
 
         {/* Metric Cards */}

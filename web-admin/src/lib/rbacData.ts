@@ -1692,7 +1692,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'audit-trail',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   MANAGER: [
     'cockpit',
@@ -1732,7 +1733,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'audit-trail',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   GROWTH_MANAGER: [
     'cockpit',
@@ -1760,7 +1762,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'audit-trail',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   MEDIA_MANAGER: [
     'cockpit',
@@ -1788,7 +1791,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'audit-trail',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   LEADER: [
     'cockpit',
@@ -1823,7 +1827,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   BOOKING_MEMBER: [
     'cockpit',
@@ -1848,7 +1853,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   CONTENT_MEMBER: [
     'cockpit',
@@ -1870,7 +1876,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   BRAND_MEMBER: [
     'cockpit',
@@ -1893,7 +1900,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   MEMBER: [
     'cockpit',
@@ -1918,7 +1926,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   GROWTH_MEMBER: [
     'input-plan',
@@ -1940,7 +1949,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   MEDIA_MEMBER: [
     'input-plan',
@@ -1961,7 +1971,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'api-settings',
     'knowledge-qa',
-    'tiktok-crawler'
+    'tiktok-crawler',
+    'market-research'
   ],
   LEGAL: [
     'contracts',
@@ -2012,7 +2023,10 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
   if (
-    (tab === 'task-delegation' || tab === 'workload-3d' || tab === 'tiktok-crawler') &&
+    (tab === 'task-delegation' ||
+      tab === 'workload-3d' ||
+      tab === 'tiktok-crawler' ||
+      tab === 'market-research') &&
     ROLE_ALLOWED_TABS[role]?.includes(tab)
   ) {
     return true;
@@ -2031,6 +2045,9 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   }
   if (ROLE_ALLOWED_TABS[role]?.includes('tiktok-crawler') && !list.includes('tiktok-crawler')) {
     list.push('tiktok-crawler');
+  }
+  if (ROLE_ALLOWED_TABS[role]?.includes('market-research') && !list.includes('market-research')) {
+    list.push('market-research');
   }
   return list;
 }
@@ -2062,6 +2079,7 @@ export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'dashboard-finance', label: 'Đối soát Kế toán & Xuất file (.xlsx)', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Đối soát chi phí Order Net/Gross, cảnh báo vượt trần và xuất báo cáo Kế toán.' },
   { key: 'input-plan', label: 'Kế hoạch tháng (Input Plan 4.1)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Lập & duyệt kế hoạch tháng theo gian hàng và khung lương.' },
   { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu (Brand Profile)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Định vị nhãn hàng, pháp nhân, ratecard và quy tắc duyệt.' },
+  { key: 'market-research', label: 'Nghiên cứu Brand & Đối thủ', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Bóc tách định vị 4P, lập ma trận đối thủ trực diện, đào bình luận khách hàng và quét trang đích.' },
   { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
   { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
   { key: 'task-delegation', label: 'Giao việc & Định mức Task', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Giao việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research.' },

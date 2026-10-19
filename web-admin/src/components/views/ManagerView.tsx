@@ -825,9 +825,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <LayersIcon className="w-3.5 h-3.5 text-accent" />
                   Hạn mức chi tiết theo 4 bậc KOC / KOL ({currentPlan.tierQuotas.length} bậc)
                 </span>
-                <span className="text-2xs text-ink-3">
-                  Tổng 4 bậc = 100% trần ngân sách & số lượng video toàn phòng
-                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">

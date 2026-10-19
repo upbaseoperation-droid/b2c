@@ -524,9 +524,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
             </div>
             <div>
               <h2 className="text-sm font-semibold text-ink">Quản lý Khóa API & Phân Luồng Nghiệp Vụ</h2>
-              <div className="text-2xs text-ink-3">
-                Đã cấu hình: <strong className="text-ink">{configuredProviderCount}/3 nhà cung cấp</strong> · Điều phối: <strong className="text-ink">6 nghiệp vụ</strong>
-              </div>
             </div>
           </div>
 
@@ -1332,7 +1329,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                               {route.departmentTag}
                             </span>
                           </div>
-                          <p className="text-xs text-ink-2 leading-relaxed">{route.description}</p>
                           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                             <span className="text-2xs text-ink-3">Áp dụng tại:</span>
                             {route.usedInScreens.map(sc => (
@@ -1701,9 +1697,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                                   <option value={4096}>4,096 tokens (~3,000 từ - Báo cáo & phân tích sâu)</option>
                                   <option value={8192}>8,192 tokens (~6,000 từ - Toàn văn dài)</option>
                                 </select>
-                                <div className="text-2xs text-ink-3">
-                                  Khống chế số token đầu ra để kiểm soát chi phí từng lượt gọi.
-                                </div>
                               </div>
                             </div>
                           </div>
