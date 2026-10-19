@@ -94,8 +94,16 @@ const HASHTAG_SAMPLES = [
 
 const SAMPLE_VIDEO_URLS = [
   {
+    url: 'https://www.tiktok.com/@keyshulive/video/7542352999495060743',
+    label: '@keyshulive (2,4M view · 88 bình luận thực)',
+  },
+  {
+    url: 'https://www.tiktok.com/@quinskincareholic/video/7511336312234970375',
+    label: '@quinskincareholic (181K view · 112 bình luận thực)',
+  },
+  {
     url: 'https://www.tiktok.com/@tiktok/video/7106594312292453675',
-    label: 'Video mẫu TikTok Official (Kiểm tra cào bình luận trực tiếp)',
+    label: 'TikTok Official',
   },
 ];
 

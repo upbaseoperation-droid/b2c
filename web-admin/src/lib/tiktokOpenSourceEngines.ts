@@ -1,4 +1,3 @@
-import type TiktokType from '@tobyg74/tiktok-api-dl';
 import type CryptoType from 'crypto';
 import {
   extractContactsFromBio,
@@ -11,12 +10,6 @@ import {
 function getServerCrypto(): typeof CryptoType {
   const req = eval('require') as NodeRequire;
   return req('crypto');
-}
-
-function getServerTiktokDl(): typeof TiktokType {
-  const req = eval('require') as NodeRequire;
-  const mod = req('@tobyg74/tiktok-api-dl');
-  return mod.default || mod;
 }
 
 const DEFAULT_BROWSER_UA =
@@ -393,9 +386,91 @@ function classifyCommentIntent(text: string): {
   };
 }
 
+interface RawTikTokApiComment {
+  cid?: string;
+  text?: string;
+  create_time?: number;
+  digg_count?: number;
+  reply_comment_total?: number;
+  user?: {
+    uid?: string;
+    unique_id?: string;
+    nickname?: string;
+    avatar_thumb?: {
+      url_list?: string[];
+    };
+  };
+  reply_comment?: RawTikTokApiComment[] | null;
+}
+
+async function fetchRawCommentsByAwemeId(
+  awemeId: string,
+  limit: number
+): Promise<RawTikTokApiComment[]> {
+  if (!awemeId) return [];
+  const collected: RawTikTokApiComment[] = [];
+  let cursor = 0;
+  const deviceId =
+    '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
+
+  for (let page = 0; page < 2 && collected.length < limit; page++) {
+    try {
+      const qs = new URLSearchParams({
+        aid: '1988',
+        app_language: 'ja-JP',
+        app_name: 'tiktok_web',
+        aweme_id: awemeId,
+        browser_language: 'en-US',
+        browser_name: 'Mozilla',
+        browser_online: 'true',
+        browser_platform: 'Linux x86_64',
+        browser_version: '5.0 (X11)',
+        channel: 'tiktok_web',
+        cookie_enabled: 'true',
+        count: '50',
+        cursor: String(cursor),
+        device_id: deviceId,
+        os: 'linux',
+        region: 'ID',
+        screen_height: '768',
+        screen_width: '1366',
+      });
+      const res = await fetch(`https://www.tiktok.com/api/comment/list/?${qs.toString()}`, {
+        method: 'GET',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36',
+          Accept: 'application/json, text/plain, */*',
+        },
+        signal: AbortSignal.timeout(6000),
+        cache: 'no-store',
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      const list: RawTikTokApiComment[] = Array.isArray(data?.comments) ? data.comments : [];
+      if (list.length === 0) break;
+
+      for (const item of list) {
+        collected.push(item);
+        if (Array.isArray(item.reply_comment)) {
+          for (const rep of item.reply_comment) {
+            collected.push(rep);
+          }
+        }
+      }
+      if (data?.has_more !== 1 || collected.length >= limit) break;
+      cursor = Number(data?.cursor || cursor + 50);
+    } catch {
+      break;
+    }
+  }
+
+  return collected.slice(0, limit);
+}
+
 /**
  * Cào trực tiếp danh sách bình luận thực tế của 1 Video TikTok & phân loại khách hỏi mua hàng
- * Kết hợp @tobyg74/tiktok-api-dl (GetVideoComments + Downloader v1 Aweme API) và inspectLiveTikTokVideoPage
+ * Sử dụng trực tiếp endpoint /api/comment/list/ và TikTok SSR WAF Solver (không phụ thuộc module ngoài trên Serverless)
  */
 export async function scrapeTikTokVideoComments(
   rawUrl: string,
@@ -405,38 +480,63 @@ export async function scrapeTikTokVideoComments(
   const safeLimit = Math.min(Math.max(5, limit), 100);
 
   const urlMatch = cleanUrl.match(/tiktok\.com\/@([^/?#]+)\/(?:video|photo)\/(\d{15,22})/i);
-  const fallbackHandle = urlMatch?.[1] || 'tiktok';
-  const fallbackVideoId =
-    urlMatch?.[2] || cleanUrl.match(/\b(\d{17,21})\b/)?.[1] || '';
+  const channelOnlyMatch = cleanUrl.match(/(?:tiktok\.com\/@|^@?)([a-zA-Z0-9._-]+)\/?$/i);
+  const fallbackHandle = (urlMatch?.[1] || channelOnlyMatch?.[1] || 'tiktok').replace(/^@+/, '');
+  let targetVideoId = urlMatch?.[2] || cleanUrl.match(/\b(\d{17,21})\b/)?.[1] || '';
 
-  const Tiktok = getServerTiktokDl();
-  const [livePage, commentsRes] = await Promise.all([
-    inspectLiveTikTokVideoPage(cleanUrl).catch(() => null),
-    Tiktok.GetVideoComments(cleanUrl, { commentLimit: safeLimit }).catch(() => null),
-  ]);
+  let livePage = await inspectLiveTikTokVideoPage(cleanUrl).catch(() => null);
+  if (livePage?.videoId) {
+    targetVideoId = livePage.videoId;
+  }
 
-  const rawComments =
-    commentsRes && commentsRes.status === 'success' && Array.isArray(commentsRes.result)
-      ? commentsRes.result
-      : [];
+  let rawComments = targetVideoId
+    ? await fetchRawCommentsByAwemeId(targetVideoId, safeLimit)
+    : [];
+
+  // Nếu video được dán hiện có 0 bình luận (hoặc người dùng dán link kênh @handle),
+  // tự động dò các video thực tế khác của chính kênh đó để lấy bình luận thật của kênh
+  const activeHandle = livePage?.author.handle || fallbackHandle;
+  if (rawComments.length === 0 && activeHandle && activeHandle !== 'tiktok') {
+    const channelVideos = await discoverRealTikTokVideoUrlsByQuery(
+      [`tiktok.com/@${activeHandle}/video`, `tiktok ${activeHandle}`],
+      8
+    );
+    for (const candidate of channelVideos) {
+      if (candidate.videoId === targetVideoId) continue;
+      const candidateComments = await fetchRawCommentsByAwemeId(candidate.videoId, safeLimit);
+      if (candidateComments.length > 0) {
+        rawComments = candidateComments;
+        const candidatePage = await inspectLiveTikTokVideoPage(candidate.videoUrl).catch(
+          () => null
+        );
+        if (candidatePage) {
+          livePage = candidatePage;
+          targetVideoId = candidatePage.videoId;
+        }
+        break;
+      }
+    }
+  }
 
   const comments: TikTokVideoCommentItem[] = rawComments.map((c, idx) => {
     const text = c.text || '';
     const { intentType, intentLabel } = classifyCommentIntent(text);
     const contact = extractContactsFromBio(text);
     const ts =
-      typeof c.createTime === 'number' && c.createTime > 1000000000
-        ? new Date(c.createTime * 1000).toISOString().slice(0, 10)
+      typeof c.create_time === 'number' && c.create_time > 1000000000
+        ? new Date(c.create_time * 1000).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10);
 
     return {
       cid: String(c.cid || `cmt-${idx + 1}`),
-      username: c.user?.username || `user_${idx + 1}`,
-      nickname: c.user?.nickname || c.user?.username || `Người dùng #${idx + 1}`,
-      avatarUrl: Array.isArray(c.user?.avatarThumb) ? c.user.avatarThumb[0] : undefined,
+      username: c.user?.unique_id || `user_${idx + 1}`,
+      nickname: c.user?.nickname || c.user?.unique_id || `Người dùng #${idx + 1}`,
+      avatarUrl: Array.isArray(c.user?.avatar_thumb?.url_list)
+        ? c.user?.avatar_thumb?.url_list[0]
+        : undefined,
       text,
-      likeCount: Number(c.likeCount || 0),
-      replyCount: Number(c.replyCommentTotal || 0),
+      likeCount: Number(c.digg_count || 0),
+      replyCount: Number(c.reply_comment_total || 0),
       publishedAt: ts,
       intentType,
       intentLabel,
@@ -458,9 +558,9 @@ export async function scrapeTikTokVideoComments(
     comments.length > 0 ? Number(((buyingIntentCount / comments.length) * 100).toFixed(1)) : 0;
 
   return {
-    engineUsed: '@tobyg74/tiktok-api-dl + TikTok SSR WAF Solver (100% Real Data)',
+    engineUsed: 'TikTok Comment API + SSR WAF Solver (100% Real Data)',
     videoInfo: {
-      videoId: String(livePage?.videoId || fallbackVideoId),
+      videoId: String(livePage?.videoId || targetVideoId),
       videoUrl: livePage?.videoUrl || cleanUrl,
       authorHandle: livePage?.author.handle || fallbackHandle,
       authorNickname: livePage?.author.nickname || fallbackHandle,
@@ -468,7 +568,7 @@ export async function scrapeTikTokVideoComments(
       publishedAt: livePage?.publishedAt || '',
       views: Number(livePage?.views || 0),
       likes: Number(livePage?.likes || 0),
-      commentsCount: Number(livePage?.comments || comments.length),
+      commentsCount: Math.max(Number(livePage?.comments || 0), comments.length),
       sharesCount: Number(livePage?.shares || 0),
       downloadsCount: Number(livePage?.saves || 0),
     },
@@ -485,7 +585,7 @@ export async function scrapeTikTokVideoComments(
 
 /**
  * Lấy danh sách 30 Kênh Creator đang thịnh hành thực tế trên TikTok
- * Sử dụng trực tiếp Tiktok.TrendingCreators() từ @tobyg74/tiktok-api-dl (/node/share/discover)
+ * Gọi trực tiếp endpoint /node/share/discover của TikTok bằng native fetch
  */
 export async function fetchTikTokTrendingCreators(
   limit = 30
@@ -495,38 +595,64 @@ export async function fetchTikTokTrendingCreators(
   creators: TikTokTrendingCreatorItem[];
 }> {
   const safeLimit = Math.min(Math.max(5, limit), 50);
-  const Tiktok = getServerTiktokDl();
-  const res = await Tiktok.TrendingCreators().catch(() => null);
+  const creators: TikTokTrendingCreatorItem[] = [];
 
-  const rawList =
-    res && res.status === 'success' && Array.isArray(res.result)
-      ? res.result.slice(0, safeLimit)
-      : [];
+  try {
+    const discoverUrl =
+      'https://www.tiktok.com/node/share/discover?aid=1988&app_language=en&app_name=tiktok_web&battery_info=1';
+    const res = await fetch(discoverUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+      },
+      signal: AbortSignal.timeout(6500),
+      cache: 'no-store',
+    });
 
-  const creators: TikTokTrendingCreatorItem[] = rawList.map((item) => {
-    const bio = item.description || '';
-    const contact = extractContactsFromBio(bio);
-    const cleanHandle = (item.username || '').replace(/^@+/, '');
-    return {
-      id: String(item.id || cleanHandle),
-      handle: cleanHandle,
-      nickname: item.nickname || cleanHandle,
-      avatarUrl: item.avatarThumb,
-      bio,
-      verified: Boolean(item.verified),
-      followers: Number(item.followerCount || 0),
-      totalLikes: Number(item.heartCount || item.likeCount || 0),
-      videoCount: Number(item.videoCount || 0),
-      followingCount: Number(item.followingCount || 0),
-      secUid: item.secUid || '',
-      channelUrl: `https://www.tiktok.com/@${cleanHandle}`,
-      extractedPhone: contact.phone,
-      extractedEmail: contact.email,
-    };
-  });
+    if (res.ok) {
+      const data = await res.json();
+      const bodyList = Array.isArray(data?.body) ? data.body : [];
+      for (const section of bodyList) {
+        const exploreList = Array.isArray(section?.exploreList) ? section.exploreList : [];
+        for (const item of exploreList) {
+          const cardItem = item?.cardItem;
+          if (!cardItem || cardItem.type !== 2) continue;
+          const cleanHandle = String(cardItem.subTitle || '').replace(/^@+/, '');
+          if (!cleanHandle) continue;
+          const bio = String(cardItem.description || '');
+          const contact = extractContactsFromBio(bio);
+          const extra = cardItem.extraInfo || {};
+
+          creators.push({
+            id: String(cardItem.id || cleanHandle),
+            handle: cleanHandle,
+            nickname: String(cardItem.title || cleanHandle),
+            avatarUrl: cardItem.cover,
+            bio,
+            verified: Boolean(extra.verified),
+            followers: Number(extra.fans || 0),
+            totalLikes: Number(extra.heart || extra.likes || 0),
+            videoCount: Number(extra.video || 0),
+            followingCount: Number(extra.following || 0),
+            secUid: String(extra.secUid || ''),
+            channelUrl: `https://www.tiktok.com/@${cleanHandle}`,
+            extractedPhone: contact.phone,
+            extractedEmail: contact.email,
+          });
+          if (creators.length >= safeLimit) break;
+        }
+        if (creators.length >= safeLimit) break;
+      }
+    }
+  } catch {
+    // ignore network error
+  }
 
   return {
-    engineUsed: '@tobyg74/tiktok-api-dl (TikTok Discover / TrendingCreators API)',
+    engineUsed: 'TikTok Discover API (/node/share/discover)',
     total: creators.length,
     creators,
   };
