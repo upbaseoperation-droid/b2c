@@ -519,11 +519,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     const visibleStores = b2cStores.filter(s => activeStoreIds.has(s.id)).slice(0, 8);
 
     // A. Position 28 Staff Nodes in a Symmetrical 4 Terraces × 7 Columns Matrix (7 × 4 = 28)
-    // Every row has at most 7 staff => ~105px horizontal space per person => ZERO overlap on any screen size!
-    // tx is normalized in [-1 .. +1], ty is exact reference Y on a 640px height canvas:
-    // - Zone 3 (Gian hàng): y = 0..104   (Store base ty = 54)
-    // - Zone 2 (Brand):     y = 104..208 (Brand base ty = 158)
-    // - Zone 1 (28 Nhân sự): y = 208..640 (4 Terraces at ty = 288, 384, 480, 576)
+    // Hierarchy from Top to Bottom:
+    // - TẦNG 3 (Trên cùng, y = 0..100):   THƯƠNG HIỆU (BRAND)          -> ty = 50
+    // - TẦNG 2 (Giữa,      y = 100..200): GIAN HÀNG B2C (STORE)        -> ty = 150
+    // - TẦNG 1 (Dưới cùng, y = 200..640): 28 NHÂN SỰ (4 BẬC × 7 CỘT)   -> ty = 268, 356, 444, 532
     const staffToRender =
       layoutMode === 'FOCUS_ORBIT' && focusedStaff ? [focusedStaff] : filteredStaff;
     const sTotal = Math.max(1, staffToRender.length);
@@ -531,30 +530,29 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     const terraceCount = Math.min(4, Math.ceil(sTotal / maxCols));
     const itemsPerTerrace = Math.ceil(sTotal / terraceCount);
 
-    const terraceY = [288, 384, 480, 576];
+    const terraceY = [268, 356, 444, 532];
     const terraceZ = [15, 45, 75, 105];
 
     staffToRender.forEach((st, idx) => {
       let tx = 0; // Normalized [-1 .. +1]
-      let ty = 384;
+      let ty = 356;
       let tz = 45;
 
-      // 3D column height in reference pixels (18px .. 38px so it never touches the row above)
-      const towerHeight = Math.max(18, Math.min(38, st.totalPts * 0.18));
-      const targetCapHeight = Math.max(15, Math.min(34, st.targetCapacityPts * 0.18));
+      // 3D column height in reference pixels (18px .. 34px so it never touches the row above)
+      const towerHeight = Math.max(18, Math.min(34, st.totalPts * 0.165));
+      const targetCapHeight = Math.max(15, Math.min(30, st.targetCapacityPts * 0.165));
 
       if (layoutMode === 'FOCUS_ORBIT' && focusedStaff && st.id === focusedStaff.id) {
         tx = 0;
-        ty = 360;
+        ty = 350;
         tz = 45;
       } else {
         const tIdx = Math.min(terraceCount - 1, Math.floor(idx / itemsPerTerrace));
         const colIdx = idx - tIdx * itemsPerTerrace;
         const rowLen = Math.min(itemsPerTerrace, sTotal - tIdx * itemsPerTerrace);
-        // Normalized coordinate in [-1 .. +1] across the 7 columns
         const spanNorm = rowLen <= 1 ? 0 : Math.min(1.0, (rowLen - 1) / (maxCols - 1));
         tx = rowLen <= 1 ? 0 : -spanNorm + (colIdx / (rowLen - 1)) * (spanNorm * 2);
-        ty = terraceY[tIdx] ?? 576;
+        ty = terraceY[tIdx] ?? 532;
         tz = terraceZ[tIdx] ?? 105;
       }
 
@@ -607,14 +605,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       });
     });
 
-    // B. Position Brand Nodes (Middle Tier: ty = 158 inside TẦNG 2: 104..208)
+    // B. Position Brand Nodes (TOP TIER - TẦNG 3: ty = 50 inside 0..100)
     const bCount = Math.max(1, visibleBrands.length);
     visibleBrands.forEach((b, idx) => {
       const nodeId = `brand-${b.id}`;
       const spanNorm = bCount <= 1 ? 0 : Math.min(0.96, (bCount - 1) / 7);
       const tx = bCount <= 1 ? 0 : -spanNorm + (idx / (bCount - 1)) * (spanNorm * 2);
-      const ty = 158;
-      const tz = -45;
+      const ty = 50;
+      const tz = -85;
 
       nodes.push({
         id: nodeId,
@@ -639,14 +637,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       });
     });
 
-    // C. Position Store Nodes (Top Tier: ty = 54 inside TẦNG 3: 0..104)
+    // C. Position Store Nodes (MIDDLE TIER - TẦNG 2: ty = 150 inside 100..200)
     const stCount = Math.max(1, visibleStores.length);
     visibleStores.forEach((s, idx) => {
       const nodeId = `store-${s.id}`;
       const spanNorm = stCount <= 1 ? 0 : Math.min(0.96, (stCount - 1) / 7);
       const tx = stCount <= 1 ? 0 : -spanNorm + (idx / (stCount - 1)) * (spanNorm * 2);
-      const ty = 54;
-      const tz = -90;
+      const ty = 150;
+      const tz = -40;
 
       const isTikTok = s.platform === 'TikTok Shop';
       const coef = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier;
@@ -772,8 +770,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           tx: 0,
           ty: 0,
           tz: 0,
-          towerHeight: 38,
-          targetCapHeight: 34,
+          towerHeight: 34,
+          targetCapHeight: 30,
           colorTop: '#10b981',
           colorLeft: '#059669',
           colorRight: '#047857',
@@ -796,7 +794,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   }, [staffWorkloads]);
 
   // ============================================================================
-  // 4. AXONOMETRIC 3D CANVAS ENGINE (PIXEL-EXACT TIER ALIGNMENT & 7x4 MATRIX)
+  // 4. AXONOMETRIC 3D CANVAS ENGINE (BRAND TOP -> STORE MIDDLE -> STAFF BOTTOM)
   // ============================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasSizeRef = useRef({ width: 920, height: 640, dpr: 1 });
@@ -969,18 +967,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       const cx = width * 0.5;
       const cy = height * 0.5;
 
-      const band3Bottom = Math.round(104 * yScale);
-      const band2Bottom = Math.round(208 * yScale);
+      const band3Bottom = Math.round(100 * yScale);
+      const band2Bottom = Math.round(200 * yScale);
 
       // 1. Clean Studio Background & Synchronized 3 Horizontal Zone Bands
       ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, width, height);
 
-      // Zone 3 (Top: Store Band 0..104)
-      ctx.fillStyle = '#f0f9ff';
-      ctx.fillRect(0, 0, width, band3Bottom);
-      // Zone 2 (Middle: Brand Band 104..208)
+      // Zone 3 (Top: BRAND Band 0..100 - Warm Amber)
       ctx.fillStyle = '#fffbeb';
+      ctx.fillRect(0, 0, width, band3Bottom);
+      // Zone 2 (Middle: STORE Band 100..200 - Sky Blue)
+      ctx.fillStyle = '#f0f9ff';
       ctx.fillRect(0, band3Bottom, width, band2Bottom - band3Bottom);
 
       ctx.strokeStyle = '#cbd5e1';
@@ -995,10 +993,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.font = '700 10.5px Inter, system-ui, sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = '#0369a1';
-      ctx.fillText('TẦNG 3 · GIAN HÀNG B2C (TIKTOK / SHOPEE)', 14, Math.round(18 * yScale));
       ctx.fillStyle = '#b45309';
-      ctx.fillText('TẦNG 2 · THƯƠNG HIỆU (BRAND)', 14, band3Bottom + Math.round(18 * yScale));
+      ctx.fillText('TẦNG 3 · THƯƠNG HIỆU (BRAND)', 14, Math.round(17 * yScale));
+      ctx.fillStyle = '#0369a1';
+      ctx.fillText(
+        'TẦNG 2 · GIAN HÀNG B2C (TIKTOK / SHOPEE)',
+        14,
+        band3Bottom + Math.round(17 * yScale)
+      );
       ctx.fillStyle = '#1e293b';
       ctx.fillText(
         'TẦNG 1 · SÀN 28 NHÂN SỰ (4 BẬC × 7 CỘT ĐỐI XỨNG · CLICK ĐỂ XEM NHÁNH)',
@@ -1033,7 +1035,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       };
 
       // 3. Draw 3D Terrace Platforms for the 4 Staff Rows
-      [288, 384, 480, 576].forEach((tyLevel, tIdx) => {
+      [268, 356, 444, 532].forEach((tyLevel, tIdx) => {
         const tzLevel = [15, 45, 75, 105][tIdx];
         const pLeft = project3D(-1.04, tyLevel + 2, tzLevel);
         const pRight = project3D(1.04, tyLevel + 2, tzLevel);
@@ -1100,7 +1102,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         });
       });
 
-      // 5. Draw 3D Connection Beams
+      // 5. Draw 3D Connection Beams (Brand Top -> Store Middle -> Staff Bottom)
       links.forEach(link => {
         const src = projectedMap.get(link.sourceId);
         const tgt = projectedMap.get(link.targetId);
@@ -1114,10 +1116,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
         if (activeId && !isHighlighted) return;
 
-        const x1 = src.topSx;
-        const y1 = src.topSy;
+        // Clean attachment points:
+        // - BRAND_TO_STORE: from bottom of Brand pill (src.sy + 24) down to top of Store cube (tgt.topSy)
+        // - STAFF_TO_STORE / STAFF_TO_BRAND: from top of Staff column (src.topSy) up to bottom of Store/Brand pill (tgt.sy + 24)
+        const x1 = link.linkType === 'BRAND_TO_STORE' ? src.sx : src.topSx;
+        const y1 = link.linkType === 'BRAND_TO_STORE' ? src.sy + 24 : src.topSy;
         const x2 = tgt.sx;
-        const y2 = tgt.sy;
+        const y2 = link.linkType === 'BRAND_TO_STORE' ? tgt.topSy : tgt.sy + 24;
         const midX = (x1 + x2) * 0.5;
         const midY = (y1 + y2) * 0.5;
 
