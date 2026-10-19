@@ -967,6 +967,9 @@ export async function discoverTikTokKocsByHashtag(
         continue;
       }
 
+      excludeSet.add(inspected.author.handle);
+      excludeSet.add(entry.handle);
+
       const baseResult = buildScrapedResultFromRealData(
         inspected.author.handle,
         period,
@@ -1589,6 +1592,10 @@ export async function discoverCompetitorKocs(
         rejectedHandlesInBatch.push(candidateHandle, kocHandle);
         continue;
       }
+      if (excludeSet.has(kocHandle)) continue;
+
+      excludeSet.add(kocHandle);
+      excludeSet.add(candidateHandle);
 
       const baseResult = buildScrapedResultFromRealData(
         kocHandle,

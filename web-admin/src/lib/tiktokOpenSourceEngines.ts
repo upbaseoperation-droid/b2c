@@ -1321,9 +1321,9 @@ export function doesInspectedVideoMatchTarget(
   // Bắt buộc video/kênh phải thuộc ngữ cảnh Việt Nam (tránh lọt video quốc tế của các thương hiệu toàn cầu)
   const norm = stripVnAccents(combinedRaw);
 
-  // Loại bỏ ngay nếu gắn thẻ chi nhánh quốc gia khác ngoài Việt Nam
+  // Loại bỏ ngay nếu gắn thẻ chi nhánh quốc gia khác ngoài Việt Nam hoặc chứa cấu trúc ngữ pháp đại từ "nous" tiếng Pháp
   if (
-    /\b(brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|india|pakistan|nigeria|arabia)\b/i.test(
+    /\b(brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|india|pakistan|nigeria|arabia|vous nous|nous on|on nous|nous avons|nous sommes|entre nous|chez nous|avec nous|pour nous|de nous|vous avez)\b/i.test(
       norm
     )
   ) {
@@ -1729,7 +1729,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
         // Loại bỏ ngay thẻ video nước ngoài hoặc video nhảy/nhạc/game không liên quan trước khi tốn lượt inspect
         if (
-          /\b(pourtoi|france|parati|senegal|senegalaise|cameroun|maroc|algerie|tunisie|quebec|abidjan|dakar|congo|mali|benin|gabon|haiti|belgique|suisse|nous avons|entre nous|chez nous|avec nous|pour nous|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|mashup|tiktok dances|dance trend|dieu nhay|nhay tiktok|lien quan|free fire|bong da)\b/i.test(
+          /\b(pourtoi|france|parati|senegal|senegalaise|cameroun|maroc|algerie|tunisie|quebec|abidjan|dakar|congo|mali|benin|gabon|haiti|belgique|suisse|vous nous|nous on|on nous|nous avons|nous sommes|entre nous|chez nous|avec nous|pour nous|de nous|vous avez|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|mashup|tiktok dances|dance trend|dieu nhay|nhay tiktok|lien quan|free fire|bong da)\b/i.test(
             normCard
           )
         ) {
