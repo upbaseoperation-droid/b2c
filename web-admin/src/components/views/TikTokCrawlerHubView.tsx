@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   Check,
   Download,
   ExternalLink,
@@ -286,7 +287,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (!res.ok || !json.success || !Array.isArray(json.results)) {
           if (accumulatedMap.size === 0) {
-            setCompError(json.message || 'Không quét được danh sách KOC của đối thủ này.');
+            const msg = json.message || 'Không quét được danh sách KOC của đối thủ này.';
+            setCompError(msg);
+            onNotify?.(msg, 'error');
           }
           break;
         }
@@ -330,9 +333,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (addedInBatch === 0) break;
       }
+
+      if (accumulatedMap.size === 0 && !compAbortRef.current) {
+        const msg = `Không tìm thấy video KOC hợp tác nào khớp với "${trimmed}". Kiểm tra lại @handle hoặc nhập tên thương hiệu (VD: Coolmate, La Roche-Posay).`;
+        setCompError(msg);
+        onNotify?.(msg, 'warning');
+      } else if (appendMode && accumulatedMap.size === baseList.length && !compAbortRef.current) {
+        onNotify?.('Đã lấy hết các KOC khớp với đối thủ này trên chỉ mục hiện tại.', 'info');
+      }
     } catch {
       if (accumulatedMap.size === 0) {
-        setCompError('Không kết nối được dịch vụ thu thập dữ liệu TikTok. Vui lòng thử lại.');
+        const msg = 'Không kết nối được dịch vụ thu thập dữ liệu TikTok. Vui lòng thử lại.';
+        setCompError(msg);
+        onNotify?.(msg, 'error');
       }
     } finally {
       setCompLoading(false);
@@ -402,7 +415,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (!res.ok || !json.success || !Array.isArray(json.results)) {
           if (accumulatedMap.size === 0) {
-            setTagError(json.message || 'Không tìm thấy KOC nào cho hashtag này.');
+            const msg = json.message || `Không tìm thấy KOC nào cho hashtag "${trimmed}".`;
+            setTagError(msg);
+            onNotify?.(msg, 'error');
           }
           break;
         }
@@ -442,9 +457,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (addedInBatch === 0) break;
       }
+
+      if (!tagAbortRef.current && accumulatedMap.size === 0) {
+        const periodText = crawlPeriod === 'ALL' ? 'toàn bộ thời gian' : `${crawlPeriod.replace('d', '')} ngày qua`;
+        const emptyMsg = `Không tìm thấy KOC nào đăng video với hashtag "${trimmed}" trong ${periodText}. Vui lòng kiểm tra lại từ khóa hoặc chọn "Tất cả thời gian".`;
+        setTagError(emptyMsg);
+        onNotify?.(emptyMsg, 'warning');
+      }
     } catch {
       if (accumulatedMap.size === 0) {
-        setTagError('Không kết nối được dịch vụ quét hashtag TikTok.');
+        const netMsg = 'Không kết nối được dịch vụ quét hashtag TikTok. Vui lòng thử lại.';
+        setTagError(netMsg);
+        onNotify?.(netMsg, 'error');
       }
     } finally {
       setTagLoading(false);
@@ -517,7 +541,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (!res.ok || !json.success || !json.videoInfo) {
           if (commentMap.size === 0) {
-            setCommentError(json.message || 'Không lấy được danh sách bình luận của video này.');
+            const msg = json.message || 'Không lấy được danh sách bình luận của video này. Vui lòng kiểm tra lại đường dẫn video.';
+            setCommentError(msg);
+            onNotify?.(msg, 'error');
           }
           break;
         }
@@ -584,9 +610,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         if (!json.hasMore || addedInBatch === 0) break;
       }
+
+      if (!commentAbortRef.current && commentMap.size === 0) {
+        const emptyCommentMsg = 'Video này chưa có bình luận công khai hoặc đã tắt bình luận trên TikTok.';
+        setCommentError(emptyCommentMsg);
+        onNotify?.(emptyCommentMsg, 'warning');
+      }
     } catch {
       if (commentMap.size === 0) {
-        setCommentError('Không kết nối được dịch vụ cào bình luận video TikTok.');
+        const netMsg = 'Không kết nối được dịch vụ cào bình luận video TikTok. Vui lòng thử lại.';
+        setCommentError(netMsg);
+        onNotify?.(netMsg, 'error');
       }
     } finally {
       setCommentLoading(false);
@@ -611,7 +645,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       const json = await res.json();
       if (res.ok && json.success && Array.isArray(json.creators)) {
         setTrendingCreators(json.creators);
+        if (json.creators.length === 0) {
+          onNotify?.('Chưa lấy được danh sách kênh xu hướng. Vui lòng bấm làm mới sau ít giây.', 'warning');
+        }
+      } else {
+        onNotify?.(json.message || 'Không tải được danh sách kênh xu hướng TikTok.', 'error');
       }
+    } catch {
+      onNotify?.('Không kết nối được dịch vụ quét kênh xu hướng TikTok.', 'error');
     } finally {
       setTrendingLoading(false);
     }
@@ -1636,9 +1677,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             </div>
 
-            {compError && <p className="text-2xs text-critical">{compError}</p>}
+            {compError && (
+              <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{compError}</div>
+              </div>
+            )}
 
-            {compProfile && compResults.length > 0 && (
+            {compProfile && (
               <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <span className="font-semibold text-ink">{compProfile.brandName}</span>
@@ -1954,7 +2000,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             </div>
 
-            {tagError && <p className="text-2xs text-critical">{tagError}</p>}
+            {tagError && (
+              <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{tagError}</div>
+              </div>
+            )}
           </div>
 
           {(tagLoading || tagResults.length > 0) && (
@@ -2229,7 +2280,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             </div>
 
-            {commentError && <p className="text-2xs text-critical">{commentError}</p>}
+            {commentError && (
+              <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex-1 font-medium leading-relaxed">{commentError}</div>
+              </div>
+            )}
 
             {commentData && (
               <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-3 text-xs">

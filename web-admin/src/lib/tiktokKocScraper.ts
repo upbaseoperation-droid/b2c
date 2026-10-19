@@ -1291,15 +1291,16 @@ export async function discoverCompetitorKocs(
         .replace(/\s+/g, ' ')
         .trim();
 
-  const cleanSearchBrand =
-    preset?.searchKeyword || strippedBrandCore || cleanCompetitorHandle;
-
   const isDirectVideoUrl = /tiktok\.com\/@[^/?#]+\/(?:video|photo)\/\d{15,22}/i.test(
     rawCompetitorInput
   );
 
-  const targetKeywordForDiscovery = strippedBrandCore || cleanCompetitorHandle;
+  const targetKeywordForDiscovery = isHandleOrUrlInput
+    ? cleanCompetitorHandle
+    : strippedBrandCore || cleanCompetitorHandle;
   const keywordProfile = buildTargetKeywordProfile(targetKeywordForDiscovery);
+  const cleanSearchBrand =
+    preset?.searchKeyword || keywordProfile.rootToken || strippedBrandCore || cleanCompetitorHandle;
 
   // 1. Chạy song song: lấy hồ sơ thực của kênh đối thủ (nếu là đợt 1) VÀ tìm các video KOC nhắc tới đối thủ
   const [liveCompProfile, directInputVideo, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
@@ -1371,7 +1372,7 @@ export async function discoverCompetitorKocs(
 
   // 2. Gom nhóm các video thực của KOC bên thứ ba (loại trừ video đăng bởi chính kênh đối thủ / đại lý brand & các KOC đã quét ở đợt trước)
   const compactBrandTag = cleanCompetitorHandle.replace(/[._-]/g, '');
-  const compactCoreTag = (strippedBrandCore || cleanCompetitorHandle)
+  const compactCoreTag = (keywordProfile.rootToken || strippedBrandCore || cleanCompetitorHandle)
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -1441,7 +1442,8 @@ export async function discoverCompetitorKocs(
       if (isBrandOwnedHandle(kocHandle) || excludeSet.has(kocHandle)) continue;
       if (
         !doesInspectedVideoMatchTarget(inspected, targetKeywordForDiscovery) &&
-        !doesInspectedVideoMatchTarget(inspected, cleanSearchBrand)
+        !doesInspectedVideoMatchTarget(inspected, cleanSearchBrand) &&
+        !(competitorBrandName && doesInspectedVideoMatchTarget(inspected, competitorBrandName))
       ) {
         continue;
       }

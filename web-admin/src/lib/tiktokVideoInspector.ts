@@ -311,36 +311,76 @@ export function scanBlacklistViolations(text: string): TikTokVideoContentCheck['
   return found;
 }
 
-/**
- * Chuyển đổi nội dung file phụ đề WebVTT của TikTok thành lời thoại có mốc giây
- */
-export function parseWebVttToTranscript(vttRaw: string): string {
-  if (!vttRaw) return '';
+export interface TikTokSubtitleSegment {
+  startSec: number;
+  endSec: number;
+  timeLabel: string;
+  text: string;
+}
+
+function parseVttTimestampToSec(raw: string): number {
+  const clean = raw.trim().replace(',', '.');
+  const parts = clean.split(':').map((p) => parseFloat(p));
+  if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2 && parts.every((n) => Number.isFinite(n))) {
+    return parts[0] * 60 + parts[1];
+  }
+  return 0;
+}
+
+export function parseWebVttToSegments(vttRaw: string): TikTokSubtitleSegment[] {
+  if (!vttRaw) return [];
   const lines = vttRaw.split(/\r?\n/);
-  const segments: string[] = [];
-  let currentTime = '';
+  const result: TikTokSubtitleSegment[] = [];
+  let startSec = 0;
+  let endSec = 0;
+  let timeLabel = '';
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line || line === 'WEBVTT' || /^\d+$/.test(line)) continue;
 
-    // Ví dụ: 00:00:00.120 --> 00:00:03.450 hoặc 00:00.120 --> 00:03.450
     if (line.includes('-->')) {
       const parts = line.split('-->');
-      const start = parts[0]?.trim().replace(/\.\d+$/, '').replace(/^00:/, '') || '00:00';
-      const end = parts[1]?.trim().split(' ')[0]?.replace(/\.\d+$/, '').replace(/^00:/, '') || '';
-      currentTime = end ? `[${start} - ${end}]` : `[${start}]`;
+      const rawStart = parts[0]?.trim() || '00:00.000';
+      const rawEnd = parts[1]?.trim().split(' ')[0] || '00:03.000';
+      startSec = Math.round(parseVttTimestampToSec(rawStart) * 10) / 10;
+      endSec = Math.round(parseVttTimestampToSec(rawEnd) * 10) / 10;
+      const startShort = rawStart.replace(/\.\d+$/, '').replace(/^00:/, '') || '00:00';
+      const endShort = rawEnd.replace(/\.\d+$/, '').replace(/^00:/, '') || '';
+      timeLabel = endShort ? `${startShort} - ${endShort}` : startShort;
       continue;
     }
 
     const cleanText = line.replace(/<[^>]+>/g, '').trim();
     if (cleanText) {
-      segments.push(currentTime ? `${currentTime} ${cleanText}` : cleanText);
-      currentTime = '';
+      const prev = result[result.length - 1];
+      if (prev && prev.text === cleanText) {
+        prev.endSec = Math.max(prev.endSec, endSec);
+      } else {
+        result.push({
+          startSec,
+          endSec: Math.max(startSec + 1, endSec),
+          timeLabel: timeLabel || '00:00',
+          text: cleanText,
+        });
+      }
+      timeLabel = '';
     }
   }
 
-  return segments.join(' ');
+  return result;
+}
+
+/**
+ * Chuyển đổi nội dung file phụ đề WebVTT của TikTok thành lời thoại có mốc giây
+ */
+export function parseWebVttToTranscript(vttRaw: string): string {
+  const segs = parseWebVttToSegments(vttRaw);
+  if (segs.length === 0) return '';
+  return segs.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
 }
 
 /**
@@ -367,6 +407,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
   sharesCount?: number;
   savesCount?: number;
   transcriptText?: string;
+  subtitleSegments?: TikTokSubtitleSegment[];
   subtitleSource?: 'TIKTOK_AUTO_CAPTIONS_VTT' | 'ON_SCREEN_TEXT_AND_CAPTION';
   onScreenStickers?: string[];
   hasCartAnchor?: boolean;
@@ -470,6 +511,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
 
           // B. Tải file phụ đề lời thoại tự động (WebVTT) của TikTok nếu có trong video.claInfo hoặc video.subtitleInfos
           let transcriptText: string | undefined;
+          let subtitleSegments: TikTokSubtitleSegment[] = [];
           let subtitleSource: 'TIKTOK_AUTO_CAPTIONS_VTT' | 'ON_SCREEN_TEXT_AND_CAPTION' | undefined;
 
           const captionInfos: Array<{
@@ -497,17 +539,23 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
           if (subUrl) {
             try {
               const subCtrl = new AbortController();
-              const subTimer = setTimeout(() => subCtrl.abort(), 3500);
+              const subTimer = setTimeout(() => subCtrl.abort(), 4000);
               const subRes = await fetch(subUrl, {
+                headers: {
+                  'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                  Referer: 'https://www.tiktok.com/',
+                },
                 signal: subCtrl.signal,
                 cache: 'no-store',
               });
               clearTimeout(subTimer);
               if (subRes.ok) {
                 const vttText = await subRes.text();
-                const parsedTranscript = parseWebVttToTranscript(vttText);
-                if (parsedTranscript) {
-                  transcriptText = parsedTranscript;
+                const parsedSegs = parseWebVttToSegments(vttText);
+                if (parsedSegs.length > 0) {
+                  subtitleSegments = parsedSegs;
+                  transcriptText = parsedSegs.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
                   subtitleSource = 'TIKTOK_AUTO_CAPTIONS_VTT';
                 }
               }
@@ -577,6 +625,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             sharesCount: Number(stats.shareCount) || 0,
             savesCount: Number(stats.collectCount) || 0,
             transcriptText,
+            subtitleSegments,
             subtitleSource,
             onScreenStickers,
             hasCartAnchor,
