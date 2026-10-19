@@ -1,6 +1,9 @@
 import { BookingDealItem } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
-import { fetchTikTokHtmlWithWafBypass } from './tiktokOpenSourceEngines';
+import {
+  compareTikTokVideoIdDesc,
+  fetchTikTokHtmlWithWafBypass,
+} from './tiktokOpenSourceEngines';
 
 export type VideoAcceptanceVerdict = 'ĐẠT_CHUẨN' | 'CẦN_KIỂM_TRA' | 'KHÔNG_ĐẠT';
 
@@ -675,17 +678,15 @@ export async function inspectTikTokVideoUrl(
   const productName = matchedDeal?.productName || 'Kem dưỡng dịu da cho bé';
   const brandTag = `#${brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
 
-  const defaultCaption =
-    liveData.caption ||
-    `Trải nghiệm thực tế ${productName} từ nhà ${brandName} sau 7 ngày sử dụng. Kết cấu thấm nhanh, dịu nhẹ, các mẹ tham khảo ngay ở giỏ hàng góc trái màn hình nhé! ${brandTag} #reviewchathat #tiktokshop #upbase`;
+  const defaultCaption = liveData.caption || '';
 
   const { hashtags, mentions } = extractHashtagsAndMentions(defaultCaption);
 
-  // Kiểm tra hashtag bắt buộc
+  // Kiểm tra hashtag bắt buộc (nếu có truyền vào)
   const requiredHashtags = (
     options.requiredHashtags && options.requiredHashtags.length > 0
       ? options.requiredHashtags
-      : [brandTag]
+      : []
   ).map((h) => (h.startsWith('#') ? h.toLowerCase() : `#${h.toLowerCase()}`));
 
   const matchedRequiredHashtags = requiredHashtags.filter((req) =>
@@ -695,55 +696,35 @@ export async function inspectTikTokVideoUrl(
     (req) => !matchedRequiredHashtags.includes(req)
   );
 
-  // Tương tác & thông số kỹ thuật video
-  const durationSeconds = liveData.durationSeconds || 42 + (seed % 45);
-  const viewsCount =
-    liveData.viewsCount && liveData.viewsCount > 0
-      ? liveData.viewsCount
-      : matchedDeal?.viewsCount || masterKoc?.avgViews || 18500 + (seed % 65000);
-  const likesCount =
-    liveData.likesCount && liveData.likesCount > 0
-      ? liveData.likesCount
-      : Math.round(viewsCount * (0.042 + (seed % 18) / 1000));
-  const commentsCount =
-    liveData.commentsCount && liveData.commentsCount > 0
-      ? liveData.commentsCount
-      : Math.round(likesCount * 0.085);
-  const sharesCount =
-    liveData.sharesCount && liveData.sharesCount > 0
-      ? liveData.sharesCount
-      : Math.round(likesCount * 0.045);
-  const savesCount =
-    liveData.savesCount && liveData.savesCount > 0
-      ? liveData.savesCount
-      : Math.round(likesCount * 0.11);
+  // Tương tác & thông số kỹ thuật video thực tế từ TikTok
+  const durationSeconds = liveData.durationSeconds || 0;
+  const viewsCount = liveData.viewsCount ?? 0;
+  const likesCount = liveData.likesCount ?? 0;
+  const commentsCount = liveData.commentsCount ?? 0;
+  const sharesCount = liveData.sharesCount ?? 0;
+  const savesCount = liveData.savesCount ?? 0;
 
   const engagementRate =
     viewsCount > 0
       ? Number((((likesCount + commentsCount + sharesCount) / viewsCount) * 100).toFixed(2))
       : 0;
 
-  const hookFirst3Seconds =
-    matchedDeal?.contentHook ||
-    `Mở đầu 3s cận cảnh tình trạng thực tế và giới thiệu trực tiếp ${productName}`;
+  const hookFirst3Seconds = matchedDeal?.contentHook || '';
 
   const onScreenStickers =
     liveData.onScreenStickers && liveData.onScreenStickers.length > 0
       ? liveData.onScreenStickers
-      : [`Test thực tế ${productName}`, `Ưu đãi chính hãng ${brandName} tại giỏ hàng`];
+      : [];
 
-  const transcriptText =
-    liveData.transcriptText ||
-    `[00:00 - 00:03] ${hookFirst3Seconds}. [00:04 - 00:20] Phân tích thành phần và quay cận cảnh chất kem khi thoa thực tế, nêu rõ ưu điểm thấm nhanh dịu nhẹ không bết dính. [00:21 - ${String(durationSeconds).padStart(2, '0')}s] Tổng kết trải nghiệm và hướng dẫn bấm vào giỏ hàng góc trái màn hình để nhận ưu đãi chính hãng từ ${brandName}.`;
+  const transcriptText = liveData.transcriptText || '';
 
   const subtitleSource: TikTokVideoContentCheck['subtitleSource'] =
-    liveData.subtitleSource || 'BRIEF_ESTIMATED';
+    liveData.subtitleSource || 'ON_SCREEN_TEXT_AND_CAPTION';
 
-  // Kiểm tra từ khóa nội dung / USP bắt buộc phải nhắc tới trong lời nói hoặc chữ trên màn hình
   const defaultUspList =
     options.requiredUspKeywords && options.requiredUspKeywords.length > 0
       ? options.requiredUspKeywords
-      : [brandName, 'dịu nhẹ', 'thấm nhanh'];
+      : [];
 
   const combinedSpokenAndText = `${defaultCaption} ${transcriptText} ${onScreenStickers.join(' ')}`.toLowerCase();
   const matchedUspKeywords = defaultUspList.filter((kw) =>
@@ -755,9 +736,8 @@ export async function inspectTikTokVideoUrl(
 
   const violatedBlacklistWords = scanBlacklistViolations(combinedSpokenAndText);
 
-  const hasCartAnchor = liveData.hasCartAnchor ?? true;
-  const cartAnchorTitle =
-    liveData.cartAnchorTitle || `${productName} - Chính hãng ${brandName}`;
+  const hasCartAnchor = Boolean(liveData.hasCartAnchor);
+  const cartAnchorTitle = liveData.cartAnchorTitle || '';
 
   // 1. Tầng kiểm tra Khung hình & Âm thanh gốc (Visual Keyframe & Audio Stream)
   const firstProductAppearanceSec = (seed % 3) + 1; // 1s - 3s
@@ -1002,7 +982,14 @@ export async function inspectTikTokVideoBatch(
     );
     results.push(...chunkResults);
   }
-  return results;
+  return results.sort((a, b) => {
+    const tsA = Date.parse(a.publishedAtIso || '');
+    const tsB = Date.parse(b.publishedAtIso || '');
+    if (Number.isFinite(tsA) && Number.isFinite(tsB) && tsA !== tsB) {
+      return tsB - tsA;
+    }
+    return compareTikTokVideoIdDesc(a.videoId, b.videoId);
+  });
 }
 
 /**

@@ -3,13 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Check,
-  CloudDownload,
   Download,
   ExternalLink,
   Music,
   RefreshCw,
   Search,
-  Video,
 } from 'lucide-react';
 import type { KocItem, TikTokVideoItem } from '../../lib/types';
 import {
@@ -26,9 +24,6 @@ import {
   Field,
   Modal,
   Panel,
-  Segmented,
-  Stat,
-  StatRow,
   Status,
   Textarea,
 } from '../ui';
@@ -45,21 +40,6 @@ interface TikTokKocScraperModalProps {
 
 type PeriodKey = '7d' | '30d' | '90d';
 type ScrapeModeKey = 'HANDLE' | 'HASHTAG';
-
-const SAMPLE_HANDLES = [
-  '@megauriviu',
-  '@chanhbeauty',
-  '@ha.linh.official',
-  '@mebimsuathongthai',
-];
-
-const SAMPLE_HASHTAGS = [
-  '#kemchongnang',
-  '#skincare',
-  '#clubclio',
-  '#kutieskin',
-  '#duocmypham',
-];
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   open,
@@ -85,11 +65,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     if (open) {
       setRawInput(initialHandle);
       setErrorMsg(null);
+      setResults([]);
+      setSelectedHandle('');
       setLoading(Boolean(initialHandle.trim()));
-      if (!initialHandle) {
-        setResults([]);
-        setSelectedHandle('');
-      }
     } else {
       setLoading(false);
     }
@@ -272,6 +250,11 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           <span className="text-2xs text-ink-3 truncate">
             {v.hashtags.length > 0 ? v.hashtags.join(' ') : 'Không có hashtag'}
           </span>
+          {v.isAffiliate && (
+            <span className="text-2xs text-positive font-medium truncate" title={v.productName}>
+              Giỏ hàng: {v.productName || 'Sản phẩm TikTok Shop'}
+            </span>
+          )}
         </div>
       ),
     },
@@ -351,140 +334,31 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       }
     >
       <div className="space-y-4">
-        {/* Khung chọn chế độ & nhập danh sách kênh hoặc #hashtag TikTok */}
-        <div className="p-4 rounded-xl border border-line bg-canvas/60 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-line/60">
-            <Segmented<ScrapeModeKey>
-              items={[
-                { key: 'HANDLE', label: 'Quét theo @handle / Link kênh' },
-                { key: 'HASHTAG', label: 'Tìm KOC theo #Hashtag / Từ khóa (0đ)' },
-              ]}
-              value={scrapeMode}
-              onChange={(mode) => {
-                setScrapeMode(mode);
-                setErrorMsg(null);
-              }}
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+          <Field
+            label="Đường dẫn kênh TikTok hoặc @handle (nhập 1 hoặc nhiều kênh, mỗi dòng 1 kênh)"
+            htmlFor="tiktok-scraper-input"
+            error={errorMsg || undefined}
+          >
+            <Textarea
+              id="tiktok-scraper-input"
+              rows={2}
+              value={rawInput}
+              onChange={(e) => setRawInput(e.target.value)}
+              placeholder="Ví dụ: @megauriviu, @chanhbeauty..."
             />
-            <span className="text-2xs text-ink-3">
-              Không cần tài khoản Kalodata · Tự động bóc tách SĐT/Zalo & chỉ số kênh thực tế
-            </span>
+          </Field>
+
+          <div className="flex flex-col gap-2 lg:pt-6">
+            <Button
+              variant={results.length === 0 ? 'primary' : 'secondary'}
+              icon={loading ? RefreshCw : Search}
+              disabled={loading}
+              onClick={() => runScrape(rawInput, period)}
+            >
+              {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
+            </Button>
           </div>
-
-          {scrapeMode === 'HANDLE' ? (
-            <>
-              <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
-                <Field
-                  label="Đường dẫn kênh TikTok hoặc @handle (nhập 1 hoặc nhiều kênh, mỗi dòng 1 kênh)"
-                  htmlFor="tiktok-scraper-input"
-                  error={errorMsg || undefined}
-                >
-                  <Textarea
-                    id="tiktok-scraper-input"
-                    rows={2}
-                    value={rawInput}
-                    onChange={(e) => setRawInput(e.target.value)}
-                    placeholder="Ví dụ: https://www.tiktok.com/@megauriviu, @chanhbeauty..."
-                  />
-                </Field>
-
-                <div className="flex flex-col gap-2 lg:pt-6">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={results.length === 0 ? 'primary' : 'secondary'}
-                      icon={loading ? RefreshCw : Search}
-                      disabled={loading}
-                      onClick={() => runScrape(rawInput, period)}
-                    >
-                      {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn kênh mẫu (nhấn Lấy dữ liệu kênh để quét):</span>
-                {SAMPLE_HANDLES.map((h) => (
-                  <button
-                    key={h}
-                    type="button"
-                    onClick={() => {
-                      const next = rawInput.trim()
-                        ? rawInput.includes(h)
-                          ? rawInput
-                          : `${rawInput.trim()}\n${h}`
-                        : h;
-                      setRawInput(next);
-                    }}
-                    className="px-2 py-0.5 rounded border border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink transition-colors font-code"
-                  >
-                    {h}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const batch = SAMPLE_HANDLES.join('\n');
-                    setRawInput(batch);
-                  }}
-                  className="px-2 py-0.5 rounded border border-line bg-surface text-accent hover:border-line-strong transition-colors font-medium ml-1"
-                >
-                  Điền 4 kênh mẫu
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
-                <Field
-                  label="Nhập #Hashtag hoặc Từ khóa ngách trên TikTok để tìm KOC đang có video lên xu hướng"
-                  htmlFor="tiktok-hashtag-input"
-                  error={errorMsg || undefined}
-                >
-                  <input
-                    id="tiktok-hashtag-input"
-                    type="text"
-                    value={hashtagInput}
-                    onChange={(e) => setHashtagInput(e.target.value)}
-                    placeholder="Ví dụ: #kemchongnang, #skincare, #clubclio, #kutieskin..."
-                    className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
-                  />
-                </Field>
-
-                <div className="flex flex-col gap-2 lg:pt-6">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="primary"
-                      icon={loading ? RefreshCw : Search}
-                      disabled={loading}
-                      onClick={() => runHashtagDiscovery(hashtagInput, period)}
-                    >
-                      {loading ? 'Đang quét hashtag...' : 'Quét KOC theo Hashtag'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn hashtag mẫu (nhấn Quét KOC theo Hashtag để bắt đầu):</span>
-                {SAMPLE_HASHTAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => {
-                      setHashtagInput(tag);
-                    }}
-                    className={`px-2 py-0.5 rounded border text-xs transition-colors font-code ${
-                      hashtagInput.toLowerCase() === tag.toLowerCase()
-                        ? 'bg-accent-soft border-accent text-ink font-semibold'
-                        : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
 
         {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
@@ -509,11 +383,6 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   <span className="text-2xs text-ink-3 tabular-nums">
                     {formatFollowers(r.channelProfile.followers)} flw · ER {r.engagementMetrics.engagementRate}%
                   </span>
-                  {r.matchedHashtagVideo && (
-                    <span className="text-2xs text-positive font-semibold tabular-nums">
-                      {r.matchedHashtagVideo.breakoutRatio}x view/flw
-                    </span>
-                  )}
                   <span className="text-2xs text-ink-3">
                     ({isExisting ? 'Đã có' : 'Mới'})
                   </span>
@@ -524,19 +393,18 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         )}
 
         {/* Chi tiết kênh & danh sách video của kênh đang chọn */}
-        {activeResult ? (
+        {activeResult && (
           <div className="space-y-4">
-            {/* Đầu hồ sơ kênh vừa thu thập */}
             <div className="p-4 rounded-xl border border-line bg-surface flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3 min-w-0 flex-1">
                 <Avatar
                   name={activeResult.channelProfile.nickname}
                   src={activeResult.channelProfile.avatarUrl}
-                  size={48}
+                  size={44}
                 />
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold text-ink">
+                    <h3 className="text-sm font-semibold text-ink">
                       {activeResult.channelProfile.nickname}
                     </h3>
                     <a
@@ -555,15 +423,15 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     )}
                   </div>
 
-                  {/* Bio kênh */}
-                  <p className="text-xs text-ink-2 leading-relaxed">
-                    {activeResult.channelProfile.bio || 'Chưa có tiểu sử trên kênh'}
-                  </p>
+                  {activeResult.channelProfile.bio && (
+                    <p className="text-xs text-ink-2 leading-relaxed">
+                      {activeResult.channelProfile.bio}
+                    </p>
+                  )}
 
-                  {/* Thông tin liên hệ bóc tách từ Bio */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-2xs text-ink-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-2xs text-ink-3">
                     <span>
-                      SĐT / Zalo tách từ bio:{' '}
+                      SĐT / Zalo:{' '}
                       <strong className="font-semibold text-ink font-code">
                         {activeResult.channelProfile.extractedPhone || '—'}
                       </strong>
@@ -574,83 +442,43 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         {activeResult.channelProfile.extractedEmail || '—'}
                       </strong>
                     </span>
-                    <span>
-                      Tổng số video trên kênh:{' '}
-                      <strong className="font-semibold text-ink tabular-nums">
-                        {formatNumber(activeResult.channelProfile.videoCount)} video
-                      </strong>
-                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <span className="text-xs font-semibold text-ink tabular-nums">
-                  {formatFollowers(activeResult.channelProfile.followers)} người theo dõi
-                </span>
-                <span className="text-2xs text-ink-3">
-                  Cập nhật lúc {new Date(activeResult.scrapedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                </span>
+              <div className="flex flex-wrap items-center gap-5 text-xs tabular-nums shrink-0">
+                <div>
+                  <span className="text-ink-3 block text-2xs">Follower</span>
+                  <strong className="text-ink">
+                    {formatFollowers(activeResult.channelProfile.followers)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-ink-3 block text-2xs">View TB</span>
+                  <strong className="text-ink">
+                    {formatNumber(activeResult.engagementMetrics.avgViews)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-ink-3 block text-2xs">ER%</span>
+                  <strong className="text-positive">
+                    {activeResult.engagementMetrics.engagementRate}%
+                  </strong>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* 4 Ô chỉ số kênh & tương tác video gần nhất */}
-              <StatRow>
-                <Stat
-                  label="Lượt theo dõi & tổng tim"
-                  value={formatFollowers(activeResult.channelProfile.followers)}
-                  note={`${formatFollowers(activeResult.channelProfile.totalLikes)} lượt thích · ${formatNumber(activeResult.channelProfile.videoCount)} video`}
-                />
-                <Stat
-                  label="Lượt xem trung bình"
-                  value={formatNumber(activeResult.engagementMetrics.avgViews)}
-                  note={`Tính trên ${activeResult.engagementMetrics.sampleVideoCount} video gần nhất`}
-                />
-                <Stat
-                  label="Tỷ lệ tương tác (ER)"
-                  value={`${activeResult.engagementMetrics.engagementRate}%`}
-                  note="(Tim + Bình luận + Chia sẻ) / Lượt xem"
-                  tone="positive"
-                />
-                <Stat
-                  label="Tương tác trung bình / video"
-                  value={`${formatNumber(activeResult.engagementMetrics.avgLikes)} tim`}
-                  note={`${formatNumber(activeResult.engagementMetrics.avgComments)} bình luận · ${formatNumber(activeResult.engagementMetrics.avgShares)} chia sẻ`}
-                />
-              </StatRow>
-
-              {/* Bảng danh sách video & nội dung */}
-              <Panel
-                flush
-                title="Danh sách video & nội dung gần nhất"
-                description="Bao gồm đường dẫn video, caption, hashtag, nhạc nền, ngày đăng và lượt tương tác"
-              >
-                <DataTable
-                  columns={videoColumns}
-                  rows={activeResult.recentVideos}
-                  rowKey={(v) => v.videoId}
-                  compact
-                />
-              </Panel>
-            </div>
-          </div>
-        ) : (
-          <div className="py-10 text-center space-y-2 border border-dashed border-line rounded-xl bg-surface">
-            <div className="w-10 h-10 rounded-lg bg-sunken text-ink-3 flex items-center justify-center mx-auto">
-              <CloudDownload className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-medium text-ink">
-              Nhập link kênh TikTok hoặc @handle để lấy dữ liệu KOC
-            </p>
-            <p className="text-xs text-ink-3 max-w-xl mx-auto">
-              Hệ thống thu thập trực tiếp dữ liệu công khai trên TikTok: Thông tin kênh & liên hệ trong Bio (SĐT, Zalo, Email), Follower, Tổng lượt thích, Tổng số video và chỉ số tương tác các video gần nhất (View, Tim, Bình luận, Chia sẻ, ER%).
-            </p>
-            <div className="pt-2 flex items-center justify-center gap-4 text-2xs text-ink-3">
-              <span className="inline-flex items-center gap-1">
-                <Video className="w-3.5 h-3.5" /> Tương tác & nội dung video
-              </span>
-            </div>
+            <Panel
+              flush
+              title={`Video gần nhất trên kênh (${activeResult.recentVideos.length})`}
+            >
+              <DataTable
+                columns={videoColumns}
+                rows={activeResult.recentVideos}
+                rowKey={(v) => v.videoId}
+                compact
+              />
+            </Panel>
           </div>
         )}
       </div>
