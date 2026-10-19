@@ -15,7 +15,7 @@ import { formatDate } from '../../lib/format';
 import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Status } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
-import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
+import { browserDemoEnabled, disableBrowserDemo, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { contractStatus, isAcceptance } from '../contracts/contractUi';
 import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
@@ -251,7 +251,24 @@ export function ContractManagementView({
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
-      {data.config.storage === 'BROWSER_DEMO' && <div role="status" className="rounded-xl bg-warning-soft px-4 py-3 text-[13px] text-ink">Bản giả lập online · Dữ liệu thử chỉ lưu trong trình duyệt này. Dùng mẫu rút gọn để thử quy trình; bộ mẫu pháp chế gốc và kết nối Lark/MISA/AI đang chờ cấu hình. Không nhập dữ liệu thật hoặc dùng tài liệu thử để ký.</div>}
+      {data.config.storage === 'BROWSER_DEMO' && (
+        <div role="status" className="rounded-xl bg-warning-soft px-4 py-3 text-[13px] text-ink flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="font-semibold text-warning-strong">Chế độ kiểm thử trình duyệt:</span>
+            <span className="ml-1.5">Đang áp dụng 8 biểu mẫu chuẩn Ver052026 với dữ liệu thử nghiệm nội bộ.</span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={async () => {
+              disableBrowserDemo();
+              await refresh();
+            }}
+          >
+            Chuyển sang dữ liệu máy chủ
+          </Button>
+        </div>
+      )}
 
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
@@ -351,7 +368,6 @@ export function ContractManagementView({
         open={Boolean(quickViewRecord)}
         onClose={() => setQuickViewRecord(null)}
         title={quickViewRecord?.title || 'Xem hợp đồng'}
-        description={quickViewRecord ? `${quickViewRecord.partner} · ${quickViewRecord.brand} · Phiên bản ${quickViewRecord.version}` : ''}
         size="lg"
         footer={
           quickViewRecord && (

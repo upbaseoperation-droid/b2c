@@ -1914,7 +1914,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           >
             <span>Phân tích Kênh &amp; Khớp Brief</span>
             {runningBriefJobsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-bold tabular-nums animate-pulse">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
                 {runningBriefJobsCount} đang chạy ngầm
               </span>
             )}
@@ -2011,7 +2011,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                         {job.totalVideosScannedSoFar} video)
                       </span>
                     </div>
-                    <span className="font-code text-2xs font-bold text-accent shrink-0">
+                    <span className="font-code text-2xs font-semibold text-accent shrink-0">
                       {job.progressPct}%
                     </span>
                   </div>

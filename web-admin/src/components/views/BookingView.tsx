@@ -839,7 +839,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                             {d.deliverables.map(item => (
                               <span
                                 key={item.id}
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border ${
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-medium border ${
                                   item.lockStatus === 'VERIFIED'
                                     ? 'bg-positive-soft border-positive/30 text-positive'
                                     : item.lockStatus === 'LOCKED_BY_WAVE_0'
@@ -855,7 +855,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                 {item.affiliateChannel !== 'Không gắn giỏ' && (
                                   <span className="text-ink-3">→{item.affiliateChannel}</span>
                                 )}
-                                <span className="text-[10px] opacity-80">({item.assignedChannelPic.split(' ').slice(-2).join(' ')})</span>
+                                <span className="text-2xs opacity-80">({item.assignedChannelPic.split(' ').slice(-2).join(' ')})</span>
                               </span>
                             ))}
                           </div>
@@ -914,7 +914,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3 italic">Chưa mã Ads</span>}
                         </div>
                         {d.rightsTerms && d.rightsTerms.length > 0 && (
-                          <div className="text-[11px] text-ink-3 truncate max-w-[140px]">
+                          <div className="text-2xs text-ink-3 truncate max-w-[140px]">
                             Bản quyền: {d.rightsTerms.length} quyền ({d.rightsTerms[0].scopeType})
                           </div>
                         )}
@@ -926,7 +926,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
                         <span className="text-ink font-semibold">{formatVndShort(d.totalValue)}</span>
                         {d.pricingDisplayMode && (
-                          <span className="text-[10px] text-ink-3">
+                          <span className="text-2xs text-ink-3">
                             {d.pricingDisplayMode === 'PACKAGE_TOTAL' ? 'Gói trọn cục' : 'Tách lẻ SOW'}
                           </span>
                         )}
@@ -1132,7 +1132,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     <div key={item.id} className="p-2.5 rounded-md border border-line bg-sunken/60 grid sm:grid-cols-12 gap-2 items-center text-xs">
                       <div className="sm:col-span-5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`px-1.5 py-0.5 rounded font-code text-[11px] font-semibold ${
+                          <span className={`px-1.5 py-0.5 rounded font-code text-2xs font-semibold ${
                             item.wave === 0 ? 'bg-accent-soft text-accent' : 'bg-warning-soft text-warning'
                           }`}>
                             Wave {item.wave}

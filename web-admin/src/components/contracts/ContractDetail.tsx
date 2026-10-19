@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, ScanSearch } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
 import type { BookingDealItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status, Textarea } from '../ui';
@@ -15,6 +15,7 @@ import { formatDate } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
+import { evaluateContractRules } from '../../lib/contracts/contractRules';
 
 type Action = (payload: Record<string, unknown>, done?: string) => Promise<ContractRecord | undefined>;
 
@@ -159,8 +160,9 @@ export function ContractDetail({
         <div className="grid gap-6 min-w-0">
           {record.hasCustomTerms && (
             <div className="rounded-xl border border-warning/50 bg-warning-soft/70 p-4 space-y-1.5">
-              <span className="font-semibold text-xs text-warning-strong uppercase tracking-wider block">
-                ⚠️ Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
+              <span className="font-semibold text-xs text-warning-strong flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
               </span>
               <p className="text-sm font-medium text-ink">
                 {record.customTermsSummary || 'Hồ sơ có yêu cầu chỉnh sửa riêng so với mẫu chuẩn (Cần Pháp chế thẩm định trước khi chuyển Kế toán)'}
@@ -258,6 +260,67 @@ export function ContractDetail({
               )}
             </div>
           </section>
+
+          {/* Quy chuẩn pháp chế & Luồng phê duyệt */}
+          {(() => {
+            const allFields = previewData?.fields || template?.fields || [];
+            const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
+            const parsedContractValue = moneyFields.reduce((max, f) => {
+              const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
+              const num = raw ? Number(raw) : 0;
+              return num > max ? num : max;
+            }, 0);
+            const ruleEvaluation = evaluateContractRules({
+              deal: linkedDeal,
+              totalValue: parsedContractValue || linkedDeal?.totalValue || 0,
+              advanceAmount: linkedDeal?.advanceAmount || 0,
+              actualSettledValue: parsedContractValue,
+              hasCustomTerms: record.hasCustomTerms,
+              isKolForm: template?.scope === 'KOC_CUSTOM',
+              availableTemplates: data.templates,
+            });
+
+            return (
+              <section className="grid gap-3">
+                <SectionHeader
+                  title="Quy chuẩn pháp chế & Luồng duyệt"
+                  actions={
+                    <Status tone={ruleEvaluation.isHighValueKoc ? 'warning' : 'positive'}>
+                      {ruleEvaluation.reviewStream.streamName}
+                    </Status>
+                  }
+                />
+                <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Mẫu hợp đồng (BR-01)</span>
+                    <span className={`text-xs font-semibold block ${ruleEvaluation.isHighValueKoc ? 'text-accent' : 'text-positive'}`}>
+                      {ruleEvaluation.isHighValueKoc ? '≥ 50 triệu (Được dùng mẫu KOC)' : 'Dưới 50 triệu (100% mẫu UpBase)'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.templateCompliance.note}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Nghĩa vụ ký (BR-03)</span>
+                    <span className={`text-xs font-semibold block ${ruleEvaluation.isContractMandatory ? 'text-ink' : 'text-positive'}`}>
+                      {ruleEvaluation.isContractMandatory ? 'Bắt buộc ký hợp đồng' : 'Miễn HĐ giấy'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.contractMandatoryReason}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Nghiệm thu (BR-04)</span>
+                    <span className={`text-xs font-semibold block ${ruleEvaluation.isAcceptanceMandatory ? 'text-ink' : 'text-positive'}`}>
+                      {ruleEvaluation.isAcceptanceMandatory ? 'Bắt buộc lập BBNT' : 'Thanh lý tự động'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.acceptanceMandatoryReason}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Thời hạn xử lý (SLA)</span>
+                    <span className="text-xs font-semibold text-accent block">TCKT {ruleEvaluation.reviewStream.slaHoursTckt}h · Pháp chế {ruleEvaluation.reviewStream.slaHoursLegal}h</span>
+                    <span className="text-2xs text-ink-3 block">{ruleEvaluation.reviewStream.flowDescription}</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Đối soát tài chính & hạn mức Booking (Dành cho Kế toán & Lead) */}
           {(() => {
@@ -453,7 +516,10 @@ export function ContractDetail({
             <AsideSection title="Lưu ý của Pháp chế">
               <div className="rounded-lg bg-warning-soft/70 border border-warning/30 p-2.5 text-xs text-ink space-y-1.5">
                 <div className="font-semibold text-warning-strong flex items-center justify-between gap-1">
-                  <span>⚖️ Lưu ý cho {record.partner}</span>
+                  <span className="flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5 shrink-0" />
+                    Lưu ý cho {record.partner}
+                  </span>
                   {kocTemplate && (
                     <span className="text-2xs font-normal px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2">
                       Mẫu đã duyệt
@@ -708,7 +774,6 @@ function SubmitDialog({
       open={open}
       onClose={onClose}
       title="Gửi duyệt hồ sơ"
-      description={`Phiên bản ${record.version}. Đã tự động cấu hình luồng duyệt theo mẫu "${template?.name || record.templateId}".`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Hủy</Button>
@@ -726,7 +791,8 @@ function SubmitDialog({
         {isExempt && !forceLegal ? (
           <div className="rounded-lg border border-positive/30 bg-positive-soft p-3 text-xs text-ink space-y-1">
             <div className="font-semibold text-positive flex items-center gap-1.5">
-              🚀 Áp dụng luồng chuẩn: Miễn duyệt Pháp chế
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+              Áp dụng luồng chuẩn: Miễn duyệt Pháp chế
             </div>
             <p className="text-2xs text-ink-2">
               Hồ sơ dùng mẫu chuẩn và không có điều khoản sửa đổi riêng. Hồ sơ chuyển thẳng Kế toán soát xét ngân sách và thuế.
@@ -735,7 +801,8 @@ function SubmitDialog({
         ) : (
           <div className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs text-ink space-y-1">
             <div className="font-semibold text-warning-strong flex items-center gap-1.5">
-              ⚠️ Bắt buộc Pháp chế (chị Liên) duyệt trước
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Bắt buộc Pháp chế (chị Liên) duyệt trước
             </div>
             <p className="text-2xs text-ink-2">
               {record.hasCustomTerms
@@ -841,7 +908,6 @@ function LegalApproveDialog({
       open={open}
       onClose={onClose}
       title="Duyệt hồ sơ (Pháp chế)"
-      description={`Phê duyệt phiên bản ${record.version} cho đối tác ${record.partner}.`}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Hủy</Button>

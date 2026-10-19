@@ -209,7 +209,7 @@ export function PlatformBadge({
     return (
       <span
         title={platform}
-        className={`inline-flex items-center justify-center p-0.5 rounded-sm transition-transform hover:scale-105 ${className}`}
+        className={`inline-flex items-center justify-center p-0.5 rounded-sm transition-colors ${className}`}
       >
         <PlatformLogo platform={platform} className={iconClassName} />
       </span>

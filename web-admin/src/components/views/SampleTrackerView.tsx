@@ -189,10 +189,10 @@ export default function SampleTrackerView({
       </div>
 
       {/* Main Table */}
-      <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-sm">
+      <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
         <div className="w-full">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold text-[11px]">
+            <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-2xs">
               <tr>
                 <th className="py-2 px-2.5 w-[18%]">KOC &amp; mã hồ sơ</th>
                 <th className="py-2 px-2.5 w-[22%]">Sản phẩm &amp; nhãn hàng</th>

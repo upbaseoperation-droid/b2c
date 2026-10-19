@@ -319,7 +319,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       <div className="card-enterprise overflow-hidden">
         <div className="w-full">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-canvas text-ink-3 border-b border-line text-[11px] font-semibold">
+            <thead className="bg-canvas text-ink-3 border-b border-line text-2xs font-semibold">
               <tr>
                 <th className="py-2.5 px-3 pl-4 w-[22%]">Tài khoản &amp; Đối tác</th>
                 <th className="py-2.5 px-2 w-[11%]">Phân loại</th>

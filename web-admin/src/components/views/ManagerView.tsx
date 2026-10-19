@@ -1725,7 +1725,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
             <div className="w-full">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-[11px]">
+                <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-2xs">
                   <tr>
                     <th className="py-2 px-2.5 w-[14%]">Mã Deal &amp; KOC</th>
                     <th className="py-2 px-2 w-[12%]">Nhãn hàng</th>
@@ -1817,7 +1817,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <td className="py-2 px-2.5 text-right">
                             <button
                               onClick={() => setBreachActionModal(breach)}
-                              className="px-2 py-0.5 text-[11px] font-semibold bg-ink hover:bg-ink text-white rounded transition shadow-2xs"
+                              className="px-2 py-0.5 text-2xs font-semibold bg-ink hover:bg-ink text-white rounded transition shadow-2xs"
                             >
                               Xử lý
                             </button>

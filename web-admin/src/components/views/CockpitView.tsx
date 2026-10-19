@@ -97,7 +97,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 text-xs text-ink-2">
           <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={26} />
           <span className="font-semibold text-ink">{currentUser.name}</span>
@@ -108,6 +108,24 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             Hôm nay có <strong className="text-ink">{criticalCount + warningCount}</strong> việc cần xử lý
             {criticalCount > 0 && <strong className="text-critical ml-1">({criticalCount} khẩn cấp)</strong>}
           </span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {onNavigateToInputPlan && (
+            <Button variant="secondary" size="sm" onClick={onNavigateToInputPlan}>
+              Kế hoạch tháng
+            </Button>
+          )}
+          {onNavigateToAirSync && (
+            <Button variant="secondary" size="sm" onClick={onNavigateToAirSync}>
+              Lịch lên sóng
+            </Button>
+          )}
+          {onNavigateToTaskDelegation && (
+            <Button variant="secondary" size="sm" onClick={onNavigateToTaskDelegation}>
+              Giao việc & định mức
+            </Button>
+          )}
         </div>
       </div>
 
@@ -167,7 +185,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                   key={task.id}
                   className={`px-4 py-3.5 hover:bg-canvas transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     task.urgency === 'done' ? 'opacity-60 bg-canvas' : 'bg-surface'
-                  }`}
+                  } ${task.urgency === 'critical' ? 'border-l-2 border-critical pl-3.5' : ''}`}
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     <button

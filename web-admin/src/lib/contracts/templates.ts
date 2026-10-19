@@ -1,10 +1,12 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import type { ContractCategory, ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate, TemplateVersionHistoryItem } from './types';
 import { requireCondition } from './domain';
 import prisma from '../prisma';
+import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
 const SOURCES = [
   ['IND-HD', 'Hợp đồng video · Cá nhân', 'Cá nhân', 'CONTRACT', '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'],
   ['IND-BBNT', 'Nghiệm thu video · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '1.1.2. BM.BBNT.VID.IND.Ver052026 booking Video.docx'],
@@ -223,6 +225,22 @@ async function writeCatalogOverrides(map: Record<string, CatalogOverride>) {
   await writeFile(catalogFile(), JSON.stringify(map, null, 2), 'utf8');
 }
 
+export function resolveTemplateDir(): string {
+  if (process.env.CONTRACT_TEMPLATE_DIR && existsSync(process.env.CONTRACT_TEMPLATE_DIR)) {
+    return process.env.CONTRACT_TEMPLATE_DIR;
+  }
+  const candidates = [
+    path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng'),
+    path.resolve(/*turbopackIgnore: true*/ process.cwd(), 'Quản lý hợp đồng'),
+    path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'B2C', 'Quản lý hợp đồng'),
+    path.resolve(/*turbopackIgnore: true*/ process.cwd(), 'public', 'contracts'),
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng');
+}
+
 async function readSourceBuffer(id: string, override?: CatalogOverride): Promise<{ buffer: Buffer; filename: string; name: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string }> {
   const builtIn = SOURCES.find(s => s[0] === id);
   requireCondition(builtIn || override, 'Không tìm thấy mẫu pháp chế.', 404);
@@ -235,7 +253,7 @@ async function readSourceBuffer(id: string, override?: CatalogOverride): Promise
     const buffer = await readFile(path.join(customTemplateDirectory(), override.customFile));
     return { buffer, filename, name, subject, kind, version };
   }
-  const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng');
+  const directory = resolveTemplateDir();
   const buffer = await readFile(path.join(/*turbopackIgnore: true*/ directory, builtIn![4]));
   return { buffer, filename, name, subject, kind, version };
 }
@@ -403,6 +421,34 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
     const loaded = await readSourceBuffer(id, override);
     buffer = loaded.buffer;
   } catch (e) {
+    if (OFFICIAL_TEMPLATES_SNAPSHOT[id] && !override?.customFile) {
+      const snap = OFFICIAL_TEMPLATES_SNAPSHOT[id];
+      const fallbackZip = new JSZip();
+      fallbackZip.file(
+        'word/document.xml',
+        '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body></w:body></w:document>',
+      );
+      return {
+        zip: fallbackZip,
+        template: {
+          ...snap,
+          category,
+          description,
+          active,
+          defaultReviewRoles,
+          exemptLegalReview,
+          scope,
+          kocId,
+          kocName,
+          approvedByLegal,
+          approvedAt,
+          originalContractId,
+          customType,
+          legalNotes,
+          history: override?.history || snap.history,
+        },
+      };
+    }
     if (!expectedHash) throw e;
     buffer = Buffer.alloc(0);
   }

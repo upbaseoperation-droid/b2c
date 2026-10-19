@@ -1574,7 +1574,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">

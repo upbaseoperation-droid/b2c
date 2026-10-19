@@ -50,7 +50,7 @@ export function BrandAvatar({
 
   return (
     <span
-      className={`inline-flex items-center justify-center shrink-0 bg-white border border-slate-200/90 shadow-2xs overflow-hidden select-none transition-transform hover:scale-105 ${roundedClass} ${className}`}
+      className={`inline-flex items-center justify-center shrink-0 bg-surface border border-line shadow-2xs overflow-hidden select-none transition-colors ${roundedClass} ${className}`}
       style={{ width: size, height: size }}
       title={displayName}
     >

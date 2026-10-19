@@ -915,7 +915,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               return (
                 <div className="flex items-center justify-center">
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-orange-50 text-orange-700 border border-orange-200/80 shadow-2xs hover:bg-orange-100/70 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-sunken text-ink border border-line shadow-2xs hover:bg-canvas transition-colors"
                     title={shopee.storeNames.join('\n') || 'Shopee'}
                   >
                     <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />

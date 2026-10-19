@@ -6,13 +6,14 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Columns2, Download, FileScan, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Columns2, Download, FileScan, Scale, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
 import type { ContractField, ContractRecord, LegalTemplate } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
+import { evaluateContractRules } from '../../lib/contracts/contractRules';
 
 export interface ContractFormInit {
   dealId?: string;
@@ -57,7 +58,7 @@ export function ContractForm({
     record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.templateId ? (isAcceptance(init.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT',
   );
   const [templateId, setTemplateId] = useState(
-    record?.templateId || init?.templateId || (initialDeal ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT') : ''),
+    record?.templateId || init?.templateId || (initialDeal ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT', initialDeal, data.templates) : ''),
   );
   const [title, setTitle] = useState(
     record?.title || (initialDeal ? [init?.kind === 'ACCEPTANCE' ? 'Nghiệm thu video' : 'Hợp đồng video', initialDeal.kocStageName, initialDeal.brandName].filter(Boolean).join(' · ') : ''),
@@ -124,7 +125,7 @@ export function ContractForm({
     if (!d) return;
     setBrand(d.brandName); setPartner(partnerName(k, d));
     if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
-    const nextTemplate = templateFor(k, kind);
+    const nextTemplate = templateFor(k, kind, d, data.templates);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
     else if (template) { const result = prefill(fields, values, { koc: k, deal: d, existingRecords: data.records }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
   };
@@ -132,7 +133,7 @@ export function ContractForm({
   const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
     setKind(k);
     if (title === autoTitle(koc, deal, kind)) setTitle(autoTitle(koc, deal, k));
-    const next = deal ? templateFor(koc, k) : '';
+    const next = deal ? templateFor(koc, k, deal, data.templates) : '';
     setTemplate(null); setValues({}); setTemplateId(next);
     if (k === 'CONTRACT') setParentId('');
   };
@@ -261,6 +262,31 @@ export function ContractForm({
     }));
   };
 
+  const numericTotal = useMemo(() => {
+    const raw = values['token:[Tổng tiền trước thuế/sau thuế]'] || values['token:[Thù lao trọn gói]'] || values['token:[Thành tiền (VNĐ)]'] || '';
+    const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : (deal?.totalValue || (deal as any)?.paymentAmount || (deal as any)?.contractAmount || 0);
+  }, [values, deal]);
+
+  const numericAdvance = useMemo(() => {
+    const raw = values['token:[Số tiền tạm ứng đợt 1]'] || '';
+    const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
+    return Number.isFinite(parsed) ? parsed : (deal?.advanceAmount || 0);
+  }, [values, deal]);
+
+  const ruleEval = useMemo(() => {
+    const selectedTpl = data.templates.find(t => t.id === templateId);
+    return evaluateContractRules({
+      koc,
+      deal,
+      totalValue: numericTotal,
+      advanceAmount: numericAdvance,
+      hasCustomTerms,
+      isKolForm: selectedTpl?.scope === 'KOC_CUSTOM',
+      availableTemplates: data.templates,
+    });
+  }, [koc, deal, numericTotal, numericAdvance, hasCustomTerms, templateId, data.templates]);
+
   return (
     <form
       className="space-y-6"
@@ -310,7 +336,8 @@ export function ContractForm({
         <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3.5 space-y-2 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold text-warning-strong flex items-center gap-1.5">
-              ⚖️ Lưu ý của Pháp chế cho KOC {koc?.stageName || partner || 'này'}:
+              <Scale className="w-3.5 h-3.5 shrink-0" />
+              Lưu ý của Pháp chế cho KOC {koc?.stageName || partner || 'này'}:
             </span>
             {primaryKocTemplate && templateId !== primaryKocTemplate.id && !editing && (
               <Button
@@ -370,7 +397,7 @@ export function ContractForm({
                 <optgroup label={`Mẫu đã duyệt riêng cho KOC (${kocTemplates.length})`}>
                   {kocTemplates.map(t => (
                     <option key={t.id} value={t.id}>
-                      ⭐ {t.name} ({t.version})
+                      [Mẫu riêng] {t.name} ({t.version})
                     </option>
                   ))}
                 </optgroup>
@@ -405,8 +432,9 @@ export function ContractForm({
 
       {duplicateRecord && (
         <div className="rounded-xl border border-warning/40 bg-warning-soft p-3.5 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="font-semibold text-warning-strong">⚠️ Cảnh báo trùng số hợp đồng:</span> Đã tồn tại một hồ sơ hợp đồng khác cùng KOC và ngày lập này ({docDateVal}/{kocIdVal} · "{duplicateRecord.title}").
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-warning-strong shrink-0" />
+            <span><strong className="text-warning-strong font-semibold">Cảnh báo trùng số hợp đồng:</strong> Đã tồn tại một hồ sơ hợp đồng khác cùng KOC và ngày lập này ({docDateVal}/{kocIdVal} · "{duplicateRecord.title}").</span>
           </div>
           <Button size="sm" variant="secondary" onClick={resolveDuplicateNumber}>
             Thêm hậu tố chống trùng (-{deal?.dealCode || '02'})
@@ -414,8 +442,40 @@ export function ContractForm({
         </div>
       )}
 
-      <Panel title="Quy chuẩn xét duyệt & Điều khoản thỏa thuận">
+      <Panel title="Đối soát quy định pháp chế & Điều khoản thỏa thuận">
         <div className="space-y-4 text-xs">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 p-3.5 rounded-lg border border-line bg-surface">
+            <div className="space-y-1">
+              <span className="text-2xs text-ink-3 block">Quy chuẩn biểu mẫu (BR-01)</span>
+              <span className={`text-xs font-semibold block ${ruleEval.isHighValueKoc ? 'text-accent' : 'text-positive'}`}>
+                {ruleEval.isHighValueKoc ? 'Hạn mức ≥ 50 triệu (Được dùng mẫu KOC)' : 'Dưới 50 triệu (100% mẫu UpBase)'}
+              </span>
+              <span className="text-2xs text-ink-3 block">{ruleEval.templateCompliance.note}</span>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-2xs text-ink-3 block">Nghĩa vụ ký hợp đồng (BR-03)</span>
+              <span className={`text-xs font-semibold block ${ruleEval.isContractMandatory ? 'text-ink' : 'text-positive'}`}>
+                {ruleEval.isContractMandatory ? 'Bắt buộc ký hợp đồng' : 'Miễn HĐ giấy (Thủ tục rút gọn)'}
+              </span>
+              <span className="text-2xs text-ink-3 block">{ruleEval.contractMandatoryReason}</span>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-2xs text-ink-3 block">Biên bản nghiệm thu (BR-04)</span>
+              <span className={`text-xs font-semibold block ${ruleEval.isAcceptanceMandatory ? 'text-ink' : 'text-positive'}`}>
+                {ruleEval.isAcceptanceMandatory ? 'Bắt buộc lập BBNT' : 'Thanh lý tự động không cần BBNT'}
+              </span>
+              <span className="text-2xs text-ink-3 block">{ruleEval.acceptanceMandatoryReason}</span>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-2xs text-ink-3 block">Luồng duyệt & SLA (BR-05)</span>
+              <span className="text-xs font-semibold text-accent block">{ruleEval.reviewStream.streamName}</span>
+              <span className="text-2xs text-ink-3 block">SLA: TCKT {ruleEval.reviewStream.slaHoursTckt}h · Pháp chế {ruleEval.reviewStream.slaHoursLegal}h</span>
+            </div>
+          </div>
+
           <div className="rounded-lg border border-line bg-sunken/40 p-3.5 space-y-2">
             <label className="flex items-start gap-2.5 cursor-pointer">
               <input

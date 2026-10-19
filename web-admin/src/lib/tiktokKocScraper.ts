@@ -977,14 +977,32 @@ export async function discoverTikTokKocsByHashtag(
       const followers = Math.max(1, baseResult.channelProfile.followers);
       const breakoutRatio = Number((inspected.views / followers).toFixed(2));
 
+      const exactTagLower = `#${effectiveTag.toLowerCase()}`;
+      const rootTagPrefix = keywordProfile.rootToken
+        ? `#${keywordProfile.rootToken.toLowerCase()}`
+        : exactTagLower;
+      const matchedRealTag =
+        inspected.hashtags.find((h) => h.toLowerCase() === exactTagLower) ||
+        inspected.hashtags.find((h) => h.toLowerCase().startsWith(rootTagPrefix)) ||
+        `#${effectiveTag}`;
+
+      const lowerCaption = (inspected.caption || '').toLowerCase();
+      const missingTags = inspected.hashtags
+        .filter((h) => !lowerCaption.includes(h.toLowerCase()))
+        .slice(0, 4);
+      const enrichedCaption =
+        missingTags.length > 0 && inspected.caption
+          ? `${inspected.caption} ${missingTags.join(' ')}`
+          : inspected.caption || `Video gắn thẻ ${matchedRealTag}`;
+
       results.push({
         ...baseResult,
         matchedHashtagVideo: {
-          hashtag: `#${effectiveTag}`,
+          hashtag: matchedRealTag,
           videoId: inspected.videoId,
           videoUrl: inspected.videoUrl,
           publishedAt: inspected.publishedAt,
-          captionSnippet: inspected.caption || `Video gắn thẻ #${effectiveTag}`,
+          captionSnippet: enrichedCaption,
           views: inspected.views,
           likes: inspected.likes,
           breakoutRatio,

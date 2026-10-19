@@ -741,7 +741,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] text-ink-3">Kênh đăng (Media)</label>
+                    <label className="block text-2xs text-ink-3">Kênh đăng (Media)</label>
                     <select
                       value={deliv.mediaChannel}
                       onChange={(e) => {
@@ -755,7 +755,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] text-ink-3">Sàn gắn link (P&amp;L)</label>
+                    <label className="block text-2xs text-ink-3">Sàn gắn link (P&amp;L)</label>
                     <select
                       value={deliv.affiliateChannel}
                       onChange={(e) => {
@@ -769,7 +769,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] text-ink-3">PIC phụ trách sàn</label>
+                    <label className="block text-2xs text-ink-3">PIC phụ trách sàn</label>
                     <select
                       value={deliv.assignedChannelPic}
                       onChange={(e) => {
@@ -783,7 +783,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   </div>
 
                   <div className="sm:col-span-2 text-right">
-                    <label className="block text-[10px] text-ink-3">P&amp;L ({deliv.allocatedWeightPct}%)</label>
+                    <label className="block text-2xs text-ink-3">P&amp;L ({deliv.allocatedWeightPct}%)</label>
                     <span className="font-mono font-semibold text-2xs text-ink tabular-nums">
                       {formatVnd(deliv.allocatedCostVnd)}
                     </span>

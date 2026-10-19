@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Select, Stat, StatRow, Status } from '../ui';
+import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Segmented, Select, Stat, StatRow, Status } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -1206,6 +1206,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         </Button>
       </PageActions>
 
+      {/* Thanh chuyển nhanh góc nhìn Dashboard điều hành */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <Segmented
+          items={[
+            { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
+            { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
+            { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
+            { key: 'TEAM_SLA', label: 'Lịch đăng video' },
+            { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
+          ]}
+          value={activeTab}
+          onChange={handleSelectDashboardSection}
+        />
+      </div>
+
       {/* ========================================================================= */}
       {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}
       {/* ========================================================================= */}
@@ -1904,7 +1919,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <div className="space-y-5">
           {/* 4 THẺ KPI ĐẶC THÙ CẤP GIAN HÀNG (STORE & TIKTOK SELLER) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Quy Mô 69 Gian Hàng B2C</span>
                 <Store className="w-4 h-4 text-accent" />
@@ -1920,7 +1935,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-accent/20 p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-accent font-semibold mb-1">
                 <span>Thực Chi &amp; % Spend Net Gian Hàng</span>
                 <DollarSign className="w-4 h-4 text-accent" />
@@ -1941,7 +1956,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-positive/20 p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-positive font-semibold mb-1">
                 <span>Độ Phủ &amp; Sản Lượng Video Air</span>
                 <Film className="w-4 h-4 text-positive" />
@@ -1960,7 +1975,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Quảng Cáo TikTok Seller (PGM/LGM)</span>
                 <TrendingUp className="w-4 h-4 text-warning" />
@@ -1981,7 +1996,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* THANH LỌC NHANH TƯƠNG QUAN KÉP: % SPEND CHI PHÍ vs SỐ LƯỢNG VIDEO AIR TRÊN 69 GIAN HÀNG */}
-          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs space-y-3">
+          <div className="bg-surface rounded-xl border border-line p-3.5 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                 <Filter className="w-4 h-4 text-accent" />
@@ -2043,7 +2058,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   value={storeSearchQuery}
                   onChange={(e) => setStoreSearchQuery(e.target.value)}
                   placeholder="Tìm tên gian hàng, PIC, Brand..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-surface"
                 />
               </div>
 
@@ -2095,7 +2110,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* KHỐI 1: HIỆU QUẢ CHIẾN DỊCH QUẢNG CÁO TIKTOK SHOP SELLER CENTER (PGM / LGM) */}
-          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+          <div className="bg-surface rounded-xl border border-line p-5">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -2207,7 +2222,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* KHỐI 2: BẢNG ĐỐI SOÁT CHI TIẾT 69 GIAN HÀNG B2C (TRỌNG TÂM % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR) */}
-          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="px-5 py-4 border-b border-line flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-ink">
@@ -2365,7 +2380,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               {aired} video
                             </span>
                             {targetPaid > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-white text-2xs font-semibold text-positive">
+                              <span className="px-1.5 py-0.5 rounded bg-surface text-2xs font-semibold text-positive border border-line">
                                 {airVsPaidPct}% Paid
                               </span>
                             )}
@@ -2393,7 +2408,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <button
                   type="button"
                   onClick={() => setStoreVisibleLimit((prev) => (prev >= filteredStores.length ? 15 : filteredStores.length))}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-white hover:bg-sunken text-ink-2 transition cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-surface hover:bg-sunken text-ink-2 transition cursor-pointer"
                 >
                   {storeVisibleLimit >= filteredStores.length ? 'Thu gọn (15 gian hàng)' : `Xem tất cả ${filteredStores.length} gian hàng`}
                 </button>
@@ -2410,7 +2425,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <div className="space-y-5">
           {/* 4 THẺ KPI ĐẶC THÙ CẤP VIDEO BOOKING & CREATIVE ADS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Tổng Đơn Đã Book</span>
                 <PlaySquare className="w-4 h-4 text-accent" />
@@ -2424,7 +2439,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-positive/20 p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-positive font-semibold mb-1">
                 <span>Số Lượng Video Đã Air Lên Sóng</span>
                 <Film className="w-4 h-4 text-positive" />
@@ -2443,7 +2458,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Cơ Cấu Khung Lương (KL1 → KL7 &amp; FOC)</span>
                 <Layers className="w-4 h-4 text-accent" />
@@ -2457,7 +2472,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+            <div className="bg-surface rounded-xl border border-line p-4">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Hiệu Suất Creative Ads TikTok Seller</span>
                 <TrendingUp className="w-4 h-4 text-warning" />
@@ -2478,7 +2493,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* THANH BỘ LỌC VIDEO BOOKING & CREATIVE */}
-          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="bg-surface rounded-xl border border-line p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -2486,7 +2501,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 value={videoSearchQuery}
                 onChange={(e) => setVideoSearchQuery(e.target.value)}
                 placeholder="Tìm mã BO26, kênh KOC, sản phẩm..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-surface"
               />
             </div>
 
@@ -2533,7 +2548,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           {/* HÀNG BIỂU ĐỒ VIDEO: 1. PHÂN BỔ KHUNG LƯƠNG KL1-KL7 + TAP 0Đ | 2. PHỄU GIỮ CHÂN & ĐỊNH DẠNG VIDEO */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
             {/* BIỂU ĐỒ KHUNG LƯƠNG KOC (KL1 -> KL7 & TAP UpAffiliate 0đ) */}
-            <div className="xl:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
+            <div className="xl:col-span-7 bg-surface rounded-xl border border-line p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-ink">
@@ -2622,7 +2637,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* BIỂU ĐỒ PHỄU CHUYỂN ĐỔI VIDEO CREATIVE & ĐỊNH DẠNG VIDEO */}
             <div className="xl:col-span-5 space-y-5">
               {/* Phễu giữ chân người xem TikTok Seller Creative */}
-              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+              <div className="bg-surface rounded-xl border border-line p-5">
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Phễu Hiệu Suất Video Quảng Cáo TikTok Seller (4.211 Dòng Creative)
                 </h3>
@@ -2679,7 +2694,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
 
               {/* Phân bổ theo Định dạng Nội dung (Review Voice, Unbox Voice, Video remix...) */}
-              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+              <div className="bg-surface rounded-xl border border-line p-5">
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Hiệu Quả Theo Định Dạng Sản Xuất Video & Loại Hình Booking
                 </h3>
@@ -2727,7 +2742,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* BẢNG ĐỐI SOÁT CHI TIẾT VIDEO BOOKING (FILE 3.2) */}
-          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h3 className="text-sm font-semibold text-ink">
                 Sổ Cái Video Đã Booking ({filteredBookedVideos.length} bản ghi)
@@ -2874,7 +2889,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           />
 
           {/* TRỌNG TÂM 2: ĐỐI SÁNH SLA GIỮA 2 LUỒNG QUẢN TRỊ B2C */}
-          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+          <div className="bg-surface rounded-xl border border-line p-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
               <h3 className="text-sm font-semibold text-ink">
                 Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
@@ -2956,7 +2971,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* BẢNG KIỂM SOÁT CẢNH BÁO TRỄ HẠN SLA & HỒ SƠ ĐNTT THEO CHUYÊN VIÊN */}
-          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold text-ink">
@@ -3064,7 +3079,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 1: Sản lượng Video Air */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topAir.name)}
-              className="bg-white rounded-xl border-2 border-positive/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-surface rounded-xl border border-positive/30 p-4 hover:border-positive transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-positive text-white">
@@ -3094,7 +3109,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 2: Kỷ luật Giải ngân % Spend Net */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topSpendDiscipline.name)}
-              className="bg-white rounded-xl border-2 border-accent/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-surface rounded-xl border border-accent/30 p-4 hover:border-accent transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
@@ -3124,7 +3139,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 3: Hiệu quả ROAS & GMV trên Chi phí */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topRoasGmv.name)}
-              className="bg-white rounded-xl border-2 border-warning/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-surface rounded-xl border border-warning/30 p-4 hover:border-warning transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-warning text-white">
@@ -3154,7 +3169,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 4: Điểm Hiệu Suất Tổng Hợp KPI Score */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topKpi.name)}
-              className="bg-white rounded-xl border-2 border-accent/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-surface rounded-xl border border-accent/30 p-4 hover:border-accent transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
@@ -3183,7 +3198,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* 2. THANH LỌC MA TRẬN 4 GÓC PHẦN TƯ: HIỆU SUẤT SẢN LƯỢNG vs HIỆU QUẢ ĐẦU TƯ */}
-          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-2">
+          <div className="bg-surface rounded-xl border border-line p-3.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-semibold text-ink">
               <Award className="w-4 h-4 text-accent" />
               <span>Phân nhóm nhân viên theo Ma trận Hiệu suất (Số Video Air) &amp; Hiệu quả (% Spend, ROAS, SLA):</span>
@@ -3237,7 +3252,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
           {/* 3. HỒ SƠ ĐÁNH GIÁ 360° TỪNG NHÂN VIÊN TRỰC TIẾP TRÊN TRANG (CHỌN NHÂN VIÊN BẤT KỲ) */}
           {focusedStaffProfile && (
-            <div className="bg-white rounded-xl border-2 border-accent/20 p-5 shadow-xs space-y-4">
+            <div className="bg-surface rounded-xl border border-accent/30 p-5 space-y-4">
               {/* Thanh chọn nhanh nhân viên để xem Hồ sơ 360° */}
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3.5 border-b border-line">
                 <div>
@@ -3264,7 +3279,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <button
                     type="button"
                     onClick={() => setIsStaff360Open(!isStaff360Open)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-accent/20 bg-white hover:bg-accent-soft text-accent text-xs font-semibold transition cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-accent/20 bg-surface hover:bg-accent-soft text-accent text-xs font-semibold transition cursor-pointer"
                   >
                     {isStaff360Open ? (
                       <>
@@ -3554,7 +3569,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           )}
 
           {/* 4. BIỂU ĐỒ SO SÁNH NGANG ĐA CHIỀU GIỮA CÁC CHUYÊN VIÊN THỰC THI */}
-          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+          <div className="bg-surface rounded-xl border border-line p-5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-ink">
@@ -3762,7 +3777,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* 5. BẢNG XẾP HẠNG & ĐỐI SOÁT HIỆU SUẤT + HIỆU QUẢ TOÀN BỘ 32 NHÂN SỰ B2C */}
-          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="px-5 py-3.5 border-b border-line flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
@@ -3778,7 +3793,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       value={staffSearchQuery}
                       onChange={(e) => setStaffSearchQuery(e.target.value)}
                       placeholder="Tìm tên nhân sự, PIC..."
-                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
+                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-surface"
                     />
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -4037,7 +4052,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <button
                   type="button"
                   onClick={() => setStaffVisibleLimit((prev) => (prev >= filteredStaffList.length ? 12 : filteredStaffList.length))}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-white hover:bg-sunken text-ink-2 transition cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-surface hover:bg-sunken text-ink-2 transition cursor-pointer"
                 >
                   {staffVisibleLimit >= filteredStaffList.length ? 'Thu gọn (12 nhân sự)' : `Xem tất cả ${filteredStaffList.length} nhân sự`}
                 </button>
@@ -4350,7 +4365,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         onClose={() => setIsReportDrawerOpen(false)}
         purposeId={dashboardReportMeta.purposeId}
         moduleTitle={dashboardReportMeta.moduleTitle}
-        moduleSubtitle="Tổng hợp trực tiếp từ dữ liệu 69 gian hàng B2C và TikTok Seller đang lọc"
         contextDataText={dashboardReportMeta.contextDataText}
         onNotify={onNotify}
       />

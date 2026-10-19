@@ -407,7 +407,7 @@ export function BrandProfilesView({
               <span className="font-medium text-ink truncate max-w-[135px]">
                 {planStrat || acc || 'Chưa gán'}
               </span>
-              <span className="text-[10px] text-ink-3 px-1 py-0.2 rounded bg-sunken shrink-0">
+              <span className="text-2xs text-ink-3 px-1 py-0.5 rounded bg-sunken shrink-0">
                 Plan
               </span>
             </div>
@@ -469,11 +469,11 @@ export function BrandProfilesView({
                 Chi: {formatVndShort(spent)}
               </span>
               {isUnbudgeted ? (
-                <span className="px-1 py-0.2 rounded bg-critical-soft text-critical text-[10px] font-semibold leading-none">
+                <span className="px-1 py-0.5 rounded bg-critical-soft text-critical text-2xs font-semibold leading-none">
                   Ngoài KH
                 </span>
               ) : isOver ? (
-                <span className="px-1 py-0.2 rounded bg-critical-soft text-critical text-[10px] font-semibold leading-none">
+                <span className="px-1 py-0.5 rounded bg-critical-soft text-critical text-2xs font-semibold leading-none">
                   Vượt NS
                 </span>
               ) : budget > 0 ? (

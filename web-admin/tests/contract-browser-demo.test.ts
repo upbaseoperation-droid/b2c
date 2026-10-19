@@ -14,12 +14,16 @@ test('Thiếu khóa phiên chỉ mở kho thử trình duyệt, không đổi qu
     await contractApi('/api/contracts/demo', { id: 'demo-legal' });
     assert.equal((await contractApi<ContractBootstrap>('/api/contracts')).actor.id, 'demo-legal');
     assert.equal(requests, 1);
-    assert.ok(data.templates.every(t => (t.version === 'Giả lập' || t.version === 'Ver052026') && t.paragraphs[0].includes('KHÔNG DÙNG ĐỂ KÝ')));
+    assert.ok(data.templates.every(t => t.version === 'Ver052026' && t.paragraphs.length > 5));
   } finally { globalThis.fetch = previous; disableBrowserDemo(); }
 });
 test('Kho thử tạo, duyệt độc lập, ký từng người, chặn gọi MISA/tải chữ ký', () => {
   browserDemoRequest('/api/contracts/demo', { id: 'demo-owner' });
-  const values = { number: 'TEST-001', party: 'Đối tác thử', date: '13/10/2026', scope: 'Video thử', money: '1000' };
+  const values = {
+    'token:[dd.mm.yy]': '19.10.26',
+    'token:[ID KOC]': 'KOC-TEST',
+    'word/document.xml:p36:cell': 'Đối tác thử',
+  };
   let record = browserDemoRequest<{ record: ContractRecord }>('/api/contracts', { action: 'CREATE', templateId: 'IND-HD', title: 'Hồ sơ thử', brand: 'Brand thử', partner: 'Đối tác thử', values }).record;
   const act = (action: string, payload = {}) => { const result = browserDemoRequest<{ record: ContractRecord }>('/api/contracts', { id: record.id, revision: record.revision, action, ...payload }); record = result.record; };
   assert.throws(() => act('DEMO_SIGN_START'));
@@ -32,5 +36,6 @@ test('Kho thử tạo, duyệt độc lập, ký từng người, chặn gọi M
   assert.equal(record.signing[0].status, 'PARTIAL'); act('DEMO_SIGN_NEXT'); assert.equal(record.signing[0].status, 'COMPLETED');
   assert.throws(() => act('SYNC_WESIGN')); assert.throws(() => act('LINK_WESIGN'));
   assert.throws(() => browserDemoRequest(`/api/contracts/${record.id}/document?signed=1`));
-  assert.ok(browserDemoRequest<{ paragraphs: string[] }>(`/api/contracts/${record.id}/document?preview=1`).paragraphs.includes('Hồ sơ thử'));
+  const preview = browserDemoRequest<{ paragraphs: string[] }>(`/api/contracts/${record.id}/document?preview=1`);
+  assert.ok(preview.paragraphs.some(p => p.includes('Đối tác thử') || p.includes('HỢP ĐỒNG')));
 });

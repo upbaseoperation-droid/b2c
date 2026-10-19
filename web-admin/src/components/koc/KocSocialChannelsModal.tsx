@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Check, ExternalLink, RefreshCw, Search, X } from 'lucide-react';
+import { Check, ExternalLink, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import type { KocItem } from '../../lib/types';
 import {
   extractHandleFromSocialInput,
@@ -401,7 +401,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                 {/* Các kết quả đã xác thực tồn tại để bấm chọn nhanh */}
                 {loading ? (
                   <div className="text-2xs text-ink-3 flex items-center gap-1.5">
-                    <Search className="w-3.5 h-3.5 animate-pulse" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Đang dò tìm và xác thực tài khoản {meta.label}...
                   </div>
                 ) : candidates.length > 0 ? (

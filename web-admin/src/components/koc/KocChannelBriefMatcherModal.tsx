@@ -506,10 +506,10 @@ export const KocChannelBriefMatcherModal: React.FC<
 
                 <div className="flex items-center gap-3 px-3.5 py-2 rounded-xl border border-accent/30 bg-accent-soft/30">
                   <div className="text-right">
-                    <span className="block text-2xs uppercase tracking-wider text-ink-3 font-semibold">
+                    <span className="block text-2xs text-ink-3 font-medium">
                       Điểm khớp Brief {activeReport.briefMatchEvaluation.brandName}
                     </span>
-                    <span className="text-lg font-bold text-accent tabular-nums">
+                    <span className="text-lg font-semibold text-accent tabular-nums">
                       {activeReport.briefMatchEvaluation.totalScore}
                       <span className="text-xs font-normal text-ink-3">
                         /100 điểm

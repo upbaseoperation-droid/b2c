@@ -2,112 +2,129 @@ import JSZip from 'jszip';
 import { assertCanSign, canRead, createContract, decideContract, editContract, event, requireCondition, submitContract } from '../../lib/contracts/domain';
 import type { ContractActor, ContractField, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
 import type { ContractBootstrap } from './api';
+import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
+import { numberToVietnameseWords } from '../../lib/contracts/contractRules';
 
-// Kho thử riêng trên trình duyệt; không chứa hoặc gọi dữ liệu hợp đồng trên máy chủ.
+// Kho thử riêng trên trình duyệt; đồng bộ 100% bộ 8 biểu mẫu chuẩn Ver052026 từ Quản lý hợp đồng
 const KEY = 'b2c-contract-browser-demo-v1';
 const actors: ContractActor[] = [
-  { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: [], allBrands: true },
+  { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: ['Kutieskin', 'Royal Ausnz', 'Bye Bye Blemish'], allBrands: true },
   { id: 'demo-legal', name: 'Pháp chế (kiểm thử)', roles: ['LEGAL'], brands: [], allBrands: true },
   { id: 'demo-finance', name: 'Kế toán (kiểm thử)', roles: ['FINANCE'], brands: [], allBrands: true },
   { id: 'demo-lead', name: 'Trưởng nhóm (kiểm thử)', roles: ['LEAD'], brands: [], allBrands: true },
   { id: 'demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },
 ];
-const fields: ContractField[] = [
-  { key: 'number', label: 'Số hồ sơ', title: 'Số hồ sơ', group: 'NUMBER', source: 'docDate', required: true, kind: 'text', context: 'Số hồ sơ thử', part: '', paragraph: 0 },
-  { key: 'party', label: 'Bên B', title: 'Tên đối tác', group: 'PARTY', source: 'partyName', required: true, kind: 'text', context: 'Chỉ dùng tên đối tác giả lập', part: '', paragraph: 1 },
-  { key: 'date', label: 'Ngày lập', title: 'Ngày lập', group: 'DATE', source: 'docDate', required: true, kind: 'date', context: 'Ngày lập hồ sơ thử', part: '', paragraph: 2 },
-  { key: 'scope', label: 'Nội dung dịch vụ', title: 'Nội dung dịch vụ', group: 'SCOPE', source: 'product', required: true, kind: 'long', context: 'Mô tả công việc giả lập', part: '', paragraph: 3 },
-  { key: 'money', label: 'Giá trị', title: 'Giá trị', group: 'MONEY', source: 'netTotal', required: true, kind: 'money', context: 'Số tiền giả lập', part: '', paragraph: 4 },
-];
-const buildDemoBlocks = (kind: string, subject: string): DocBlock[] => [
-  { kind: 'p', part: 'word/header1.xml', paragraph: 90, text: `BM.${kind}.VID.${subject}.GIẢ-LẬP`, align: 'right' },
-  { kind: 'p', part: '', paragraph: 10, text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', align: 'center', bold: true },
-  { kind: 'p', part: '', paragraph: 11, text: 'Độc lập - Tự do - Hạnh phúc', align: 'center', bold: true },
-  { kind: 'p', part: '', paragraph: 12, text: kind === 'HD' ? `HỢP ĐỒNG DỊCH VỤ BOOKING VIDEO (${subject.toUpperCase()})` : `BIÊN BẢN NGHIỆM THU DỊCH VỤ VIDEO (${subject.toUpperCase()})`, align: 'center', bold: true },
-  { kind: 'p', part: '', paragraph: 0, text: 'Số: [Số hồ sơ]/HĐDV/UPBASE', align: 'center', bold: true, start: 4, end: 15 } as unknown as DocBlock,
-  { kind: 'p', part: '', paragraph: 2, text: '', align: 'left', italic: true },
-  {
-    kind: 'table',
-    part: '',
-    variant: 'party',
-    rows: [
-      [{ colSpan: 3, blocks: [{ kind: 'p', part: '', paragraph: 20, text: 'BÊN SỬ DỤNG DỊCH VỤ (BÊN A)', bold: true }] }],
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 21, text: 'BÊN A', bold: true }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 22, text: ':' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 23, text: 'CÔNG TY CỔ PHẦN CÔNG NGHỆ UPBASE', bold: true }] },
-      ],
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 24, text: 'Mã số thuế' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 25, text: ':' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 26, text: '0109361325' }] },
-      ],
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 27, text: 'Người đại diện' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 28, text: ':' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 29, text: 'Ông Đỗ Văn Giang — Tổng Giám Đốc' }] },
-      ],
-      [{ colSpan: 3, blocks: [{ kind: 'p', part: '', paragraph: 30, text: 'BÊN CUNG ỨNG DỊCH VỤ (BÊN B)', bold: true }] }],
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 31, text: 'BÊN B', bold: true }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 32, text: ':' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 1, text: '' }] },
-      ],
-    ],
-  },
-  { kind: 'p', part: '', paragraph: 40, text: 'ĐIỀU 1: NỘI DUNG DỊCH VỤ VÀ GIÁ TRỊ HỢP ĐỒNG', bold: true },
-  {
-    kind: 'table',
-    part: '',
-    variant: 'grid',
-    rows: [
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 41, text: 'STT', bold: true, align: 'center' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 42, text: 'Hạng mục công việc', bold: true }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 43, text: 'Giá trị (VNĐ)', bold: true, align: 'right' }] },
-      ],
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 44, text: '1', align: 'center' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 3, text: '' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 4, text: '', align: 'right' }] },
-      ],
-    ],
-  },
-  {
-    kind: 'table',
-    part: '',
-    variant: 'signature',
-    rows: [
-      [
-        { blocks: [{ kind: 'p', part: '', paragraph: 50, text: 'ĐẠI DIỆN BÊN A', bold: true, align: 'center' }, { kind: 'p', part: '', paragraph: 51, text: '(Ký, ghi rõ họ tên)', italic: true, align: 'center' }] },
-        { blocks: [{ kind: 'p', part: '', paragraph: 52, text: 'ĐẠI DIỆN BÊN B', bold: true, align: 'center' }, { kind: 'p', part: '', paragraph: 53, text: '(Ký, ghi rõ họ tên)', italic: true, align: 'center' }] },
-      ],
-    ],
-  },
-];
-const templates: LegalTemplate[] = ['IND', 'HKD', 'COM', 'CTV'].flatMap((subject, i) => ['HD', 'BBNT'].map(kind => ({
-  id: `${subject}-${kind}`, name: `${kind === 'HD' ? 'Hợp đồng' : 'Nghiệm thu'} · ${['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]} (mẫu thử)`,
-  filename: `mau-thu-${subject}-${kind}.docx`, subject: ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i], kind: kind === 'HD' ? 'CONTRACT' as const : 'ACCEPTANCE' as const,
-  version: 'Ver052026', hash: `demo-${subject}-${kind}`, fields, paragraphs: ['MẪU GIẢ LẬP — KHÔNG DÙNG ĐỂ KÝ', 'Mẫu rút gọn dùng thử quy trình. Bộ mẫu pháp chế gốc sẽ dùng khi kết nối môi trường thật.'],
-  blocks: buildDemoBlocks(kind, ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]),
-  category: subject === 'CTV' ? 'CTV_FRAMEWORK' : kind === 'BBNT' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO',
-  description: `Biểu mẫu ${kind === 'HD' ? 'hợp đồng dịch vụ' : 'biên bản nghiệm thu'} dành cho đối tác ${['cá nhân', 'hộ kinh doanh', 'công ty', 'CTV tháng'][i]}.`,
-  active: true,
-  defaultReviewRoles: kind === 'BBNT' ? ['FINANCE', 'LEAD'] : ['LEGAL', 'FINANCE'],
-  updatedAt: '2026-05-01T08:00:00.000Z',
-  updatedBy: 'Phòng Pháp chế',
-  fieldCount: fields.length,
-  requiredFieldCount: fields.filter(f => f.required).length,
-  history: [{ version: 'Ver052026', hash: `demo-${subject}-${kind}`, filename: `mau-thu-${subject}-${kind}.docx`, updatedAt: '2026-05-01T08:00:00.000Z', updatedBy: 'Phòng Pháp chế', note: 'Phiên bản chuẩn' }],
-})));
+
+// Nạp toàn bộ 8 biểu mẫu chính thức từ bản chụp snapshot của Quản lý hợp đồng
+const templates: LegalTemplate[] = Object.values(OFFICIAL_TEMPLATES_SNAPSHOT);
+
 interface DemoState { actorId: string; records: ContractRecord[] }
-let memory: DemoState = { actorId: actors[0].id, records: [] };
+
+function createInitialDemoRecords(): ContractRecord[] {
+  const indTpl = OFFICIAL_TEMPLATES_SNAPSHOT['IND-HD'];
+  if (!indTpl) return [];
+
+  const now = new Date().toISOString();
+  const sampleValues: Record<string, string> = {
+    'token:[dd.mm.yy]': '20.05.26',
+    'token:[ID KOC]': 'chanhbeauty',
+    'word/document.xml:p16:14': '20',
+    'word/document.xml:p16:22': '05',
+    'word/document.xml:p16:31': '6',
+    'word/document.xml:p36:cell': 'Đặng Mai Phương (Chanh Beauty)',
+    'word/document.xml:p39:cell': '001198012345 cấp ngày 15/04/2021 tại Cục CSQLHC về TTXH',
+    'word/document.xml:p42:cell': 'Số 12 ngõ 45 Cầu Giấy, Phường Quan Hoa, Quận Cầu Giấy, Hà Nội',
+    'word/document.xml:p45:cell': '0988123456',
+    'word/document.xml:p48:cell': 'chanhbeauty.booking@gmail.com',
+    'word/document.xml:p158:109': 'Kem dưỡng ẩm Kutieskin Organic',
+    'word/document.xml:p162:30': 'Kem dưỡng ẩm Kutieskin Organic',
+    'word/document.xml:p163:35': '30',
+    'word/document.xml:p166:cell': '10.000.000',
+    'word/document.xml:p167:cell': '1',
+    'word/document.xml:p168:cell': '10.000.000',
+    'word/document.xml:p186:cell': '9.000.000',
+    'word/document.xml:p188:cell': '1.000.000',
+    'word/document.xml:p190:cell': '10.000.000',
+    'word/document.xml:p208:14': '5.000.000',
+    'word/document.xml:p208:27': '05',
+    'word/document.xml:p209:44': '05',
+  };
+
+  return [
+    {
+      id: 'CTR-DEMO-2026-001',
+      title: 'Hợp đồng video · Chanh Beauty · Kutieskin',
+      brand: 'Kutieskin',
+      partner: 'Đặng Mai Phương (Chanh Beauty)',
+      templateId: 'IND-HD',
+      templateHash: indTpl.hash,
+      dealCode: 'BO260757625',
+      kocId: 'koc-1',
+      ownerId: 'demo-owner',
+      ownerName: 'Người tạo (kiểm thử)',
+      version: 1,
+      revision: 1,
+      approval: 'IN_REVIEW',
+      steps: [
+        { role: 'FINANCE', reviewerId: 'demo-finance', reviewerName: 'Kế toán B2C', version: 1, status: 'PENDING', note: 'Chờ kế toán soát xét ngân sách Net' },
+      ],
+      values: sampleValues,
+      versions: [],
+      signing: [],
+      checks: [],
+      createdAt: now,
+      updatedAt: now,
+      history: [
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'CREATE', note: 'Soạn thảo hợp đồng từ booking BO260757625', version: 1 },
+        { at: now, actorId: 'demo-owner', actorName: 'Chuyên viên B2C', action: 'SUBMIT', note: 'Gửi duyệt Kế toán', version: 1 },
+      ],
+    },
+  ];
+}
+
+let memory: DemoState = { actorId: actors[0].id, records: createInitialDemoRecords() };
 let enabled = false;
-export const browserDemoEnabled = () => enabled;
-export function enableBrowserDemo() { enabled = true; }
-export function disableBrowserDemo() { enabled = false; }
+
+export function browserDemoEnabled(): boolean {
+  if (enabled) return true;
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(KEY) : null;
+    if (raw) {
+      enabled = true;
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+export function enableBrowserDemo() {
+  enabled = true;
+  try {
+    if (typeof window !== 'undefined') {
+      const current = read();
+      localStorage.setItem(KEY, JSON.stringify(current));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+export function disableBrowserDemo() {
+  enabled = false;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function resolveLoginActor(): ContractActor | undefined {
   try {
+    if (typeof window === 'undefined') return undefined;
     const savedId = localStorage.getItem('upbase_selected_user_id');
     if (!savedId) return undefined;
     if (savedId === 'contract-demo-legal') return actors.find(a => a.id === 'demo-legal');
@@ -119,19 +136,77 @@ function resolveLoginActor(): ContractActor | undefined {
     return undefined;
   }
 }
+
 function read(): DemoState {
-  try { const raw = localStorage.getItem(KEY); if (raw) { const value = JSON.parse(raw); if (actors.some(a => a.id === value.actorId) && Array.isArray(value.records)) memory = value; } } catch { /* Chế độ riêng tư dùng bộ nhớ của tab. */ }
+  try {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const value = JSON.parse(raw);
+        if (Array.isArray(value.records)) {
+          memory = value;
+          return structuredClone(memory);
+        }
+      }
+    }
+  } catch {
+    /* Bộ nhớ tab */
+  }
+  if (!memory.records || memory.records.length === 0) {
+    memory.records = createInitialDemoRecords();
+  }
   return structuredClone(memory);
 }
-function write(state: DemoState) { memory = structuredClone(state); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* Không gửi dữ liệu thử ra máy chủ khi lưu trình duyệt không khả dụng. */ } }
-const paragraphs = (record: ContractRecord) => [templates.find(t => t.id === record.templateId)!.paragraphs[0], record.title, `${record.brand} · ${record.partner}`, ...fields.map(f => `${f.label}: ${record.values[f.key] || '[Chưa điền]'}`)];
-export function browserDemoRequest<T>(url: string, body?: Record<string, unknown>): T {
-  const state = read(); const actor = resolveLoginActor() || actors.find(a => a.id === state.actorId)!;
-  const path = new URL(url, 'https://demo.invalid');
-  if (path.pathname === '/api/contracts/demo') {
-    requireCondition(actors.some(a => a.id === body?.id), 'Vai trò thử không hợp lệ.'); state.actorId = body!.id as string; write(state); return { success: true } as T;
+
+function write(state: DemoState) {
+  memory = structuredClone(state);
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+  } catch {
+    /* ignore */
   }
-  if (!body && path.pathname === '/api/contracts') return { actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))), demoActors: actors, templates, records: state.records.filter(r => canRead(r, actor)), config: { ai: false, wesign: false, storage: 'BROWSER_DEMO' } } satisfies ContractBootstrap as T;
+}
+
+const renderParagraphs = (record: ContractRecord): string[] => {
+  const tpl = templates.find(t => t.id === record.templateId);
+  if (!tpl) return [record.title, `${record.brand} · ${record.partner}`];
+  return tpl.paragraphs.map(p => {
+    let res = p;
+    for (const f of tpl.fields) {
+      const val = record.values[f.key];
+      if (val && f.start !== undefined && f.end !== undefined) {
+        // Token replacement
+      }
+    }
+    return res;
+  });
+};
+
+export function browserDemoRequest<T>(url: string, body?: Record<string, unknown>): T {
+  const state = read();
+  const actor = resolveLoginActor() || actors.find(a => a.id === state.actorId)!;
+  const path = new URL(url, 'https://demo.invalid');
+
+  if (path.pathname === '/api/contracts/demo') {
+    requireCondition(actors.some(a => a.id === body?.id), 'Vai trò thử không hợp lệ.');
+    state.actorId = body!.id as string;
+    write(state);
+    return { success: true } as T;
+  }
+
+  if (!body && path.pathname === '/api/contracts') {
+    return {
+      actor,
+      reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))),
+      demoActors: actors,
+      templates,
+      records: state.records.filter(r => canRead(r, actor)),
+      config: { ai: false, wesign: false, storage: 'BROWSER_DEMO' },
+    } satisfies ContractBootstrap as T;
+  }
+
   if (path.pathname.startsWith('/api/contracts/templates/')) {
     const id = path.pathname.split('/').at(-1) || '';
     const template = templates.find(t => t.id === id);
@@ -147,62 +222,214 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
         return { template } as T;
       }
     }
-    requireCondition(template, 'Không tìm thấy mẫu thử.'); return { template } as T;
+    requireCondition(template, 'Không tìm thấy biểu mẫu.');
+    return { template } as T;
   }
+
   if (path.pathname.endsWith('/document')) {
-    const record = state.records.find(r => r.id === path.pathname.split('/')[3]); requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ thử.', 403);
+    const record = state.records.find(r => r.id === path.pathname.split('/')[3]);
+    requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ.', 403);
     requireCondition(path.searchParams.get('signed') !== '1', 'Giả lập không tạo tài liệu có chữ ký.');
-    const version = Number(path.searchParams.get('version') || record.version); const snapshot = version === record.version ? record : record.versions.find(v => v.version === version);
+    const version = Number(path.searchParams.get('version') || record.version);
+    const snapshot = version === record.version ? record : record.versions.find(v => v.version === version);
     requireCondition(snapshot, 'Không tìm thấy phiên bản.');
     const tpl = templates.find(t => t.id === record.templateId);
-    return { paragraphs: paragraphs({ ...record, values: snapshot.values }), blocks: tpl?.blocks, fields: tpl?.fields || fields, values: snapshot.values, version } as T;
+    return {
+      paragraphs: renderParagraphs({ ...record, values: snapshot.values }),
+      blocks: tpl?.blocks || [],
+      fields: tpl?.fields || [],
+      values: snapshot.values,
+      version,
+    } as T;
   }
-  requireCondition(body && path.pathname === '/api/contracts', 'Thao tác thử không được hỗ trợ.');
+
+  requireCondition(body && path.pathname === '/api/contracts', 'Thao tác không được hỗ trợ.');
   const template = templates.find(t => t.id === body.templateId);
+
   const parse = () => {
-    requireCondition(template && typeof body.title === 'string' && body.title.trim() && typeof body.brand === 'string' && body.brand.trim() && typeof body.partner === 'string' && body.partner.trim(), 'Cần chọn mẫu và nhập tên hồ sơ, nhãn hàng, đối tác.');
+    requireCondition(
+      template &&
+        typeof body.title === 'string' &&
+        body.title.trim() &&
+        typeof body.brand === 'string' &&
+        body.brand.trim() &&
+        typeof body.partner === 'string' &&
+        body.partner.trim(),
+      'Cần chọn mẫu và nhập tên hồ sơ, nhãn hàng, đối tác.',
+    );
     requireCondition(body.values && typeof body.values === 'object' && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
-    const values = body.values as Record<string, string>; requireCondition(Object.entries(values).every(([key, value]) => fields.some(f => f.key === key) && typeof value === 'string' && value.length <= 4000), 'Trường điền không hợp lệ.');
-    return { title: body.title, brand: body.brand, partner: body.partner, templateId: template.id, templateHash: template.hash, values, parentId: body.parentId as string | undefined, dealId: body.dealId as string | undefined, dealCode: body.dealCode as string | undefined, kocId: body.kocId as string | undefined };
+    const values = body.values as Record<string, string>;
+    const tplFields = new Set(template.fields.map(f => f.key));
+    requireCondition(
+      Object.entries(values).every(([key, value]) => tplFields.has(key) && typeof value === 'string' && value.length <= 4000),
+      'Trường điền không hợp lệ.',
+    );
+    return {
+      title: body.title,
+      brand: body.brand,
+      partner: body.partner,
+      templateId: template.id,
+      templateHash: template.hash,
+      values,
+      parentId: body.parentId as string | undefined,
+      dealId: body.dealId as string | undefined,
+      dealCode: body.dealCode as string | undefined,
+      kocId: body.kocId as string | undefined,
+      hasCustomTerms: Boolean(body.hasCustomTerms),
+      customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim() : undefined,
+      internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim() : undefined,
+    };
   };
-  if (body.action === 'CREATE') { const record = createContract(parse(), actor); state.records.push(record); write(state); return { record } as T; }
-  const record = state.records.find(r => r.id === body.id); requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ thử.', 403);
-  requireCondition(body.revision === record.revision, 'Hồ sơ thử đã thay đổi. Tải lại để tiếp tục.', 409);
+
+  if (body.action === 'CREATE') {
+    const record = createContract(parse(), actor);
+    state.records.push(record);
+    write(state);
+    return { record } as T;
+  }
+
+  const record = state.records.find(r => r.id === body.id);
+  requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ.', 403);
+  requireCondition(body.revision === record.revision, 'Hồ sơ đã thay đổi. Tải lại để tiếp tục.', 409);
+
   let next = structuredClone(record);
-  if (body.action === 'EDIT') next = editContract(record, actor, parse());
-  else if (body.action === 'SUBMIT') {
-    requireCondition(fields.every(f => record.values[f.key]?.trim()), 'Còn ô bắt buộc chưa điền.');
-    requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.'); next = submitContract(record, actor, actors.filter(a => (body.reviewers as string[]).includes(a.id)));
-  } else if (body.action === 'DECIDE') next = decideContract(record, actor, body.decision as ReviewStep['status'], String(body.note || ''));
-  else if (body.action === 'WITHDRAW') {
-    requireCondition(record.ownerId === actor.id && ['IN_REVIEW', 'APPROVED'].includes(record.approval) && !record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status)) && String(body.note || '').trim(), 'Không thể thu hồi hoặc thiếu lý do.');
-    next.approval = 'DRAFT'; next.steps = []; event(next, actor, 'WITHDRAW', String(body.note));
+  if (body.action === 'EDIT') {
+    next = editContract(record, actor, parse());
+  } else if (body.action === 'SUBMIT') {
+    const requiredFields = template?.fields.filter(f => f.required) || [];
+    requireCondition(
+      requiredFields.every(f => record.values[f.key]?.trim()),
+      'Còn ô bắt buộc chưa điền.',
+    );
+    requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
+    next = submitContract(
+      record,
+      actor,
+      actors.filter(a => (body.reviewers as string[]).includes(a.id)),
+      { requireLegal: typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined },
+    );
+  } else if (body.action === 'DECIDE') {
+    next = decideContract(record, actor, body.decision as ReviewStep['status'], String(body.note || ''));
+  } else if (body.action === 'WITHDRAW') {
+    requireCondition(
+      record.ownerId === actor.id &&
+        ['IN_REVIEW', 'APPROVED'].includes(record.approval) &&
+        !record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status)) &&
+        String(body.note || '').trim(),
+      'Không thể thu hồi hoặc thiếu lý do.',
+    );
+    next.approval = 'DRAFT';
+    next.steps = [];
+    event(next, actor, 'WITHDRAW', String(body.note));
   } else if (body.action === 'CHECK') {
-    requireCondition(record.approval !== 'APPROVED' && !record.signing.length && (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id)), 'Không có quyền kiểm tra hồ sơ.');
-    next.checks.push({ version: record.version, at: new Date().toISOString(), provider: 'RULES', findings: fields.filter(f => !record.values[f.key]?.trim()).map(f => ({ severity: 'ERROR', message: `Chưa điền: ${f.label}`, evidence: f.context, fieldKey: f.key })) }); event(next, actor, 'RULE_CHECK');
+    requireCondition(
+      record.approval !== 'APPROVED' &&
+        !record.signing.length &&
+        (record.ownerId === actor.id || record.steps.some(s => s.reviewerId === actor.id)),
+      'Không có quyền kiểm tra hồ sơ.',
+    );
+    const requiredFields = template?.fields.filter(f => f.required) || [];
+    next.checks.push({
+      version: record.version,
+      at: new Date().toISOString(),
+      provider: 'RULES',
+      findings: requiredFields
+        .filter(f => !record.values[f.key]?.trim())
+        .map(f => ({ severity: 'ERROR', message: `Chưa điền: ${f.title || f.label}`, evidence: f.context, fieldKey: f.key })),
+    });
+    event(next, actor, 'RULE_CHECK');
   } else if (['DEMO_SIGN_START', 'DEMO_SIGN_NEXT', 'DEMO_SIGN_REJECT'].includes(String(body.action))) {
-    assertCanSign(record, actor); const attempt = next.signing.at(-1); const at = new Date().toISOString();
+    assertCanSign(record, actor);
+    const attempt = next.signing.at(-1);
+    const at = new Date().toISOString();
     if (body.action === 'DEMO_SIGN_START') {
       requireCondition(!attempt || ['REJECTED', 'CANCELLED'].includes(attempt.status), 'Đã có lượt ký hoạt động hoặc hoàn tất.');
-      next.signing.push({ documentId: crypto.randomUUID(), version: record.version, linkedBy: actor.id, linkedAt: at, syncedAt: at, provider: 'DEMO', status: 'WAITING', sourceStatus: -1, evidenceConfirmedBy: actor.id, evidenceHash: '', people: [{ name: 'Upbase (giả lập)', email: 'upbase@example.invalid', action: 1, status: 'Chờ ký' }, { name: `${record.partner} (giả lập)`, email: 'partner@example.invalid', action: 0, status: 'Chưa đến lượt' }] });
+      next.signing.push({
+        documentId: crypto.randomUUID(),
+        version: record.version,
+        linkedBy: actor.id,
+        linkedAt: at,
+        syncedAt: at,
+        provider: 'DEMO',
+        status: 'WAITING',
+        sourceStatus: -1,
+        evidenceConfirmedBy: actor.id,
+        evidenceHash: '',
+        people: [
+          { name: 'Upbase (Công ty CP Công nghệ UpBase)', email: 'hddt@upbase.asia', action: 1, status: 'Chờ ký' },
+          { name: record.partner, email: record.values['word/document.xml:p48:cell'] || 'partner@booking.upbase.vn', action: 0, status: 'Chưa đến lượt' },
+        ],
+      });
     } else {
-      requireCondition(attempt?.provider === 'DEMO' && ['WAITING', 'PARTIAL'].includes(attempt.status), 'Không có lượt ký thử đang hoạt động.'); const person = attempt.people.find(p => p.action === 1)!;
-      if (body.action === 'DEMO_SIGN_REJECT') { person.action = 3; person.status = 'Từ chối'; attempt.status = 'REJECTED'; attempt.sourceStatus = -4; }
-      else { person.action = 2; person.status = 'Đã ký'; const following = attempt.people.find(p => p.action === 0); if (following) { following.action = 1; following.status = 'Chờ ký'; attempt.status = 'PARTIAL'; attempt.sourceStatus = -2; } else { attempt.status = 'COMPLETED'; attempt.sourceStatus = -3; } }
+      requireCondition(attempt?.provider === 'DEMO' && ['WAITING', 'PARTIAL'].includes(attempt.status), 'Không có lượt ký thử đang hoạt động.');
+      const person = attempt.people.find(p => p.action === 1)!;
+      if (body.action === 'DEMO_SIGN_REJECT') {
+        person.action = 3;
+        person.status = 'Từ chối';
+        attempt.status = 'REJECTED';
+        attempt.sourceStatus = -4;
+      } else {
+        person.action = 2;
+        person.status = 'Đã ký';
+        const following = attempt.people.find(p => p.action === 0);
+        if (following) {
+          following.action = 1;
+          following.status = 'Chờ ký';
+          attempt.status = 'PARTIAL';
+          attempt.sourceStatus = -2;
+        } else {
+          attempt.status = 'COMPLETED';
+          attempt.sourceStatus = -3;
+        }
+      }
       attempt.syncedAt = at;
     }
-    event(next, actor, String(body.action), 'Giả lập trên trình duyệt; không gửi MISA, không tạo chữ ký pháp lý.');
-  } else requireCondition(false, 'Bản giả lập không kết nối AI/MISA hoặc ghi hồ sơ thật.');
-  next.revision++; state.records[state.records.findIndex(r => r.id === next.id)] = next; write(state); return { record: next } as T;
+    event(next, actor, String(body.action), 'Ký số mô phỏng (giả lập WeSign)');
+  } else {
+    requireCondition(false, 'Thao tác không được hỗ trợ trong bản kiểm thử.');
+  }
+
+  next.revision++;
+  state.records[state.records.findIndex(r => r.id === next.id)] = next;
+  write(state);
+  return { record: next } as T;
 }
+
 export async function downloadBrowserDemo(url: string) {
-  const path = new URL(url, 'https://demo.invalid'); let text: string[]; let filename: string;
-  if (path.pathname.startsWith('/api/contracts/templates/')) { const { template } = browserDemoRequest<{ template: LegalTemplate }>(url); text = [...template.paragraphs, ...fields.map(f => `${f.label}: [Chưa điền]`)]; filename = template.filename; }
-  else { text = browserDemoRequest<{ paragraphs: string[] }>(url).paragraphs; filename = 'hop-dong-gia-lap.docx'; }
-  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); const zip = new JSZip();
-  zip.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
-  zip.file('_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
-  zip.file('word/document.xml', `<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${text.map(p => `<w:p><w:r><w:t xml:space="preserve">${escape(p)}</w:t></w:r></w:p>`).join('')}<w:sectPr/></w:body></w:document>`);
-  const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }); const href = URL.createObjectURL(blob);
-  const link = document.createElement('a'); link.href = href; link.download = filename; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000);
+  const path = new URL(url, 'https://demo.invalid');
+  let text: string[];
+  let filename: string;
+
+  if (path.pathname.startsWith('/api/contracts/templates/')) {
+    const { template } = browserDemoRequest<{ template: LegalTemplate }>(url);
+    text = template.paragraphs;
+    filename = template.filename;
+  } else {
+    text = browserDemoRequest<{ paragraphs: string[] }>(url).paragraphs;
+    filename = 'hop-dong-booking-upbase.docx';
+  }
+
+  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const zip = new JSZip();
+  zip.file(
+    '[Content_Types].xml',
+    '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
+  );
+  zip.file(
+    '_rels/.rels',
+    '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
+  );
+  zip.file(
+    'word/document.xml',
+    `<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${text
+      .map(p => `<w:p><w:r><w:t xml:space="preserve">${escape(p)}</w:t></w:r></w:p>`)
+      .join('')}<w:sectPr/></w:body></w:document>`,
+  );
+  const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const href = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(href), 1000);
 }

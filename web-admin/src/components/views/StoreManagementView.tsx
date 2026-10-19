@@ -476,7 +476,7 @@ export function StoreManagementView({
               <span>{norm.tier}</span>
               <span className="font-mono font-semibold text-ink-2">· {norm.label}</span>
             </span>
-            <span className="text-[10px] text-ink-3">
+            <span className="text-2xs text-ink-3">
               {s.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
                 ? 'Chờ duyệt'
                 : 'Đã duyệt'}
@@ -541,7 +541,7 @@ export function StoreManagementView({
             <span className="block font-medium text-ink text-xs">
               Air {formatNumber(rep.reportAiredVideos)} / Plan {formatNumber(rep.planTotalVideos)}
             </span>
-            <span className="block text-[10px] text-ink-3 truncate max-w-[110px]">
+            <span className="block text-2xs text-ink-3 truncate max-w-[110px]">
               Aff {rep.planAffVideos} · Kênh {rep.planSelfVideos}
             </span>
           </div>

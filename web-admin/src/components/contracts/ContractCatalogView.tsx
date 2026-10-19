@@ -13,6 +13,7 @@ import {
   Layers,
   Plus,
   ShieldCheck,
+  Star,
   Upload,
 } from 'lucide-react';
 import type { ContractCategory, LegalTemplate } from '../../lib/contracts/types';
@@ -485,8 +486,8 @@ export function ContractCatalogView({
 
                     {t.scope === 'KOC_CUSTOM' ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center rounded bg-accent-soft px-1.5 py-0.5 text-2xs font-semibold text-accent">
-                          ⭐ Mẫu riêng KOC: {t.kocName || t.kocId}
+                        <span className="inline-flex items-center gap-1 rounded bg-accent-soft px-1.5 py-0.5 text-2xs font-semibold text-accent">
+                          <Star className="w-3 h-3 text-accent shrink-0" /> Mẫu riêng KOC: {t.kocName || t.kocId}
                         </span>
                         <span className="text-2xs text-ink-3">
                           ({t.customType === 'KOC_FORM' ? 'Form KOC' : 'Sửa Upbase'})
@@ -560,7 +561,10 @@ export function ContractCatalogView({
                     {loadedTemplate.scope === 'KOC_CUSTOM' && (
                       <div className="rounded-lg border border-accent/40 bg-accent-soft/40 p-3 space-y-1.5 mt-2">
                         <div className="font-semibold text-accent text-xs flex items-center justify-between">
-                          <span>⭐ Mẫu hợp đồng duyệt riêng cho KOC: {loadedTemplate.kocName || loadedTemplate.kocId}</span>
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3.5 h-3.5 text-accent shrink-0" />
+                            Mẫu hợp đồng duyệt riêng cho KOC: {loadedTemplate.kocName || loadedTemplate.kocId}
+                          </span>
                           <span className="text-2xs font-normal bg-surface border border-accent/20 px-1.5 py-0.5 rounded text-ink-2">
                             {loadedTemplate.customType === 'KOC_FORM' ? 'Form riêng của KOC / Agency' : 'Chỉnh sửa từ mẫu Upbase'}
                           </span>

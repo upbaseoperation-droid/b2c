@@ -23,7 +23,6 @@ import {
   X,
   Flame,
   Target,
-  Activity,
   LayoutGrid,
   Box,
 } from 'lucide-react';
@@ -1503,6 +1502,27 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     );
   };
 
+  const st = selectedNode?.kind === 'STAFF' ? selectedNode.staffData : null;
+  const b = selectedNode?.kind === 'BRAND' ? selectedNode.brandData : null;
+  const s = selectedNode?.kind === 'STORE' ? selectedNode.storeData : null;
+
+  const brandContentMain = b?.contentBrandMainPic || b?.contentPic || 'Bùi Ngọc Ánh';
+  const brandPlanStrat = b?.planStrategyPic || b?.brandPicName || 'Nguyễn Thị Ngọc Tâm';
+  const brandKvSis = b?.keyVisualSisPic || 'Hoàng Diệu Thùy';
+  const brandBookingLead = b?.bookingPicLead || 'Đặng Thị Yến Nhi';
+
+  const brandStores = useMemo(() => {
+    if (!b) return [];
+    return b2cStores.filter(
+      item => item.brandId === b.id || item.brandName.toLowerCase() === b.name.toLowerCase()
+    );
+  }, [b, b2cStores]);
+
+  const coefInfo = useMemo(() => {
+    if (!s) return null;
+    return normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
+  }, [s]);
+
   return (
     <div className="space-y-4">
       {/* 1. Top KPI & Workload Overview Strip */}
@@ -1521,7 +1541,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <Users className="w-3.5 h-3.5 text-accent" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-ink tabular-nums">{staffWorkloads.length}</span>
+            <span className="text-xl font-semibold text-ink tabular-nums">{staffWorkloads.length}</span>
             <span className="text-2xs text-ink-3">TB tải {summaryStats.avgLoadPct}%</span>
           </div>
         </button>
@@ -1540,7 +1560,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <Flame className="w-3.5 h-3.5 text-critical" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-critical tabular-nums">
+            <span className="text-xl font-semibold text-critical tabular-nums">
               {summaryStats.overloadCount}
             </span>
             <span className="text-2xs text-ink-3">cần san tải</span>
@@ -1561,7 +1581,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-positive tabular-nums">
+            <span className="text-xl font-semibold text-positive tabular-nums">
               {summaryStats.optimalCount}
             </span>
             <span className="text-2xs text-ink-3">cân bằng</span>
@@ -1582,7 +1602,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <Target className="w-3.5 h-3.5 text-accent" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-accent tabular-nums">
+            <span className="text-xl font-semibold text-accent tabular-nums">
               {summaryStats.underloadCount}
             </span>
             <span className="text-2xs text-ink-3">sẵn sàng nhận việc</span>
@@ -1603,7 +1623,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <AlertTriangle className="w-3.5 h-3.5 text-warning" />
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-warning tabular-nums">
+            <span className="text-xl font-semibold text-warning tabular-nums">
               {summaryStats.lowHardRatioCount}
             </span>
             <span className="text-2xs text-ink-3">theo chuẩn Bảng 4</span>
@@ -1719,23 +1739,23 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           <div className="px-3 py-2 bg-sunken/60 border-b border-line flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2.5 text-2xs text-ink-2 font-medium">
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-rose-600 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-critical inline-block" />
                 <span>Quá tải (≥115%)</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-positive inline-block" />
                 <span>Đủ tải (96–114%)</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-indigo-600 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-accent inline-block" />
                 <span>Dư tải (&lt;96%)</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-amber-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-warning inline-block" />
                 <span>Brand</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-sky-600 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-primary inline-block" />
                 <span>Gian hàng</span>
               </span>
             </div>
@@ -1831,12 +1851,12 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     onClick={() => handleSelectAndFly(st.id)}
                     className={`shrink-0 px-2.5 py-1 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
                       isActive
-                        ? 'ring-2 ring-accent bg-surface text-ink border-accent font-bold'
+                        ? 'ring-2 ring-accent bg-surface text-ink border-accent font-semibold'
                         : `${toneClass} hover:opacity-90`
                     }`}
                   >
                     <span>{st.shortName}</span>
-                    <span className="text-2xs font-bold tabular-nums">({st.loadPct}%)</span>
+                    <span className="text-2xs font-semibold tabular-nums">({st.loadPct}%)</span>
                   </button>
                 );
               })}
@@ -1857,16 +1877,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                 </h3>
               </div>
             </div>
-          ) : selectedNode.kind === 'STAFF' && selectedNode.staffData ? (
-            (() => {
-              const st = selectedNode.staffData;
-              return (
-                <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
+          ) : st ? (
+            <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-bold">
+                          <span className="px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold">
                             {st.level}
                           </span>
                           <span className="text-2xs text-ink-3 font-mono">{st.staffCode}</span>
@@ -1886,7 +1903,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                                 : `Đủ tải chuẩn (${st.loadPct}%)`}
                           </Status>
                         </div>
-                        <h3 className="text-base font-bold text-ink mt-1">{st.name}</h3>
+                        <h3 className="text-base font-semibold text-ink mt-1">{st.name}</h3>
                         <p className="text-xs text-ink-2">{st.roleGroup}</p>
                       </div>
                       {selectedNodeId && (
@@ -1932,13 +1949,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                       <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
                         <div className="p-1.5 rounded bg-sunken/70">
                           <div className="text-ink-3">Quy trình</div>
-                          <div className="font-bold text-ink tabular-nums">
+                          <div className="font-semibold text-ink tabular-nums">
                             {st.workflowPts.toFixed(1)} pt
                           </div>
                         </div>
                         <div className="p-1.5 rounded bg-sunken/70">
                           <div className="text-ink-3">Quản lý giao</div>
-                          <div className="font-bold text-ink tabular-nums">
+                          <div className="font-semibold text-ink tabular-nums">
                             {st.directorPts.toFixed(1)} pt
                           </div>
                         </div>
@@ -1949,7 +1966,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         >
                           <div className="text-ink-3">Tỷ lệ Việc khó</div>
                           <div
-                            className={`font-bold tabular-nums ${
+                            className={`font-semibold tabular-nums ${
                               st.isHardRatioPass ? 'text-positive' : 'text-warning'
                             }`}
                           >
@@ -2065,7 +2082,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             className="px-2 py-1 rounded-md bg-surface border border-line text-2xs font-medium text-ink hover:border-accent flex items-center gap-1 cursor-pointer"
                           >
                             <span>{cand.shortName}</span>
-                            <span className="text-accent font-bold">({cand.loadPct}%)</span>
+                            <span className="text-accent font-semibold">({cand.loadPct}%)</span>
                           </button>
                         ))}
                       </div>
@@ -2073,7 +2090,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   )}
 
                   <div className="p-4 space-y-2.5">
-                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                    <h4 className="text-xs font-semibold text-ink flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-warning" />
                       <span>Thương hiệu phụ trách ({st.assignedBrands.length})</span>
                     </h4>
@@ -2122,7 +2139,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   </div>
 
                   <div className="p-4 space-y-2.5">
-                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                    <h4 className="text-xs font-semibold text-ink flex items-center gap-1.5">
                       <Store className="w-3.5 h-3.5 text-accent" />
                       <span>Gian hàng B2C phụ trách ({st.assignedStores.length})</span>
                     </h4>
@@ -2165,73 +2182,60 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     </div>
                   </div>
                 </div>
-              );
-            })()
-          ) : selectedNode.kind === 'BRAND' && selectedNode.brandData ? (
-            (() => {
-              const b = selectedNode.brandData;
-              const contentMain = b.contentBrandMainPic || b.contentPic || 'Bùi Ngọc Ánh';
-              const planStrat = b.planStrategyPic || b.brandPicName || 'Nguyễn Thị Ngọc Tâm';
-              const kvSis = b.keyVisualSisPic || 'Hoàng Diệu Thùy';
-              const bookingLead = b.bookingPicLead || 'Đặng Thị Yến Nhi';
-              const brandStores = b2cStores.filter(
-                s => s.brandId === b.id || s.brandName.toLowerCase() === b.name.toLowerCase()
-              );
-
-              return (
-                <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
-                  <div className="p-4 bg-sunken/40 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <BrandAvatar brandId={b.id} brandName={b.name} size={36} />
-                        <div>
-                          <span className="px-2 py-0.5 rounded bg-warning-soft text-warning text-2xs font-bold">
-                            Thương hiệu (Brand)
-                          </span>
-                          <h3 className="text-base font-bold text-ink mt-0.5">{b.name}</h3>
-                        </div>
-                      </div>
-                      {onNavigateToBrandProfile && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onNavigateToBrandProfile(b.name)}
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                          Hồ sơ Brand
-                        </Button>
-                      )}
+          ) : b ? (
+            <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
+              <div className="p-4 bg-sunken/40 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <BrandAvatar brandId={b.id} brandName={b.name} size={36} />
+                    <div>
+                      <span className="px-2 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold">
+                        Thương hiệu (Brand)
+                      </span>
+                      <h3 className="text-base font-semibold text-ink mt-0.5">{b.name}</h3>
                     </div>
                   </div>
+                  {onNavigateToBrandProfile && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onNavigateToBrandProfile(b.name)}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                      Hồ sơ Brand
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-                  <div className="p-4 space-y-2.5">
-                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
-                      Đội ngũ phụ trách cấp Brand
-                    </h4>
-                    {(
-                      [
-                        {
-                          label: 'Content / Brand Main',
-                          field: 'contentBrandMainPic' as const,
-                          val: contentMain,
-                        },
-                        {
-                          label: 'Plan / Strategy',
-                          field: 'planStrategyPic' as const,
-                          val: planStrat,
-                        },
-                        {
-                          label: 'Key Visual / SIS',
-                          field: 'keyVisualSisPic' as const,
-                          val: kvSis,
-                        },
-                        {
-                          label: 'Booking Lead',
-                          field: 'bookingPicLead' as const,
-                          val: bookingLead,
-                        },
-                      ]
-                    ).map(pos => (
+              <div className="p-4 space-y-2.5">
+                <h4 className="text-xs font-semibold text-ink">
+                  Đội ngũ phụ trách cấp Brand
+                </h4>
+                {(
+                  [
+                    {
+                      label: 'Content / Brand Main',
+                      field: 'contentBrandMainPic' as const,
+                      val: brandContentMain,
+                    },
+                    {
+                      label: 'Plan / Strategy',
+                      field: 'planStrategyPic' as const,
+                      val: brandPlanStrat,
+                    },
+                    {
+                      label: 'Key Visual / SIS',
+                      field: 'keyVisualSisPic' as const,
+                      val: brandKvSis,
+                    },
+                    {
+                      label: 'Booking Lead',
+                      field: 'bookingPicLead' as const,
+                      val: brandBookingLead,
+                    },
+                  ]
+                ).map(pos => (
                       <div
                         key={pos.field}
                         className="p-2.5 rounded-xl bg-sunken/50 border border-line flex items-center justify-between gap-2"
@@ -2256,7 +2260,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                   </div>
 
                   <div className="p-4 space-y-2.5">
-                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
+                    <h4 className="text-xs font-semibold text-ink">
                       Gian hàng thuộc Brand ({brandStores.length})
                     </h4>
                     {brandStores.map(bs => (
@@ -2276,28 +2280,20 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             {bs.platform} · PIC: {bs.b2cOwnerName || bs.assignedStaff}
                           </div>
                         </div>
-                        <span className="text-2xs font-bold text-ink-2">
+                        <span className="text-2xs font-semibold text-ink-2">
                           {formatVndShort(bs.budgetNet || bs.monthlyBudget || 0)}
                         </span>
                       </div>
                     ))}
                   </div>
                 </div>
-              );
-            })()
-          ) : selectedNode.kind === 'STORE' && selectedNode.storeData ? (
-            (() => {
-              const s = selectedNode.storeData;
-              const coefInfo = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
-              const currentPic = s.b2cOwnerName || s.assignedStaff || 'Chưa gán';
-
-              return (
-                <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
+          ) : s && coefInfo ? (
+            <div className="divide-y divide-line flex-1 min-h-0 overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <PlatformBadge platform={s.platform} />
-                        <h3 className="text-base font-bold text-ink mt-1">{s.storeName}</h3>
+                        <h3 className="text-base font-semibold text-ink mt-1">{s.storeName}</h3>
                         <p className="text-xs text-ink-3">Thương hiệu: {s.brandName}</p>
                       </div>
                       {onNavigateToStoreProfile && (
@@ -2319,7 +2315,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         Chuyên viên phụ trách (PIC Gian hàng)
                       </label>
                       <select
-                        value={currentPic}
+                        value={s.b2cOwnerName || s.assignedStaff || ''}
                         onChange={e => handleReassignStorePic(s.id, e.target.value)}
                         className="w-full h-8 px-2.5 rounded-lg bg-surface border border-line text-xs text-ink font-medium"
                       >
@@ -2343,7 +2339,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                               key={tier.code}
                               type="button"
                               onClick={() => handleChangeStoreCoef(s.id, tier.coef)}
-                              className={`py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                              className={`py-1.5 rounded-lg border text-xs font-semibold transition cursor-pointer ${
                                 active
                                   ? 'bg-accent text-white border-accent'
                                   : 'bg-sunken text-ink-2 border-line hover:text-ink'
@@ -2357,8 +2353,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     </div>
                   </div>
                 </div>
-              );
-            })()
           ) : null}
         </div>
       </div>
@@ -2368,7 +2362,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-4 h-4 text-accent" />
-            <h3 className="text-sm font-bold text-ink">
+            <h3 className="text-sm font-semibold text-ink">
               Bảng Nhìn Nhanh Khối Lượng & Brand / Gian Hàng Của Từng Nhân Sự (3 Nhóm Tải Trọng)
             </h3>
           </div>
@@ -2377,7 +2371,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="rounded-xl border border-critical/30 bg-critical-soft/20 p-3 space-y-2.5">
             <div className="flex items-center justify-between pb-1 border-b border-critical/20">
-              <span className="text-xs font-bold text-critical flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-critical flex items-center gap-1.5">
                 <Flame className="w-3.5 h-3.5" />
                 <span>Đang Quá Tải ≥115% ({groupedStaffByLoad.overload.length})</span>
               </span>
@@ -2395,26 +2389,26 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-semibold">
                         {st.level}
                       </span>
-                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                      <span className="text-xs font-semibold text-ink truncate">{st.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-critical tabular-nums shrink-0">
+                    <span className="text-xs font-semibold text-critical tabular-nums shrink-0">
                       {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
                     </span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
                     <div
                       style={{ width: `${Math.min(100, st.loadPct)}%` }}
-                      className="h-full bg-rose-600"
+                      className="h-full bg-critical"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {st.assignedBrands.map(ab => (
                       <span
                         key={ab.brandId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold"
                       >
                         <Building2 className="w-2.5 h-2.5" />
                         {ab.brandName}
@@ -2423,14 +2417,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     {st.assignedStores.slice(0, 4).map(as => (
                       <span
                         key={as.storeId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-medium"
                       >
                         <Store className="w-2.5 h-2.5 text-accent" />
                         {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
                       </span>
                     ))}
                     {st.assignedStores.length > 4 && (
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-3 text-3xs">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-3 text-2xs">
                         +{st.assignedStores.length - 4} gian
                       </span>
                     )}
@@ -2442,7 +2436,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
           <div className="rounded-xl border border-positive/30 bg-positive-soft/20 p-3 space-y-2.5">
             <div className="flex items-center justify-between pb-1 border-b border-positive/20">
-              <span className="text-xs font-bold text-positive flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-positive flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Đủ Tải Chuẩn 96–114% ({groupedStaffByLoad.optimal.length})</span>
               </span>
@@ -2460,26 +2454,26 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-semibold">
                         {st.level}
                       </span>
-                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                      <span className="text-xs font-semibold text-ink truncate">{st.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-positive tabular-nums shrink-0">
+                    <span className="text-xs font-semibold text-positive tabular-nums shrink-0">
                       {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
                     </span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
                     <div
                       style={{ width: `${Math.min(100, st.loadPct)}%` }}
-                      className="h-full bg-emerald-600"
+                      className="h-full bg-positive"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {st.assignedBrands.map(ab => (
                       <span
                         key={ab.brandId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold"
                       >
                         <Building2 className="w-2.5 h-2.5" />
                         {ab.brandName}
@@ -2488,7 +2482,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     {st.assignedStores.slice(0, 4).map(as => (
                       <span
                         key={as.storeId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-medium"
                       >
                         <Store className="w-2.5 h-2.5 text-accent" />
                         {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
@@ -2502,7 +2496,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
           <div className="rounded-xl border border-accent/30 bg-accent-soft/25 p-3 space-y-2.5">
             <div className="flex items-center justify-between pb-1 border-b border-accent/20">
-              <span className="text-xs font-bold text-accent flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-accent flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5" />
                 <span>Dư Công Suất &lt;96% ({groupedStaffByLoad.underload.length})</span>
               </span>
@@ -2520,26 +2514,26 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-semibold">
                         {st.level}
                       </span>
-                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                      <span className="text-xs font-semibold text-ink truncate">{st.name}</span>
                     </div>
-                    <span className="text-xs font-bold text-accent tabular-nums shrink-0">
+                    <span className="text-xs font-semibold text-accent tabular-nums shrink-0">
                       {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
                     </span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
                     <div
                       style={{ width: `${Math.min(100, st.loadPct)}%` }}
-                      className="h-full bg-indigo-600"
+                      className="h-full bg-accent"
                     />
                   </div>
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {st.assignedBrands.map(ab => (
                       <span
                         key={ab.brandId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold"
                       >
                         <Building2 className="w-2.5 h-2.5" />
                         {ab.brandName}
@@ -2548,7 +2542,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     {st.assignedStores.slice(0, 4).map(as => (
                       <span
                         key={as.storeId}
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-medium"
                       >
                         <Store className="w-2.5 h-2.5 text-accent" />
                         {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
