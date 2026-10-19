@@ -18,7 +18,6 @@ const DEFAULT_BROWSER_UA =
 const VIDEO_CACHE_TTL_MS = 30 * 60 * 1000; // 30 phút
 const SEARCH_CACHE_TTL_MS = 20 * 60 * 1000; // 20 phút
 const COMMENT_CACHE_TTL_MS = 15 * 60 * 1000; // 15 phút
-const WAF_COOKIE_TTL_MS = 10 * 60 * 1000; // 10 phút
 
 class ConcurrencyLimiter {
   private active = 0;
@@ -78,7 +77,6 @@ interface SharedTikTokCrawlerStore {
     string,
     Promise<{ items: RawTikTokApiComment[]; nextCursor: number; hasMore: boolean }>
   >;
-  wafSession: { cookie: string; expiresAt: number } | null;
   tiktokLimiter: ConcurrencyLimiter;
   searchLimiter: ConcurrencyLimiter;
 }
@@ -98,7 +96,6 @@ export function getSharedCrawlerStore(): SharedTikTokCrawlerStore {
       inFlightSearchHtml: new Map(),
       commentsPageCache: new Map(),
       inFlightCommentsPage: new Map(),
-      wafSession: null,
       // Giới hạn số kết nối đồng thời ra ngoài trên toàn máy chủ để 30 nhân sự bấm quét cùng lúc không bị TikTok/Bing chặn IP
       tiktokLimiter: new ConcurrencyLimiter(14),
       searchLimiter: new ConcurrencyLimiter(8),
@@ -186,7 +183,7 @@ function mergeCookieStrings(...cookieParts: Array<string | undefined>): string {
 
 /**
  * Tải trang công khai TikTok (Kênh hoặc Video) kèm tự động vượt tường lửa SlardarWAF,
- * tái sử dụng WAF Session Cookie chung và điều tiết luồng qua ConcurrencyLimiter cho 30+ người dùng đồng thời.
+ * giải mã độc lập cookie WAF theo đúng từng đường dẫn và điều tiết luồng qua ConcurrencyLimiter.
  */
 export async function fetchTikTokHtmlWithWafBypass(
   url: string,
@@ -195,18 +192,11 @@ export async function fetchTikTokHtmlWithWafBypass(
   const store = getSharedCrawlerStore();
   return store.tiktokLimiter.run(async () => {
     try {
-      const now = Date.now();
-      const cachedWafCookie =
-        store.wafSession && store.wafSession.expiresAt > now ? store.wafSession.cookie : undefined;
-
       const r1Headers: Record<string, string> = {
         'User-Agent': DEFAULT_BROWSER_UA,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
       };
-      if (cachedWafCookie) {
-        r1Headers.Cookie = cachedWafCookie;
-      }
 
       const r1 = await fetch(url, {
         method: 'GET',
@@ -229,11 +219,7 @@ export async function fetchTikTokHtmlWithWafBypass(
         return { html: html1, finalUrl };
       }
 
-      const combinedCookie1 = mergeCookieStrings(cachedWafCookie, ...setCookies1, wafCookie1);
-      store.wafSession = {
-        cookie: combinedCookie1,
-        expiresAt: Date.now() + WAF_COOKIE_TTL_MS,
-      };
+      const combinedCookie1 = mergeCookieStrings(...setCookies1, wafCookie1);
 
       const r2 = await fetch(finalUrl, {
         method: 'GET',
@@ -258,12 +244,6 @@ export async function fetchTikTokHtmlWithWafBypass(
 
       const wafCookie2 = solveTikTokWafHtml(html2);
       if (!wafCookie2) {
-        if (setCookies2.length > 0) {
-          store.wafSession = {
-            cookie: mergeCookieStrings(combinedCookie1, ...setCookies2),
-            expiresAt: Date.now() + WAF_COOKIE_TTL_MS,
-          };
-        }
         return {
           html: html2,
           finalUrl: finalUrl2,
@@ -271,10 +251,6 @@ export async function fetchTikTokHtmlWithWafBypass(
       }
 
       const combinedCookie2 = mergeCookieStrings(combinedCookie1, ...setCookies2, wafCookie2);
-      store.wafSession = {
-        cookie: combinedCookie2,
-        expiresAt: Date.now() + WAF_COOKIE_TTL_MS,
-      };
 
       const r3 = await fetch(finalUrl2, {
         method: 'GET',
@@ -636,7 +612,6 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'quinskincareholic', videoId: '7511336312234970375', videoUrl: 'https://www.tiktok.com/@quinskincareholic/video/7511336312234970375' },
     { handle: 'vu_dieuthuy_', videoId: '7619313454364724500', videoUrl: 'https://www.tiktok.com/@vu_dieuthuy_/video/7619313454364724500' },
     { handle: 'meox96', videoId: '7477573484609129746', videoUrl: 'https://www.tiktok.com/@meox96/video/7477573484609129746' },
-    { handle: 'happipham', videoId: '7638845114655214855', videoUrl: 'https://www.tiktok.com/@happipham/video/7638845114655214855' },
     { handle: 'minchimoah', videoId: '7622252402468588808', videoUrl: 'https://www.tiktok.com/@minchimoah/video/7622252402468588808' },
     { handle: 'thuuyen1402', videoId: '7511329708047469842', videoUrl: 'https://www.tiktok.com/@thuuyen1402/video/7511329708047469842' },
     { handle: 'manhtienkhoi_', videoId: '7513161286222499090', videoUrl: 'https://www.tiktok.com/@manhtienkhoi_/video/7513161286222499090' },
@@ -649,14 +624,12 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'mamachanbeauty', videoId: '7628553171555601684', videoUrl: 'https://www.tiktok.com/@mamachanbeauty/video/7628553171555601684' },
     { handle: 'gaoiuu2025', videoId: '7621930879387995413', videoUrl: 'https://www.tiktok.com/@gaoiuu2025/video/7621930879387995413' },
     { handle: 'rynaa.riviu', videoId: '7481606413664472338', videoUrl: 'https://www.tiktok.com/@rynaa.riviu/video/7481606413664472338' },
-    { handle: 'dokhanhvan', videoId: '7635294424548904210', videoUrl: 'https://www.tiktok.com/@dokhanhvan/video/7635294424548904210' },
     { handle: 'trinh_lucia', videoId: '7510591383871196423', videoUrl: 'https://www.tiktok.com/@trinh_lucia/video/7510591383871196423' },
     { handle: 'luumaianh_', videoId: '7641123573322550536', videoUrl: 'https://www.tiktok.com/@luumaianh_/video/7641123573322550536' },
     { handle: 'chanhthu__', videoId: '7100138448777907482', videoUrl: 'https://www.tiktok.com/@chanhthu__/video/7100138448777907482' },
     { handle: 'viet_ngthe', videoId: '7645237029353049345', videoUrl: 'https://www.tiktok.com/@viet_ngthe/video/7645237029353049345' },
     { handle: 'reviewallthing', videoId: '7439379022288637191', videoUrl: 'https://www.tiktok.com/@reviewallthing/video/7439379022288637191' },
     { handle: 'ndiepne', videoId: '7627844204005297416', videoUrl: 'https://www.tiktok.com/@ndiepne/video/7627844204005297416' },
-    { handle: 'unofficiallykyky', videoId: '7366211323929169169', videoUrl: 'https://www.tiktok.com/@unofficiallykyky/video/7366211323929169169' },
     { handle: 'banhbeophuphiemofficial', videoId: '7462386528816303367', videoUrl: 'https://www.tiktok.com/@banhbeophuphiemofficial/video/7462386528816303367' },
   ],
   romand: [
@@ -675,17 +648,12 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
   ],
   cocoon: [
     { handle: 'yangho.bando', videoId: '7647916662087240967', videoUrl: 'https://www.tiktok.com/@yangho.bando/video/7647916662087240967' },
-    { handle: 'quynhanhvuive', videoId: '7566504070635097362', videoUrl: 'https://www.tiktok.com/@quynhanhvuive/video/7566504070635097362' },
-    { handle: 'pixinhxinh', videoId: '7575030943560256775', videoUrl: 'https://www.tiktok.com/@pixinhxinh/video/7575030943560256775' },
     { handle: 'heyiamvanh', videoId: '7258122844238925061', videoUrl: 'https://www.tiktok.com/@heyiamvanh/video/7258122844238925061' },
     { handle: 'gocreviewcuatuyen', videoId: '7677977042519919879', videoUrl: 'https://www.tiktok.com/@gocreviewcuatuyen/video/7677977042519919879' },
-    { handle: 'skincaredungcach.byson', videoId: '7392604801747438865', videoUrl: 'https://www.tiktok.com/@skincaredungcach.byson/video/7392604801747438865' },
     { handle: 'bibiidayne', videoId: '7576402236201307399', videoUrl: 'https://www.tiktok.com/@bibiidayne/video/7576402236201307399' },
     { handle: 'bongbachthichlamdep', videoId: '7299071591403638018', videoUrl: 'https://www.tiktok.com/@bongbachthichlamdep/video/7299071591403638018' },
     { handle: 'tuongnhicosmetic', videoId: '7249660789043334405', videoUrl: 'https://www.tiktok.com/@tuongnhicosmetic/video/7249660789043334405' },
     { handle: 'trangtrangkhau', videoId: '7660324347407650069', videoUrl: 'https://www.tiktok.com/@trangtrangkhau/video/7660324347407650069' },
-    { handle: 'ngophuonganh0211', videoId: '7639716221331557653', videoUrl: 'https://www.tiktok.com/@ngophuonganh0211/video/7639716221331557653' },
-    { handle: 'review.cng.tm', videoId: '7631597242331254023', videoUrl: 'https://www.tiktok.com/@review.cng.tm/video/7631597242331254023' },
   ],
   skin1004: [
     { handle: 'nguyenskincare', videoId: '7384408669624077575', videoUrl: 'https://www.tiktok.com/@nguyenskincare/video/7384408669624077575' },
@@ -707,8 +675,6 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'im_phuongdun', videoId: '7613389778058284289', videoUrl: 'https://www.tiktok.com/@im_phuongdun/video/7613389778058284289' },
     { handle: 'emlylynguyen', videoId: '7615246461340552455', videoUrl: 'https://www.tiktok.com/@emlylynguyen/video/7615246461340552455' },
     { handle: 'nhubinh.review', videoId: '7482329756772355346', videoUrl: 'https://www.tiktok.com/@nhubinh.review/video/7482329756772355346' },
-    { handle: 'khanh7702', videoId: '7643026642465623303', videoUrl: 'https://www.tiktok.com/@khanh7702/video/7643026642465623303' },
-    { handle: 'dido_review', videoId: '7646050315120446727', videoUrl: 'https://www.tiktok.com/@dido_review/video/7646050315120446727' },
   ],
   cerave: [
     { handle: 'hannieday10', videoId: '7650151251614764309', videoUrl: 'https://www.tiktok.com/@hannieday10/video/7650151251614764309' },
@@ -747,9 +713,7 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'miamereviewday', videoId: '7655718121315093767', videoUrl: 'https://www.tiktok.com/@miamereviewday/video/7655718121315093767' },
     { handle: 'annie.rose697', videoId: '7548808880663399687', videoUrl: 'https://www.tiktok.com/@annie.rose697/video/7548808880663399687' },
     { handle: '_hattieune', videoId: '7475703983147928850', videoUrl: 'https://www.tiktok.com/@_hattieune/video/7475703983147928850' },
-    { handle: 'bbskincare1', videoId: '7547306172890565889', videoUrl: 'https://www.tiktok.com/@bbskincare1/video/7547306172890565889' },
     { handle: 'chile.2000', videoId: '7541765684343098625', videoUrl: 'https://www.tiktok.com/@chile.2000/video/7541765684343098625' },
-    { handle: 'swatchesbybaobao', videoId: '7628573780763315477', videoUrl: 'https://www.tiktok.com/@swatchesbybaobao/video/7628573780763315477' },
   ],
   kemchongnang: [
     { handle: 'harrydailyyy', videoId: '7613746197345471765', videoUrl: 'https://www.tiktok.com/@harrydailyyy/video/7613746197345471765' },
@@ -767,7 +731,6 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
   ],
   skincare: [
     { handle: 'conmeo.keu_', videoId: '7648263603241405716', videoUrl: 'https://www.tiktok.com/@conmeo.keu_/video/7648263603241405716' },
-    { handle: 'luv_bnqanxaiginh', videoId: '7625093114209897736', videoUrl: 'https://www.tiktok.com/@luv_bnqanxaiginh/video/7625093114209897736' },
     { handle: 'hapudunghet', videoId: '7647903412171836679', videoUrl: 'https://www.tiktok.com/@hapudunghet/video/7647903412171836679' },
     { handle: 'yuuxinh7699', videoId: '7485730067637718279', videoUrl: 'https://www.tiktok.com/@yuuxinh7699/video/7485730067637718279' },
     { handle: 'haiyekinke', videoId: '7637378773268172039', videoUrl: 'https://www.tiktok.com/@haiyekinke/video/7637378773268172039' },
@@ -781,11 +744,9 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
   ],
   clubclio: [
     { handle: 'minchimoah', videoId: '7553635350451637511', videoUrl: 'https://www.tiktok.com/@minchimoah/video/7553635350451637511' },
-    { handle: 'l_yuhann', videoId: '7412232211249909008', videoUrl: 'https://www.tiktok.com/@l_yuhann/video/7412232211249909008' },
     { handle: 'hoangthachhh', videoId: '7509879936698600711', videoUrl: 'https://www.tiktok.com/@hoangthachhh/video/7509879936698600711' },
     { handle: 'cucaideyy', videoId: '7613430835768839444', videoUrl: 'https://www.tiktok.com/@cucaideyy/video/7613430835768839444' },
     { handle: 'thaoglowupdiary', videoId: '7611343947893378312', videoUrl: 'https://www.tiktok.com/@thaoglowupdiary/video/7611343947893378312' },
-    { handle: '_minganlq', videoId: '7573217243002096914', videoUrl: 'https://www.tiktok.com/@_minganlq/video/7573217243002096914' },
     { handle: 'lapiszuzu', videoId: '7564644653933382933', videoUrl: 'https://www.tiktok.com/@lapiszuzu/video/7564644653933382933' },
     { handle: 'kei.miii', videoId: '7572848267315268882', videoUrl: 'https://www.tiktok.com/@kei.miii/video/7572848267315268882' },
   ],
@@ -803,19 +764,12 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
   duocmypham: [
     { handle: 'sobeauty.glx', videoId: '7640003474041621761', videoUrl: 'https://www.tiktok.com/@sobeauty.glx/video/7640003474041621761' },
     { handle: 'bacsicanhvu', videoId: '7595813741380373780', videoUrl: 'https://www.tiktok.com/@bacsicanhvu/video/7595813741380373780' },
-    { handle: 'b26041999', videoId: '7582364351147805973', videoUrl: 'https://www.tiktok.com/@b26041999/video/7582364351147805973' },
     { handle: 'ngophuonglinhneee', videoId: '7588137119927799048', videoUrl: 'https://www.tiktok.com/@ngophuonglinhneee/video/7588137119927799048' },
     { handle: 'lynreviewne', videoId: '7598499117005901074', videoUrl: 'https://www.tiktok.com/@lynreviewne/video/7598499117005901074' },
-    { handle: 'anchimereview', videoId: '7650078490892602642', videoUrl: 'https://www.tiktok.com/@anchimereview/video/7650078490892602642' },
     { handle: 'madamespaclinic', videoId: '7631789775258668308', videoUrl: 'https://www.tiktok.com/@madamespaclinic/video/7631789775258668308' },
-    { handle: 't5a.reviewkoc', videoId: '7372051291138313490', videoUrl: 'https://www.tiktok.com/@t5a.reviewkoc/video/7372051291138313490' },
     { handle: 'congbeauty3', videoId: '7482020226641464584', videoUrl: 'https://www.tiktok.com/@congbeauty3/video/7482020226641464584' },
-    { handle: 'duocsy.skincare', videoId: '7614860554607332616', videoUrl: 'https://www.tiktok.com/@duocsy.skincare/video/7614860554607332616' },
-    { handle: 'hangcareskinban', videoId: '7650450638307904788', videoUrl: 'https://www.tiktok.com/@hangcareskinban/video/7650450638307904788' },
-    { handle: 'bbskincare1', videoId: '7614414718131981588', videoUrl: 'https://www.tiktok.com/@bbskincare1/video/7614414718131981588' },
   ],
   mebimsua: [
-    { handle: 'mebesuatiktokk', videoId: '7639579615761042708', videoUrl: 'https://www.tiktok.com/@mebesuatiktokk/video/7639579615761042708' },
     { handle: 'mexitrum123', videoId: '7491912903625313554', videoUrl: 'https://www.tiktok.com/@mexitrum123/video/7491912903625313554' },
     { handle: 'mebim38ky', videoId: '7628577472459672839', videoUrl: 'https://www.tiktok.com/@mebim38ky/video/7628577472459672839' },
     { handle: 'hanhhaohuc', videoId: '7655519850718154005', videoUrl: 'https://www.tiktok.com/@hanhhaohuc/video/7655519850718154005' },
@@ -832,29 +786,25 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'chichilinh__', videoId: '7594808490581888276', videoUrl: 'https://www.tiktok.com/@chichilinh__/video/7594808490581888276' },
     { handle: 'lapiszuzu', videoId: '7601145267634720021', videoUrl: 'https://www.tiktok.com/@lapiszuzu/video/7601145267634720021' },
     { handle: 'hanthie', videoId: '7634147729450536212', videoUrl: 'https://www.tiktok.com/@hanthie/video/7634147729450536212' },
-    { handle: 'iamnz94', videoId: '7513521490529193234', videoUrl: 'https://www.tiktok.com/@iamnz94/video/7513521490529193234' },
     { handle: 'hannaholala', videoId: '7601395093391625492', videoUrl: 'https://www.tiktok.com/@hannaholala/video/7601395093391625492' },
-    { handle: 'unboxingai1', videoId: '7611716704883838215', videoUrl: 'https://www.tiktok.com/@unboxingai1/video/7611716704883838215' },
     { handle: 'thuchienne6868', videoId: '7595388528972811527', videoUrl: 'https://www.tiktok.com/@thuchienne6868/video/7595388528972811527' },
     { handle: 'khvan19', videoId: '7604458740183665927', videoUrl: 'https://www.tiktok.com/@khvan19/video/7604458740183665927' },
   ],
   nous: [
-    { handle: 'chuyennhathoday', videoId: '7610018007188737298', videoUrl: 'https://www.tiktok.com/@chuyennhathoday/video/7610018007188737298' },
-    { handle: 'thegioimebimsua', videoId: '7598061449215200530', videoUrl: 'https://www.tiktok.com/@thegioimebimsua/video/7598061449215200530' },
-    { handle: 'mia_min99', videoId: '7617761588058049810', videoUrl: 'https://www.tiktok.com/@mia_min99/video/7617761588058049810' },
-    { handle: 'xuanquynh_me2dua', videoId: '7598153766408391954', videoUrl: 'https://www.tiktok.com/@xuanquynh_me2dua/video/7598153766408391954' },
-    { handle: 'baclynne', videoId: '7616301066674490642', videoUrl: 'https://www.tiktok.com/@baclynne/video/7616301066674490642' },
-    { handle: 'ngockhanhday', videoId: '7617018526787783944', videoUrl: 'https://www.tiktok.com/@ngockhanhday/video/7617018526787783944' },
-    { handle: 'besuadeiii', videoId: '7602892638644112658', videoUrl: 'https://www.tiktok.com/@besuadeiii/video/7602892638644112658' },
-    { handle: 'mepepssi', videoId: '7608498074508414226', videoUrl: 'https://www.tiktok.com/@mepepssi/video/7608498074508414226' },
+    { handle: 'chuyennhathoday', videoId: '7696353302589738260', videoUrl: 'https://www.tiktok.com/@chuyennhathoday/video/7696353302589738260' },
+    { handle: 'sukemshopdososinh', videoId: '7692300985150049556', videoUrl: 'https://www.tiktok.com/@sukemshopdososinh/video/7692300985150049556' },
+    { handle: 'chuyennhathoday', videoId: '7682074704907373845', videoUrl: 'https://www.tiktok.com/@chuyennhathoday/video/7682074704907373845' },
+    { handle: 'phm.nh.li1', videoId: '7670574316722851090', videoUrl: 'https://www.tiktok.com/@phm.nh.li1/video/7670574316722851090' },
+    { handle: 'besuadeiii', videoId: '7664908993902464276', videoUrl: 'https://www.tiktok.com/@besuadeiii/video/7664908993902464276' },
+    { handle: 'combodisinh', videoId: '7660439036749778197', videoUrl: 'https://www.tiktok.com/@combodisinh/video/7660439036749778197' },
+    { handle: 'nousbabystore', videoId: '7657051530738126098', videoUrl: 'https://www.tiktok.com/@nousbabystore/video/7657051530738126098' },
     { handle: 'hathuuu163', videoId: '7651638911999085831', videoUrl: 'https://www.tiktok.com/@hathuuu163/video/7651638911999085831' },
-    { handle: 'mesammiiu', videoId: '7605482924587126034', videoUrl: 'https://www.tiktok.com/@mesammiiu/video/7605482924587126034' },
-    { handle: 'chuyennhalinen', videoId: '7606247392392760594', videoUrl: 'https://www.tiktok.com/@chuyennhalinen/video/7606247392392760594' },
-    { handle: 'mekami_linhnguyen', videoId: '7608867304646905106', videoUrl: 'https://www.tiktok.com/@mekami_linhnguyen/video/7608867304646905106' },
-    { handle: 'gamaitenmo', videoId: '7607381845500546322', videoUrl: 'https://www.tiktok.com/@gamaitenmo/video/7607381845500546322' },
-    { handle: 'mochi_iuday', videoId: '7614502051968453906', videoUrl: 'https://www.tiktok.com/@mochi_iuday/video/7614502051968453906' },
-    { handle: 'sukemshopdososinh', videoId: '7606638921384070421', videoUrl: 'https://www.tiktok.com/@sukemshopdososinh/video/7606638921384070421' },
-    { handle: 't.chieuu', videoId: '7599603940531899666', videoUrl: 'https://www.tiktok.com/@t.chieuu/video/7599603940531899666' },
+    { handle: 'embemeo_1792', videoId: '7650505481550597383', videoUrl: 'https://www.tiktok.com/@embemeo_1792/video/7650505481550597383' },
+    { handle: 'nous.vietnam', videoId: '7649743444771933458', videoUrl: 'https://www.tiktok.com/@nous.vietnam/video/7649743444771933458' },
+    { handle: 'noushanoi', videoId: '7646366709301005576', videoUrl: 'https://www.tiktok.com/@noushanoi/video/7646366709301005576' },
+    { handle: 'ngockhanhday', videoId: '7624523830559542549', videoUrl: 'https://www.tiktok.com/@ngockhanhday/video/7624523830559542549' },
+    { handle: 'nousbabystoredaily', videoId: '7619699870349184276', videoUrl: 'https://www.tiktok.com/@nousbabystoredaily/video/7619699870349184276' },
+    { handle: 'genzhocdelamcha', videoId: '7604079616076123413', videoUrl: 'https://www.tiktok.com/@genzhocdelamcha/video/7604079616076123413' },
   ],
 };
 
@@ -869,17 +819,40 @@ export interface TargetKeywordProfile {
 
 const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
   kemchongnang: ['kem chống nắng', 'kem chong nang', 'chống nắng'],
-  duocmypham: ['dược mỹ phẩm', 'duoc my pham'],
-  mebimsua: ['mẹ bỉm sữa', 'me bim sua', 'mẹ bỉm', 'chăm con'],
+  duocmypham: ['dược mỹ phẩm', 'duoc my pham', 'da dầu mụn', 'chăm sóc da mụn', 'trị mụn'],
+  mebimsua: ['mẹ bỉm sữa', 'me bim sua', 'mẹ bỉm', 'chăm con', 'đồ sơ sinh'],
   suaruamat: ['sữa rửa mặt', 'sua rua mat'],
   taytrang: ['nước tẩy trang', 'tẩy trang', 'tay trang'],
   kemduongam: ['kem dưỡng ẩm', 'kem duong am', 'dưỡng ẩm'],
   dososinh: ['đồ sơ sinh', 'do so sinh', 'quần áo sơ sinh'],
   quanaososinh: ['quần áo sơ sinh', 'đồ sơ sinh'],
   chamda: ['chăm sóc da', 'chăm da', 'skincare'],
-  trimun: ['trị mụn', 'tri mun', 'da mụn'],
+  trimun: ['trị mụn', 'tri mun', 'da mụn', 'chấm mụn'],
   sonduong: ['son dưỡng', 'son duong'],
   trangdiem: ['trang điểm', 'makeup'],
+  cushion: ['cushion', 'phấn nước', 'phan nuoc'],
+  larocheposay: [
+    'la roche posay',
+    'la roche-posay',
+    'kem chống nắng la roche posay',
+    'b5 la roche posay',
+    'sữa rửa mặt la roche posay',
+  ],
+  clubclio: ['club clio', 'clio', 'cushion clio', 'phấn nước clio', 'son clio'],
+  cocoon: ['cocoon', 'cocoon vietnam', 'tẩy da chết cocoon', 'xịt bưởi cocoon', 'bí đao cocoon'],
+  skin1004: ['skin1004', 'skin 1004', 'rau má skin1004', 'kem chống nắng skin1004'],
+  anessa: ['anessa', 'kem chống nắng anessa', 'sữa chống nắng anessa'],
+  romand: ['romand', 'rom&nd', 'son romand', 'bảng màu romand'],
+  cetaphil: ['cetaphil', 'sữa rửa mặt cetaphil', 'sữa tắm cetaphil'],
+  cerave: ['cerave', 'sữa rửa mặt cerave', 'kem dưỡng cerave'],
+  loreal: ['loreal', "l'oreal", 'nước tẩy trang loreal', 'kem chống nắng loreal'],
+  keyshu: ['keyshu', 'mặt nạ keyshu', 'kem chống nắng keyshu'],
+  kutieskin: ['kutieskin', 'kem chàm sữa kutieskin', 'kem hăm kutieskin', 'sữa tắm kutieskin'],
+  mustela: ['mustela', 'sữa tắm mustela', 'kem hăm mustela', 'dầu tràm mustela'],
+  byebyeblemish: ['bye bye blemish', 'chấm mụn bye bye blemish'],
+  cindybloom: ['cindy bloom', 'nước hoa cindy bloom'],
+  loccitane: ['loccitane', "l'occitane", 'dầu tắm hạnh nhân loccitane'],
+  rejuran: ['rejuran', 'serum rejuran', 'kem dưỡng rejuran'],
   nousvietnam: [
     'nous vietnam',
     'nous việt nam',
@@ -889,6 +862,8 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
     'bộ nous',
     'nous cho bé',
     'nous sơ sinh',
+    'hãng nous',
+    'set sơ sinh nous',
   ],
   nous: [
     'nous vietnam',
@@ -898,6 +873,8 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
     'bộ nous',
     'nous cho bé',
     'nous sơ sinh',
+    'hãng nous',
+    'set sơ sinh nous',
   ],
 };
 
@@ -920,7 +897,7 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
 
   const strippedRoot = compactTag
     .replace(
-      /(?:_|-|\.)?(official|vietnam|vn|store|shop|live|mall|channel|chinhhang|korea|kr|japan|jp|cosmetics|beauty|mama|baby|kids)$/i,
+      /(?:_|-|\.)?(official|vietnam|vn|store|shop|live|mall|channel|chinhhang|korea|kr|japan|jp|cosmetics|beauty|mama|baby|kids|paris)$/i,
       ''
     )
     .replace(/^_+|_+$/g, '');
@@ -959,25 +936,13 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
 
   const searchQueries = Array.from(
     new Set([
-      `tiktok.com "${compactTag}"`,
       `tiktok.com "#${compactTag}"`,
-      ...(rootToken && rootToken !== compactTag
-        ? [
-            `tiktok.com "${rootToken} vietnam"`,
-            `tiktok.com "nhà ${rootToken}"`,
-            `tiktok.com "đồ ${rootToken}"`,
-            `tiktok.com "#${rootToken}"`,
-            `tiktok.com "${rootToken}" cho bé`,
-            `tiktok.com "${rootToken}" sơ sinh`,
-            `tiktok.com "${rootToken}" review`,
-            `tiktok.com "${rootToken}" unbox`,
-          ]
-        : [
-            `tiktok.com "${rawClean}" review`,
-            `tiktok.com "${rootToken}" tiktok shop`,
-            `tiktok.com "${rootToken}" unbox`,
-          ]),
-      ...spacedAliases.slice(0, 6).map((alias) => `tiktok.com "${alias}"`),
+      ...(rootToken && rootToken !== compactTag ? [`tiktok.com "#${rootToken}"`] : []),
+      ...spacedAliases.slice(0, 7).map((alias) => `tiktok.com "${alias}"`),
+      `tiktok.com "${compactTag}"`,
+      `tiktok.com "review ${rootToken}"`,
+      `tiktok.com "${rootToken} chính hãng"`,
+      `tiktok.com "unbox ${rootToken}"`,
     ])
   );
 
@@ -1001,7 +966,7 @@ function textContainsAnyToken(rawText: string, matchTokens: string[]): boolean {
   for (const token of matchTokens) {
     if (!token) continue;
     if (token.length <= 5 && /^[a-z0-9]+$/.test(token)) {
-      const re = new RegExp(`(?:^|[^a-z0-9])${escapeRegexLiteral(token)}(?:$|[^a-z0-9]|vietnam|vn|baby|kids|mom|mama|store|shop|official)`, 'i');
+      const re = new RegExp(`(?:^|[^a-z0-9])${escapeRegexLiteral(token)}(?:$|[^a-z0-9]|vietnam|vn|baby|kids|mom|mama|store|shop|official|cushion)`, 'i');
       if (re.test(norm)) return true;
     } else if (norm.includes(token)) {
       return true;
@@ -1041,31 +1006,41 @@ export function doesInspectedVideoMatchTarget(
     inspected.author.bio,
   ].join(' ');
 
-  // Nếu từ khóa gốc ngắn (<= 5 ký tự như "nous", "fresh", "mine") trùng với từ vựng tiếng Pháp/Anh,
-  // bắt buộc video phải chứa hậu tố đặc trưng (nousvietnam, nous.vietnam, nous_hcm...) HOẶC có dấu/từ vựng tiếng Việt
-  if (profile.rootToken.length <= 5) {
-    const norm = stripVnAccents(combinedRaw);
-    const hasExplicitBrandTag =
-      (profile.compactTag.length > profile.rootToken.length &&
-        norm.includes(profile.compactTag)) ||
-      norm.includes(`${profile.rootToken}.vietnam`) ||
-      norm.includes(`${profile.rootToken}_hcm`) ||
-      norm.includes(`${profile.rootToken}babystore`) ||
-      norm.includes(`${profile.rootToken}kids`) ||
-      norm.includes(`${profile.rootToken}hanoi`);
+  // Bắt buộc video/kênh phải thuộc ngữ cảnh Việt Nam (tránh lọt video quốc tế của các thương hiệu toàn cầu như La Roche-Posay Brasil, CeraVe US, Cetaphil UK...)
+  const norm = stripVnAccents(combinedRaw);
 
-    const hasSpecificVietnameseDiacritics =
-      /[ăằắặẳẵầấậẩẫềếệểễìíịỉĩòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
-        combinedRaw
-      );
-    const hasVietnameseWords =
-      /\b(cua|cho|nha|me|be|voi|cac|nay|qua|minh|duoc|khong|hang|shop|san|mac|mua|dung|bo|set|ao|quan|kem|da|son|hop|dep|xinh|sosinh|bimsua|vietnam)\b/i.test(
-        norm
-      );
+  // Loại bỏ ngay nếu gắn thẻ chi nhánh quốc gia khác ngoài Việt Nam
+  if (
+    /\b(brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|india|pakistan|nigeria|arabia)\b/i.test(
+      norm
+    )
+  ) {
+    return false;
+  }
 
-    if (!hasExplicitBrandTag && !hasSpecificVietnameseDiacritics && !hasVietnameseWords) {
-      return false;
-    }
+  const hasExplicitVnBrandTag =
+    norm.includes(`${profile.rootToken}vietnam`) ||
+    norm.includes(`${profile.rootToken}.vietnam`) ||
+    norm.includes(`${profile.rootToken}_vn`) ||
+    norm.includes(`${profile.rootToken}vn`) ||
+    norm.includes(`${profile.rootToken}_hcm`) ||
+    norm.includes(`${profile.rootToken}babystore`) ||
+    norm.includes(`${profile.rootToken}hanoi`) ||
+    /\b(vietnam|viet nam|ha noi|hanoi|tphcm|sai gon|saigon|da nang| tiktokshopvn|xuhuong|goclamdep|reviewlamdep|mebimsua|dososinh)\b/i.test(
+      norm
+    );
+
+  const hasSpecificVietnameseDiacritics =
+    /[ăằắặẳẵầấậẩẫềếệểễìíịỉĩòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
+      combinedRaw
+    );
+  const hasVietnameseWords =
+    /\b(cua|cho|nha|me|be|voi|cac|nay|qua|minh|duoc|khong|hang|san|mac|mua|dung|bo|set|ao|quan|kem|da|son|hop|dep|xinh|sosinh|bimsua|chinhhang|duocmypham|sua|rua|mat|chong|nang|duong|am|mun|tham|trang|moi|toc|goi|thom)\b/i.test(
+      norm
+    );
+
+  if (!hasExplicitVnBrandTag && !hasSpecificVietnameseDiacritics && !hasVietnameseWords) {
+    return false;
   }
 
   return true;
@@ -1236,8 +1211,8 @@ export async function discoverTikTokChannelVideoUrls(
 /**
  * Tìm kiếm danh sách đường dẫn video TikTok thực tế (https://www.tiktok.com/@handle/video/videoId)
  * thông qua chỉ mục Bing Video Search (vi-VN) và danh mục URL video TikTok Việt Nam đã xác thực.
- * Bóc tách theo từng thẻ kết quả (card-level filtering) để loại bỏ hoàn toàn widget "Video thịnh hành ngẫu nhiên" của Bing,
- * và KHÔNG trộn lẫn KOC của nhãn hàng khác khi tìm kiếm.
+ * Bóc tách theo từng thẻ kết quả (card-level metadata filtering) để loại bỏ hoàn toàn tham số q=... bị dội lại
+ * và widget "Video thịnh hành ngẫu nhiên" của Bing.
  */
 export async function discoverRealTikTokVideoUrlsByQuery(
   queries: string[],
@@ -1274,9 +1249,12 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   ): Array<{ handle: string; videoId: string; videoUrl: string }> => {
     const found = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
 
-    // Tách theo từng thẻ video kết quả của Bing (`dg_u` hoặc `mc_vtvc_con_rc`) để kiểm tra ngữ cảnh từng thẻ
-    const cardBlocks = rawHtml.split(/class="dg_u"|class="mc_vtvc_con_rc"/i);
-    const blocksToScan = cardBlocks.length > 1 ? cardBlocks.slice(1) : [rawHtml];
+    // Tách theo từng thẻ video kết quả của Bing (`mc_vtvc_con_rc`) và giới hạn độ dài mỗi thẻ 4500 ký tự
+    const cardBlocks = rawHtml.split(/class="mc_vtvc_con_rc"/i);
+    const hasCards = cardBlocks.length > 1;
+    const blocksToScan = hasCards
+      ? cardBlocks.slice(1).map((b) => b.slice(0, 4500))
+      : [rawHtml];
 
     for (const block of blocksToScan) {
       const b64Decoded = [...block.matchAll(/(?:[?&]|&amp;)u=a1([a-zA-Z0-9_-]+)/g)]
@@ -1289,7 +1267,9 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         })
         .join('\n');
 
-      const normalizedBlock = `${block}\n${b64Decoded}`
+      // Loại bỏ các tham số relatedvideo?q=... hoặc search?q=... mà Bing chèn vào thẻ để tránh khớp nhầm câu truy vấn
+      const cleanedBlock = `${block}\n${b64Decoded}`
+        .replace(/(?:relatedvideo|search)\?q=[^"&'\s<>]+/gi, '')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&amp;/g, '&')
@@ -1297,12 +1277,23 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         .replace(/%2F/gi, '/')
         .replace(/\\u002f/gi, '/');
 
-      // Nếu có requiredTokens, thẻ video trên Bing BẮT BUỘC phải chứa ít nhất 1 token mục tiêu
-      if (requiredTokens.length > 0 && !textContainsAnyToken(normalizedBlock, requiredTokens)) {
-        continue;
+      if (requiredTokens.length > 0) {
+        const cardTitle = block.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
+        const cardAlt = block.match(/\balt="([^"]*)"/i)?.[1] || '';
+        const cardVrhm = block.match(/vrhm="([^"]*)"/i)?.[1] || '';
+        const cardOurl = block.match(/ourl="([^"]*)"/i)?.[1] || '';
+        const cardSemanticText = hasCards
+          ? `${cardTitle} ${cardAlt} ${cardVrhm} ${cardOurl} ${b64Decoded}`
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+          : cleanedBlock;
+
+        if (!textContainsAnyToken(cardSemanticText, requiredTokens)) {
+          continue;
+        }
       }
 
-      for (const m of normalizedBlock.matchAll(
+      for (const m of cleanedBlock.matchAll(
         /tiktok\.com\/@([a-zA-Z0-9._-]+)\/video\/(\d{15,22})/gi
       )) {
         const handle = m[1].toLowerCase();
@@ -1373,15 +1364,15 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   };
 
+  // Ưu tiên bộ truy vấn tiếng Việt chuẩn từ targetProfile.searchQueries lên đầu
   const baseQueries =
     targetProfile && targetProfile.searchQueries.length > 0
-      ? Array.from(new Set([...queries, ...targetProfile.searchQueries]))
+      ? Array.from(new Set([...targetProfile.searchQueries, ...queries]))
       : queries;
 
   const batchModifiers = [
     '',
     'unbox',
-    'tiktok shop',
     'review',
     'haul',
     'test thực tế',
@@ -1395,15 +1386,21 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       : baseQueries;
 
   const firstParam = Math.floor(pageOffset / 2) * 35;
-  for (const q of effectiveQueries) {
+  const queryBatchSize = 4;
+  for (let i = 0; i < effectiveQueries.length; i += queryBatchSize) {
     if (uniqueLiveHandles.size >= maxUrls) break;
-    const urls = await fetchOrGetCachedSearch(q, firstParam);
-    for (const item of urls) {
-      if (excludeSet.has(item.handle)) continue;
-      const key = `${item.handle}_${item.videoId}`;
-      if (!liveCandidates.has(key)) {
-        liveCandidates.set(key, item);
-        uniqueLiveHandles.add(item.handle);
+    const batchQueries = effectiveQueries.slice(i, i + queryBatchSize);
+    const batchLists = await Promise.all(
+      batchQueries.map((q) => fetchOrGetCachedSearch(q, firstParam))
+    );
+    for (const urls of batchLists) {
+      for (const item of urls) {
+        if (excludeSet.has(item.handle)) continue;
+        const key = `${item.handle}_${item.videoId}`;
+        if (!liveCandidates.has(key)) {
+          liveCandidates.set(key, item);
+          uniqueLiveHandles.add(item.handle);
+        }
       }
     }
   }
@@ -1688,10 +1685,10 @@ export async function scrapeTikTokVideoComments(
     ? await fetchRawCommentsByAwemeId(targetVideoId, safeLimit, startCursor)
     : { items: [], nextCursor: 0, hasMore: false };
 
-  // Nếu video được dán hiện có 0 bình luận ở đợt đầu tiên,
-  // tự động dò các video thực tế khác của chính kênh đó để lấy bình luận thật của kênh
+  // Chỉ tự động lấy video mới nhất của kênh khi người dùng nhập link Kênh (@handle) mà chưa truyền ID video cụ thể
   const activeHandle = livePage?.author.handle || fallbackHandle;
   if (
+    !targetVideoId &&
     startCursor === 0 &&
     commentFetch.items.length === 0 &&
     activeHandle &&
@@ -1699,10 +1696,11 @@ export async function scrapeTikTokVideoComments(
   ) {
     const channelVideos = await discoverRealTikTokVideoUrlsByQuery(
       [`tiktok.com/@${activeHandle}/video`, `tiktok ${activeHandle}`],
-      8
+      8,
+      { targetKeyword: activeHandle.toLowerCase() }
     );
     for (const candidate of channelVideos) {
-      if (candidate.videoId === targetVideoId) continue;
+      if (candidate.handle.toLowerCase() !== activeHandle.toLowerCase()) continue;
       const candidateComments = await fetchRawCommentsByAwemeId(
         candidate.videoId,
         safeLimit,
