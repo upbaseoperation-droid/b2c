@@ -54,6 +54,17 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [selectedDealCode, setSelectedDealCode] = useState<string>(
     initialDeal?.dealCode || ''
   );
+  const [requiredHashtagsInput, setRequiredHashtagsInput] = useState<string>('');
+  const [requiredUspInput, setRequiredUspInput] = useState<string>(
+    initialDeal?.contentHook || ''
+  );
+  const [expectedDeadlineInput, setExpectedDeadlineInput] = useState<string>(
+    initialDeal?.deadlinePost || ''
+  );
+  const [expectedHandleInput, setExpectedHandleInput] = useState<string>(
+    initialDeal?.kocChannelId || ''
+  );
+  const [minDurationInput, setMinDurationInput] = useState<string>('15');
 
   const [isInspecting, setIsInspecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -73,9 +84,21 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       if (initialDeal) {
         setSelectedDealCode(initialDeal.dealCode);
         setRawUrlsInput(initialUrl || initialDeal.tiktokVideoUrl || '');
+        setExpectedDeadlineInput(initialDeal.deadlinePost || '');
+        setExpectedHandleInput(initialDeal.kocChannelId || '');
+        setRequiredUspInput(initialDeal.contentHook || '');
+        setRequiredHashtagsInput(
+          initialDeal.brandName
+            ? `#${initialDeal.brandName.replace(/\s+/g, '')}`
+            : ''
+        );
       } else {
         setSelectedDealCode('');
         setRawUrlsInput(initialUrl || '');
+        setExpectedDeadlineInput('');
+        setExpectedHandleInput('');
+        setRequiredUspInput('');
+        setRequiredHashtagsInput('');
       }
     }
   }
@@ -89,6 +112,31 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     () => results.find((r) => r.id === selectedVideoId) || results[0] || null,
     [results, selectedVideoId]
   );
+
+  const inspectionSummary = useMemo(() => {
+    const total = results.length;
+    const passed = results.filter((r) => r.verdict === 'ĐẠT_CHUẨN').length;
+    const warning = results.filter((r) => r.verdict === 'CẦN_KIỂM_TRA').length;
+    const failed = results.filter((r) => r.verdict === 'KHÔNG_ĐẠT').length;
+    const onTime = results.filter((r) => r.isOnTime).length;
+    return { total, passed, warning, failed, onTime };
+  }, [results]);
+
+  const handleDealSelectChange = (dealCode: string) => {
+    setSelectedDealCode(dealCode);
+    const deal = deals.find((d) => d.dealCode === dealCode);
+    if (deal) {
+      setExpectedDeadlineInput(deal.deadlinePost || '');
+      setExpectedHandleInput(deal.kocChannelId || '');
+      if (deal.contentHook) setRequiredUspInput(deal.contentHook);
+      if (deal.brandName) {
+        setRequiredHashtagsInput(`#${deal.brandName.replace(/\s+/g, '')}`);
+      }
+      if (!rawUrlsInput.trim() && deal.tiktokVideoUrl) {
+        setRawUrlsInput(deal.tiktokVideoUrl);
+      }
+    }
+  };
 
   const handleCopyText = (key: string, text: string) => {
     if (!text) return;
@@ -108,6 +156,18 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     setIsInspecting(true);
     setErrorMessage(null);
 
+    const parsedHashtags = requiredHashtagsInput
+      .split(/[\s,;]+/)
+      .map((h) => h.trim())
+      .filter(Boolean);
+
+    const parsedUspKeywords = requiredUspInput
+      .split(/[,;\n]+/)
+      .map((kw) => kw.trim())
+      .filter(Boolean);
+
+    const minDurNum = Number(minDurationInput);
+
     try {
       const response = await fetch('/api/integrations/tiktok-koc/inspect-video', {
         method: 'POST',
@@ -115,8 +175,11 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
         body: JSON.stringify({
           urls: rawUrlsInput,
           dealCode: selectedDealCode || undefined,
-          expectedHandle: selectedDealObj?.kocChannelId,
-          expectedDeadline: selectedDealObj?.deadlinePost || undefined,
+          expectedHandle: expectedHandleInput.trim() || selectedDealObj?.kocChannelId || undefined,
+          expectedDeadline: expectedDeadlineInput.trim() || selectedDealObj?.deadlinePost || undefined,
+          requiredHashtags: parsedHashtags.length > 0 ? parsedHashtags : undefined,
+          requiredUspKeywords: parsedUspKeywords.length > 0 ? parsedUspKeywords : undefined,
+          minDurationSeconds: Number.isFinite(minDurNum) && minDurNum > 0 ? minDurNum : 15,
           brandName: selectedDealObj?.brandName,
         }),
       });
@@ -204,15 +267,20 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             <span>@{r.authorHandle}</span>
             <ExternalLink className="w-3 h-3" />
           </a>
+          {!r.isChannelMatched && r.expectedKocHandle && (
+            <span className="text-2xs text-critical font-medium">
+              Lệch kênh cam kết (@{r.expectedKocHandle})
+            </span>
+          )}
         </div>
       ),
     },
     {
       key: 'content',
       header: 'Bài đăng & Câu mở đầu 3s (Hook)',
-      width: 310,
+      width: 300,
       render: (r) => (
-        <div className="grid gap-1 min-w-0 max-w-[330px]">
+        <div className="grid gap-1 min-w-0 max-w-[320px]">
           {r.contentCheck.hookFirst3Seconds && (
             <div className="text-2xs font-semibold text-ink bg-accent-soft/40 border border-accent/20 rounded px-1.5 py-0.5 line-clamp-1">
               Hook 3s: &ldquo;{r.contentCheck.hookFirst3Seconds}&rdquo;
@@ -237,15 +305,26 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     },
     {
       key: 'published',
-      header: 'Ngày đăng & Thời lượng',
-      width: 155,
+      header: 'Ngày đăng & SLA',
+      width: 165,
       render: (r) => (
         <div className="grid gap-0.5 text-xs tabular-nums">
           <span className="font-medium text-ink">{r.publishedTimeFormatted}</span>
           <span className="text-2xs text-ink-3">
             {r.durationSeconds > 0 ? `${r.durationSeconds} giây · ` : ''}
-            {r.contentCheck.hasCartAnchor ? 'Có gắn giỏ hàng' : 'Không gắn giỏ'}
+            {r.contentCheck.hasCartAnchor ? 'Có gắn giỏ' : 'Không gắn giỏ'}
           </span>
+          {r.expectedDeadline && (
+            <span
+              className={`text-2xs font-semibold ${
+                r.isOnTime ? 'text-positive' : 'text-critical'
+              }`}
+            >
+              {r.isOnTime
+                ? `Đúng hạn (${r.expectedDeadline})`
+                : `Trễ ${r.daysDelayed} ngày (Hạn ${r.expectedDeadline})`}
+            </span>
+          )}
         </div>
       ),
     },
@@ -253,7 +332,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       key: 'metrics',
       header: 'Lượt xem & Tương tác',
       align: 'right',
-      width: 175,
+      width: 170,
       render: (r) => (
         <div className="grid gap-0.5 text-xs tabular-nums">
           <span className="font-semibold text-ink">
@@ -268,44 +347,49 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     },
     {
       key: 'status',
-      header: 'Trạng thái & Kịch bản',
+      header: 'Kết luận Brief & Kịch bản',
       align: 'right',
-      width: 195,
+      width: 215,
       render: (r) => {
-        const hasViolation = r.contentCheck.violatedBlacklistWords.length > 0;
         const isSelected = activeInspection?.id === r.id;
         return (
-          <div className="flex items-center justify-end gap-1.5 flex-wrap">
-            {results.length > 1 && (
-              <Button
-                size="sm"
-                variant={isSelected ? 'primary' : 'ghost'}
-                icon={FileText}
-                onClick={() => setSelectedVideoId(r.id)}
-              >
-                Kịch bản
-              </Button>
-            )}
-            {hasViolation ? (
-              <Status tone="critical">
-                Từ cấm: {r.contentCheck.violatedBlacklistWords.map((w) => w.word).join(', ')}
-              </Status>
-            ) : (
-              <Status tone="positive">Hợp lệ</Status>
-            )}
-            {(onAcceptVideoForDeal || onAddPublication) && (
-              acceptedVideoIds.has(r.videoId) ? (
-                <span className="text-2xs font-semibold text-positive">Đã duyệt</span>
-              ) : (
+          <div className="grid gap-1 justify-items-end">
+            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+              {results.length > 1 && (
                 <Button
                   size="sm"
-                  variant="secondary"
-                  icon={Check}
-                  onClick={() => handleAcceptSingleVideo(r)}
+                  variant={isSelected ? 'primary' : 'ghost'}
+                  icon={FileText}
+                  onClick={() => setSelectedVideoId(r.id)}
                 >
-                  Duyệt
+                  Chi tiết
                 </Button>
-              )
+              )}
+              {r.verdict === 'ĐẠT_CHUẨN' ? (
+                <Status tone="positive">Đạt chuẩn</Status>
+              ) : r.verdict === 'CẦN_KIỂM_TRA' ? (
+                <Status tone="warning">Cần kiểm tra</Status>
+              ) : (
+                <Status tone="critical">Không đạt</Status>
+              )}
+              {(onAcceptVideoForDeal || onAddPublication) &&
+                (acceptedVideoIds.has(r.videoId) ? (
+                  <span className="text-2xs font-semibold text-positive">Đã duyệt</span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Check}
+                    onClick={() => handleAcceptSingleVideo(r)}
+                  >
+                    Duyệt
+                  </Button>
+                ))}
+            </div>
+            {r.verdict !== 'ĐẠT_CHUẨN' && (
+              <span className="text-2xs text-ink-3 text-right line-clamp-1 max-w-[205px]">
+                {r.verdictSummary}
+              </span>
             )}
           </div>
         );
@@ -317,13 +401,19 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     if (!activeInspection) return '';
     const sections = activeInspection.contentCheck.scriptSections || [];
     return [
-      `=== KỊCH BẢN & LỜI THOẠI VIDEO NGHIỆM THU (@${activeInspection.authorHandle}) ===`,
+      `=== KỊCH BẢN & ĐỐI SOÁT BRIEF VIDEO NGHIỆM THU (@${activeInspection.authorHandle}) ===`,
       `• Link video: ${activeInspection.resolvedUrl}`,
+      `• Kết luận nghiệm thu: ${activeInspection.verdict} (${activeInspection.verdictSummary})`,
       `• Thời lượng: ${activeInspection.durationSeconds} giây · Lượt xem: ${formatNumber(activeInspection.viewsCount)} (ER ${activeInspection.engagementRate}%)`,
       `• Câu mở đầu 3 giây đầu (Hook): "${activeInspection.contentCheck.hookFirst3Seconds}"`,
       activeInspection.contentCheck.hookPatternLabel
         ? `• Nhóm mở đầu: ${activeInspection.contentCheck.hookPatternLabel}`
         : '',
+      '',
+      '[CHECKLIST 5 TIÊU CHÍ ĐỐI SOÁT BRIEF]:',
+      ...activeInspection.checklist.map(
+        (c) => `- [${c.passed ? 'ĐẠT' : 'CHƯA ĐẠT'}] ${c.label}: ${c.detail}`
+      ),
       '',
       '[KỊCH BẢN 4 BƯỚC TRONG VIDEO]:',
       ...sections.map(
@@ -358,22 +448,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       }
     >
       <div className="space-y-4">
-        {initialDeal && (
-          <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between text-xs">
-            <span>
-              Đối chiếu Deal: <strong className="font-code">{initialDeal.dealCode}</strong> ·{' '}
-              <strong>{initialDeal.kocStageName}</strong> (@{initialDeal.kocChannelId}) ·{' '}
-              {initialDeal.brandName}
-            </span>
-            {initialDeal.deadlinePost && (
-              <span className="text-2xs text-ink-3">
-                Hạn đăng: {initialDeal.deadlinePost}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+        {/* Khung nhập Link & Tiêu chí đối soát theo Brief chiến dịch */}
+        <div className="px-3.5 py-3 rounded-xl border border-line bg-surface space-y-3">
           <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-2.5 items-start">
             <Textarea
               id="tiktok-video-inspector-input"
@@ -397,8 +473,121 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
               {isInspecting ? 'Đang kiểm tra...' : 'Kiểm tra video'}
             </Button>
           </div>
+
+          <div className="pt-2.5 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            {deals.length > 0 ? (
+              <label className="grid gap-1 text-2xs font-medium text-ink-2">
+                <span>Deal Booking đối chiếu</span>
+                <select
+                  value={selectedDealCode}
+                  onChange={(e) => handleDealSelectChange(e.target.value)}
+                  className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+                >
+                  <option value="">-- Không chọn Deal --</option>
+                  {deals.map((d) => (
+                    <option key={d.id} value={d.dealCode}>
+                      {d.dealCode} · @{d.kocChannelId} ({d.brandName})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label className="grid gap-1 text-2xs font-medium text-ink-2">
+                <span>Kênh KOC cam kết (@handle)</span>
+                <input
+                  type="text"
+                  value={expectedHandleInput}
+                  onChange={(e) => setExpectedHandleInput(e.target.value)}
+                  placeholder="VD: @reviewmypham..."
+                  className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+                />
+              </label>
+            )}
+
+            <label className="grid gap-1 text-2xs font-medium text-ink-2">
+              <span>Hashtag bắt buộc</span>
+              <input
+                type="text"
+                value={requiredHashtagsInput}
+                onChange={(e) => setRequiredHashtagsInput(e.target.value)}
+                placeholder="VD: #CocoonVietnam, #TayDaChet"
+                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+              />
+            </label>
+
+            <label className="grid gap-1 text-2xs font-medium text-ink-2 sm:col-span-2 lg:col-span-2">
+              <span>Từ khóa USP bắt buộc nói trong video (phân cách dấu phẩy)</span>
+              <input
+                type="text"
+                value={requiredUspInput}
+                onChange={(e) => setRequiredUspInput(e.target.value)}
+                placeholder="VD: không cồn, dịu nhẹ, cà phê Đắk Lắk"
+                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
+              />
+            </label>
+
+            <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
+              <label className="grid gap-1 text-2xs font-medium text-ink-2">
+                <span>Hạn đăng SLA</span>
+                <input
+                  type="date"
+                  value={expectedDeadlineInput}
+                  onChange={(e) => setExpectedDeadlineInput(e.target.value)}
+                  className="h-8 px-2 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+                />
+              </label>
+              <label className="grid gap-1 text-2xs font-medium text-ink-2">
+                <span>Tối thiểu (s)</span>
+                <input
+                  type="number"
+                  min={5}
+                  max={300}
+                  value={minDurationInput}
+                  onChange={(e) => setMinDurationInput(e.target.value)}
+                  className="h-8 px-2 rounded-md border border-line bg-surface-2 text-xs text-ink font-code tabular-nums"
+                />
+              </label>
+            </div>
+          </div>
+
           {errorMessage && <p className="text-2xs text-critical">{errorMessage}</p>}
         </div>
+
+        {/* Thanh tổng hợp kết quả đối soát Brief */}
+        {results.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between">
+              <span className="text-2xs text-ink-3">Tổng video</span>
+              <span className="text-xs font-semibold text-ink tabular-nums">
+                {inspectionSummary.total}
+              </span>
+            </div>
+            <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between">
+              <span className="text-2xs text-ink-3">Đạt chuẩn</span>
+              <span className="text-xs font-semibold text-positive tabular-nums">
+                {inspectionSummary.passed}
+              </span>
+            </div>
+            <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between">
+              <span className="text-2xs text-ink-3">Cần kiểm tra</span>
+              <span className="text-xs font-semibold text-warning tabular-nums">
+                {inspectionSummary.warning}
+              </span>
+            </div>
+            <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between">
+              <span className="text-2xs text-ink-3">Không đạt</span>
+              <span className="text-xs font-semibold text-critical tabular-nums">
+                {inspectionSummary.failed}
+              </span>
+            </div>
+            <div className="px-3 py-2 rounded-lg border border-line bg-surface-2 flex items-center justify-between">
+              <span className="text-2xs text-ink-3">Đúng hạn SLA</span>
+              <span className="text-xs font-semibold text-ink tabular-nums">
+                {inspectionSummary.onTime}/{inspectionSummary.total}
+              </span>
+            </div>
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="border border-line rounded-xl overflow-hidden bg-surface">
@@ -414,6 +603,120 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
 
         {activeInspection && (
           <div className="border border-line rounded-xl bg-surface p-3.5 space-y-3.5">
+            {results.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-line">
+                {results.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedVideoId(item.id)}
+                    className={`px-2.5 py-1 rounded-lg text-2xs font-medium border transition ${
+                      item.id === activeInspection.id
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
+                    }`}
+                  >
+                    #{idx + 1} @{item.authorHandle} ({item.verdict === 'ĐẠT_CHUẨN' ? 'Đạt' : item.verdict === 'CẦN_KIỂM_TRA' ? 'Cần xem' : 'Lỗi'})
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Checklist 5 tiêu chí đối soát theo Brief chiến dịch */}
+            <div className="rounded-lg border border-line bg-surface-2/60 p-3 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-ink">
+                    Checklist 5 Tiêu chí Đối soát Brief: @{activeInspection.authorHandle}
+                  </span>
+                  {activeInspection.verdict === 'ĐẠT_CHUẨN' ? (
+                    <Status tone="positive">Đạt chuẩn nghiệm thu</Status>
+                  ) : activeInspection.verdict === 'CẦN_KIỂM_TRA' ? (
+                    <Status tone="warning">{activeInspection.verdictSummary}</Status>
+                  ) : (
+                    <Status tone="critical">{activeInspection.verdictSummary}</Status>
+                  )}
+                </div>
+                <span className="text-2xs font-code text-ink-3">
+                  Đạt {activeInspection.checklist.filter((c) => c.passed).length}/
+                  {activeInspection.checklist.length} tiêu chí
+                </span>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                {activeInspection.checklist.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`p-2 rounded-lg border text-xs space-y-1 ${
+                      item.passed
+                        ? 'border-line bg-surface'
+                        : 'border-critical/40 bg-critical-soft/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="font-semibold text-ink text-2xs">
+                        {item.label}
+                      </span>
+                      <Status tone={item.passed ? 'positive' : 'critical'}>
+                        {item.passed ? 'Đạt' : 'Chưa đạt'}
+                      </Status>
+                    </div>
+                    <p className="text-2xs text-ink-2 leading-snug">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Chi tiết Từ khóa USP, Hashtag bắt buộc & Từ cấm nếu có */}
+              {(activeInspection.contentCheck.matchedRequiredHashtags.length > 0 ||
+                activeInspection.contentCheck.missingRequiredHashtags.length > 0 ||
+                activeInspection.contentCheck.matchedUspKeywords.length > 0 ||
+                activeInspection.contentCheck.missingUspKeywords.length > 0 ||
+                activeInspection.contentCheck.violatedBlacklistWords.length > 0) && (
+                <div className="pt-2 border-t border-line flex flex-wrap gap-2 text-2xs">
+                  {activeInspection.contentCheck.matchedRequiredHashtags.map((ht) => (
+                    <span
+                      key={`ht-ok-${ht}`}
+                      className="px-2 py-0.5 rounded bg-positive-soft text-positive font-code font-medium"
+                    >
+                      Đủ hashtag: {ht}
+                    </span>
+                  ))}
+                  {activeInspection.contentCheck.missingRequiredHashtags.map((ht) => (
+                    <span
+                      key={`ht-miss-${ht}`}
+                      className="px-2 py-0.5 rounded bg-critical-soft text-critical font-code font-medium"
+                    >
+                      Thiếu hashtag: {ht}
+                    </span>
+                  ))}
+                  {activeInspection.contentCheck.matchedUspKeywords.map((kw) => (
+                    <span
+                      key={`usp-ok-${kw}`}
+                      className="px-2 py-0.5 rounded bg-positive-soft text-positive font-medium"
+                    >
+                      Đã nói USP: &ldquo;{kw}&rdquo;
+                    </span>
+                  ))}
+                  {activeInspection.contentCheck.missingUspKeywords.map((kw) => (
+                    <span
+                      key={`usp-miss-${kw}`}
+                      className="px-2 py-0.5 rounded bg-warning-soft text-warning font-medium"
+                    >
+                      Chưa nhắc USP: &ldquo;{kw}&rdquo;
+                    </span>
+                  ))}
+                  {activeInspection.contentCheck.violatedBlacklistWords.map((v, i) => (
+                    <span
+                      key={`bl-${i}`}
+                      className="px-2 py-0.5 rounded bg-critical-soft text-critical font-medium"
+                    >
+                      Từ cấm &ldquo;{v.word}&rdquo; → {v.suggestion}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-ink">
@@ -451,25 +754,6 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                 </Button>
               </div>
             </div>
-
-            {results.length > 1 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                {results.map((item, idx) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelectedVideoId(item.id)}
-                    className={`px-2.5 py-1 rounded-lg text-2xs font-medium border transition ${
-                      item.id === activeInspection.id
-                        ? 'bg-accent text-white border-accent'
-                        : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
-                    }`}
-                  >
-                    #{idx + 1} @{item.authorHandle} ({item.durationSeconds || 30}s)
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* Câu mở đầu 3 giây đầu (Hook) & Chữ nổi trên màn hình */}
             <div className="grid md:grid-cols-2 gap-2.5">
