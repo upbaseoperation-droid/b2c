@@ -655,7 +655,7 @@ function buildScrapedResultFromRealData(
 async function inspectVideoCandidatesInBatches(
   candidates: Array<{ handle: string; videoId: string; videoUrl: string }>,
   expectedHandle: string,
-  targetCount = 6
+  targetCount = 24
 ): Promise<RealTikTokVideoAndAuthorDetail[]> {
   const uniqueUrls = new Map<string, string>();
   for (const c of candidates) {
@@ -667,9 +667,10 @@ async function inspectVideoCandidatesInBatches(
   if (urlList.length === 0) return [];
 
   const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
-  const batchSize = 8;
+  const batchSize = 10;
+  const maxCandidatesToInspect = Math.min(urlList.length, Math.max(targetCount + 14, 30));
 
-  for (let offset = 0; offset < Math.min(urlList.length, 16); offset += batchSize) {
+  for (let offset = 0; offset < maxCandidatesToInspect; offset += batchSize) {
     const batch = urlList.slice(offset, offset + batchSize);
     const inspected = await Promise.all(
       batch.map((u) => inspectLiveTikTokVideoPage(u))
@@ -684,7 +685,9 @@ async function inspectVideoCandidatesInBatches(
     if (collected.size >= targetCount) break;
   }
 
-  return [...collected.values()].sort((a, b) => compareVideoAirDateDesc(a, b)).slice(0, 8);
+  return [...collected.values()]
+    .sort((a, b) => compareVideoAirDateDesc(a, b))
+    .slice(0, targetCount);
 }
 
 /**
@@ -696,6 +699,7 @@ export async function scrapeTikTokCreatorData(
   period: '7d' | '30d' | '90d' = '30d',
   options?: {
     directVideoUrls?: Array<{ handle: string; videoId: string; videoUrl: string }>;
+    videoLimit?: number;
   }
 ): Promise<TikTokScrapedKocResult> {
   const parsedHandles = parseTikTokHandles(rawHandle);
@@ -703,6 +707,9 @@ export async function scrapeTikTokCreatorData(
     .trim()
     .toLowerCase()
     .replace(/^@+/, '');
+
+  const targetVideoLimit = Math.min(Math.max(options?.videoLimit || 24, 6), 80);
+  const candidateMaxUrls = Math.min(Math.max(targetVideoLimit * 2, 60), 120);
 
   const inlineDirectVideos = extractDirectVideoUrlsFromInput(rawHandle);
   const directVideosForHandle = [
@@ -712,20 +719,20 @@ export async function scrapeTikTokCreatorData(
 
   const [initialLivePublic, initialChannelVideos] = await Promise.all([
     fetchLiveTikTokPublicProfile(cleanHandle),
-    discoverTikTokChannelVideoUrls(cleanHandle, { maxUrls: 20 }),
+    discoverTikTokChannelVideoUrls(cleanHandle, { maxUrls: candidateMaxUrls }),
   ]);
 
   let livePublic = initialLivePublic;
   let candidateVideos = [...directVideosForHandle, ...initialChannelVideos];
 
   if (
-    candidateVideos.length < 4 &&
+    candidateVideos.length < targetVideoLimit &&
     livePublic?.nickname &&
     livePublic.nickname.trim().toLowerCase() !== cleanHandle
   ) {
     const extraByNickname = await discoverTikTokChannelVideoUrls(cleanHandle, {
       nickname: livePublic.nickname,
-      maxUrls: 20,
+      maxUrls: candidateMaxUrls,
     });
     candidateVideos = [...candidateVideos, ...extraByNickname];
   }
@@ -733,11 +740,11 @@ export async function scrapeTikTokCreatorData(
   let inspectedVideos = await inspectVideoCandidatesInBatches(
     candidateVideos,
     cleanHandle,
-    6
+    targetVideoLimit
   );
   let usedFallbackVideosForInternalKoc = false;
 
-  // Nếu kênh được yêu cầu là mã KOC nội bộ trong danh bạ mẫu hoặc alias chưa có video công khai trên TikTok,
+  // Nếu kênh được yêu cầu là alias chính chủ (VD: vohalinh -> halinhofficial),
   // dò sang kênh TikTok thực tế tương ứng để lấy danh sách video thật
   if (inspectedVideos.length === 0 && (livePublic?.videoCount ?? 0) === 0) {
     const existingKoc = UPBASE_FULL_KOC_MASTER.find(
@@ -747,12 +754,12 @@ export async function scrapeTikTokCreatorData(
     if (fallbackHandle && fallbackHandle !== cleanHandle) {
       const [fallbackProfile, fallbackUrls] = await Promise.all([
         existingKoc ? Promise.resolve(null) : fetchLiveTikTokPublicProfile(fallbackHandle),
-        discoverTikTokChannelVideoUrls(fallbackHandle, { maxUrls: 16 }),
+        discoverTikTokChannelVideoUrls(fallbackHandle, { maxUrls: candidateMaxUrls }),
       ]);
       const fallbackInspected = await inspectVideoCandidatesInBatches(
         fallbackUrls,
         fallbackHandle,
-        6
+        targetVideoLimit
       );
       if (fallbackInspected.length > 0) {
         inspectedVideos = fallbackInspected;

@@ -1079,12 +1079,12 @@ export async function discoverTikTokChannelVideoUrls(
 ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> {
   const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
   if (!cleanHandle) return [];
-  const maxUrls = Math.max(4, options?.maxUrls || 24);
+  const maxUrls = Math.min(Math.max(8, options?.maxUrls || 60), 120);
   const store = getSharedCrawlerStore();
   const cacheKey = `channel_videos__${cleanHandle}`;
   const now = Date.now();
   const cached = store.searchHtmlCache.get(cacheKey);
-  if (cached && cached.expiresAt > now && cached.data.length > 0) {
+  if (cached && cached.expiresAt > now && cached.data.length >= Math.min(maxUrls, 20)) {
     return cached.data.slice(0, maxUrls);
   }
 
@@ -1135,31 +1135,75 @@ export async function discoverTikTokChannelVideoUrls(
     }
   }
 
-  const bingQueries = [
-    `tiktok.com/@${cleanHandle}/video`,
-    `tiktok @${cleanHandle}`,
+  const bingVideoUrls: string[] = [
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok.com/@${cleanHandle}/video`
+    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok.com/@${cleanHandle}/video`
+    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok @${cleanHandle}`
+    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok @${cleanHandle}`
+    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `site:tiktok.com/@${cleanHandle}`
+    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
   ];
+
   if (
     options?.nickname &&
     options.nickname.trim() &&
     options.nickname.trim().toLowerCase() !== cleanHandle
   ) {
-    bingQueries.push(`tiktok.com/@${cleanHandle} ${options.nickname.trim()}`);
+    bingVideoUrls.push(
+      `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+        `tiktok.com/@${cleanHandle} ${options.nickname.trim()}`
+      )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`
+    );
   }
 
+  const bingWebUrls: string[] = [
+    `https://www.bing.com/search?q=${encodeURIComponent(
+      `site:tiktok.com/@${cleanHandle}/video`
+    )}&count=50&first=1`,
+    `https://www.bing.com/search?q=${encodeURIComponent(
+      `site:tiktok.com/@${cleanHandle}/video`
+    )}&count=50&first=51`,
+  ];
+
   const searchTasks: Array<Promise<void>> = [
-    ...bingQueries.map((q) =>
+    ...bingVideoUrls.map((url) =>
       store.searchLimiter.run(async () => {
         try {
-          const url = `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
-            q
-          )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`;
           const res = await fetch(url, {
             headers: {
               'User-Agent': DEFAULT_BROWSER_UA,
               Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
               'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
               Cookie: '_EDGE_S=mkt=vi-vn&ui=vi-vn; SRCHHPGUSR=SRCHLANG=vi',
+            },
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store',
+          });
+          if (res.ok) {
+            extractOwnVideosFromHtml(await res.text());
+          }
+        } catch {
+          // ignore
+        }
+      })
+    ),
+    ...bingWebUrls.map((url) =>
+      store.searchLimiter.run(async () => {
+        try {
+          const res = await fetch(url, {
+            headers: {
+              'User-Agent': DEFAULT_BROWSER_UA,
+              Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
             },
             signal: AbortSignal.timeout(4500),
             cache: 'no-store',

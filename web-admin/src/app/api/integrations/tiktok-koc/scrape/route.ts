@@ -99,7 +99,11 @@ export async function GET(req: NextRequest) {
     }
 
     const directVideoUrls = extractDirectVideoUrlsFromInput(raw);
-    const data = await scrapeTikTokCreatorData(handles[0], period, { directVideoUrls });
+    const videoLimit = Number(searchParams.get('videoLimit') || 24);
+    const data = await scrapeTikTokCreatorData(handles[0], period, {
+      directVideoUrls,
+      videoLimit,
+    });
     return NextResponse.json({
       success: true,
       mode: 'HANDLE_SCRAPE',
@@ -126,7 +130,7 @@ export async function GET(req: NextRequest) {
  * 2. Lấy danh sách Creator đang thịnh hành thực tế trên TikTok ({ trendingCreators: true })
  * 3. Quét KOC làm việc cho Đối thủ ({ competitor: "larocheposayvn" })
  * 4. Tìm KOC theo Hashtag / Từ khóa ({ hashtag: "kemchongnang" })
- * 5. Cào hàng loạt kênh theo @handle ({ rawInput: "@quinskincareholic\n@halinhofficial" })
+ * 5. Cào hàng loạt kênh theo @handle ({ rawInput: "@quinskincareholic\n@halinhofficial", videoLimit: 24 })
  */
 export async function POST(req: NextRequest) {
   try {
@@ -226,8 +230,10 @@ export async function POST(req: NextRequest) {
     }
 
     const directVideoUrls = extractDirectVideoUrlsFromInput(rawInput);
+    const defaultVideoLimit = handles.length === 1 ? 24 : 16;
+    const videoLimit = Number(body.videoLimit || defaultVideoLimit);
     const results: TikTokScrapedKocResult[] = await Promise.all(
-      handles.map((h) => scrapeTikTokCreatorData(h, period, { directVideoUrls }))
+      handles.map((h) => scrapeTikTokCreatorData(h, period, { directVideoUrls, videoLimit }))
     );
 
     return NextResponse.json({

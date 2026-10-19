@@ -320,11 +320,11 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
   const [liveEr, setLiveEr] = useState<number | undefined>(koc.engagementRate);
   const [fetchingVideos, setFetchingVideos] = useState(false);
 
-  const handleFetchChannelVideos = async () => {
+  const handleFetchChannelVideos = async (targetLimit = 24) => {
     setFetchingVideos(true);
     try {
       const res = await fetch(
-        `/api/integrations/tiktok-koc/scrape?handle=${encodeURIComponent(koc.channelId)}&period=30d`
+        `/api/integrations/tiktok-koc/scrape?handle=${encodeURIComponent(koc.channelId)}&period=30d&videoLimit=${targetLimit}`
       );
       const json = await res.json();
       if (json.success && json.data) {
@@ -675,21 +675,34 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       {/* Danh sách video & nội dung gần nhất trên kênh TikTok */}
       <Panel
         flush
-        title="Danh sách video & nội dung gần nhất trên kênh"
+        title={`Danh sách video & nội dung gần nhất trên kênh (${videosToShow.length}${videoCountToShow ? ` / ${formatNumber(videoCountToShow)}` : ''} bài)`}
         actions={
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={fetchingVideos ? RefreshCw : CloudDownload}
-            disabled={fetchingVideos}
-            onClick={handleFetchChannelVideos}
-          >
-            {fetchingVideos
-              ? 'Đang lấy video...'
-              : videosToShow.length > 0
-                ? 'Làm mới video'
-                : 'Lấy danh sách video'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {videosToShow.length > 0 && videosToShow.length < 80 && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={RefreshCw}
+                disabled={fetchingVideos}
+                onClick={() => handleFetchChannelVideos(Math.min(80, Math.max(videosToShow.length + 24, 48)))}
+              >
+                {fetchingVideos ? 'Đang tải...' : 'Tải thêm video'}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={fetchingVideos ? RefreshCw : CloudDownload}
+              disabled={fetchingVideos}
+              onClick={() => handleFetchChannelVideos(24)}
+            >
+              {fetchingVideos
+                ? 'Đang lấy video...'
+                : videosToShow.length > 0
+                  ? 'Làm mới video'
+                  : 'Lấy danh sách video'}
+            </Button>
+          </div>
         }
       >
         {videosToShow.length > 0 ? (
@@ -708,7 +721,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
                 variant="secondary"
                 icon={CloudDownload}
                 disabled={fetchingVideos}
-                onClick={handleFetchChannelVideos}
+                onClick={() => handleFetchChannelVideos(24)}
               >
                 Lấy danh sách video
               </Button>

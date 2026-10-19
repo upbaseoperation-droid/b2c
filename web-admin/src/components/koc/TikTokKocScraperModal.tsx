@@ -24,6 +24,7 @@ import {
   Field,
   Modal,
   Panel,
+  Select,
   Status,
   Textarea,
 } from '../ui';
@@ -39,6 +40,7 @@ interface TikTokKocScraperModalProps {
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
+const VIDEO_LIMIT_OPTIONS = [12, 24, 40, 60, 80] as const;
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   open,
@@ -50,7 +52,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 }) => {
   const [rawInput, setRawInput] = useState(initialHandle);
   const period: PeriodKey = '30d';
+  const [videoLimit, setVideoLimit] = useState<number>(24);
   const [loading, setLoading] = useState(false);
+  const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
@@ -67,10 +71,11 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setLoading(Boolean(initialHandle.trim()));
     } else {
       setLoading(false);
+      setLoadingMoreHandle(null);
     }
   }
 
-  const runScrape = async (inputToFetch: string, targetPeriod: PeriodKey) => {
+  const runScrape = async (inputToFetch: string, targetPeriod: PeriodKey, targetLimit = videoLimit) => {
     const trimmed = inputToFetch.trim();
     if (!trimmed) {
       setErrorMsg('Nhập ít nhất một đường dẫn kênh hoặc @handle TikTok để lấy dữ liệu.');
@@ -87,6 +92,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         body: JSON.stringify({
           rawInput: trimmed,
           period: targetPeriod,
+          videoLimit: targetLimit,
         }),
       });
       const json = await res.json();
@@ -105,6 +111,34 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     }
   };
 
+  const handleLoadMoreVideos = async (handle: string, nextLimit: number) => {
+    setLoadingMoreHandle(handle);
+    try {
+      const res = await fetch('/api/integrations/tiktok-koc/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          handles: [handle],
+          period,
+          videoLimit: nextLimit,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.results) && json.results.length > 0) {
+        const refreshed = json.results[0] as TikTokScrapedKocResult;
+        setResults((prev) => prev.map((item) => (item.handle === handle ? refreshed : item)));
+        setVideoLimit(nextLimit);
+        onNotify?.(`Đã tải ${refreshed.recentVideos.length} video trên kênh @${handle}`, 'success');
+      } else {
+        onNotify?.('Không tải thêm được video của kênh này.', 'warning');
+      }
+    } catch {
+      onNotify?.('Lỗi kết nối khi tải thêm video của kênh.', 'error');
+    } finally {
+      setLoadingMoreHandle(null);
+    }
+  };
+
   useEffect(() => {
     if (!open || !initialHandle.trim()) return;
     let active = true;
@@ -114,6 +148,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       body: JSON.stringify({
         rawInput: initialHandle.trim(),
         period,
+        videoLimit: 24,
       }),
     })
       .then((res) => res.json())
@@ -295,7 +330,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       }
     >
       <div className="space-y-4">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_160px_auto] gap-3 items-start">
           <Field
             label="Kênh TikTok (@handle hoặc link kênh)"
             htmlFor="tiktok-scraper-input"
@@ -310,12 +345,29 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             />
           </Field>
 
+          <Field
+            label="Số video đọc / kênh"
+            htmlFor="tiktok-scraper-video-limit"
+          >
+            <Select
+              id="tiktok-scraper-video-limit"
+              value={String(videoLimit)}
+              onChange={(e) => setVideoLimit(Number(e.target.value))}
+            >
+              {VIDEO_LIMIT_OPTIONS.map((num) => (
+                <option key={num} value={num}>
+                  Tối đa {num} video
+                </option>
+              ))}
+            </Select>
+          </Field>
+
           <div className="flex flex-col gap-2 lg:pt-6">
             <Button
               variant={results.length === 0 ? 'primary' : 'secondary'}
               icon={loading ? RefreshCw : Search}
               disabled={loading}
-              onClick={() => runScrape(rawInput, period)}
+              onClick={() => runScrape(rawInput, period, videoLimit)}
             >
               {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
             </Button>
@@ -415,7 +467,13 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   </strong>
                 </div>
                 <div>
-                  <span className="text-ink-3 block text-2xs">View TB</span>
+                  <span className="text-ink-3 block text-2xs">Tổng video kênh</span>
+                  <strong className="text-ink">
+                    {formatNumber(activeResult.channelProfile.videoCount)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-ink-3 block text-2xs">View TB ({activeResult.recentVideos.length} bài)</span>
                   <strong className="text-ink">
                     {formatNumber(activeResult.engagementMetrics.avgViews)}
                   </strong>
@@ -431,7 +489,28 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
             <Panel
               flush
-              title={`Video gần nhất trên kênh (${activeResult.recentVideos.length})`}
+              title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
+              actions={
+                activeResult.recentVideos.length < 80 &&
+                activeResult.recentVideos.length < activeResult.channelProfile.videoCount ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={RefreshCw}
+                    disabled={loadingMoreHandle === activeResult.handle || loading}
+                    onClick={() =>
+                      handleLoadMoreVideos(
+                        activeResult.handle,
+                        Math.min(80, Math.max(activeResult.recentVideos.length + 24, 48))
+                      )
+                    }
+                  >
+                    {loadingMoreHandle === activeResult.handle
+                      ? 'Đang tải thêm...'
+                      : 'Tải thêm video'}
+                  </Button>
+                ) : undefined
+              }
             >
               <DataTable
                 columns={videoColumns}
