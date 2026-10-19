@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -11,6 +11,7 @@ import {
   Phone,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Square,
   UserPlus,
@@ -45,6 +46,7 @@ import {
   FilterBar,
   Panel,
   Segmented,
+  Select,
   Status,
 } from '../ui';
 import type { Column } from '../ui';
@@ -67,8 +69,31 @@ type CompetitorFilterKey =
   | 'NEW_OPPORTUNITY'
   | 'ALREADY_IN_UPBASE'
   | 'PAID_BOOKING'
-  | 'AFFILIATE_CART';
-type CommentFilterKey = 'ALL' | TikTokCommentIntentType;
+  | 'AFFILIATE_CART'
+  | 'HAS_PHONE';
+type HashtagFilterKey =
+  | 'ALL'
+  | 'NEW_OPPORTUNITY'
+  | 'ALREADY_IN_UPBASE'
+  | 'VIRAL_BREAKOUT'
+  | 'HAS_PHONE';
+type TrendingFilterKey =
+  | 'ALL'
+  | 'NEW_OPPORTUNITY'
+  | 'ALREADY_IN_UPBASE'
+  | 'VERIFIED'
+  | 'HAS_CONTACT';
+type FollowerTierKey = 'ALL' | 'NANO' | 'MICRO' | 'MACRO' | 'MEGA';
+type KocSortKey = 'VIEWS_DESC' | 'FOLLOWERS_DESC' | 'ER_DESC' | 'LATEST_DESC';
+type CommentFilterKey = 'ALL' | TikTokCommentIntentType | 'HAS_PHONE';
+
+function matchesFollowerTier(followers: number, tier: FollowerTierKey): boolean {
+  if (tier === 'NANO') return followers < 50_000;
+  if (tier === 'MICRO') return followers >= 50_000 && followers < 200_000;
+  if (tier === 'MACRO') return followers >= 200_000 && followers < 500_000;
+  if (tier === 'MEGA') return followers >= 500_000;
+  return true;
+}
 
 interface BatchCrawlProgress {
   currentBatch: number;
@@ -136,6 +161,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [compResults, setCompResults] = useState<TikTokCompetitorKocResult[]>([]);
   const [compFilter, setCompFilter] = useState<CompetitorFilterKey>('ALL');
   const [compSearchQuery, setCompSearchQuery] = useState('');
+  const [compFollowerTier, setCompFollowerTier] = useState<FollowerTierKey>('ALL');
+  const [compMinViews, setCompMinViews] = useState<number>(0);
+  const [compMinEr, setCompMinEr] = useState<number>(0);
+  const [compSortBy, setCompSortBy] = useState<KocSortKey>('VIEWS_DESC');
   const compAbortRef = useRef(false);
 
   // --- State Tab 2: Tìm KOC theo Hashtag ---
@@ -145,12 +174,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [tagBatchProgress, setTagBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
   const [tagResults, setTagResults] = useState<TikTokHashtagKocResult[]>([]);
+  const [tagFilter, setTagFilter] = useState<HashtagFilterKey>('ALL');
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [tagFollowerTier, setTagFollowerTier] = useState<FollowerTierKey>('ALL');
+  const [tagMinViews, setTagMinViews] = useState<number>(0);
+  const [tagMinEr, setTagMinEr] = useState<number>(0);
+  const [tagSortBy, setTagSortBy] = useState<KocSortKey>('VIEWS_DESC');
   const tagAbortRef = useRef(false);
 
-  // --- State Tab 3: Cào Bình luận Video & KOC Xu hướng ---
+  // --- State Tab 3: Cào Bình luận Video ---
   const [videoCommentUrl, setVideoCommentUrl] = useState(
-    'https://www.tiktok.com/@tiktok/video/7106594312292453675'
+    'https://www.tiktok.com/@keyshulive/video/7542352999495060743'
   );
   const [commentTargetCount, setCommentTargetCount] = useState<number>(40);
   const [commentLoading, setCommentLoading] = useState(false);
@@ -159,10 +193,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [commentData, setCommentData] = useState<TikTokVideoCommentsScrapeResult | null>(null);
   const [commentFilter, setCommentFilter] = useState<CommentFilterKey>('ALL');
   const [commentSearch, setCommentSearch] = useState('');
+  const [commentSortBy, setCommentSortBy] = useState<'INTENT_FIRST' | 'LIKES_DESC' | 'NEWEST'>('INTENT_FIRST');
   const commentAbortRef = useRef(false);
 
+  // --- State Tab 4: KOC Xu hướng ---
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingCreators, setTrendingCreators] = useState<TikTokTrendingCreatorItem[]>([]);
+  const [trendingFilter, setTrendingFilter] = useState<TrendingFilterKey>('ALL');
+  const [trendingFollowerTier, setTrendingFollowerTier] = useState<FollowerTierKey>('ALL');
   const [trendingSearch, setTrendingSearch] = useState('');
 
   // --- State Modals ---
@@ -543,47 +581,125 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
   };
 
-  useEffect(() => {
-    void runCompetitorCrawl('@larocheposayvn', '30d', { targetCount: 12 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const filteredCompResults = useMemo(() => {
-    return compResults.filter((r) => {
+    const filtered = compResults.filter((r) => {
       const c = r.competitorCollaboration;
+      const p = r.channelProfile;
+      const e = r.engagementMetrics;
       const isExisting = existingByHandle.has(r.handle) || c.isAlreadyInUpbase;
+
       if (compFilter === 'NEW_OPPORTUNITY' && isExisting) return false;
       if (compFilter === 'ALREADY_IN_UPBASE' && !isExisting) return false;
       if (compFilter === 'PAID_BOOKING' && c.collaborationType !== 'PAID_BOOKING') return false;
       if (compFilter === 'AFFILIATE_CART' && c.collaborationType !== 'AFFILIATE_CART') return false;
+      if (compFilter === 'HAS_PHONE' && !p.extractedPhone) return false;
+
+      if (!matchesFollowerTier(p.followers, compFollowerTier)) return false;
+      if (compMinViews > 0 && c.latestCollabViews < compMinViews) return false;
+      if (compMinEr > 0 && e.engagementRate < compMinEr) return false;
 
       if (compSearchQuery.trim()) {
         const q = compSearchQuery.toLowerCase();
-        const matchHandle = r.channelProfile.handle.toLowerCase().includes(q);
-        const matchName = r.channelProfile.nickname.toLowerCase().includes(q);
+        const matchHandle = p.handle.toLowerCase().includes(q);
+        const matchName = p.nickname.toLowerCase().includes(q);
         const matchProd = c.competitorProductPromoted.toLowerCase().includes(q);
         const matchCaption = c.latestCollabCaption.toLowerCase().includes(q);
-        if (!matchHandle && !matchName && !matchProd && !matchCaption) return false;
+        const matchPhone = (p.extractedPhone || '').toLowerCase().includes(q);
+        if (!matchHandle && !matchName && !matchProd && !matchCaption && !matchPhone) return false;
       }
       return true;
     });
-  }, [compResults, compFilter, compSearchQuery, existingByHandle]);
+
+    return [...filtered].sort((a, b) => {
+      if (compSortBy === 'FOLLOWERS_DESC') {
+        return b.channelProfile.followers - a.channelProfile.followers;
+      }
+      if (compSortBy === 'ER_DESC') {
+        return b.engagementMetrics.engagementRate - a.engagementMetrics.engagementRate;
+      }
+      if (compSortBy === 'LATEST_DESC') {
+        return (
+          new Date(b.competitorCollaboration.latestCollabPublishedAt).getTime() -
+          new Date(a.competitorCollaboration.latestCollabPublishedAt).getTime()
+        );
+      }
+      return (
+        b.competitorCollaboration.latestCollabViews -
+        a.competitorCollaboration.latestCollabViews
+      );
+    });
+  }, [
+    compResults,
+    compFilter,
+    compFollowerTier,
+    compMinViews,
+    compMinEr,
+    compSortBy,
+    compSearchQuery,
+    existingByHandle,
+  ]);
 
   const filteredTagResults = useMemo(() => {
-    if (!tagSearchQuery.trim()) return tagResults;
-    const q = tagSearchQuery.toLowerCase();
-    return tagResults.filter(
-      (r) =>
-        r.channelProfile.handle.toLowerCase().includes(q) ||
-        r.channelProfile.nickname.toLowerCase().includes(q) ||
-        r.matchedHashtagVideo.captionSnippet.toLowerCase().includes(q)
-    );
-  }, [tagResults, tagSearchQuery]);
+    const filtered = tagResults.filter((r) => {
+      const p = r.channelProfile;
+      const v = r.matchedHashtagVideo;
+      const e = r.engagementMetrics;
+      const isExisting = existingByHandle.has(r.handle);
+
+      if (tagFilter === 'NEW_OPPORTUNITY' && isExisting) return false;
+      if (tagFilter === 'ALREADY_IN_UPBASE' && !isExisting) return false;
+      if (tagFilter === 'VIRAL_BREAKOUT' && v.breakoutRatio < 1) return false;
+      if (tagFilter === 'HAS_PHONE' && !p.extractedPhone) return false;
+
+      if (!matchesFollowerTier(p.followers, tagFollowerTier)) return false;
+      if (tagMinViews > 0 && v.views < tagMinViews) return false;
+      if (tagMinEr > 0 && e.engagementRate < tagMinEr) return false;
+
+      if (tagSearchQuery.trim()) {
+        const q = tagSearchQuery.toLowerCase();
+        const matchHandle = p.handle.toLowerCase().includes(q);
+        const matchName = p.nickname.toLowerCase().includes(q);
+        const matchCaption = v.captionSnippet.toLowerCase().includes(q);
+        const matchPhone = (p.extractedPhone || '').toLowerCase().includes(q);
+        if (!matchHandle && !matchName && !matchCaption && !matchPhone) return false;
+      }
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (tagSortBy === 'FOLLOWERS_DESC') {
+        return b.channelProfile.followers - a.channelProfile.followers;
+      }
+      if (tagSortBy === 'ER_DESC') {
+        return b.engagementMetrics.engagementRate - a.engagementMetrics.engagementRate;
+      }
+      if (tagSortBy === 'LATEST_DESC') {
+        return (
+          new Date(b.matchedHashtagVideo.publishedAt).getTime() -
+          new Date(a.matchedHashtagVideo.publishedAt).getTime()
+        );
+      }
+      return b.matchedHashtagVideo.views - a.matchedHashtagVideo.views;
+    });
+  }, [
+    tagResults,
+    tagFilter,
+    tagFollowerTier,
+    tagMinViews,
+    tagMinEr,
+    tagSortBy,
+    tagSearchQuery,
+    existingByHandle,
+  ]);
 
   const filteredComments = useMemo(() => {
     const list = commentData?.comments || [];
-    return list.filter((c) => {
-      if (commentFilter !== 'ALL' && c.intentType !== commentFilter) return false;
+    const filtered = list.filter((c) => {
+      if (commentFilter === 'HAS_PHONE') {
+        if (!c.extractedPhone) return false;
+      } else if (commentFilter !== 'ALL' && c.intentType !== commentFilter) {
+        return false;
+      }
       if (commentSearch.trim()) {
         const q = commentSearch.toLowerCase();
         if (
@@ -596,18 +712,43 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       }
       return true;
     });
-  }, [commentData, commentFilter, commentSearch]);
+
+    return [...filtered].sort((a, b) => {
+      if (commentSortBy === 'LIKES_DESC') return b.likeCount - a.likeCount;
+      if (commentSortBy === 'NEWEST') {
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+      }
+      const scoreA =
+        a.intentType === 'BUYING_INTENT' ? 2 : a.intentType === 'PRODUCT_FEEDBACK' ? 1 : 0;
+      const scoreB =
+        b.intentType === 'BUYING_INTENT' ? 2 : b.intentType === 'PRODUCT_FEEDBACK' ? 1 : 0;
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return b.likeCount - a.likeCount;
+    });
+  }, [commentData, commentFilter, commentSearch, commentSortBy]);
 
   const filteredTrendingCreators = useMemo(() => {
-    if (!trendingSearch.trim()) return trendingCreators;
-    const q = trendingSearch.toLowerCase();
-    return trendingCreators.filter(
-      (c) =>
-        c.handle.toLowerCase().includes(q) ||
-        c.nickname.toLowerCase().includes(q) ||
-        c.bio.toLowerCase().includes(q)
-    );
-  }, [trendingCreators, trendingSearch]);
+    return trendingCreators.filter((c) => {
+      const isExisting = existingByHandle.has(c.handle.toLowerCase());
+      if (trendingFilter === 'NEW_OPPORTUNITY' && isExisting) return false;
+      if (trendingFilter === 'ALREADY_IN_UPBASE' && !isExisting) return false;
+      if (trendingFilter === 'VERIFIED' && !c.verified) return false;
+      if (trendingFilter === 'HAS_CONTACT' && !c.extractedPhone && !c.extractedEmail) return false;
+      if (!matchesFollowerTier(c.followers, trendingFollowerTier)) return false;
+
+      if (trendingSearch.trim()) {
+        const q = trendingSearch.toLowerCase();
+        if (
+          !c.handle.toLowerCase().includes(q) &&
+          !c.nickname.toLowerCase().includes(q) &&
+          !c.bio.toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [trendingCreators, trendingFilter, trendingFollowerTier, trendingSearch, existingByHandle]);
 
   const compStats = useMemo(() => {
     const total = compResults.length;
@@ -615,6 +756,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       (r) => existingByHandle.has(r.handle) || r.competitorCollaboration.isAlreadyInUpbase
     ).length;
     const newCount = total - existingCount;
+    const phoneCount = compResults.filter((r) => Boolean(r.channelProfile.extractedPhone)).length;
     const totalCompVideos = compResults.reduce(
       (sum, r) => sum + r.competitorCollaboration.competitorVideoCount,
       0
@@ -623,8 +765,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       (sum, r) => sum + r.competitorCollaboration.latestCollabViews,
       0
     );
-    return { total, existingCount, newCount, totalCompVideos, totalCompViews };
+    return { total, existingCount, newCount, phoneCount, totalCompVideos, totalCompViews };
   }, [compResults, existingByHandle]);
+
+  const tagStats = useMemo(() => {
+    const total = tagResults.length;
+    const existingCount = tagResults.filter((r) => existingByHandle.has(r.handle)).length;
+    const newCount = total - existingCount;
+    const viralCount = tagResults.filter((r) => r.matchedHashtagVideo.breakoutRatio >= 1).length;
+    const phoneCount = tagResults.filter((r) => Boolean(r.channelProfile.extractedPhone)).length;
+    return { total, existingCount, newCount, viralCount, phoneCount };
+  }, [tagResults, existingByHandle]);
 
   const handleSaveSingleKoc = (item: TikTokScrapedKocResult) => {
     const clean = item.handle.toLowerCase().replace(/^@+/, '');
@@ -1172,7 +1323,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Thanh điều hướng gọn nhẹ, không bọc khung thừa */}
+      {/* Thanh điều hướng gọn nhẹ, chuyển tab không tự động quét */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented<CrawlerTabKey>
           items={[
@@ -1194,18 +1345,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             },
           ]}
           value={activeTab}
-          onChange={(t) => {
-            setActiveTab(t);
-            if (t === 'HASHTAG_DISCOVERY' && tagResults.length === 0) {
-              void runHashtagCrawl(hashtagInput, period);
-            }
-            if (t === 'COMMENTS_AND_TRENDING' && !commentData) {
-              void runVideoCommentsCrawl(videoCommentUrl);
-            }
-            if (t === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length === 0) {
-              void runTrendingCreatorsCrawl();
-            }
-          }}
+          onChange={(t) => setActiveTab(t)}
         />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1256,7 +1396,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     id="competitor-channel-input"
                     type="text"
                     value={competitorInput}
-                    onChange={(e) => setCompetitorInput(e.target.value)}
+                    onChange={(e) => {
+                      setCompetitorInput(e.target.value);
+                      if (compError) setCompError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !compLoading) {
+                        e.preventDefault();
+                        void runCompetitorCrawl(competitorInput, period, {
+                          targetCount: compTargetCount,
+                        });
+                      }
+                    }}
                     placeholder="Ví dụ: @larocheposayvn, @anessavietnam, @romand_vn, Cocoon..."
                     className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
                   />
@@ -1326,16 +1477,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn nhanh:</span>
+                <span>Chọn thương hiệu mẫu (nhấn nút Quét để bắt đầu):</span>
                 {COMPETITOR_SAMPLES.map((s) => (
                   <button
                     key={s.handle}
                     type="button"
                     onClick={() => {
                       setCompetitorInput(s.handle);
-                      void runCompetitorCrawl(s.handle, period, {
-                        targetCount: compTargetCount,
-                      });
+                      if (compError) setCompError(null);
                     }}
                     className={`px-2.5 py-1 rounded-md border text-xs transition-colors ${
                       competitorInput.toLowerCase() === s.handle.toLowerCase()
@@ -1405,7 +1554,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
           {/* Bảng danh sách KOC của đối thủ */}
           <Panel
-            title={`KOC hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length})`}
+            title={`KOC hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length}/${compResults.length})`}
             flush
             actions={
               <div className="flex flex-wrap items-center gap-2">
@@ -1413,7 +1562,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   size="sm"
                   variant="secondary"
                   icon={Plus}
-                  disabled={compLoading}
+                  disabled={compLoading || compResults.length === 0}
                   onClick={() =>
                     runCompetitorCrawl(competitorInput, period, {
                       targetCount: KOC_BATCH_SIZE,
@@ -1444,53 +1593,134 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             }
           >
-            <FilterBar
-              search={{
-                value: compSearchQuery,
-                onChange: setCompSearchQuery,
-                placeholder: 'Tìm theo @handle, tên KOC, sản phẩm hoặc nội dung video...',
-              }}
-              chips={
-                <Chips<CompetitorFilterKey>
-                  items={[
-                    { key: 'ALL', label: 'Tất cả', count: compResults.length },
-                    {
-                      key: 'NEW_OPPORTUNITY',
-                      label: 'KOC Mới',
-                      count: compStats.newCount,
-                    },
-                    {
-                      key: 'ALREADY_IN_UPBASE',
-                      label: 'Đã có tại UpBase',
-                      count: compStats.existingCount,
-                    },
-                    {
-                      key: 'PAID_BOOKING',
-                      label: 'Booking trả phí',
-                      count: compResults.filter(
-                        (r) => r.competitorCollaboration.collaborationType === 'PAID_BOOKING'
-                      ).length,
-                    },
-                    {
-                      key: 'AFFILIATE_CART',
-                      label: 'Gắn giỏ Affiliate',
-                      count: compResults.filter(
-                        (r) => r.competitorCollaboration.collaborationType === 'AFFILIATE_CART'
-                      ).length,
-                    },
-                  ]}
-                  value={compFilter}
-                  onChange={setCompFilter}
-                />
-              }
-            />
+            <div className="px-4 py-3 border-b border-line bg-surface">
+              <FilterBar
+                search={{
+                  value: compSearchQuery,
+                  onChange: setCompSearchQuery,
+                  placeholder: 'Tìm theo @handle, tên KOC, SĐT, sản phẩm hoặc nội dung video...',
+                }}
+                filters={
+                  <>
+                    <Select
+                      aria-label="Lọc theo quy mô Follower"
+                      value={compFollowerTier}
+                      onChange={(e) => setCompFollowerTier(e.target.value as FollowerTierKey)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="ALL">Mọi quy mô Follower</option>
+                      <option value="NANO">Nano (&lt; 50K flw)</option>
+                      <option value="MICRO">Micro (50K – 200K flw)</option>
+                      <option value="MACRO">Macro (200K – 500K flw)</option>
+                      <option value="MEGA">Mega (&gt; 500K flw)</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Lọc theo lượt xem video"
+                      value={String(compMinViews)}
+                      onChange={(e) => setCompMinViews(Number(e.target.value) || 0)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="0">Mọi lượt xem video</option>
+                      <option value="10000">Video ≥ 10K view</option>
+                      <option value="50000">Video ≥ 50K view</option>
+                      <option value="100000">Video ≥ 100K view</option>
+                      <option value="500000">Video ≥ 500K view</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Lọc theo tỷ lệ tương tác ER"
+                      value={String(compMinEr)}
+                      onChange={(e) => setCompMinEr(Number(e.target.value) || 0)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="0">Mọi mức ER%</option>
+                      <option value="3">ER ≥ 3%</option>
+                      <option value="5">ER ≥ 5%</option>
+                      <option value="10">ER ≥ 10%</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Sắp xếp kết quả"
+                      value={compSortBy}
+                      onChange={(e) => setCompSortBy(e.target.value as KocSortKey)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                      <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
+                      <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
+                      <option value="LATEST_DESC">Sắp xếp: Đăng mới nhất</option>
+                    </Select>
+
+                    {(compFilter !== 'ALL' ||
+                      compFollowerTier !== 'ALL' ||
+                      compMinViews > 0 ||
+                      compMinEr > 0 ||
+                      compSearchQuery.trim() !== '') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={RotateCcw}
+                        onClick={() => {
+                          setCompFilter('ALL');
+                          setCompFollowerTier('ALL');
+                          setCompMinViews(0);
+                          setCompMinEr(0);
+                          setCompSearchQuery('');
+                        }}
+                      >
+                        Đặt lại lọc
+                      </Button>
+                    )}
+                  </>
+                }
+                chips={
+                  <Chips<CompetitorFilterKey>
+                    items={[
+                      { key: 'ALL', label: 'Tất cả', count: compResults.length },
+                      {
+                        key: 'NEW_OPPORTUNITY',
+                        label: 'KOC Mới',
+                        count: compStats.newCount,
+                      },
+                      {
+                        key: 'ALREADY_IN_UPBASE',
+                        label: 'Đã có tại UpBase',
+                        count: compStats.existingCount,
+                      },
+                      {
+                        key: 'PAID_BOOKING',
+                        label: 'Booking trả phí',
+                        count: compResults.filter(
+                          (r) => r.competitorCollaboration.collaborationType === 'PAID_BOOKING'
+                        ).length,
+                      },
+                      {
+                        key: 'AFFILIATE_CART',
+                        label: 'Gắn giỏ Affiliate',
+                        count: compResults.filter(
+                          (r) => r.competitorCollaboration.collaborationType === 'AFFILIATE_CART'
+                        ).length,
+                      },
+                      {
+                        key: 'HAS_PHONE',
+                        label: 'Có SĐT',
+                        count: compStats.phoneCount,
+                      },
+                    ]}
+                    value={compFilter}
+                    onChange={setCompFilter}
+                  />
+                }
+              />
+            </div>
 
             <DataTable
               rows={filteredCompResults}
               columns={competitorColumns}
               rowKey={(r) => r.handle}
               fitContainer
-              empty="Chưa có dữ liệu KOC đối thủ. Nhập @handle kênh đối thủ (ví dụ: @larocheposayvn) và bấm Quét KOC đối thủ."
+              empty="Chưa có dữ liệu KOC đối thủ. Chọn hoặc nhập @handle thương hiệu đối thủ và nhấn nút Quét KOC đối thủ để bắt đầu."
             />
           </Panel>
         </div>
@@ -1511,7 +1741,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     id="crawler-hashtag-input"
                     type="text"
                     value={hashtagInput}
-                    onChange={(e) => setHashtagInput(e.target.value)}
+                    onChange={(e) => {
+                      setHashtagInput(e.target.value);
+                      if (tagError) setTagError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !tagLoading) {
+                        e.preventDefault();
+                        void runHashtagCrawl(hashtagInput, period, {
+                          targetCount: tagTargetCount,
+                        });
+                      }
+                    }}
                     placeholder="Ví dụ: #kemchongnang, #skincare, #clubclio, #kutieskin..."
                     className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
                   />
@@ -1581,16 +1822,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn nhanh:</span>
+                <span>Chọn hashtag mẫu (nhấn nút Quét theo Hashtag để bắt đầu):</span>
                 {HASHTAG_SAMPLES.map((tag) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => {
                       setHashtagInput(tag);
-                      void runHashtagCrawl(tag, period, {
-                        targetCount: tagTargetCount,
-                      });
+                      if (tagError) setTagError(null);
                     }}
                     className={`px-2.5 py-1 rounded-md border text-xs font-code transition-colors ${
                       hashtagInput.toLowerCase() === tag.toLowerCase()
@@ -1606,7 +1845,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           </Panel>
 
           <Panel
-            title={`KOC theo ${hashtagInput} (${filteredTagResults.length})`}
+            title={`KOC theo ${hashtagInput} (${filteredTagResults.length}/${tagResults.length})`}
             flush
             actions={
               <div className="flex flex-wrap items-center gap-2">
@@ -1614,7 +1853,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   size="sm"
                   variant="secondary"
                   icon={Plus}
-                  disabled={tagLoading}
+                  disabled={tagLoading || tagResults.length === 0}
                   onClick={() =>
                     runHashtagCrawl(hashtagInput, period, {
                       targetCount: KOC_BATCH_SIZE,
@@ -1645,20 +1884,125 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             }
           >
-            <FilterBar
-              search={{
-                value: tagSearchQuery,
-                onChange: setTagSearchQuery,
-                placeholder: 'Lọc theo @handle, tên kênh hoặc nội dung caption...',
-              }}
-            />
+            <div className="px-4 py-3 border-b border-line bg-surface">
+              <FilterBar
+                search={{
+                  value: tagSearchQuery,
+                  onChange: setTagSearchQuery,
+                  placeholder: 'Tìm theo @handle, tên kênh, SĐT hoặc nội dung caption...',
+                }}
+                filters={
+                  <>
+                    <Select
+                      aria-label="Lọc theo quy mô Follower"
+                      value={tagFollowerTier}
+                      onChange={(e) => setTagFollowerTier(e.target.value as FollowerTierKey)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="ALL">Mọi quy mô Follower</option>
+                      <option value="NANO">Nano (&lt; 50K flw)</option>
+                      <option value="MICRO">Micro (50K – 200K flw)</option>
+                      <option value="MACRO">Macro (200K – 500K flw)</option>
+                      <option value="MEGA">Mega (&gt; 500K flw)</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Lọc theo lượt xem video"
+                      value={String(tagMinViews)}
+                      onChange={(e) => setTagMinViews(Number(e.target.value) || 0)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="0">Mọi lượt xem video</option>
+                      <option value="10000">Video ≥ 10K view</option>
+                      <option value="50000">Video ≥ 50K view</option>
+                      <option value="100000">Video ≥ 100K view</option>
+                      <option value="500000">Video ≥ 500K view</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Lọc theo tỷ lệ tương tác ER"
+                      value={String(tagMinEr)}
+                      onChange={(e) => setTagMinEr(Number(e.target.value) || 0)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="0">Mọi mức ER%</option>
+                      <option value="3">ER ≥ 3%</option>
+                      <option value="5">ER ≥ 5%</option>
+                      <option value="10">ER ≥ 10%</option>
+                    </Select>
+
+                    <Select
+                      aria-label="Sắp xếp kết quả Hashtag"
+                      value={tagSortBy}
+                      onChange={(e) => setTagSortBy(e.target.value as KocSortKey)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                      <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
+                      <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
+                      <option value="LATEST_DESC">Sắp xếp: Đăng mới nhất</option>
+                    </Select>
+
+                    {(tagFilter !== 'ALL' ||
+                      tagFollowerTier !== 'ALL' ||
+                      tagMinViews > 0 ||
+                      tagMinEr > 0 ||
+                      tagSearchQuery.trim() !== '') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={RotateCcw}
+                        onClick={() => {
+                          setTagFilter('ALL');
+                          setTagFollowerTier('ALL');
+                          setTagMinViews(0);
+                          setTagMinEr(0);
+                          setTagSearchQuery('');
+                        }}
+                      >
+                        Đặt lại lọc
+                      </Button>
+                    )}
+                  </>
+                }
+                chips={
+                  <Chips<HashtagFilterKey>
+                    items={[
+                      { key: 'ALL', label: 'Tất cả', count: tagResults.length },
+                      {
+                        key: 'NEW_OPPORTUNITY',
+                        label: 'KOC Mới',
+                        count: tagStats.newCount,
+                      },
+                      {
+                        key: 'ALREADY_IN_UPBASE',
+                        label: 'Đã có tại UpBase',
+                        count: tagStats.existingCount,
+                      },
+                      {
+                        key: 'VIRAL_BREAKOUT',
+                        label: 'Video xu hướng (View ≥ Flw)',
+                        count: tagStats.viralCount,
+                      },
+                      {
+                        key: 'HAS_PHONE',
+                        label: 'Có SĐT',
+                        count: tagStats.phoneCount,
+                      },
+                    ]}
+                    value={tagFilter}
+                    onChange={setTagFilter}
+                  />
+                }
+              />
+            </div>
 
             <DataTable
               rows={filteredTagResults}
               columns={hashtagColumns}
               rowKey={(r) => r.handle}
               fitContainer
-              empty="Chưa có dữ liệu KOC theo hashtag. Nhập #hashtag (ví dụ #kemchongnang) và bấm Quét theo Hashtag."
+              empty="Chưa có dữ liệu KOC theo hashtag. Chọn hoặc nhập #hashtag và nhấn nút Quét theo Hashtag để bắt đầu."
             />
           </Panel>
         </div>
@@ -1679,8 +2023,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     id="video-comment-url-input"
                     type="text"
                     value={videoCommentUrl}
-                    onChange={(e) => setVideoCommentUrl(e.target.value)}
-                    placeholder="Ví dụ: https://www.tiktok.com/@tiktok/video/7106594312292453675"
+                    onChange={(e) => {
+                      setVideoCommentUrl(e.target.value);
+                      if (commentError) setCommentError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !commentLoading) {
+                        e.preventDefault();
+                        void runVideoCommentsCrawl(videoCommentUrl, {
+                          targetCount: commentTargetCount,
+                        });
+                      }
+                    }}
+                    placeholder="Ví dụ: https://www.tiktok.com/@keyshulive/video/7542352999495060743"
                     className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
                   />
                 </Field>
@@ -1749,18 +2104,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
-                <span>Chọn nhanh video mẫu:</span>
+                <span>Chọn video mẫu (nhấn nút Cào bình luận để bắt đầu):</span>
                 {SAMPLE_VIDEO_URLS.map((item) => (
                   <button
                     key={item.url}
                     type="button"
                     onClick={() => {
                       setVideoCommentUrl(item.url);
-                      void runVideoCommentsCrawl(item.url, {
-                        targetCount: commentTargetCount,
-                      });
+                      if (commentError) setCommentError(null);
                     }}
-                    className="px-2.5 py-1 rounded-md border border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink transition-colors"
+                    className={`px-2.5 py-1 rounded-md border text-xs transition-colors ${
+                      videoCommentUrl === item.url
+                        ? 'bg-accent-soft border-accent text-ink font-semibold'
+                        : 'bg-surface border-line text-ink-2 hover:border-line-strong hover:text-ink'
+                    }`}
                   >
                     {item.label}
                   </button>
@@ -1815,7 +2172,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <Panel
-                title={`Danh sách bình luận (${filteredComments.length})`}
+                title={`Danh sách bình luận (${filteredComments.length}/${commentData.comments.length})`}
                 flush
                 actions={
                   <div className="flex flex-wrap items-center gap-2">
@@ -1845,44 +2202,68 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   </div>
                 }
               >
-                <FilterBar
-                  search={{
-                    value: commentSearch,
-                    onChange: setCommentSearch,
-                    placeholder: 'Tìm nội dung bình luận hoặc @username người bình luận...',
-                  }}
-                  chips={
-                    <Chips<CommentFilterKey>
-                      items={[
-                        {
-                          key: 'ALL',
-                          label: 'Tất cả',
-                          count: commentData.comments.length,
-                        },
-                        {
-                          key: 'BUYING_INTENT',
-                          label: 'Hỏi mua / Tư vấn',
-                          count: commentData.summary.buyingIntentCount,
-                        },
-                        {
-                          key: 'PRODUCT_FEEDBACK',
-                          label: 'Phản hồi SP',
-                          count: commentData.summary.feedbackCount,
-                        },
-                        {
-                          key: 'GENERAL',
-                          label: 'Tương tác chung',
-                          count:
-                            commentData.comments.length -
-                            commentData.summary.buyingIntentCount -
-                            commentData.summary.feedbackCount,
-                        },
-                      ]}
-                      value={commentFilter}
-                      onChange={setCommentFilter}
-                    />
-                  }
-                />
+                <div className="px-4 py-3 border-b border-line bg-surface">
+                  <FilterBar
+                    search={{
+                      value: commentSearch,
+                      onChange: setCommentSearch,
+                      placeholder: 'Tìm nội dung bình luận hoặc @username người bình luận...',
+                    }}
+                    filters={
+                      <Select
+                        aria-label="Sắp xếp bình luận"
+                        value={commentSortBy}
+                        onChange={(e) =>
+                          setCommentSortBy(
+                            e.target.value as 'INTENT_FIRST' | 'LIKES_DESC' | 'NEWEST'
+                          )
+                        }
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="INTENT_FIRST">Sắp xếp: Ưu tiên khách hỏi mua</option>
+                        <option value="LIKES_DESC">Sắp xếp: Lượt thích cao → thấp</option>
+                        <option value="NEWEST">Sắp xếp: Bình luận mới nhất</option>
+                      </Select>
+                    }
+                    chips={
+                      <Chips<CommentFilterKey>
+                        items={[
+                          {
+                            key: 'ALL',
+                            label: 'Tất cả',
+                            count: commentData.comments.length,
+                          },
+                          {
+                            key: 'BUYING_INTENT',
+                            label: 'Hỏi mua / Tư vấn',
+                            count: commentData.summary.buyingIntentCount,
+                          },
+                          {
+                            key: 'PRODUCT_FEEDBACK',
+                            label: 'Phản hồi SP',
+                            count: commentData.summary.feedbackCount,
+                          },
+                          {
+                            key: 'HAS_PHONE',
+                            label: 'Có để lại SĐT',
+                            count: commentData.comments.filter((c) => Boolean(c.extractedPhone))
+                              .length,
+                          },
+                          {
+                            key: 'GENERAL',
+                            label: 'Tương tác chung',
+                            count:
+                              commentData.comments.length -
+                              commentData.summary.buyingIntentCount -
+                              commentData.summary.feedbackCount,
+                          },
+                        ]}
+                        value={commentFilter}
+                        onChange={setCommentFilter}
+                      />
+                    }
+                  />
+                </div>
 
                 <DataTable
                   rows={filteredComments}
@@ -1900,34 +2281,85 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {/* TAB 4: DANH SÁCH KOC XU HƯỚNG TRÊN TIKTOK */}
       {activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && (
         <Panel
-          title={`KOC đang thịnh hành trên TikTok (${filteredTrendingCreators.length})`}
+          title={`KOC đang thịnh hành trên TikTok (${filteredTrendingCreators.length}/${trendingCreators.length})`}
           flush
           actions={
             <Button
               size="sm"
-              variant="secondary"
+              variant="primary"
               icon={trendingLoading ? RefreshCw : Flame}
               disabled={trendingLoading}
               onClick={runTrendingCreatorsCrawl}
             >
-              {trendingLoading ? 'Đang làm mới...' : 'Làm mới danh sách'}
+              {trendingLoading ? 'Đang quét...' : 'Quét danh sách xu hướng'}
             </Button>
           }
         >
-          <FilterBar
-            search={{
-              value: trendingSearch,
-              onChange: setTrendingSearch,
-              placeholder: 'Tìm theo @handle, tên kênh hoặc nội dung tiểu sử...',
-            }}
-          />
+          <div className="px-4 py-3 border-b border-line bg-surface">
+            <FilterBar
+              search={{
+                value: trendingSearch,
+                onChange: setTrendingSearch,
+                placeholder: 'Tìm theo @handle, tên kênh hoặc nội dung tiểu sử...',
+              }}
+              filters={
+                <Select
+                  aria-label="Lọc KOC xu hướng theo quy mô Follower"
+                  value={trendingFollowerTier}
+                  onChange={(e) => setTrendingFollowerTier(e.target.value as FollowerTierKey)}
+                  className="h-[34px] text-xs"
+                >
+                  <option value="ALL">Mọi quy mô Follower</option>
+                  <option value="NANO">Nano (&lt; 50K flw)</option>
+                  <option value="MICRO">Micro (50K – 200K flw)</option>
+                  <option value="MACRO">Macro (200K – 500K flw)</option>
+                  <option value="MEGA">Mega (&gt; 500K flw)</option>
+                </Select>
+              }
+              chips={
+                <Chips<TrendingFilterKey>
+                  items={[
+                    { key: 'ALL', label: 'Tất cả', count: trendingCreators.length },
+                    {
+                      key: 'NEW_OPPORTUNITY',
+                      label: 'KOC Mới',
+                      count: trendingCreators.filter(
+                        (c) => !existingByHandle.has(c.handle.toLowerCase())
+                      ).length,
+                    },
+                    {
+                      key: 'ALREADY_IN_UPBASE',
+                      label: 'Đã có tại UpBase',
+                      count: trendingCreators.filter((c) =>
+                        existingByHandle.has(c.handle.toLowerCase())
+                      ).length,
+                    },
+                    {
+                      key: 'VERIFIED',
+                      label: 'Tick xanh',
+                      count: trendingCreators.filter((c) => c.verified).length,
+                    },
+                    {
+                      key: 'HAS_CONTACT',
+                      label: 'Có SĐT / Email',
+                      count: trendingCreators.filter(
+                        (c) => Boolean(c.extractedPhone || c.extractedEmail)
+                      ).length,
+                    },
+                  ]}
+                  value={trendingFilter}
+                  onChange={setTrendingFilter}
+                />
+              }
+            />
+          </div>
 
           <DataTable
             rows={filteredTrendingCreators}
             columns={trendingColumns}
             rowKey={(c) => c.handle}
             fitContainer
-            empty="Nhấn Làm mới danh sách để tải các kênh KOC đang thịnh hành trên TikTok."
+            empty="Nhấn nút Quét danh sách xu hướng ở góc phải để tải các kênh KOC đang thịnh hành trên TikTok."
           />
         </Panel>
       )}
