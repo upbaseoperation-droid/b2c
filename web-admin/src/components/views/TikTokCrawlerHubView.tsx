@@ -6,6 +6,7 @@ import {
   Check,
   Download,
   ExternalLink,
+  FileText,
   Flame,
   Hash,
   MessageSquare,
@@ -40,6 +41,10 @@ import { formatFollowers } from '../koc/kocUtils';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LinkAirCheckerPanel } from '../crawler/LinkAirCheckerPanel';
+import {
+  CompetitorVideoScriptModal,
+  type ScriptExtractFallbackContext,
+} from '../crawler/CompetitorVideoScriptModal';
 import {
   Avatar,
   Button,
@@ -459,10 +464,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       }
 
       if (!tagAbortRef.current && accumulatedMap.size === 0) {
-        const periodText = crawlPeriod === 'ALL' ? 'toàn bộ thời gian' : `${crawlPeriod.replace('d', '')} ngày qua`;
-        const emptyMsg = `Không tìm thấy KOC nào đăng video với hashtag "${trimmed}" trong ${periodText}. Vui lòng kiểm tra lại từ khóa hoặc chọn "Tất cả thời gian".`;
+        const periodText = `${targetPeriod.replace('d', '')} ngày qua`;
+        const emptyMsg = `Không tìm thấy KOC nào đăng video với hashtag "${trimmed}" trong ${periodText}. Vui lòng kiểm tra lại từ khóa hoặc mở rộng khung thời gian.`;
         setTagError(emptyMsg);
         onNotify?.(emptyMsg, 'warning');
+      } else if (appendMode && accumulatedMap.size === baseList.length && !tagAbortRef.current) {
+        onNotify?.('Đã lấy hết các KOC khớp với hashtag này trên chỉ mục hiện tại.', 'info');
       }
     } catch {
       if (accumulatedMap.size === 0) {
