@@ -919,7 +919,7 @@ export async function discoverTikTokKocsByHashtag(
   // 1. Phân tách hashtag/từ khóa (kể cả từ ghép như #nousvietnam -> nous + nousvietnam) và tìm link video thực tế
   const keywordProfile = buildTargetKeywordProfile(cleanKeyword || effectiveTag);
   const searchQueries = keywordProfile.searchQueries;
-  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 4, {
+  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 6, {
     excludeHandles: options?.excludeHandles,
     pageOffset: options?.pageOffset,
     targetKeyword: cleanKeyword || effectiveTag,
@@ -935,7 +935,7 @@ export async function discoverTikTokKocsByHashtag(
     if (!uniqueByHandle.has(item.handle)) {
       uniqueByHandle.set(item.handle, item);
     }
-    if (uniqueByHandle.size >= limit * 2 + 8) break;
+    if (uniqueByHandle.size >= limit * 3 + 12) break;
   }
 
   const candidateEntries = [...uniqueByHandle.values()];
@@ -1216,6 +1216,48 @@ const COMPETITOR_PRESET_CATALOG: Record<
     category: 'Mỹ phẩm Thiên nhiên Việt Nam',
     recommendedUpbaseBrands: ['Herbal Care', 'Kutieskin', 'pHCare'],
   },
+  cindybloom: {
+    officialHandle: 'cindybloom.official',
+    brandName: 'Cindy Bloom Vietnam',
+    searchKeyword: 'cindy bloom',
+    category: 'Sữa tắm nước hoa & Chăm sóc cơ thể',
+    recommendedUpbaseBrands: ["L'Occitane", 'Herbal Care', 'Mine'],
+  },
+  clubclio: {
+    officialHandle: 'clubclio_vietnam',
+    brandName: 'ClubClio Vietnam Official',
+    searchKeyword: 'club clio',
+    category: 'Trang điểm Hàn Quốc (Makeup)',
+    recommendedUpbaseBrands: ['Cathy Doll', 'Rejuran', 'Karmart'],
+  },
+  byebyeblemish: {
+    officialHandle: 'byebyeblemishvn',
+    brandName: 'Bye Bye Blemish Vietnam',
+    searchKeyword: 'bye bye blemish',
+    category: 'Chăm sóc da mụn',
+    recommendedUpbaseBrands: ['Babé', 'Rejuran', 'ClubClio'],
+  },
+  rejuran: {
+    officialHandle: 'rejuran.vn',
+    brandName: 'Rejuran Vietnam Official',
+    searchKeyword: 'rejuran',
+    category: 'Dược mỹ phẩm & Phục hồi da',
+    recommendedUpbaseBrands: ['Babé', 'ClubClio', "L'Occitane"],
+  },
+  loccitane: {
+    officialHandle: 'loccitane_vn',
+    brandName: "L'Occitane en Provence",
+    searchKeyword: 'loccitane',
+    category: 'Chăm sóc cơ thể & Da cao cấp',
+    recommendedUpbaseBrands: ['Cindy Bloom', 'Rejuran', 'Fresh'],
+  },
+  kutieskin: {
+    officialHandle: 'kutieskin.official',
+    brandName: 'Kutieskin Chính Hãng',
+    searchKeyword: 'kutieskin',
+    category: 'Chăm sóc da Mẹ & Bé',
+    recommendedUpbaseBrands: ['Nabizam', 'Docilee', 'Babé'],
+  },
 };
 
 /**
@@ -1303,7 +1345,7 @@ export async function discoverCompetitorKocs(
     preset?.searchKeyword || keywordProfile.rootToken || strippedBrandCore || cleanCompetitorHandle;
 
   // 1. Chạy song song: lấy hồ sơ thực của kênh đối thủ (nếu là đợt 1) VÀ tìm các video KOC nhắc tới đối thủ
-  const [liveCompProfile, directInputVideo, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
+  const [initialLiveCompProfile, directInputVideo, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
     options?.skipProfileFetch
       ? Promise.resolve(null)
       : fetchLiveTikTokPublicProfile(cleanCompetitorHandle),
@@ -1319,7 +1361,7 @@ export async function discoverCompetitorKocs(
         `tiktok.com "${cleanSearchBrand}" review`,
         `tiktok.com "${targetKeywordForDiscovery}"`,
       ],
-      limit * 4,
+      limit * 6,
       {
         excludeHandles: options?.excludeHandles,
         pageOffset: options?.pageOffset,
@@ -1327,6 +1369,39 @@ export async function discoverCompetitorKocs(
       }
     ),
   ]);
+
+  let liveCompProfile = initialLiveCompProfile;
+  let resolvedCompetitorHandle = cleanCompetitorHandle;
+
+  // Nếu người dùng nhập tên thương hiệu (không phải @handle cụ thể) mà tài khoản @brand gốc không tồn tại, tự dò @brand.official / @brandvietnam
+  if (
+    !options?.skipProfileFetch &&
+    !isExplicitHandleOrUrl &&
+    (!liveCompProfile?.followers || liveCompProfile.followers < 100)
+  ) {
+    const candidateOfficialHandles = Array.from(
+      new Set([
+        `${compactInputTag}.official`,
+        `${compactInputTag}vietnam`,
+        `${compactInputTag}_vn`,
+        `${compactInputTag}.vn`,
+      ])
+    ).filter((h) => h !== cleanCompetitorHandle);
+
+    const fallbackProfiles = await Promise.all(
+      candidateOfficialHandles.slice(0, 3).map(async (h) => ({
+        handle: h,
+        profile: await fetchLiveTikTokPublicProfile(h),
+      }))
+    );
+    const bestOfficial = fallbackProfiles
+      .filter((item) => (item.profile?.followers || 0) >= 100)
+      .sort((a, b) => (b.profile?.followers || 0) - (a.profile?.followers || 0))[0];
+    if (bestOfficial?.profile) {
+      liveCompProfile = bestOfficial.profile;
+      resolvedCompetitorHandle = bestOfficial.handle;
+    }
+  }
 
   // Nếu trang profile @competitor chưa trả về số liệu (hoặc trả về tài khoản trùng tên < 500 flw), lấy từ 1 video thực của chính kênh đối thủ
   let compVideoAuthor: RealTikTokVideoAndAuthorDetail['author'] | undefined =
@@ -1336,8 +1411,8 @@ export async function discoverCompetitorKocs(
     ((!liveCompProfile?.followers || liveCompProfile.followers < 500) && !compVideoAuthor?.followers)
   ) {
     const ownVideo =
-      compOwnVideos.find((v) => v.handle === cleanCompetitorHandle) ||
-      rawDiscoveredVideos.find((v) => v.handle === cleanCompetitorHandle);
+      compOwnVideos.find((v) => v.handle === resolvedCompetitorHandle || v.handle === cleanCompetitorHandle) ||
+      rawDiscoveredVideos.find((v) => v.handle === resolvedCompetitorHandle || v.handle === cleanCompetitorHandle);
     if (ownVideo) {
       const inspectedOwn = await inspectLiveTikTokVideoPage(ownVideo.videoUrl);
       if (inspectedOwn?.author) {
@@ -1353,11 +1428,11 @@ export async function discoverCompetitorKocs(
     compVideoAuthor?.nickname ||
     preset?.brandName ||
     (useLiveProfile ? liveCompProfile?.nickname : undefined) ||
-    (isExplicitHandleOrUrl ? cleanCompetitorHandle : trimmedInput);
+    (isExplicitHandleOrUrl ? resolvedCompetitorHandle : trimmedInput);
 
   const competitorProfile: TikTokCompetitorProfileSummary = {
-    handle: cleanCompetitorHandle,
-    channelUrl: `https://www.tiktok.com/@${cleanCompetitorHandle}`,
+    handle: resolvedCompetitorHandle,
+    channelUrl: `https://www.tiktok.com/@${resolvedCompetitorHandle}`,
     brandName: competitorBrandName,
     followers: Math.max(liveCompProfile?.followers ?? 0, compVideoAuthor?.followers ?? 0),
     totalLikes: Math.max(liveCompProfile?.totalLikes ?? 0, compVideoAuthor?.totalLikes ?? 0),
@@ -1365,7 +1440,7 @@ export async function discoverCompetitorKocs(
     bio:
       compVideoAuthor?.bio ||
       (useLiveProfile ? liveCompProfile?.bio : undefined) ||
-      `Kênh TikTok @${cleanCompetitorHandle}`,
+      `Kênh TikTok @${resolvedCompetitorHandle}`,
     category: preset?.category || 'Mỹ phẩm & Chăm sóc cá nhân',
     recommendedUpbaseBrands: preset?.recommendedUpbaseBrands || [],
   };

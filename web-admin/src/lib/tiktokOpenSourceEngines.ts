@@ -849,10 +849,26 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
   keyshu: ['keyshu', 'mặt nạ keyshu', 'kem chống nắng keyshu'],
   kutieskin: ['kutieskin', 'kem chàm sữa kutieskin', 'kem hăm kutieskin', 'sữa tắm kutieskin'],
   mustela: ['mustela', 'sữa tắm mustela', 'kem hăm mustela', 'dầu tràm mustela'],
-  byebyeblemish: ['bye bye blemish', 'chấm mụn bye bye blemish'],
-  cindybloom: ['cindy bloom', 'nước hoa cindy bloom'],
-  loccitane: ['loccitane', "l'occitane", 'dầu tắm hạnh nhân loccitane'],
-  rejuran: ['rejuran', 'serum rejuran', 'kem dưỡng rejuran'],
+  byebyeblemish: [
+    'bye bye blemish',
+    'chấm mụn bye bye blemish',
+    'lotion chấm mụn bye bye blemish',
+    'serum bye bye blemish',
+  ],
+  cindybloom: [
+    'cindy bloom',
+    'sữa tắm cindy bloom',
+    'sữa tắm nước hoa cindy bloom',
+    'nước hoa cindy bloom',
+    'xịt thơm cindy bloom',
+    'body mist cindy bloom',
+    'dưỡng thể cindy bloom',
+  ],
+  loccitane: ['loccitane', "l'occitane", 'dầu tắm hạnh nhân loccitane', 'kem tay loccitane'],
+  rejuran: ['rejuran', 'serum rejuran', 'kem dưỡng rejuran', 'mặt nạ rejuran'],
+  babe: ['babe', 'babé', 'sữa rửa mặt babe', 'kem dưỡng babe', 'kem chống nắng babe'],
+  cathydoll: ['cathy doll', 'kem chống nắng cathy doll', 'sữa tắm cathy doll'],
+  nabizam: ['nabizam', 'bỉm nabizam', 'tã nabizam'],
   nousvietnam: [
     'nous vietnam',
     'nous việt nam',
@@ -887,7 +903,7 @@ export function stripVnAccents(str: string): string {
 }
 
 /**
- * Bóc tách từ khóa / hashtag / @handle (kể cả từ ghép như #nousvietnam, @larocheposayvn, #kutieskinmama)
+ * Bóc tách từ khóa / hashtag / @handle (kể cả từ ghép như #nousvietnam, @larocheposayvn, #kutieskinmama, "cindy bloom")
  * thành bộ gốc thương hiệu (rootToken), cụm từ có dấu/cách chữ và danh sách truy vấn đặt trong ngoặc kép.
  */
 export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfile {
@@ -928,10 +944,14 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
 
   const rootToken = strippedRoot.length >= 3 ? strippedRoot : compactTag;
 
-  // Các từ khóa đơn đủ dài (>= 5 ký tự) trong cụm từ (VD: "dear.klairs" -> "klairs")
-  const distinctiveSubTokens = effectiveSegments.filter(
-    (s) => s.length >= 5 && s !== rootToken && !GENERIC_AFFIX_RE.test(s)
-  );
+  // Không tách tên thương hiệu nhiều từ cách nhau bằng khoảng trắng (VD: "cindy bloom", "bye bye blemish")
+  // thành các từ tiếng Anh đơn lẻ ("cindy", "bloom") gây khớp nhầm video quốc tế (#bloompop)
+  const hasMultipleSpacedWords = /\s/.test(rawClean.trim()) && effectiveSegments.length >= 2;
+  const distinctiveSubTokens = hasMultipleSpacedWords
+    ? []
+    : effectiveSegments.filter(
+        (s) => s.length >= 6 && s !== rootToken && !GENERIC_AFFIX_RE.test(s)
+      );
 
   const dictEntries =
     VN_HASHTAG_SPACED_DICTIONARY[compactTag] ||
@@ -940,6 +960,8 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
     [];
 
   const spacedPhrase = effectiveSegments.length > 1 ? effectiveSegments.join(' ') : '';
+  const dottedPhrase = effectiveSegments.length > 1 ? effectiveSegments.join('.') : '';
+  const underscoredPhrase = effectiveSegments.length > 1 ? effectiveSegments.join('_') : '';
 
   const spacedAliases = Array.from(
     new Set([
@@ -961,6 +983,8 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
         compactTag,
         rootToken,
         fullCompactTag,
+        ...(dottedPhrase ? [dottedPhrase] : []),
+        ...(underscoredPhrase ? [underscoredPhrase] : []),
         ...(rawClean.includes('.') ? [asciiClean] : []),
         ...distinctiveSubTokens,
         ...spacedAliases.map((s) => stripVnAccents(s).trim()),
@@ -976,11 +1000,13 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
       ...(compactTag !== rootToken ? [`tiktok.com "#${compactTag}"`] : []),
       ...(rawClean.includes('.') ? [`tiktok.com "@${asciiClean}"`] : []),
       ...distinctiveSubTokens.map((sub) => `tiktok.com "#${sub}"`),
-      ...spacedAliases.slice(0, 6).map((alias) => `tiktok.com "${alias}"`),
+      ...spacedAliases.slice(0, 8).map((alias) => `tiktok.com "${alias}"`),
       `tiktok.com "${primaryQueryTerm}"`,
       `tiktok.com "review ${primaryQueryTerm}"`,
       `tiktok.com "${primaryQueryTerm} chính hãng"`,
       `tiktok.com "unbox ${primaryQueryTerm}"`,
+      `tiktok.com "${primaryQueryTerm}" review`,
+      `tiktok.com #${rootToken} review`,
     ])
   );
 
@@ -1016,7 +1042,7 @@ function textContainsAnyToken(rawText: string, matchTokens: string[]): boolean {
 /**
  * Kiểm tra nghiêm ngặt xem video thực tế trên TikTok (sau khi inspectLiveTikTokVideoPage)
  * có thực sự nhắc tới hashtag / thương hiệu / từ khóa mục tiêu và thuộc ngữ cảnh Việt Nam hay không.
- * Loại bỏ 100% video rác quốc tế (VD: tin tức bóng bầu dục Mỹ @ketv7newswatch, từ "nous" tiếng Pháp @mariabalenga)
+ * Loại bỏ 100% video rác quốc tế (VD: tin tức bóng bầu dục Mỹ @ketv7newswatch, từ "nous" tiếng Pháp @mariabalenga, #bloompop Mỹ @autumatic4thepeople)
  * hoặc video nhạc/trend không liên quan (@giangokinguyen).
  */
 export function doesInspectedVideoMatchTarget(
@@ -1044,7 +1070,7 @@ export function doesInspectedVideoMatchTarget(
     inspected.author.bio,
   ].join(' ');
 
-  // Bắt buộc video/kênh phải thuộc ngữ cảnh Việt Nam (tránh lọt video quốc tế của các thương hiệu toàn cầu như La Roche-Posay Brasil, CeraVe US, Cetaphil UK...)
+  // Bắt buộc video/kênh phải thuộc ngữ cảnh Việt Nam (tránh lọt video quốc tế của các thương hiệu toàn cầu)
   const norm = stripVnAccents(combinedRaw);
 
   // Loại bỏ ngay nếu gắn thẻ chi nhánh quốc gia khác ngoài Việt Nam
@@ -1064,7 +1090,7 @@ export function doesInspectedVideoMatchTarget(
     norm.includes(`${profile.rootToken}_hcm`) ||
     norm.includes(`${profile.rootToken}babystore`) ||
     norm.includes(`${profile.rootToken}hanoi`) ||
-    /\b(vietnam|viet nam|ha noi|hanoi|tphcm|sai gon|saigon|da nang| tiktokshopvn|xuhuong|goclamdep|reviewlamdep|mebimsua|dososinh)\b/i.test(
+    /\b(vietnam|viet nam|ha noi|hanoi|tphcm|sai gon|saigon|da nang|tiktokshopvn|xuhuong|goclamdep|reviewlamdep|mebimsua|dososinh|suatam|kemchongnang|duocmypham|chinhhang)\b/i.test(
       norm
     );
 
@@ -1072,12 +1098,17 @@ export function doesInspectedVideoMatchTarget(
     /[ăằắặẳẵầấậẩẫềếệểễìíịỉĩòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
       combinedRaw
     );
-  const hasVietnameseWords =
-    /\b(cua|cho|nha|me|be|voi|cac|nay|qua|minh|duoc|khong|hang|san|mac|mua|dung|bo|set|ao|quan|kem|da|son|hop|dep|xinh|sosinh|bimsua|chinhhang|duocmypham|sua|rua|mat|chong|nang|duong|am|mun|tham|trang|moi|toc|goi|thom)\b/i.test(
+  // Chỉ dùng các từ tiếng Việt không dấu đủ dài/đặc trưng (không dùng từ đơn 2-3 chữ trùng tiếng Anh như me, be, set, son, hop, mac, da)
+  const hasUnmistakableUnaccentedVnPhrase =
+    /\b(cua minh|cho be|nha minh|khong bi|chinh hang|sua tam|sua rua mat|kem chong nang|kem duong|nuoc hoa|tay trang|duong the|xit thom|dau goi|cham soc da|trang diem|me bim|so sinh)\b/i.test(
       norm
     );
 
-  if (!hasExplicitVnBrandTag && !hasSpecificVietnameseDiacritics && !hasVietnameseWords) {
+  if (
+    !hasExplicitVnBrandTag &&
+    !hasSpecificVietnameseDiacritics &&
+    !hasUnmistakableUnaccentedVnPhrase
+  ) {
     return false;
   }
 
@@ -1446,6 +1477,58 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   };
 
+  const fetchOrGetCachedWebSearch = async (
+    q: string,
+    firstParam: number
+  ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> => {
+    const tokenKey = requiredTokens.slice(0, 2).join('_');
+    const cacheKey = `web__${q.trim().toLowerCase()}__t_${tokenKey}__p${firstParam}`;
+    const now = Date.now();
+    const cached = store.searchHtmlCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return cached.data;
+    }
+
+    const inFlight = store.inFlightSearchHtml.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const taskPromise = store.searchLimiter.run(async () => {
+      try {
+        const webSearchUrl = `https://www.bing.com/search?q=${encodeURIComponent(
+          q
+        )}&count=50&first=${Math.max(1, firstParam + 1)}&mkt=vi-VN&setlang=vi&cc=VN`;
+        const res = await fetch(webSearchUrl, {
+          headers: {
+            'User-Agent': DEFAULT_BROWSER_UA,
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+            Cookie: '_EDGE_S=mkt=vi-vn&ui=vi-vn; SRCHHPGUSR=SRCHLANG=vi',
+          },
+          signal: AbortSignal.timeout(4500),
+          cache: 'no-store',
+        });
+        if (!res.ok) return [];
+        const html = await res.text();
+        const extracted = extractUrlsFromHtml(html);
+        if (extracted.length > 0) {
+          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 500);
+        }
+        return extracted;
+      } catch {
+        return [];
+      }
+    });
+
+    store.inFlightSearchHtml.set(cacheKey, taskPromise);
+    try {
+      return await taskPromise;
+    } finally {
+      store.inFlightSearchHtml.delete(cacheKey);
+    }
+  };
+
   // Ưu tiên bộ truy vấn tiếng Việt chuẩn từ targetProfile.searchQueries lên đầu
   const baseQueries =
     targetProfile && targetProfile.searchQueries.length > 0
@@ -1454,26 +1537,71 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
   const batchModifiers = [
     '',
-    'unbox',
     'review',
+    'unbox',
+    'sữa tắm',
+    'tiktok shop',
     'haul',
-    'test thực tế',
     'chính hãng',
+    'test thực tế',
     'koc',
+    'gắn giỏ',
+    'dùng thử',
+    'combo',
+    'sale',
+    'có tốt không',
+    'affiliate',
+    'mỹ phẩm',
   ];
   const modifier = batchModifiers[pageOffset % batchModifiers.length];
-  const effectiveQueries =
-    pageOffset > 0 && modifier
-      ? [...baseQueries.slice(0, 6).map((q) => `${q} ${modifier}`), ...baseQueries]
-      : baseQueries;
+  // Truy vấn có hậu tố mở rộng luôn bắt đầu từ trang đầu (first=0) để không bỏ sót kết quả trang 1 của từng hậu tố
+  const modifierFirstParam = Math.floor(pageOffset / batchModifiers.length) * 35;
+  // Truy vấn gốc phân trang tuần tự qua các trang kết quả (0, 35, 70, 105, 140)
+  const baseFirstParam = (pageOffset % 5) * 35;
 
-  const firstParam = Math.floor(pageOffset / 2) * 35;
-  const queryBatchSize = 4;
-  for (let i = 0; i < effectiveQueries.length; i += queryBatchSize) {
-    if (uniqueLiveHandles.size >= maxUrls) break;
-    const batchQueries = effectiveQueries.slice(i, i + queryBatchSize);
+  const searchTasksQueue: Array<{ q: string; first: number; mode: 'video' | 'web' }> = [];
+  if (pageOffset > 0 && modifier) {
+    for (const q of baseQueries.slice(0, 8)) {
+      searchTasksQueue.push({ q: `${q} ${modifier}`, first: modifierFirstParam, mode: 'video' });
+    }
+  }
+  for (const q of baseQueries) {
+    searchTasksQueue.push({ q, first: baseFirstParam, mode: 'video' });
+  }
+  if (pageOffset > 0 && baseFirstParam === 0) {
+    for (const q of baseQueries.slice(0, 6)) {
+      searchTasksQueue.push({ q, first: 35, mode: 'video' });
+    }
+  }
+  // Bổ sung truy vấn Bing Web Search để gom thêm các video KOC không nằm trong tab Video
+  const webSeedTerm = targetProfile?.spacedAliases?.[0] || targetProfile?.rawClean || rawTargetSeed;
+  if (webSeedTerm) {
+    const webModifier = modifier ? ` ${modifier}` : '';
+    searchTasksQueue.push(
+      {
+        q: `site:tiktok.com "${webSeedTerm}"${webModifier} video`,
+        first: (pageOffset % 4) * 50,
+        mode: 'web',
+      },
+      {
+        q: `site:tiktok.com "#${targetProfile?.rootToken || webSeedTerm}"${webModifier}`,
+        first: (pageOffset % 4) * 50,
+        mode: 'web',
+      }
+    );
+  }
+
+  const targetUniqueHandles = Math.max(maxUrls, 60);
+  const queryBatchSize = 5;
+  for (let i = 0; i < searchTasksQueue.length; i += queryBatchSize) {
+    if (uniqueLiveHandles.size >= targetUniqueHandles) break;
+    const batchTasks = searchTasksQueue.slice(i, i + queryBatchSize);
     const batchLists = await Promise.all(
-      batchQueries.map((q) => fetchOrGetCachedSearch(q, firstParam))
+      batchTasks.map((t) =>
+        t.mode === 'web'
+          ? fetchOrGetCachedWebSearch(t.q, t.first)
+          : fetchOrGetCachedSearch(t.q, t.first)
+      )
     );
     for (const urls of batchLists) {
       for (const item of urls) {
@@ -1518,7 +1646,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       discovered.set(key, item);
       perHandleCount.set(item.handle, countForH + 1);
     }
-    if (discovered.size >= maxUrls * 2) break;
+    if (discovered.size >= targetUniqueHandles * 2) break;
   }
 
   return [...discovered.values()];
