@@ -51,11 +51,13 @@ import {
   type ScriptExtractFallbackContext,
 } from '../crawler/CompetitorVideoScriptModal';
 import {
+  ActionMenu,
   Avatar,
   Button,
   Chips,
   DataTable,
   FilterBar,
+  PageActions,
   PageActiveContext,
   Panel,
   Segmented,
@@ -1866,8 +1868,58 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Thanh điều hướng gọn nhẹ, chuyển tab không tự động quét */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Nút chính lên thanh trên qua PageActions; tiện ích phụ vào ActionMenu */}
+      <PageActions>
+        <ActionMenu
+          label="Tiện ích crawler"
+          items={[
+            {
+              label: 'Cào kênh theo @handle',
+              icon: Search,
+              onSelect: () => {
+                setScraperInitialHandle('');
+                setScraperModalOpen(true);
+              },
+            },
+            {
+              label: 'Tách lời thoại & Hook',
+              icon: FileText,
+              onSelect: () => openScriptExtractorModal(''),
+            },
+            {
+              label: 'Nghiệm thu link video',
+              icon: Video,
+              onSelect: () => setVideoInspectorOpen(true),
+            },
+          ]}
+        />
+        <Button
+          size="sm"
+          variant="primary"
+          icon={Target}
+          onClick={() => {
+            const defaultHandles =
+              activeTab === 'COMPETITOR_KOCS' && compResults.length > 0
+                ? compResults.slice(0, 5).map((r) => `@${r.handle}`)
+                : activeTab === 'HASHTAG_DISCOVERY' && tagResults.length > 0
+                  ? tagResults.slice(0, 5).map((r) => `@${r.handle}`)
+                  : activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length > 0
+                    ? trendingCreators.slice(0, 5).map((r) => `@${r.handle}`)
+                    : [];
+            openBriefMatcherModal(defaultHandles, competitorInput || hashtagInput);
+          }}
+        >
+          <span>Phân tích Kênh &amp; Khớp Brief</span>
+          {runningBriefJobsCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
+              {runningBriefJobsCount}
+            </span>
+          )}
+        </Button>
+      </PageActions>
+
+      {/* Thanh điều hướng tab gọn gàng */}
+      <div className="flex items-center justify-between gap-3">
         <Segmented<CrawlerTabKey>
           items={[
             {
@@ -1894,69 +1946,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           value={activeTab}
           onChange={(t) => setActiveTab(t)}
         />
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={Target}
-            onClick={() => {
-              const defaultHandles =
-                activeTab === 'COMPETITOR_KOCS' && compResults.length > 0
-                  ? compResults.slice(0, 5).map((r) => `@${r.handle}`)
-                  : activeTab === 'HASHTAG_DISCOVERY' && tagResults.length > 0
-                    ? tagResults.slice(0, 5).map((r) => `@${r.handle}`)
-                    : activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length > 0
-                      ? trendingCreators.slice(0, 5).map((r) => `@${r.handle}`)
-                      : [];
-              openBriefMatcherModal(defaultHandles, competitorInput || hashtagInput);
-            }}
-          >
-            <span>Phân tích Kênh &amp; Khớp Brief</span>
-            {runningBriefJobsCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-semibold tabular-nums">
-                {runningBriefJobsCount} đang chạy ngầm
-              </span>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={Search}
-            onClick={() => {
-              setScraperInitialHandle('');
-              setScraperModalOpen(true);
-            }}
-          >
-            Cào kênh theo @handle
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={FileText}
-            onClick={() => openScriptExtractorModal('')}
-          >
-            Tách lời thoại &amp; Hook
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={Video}
-            onClick={() => setVideoInspectorOpen(true)}
-          >
-            Nghiệm thu link video
-          </Button>
-          {onNavigateToKocMaster && (
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={Users}
-              onClick={onNavigateToKocMaster}
-            >
-              Danh bạ KOC ({kocs.length})
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* Thanh theo dõi trực tiếp các tiến trình Phân tích Kênh & Khớp Brief đang chạy ngầm */}
