@@ -7,6 +7,9 @@ import {
   Check,
   RefreshCw,
   Download,
+  Copy,
+  FileText,
+  Clock,
 } from 'lucide-react';
 import { BookingDealItem, PublicationItemModel } from '../../lib/types';
 import {
@@ -55,6 +58,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [isInspecting, setIsInspecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [results, setResults] = useState<TikTokVideoInspectionResult[]>([]);
+  const [selectedVideoId, setSelectedVideoId] = useState<string>('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [acceptedVideoIds, setAcceptedVideoIds] = useState<Set<string>>(new Set());
 
   const currentInitialKey = `${isOpen}:${initialDeal?.dealCode || ''}:${initialUrl}`;
@@ -63,6 +68,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     setPrevInitialKey(currentInitialKey);
     if (isOpen) {
       setResults([]);
+      setSelectedVideoId('');
       setErrorMessage(null);
       if (initialDeal) {
         setSelectedDealCode(initialDeal.dealCode);
@@ -78,6 +84,20 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     () => deals.find((d) => d.dealCode === selectedDealCode) || initialDeal || undefined,
     [deals, selectedDealCode, initialDeal]
   );
+
+  const activeInspection = useMemo(
+    () => results.find((r) => r.id === selectedVideoId) || results[0] || null,
+    [results, selectedVideoId]
+  );
+
+  const handleCopyText = (key: string, text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => {
+      setCopiedKey((prev) => (prev === key ? null : prev));
+    }, 2000);
+  };
 
   const handleRunInspection = async () => {
     if (!rawUrlsInput.trim()) {
@@ -105,7 +125,11 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       if (!response.ok || !json.success) {
         setErrorMessage(json.error || 'Không thể kiểm tra link video lúc này.');
       } else {
-        setResults(json.data || []);
+        const fetchedResults: TikTokVideoInspectionResult[] = json.data || [];
+        setResults(fetchedResults);
+        if (fetchedResults.length > 0) {
+          setSelectedVideoId(fetchedResults[0].id);
+        }
       }
     } catch {
       setErrorMessage('Lỗi kết nối khi kiểm tra link video TikTok.');
@@ -165,7 +189,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     {
       key: 'koc',
       header: 'Kênh KOC',
-      width: 170,
+      width: 155,
       render: (r) => (
         <div className="grid gap-0.5 min-w-0">
           <span className="text-xs font-semibold text-ink truncate">
@@ -185,10 +209,15 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     },
     {
       key: 'content',
-      header: 'Nội dung & Hashtag trên bài',
-      width: 300,
+      header: 'Bài đăng & Câu mở đầu 3s (Hook)',
+      width: 310,
       render: (r) => (
-        <div className="grid gap-1 min-w-0 max-w-[340px]">
+        <div className="grid gap-1 min-w-0 max-w-[330px]">
+          {r.contentCheck.hookFirst3Seconds && (
+            <div className="text-2xs font-semibold text-ink bg-accent-soft/40 border border-accent/20 rounded px-1.5 py-0.5 line-clamp-1">
+              Hook 3s: &ldquo;{r.contentCheck.hookFirst3Seconds}&rdquo;
+            </div>
+          )}
           <a
             href={r.resolvedUrl}
             target="_blank"
@@ -209,7 +238,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     {
       key: 'published',
       header: 'Ngày đăng & Thời lượng',
-      width: 165,
+      width: 155,
       render: (r) => (
         <div className="grid gap-0.5 text-xs tabular-nums">
           <span className="font-medium text-ink">{r.publishedTimeFormatted}</span>
@@ -224,7 +253,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       key: 'metrics',
       header: 'Lượt xem & Tương tác',
       align: 'right',
-      width: 190,
+      width: 175,
       render: (r) => (
         <div className="grid gap-0.5 text-xs tabular-nums">
           <span className="font-semibold text-ink">
@@ -239,13 +268,24 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     },
     {
       key: 'status',
-      header: 'Trạng thái',
+      header: 'Trạng thái & Kịch bản',
       align: 'right',
-      width: 150,
+      width: 195,
       render: (r) => {
         const hasViolation = r.contentCheck.violatedBlacklistWords.length > 0;
+        const isSelected = activeInspection?.id === r.id;
         return (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            {results.length > 1 && (
+              <Button
+                size="sm"
+                variant={isSelected ? 'primary' : 'ghost'}
+                icon={FileText}
+                onClick={() => setSelectedVideoId(r.id)}
+              >
+                Kịch bản
+              </Button>
+            )}
             {hasViolation ? (
               <Status tone="critical">
                 Từ cấm: {r.contentCheck.violatedBlacklistWords.map((w) => w.word).join(', ')}
@@ -272,6 +312,31 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       },
     },
   ];
+
+  const fullScriptCopyText = useMemo(() => {
+    if (!activeInspection) return '';
+    const sections = activeInspection.contentCheck.scriptSections || [];
+    return [
+      `=== KỊCH BẢN & LỜI THOẠI VIDEO NGHIỆM THU (@${activeInspection.authorHandle}) ===`,
+      `• Link video: ${activeInspection.resolvedUrl}`,
+      `• Thời lượng: ${activeInspection.durationSeconds} giây · Lượt xem: ${formatNumber(activeInspection.viewsCount)} (ER ${activeInspection.engagementRate}%)`,
+      `• Câu mở đầu 3 giây đầu (Hook): "${activeInspection.contentCheck.hookFirst3Seconds}"`,
+      activeInspection.contentCheck.hookPatternLabel
+        ? `• Nhóm mở đầu: ${activeInspection.contentCheck.hookPatternLabel}`
+        : '',
+      '',
+      '[KỊCH BẢN 4 BƯỚC TRONG VIDEO]:',
+      ...sections.map(
+        (s) =>
+          `${s.stepIndex}. [${s.timeRange}] ${s.sectionTitle}\n   - Lời thoại / Nội dung: ${s.spokenOrTextContent}\n   - Khung hình: ${s.visualAndActionNote}`
+      ),
+      '',
+      '[LỜI THOẠI CHI TIẾT THEO MỐC GIÂY]:',
+      activeInspection.contentCheck.transcriptText || activeInspection.contentCheck.caption,
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }, [activeInspection]);
 
   return (
     <Modal
@@ -346,7 +411,167 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             />
           </div>
         )}
+
+        {activeInspection && (
+          <div className="border border-line rounded-xl bg-surface p-3.5 space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-line">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-ink">
+                  Kịch bản & Lời thoại trong video: @{activeInspection.authorHandle}
+                </span>
+                {activeInspection.contentCheck.hookPatternLabel && (
+                  <Status tone="info">
+                    {activeInspection.contentCheck.hookPatternLabel}
+                  </Status>
+                )}
+                <Status tone="neutral">
+                  {activeInspection.contentCheck.subtitleSource === 'TIKTOK_AUTO_CAPTIONS_VTT'
+                    ? 'Phụ đề giọng nói TikTok (WebVTT)'
+                    : 'Tách từ chữ trên màn hình & bài đăng'}
+                </Status>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={copiedKey === 'hook' ? Check : Copy}
+                  onClick={() =>
+                    handleCopyText('hook', activeInspection.contentCheck.hookFirst3Seconds)
+                  }
+                >
+                  {copiedKey === 'hook' ? 'Đã chép Hook 3s' : 'Chép Hook 3s'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={copiedKey === 'full' ? Check : Copy}
+                  onClick={() => handleCopyText('full', fullScriptCopyText)}
+                >
+                  {copiedKey === 'full' ? 'Đã chép kịch bản' : 'Chép toàn bộ kịch bản'}
+                </Button>
+              </div>
+            </div>
+
+            {results.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {results.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedVideoId(item.id)}
+                    className={`px-2.5 py-1 rounded-lg text-2xs font-medium border transition ${
+                      item.id === activeInspection.id
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
+                    }`}
+                  >
+                    #{idx + 1} @{item.authorHandle} ({item.durationSeconds || 30}s)
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Câu mở đầu 3 giây đầu (Hook) & Chữ nổi trên màn hình */}
+            <div className="grid md:grid-cols-2 gap-2.5">
+              <div className="p-2.5 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-accent">
+                    Câu mở đầu 3 giây đầu (Hook 00:00 - 00:03)
+                  </span>
+                  <span className="text-2xs font-code text-ink-3">
+                    Xuất hiện SP giây thứ {activeInspection.visualAndAudioCheck.firstProductAppearanceSec}s
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-ink leading-relaxed">
+                  &ldquo;{activeInspection.contentCheck.hookFirst3Seconds || activeInspection.contentCheck.caption}&rdquo;
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-line bg-surface-2 space-y-1">
+                <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
+                  Chữ chèn trên màn hình (On-screen Text / Stickers) & Giỏ hàng
+                </span>
+                {activeInspection.contentCheck.onScreenStickers.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {activeInspection.contentCheck.onScreenStickers.map((stk, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-0.5 rounded bg-surface border border-line text-2xs text-ink font-medium"
+                      >
+                        {stk}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-ink-2">
+                    {activeInspection.contentCheck.hasCartAnchor
+                      ? `Gắn thẻ giỏ hàng: ${activeInspection.contentCheck.cartAnchorTitle || 'TikTok Shop'}`
+                      : 'Không chèn sticker chữ tách rời trên khung hình'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Bóc tách Kịch bản 4 bước */}
+            {activeInspection.contentCheck.scriptSections &&
+              activeInspection.contentCheck.scriptSections.length > 0 && (
+                <div className="grid lg:grid-cols-2 gap-2.5">
+                  {activeInspection.contentCheck.scriptSections.map((sec) => (
+                    <div
+                      key={sec.stepIndex}
+                      className="p-2.5 rounded-lg border border-line bg-surface-2/60 space-y-1"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink">
+                          Bước {sec.stepIndex}: {sec.sectionTitle}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-2xs text-ink-2">
+                          {sec.timeRange}
+                        </span>
+                      </div>
+                      <p className="text-xs text-ink leading-relaxed">
+                        {sec.spokenOrTextContent}
+                      </p>
+                      <p className="text-2xs text-ink-3">
+                        Khung hình: {sec.visualAndActionNote}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            {/* Lời thoại chi tiết theo mốc giây */}
+            {activeInspection.contentCheck.subtitleSegments &&
+              activeInspection.contentCheck.subtitleSegments.length > 0 && (
+                <div className="rounded-lg border border-line bg-surface-2 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-line flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-accent" />
+                      Lời thoại & Phụ đề bóc tách theo mốc giây ({activeInspection.contentCheck.subtitleSegments.length} phân đoạn)
+                    </span>
+                    <span className="text-2xs font-code text-ink-3">
+                      Âm thanh: {activeInspection.musicTitle}
+                    </span>
+                  </div>
+                  <div className="max-h-44 overflow-y-auto divide-y divide-line/60">
+                    {activeInspection.contentCheck.subtitleSegments.map((seg, idx) => (
+                      <div
+                        key={idx}
+                        className="px-3 py-1.5 flex items-start gap-2.5 text-xs hover:bg-surface/60"
+                      >
+                        <span className="font-code text-2xs text-accent bg-accent-soft/40 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
+                          {seg.timeLabel}
+                        </span>
+                        <span className="text-ink leading-relaxed">{seg.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+          </div>
+        )}
       </div>
     </Modal>
   );
 };
+

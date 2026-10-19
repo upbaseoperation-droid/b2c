@@ -16,6 +16,9 @@ export interface TikTokVideoContentCheck {
   subtitleSource: 'TIKTOK_AUTO_CAPTIONS_VTT' | 'ON_SCREEN_TEXT_AND_CAPTION' | 'BRIEF_ESTIMATED';
   onScreenStickers: string[]; // Chữ KOC chèn trực tiếp trên màn hình video (stickersOnItem)
   hookFirst3Seconds: string;
+  hookPatternLabel?: string;
+  subtitleSegments?: TikTokSubtitleSegment[];
+  scriptSections?: CompetitorVideoScriptSection[];
   detectedProductMentions: string[];
   matchedUspKeywords: string[]; // Các điểm USP / thông điệp bắt buộc KOC đã nói trong video
   missingUspKeywords: string[]; // Các điểm USP bắt buộc KOC quên chưa nhắc tới
@@ -780,16 +783,138 @@ export async function inspectTikTokVideoUrl(
       ? liveData.onScreenStickers
       : [];
 
-  const transcriptText = liveData.transcriptText || '';
+  const cleanCaptionSentences = defaultCaption
+    .replace(/#[\p{L}\p{N}_]+/gu, '')
+    .split(/(?<=[.!?…\n])\s+|\r?\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 6);
+
+  let subtitleSegments: TikTokSubtitleSegment[] =
+    liveData.subtitleSegments && liveData.subtitleSegments.length > 0
+      ? liveData.subtitleSegments
+      : [];
+
+  if (subtitleSegments.length === 0) {
+    const combinedLines = [
+      ...onScreenStickers,
+      ...cleanCaptionSentences,
+    ].filter((line, idx, arr) => line && arr.indexOf(line) === idx);
+
+    if (combinedLines.length > 0) {
+      const effectiveDur = durationSeconds > 0 ? durationSeconds : 30;
+      const stepSec = Math.max(3, Math.floor(effectiveDur / Math.max(1, combinedLines.length)));
+      subtitleSegments = combinedLines.map((line, idx) => {
+        const start = idx * stepSec;
+        const end = Math.min(effectiveDur, (idx + 1) * stepSec);
+        const fmt = (sec: number) =>
+          `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+        return {
+          startSec: start,
+          endSec: end,
+          timeLabel: `${fmt(start)} - ${fmt(end)}`,
+          text: line,
+        };
+      });
+    }
+  }
+
+  const transcriptText =
+    liveData.transcriptText ||
+    (subtitleSegments.length > 0
+      ? subtitleSegments.map((s) => `[${s.timeLabel}] ${s.text}`).join('\n')
+      : defaultCaption);
+
+  const first3SecSegments = subtitleSegments.filter((s) => s.startSec <= 4);
   const hookFirst3Seconds =
-    onScreenStickers[0] ||
-    transcriptText.slice(0, 120) ||
-    defaultCaption.slice(0, 120) ||
-    matchedDeal?.contentHook ||
+    (first3SecSegments.length > 0
+      ? first3SecSegments.map((s) => s.text).join(' ')
+      : onScreenStickers[0] ||
+        cleanCaptionSentences[0] ||
+        defaultCaption.slice(0, 120) ||
+        matchedDeal?.contentHook) ||
     '';
 
+  const hookClass = classifyCompetitorHookPattern(
+    `${hookFirst3Seconds} ${onScreenStickers[0] || ''} ${defaultCaption}`
+  );
+
+  const segCount = subtitleSegments.length;
+  const part2Segs =
+    segCount >= 3
+      ? subtitleSegments.slice(1, Math.max(2, Math.ceil(segCount * 0.4)))
+      : [];
+  const part3Segs =
+    segCount >= 3
+      ? subtitleSegments.slice(
+          Math.max(2, Math.ceil(segCount * 0.4)),
+          Math.max(3, Math.ceil(segCount * 0.8))
+        )
+      : [];
+  const part4Segs =
+    segCount >= 4
+      ? subtitleSegments.slice(Math.max(3, Math.ceil(segCount * 0.8)))
+      : [];
+
+  const targetProductLabel =
+    liveData.cartAnchorTitle ||
+    productName ||
+    brandName ||
+    cleanCaptionSentences[0]?.slice(0, 50) ||
+    'sản phẩm trong bài';
+
+  const scriptSections: CompetitorVideoScriptSection[] = [
+    {
+      stepIndex: 1,
+      timeRange: '00:00 - 00:03',
+      sectionTitle: 'Mở đầu giữ chân (Hook 3 giây đầu)',
+      spokenOrTextContent: hookFirst3Seconds || 'Mở đầu trực tiếp vào sản phẩm / tình huống',
+      visualAndActionNote:
+        onScreenStickers.length > 0
+          ? `Chữ nổi trên màn hình: "${onScreenStickers[0]}" · Cận cảnh gương mặt KOC hoặc sản phẩm.`
+          : 'Quay cận cảnh sản phẩm hoặc nêu trực diện vấn đề ngay 3 giây đầu.',
+    },
+    {
+      stepIndex: 2,
+      timeRange: '00:03 - 00:10',
+      sectionTitle: 'Dẫn dắt vấn đề & Bối cảnh sử dụng',
+      spokenOrTextContent:
+        part2Segs.map((s) => s.text).join(' ') ||
+        cleanCaptionSentences[1] ||
+        `Dẫn dắt tình huống sử dụng thực tế của ${targetProductLabel}.`,
+      visualAndActionNote:
+        'Mô tả tình trạng trước khi dùng hoặc lý do lựa chọn sản phẩm.',
+    },
+    {
+      stepIndex: 3,
+      timeRange: '00:10 - 00:25',
+      sectionTitle: 'Trải nghiệm thực tế & Thông điệp USP',
+      spokenOrTextContent:
+        part3Segs.map((s) => s.text).join(' ') ||
+        cleanCaptionSentences.slice(1, 3).join(' ') ||
+        defaultCaption ||
+        `Trình bày công dụng và điểm nổi bật của ${targetProductLabel}.`,
+      visualAndActionNote:
+        'Test chất sản phẩm (texture), thao tác sử dụng trên da/thực tế.',
+    },
+    {
+      stepIndex: 4,
+      timeRange: `00:25 - 00:${String(Math.max(28, durationSeconds || 30)).padStart(2, '0')}`,
+      sectionTitle: 'Chốt đơn & Điều hướng Giỏ hàng (CTA)',
+      spokenOrTextContent:
+        part4Segs.map((s) => s.text).join(' ') ||
+        (liveData.hasCartAnchor
+          ? `Nhắc ưu đãi và điều hướng bấm vào giỏ hàng góc trái (${liveData.cartAnchorTitle || targetProductLabel}).`
+          : 'Kêu gọi người xem tham khảo sản phẩm và để lại bình luận.'),
+      visualAndActionNote: liveData.hasCartAnchor
+        ? `Gắn giỏ hàng TikTok Shop: "${liveData.cartAnchorTitle || targetProductLabel}".`
+        : 'Chốt lại kết quả trải nghiệm cuối video.',
+    },
+  ];
+
   const subtitleSource: TikTokVideoContentCheck['subtitleSource'] =
-    liveData.subtitleSource || 'ON_SCREEN_TEXT_AND_CAPTION';
+    liveData.subtitleSegments && liveData.subtitleSegments.length > 0
+      ? 'TIKTOK_AUTO_CAPTIONS_VTT'
+      : 'ON_SCREEN_TEXT_AND_CAPTION';
 
   const defaultUspList =
     options.requiredUspKeywords && options.requiredUspKeywords.length > 0
@@ -1044,6 +1169,9 @@ export async function inspectTikTokVideoUrl(
       subtitleSource,
       onScreenStickers,
       hookFirst3Seconds,
+      hookPatternLabel: hookClass.label,
+      subtitleSegments,
+      scriptSections,
       detectedProductMentions: [brandName, productName].filter(Boolean),
       matchedUspKeywords,
       missingUspKeywords,
