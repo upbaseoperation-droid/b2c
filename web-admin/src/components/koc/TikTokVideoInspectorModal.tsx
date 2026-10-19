@@ -17,7 +17,6 @@ import { formatNumber } from '../../lib/format';
 import {
   Button,
   DataTable,
-  Field,
   Modal,
   Status,
   Textarea,
@@ -36,12 +35,6 @@ interface TikTokVideoInspectorModalProps {
   ) => void;
   onAddPublication?: (pub: PublicationItemModel) => void;
 }
-
-const SAMPLE_VIDEO_URLS = [
-  'https://www.tiktok.com/@dhnlie/video/7638191108970843412',
-  'https://www.tiktok.com/@keyshulive/video/7542352999495060743',
-  'https://www.tiktok.com/@happipham/video/7638845114655214855',
-];
 
 export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps> = ({
   isOpen,
@@ -315,25 +308,21 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
-          <Field
-            label="Link video TikTok"
-            htmlFor="tiktok-video-inspector-input"
-            error={errorMessage || undefined}
-          >
+        <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-2.5 items-start">
             <Textarea
               id="tiktok-video-inspector-input"
-              rows={3}
+              aria-label="Link video TikTok"
+              rows={2}
               value={rawUrlsInput}
               onChange={(e) => {
                 setRawUrlsInput(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              placeholder="Ví dụ: https://www.tiktok.com/@dhnlie/video/7638191108970843412"
+              placeholder="Dán link video TikTok cần nghiệm thu (mỗi dòng 1 link)..."
+              className="font-code text-xs"
             />
-          </Field>
 
-          <div className="flex flex-col gap-2 lg:pt-6">
             <Button
               variant="primary"
               icon={isInspecting ? RefreshCw : Search}
@@ -342,17 +331,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             >
               {isInspecting ? 'Đang kiểm tra...' : 'Kiểm tra video'}
             </Button>
-            <button
-              type="button"
-              onClick={() => {
-                setRawUrlsInput(SAMPLE_VIDEO_URLS.join('\n'));
-                if (errorMessage) setErrorMessage(null);
-              }}
-              className="text-2xs text-accent hover:underline text-right font-medium"
-            >
-              Điền 3 link mẫu
-            </button>
           </div>
+          {errorMessage && <p className="text-2xs text-critical">{errorMessage}</p>}
         </div>
 
         {results.length > 0 && (

@@ -21,12 +21,10 @@ import {
   Avatar,
   Button,
   DataTable,
-  Field,
   Modal,
   Panel,
   Select,
   Status,
-  Textarea,
 } from '../ui';
 import type { Column } from '../ui';
 
@@ -329,30 +327,31 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
         </>
       }
     >
-      <div className="space-y-4">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_160px_auto] gap-3 items-start">
-          <Field
-            label="Kênh TikTok (@handle hoặc link kênh)"
-            htmlFor="tiktok-scraper-input"
-            error={errorMsg || undefined}
-          >
-            <Textarea
+      <div className="space-y-3">
+        <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_160px_auto] gap-2.5 items-center">
+            <input
               id="tiktok-scraper-input"
-              rows={2}
+              type="text"
+              aria-label="Kênh TikTok (@handle hoặc link kênh)"
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
-              placeholder="Ví dụ: @megauriviu, @chanhbeauty..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !loading) {
+                  e.preventDefault();
+                  void runScrape(rawInput, period, videoLimit);
+                }
+              }}
+              placeholder="Nhập @handle hoặc link kênh TikTok (cách nhau bằng dấu phẩy, VD: @megauriviu, @chanhbeauty)..."
+              className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
             />
-          </Field>
 
-          <Field
-            label="Số video đọc / kênh"
-            htmlFor="tiktok-scraper-video-limit"
-          >
             <Select
               id="tiktok-scraper-video-limit"
+              aria-label="Số video đọc / kênh"
               value={String(videoLimit)}
               onChange={(e) => setVideoLimit(Number(e.target.value))}
+              className="h-9 text-xs"
             >
               {VIDEO_LIMIT_OPTIONS.map((num) => (
                 <option key={num} value={num}>
@@ -360,9 +359,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                 </option>
               ))}
             </Select>
-          </Field>
 
-          <div className="flex flex-col gap-2 lg:pt-6">
             <Button
               variant={results.length === 0 ? 'primary' : 'secondary'}
               icon={loading ? RefreshCw : Search}
@@ -372,11 +369,13 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
             </Button>
           </div>
+
+          {errorMsg && <p className="text-2xs text-critical">{errorMsg}</p>}
         </div>
 
         {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
         {results.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 pb-1">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
             {results.map((r) => {
               const isSelected = r.handle === activeResult?.handle;
@@ -386,7 +385,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   key={r.handle}
                   type="button"
                   onClick={() => setSelectedHandle(r.handle)}
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                  className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
                     isSelected
                       ? 'bg-accent-soft border-accent text-ink font-semibold'
                       : 'bg-surface border-line text-ink-2 hover:bg-canvas'
@@ -407,17 +406,17 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
         {/* Chi tiết kênh & danh sách video của kênh đang chọn */}
         {activeResult && (
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl border border-line bg-surface flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="space-y-3">
+            <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <Avatar
                   name={activeResult.channelProfile.nickname}
                   src={activeResult.channelProfile.avatarUrl}
-                  size={44}
+                  size={36}
                 />
-                <div className="min-w-0 flex-1 space-y-1">
+                <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-semibold text-ink">
+                    <h3 className="text-xs font-semibold text-ink">
                       {activeResult.channelProfile.nickname}
                     </h3>
                     <a
@@ -434,56 +433,53 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     ) : (
                       <Status tone="positive">Kênh mới</Status>
                     )}
-                  </div>
-
-                  {activeResult.channelProfile.bio && (
-                    <p className="text-xs text-ink-2 leading-relaxed">
-                      {activeResult.channelProfile.bio}
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-2xs text-ink-3">
-                    <span>
-                      SĐT / Zalo:{' '}
+                    <span className="text-2xs text-ink-3">
+                      · SĐT:{' '}
                       <strong className="font-semibold text-ink font-code">
                         {activeResult.channelProfile.extractedPhone || '—'}
                       </strong>
                     </span>
-                    <span>
-                      Email:{' '}
+                    <span className="text-2xs text-ink-3">
+                      · Email:{' '}
                       <strong className="font-semibold text-ink font-code">
                         {activeResult.channelProfile.extractedEmail || '—'}
                       </strong>
                     </span>
                   </div>
+
+                  {activeResult.channelProfile.bio && (
+                    <p className="text-2xs text-ink-2 truncate max-w-2xl">
+                      {activeResult.channelProfile.bio}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-5 text-xs tabular-nums shrink-0">
-                <div>
-                  <span className="text-ink-3 block text-2xs">Follower</span>
+              <div className="flex flex-wrap items-center gap-4 text-2xs tabular-nums shrink-0">
+                <span>
+                  <span className="text-ink-3">Follower: </span>
                   <strong className="text-ink">
                     {formatFollowers(activeResult.channelProfile.followers)}
                   </strong>
-                </div>
-                <div>
-                  <span className="text-ink-3 block text-2xs">Tổng video kênh</span>
+                </span>
+                <span>
+                  <span className="text-ink-3">Tổng video: </span>
                   <strong className="text-ink">
                     {formatNumber(activeResult.channelProfile.videoCount)}
                   </strong>
-                </div>
-                <div>
-                  <span className="text-ink-3 block text-2xs">View TB ({activeResult.recentVideos.length} bài)</span>
+                </span>
+                <span>
+                  <span className="text-ink-3">View TB ({activeResult.recentVideos.length} bài): </span>
                   <strong className="text-ink">
                     {formatNumber(activeResult.engagementMetrics.avgViews)}
                   </strong>
-                </div>
-                <div>
-                  <span className="text-ink-3 block text-2xs">ER%</span>
+                </span>
+                <span>
+                  <span className="text-ink-3">ER: </span>
                   <strong className="text-positive">
                     {activeResult.engagementMetrics.engagementRate}%
                   </strong>
-                </div>
+                </span>
               </div>
             </div>
 
