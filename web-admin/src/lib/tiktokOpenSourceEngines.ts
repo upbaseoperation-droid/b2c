@@ -472,12 +472,21 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
 /**
  * Tìm kiếm danh sách đường dẫn video TikTok thực tế (https://www.tiktok.com/@handle/video/videoId)
  * thông qua chỉ mục Bing Video Search (vi-VN) và danh mục URL video TikTok Việt Nam đã xác thực.
+ * Hỗ trợ excludeHandles và pageOffset để chia thành nhiều đợt quét liên tiếp không trùng lặp.
  */
 export async function discoverRealTikTokVideoUrlsByQuery(
   queries: string[],
-  maxUrls = 30
+  maxUrls = 30,
+  options?: {
+    excludeHandles?: string[];
+    pageOffset?: number;
+  }
 ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> {
   const discovered = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
+  const excludeSet = new Set(
+    (options?.excludeHandles || []).map((h) => h.trim().toLowerCase().replace(/^@+/, ''))
+  );
+  const pageOffset = Math.max(0, options?.pageOffset || 0);
 
   const extractFromHtml = (rawHtml: string) => {
     const b64Decoded = [...rawHtml.matchAll(/(?:[?&]|&amp;)u=a1([a-zA-Z0-9_-]+)/g)]
@@ -500,7 +509,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
     for (const m of normalized.matchAll(/tiktok\.com\/@([a-zA-Z0-9._-]+)\/video\/(\d{15,22})/g)) {
       const handle = m[1].toLowerCase();
-      if (BING_US_WIDGET_BLACKLIST.has(handle)) continue;
+      if (BING_US_WIDGET_BLACKLIST.has(handle) || excludeSet.has(handle)) continue;
       const videoId = m[2];
       const key = `${handle}_${videoId}`;
       if (!discovered.has(key)) {
@@ -517,9 +526,10 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   for (const q of queries) {
     if (discovered.size >= maxUrls) break;
     try {
+      const firstParam = pageOffset * 35;
       const asyncSearchUrl = `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
         q
-      )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`;
+      )}&async=content&first=${firstParam}&count=35&mkt=vi-VN&setlang=vi&cc=VN`;
       const res = await fetch(asyncSearchUrl, {
         headers: {
           'User-Agent': DEFAULT_BROWSER_UA,
@@ -527,7 +537,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
           'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
           Cookie: '_EDGE_S=mkt=vi-vn&ui=vi-vn; SRCHHPGUSR=SRCHLANG=vi',
         },
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(4500),
         cache: 'no-store',
       });
       if (res.ok) {
@@ -539,8 +549,8 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   }
 
-  // Nếu máy chủ Serverless tại Mỹ (AWS US-East) bị giới hạn tìm kiếm theo vùng, bổ sung URL video thực từ chỉ mục đã xác thực
-  if (discovered.size < 6) {
+  // Bổ sung URL video KOC Việt Nam thực tế (chưa nằm trong excludeSet) để đáp ứng đủ số lượng khi quét nhiều đợt
+  if (discovered.size < maxUrls) {
     const joinedQuery = queries
       .join(' ')
       .toLowerCase()
@@ -548,10 +558,13 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/đ/g, 'd');
 
+    // 1. Ưu tiên nhóm khớp trực tiếp với thương hiệu / hashtag
     for (const [catalogKey, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
       if (joinedQuery.includes(catalogKey)) {
         for (const item of items) {
-          const key = `${item.handle}_${item.videoId}`;
+          const cleanH = item.handle.toLowerCase();
+          if (excludeSet.has(cleanH)) continue;
+          const key = `${cleanH}_${item.videoId}`;
           if (!discovered.has(key)) {
             discovered.set(key, item);
           }
@@ -560,16 +573,17 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       }
     }
 
-    // Nếu là từ khóa hoặc thương hiệu mới chưa có trong danh mục riêng, lấy từ nhóm Dược mỹ phẩm & Skincare thực tế
-    if (discovered.size === 0) {
-      const generalPool = [
-        ...VERIFIED_VN_TIKTOK_VIDEO_URLS.duocmypham,
-        ...VERIFIED_VN_TIKTOK_VIDEO_URLS.skincare,
-      ];
-      for (const item of generalPool) {
-        const key = `${item.handle}_${item.videoId}`;
-        if (!discovered.has(key)) {
-          discovered.set(key, item);
+    // 2. Khi người dùng yêu cầu số lượng lớn (chia nhiều đợt quét > 12 KOC), lấy tiếp từ các nhóm KOC Việt Nam cùng ngành hàng
+    if (discovered.size < maxUrls) {
+      for (const [, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
+        for (const item of items) {
+          const cleanH = item.handle.toLowerCase();
+          if (excludeSet.has(cleanH)) continue;
+          const key = `${cleanH}_${item.videoId}`;
+          if (!discovered.has(key)) {
+            discovered.set(key, item);
+          }
+          if (discovered.size >= maxUrls) break;
         }
         if (discovered.size >= maxUrls) break;
       }
@@ -675,15 +689,22 @@ interface RawTikTokApiComment {
 
 async function fetchRawCommentsByAwemeId(
   awemeId: string,
-  limit: number
-): Promise<RawTikTokApiComment[]> {
-  if (!awemeId) return [];
+  limit: number,
+  startCursor = 0
+): Promise<{
+  items: RawTikTokApiComment[];
+  nextCursor: number;
+  hasMore: boolean;
+}> {
+  if (!awemeId) return { items: [], nextCursor: 0, hasMore: false };
   const collected: RawTikTokApiComment[] = [];
-  let cursor = 0;
+  let cursor = Math.max(0, startCursor);
+  let hasMore = false;
   const deviceId =
     '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
 
-  for (let page = 0; page < 2 && collected.length < limit; page++) {
+  const maxPages = Math.min(Math.ceil(limit / 35) + 1, 5);
+  for (let page = 0; page < maxPages && collected.length < limit; page++) {
     try {
       const qs = new URLSearchParams({
         aid: '1988',
@@ -718,7 +739,10 @@ async function fetchRawCommentsByAwemeId(
       if (!res.ok) break;
       const data = await res.json();
       const list: RawTikTokApiComment[] = Array.isArray(data?.comments) ? data.comments : [];
-      if (list.length === 0) break;
+      if (list.length === 0) {
+        hasMore = false;
+        break;
+      }
 
       for (const item of list) {
         collected.push(item);
@@ -728,54 +752,80 @@ async function fetchRawCommentsByAwemeId(
           }
         }
       }
-      if (data?.has_more !== 1 || collected.length >= limit) break;
+      hasMore = data?.has_more === 1;
       cursor = Number(data?.cursor || cursor + 50);
+      if (!hasMore || collected.length >= limit) break;
     } catch {
       break;
     }
   }
 
-  return collected.slice(0, limit);
+  return {
+    items: collected.slice(0, limit),
+    nextCursor: cursor,
+    hasMore,
+  };
 }
 
 /**
  * Cào trực tiếp danh sách bình luận thực tế của 1 Video TikTok & phân loại khách hỏi mua hàng
- * Sử dụng trực tiếp endpoint /api/comment/list/ và TikTok SSR WAF Solver (không phụ thuộc module ngoài trên Serverless)
+ * Sử dụng trực tiếp endpoint /api/comment/list/ và TikTok SSR WAF Solver (hỗ trợ cursor phân trang theo đợt)
  */
 export async function scrapeTikTokVideoComments(
   rawUrl: string,
-  limit = 30
+  limit = 40,
+  options?: {
+    cursor?: number;
+    resolvedVideoId?: string;
+  }
 ): Promise<TikTokVideoCommentsScrapeResult> {
   const cleanUrl = rawUrl.trim();
-  const safeLimit = Math.min(Math.max(5, limit), 100);
+  const safeLimit = Math.min(Math.max(5, limit), 200);
+  const startCursor = Math.max(0, options?.cursor || 0);
 
   const urlMatch = cleanUrl.match(/tiktok\.com\/@([^/?#]+)\/(?:video|photo)\/(\d{15,22})/i);
   const channelOnlyMatch = cleanUrl.match(/(?:tiktok\.com\/@|^@?)([a-zA-Z0-9._-]+)\/?$/i);
   const fallbackHandle = (urlMatch?.[1] || channelOnlyMatch?.[1] || 'tiktok').replace(/^@+/, '');
-  let targetVideoId = urlMatch?.[2] || cleanUrl.match(/\b(\d{17,21})\b/)?.[1] || '';
+  let targetVideoId =
+    options?.resolvedVideoId ||
+    urlMatch?.[2] ||
+    cleanUrl.match(/\b(\d{17,21})\b/)?.[1] ||
+    '';
 
-  let livePage = await inspectLiveTikTokVideoPage(cleanUrl).catch(() => null);
+  let livePage =
+    startCursor > 0 && targetVideoId
+      ? null
+      : await inspectLiveTikTokVideoPage(cleanUrl).catch(() => null);
   if (livePage?.videoId) {
     targetVideoId = livePage.videoId;
   }
 
-  let rawComments = targetVideoId
-    ? await fetchRawCommentsByAwemeId(targetVideoId, safeLimit)
-    : [];
+  let commentFetch = targetVideoId
+    ? await fetchRawCommentsByAwemeId(targetVideoId, safeLimit, startCursor)
+    : { items: [], nextCursor: 0, hasMore: false };
 
-  // Nếu video được dán hiện có 0 bình luận (hoặc người dùng dán link kênh @handle),
+  // Nếu video được dán hiện có 0 bình luận ở đợt đầu tiên,
   // tự động dò các video thực tế khác của chính kênh đó để lấy bình luận thật của kênh
   const activeHandle = livePage?.author.handle || fallbackHandle;
-  if (rawComments.length === 0 && activeHandle && activeHandle !== 'tiktok') {
+  if (
+    startCursor === 0 &&
+    commentFetch.items.length === 0 &&
+    activeHandle &&
+    activeHandle !== 'tiktok'
+  ) {
     const channelVideos = await discoverRealTikTokVideoUrlsByQuery(
       [`tiktok.com/@${activeHandle}/video`, `tiktok ${activeHandle}`],
       8
     );
     for (const candidate of channelVideos) {
       if (candidate.videoId === targetVideoId) continue;
-      const candidateComments = await fetchRawCommentsByAwemeId(candidate.videoId, safeLimit);
-      if (candidateComments.length > 0) {
-        rawComments = candidateComments;
+      const candidateComments = await fetchRawCommentsByAwemeId(
+        candidate.videoId,
+        safeLimit,
+        0
+      );
+      if (candidateComments.items.length > 0) {
+        commentFetch = candidateComments;
         const candidatePage = await inspectLiveTikTokVideoPage(candidate.videoUrl).catch(
           () => null
         );
@@ -788,6 +838,8 @@ export async function scrapeTikTokVideoComments(
     }
   }
 
+  const rawComments = commentFetch.items;
+
   const comments: TikTokVideoCommentItem[] = rawComments.map((c, idx) => {
     const text = c.text || '';
     const { intentType, intentLabel } = classifyCommentIntent(text);
@@ -798,9 +850,9 @@ export async function scrapeTikTokVideoComments(
         : new Date().toISOString().slice(0, 10);
 
     return {
-      cid: String(c.cid || `cmt-${idx + 1}`),
-      username: c.user?.unique_id || `user_${idx + 1}`,
-      nickname: c.user?.nickname || c.user?.unique_id || `Người dùng #${idx + 1}`,
+      cid: String(c.cid || `cmt-${startCursor + idx + 1}`),
+      username: c.user?.unique_id || `user_${startCursor + idx + 1}`,
+      nickname: c.user?.nickname || c.user?.unique_id || `Người dùng #${startCursor + idx + 1}`,
       avatarUrl: Array.isArray(c.user?.avatar_thumb?.url_list)
         ? c.user?.avatar_thumb?.url_list[0]
         : undefined,
@@ -829,6 +881,8 @@ export async function scrapeTikTokVideoComments(
 
   return {
     engineUsed: 'TikTok Comment API + SSR WAF Solver (100% Real Data)',
+    nextCursor: commentFetch.nextCursor,
+    hasMore: commentFetch.hasMore,
     videoInfo: {
       videoId: String(livePage?.videoId || targetVideoId),
       videoUrl: livePage?.videoUrl || cleanUrl,

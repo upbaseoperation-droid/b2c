@@ -605,12 +605,15 @@ export interface TikTokHashtagKocResult extends TikTokScrapedKocResult {
 
 /**
  * Thu thập danh sách KOC thực tế đang có video gắn Hashtag hoặc Từ khóa ngách (100% dữ liệu thực từ TikTok).
+ * Hỗ trợ excludeHandles và pageOffset để chia thành nhiều đợt quét liên tiếp.
  */
 export async function discoverTikTokKocsByHashtag(
   rawHashtagOrKeyword: string,
   options?: {
     period?: '7d' | '30d' | '90d';
     limit?: number;
+    excludeHandles?: string[];
+    pageOffset?: number;
   }
 ): Promise<{
   hashtag: string;
@@ -619,7 +622,10 @@ export async function discoverTikTokKocsByHashtag(
   results: TikTokHashtagKocResult[];
 }> {
   const period = options?.period || '30d';
-  const limit = Math.min(Math.max(options?.limit || 12, 1), 25);
+  const limit = Math.min(Math.max(options?.limit || 12, 1), 30);
+  const excludeSet = new Set(
+    (options?.excludeHandles || []).map((h) => h.trim().toLowerCase().replace(/^@+/, ''))
+  );
 
   const cleanKeyword = rawHashtagOrKeyword.replace(/^#+/, '').trim();
   const cleanTag = cleanKeyword
@@ -632,16 +638,20 @@ export async function discoverTikTokKocsByHashtag(
   const effectiveTag = cleanTag || 'kemchongnang';
   const tagPageUrl = `https://www.tiktok.com/tag/${encodeURIComponent(effectiveTag)}`;
 
-  // 1. Tìm danh sách link video TikTok thực tế theo từ khóa / hashtag
+  // 1. Tìm danh sách link video TikTok thực tế theo từ khóa / hashtag (bỏ qua các handle đã quét ở đợt trước)
   const searchQueries = [
     `tiktok ${cleanKeyword} review`,
     `tiktok #${effectiveTag}`,
   ];
-  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 3);
+  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 3, {
+    excludeHandles: options?.excludeHandles,
+    pageOffset: options?.pageOffset,
+  });
 
   // Gom theo từng KOC duy nhất
   const uniqueByHandle = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
   for (const item of rawDiscovered) {
+    if (excludeSet.has(item.handle)) continue;
     if (!uniqueByHandle.has(item.handle)) {
       uniqueByHandle.set(item.handle, item);
     }
@@ -652,7 +662,7 @@ export async function discoverTikTokKocsByHashtag(
   const results: TikTokHashtagKocResult[] = [];
 
   // 2. Truy vấn trực tiếp từng trang video trên TikTok (vượt WAF Slardar) để lấy cả hồ sơ KOC + chỉ số thực của video
-  const chunkSize = 5;
+  const chunkSize = 8;
   for (let i = 0; i < candidateEntries.length && results.length < limit; i += chunkSize) {
     const chunk = candidateEntries.slice(i, i + chunkSize);
     const inspectedChunk = await Promise.all(
@@ -661,6 +671,7 @@ export async function discoverTikTokKocsByHashtag(
 
     for (const inspected of inspectedChunk) {
       if (!inspected || results.length >= limit) continue;
+      if (excludeSet.has(inspected.author.handle)) continue;
 
       const baseResult = buildScrapedResultFromRealData(
         inspected.author.handle,
@@ -867,6 +878,7 @@ const COMPETITOR_PRESET_CATALOG: Record<
 
 /**
  * Quét danh sách các KOC thực tế đang lên video review / gắn thẻ Kênh hoặc Thương hiệu Đối thủ (100% dữ liệu thực từ TikTok).
+ * Hỗ trợ excludeHandles, pageOffset và skipProfileFetch để chia thành nhiều đợt quét liên tiếp.
  */
 export async function discoverCompetitorKocs(
   rawCompetitorInput: string,
@@ -874,6 +886,9 @@ export async function discoverCompetitorKocs(
     period?: '7d' | '30d' | '90d';
     limit?: number;
     targetUpbaseBrand?: string;
+    excludeHandles?: string[];
+    pageOffset?: number;
+    skipProfileFetch?: boolean;
   }
 ): Promise<{
   competitorProfile: TikTokCompetitorProfileSummary;
@@ -883,7 +898,10 @@ export async function discoverCompetitorKocs(
   results: TikTokCompetitorKocResult[];
 }> {
   const period = options?.period || '30d';
-  const limit = Math.min(Math.max(options?.limit || 12, 1), 25);
+  const limit = Math.min(Math.max(options?.limit || 12, 1), 30);
+  const excludeSet = new Set(
+    (options?.excludeHandles || []).map((h) => h.trim().toLowerCase().replace(/^@+/, ''))
+  );
 
   const parsedHandles = parseTikTokHandles(rawCompetitorInput);
   const cleanCompetitorHandle = (
@@ -916,25 +934,35 @@ export async function discoverCompetitorKocs(
     rawCompetitorInput
   );
 
-  // 1. Chạy song song: lấy hồ sơ thực của kênh đối thủ VÀ tìm các video KOC nhắc tới đối thủ
+  // 1. Chạy song song: lấy hồ sơ thực của kênh đối thủ (nếu là đợt 1) VÀ tìm các video KOC nhắc tới đối thủ
   const [liveCompProfile, directInputVideo, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
-    fetchLiveTikTokPublicProfile(cleanCompetitorHandle),
-    isDirectVideoUrl ? inspectLiveTikTokVideoPage(rawCompetitorInput.trim()) : Promise.resolve(null),
-    discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanCompetitorHandle}/video`], 5),
+    options?.skipProfileFetch
+      ? Promise.resolve(null)
+      : fetchLiveTikTokPublicProfile(cleanCompetitorHandle),
+    !options?.skipProfileFetch && isDirectVideoUrl
+      ? inspectLiveTikTokVideoPage(rawCompetitorInput.trim())
+      : Promise.resolve(null),
+    options?.skipProfileFetch
+      ? Promise.resolve([])
+      : discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanCompetitorHandle}/video`], 5),
     discoverRealTikTokVideoUrlsByQuery(
       [
         `tiktok ${cleanSearchBrand} review`,
         `tiktok review ${cleanSearchBrand} chính hãng`,
         `tiktok #${strippedBrandCore.replace(/\s+/g, '')}`,
       ],
-      limit * 4
+      limit * 4,
+      {
+        excludeHandles: options?.excludeHandles,
+        pageOffset: options?.pageOffset,
+      }
     ),
   ]);
 
   // Nếu trang profile @competitor chưa trả về số liệu (do chỉ mở trên trang video), lấy từ 1 video thực của chính kênh đối thủ
   let compVideoAuthor: RealTikTokVideoAndAuthorDetail['author'] | undefined =
     directInputVideo?.author;
-  if (!liveCompProfile?.followers && !compVideoAuthor?.followers) {
+  if (!options?.skipProfileFetch && !liveCompProfile?.followers && !compVideoAuthor?.followers) {
     const ownVideo = compOwnVideos.find((v) => v.handle === cleanCompetitorHandle);
     if (ownVideo) {
       const inspectedOwn = await inspectLiveTikTokVideoPage(ownVideo.videoUrl);
@@ -965,7 +993,7 @@ export async function discoverCompetitorKocs(
     recommendedUpbaseBrands: preset?.recommendedUpbaseBrands || [],
   };
 
-  // 2. Gom nhóm các video thực của KOC bên thứ ba (loại trừ video đăng bởi chính kênh đối thủ)
+  // 2. Gom nhóm các video thực của KOC bên thứ ba (loại trừ video đăng bởi chính kênh đối thủ & các KOC đã quét ở đợt trước)
   const compactBrandTag = cleanCompetitorHandle.replace(/[._-]/g, '');
   const groupedByKoc = new Map<
     string,
@@ -975,7 +1003,8 @@ export async function discoverCompetitorKocs(
   for (const item of rawDiscoveredVideos) {
     if (
       item.handle === cleanCompetitorHandle ||
-      item.handle.includes(compactBrandTag)
+      item.handle.includes(compactBrandTag) ||
+      excludeSet.has(item.handle)
     ) {
       continue;
     }
@@ -992,7 +1021,7 @@ export async function discoverCompetitorKocs(
   const results: TikTokCompetitorKocResult[] = [];
 
   // 3. Truy vấn trực tiếp từng trang video trên TikTok để lấy 100% số liệu thật của KOC & Video
-  const chunkSize = 5;
+  const chunkSize = 8;
   for (let i = 0; i < kocEntries.length && results.length < limit; i += chunkSize) {
     const chunk = kocEntries.slice(i, i + chunkSize);
     const inspectedChunk = await Promise.all(
@@ -1005,7 +1034,7 @@ export async function discoverCompetitorKocs(
       if (!inspected || results.length >= limit) continue;
 
       const kocHandle = inspected.author.handle;
-      if (kocHandle === cleanCompetitorHandle) continue;
+      if (kocHandle === cleanCompetitorHandle || excludeSet.has(kocHandle)) continue;
 
       const baseResult = buildScrapedResultFromRealData(
         kocHandle,
@@ -1164,6 +1193,8 @@ export interface TikTokVideoCommentItem {
 
 export interface TikTokVideoCommentsScrapeResult {
   engineUsed: string;
+  nextCursor?: number;
+  hasMore?: boolean;
   videoInfo: {
     videoId: string;
     videoUrl: string;

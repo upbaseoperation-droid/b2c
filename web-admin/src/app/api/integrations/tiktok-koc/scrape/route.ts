@@ -138,9 +138,21 @@ export async function POST(req: NextRequest) {
     const period: '7d' | '30d' | '90d' =
       periodParam === '7d' || periodParam === '90d' ? periodParam : '30d';
 
+    const excludeHandles: string[] = Array.isArray(body.excludeHandles)
+      ? body.excludeHandles.map((h: unknown) => String(h || ''))
+      : [];
+    const pageOffset = Number(body.pageOffset || 0);
+    const skipProfileFetch = Boolean(body.skipProfileFetch);
+
     if (typeof videoUrlParam === 'string' && videoUrlParam.trim().length > 0) {
-      const limit = Number(body.limit || 30);
-      const commentData = await scrapeTikTokVideoComments(videoUrlParam, limit);
+      const limit = Number(body.limit || 40);
+      const cursor = Number(body.cursor || 0);
+      const resolvedVideoId =
+        typeof body.resolvedVideoId === 'string' ? body.resolvedVideoId : undefined;
+      const commentData = await scrapeTikTokVideoComments(videoUrlParam, limit, {
+        cursor,
+        resolvedVideoId,
+      });
       return NextResponse.json({
         success: true,
         mode: 'VIDEO_COMMENTS',
@@ -165,6 +177,9 @@ export async function POST(req: NextRequest) {
         period,
         limit,
         targetUpbaseBrand,
+        excludeHandles,
+        pageOffset,
+        skipProfileFetch,
       });
       return NextResponse.json({
         success: true,
@@ -180,7 +195,12 @@ export async function POST(req: NextRequest) {
 
     if (typeof hashtagParam === 'string' && hashtagParam.trim().length > 0) {
       const limit = Number(body.limit || 12);
-      const discovery = await discoverTikTokKocsByHashtag(hashtagParam, { period, limit });
+      const discovery = await discoverTikTokKocsByHashtag(hashtagParam, {
+        period,
+        limit,
+        excludeHandles,
+        pageOffset,
+      });
       return NextResponse.json({
         success: true,
         mode: 'HASHTAG_DISCOVERY',

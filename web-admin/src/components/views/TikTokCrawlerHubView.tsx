@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -10,8 +10,10 @@ import {
   Hash,
   MessageSquare,
   Phone,
+  Plus,
   RefreshCw,
   Search,
+  Square,
   Store,
   ThumbsUp,
   UserPlus,
@@ -73,6 +75,18 @@ type CompetitorFilterKey =
   | 'AFFILIATE_CART';
 type CommentFilterKey = 'ALL' | TikTokCommentIntentType;
 
+interface BatchCrawlProgress {
+  currentBatch: number;
+  totalBatches: number;
+  collectedCount: number;
+  targetCount: number;
+}
+
+const KOC_BATCH_SIZE = 12;
+const COMMENT_BATCH_SIZE = 40;
+const KOC_COUNT_PRESETS = [12, 24, 36, 60];
+const COMMENT_COUNT_PRESETS = [30, 60, 100, 150];
+
 const COMPETITOR_SAMPLES = [
   { handle: '@larocheposayvn', label: 'La Roche-Posay VN' },
   { handle: '@keyshulive', label: 'KEYSHU LIVE' },
@@ -119,29 +133,38 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
   // --- State Tab 1: Quét KOC của Đối thủ ---
   const [competitorInput, setCompetitorInput] = useState('@larocheposayvn');
+  const [compTargetCount, setCompTargetCount] = useState<number>(12);
   const [compLoading, setCompLoading] = useState(false);
+  const [compBatchProgress, setCompBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [compError, setCompError] = useState<string | null>(null);
   const [compProfile, setCompProfile] = useState<TikTokCompetitorProfileSummary | null>(null);
   const [compResults, setCompResults] = useState<TikTokCompetitorKocResult[]>([]);
   const [compFilter, setCompFilter] = useState<CompetitorFilterKey>('ALL');
   const [compSearchQuery, setCompSearchQuery] = useState('');
+  const compAbortRef = useRef(false);
 
   // --- State Tab 2: Tìm KOC theo Hashtag ---
   const [hashtagInput, setHashtagInput] = useState('#kemchongnang');
+  const [tagTargetCount, setTagTargetCount] = useState<number>(12);
   const [tagLoading, setTagLoading] = useState(false);
+  const [tagBatchProgress, setTagBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
   const [tagResults, setTagResults] = useState<TikTokHashtagKocResult[]>([]);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const tagAbortRef = useRef(false);
 
-  // --- State Tab 3: Cào Bình luận Video & KOC Xu hướng (@tobyg74/tiktok-api-dl) ---
+  // --- State Tab 3: Cào Bình luận Video & KOC Xu hướng ---
   const [videoCommentUrl, setVideoCommentUrl] = useState(
     'https://www.tiktok.com/@tiktok/video/7106594312292453675'
   );
+  const [commentTargetCount, setCommentTargetCount] = useState<number>(40);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [commentBatchProgress, setCommentBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [commentData, setCommentData] = useState<TikTokVideoCommentsScrapeResult | null>(null);
   const [commentFilter, setCommentFilter] = useState<CommentFilterKey>('ALL');
   const [commentSearch, setCommentSearch] = useState('');
+  const commentAbortRef = useRef(false);
 
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingCreators, setTrendingCreators] = useState<TikTokTrendingCreatorItem[]>([]);
@@ -161,108 +184,347 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     return map;
   }, [kocs]);
 
-  const runCompetitorCrawl = async (rawComp: string, targetPeriod: PeriodKey) => {
+  const runCompetitorCrawl = async (
+    rawComp: string,
+    targetPeriod: PeriodKey,
+    options?: { targetCount?: number; appendMode?: boolean }
+  ) => {
     const trimmed = rawComp.trim();
     if (!trimmed) {
       setCompError('Vui lòng nhập @handle kênh TikTok hoặc tên thương hiệu đối thủ.');
       return;
     }
 
+    const appendMode = Boolean(options?.appendMode);
+    const baseList = appendMode ? [...compResults] : [];
+    const requestedTotal = appendMode
+      ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
+      : Math.min(Math.max(Number(options?.targetCount ?? compTargetCount) || 12, 1), 120);
+
+    const totalNeeded = Math.max(1, requestedTotal - baseList.length);
+    const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+
+    compAbortRef.current = false;
     setCompLoading(true);
     setCompError(null);
 
+    const accumulatedMap = new Map<string, TikTokCompetitorKocResult>();
+    for (const item of baseList) {
+      accumulatedMap.set(item.handle.toLowerCase(), item);
+    }
+    let latestProfile = appendMode ? compProfile : null;
+
     try {
-      const res = await fetch('/api/integrations/tiktok-koc/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          competitor: trimmed,
-          period: targetPeriod,
-          limit: 12,
-        }),
-      });
-      const json = await res.json();
+      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+        if (compAbortRef.current) break;
 
-      if (!res.ok || !json.success || !Array.isArray(json.results)) {
-        setCompError(json.message || 'Không quét được danh sách KOC của đối thủ này.');
-        return;
+        const remaining = requestedTotal - accumulatedMap.size;
+        if (remaining <= 0) break;
+        const batchLimit = Math.min(KOC_BATCH_SIZE, remaining);
+
+        setCompBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: accumulatedMap.size,
+          targetCount: requestedTotal,
+        });
+
+        const res = await fetch('/api/integrations/tiktok-koc/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            competitor: trimmed,
+            period: targetPeriod,
+            limit: batchLimit,
+            excludeHandles: Array.from(accumulatedMap.keys()),
+            pageOffset: Math.floor(accumulatedMap.size / KOC_BATCH_SIZE),
+            skipProfileFetch: accumulatedMap.size > 0 && Boolean(latestProfile),
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success || !Array.isArray(json.results)) {
+          if (accumulatedMap.size === 0) {
+            setCompError(json.message || 'Không quét được danh sách KOC của đối thủ này.');
+          }
+          break;
+        }
+
+        if (json.competitorProfile && (!latestProfile || !latestProfile.followers)) {
+          latestProfile = json.competitorProfile;
+          setCompProfile(json.competitorProfile);
+        }
+
+        let addedInBatch = 0;
+        for (const row of json.results as TikTokCompetitorKocResult[]) {
+          const key = row.handle.toLowerCase();
+          if (!accumulatedMap.has(key)) {
+            accumulatedMap.set(key, row);
+            addedInBatch++;
+          }
+        }
+
+        const mergedList = Array.from(accumulatedMap.values()).sort(
+          (a, b) =>
+            b.competitorCollaboration.latestCollabViews -
+            a.competitorCollaboration.latestCollabViews
+        );
+        setCompResults(mergedList);
+
+        setCompBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: mergedList.length,
+          targetCount: requestedTotal,
+        });
+
+        if (addedInBatch === 0) break;
       }
-
-      setCompProfile(json.competitorProfile || null);
-      setCompResults(json.results);
     } catch {
-      setCompError('Không kết nối được dịch vụ thu thập dữ liệu TikTok. Vui lòng thử lại.');
+      if (accumulatedMap.size === 0) {
+        setCompError('Không kết nối được dịch vụ thu thập dữ liệu TikTok. Vui lòng thử lại.');
+      }
     } finally {
       setCompLoading(false);
+      setCompBatchProgress(null);
     }
   };
 
-  const runHashtagCrawl = async (rawTag: string, targetPeriod: PeriodKey) => {
+  const runHashtagCrawl = async (
+    rawTag: string,
+    targetPeriod: PeriodKey,
+    options?: { targetCount?: number; appendMode?: boolean }
+  ) => {
     const trimmed = rawTag.trim();
     if (!trimmed) {
       setTagError('Vui lòng nhập #hashtag hoặc từ khóa ngách cần quét.');
       return;
     }
 
+    const appendMode = Boolean(options?.appendMode);
+    const baseList = appendMode ? [...tagResults] : [];
+    const requestedTotal = appendMode
+      ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
+      : Math.min(Math.max(Number(options?.targetCount ?? tagTargetCount) || 12, 1), 120);
+
+    const totalNeeded = Math.max(1, requestedTotal - baseList.length);
+    const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+
+    tagAbortRef.current = false;
     setTagLoading(true);
     setTagError(null);
 
+    const accumulatedMap = new Map<string, TikTokHashtagKocResult>();
+    for (const item of baseList) {
+      accumulatedMap.set(item.handle.toLowerCase(), item);
+    }
+
     try {
-      const res = await fetch('/api/integrations/tiktok-koc/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hashtag: trimmed,
-          period: targetPeriod,
-          limit: 12,
-        }),
-      });
-      const json = await res.json();
+      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+        if (tagAbortRef.current) break;
 
-      if (!res.ok || !json.success || !Array.isArray(json.results)) {
-        setTagError(json.message || 'Không tìm thấy KOC nào cho hashtag này.');
-        return;
+        const remaining = requestedTotal - accumulatedMap.size;
+        if (remaining <= 0) break;
+        const batchLimit = Math.min(KOC_BATCH_SIZE, remaining);
+
+        setTagBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: accumulatedMap.size,
+          targetCount: requestedTotal,
+        });
+
+        const res = await fetch('/api/integrations/tiktok-koc/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hashtag: trimmed,
+            period: targetPeriod,
+            limit: batchLimit,
+            excludeHandles: Array.from(accumulatedMap.keys()),
+            pageOffset: Math.floor(accumulatedMap.size / KOC_BATCH_SIZE),
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success || !Array.isArray(json.results)) {
+          if (accumulatedMap.size === 0) {
+            setTagError(json.message || 'Không tìm thấy KOC nào cho hashtag này.');
+          }
+          break;
+        }
+
+        let addedInBatch = 0;
+        for (const row of json.results as TikTokHashtagKocResult[]) {
+          const key = row.handle.toLowerCase();
+          if (!accumulatedMap.has(key)) {
+            accumulatedMap.set(key, row);
+            addedInBatch++;
+          }
+        }
+
+        const mergedList = Array.from(accumulatedMap.values()).sort(
+          (a, b) =>
+            b.matchedHashtagVideo.views - a.matchedHashtagVideo.views ||
+            b.matchedHashtagVideo.breakoutRatio - a.matchedHashtagVideo.breakoutRatio
+        );
+        setTagResults(mergedList);
+
+        setTagBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: mergedList.length,
+          targetCount: requestedTotal,
+        });
+
+        if (addedInBatch === 0) break;
       }
-
-      setTagResults(json.results);
     } catch {
-      setTagError('Không kết nối được dịch vụ quét hashtag TikTok.');
+      if (accumulatedMap.size === 0) {
+        setTagError('Không kết nối được dịch vụ quét hashtag TikTok.');
+      }
     } finally {
       setTagLoading(false);
+      setTagBatchProgress(null);
     }
   };
 
-  const runVideoCommentsCrawl = async (rawUrl: string) => {
+  const runVideoCommentsCrawl = async (
+    rawUrl: string,
+    options?: { targetCount?: number; appendMode?: boolean }
+  ) => {
     const trimmed = rawUrl.trim();
     if (!trimmed) {
       setCommentError('Vui lòng nhập đường dẫn video TikTok cần cào bình luận.');
       return;
     }
 
+    const appendMode = Boolean(options?.appendMode && commentData);
+    const existingComments = appendMode && commentData ? [...commentData.comments] : [];
+    const requestedTotal = appendMode
+      ? existingComments.length + (options?.targetCount || COMMENT_BATCH_SIZE)
+      : Math.min(Math.max(Number(options?.targetCount ?? commentTargetCount) || 40, 5), 300);
+
+    const totalNeeded = Math.max(5, requestedTotal - existingComments.length);
+    const totalBatches = Math.max(1, Math.ceil(totalNeeded / COMMENT_BATCH_SIZE));
+
+    commentAbortRef.current = false;
     setCommentLoading(true);
     setCommentError(null);
 
+    const commentMap = new Map<string, TikTokVideoCommentItem>();
+    for (const c of existingComments) {
+      commentMap.set(c.cid, c);
+    }
+
+    let currentCursor = appendMode ? commentData?.nextCursor || existingComments.length : 0;
+    let resolvedVideoId = appendMode ? commentData?.videoInfo.videoId : undefined;
+    let latestVideoInfo = appendMode ? commentData?.videoInfo : undefined;
+    let latestEngine = appendMode ? commentData?.engineUsed : undefined;
+
     try {
-      const res = await fetch('/api/integrations/tiktok-koc/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoUrl: trimmed,
-          limit: 40,
-        }),
-      });
-      const json = await res.json();
+      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+        if (commentAbortRef.current) break;
 
-      if (!res.ok || !json.success || !json.videoInfo) {
-        setCommentError(json.message || 'Không lấy được danh sách bình luận của video này.');
-        return;
+        const remaining = requestedTotal - commentMap.size;
+        if (remaining <= 0) break;
+        const batchLimit = Math.min(COMMENT_BATCH_SIZE, remaining);
+
+        setCommentBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: commentMap.size,
+          targetCount: requestedTotal,
+        });
+
+        const res = await fetch('/api/integrations/tiktok-koc/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videoUrl: trimmed,
+            limit: batchLimit,
+            cursor: currentCursor,
+            resolvedVideoId,
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success || !json.videoInfo) {
+          if (commentMap.size === 0) {
+            setCommentError(json.message || 'Không lấy được danh sách bình luận của video này.');
+          }
+          break;
+        }
+
+        if (!latestVideoInfo || json.videoInfo.views > 0) {
+          latestVideoInfo = json.videoInfo;
+        }
+        resolvedVideoId = json.videoInfo.videoId || resolvedVideoId;
+        latestEngine = json.engineUsed || latestEngine;
+        currentCursor = typeof json.nextCursor === 'number' ? json.nextCursor : currentCursor + batchLimit;
+
+        let addedInBatch = 0;
+        for (const c of (json.comments || []) as TikTokVideoCommentItem[]) {
+          if (!commentMap.has(c.cid)) {
+            commentMap.set(c.cid, c);
+            addedInBatch++;
+          }
+        }
+
+        const allComments = Array.from(commentMap.values()).sort((a, b) => {
+          const scoreA =
+            a.intentType === 'BUYING_INTENT' ? 2 : a.intentType === 'PRODUCT_FEEDBACK' ? 1 : 0;
+          const scoreB =
+            b.intentType === 'BUYING_INTENT' ? 2 : b.intentType === 'PRODUCT_FEEDBACK' ? 1 : 0;
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          return b.likeCount - a.likeCount;
+        });
+
+        const buyingIntentCount = allComments.filter((c) => c.intentType === 'BUYING_INTENT').length;
+        const feedbackCount = allComments.filter((c) => c.intentType === 'PRODUCT_FEEDBACK').length;
+        const totalLikesOnComments = allComments.reduce((s, c) => s + c.likeCount, 0);
+        const buyingIntentRate =
+          allComments.length > 0
+            ? Number(((buyingIntentCount / allComments.length) * 100).toFixed(1))
+            : 0;
+
+        setCommentData({
+          engineUsed: latestEngine || 'TikTok Comment API + SSR WAF Solver (100% Real Data)',
+          nextCursor: currentCursor,
+          hasMore: Boolean(json.hasMore),
+          videoInfo: {
+            ...(latestVideoInfo || json.videoInfo),
+            commentsCount: Math.max(
+              Number((latestVideoInfo || json.videoInfo).commentsCount || 0),
+              allComments.length
+            ),
+          },
+          summary: {
+            totalFetched: allComments.length,
+            buyingIntentCount,
+            buyingIntentRate,
+            feedbackCount,
+            totalLikesOnComments,
+          },
+          comments: allComments,
+        });
+
+        setCommentBatchProgress({
+          currentBatch: batchIdx + 1,
+          totalBatches,
+          collectedCount: allComments.length,
+          targetCount: requestedTotal,
+        });
+
+        if (!json.hasMore || addedInBatch === 0) break;
       }
-
-      setCommentData(json);
     } catch {
-      setCommentError('Không kết nối được dịch vụ cào bình luận video TikTok.');
+      if (commentMap.size === 0) {
+        setCommentError('Không kết nối được dịch vụ cào bình luận video TikTok.');
+      }
     } finally {
       setCommentLoading(false);
+      setCommentBatchProgress(null);
     }
   };
 
@@ -287,7 +549,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   };
 
   useEffect(() => {
-    void runCompetitorCrawl('@larocheposayvn', '30d');
+    void runCompetitorCrawl('@larocheposayvn', '30d', { targetCount: 12 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -980,7 +1242,42 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   />
                 </Field>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng KOC:</span>
+                    {KOC_COUNT_PRESETS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setCompTargetCount(n)}
+                        className={`px-2 py-0.5 rounded text-xs font-code transition-colors ${
+                          compTargetCount === n
+                            ? 'bg-accent text-white font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <input
+                      id="competitor-count-input"
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={compTargetCount}
+                      onChange={(e) =>
+                        setCompTargetCount(
+                          Math.min(120, Math.max(1, Number(e.target.value) || 12))
+                        )
+                      }
+                      title="Nhập số lượng KOC muốn quét (hệ thống tự chia thành từng đợt 12 KOC)"
+                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                    />
+                    <span className="text-2xs text-ink-3 whitespace-nowrap">
+                      ({Math.max(1, Math.ceil(compTargetCount / KOC_BATCH_SIZE))} đợt)
+                    </span>
+                  </div>
+
                   <Segmented<PeriodKey>
                     items={[
                       { key: '7d', label: '7 ngày' },
@@ -997,12 +1294,50 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     variant="primary"
                     icon={compLoading ? RefreshCw : Search}
                     disabled={compLoading}
-                    onClick={() => runCompetitorCrawl(competitorInput, period)}
+                    onClick={() =>
+                      runCompetitorCrawl(competitorInput, period, {
+                        targetCount: compTargetCount,
+                      })
+                    }
                   >
-                    {compLoading ? 'Đang quét KOC đối thủ...' : 'Quét KOC đối thủ'}
+                    {compLoading
+                      ? compBatchProgress
+                        ? `Đang quét đợt ${compBatchProgress.currentBatch}/${compBatchProgress.totalBatches} (${compBatchProgress.collectedCount}/${compBatchProgress.targetCount})...`
+                        : 'Đang quét KOC đối thủ...'
+                      : `Quét ${compTargetCount} KOC đối thủ`}
                   </Button>
+                  {compLoading && (
+                    <Button
+                      variant="secondary"
+                      icon={Square}
+                      onClick={() => {
+                        compAbortRef.current = true;
+                      }}
+                    >
+                      Dừng
+                    </Button>
+                  )}
                 </div>
               </div>
+
+              {compBatchProgress && (
+                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-ink font-medium">
+                    Hệ thống đang chia đợt quét tự động:{' '}
+                    <strong>
+                      Đợt {compBatchProgress.currentBatch}/{compBatchProgress.totalBatches}
+                    </strong>{' '}
+                    ({KOC_BATCH_SIZE} KOC/đợt) — Đã thu thập{' '}
+                    <strong>
+                      {compBatchProgress.collectedCount}/{compBatchProgress.targetCount}
+                    </strong>{' '}
+                    KOC thực tế
+                  </span>
+                  <span className="text-2xs text-ink-2">
+                    Dữ liệu từng đợt được cộng dồn trực tiếp vào bảng bên dưới
+                  </span>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
                 <span>Chọn nhanh kênh đối thủ mẫu:</span>
@@ -1012,7 +1347,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="button"
                     onClick={() => {
                       setCompetitorInput(s.handle);
-                      void runCompetitorCrawl(s.handle, period);
+                      void runCompetitorCrawl(s.handle, period, {
+                        targetCount: compTargetCount,
+                      });
                     }}
                     className={`px-2.5 py-1 rounded-md border text-xs transition-colors ${
                       competitorInput.toLowerCase() === s.handle.toLowerCase()
@@ -1114,7 +1451,21 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             title={`Danh sách KOC đang hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length})`}
             flush
             actions={
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Plus}
+                  disabled={compLoading}
+                  onClick={() =>
+                    runCompetitorCrawl(competitorInput, period, {
+                      targetCount: KOC_BATCH_SIZE,
+                      appendMode: true,
+                    })
+                  }
+                >
+                  Quét thêm +{KOC_BATCH_SIZE} KOC
+                </Button>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -1211,7 +1562,42 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   />
                 </Field>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số lượng KOC:</span>
+                    {KOC_COUNT_PRESETS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setTagTargetCount(n)}
+                        className={`px-2 py-0.5 rounded text-xs font-code transition-colors ${
+                          tagTargetCount === n
+                            ? 'bg-accent text-white font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <input
+                      id="hashtag-count-input"
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={tagTargetCount}
+                      onChange={(e) =>
+                        setTagTargetCount(
+                          Math.min(120, Math.max(1, Number(e.target.value) || 12))
+                        )
+                      }
+                      title="Nhập số lượng KOC muốn quét theo Hashtag (hệ thống tự chia thành từng đợt 12 KOC)"
+                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                    />
+                    <span className="text-2xs text-ink-3 whitespace-nowrap">
+                      ({Math.max(1, Math.ceil(tagTargetCount / KOC_BATCH_SIZE))} đợt)
+                    </span>
+                  </div>
+
                   <Segmented<PeriodKey>
                     items={[
                       { key: '7d', label: '7 ngày' },
@@ -1228,12 +1614,50 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     variant="primary"
                     icon={tagLoading ? RefreshCw : Hash}
                     disabled={tagLoading}
-                    onClick={() => runHashtagCrawl(hashtagInput, period)}
+                    onClick={() =>
+                      runHashtagCrawl(hashtagInput, period, {
+                        targetCount: tagTargetCount,
+                      })
+                    }
                   >
-                    {tagLoading ? 'Đang quét hashtag...' : 'Quét KOC theo Hashtag'}
+                    {tagLoading
+                      ? tagBatchProgress
+                        ? `Đang quét đợt ${tagBatchProgress.currentBatch}/${tagBatchProgress.totalBatches} (${tagBatchProgress.collectedCount}/${tagBatchProgress.targetCount})...`
+                        : 'Đang quét hashtag...'
+                      : `Quét ${tagTargetCount} KOC theo Hashtag`}
                   </Button>
+                  {tagLoading && (
+                    <Button
+                      variant="secondary"
+                      icon={Square}
+                      onClick={() => {
+                        tagAbortRef.current = true;
+                      }}
+                    >
+                      Dừng
+                    </Button>
+                  )}
                 </div>
               </div>
+
+              {tagBatchProgress && (
+                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-ink font-medium">
+                    Hệ thống đang chia đợt quét Hashtag tự động:{' '}
+                    <strong>
+                      Đợt {tagBatchProgress.currentBatch}/{tagBatchProgress.totalBatches}
+                    </strong>{' '}
+                    ({KOC_BATCH_SIZE} KOC/đợt) — Đã thu thập{' '}
+                    <strong>
+                      {tagBatchProgress.collectedCount}/{tagBatchProgress.targetCount}
+                    </strong>{' '}
+                    KOC thực tế
+                  </span>
+                  <span className="text-2xs text-ink-2">
+                    Dữ liệu từng đợt được cộng dồn trực tiếp vào bảng bên dưới
+                  </span>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
                 <span>Chọn nhanh hashtag ngách:</span>
@@ -1243,7 +1667,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="button"
                     onClick={() => {
                       setHashtagInput(tag);
-                      void runHashtagCrawl(tag, period);
+                      void runHashtagCrawl(tag, period, {
+                        targetCount: tagTargetCount,
+                      });
                     }}
                     className={`px-2.5 py-1 rounded-md border text-xs font-code transition-colors ${
                       hashtagInput.toLowerCase() === tag.toLowerCase()
@@ -1262,7 +1688,21 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             title={`Danh sách KOC phát hiện từ ${hashtagInput} (${filteredTagResults.length})`}
             flush
             actions={
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={Plus}
+                  disabled={tagLoading}
+                  onClick={() =>
+                    runHashtagCrawl(hashtagInput, period, {
+                      targetCount: KOC_BATCH_SIZE,
+                      appendMode: true,
+                    })
+                  }
+                >
+                  Quét thêm +{KOC_BATCH_SIZE} KOC
+                </Button>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -1303,11 +1743,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         </div>
       )}
 
-      {/* TAB 3: CÀO BÌNH LUẬN VIDEO & KOC XU HƯỚNG (@tobyg74/tiktok-api-dl) */}
+      {/* TAB 3: CÀO BÌNH LUẬN VIDEO & KOC XU HƯỚNG */}
       {activeTab === 'COMMENTS_AND_TRENDING' && (
         <div className="space-y-4">
           <Panel
-            title="Cào Bình luận thực tế của Video TikTok & Lọc khách hỏi mua hàng (@tobyg74/tiktok-api-dl)"
+            title="Cào Bình luận thực tế của Video TikTok & Lọc khách hỏi mua hàng"
           >
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
@@ -1326,15 +1766,84 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   />
                 </Field>
 
-                <Button
-                  variant="primary"
-                  icon={commentLoading ? RefreshCw : MessageSquare}
-                  disabled={commentLoading}
-                  onClick={() => runVideoCommentsCrawl(videoCommentUrl)}
-                >
-                  {commentLoading ? 'Đang tải bình luận...' : 'Cào bình luận Video'}
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-surface-2 px-2.5 h-9 rounded-lg border border-line">
+                    <span className="text-2xs text-ink-2 whitespace-nowrap">Số bình luận:</span>
+                    {COMMENT_COUNT_PRESETS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setCommentTargetCount(n)}
+                        className={`px-2 py-0.5 rounded text-xs font-code transition-colors ${
+                          commentTargetCount === n
+                            ? 'bg-accent text-white font-semibold'
+                            : 'text-ink-2 hover:text-ink'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <input
+                      id="comment-count-input"
+                      type="number"
+                      min={10}
+                      max={300}
+                      value={commentTargetCount}
+                      onChange={(e) =>
+                        setCommentTargetCount(
+                          Math.min(300, Math.max(10, Number(e.target.value) || 40))
+                        )
+                      }
+                      title="Nhập số lượng bình luận muốn lấy (hệ thống tự chia đợt 40 bình luận/đợt)"
+                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                    />
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    icon={commentLoading ? RefreshCw : MessageSquare}
+                    disabled={commentLoading}
+                    onClick={() =>
+                      runVideoCommentsCrawl(videoCommentUrl, {
+                        targetCount: commentTargetCount,
+                      })
+                    }
+                  >
+                    {commentLoading
+                      ? commentBatchProgress
+                        ? `Đang cào đợt ${commentBatchProgress.currentBatch}/${commentBatchProgress.totalBatches} (${commentBatchProgress.collectedCount}/${commentBatchProgress.targetCount})...`
+                        : 'Đang tải bình luận...'
+                      : `Cào ${commentTargetCount} bình luận Video`}
+                  </Button>
+                  {commentLoading && (
+                    <Button
+                      variant="secondary"
+                      icon={Square}
+                      onClick={() => {
+                        commentAbortRef.current = true;
+                      }}
+                    >
+                      Dừng
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {commentBatchProgress && (
+                <div className="p-2.5 rounded-lg border border-accent bg-accent-soft/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-ink font-medium">
+                    Hệ thống đang chia đợt cào bình luận:{' '}
+                    <strong>
+                      Đợt {commentBatchProgress.currentBatch}/{commentBatchProgress.totalBatches}
+                    </strong>{' '}
+                    — Đã lấy{' '}
+                    <strong>
+                      {commentBatchProgress.collectedCount}/{commentBatchProgress.targetCount}
+                    </strong>{' '}
+                    bình luận thực tế
+                  </span>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
                 <span>Thử nhanh link video mẫu:</span>
@@ -1344,7 +1853,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="button"
                     onClick={() => {
                       setVideoCommentUrl(item.url);
-                      void runVideoCommentsCrawl(item.url);
+                      void runVideoCommentsCrawl(item.url, {
+                        targetCount: commentTargetCount,
+                      });
                     }}
                     className="px-2.5 py-1 rounded-md border border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink transition-colors"
                   >
@@ -1434,15 +1945,31 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 title={`Danh sách bình luận thực tế (${filteredComments.length})`}
                 flush
                 actions={
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Download}
-                    disabled={filteredComments.length === 0}
-                    onClick={handleExportCommentsCsv}
-                  >
-                    Xuất CSV Bình luận ({filteredComments.length})
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Plus}
+                      disabled={commentLoading || commentData.hasMore === false}
+                      onClick={() =>
+                        runVideoCommentsCrawl(videoCommentUrl, {
+                          targetCount: COMMENT_BATCH_SIZE,
+                          appendMode: true,
+                        })
+                      }
+                    >
+                      Cào thêm +{COMMENT_BATCH_SIZE} bình luận
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Download}
+                      disabled={filteredComments.length === 0}
+                      onClick={handleExportCommentsCsv}
+                    >
+                      Xuất CSV Bình luận ({filteredComments.length})
+                    </Button>
+                  </div>
                 }
               >
                 <FilterBar
