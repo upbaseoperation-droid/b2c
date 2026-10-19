@@ -1861,13 +1861,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mx-auto">
                 <Compass className="w-6 h-6" />
               </div>
-              <div className="space-y-1">
+              <div>
                 <h3 className="text-sm font-semibold text-ink">
                   Chọn 1 Nhân sự, Brand hoặc Gian hàng
                 </h3>
-                <p className="text-xs text-ink-3 leading-relaxed">
-                  Click trực tiếp vào cột trên sơ đồ 3D hoặc bảng phía dưới để điều phối công việc.
-                </p>
               </div>
             </div>
           ) : selectedNode.kind === 'STAFF' && selectedNode.staffData ? (

@@ -1,9 +1,12 @@
 # Upbase B2C - Hướng Dẫn & Quy Tắc Vận Hành Trợ Lý (GEMINI.md)
 
-## 1. Cấm Lạm Dụng Từ Ngữ AI & Buzzword
+## 1. Cấm Lạm Dụng Từ Ngữ AI, Buzzword & Chữ Giải Thích Thừa Dưới Tiêu Đề
 - **Giao diện (UI):** Dùng từ ngữ nghiệp vụ đời thực của phòng ban Marketing/Vận hành/Kế toán.
   - CẤM: "AI", "Trí tuệ nhân tạo", "Smart", "OCR AI", "1-chạm", "Siêu tốc", "Đột phá", "Toàn diện", "Live dynamic binding".
   - DÙNG: "Tải ảnh giấy tờ", "Đọc ảnh CCCD", "Soạn hợp đồng", "Xem hợp đồng", "Duyệt chi", "Mã QR".
+- **Cấm tuyệt đối dòng chữ giải thích/phụ đề bên dưới tiêu đề:**
+  - Tuyệt đối KHÔNG viết dòng phụ đề xám (`subtitle`, `description`, `<p className="text-xs text-ink-2/3">`) bên dưới tiêu đề Trang (`TopHeader`), tiêu đề Khung (`Panel`), tiêu đề Hộp thoại (`Modal`), tiêu đề Khối (`SectionHeader`, `<h1>`, `<h2>`, `<h3>`) hoặc dòng `hint` giải thích dài dòng dưới ô nhập (`Field`).
+  - Mọi hộp thoại đều phải dùng component `<Modal>` chuẩn từ `src/components/ui`, không tự dựng header kèm đoạn văn giải thích cách hệ thống hoạt động.
 - **Giao tiếp:** Trả lời ngắn gọn, thẳng thắn, không liệt kê hoa mỹ, không dùng giọng điệu robot hay marketing quảng cáo.
 
 ## 2. Tiêu Chuẩn Kỹ Thuật & Vận Hành B2C

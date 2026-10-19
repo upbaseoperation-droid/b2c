@@ -1384,7 +1384,6 @@ export function BrandProfileDetail({
             {/* Kho tài liệu rút gọn */}
             <Aside
               title={`${SECTION_LABEL.DOCUMENTS} (${p.documents.length})`}
-              note="Tệp tải lên hoặc liên kết tài liệu"
               action={
                 <div className="flex items-center gap-1.5">
                   {can.DOCUMENTS && (
@@ -1491,7 +1490,7 @@ export function BrandProfileDetail({
             </Aside>
 
             {/* Đội ngũ phụ trách theo cơ cấu 2 tầng B2C */}
-            <Aside title="Cơ cấu nhân sự phụ trách B2C" note="Phân bổ theo quy chuẩn 69 gian hàng B2C">
+            <Aside title="Cơ cấu nhân sự phụ trách B2C">
               <dl className="grid gap-3">
                 <Info label="Trưởng phòng B2C (Phê duyệt kế hoạch)">
                   <Person name={leadB2c} size={20} />
@@ -1530,7 +1529,7 @@ export function BrandProfileDetail({
 
             {/* Trần thù lao */}
             {!hideInternalRatecard && (
-              <Aside title={SECTION_LABEL.RATECARD} action={editBtn('RATECARD', () => setDialog('RATECARD'))} note="Mức tối đa cho 1 video theo khung lương KOC.">
+              <Aside title={SECTION_LABEL.RATECARD} action={editBtn('RATECARD', () => setDialog('RATECARD'))}>
                 {p.ratecard.some(r => r.maxBudget) ? (
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     {p.ratecard.map(r => (
@@ -1763,9 +1762,6 @@ export function BrandProfileDetail({
                   <h3 className="text-sm font-semibold text-ink">
                     Tải tài liệu thương hiệu lên hệ thống
                   </h3>
-                  <p className="text-xs text-ink-2 mt-0.5">
-                    Kéo thả nhiều tệp vào khung này hoặc chọn tệp từ máy tính. Hỗ trợ PDF, Word, Excel, PowerPoint, ảnh PNG/JPG/SVG, ZIP (tối đa 25 MB/tệp).
-                  </p>
                 </div>
               </div>
 
@@ -2593,12 +2589,10 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
 function Aside({ title, action, note, children }: { title: string; action?: React.ReactNode; note?: string; children: React.ReactNode }) {
   return (
     <section className="px-4 py-4">
-      <div className="flex items-center justify-between gap-2 min-h-7 mb-1">
+      <div className="flex items-center justify-between gap-2 min-h-7 mb-2">
         <h3 className="text-sm font-semibold text-ink">{title}</h3>
         {action}
       </div>
-      {note && <p className="text-2xs text-ink-3 mb-3">{note}</p>}
-      {!note && <div className="mb-2" />}
       {children}
     </section>
   );

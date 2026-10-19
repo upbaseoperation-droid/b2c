@@ -44,6 +44,10 @@ const eslintConfig = defineConfig([
           selector: "CallExpression[callee.name=/^(alert|prompt|confirm)$/]",
           message: "Không dùng hộp thoại của trình duyệt. Dùng ConfirmDialog hoặc toast trong src/components/ui.",
         },
+        {
+          selector: "JSXOpeningElement[name.name=/^(Panel|Modal|SectionHeader)$/] > JSXAttribute[name.name='subtitle']",
+          message: "Cấm dùng dòng chữ giải thích/phụ đề (subtitle) bên dưới tiêu đề Panel, Modal, SectionHeader. Xem GEMINI.md §1 và DESIGN_SYSTEM.md §5.",
+        },
       ],
     },
   },

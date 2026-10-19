@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useContext, useMemo, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -38,6 +38,7 @@ import { formatDate, formatNumber } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
+import { LinkAirCheckerPanel } from '../crawler/LinkAirCheckerPanel';
 import {
   Avatar,
   Button,
@@ -45,6 +46,7 @@ import {
   DataTable,
   Field,
   FilterBar,
+  PageActiveContext,
   Panel,
   Segmented,
   Select,
@@ -63,7 +65,8 @@ type CrawlerTabKey =
   | 'COMPETITOR_KOCS'
   | 'HASHTAG_DISCOVERY'
   | 'COMMENTS_AND_TRENDING'
-  | 'CHANNEL_AND_VIDEO_TOOLS';
+  | 'CHANNEL_AND_VIDEO_TOOLS'
+  | 'LINK_AIR_CHECK';
 type PeriodKey = '7d' | '30d' | '90d';
 type CompetitorFilterKey =
   | 'ALL'
@@ -153,7 +156,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const period: PeriodKey = '30d';
 
   // --- State Tab 1: Quét KOC của Đối thủ ---
-  const [competitorInput, setCompetitorInput] = useState('@larocheposayvn');
+  const [competitorInput, setCompetitorInput] = useState('');
   const [compTargetCount, setCompTargetCount] = useState<number>(12);
   const [compLoading, setCompLoading] = useState(false);
   const [compBatchProgress, setCompBatchProgress] = useState<BatchCrawlProgress | null>(null);
@@ -169,7 +172,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const compAbortRef = useRef(false);
 
   // --- State Tab 2: Tìm KOC theo Hashtag ---
-  const [hashtagInput, setHashtagInput] = useState('#kemchongnang');
+  const [hashtagInput, setHashtagInput] = useState('');
   const [tagTargetCount, setTagTargetCount] = useState<number>(12);
   const [tagLoading, setTagLoading] = useState(false);
   const [tagBatchProgress, setTagBatchProgress] = useState<BatchCrawlProgress | null>(null);
@@ -184,9 +187,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const tagAbortRef = useRef(false);
 
   // --- State Tab 3: Cào Bình luận Video ---
-  const [videoCommentUrl, setVideoCommentUrl] = useState(
-    'https://www.tiktok.com/@keyshulive/video/7542352999495060743'
-  );
+  const [videoCommentUrl, setVideoCommentUrl] = useState('');
   const [commentTargetCount, setCommentTargetCount] = useState<number>(40);
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentBatchProgress, setCommentBatchProgress] = useState<BatchCrawlProgress | null>(null);
@@ -209,6 +210,44 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
   const [videoInspectorOpen, setVideoInspectorOpen] = useState(false);
 
+  // Làm mới toàn bộ kết quả từ lần trước mỗi khi người dùng nhấn vào màn hình Crawler
+  const isPageActive = useContext(PageActiveContext);
+  const [prevPageActive, setPrevPageActive] = useState(isPageActive);
+  if (prevPageActive !== isPageActive) {
+    setPrevPageActive(isPageActive);
+    setActiveTab('COMPETITOR_KOCS');
+    setCompetitorInput('');
+    setCompLoading(false);
+    setCompBatchProgress(null);
+    setCompError(null);
+    setCompProfile(null);
+    setCompResults([]);
+    setCompSearchQuery('');
+    setHashtagInput('');
+    setTagLoading(false);
+    setTagBatchProgress(null);
+    setTagError(null);
+    setTagResults([]);
+    setTagSearchQuery('');
+    setVideoCommentUrl('');
+    setCommentLoading(false);
+    setCommentBatchProgress(null);
+    setCommentError(null);
+    setCommentData(null);
+    setCommentSearch('');
+    setTrendingLoading(false);
+    setTrendingCreators([]);
+    setTrendingSearch('');
+  }
+
+  useEffect(() => {
+    if (!isPageActive) {
+      compAbortRef.current = true;
+      tagAbortRef.current = true;
+      commentAbortRef.current = true;
+    }
+  }, [isPageActive]);
+
   const existingByHandle = useMemo(() => {
     const map = new Map<string, KocItem>();
     for (const k of kocs) {
@@ -230,6 +269,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
 
     const appendMode = Boolean(options?.appendMode);
+    if (!appendMode) {
+      setCompResults([]);
+      setCompProfile(null);
+    }
     const baseList = appendMode ? [...compResults] : [];
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
@@ -345,6 +388,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
 
     const appendMode = Boolean(options?.appendMode);
+    if (!appendMode) {
+      setTagResults([]);
+    }
     const baseList = appendMode ? [...tagResults] : [];
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
@@ -453,6 +499,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
 
     const appendMode = Boolean(options?.appendMode && commentData);
+    if (!appendMode) {
+      setCommentData(null);
+    }
     const existingComments = appendMode && commentData ? [...commentData.comments] : [];
     const requestedTotal = appendMode
       ? existingComments.length + (options?.targetCount || COMMENT_BATCH_SIZE)
@@ -1379,6 +1428,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               key: 'CHANNEL_AND_VIDEO_TOOLS',
               label: 'KOC xu hướng',
             },
+            {
+              key: 'LINK_AIR_CHECK',
+              label: 'Kiểm tra link air',
+            },
           ]}
           value={activeTab}
           onChange={(t) => setActiveTab(t)}
@@ -1433,8 +1486,13 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="text"
                     value={competitorInput}
                     onChange={(e) => {
-                      setCompetitorInput(e.target.value);
+                      const val = e.target.value;
+                      setCompetitorInput(val);
                       if (compError) setCompError(null);
+                      if (!val.trim() || compResults.length > 0 || compProfile) {
+                        setCompResults([]);
+                        setCompProfile(null);
+                      }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !compLoading) {
@@ -1524,12 +1582,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn thương hiệu mẫu (nhấn nút Quét để bắt đầu):</span>
+                <span>Thương hiệu mẫu:</span>
                 {COMPETITOR_SAMPLES.map((s) => (
                   <button
                     key={s.handle}
                     type="button"
                     onClick={() => {
+                      if (competitorInput.toLowerCase() !== s.handle.toLowerCase()) {
+                        setCompResults([]);
+                        setCompProfile(null);
+                      }
                       setCompetitorInput(s.handle);
                       if (compError) setCompError(null);
                     }}
@@ -1548,7 +1610,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           </Panel>
 
           {/* Thanh tóm tắt gọn nhẹ thông tin kênh đối thủ + tổng lượt xem KOC hợp tác */}
-          {compProfile && (
+          {compProfile && compResults.length > 0 && (
             <div className="px-4 py-3 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar name={compProfile.brandName} size={38} />
@@ -1599,179 +1661,181 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           )}
 
-          {/* Bảng danh sách KOC của đối thủ */}
-          <Panel
-            title={`KOC hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length}/${compResults.length})`}
-            flush
-            actions={
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Plus}
-                  disabled={compLoading || compResults.length === 0}
-                  onClick={() =>
-                    runCompetitorCrawl(competitorInput, period, {
-                      targetCount: KOC_BATCH_SIZE,
-                      appendMode: true,
-                    })
-                  }
-                >
-                  Quét thêm +{KOC_BATCH_SIZE} KOC
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  disabled={filteredCompResults.length === 0}
-                  onClick={handleExportCompetitorCsv}
-                >
-                  Xuất CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Check}
-                  disabled={filteredCompResults.length === 0}
-                  onClick={() => handleSaveBulkKocs(filteredCompResults)}
-                >
-                  Lưu tất cả vào Danh bạ
-                </Button>
-              </div>
-            }
-          >
-            <div className="px-4 py-3 border-b border-line bg-surface">
-              <FilterBar
-                search={{
-                  value: compSearchQuery,
-                  onChange: setCompSearchQuery,
-                  placeholder: 'Tìm theo @handle, tên KOC, SĐT, sản phẩm hoặc nội dung video...',
-                }}
-                filters={
-                  <>
-                    <Select
-                      aria-label="Lọc theo quy mô Follower"
-                      value={compFollowerTier}
-                      onChange={(e) => setCompFollowerTier(e.target.value as FollowerTierKey)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="ALL">Mọi quy mô Follower</option>
-                      <option value="NANO">Nano (&lt; 50K flw)</option>
-                      <option value="MICRO">Micro (50K – 200K flw)</option>
-                      <option value="MACRO">Macro (200K – 500K flw)</option>
-                      <option value="MEGA">Mega (&gt; 500K flw)</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Lọc theo lượt xem video"
-                      value={String(compMinViews)}
-                      onChange={(e) => setCompMinViews(Number(e.target.value) || 0)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="0">Mọi lượt xem video</option>
-                      <option value="10000">Video ≥ 10K view</option>
-                      <option value="50000">Video ≥ 50K view</option>
-                      <option value="100000">Video ≥ 100K view</option>
-                      <option value="500000">Video ≥ 500K view</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Lọc theo tỷ lệ tương tác ER"
-                      value={String(compMinEr)}
-                      onChange={(e) => setCompMinEr(Number(e.target.value) || 0)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="0">Mọi mức ER%</option>
-                      <option value="3">ER ≥ 3%</option>
-                      <option value="5">ER ≥ 5%</option>
-                      <option value="10">ER ≥ 10%</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Sắp xếp kết quả"
-                      value={compSortBy}
-                      onChange={(e) => setCompSortBy(e.target.value as KocSortKey)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
-                      <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
-                      <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
-                      <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
-                    </Select>
-
-                    {(compFilter !== 'ALL' ||
-                      compFollowerTier !== 'ALL' ||
-                      compMinViews > 0 ||
-                      compMinEr > 0 ||
-                      compSortBy !== 'LATEST_DESC' ||
-                      compSearchQuery.trim() !== '') && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={RotateCcw}
-                        onClick={() => {
-                          setCompFilter('ALL');
-                          setCompFollowerTier('ALL');
-                          setCompMinViews(0);
-                          setCompMinEr(0);
-                          setCompSortBy('LATEST_DESC');
-                          setCompSearchQuery('');
-                        }}
+          {/* Bảng danh sách KOC của đối thủ — chỉ hiển thị khi đang quét hoặc đã có kết quả */}
+          {(compLoading || compResults.length > 0) && (
+            <Panel
+              title={`KOC hợp tác với ${compProfile?.brandName || competitorInput} (${filteredCompResults.length}/${compResults.length})`}
+              flush
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Plus}
+                    disabled={compLoading || compResults.length === 0}
+                    onClick={() =>
+                      runCompetitorCrawl(competitorInput, period, {
+                        targetCount: KOC_BATCH_SIZE,
+                        appendMode: true,
+                      })
+                    }
+                  >
+                    Quét thêm +{KOC_BATCH_SIZE} KOC
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    disabled={filteredCompResults.length === 0}
+                    onClick={handleExportCompetitorCsv}
+                  >
+                    Xuất CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Check}
+                    disabled={filteredCompResults.length === 0}
+                    onClick={() => handleSaveBulkKocs(filteredCompResults)}
+                  >
+                    Lưu tất cả vào Danh bạ
+                  </Button>
+                </div>
+              }
+            >
+              <div className="px-4 py-3 border-b border-line bg-surface">
+                <FilterBar
+                  search={{
+                    value: compSearchQuery,
+                    onChange: setCompSearchQuery,
+                    placeholder: 'Tìm theo @handle, tên KOC, SĐT, sản phẩm hoặc nội dung video...',
+                  }}
+                  filters={
+                    <>
+                      <Select
+                        aria-label="Lọc theo quy mô Follower"
+                        value={compFollowerTier}
+                        onChange={(e) => setCompFollowerTier(e.target.value as FollowerTierKey)}
+                        className="h-[34px] text-xs"
                       >
-                        Đặt lại lọc
-                      </Button>
-                    )}
-                  </>
-                }
-                chips={
-                  <Chips<CompetitorFilterKey>
-                    items={[
-                      { key: 'ALL', label: 'Tất cả', count: compResults.length },
-                      {
-                        key: 'NEW_OPPORTUNITY',
-                        label: 'KOC Mới',
-                        count: compStats.newCount,
-                      },
-                      {
-                        key: 'ALREADY_IN_UPBASE',
-                        label: 'Đã có tại UpBase',
-                        count: compStats.existingCount,
-                      },
-                      {
-                        key: 'PAID_BOOKING',
-                        label: 'Booking trả phí',
-                        count: compResults.filter(
-                          (r) => r.competitorCollaboration.collaborationType === 'PAID_BOOKING'
-                        ).length,
-                      },
-                      {
-                        key: 'AFFILIATE_CART',
-                        label: 'Gắn giỏ Affiliate',
-                        count: compResults.filter(
-                          (r) => r.competitorCollaboration.collaborationType === 'AFFILIATE_CART'
-                        ).length,
-                      },
-                      {
-                        key: 'HAS_PHONE',
-                        label: 'Có SĐT',
-                        count: compStats.phoneCount,
-                      },
-                    ]}
-                    value={compFilter}
-                    onChange={setCompFilter}
-                  />
-                }
-              />
-            </div>
+                        <option value="ALL">Mọi quy mô Follower</option>
+                        <option value="NANO">Nano (&lt; 50K flw)</option>
+                        <option value="MICRO">Micro (50K – 200K flw)</option>
+                        <option value="MACRO">Macro (200K – 500K flw)</option>
+                        <option value="MEGA">Mega (&gt; 500K flw)</option>
+                      </Select>
 
-            <DataTable
-              rows={filteredCompResults}
-              columns={competitorColumns}
-              rowKey={(r) => r.handle}
-              fitContainer
-              empty="Chưa có dữ liệu KOC đối thủ. Chọn hoặc nhập @handle thương hiệu đối thủ và nhấn nút Quét KOC đối thủ để bắt đầu."
-            />
-          </Panel>
+                      <Select
+                        aria-label="Lọc theo lượt xem video"
+                        value={String(compMinViews)}
+                        onChange={(e) => setCompMinViews(Number(e.target.value) || 0)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="0">Mọi lượt xem video</option>
+                        <option value="10000">Video ≥ 10K view</option>
+                        <option value="50000">Video ≥ 50K view</option>
+                        <option value="100000">Video ≥ 100K view</option>
+                        <option value="500000">Video ≥ 500K view</option>
+                      </Select>
+
+                      <Select
+                        aria-label="Lọc theo tỷ lệ tương tác ER"
+                        value={String(compMinEr)}
+                        onChange={(e) => setCompMinEr(Number(e.target.value) || 0)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="0">Mọi mức ER%</option>
+                        <option value="3">ER ≥ 3%</option>
+                        <option value="5">ER ≥ 5%</option>
+                        <option value="10">ER ≥ 10%</option>
+                      </Select>
+
+                      <Select
+                        aria-label="Sắp xếp kết quả"
+                        value={compSortBy}
+                        onChange={(e) => setCompSortBy(e.target.value as KocSortKey)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
+                        <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                        <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
+                        <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
+                      </Select>
+
+                      {(compFilter !== 'ALL' ||
+                        compFollowerTier !== 'ALL' ||
+                        compMinViews > 0 ||
+                        compMinEr > 0 ||
+                        compSortBy !== 'LATEST_DESC' ||
+                        compSearchQuery.trim() !== '') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={RotateCcw}
+                          onClick={() => {
+                            setCompFilter('ALL');
+                            setCompFollowerTier('ALL');
+                            setCompMinViews(0);
+                            setCompMinEr(0);
+                            setCompSortBy('LATEST_DESC');
+                            setCompSearchQuery('');
+                          }}
+                        >
+                          Đặt lại lọc
+                        </Button>
+                      )}
+                    </>
+                  }
+                  chips={
+                    <Chips<CompetitorFilterKey>
+                      items={[
+                        { key: 'ALL', label: 'Tất cả', count: compResults.length },
+                        {
+                          key: 'NEW_OPPORTUNITY',
+                          label: 'KOC Mới',
+                          count: compStats.newCount,
+                        },
+                        {
+                          key: 'ALREADY_IN_UPBASE',
+                          label: 'Đã có tại UpBase',
+                          count: compStats.existingCount,
+                        },
+                        {
+                          key: 'PAID_BOOKING',
+                          label: 'Booking trả phí',
+                          count: compResults.filter(
+                            (r) => r.competitorCollaboration.collaborationType === 'PAID_BOOKING'
+                          ).length,
+                        },
+                        {
+                          key: 'AFFILIATE_CART',
+                          label: 'Gắn giỏ Affiliate',
+                          count: compResults.filter(
+                            (r) => r.competitorCollaboration.collaborationType === 'AFFILIATE_CART'
+                          ).length,
+                        },
+                        {
+                          key: 'HAS_PHONE',
+                          label: 'Có SĐT',
+                          count: compStats.phoneCount,
+                        },
+                      ]}
+                      value={compFilter}
+                      onChange={setCompFilter}
+                    />
+                  }
+                />
+              </div>
+
+              <DataTable
+                rows={filteredCompResults}
+                columns={competitorColumns}
+                rowKey={(r) => r.handle}
+                fitContainer
+                empty={compLoading ? 'Đang quét danh sách KOC hợp tác...' : 'Không có KOC nào khớp bộ lọc.'}
+              />
+            </Panel>
+          )}
         </div>
       )}
 
@@ -1791,8 +1855,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="text"
                     value={hashtagInput}
                     onChange={(e) => {
-                      setHashtagInput(e.target.value);
+                      const val = e.target.value;
+                      setHashtagInput(val);
                       if (tagError) setTagError(null);
+                      if (!val.trim() || tagResults.length > 0) {
+                        setTagResults([]);
+                      }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !tagLoading) {
@@ -1882,12 +1950,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Chọn hashtag mẫu (nhấn nút Quét theo Hashtag để bắt đầu):</span>
+                <span>Hashtag mẫu:</span>
                 {HASHTAG_SAMPLES.map((tag) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => {
+                      if (hashtagInput.toLowerCase() !== tag.toLowerCase()) {
+                        setTagResults([]);
+                      }
                       setHashtagInput(tag);
                       if (tagError) setTagError(null);
                     }}
@@ -1904,169 +1975,171 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           </Panel>
 
-          <Panel
-            title={`KOC theo ${hashtagInput} (${filteredTagResults.length}/${tagResults.length})`}
-            flush
-            actions={
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Plus}
-                  disabled={tagLoading || tagResults.length === 0}
-                  onClick={() =>
-                    runHashtagCrawl(hashtagInput, period, {
-                      targetCount: KOC_BATCH_SIZE,
-                      appendMode: true,
-                    })
-                  }
-                >
-                  Quét thêm +{KOC_BATCH_SIZE} KOC
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  disabled={filteredTagResults.length === 0}
-                  onClick={handleExportHashtagCsv}
-                >
-                  Xuất CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Check}
-                  disabled={filteredTagResults.length === 0}
-                  onClick={() => handleSaveBulkKocs(filteredTagResults)}
-                >
-                  Lưu tất cả vào Danh bạ
-                </Button>
-              </div>
-            }
-          >
-            <div className="px-4 py-3 border-b border-line bg-surface">
-              <FilterBar
-                search={{
-                  value: tagSearchQuery,
-                  onChange: setTagSearchQuery,
-                  placeholder: 'Tìm theo @handle, tên kênh, SĐT hoặc nội dung caption...',
-                }}
-                filters={
-                  <>
-                    <Select
-                      aria-label="Lọc theo quy mô Follower"
-                      value={tagFollowerTier}
-                      onChange={(e) => setTagFollowerTier(e.target.value as FollowerTierKey)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="ALL">Mọi quy mô Follower</option>
-                      <option value="NANO">Nano (&lt; 50K flw)</option>
-                      <option value="MICRO">Micro (50K – 200K flw)</option>
-                      <option value="MACRO">Macro (200K – 500K flw)</option>
-                      <option value="MEGA">Mega (&gt; 500K flw)</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Lọc theo lượt xem video"
-                      value={String(tagMinViews)}
-                      onChange={(e) => setTagMinViews(Number(e.target.value) || 0)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="0">Mọi lượt xem video</option>
-                      <option value="10000">Video ≥ 10K view</option>
-                      <option value="50000">Video ≥ 50K view</option>
-                      <option value="100000">Video ≥ 100K view</option>
-                      <option value="500000">Video ≥ 500K view</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Lọc theo tỷ lệ tương tác ER"
-                      value={String(tagMinEr)}
-                      onChange={(e) => setTagMinEr(Number(e.target.value) || 0)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="0">Mọi mức ER%</option>
-                      <option value="3">ER ≥ 3%</option>
-                      <option value="5">ER ≥ 5%</option>
-                      <option value="10">ER ≥ 10%</option>
-                    </Select>
-
-                    <Select
-                      aria-label="Sắp xếp kết quả Hashtag"
-                      value={tagSortBy}
-                      onChange={(e) => setTagSortBy(e.target.value as KocSortKey)}
-                      className="h-[34px] text-xs"
-                    >
-                      <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
-                      <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
-                      <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
-                      <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
-                    </Select>
-
-                    {(tagFilter !== 'ALL' ||
-                      tagFollowerTier !== 'ALL' ||
-                      tagMinViews > 0 ||
-                      tagMinEr > 0 ||
-                      tagSortBy !== 'LATEST_DESC' ||
-                      tagSearchQuery.trim() !== '') && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        icon={RotateCcw}
-                        onClick={() => {
-                          setTagFilter('ALL');
-                          setTagFollowerTier('ALL');
-                          setTagMinViews(0);
-                          setTagMinEr(0);
-                          setTagSortBy('LATEST_DESC');
-                          setTagSearchQuery('');
-                        }}
+          {(tagLoading || tagResults.length > 0) && (
+            <Panel
+              title={`KOC theo ${hashtagInput} (${filteredTagResults.length}/${tagResults.length})`}
+              flush
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Plus}
+                    disabled={tagLoading || tagResults.length === 0}
+                    onClick={() =>
+                      runHashtagCrawl(hashtagInput, period, {
+                        targetCount: KOC_BATCH_SIZE,
+                        appendMode: true,
+                      })
+                    }
+                  >
+                    Quét thêm +{KOC_BATCH_SIZE} KOC
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    disabled={filteredTagResults.length === 0}
+                    onClick={handleExportHashtagCsv}
+                  >
+                    Xuất CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Check}
+                    disabled={filteredTagResults.length === 0}
+                    onClick={() => handleSaveBulkKocs(filteredTagResults)}
+                  >
+                    Lưu tất cả vào Danh bạ
+                  </Button>
+                </div>
+              }
+            >
+              <div className="px-4 py-3 border-b border-line bg-surface">
+                <FilterBar
+                  search={{
+                    value: tagSearchQuery,
+                    onChange: setTagSearchQuery,
+                    placeholder: 'Tìm theo @handle, tên kênh, SĐT hoặc nội dung caption...',
+                  }}
+                  filters={
+                    <>
+                      <Select
+                        aria-label="Lọc theo quy mô Follower"
+                        value={tagFollowerTier}
+                        onChange={(e) => setTagFollowerTier(e.target.value as FollowerTierKey)}
+                        className="h-[34px] text-xs"
                       >
-                        Đặt lại lọc
-                      </Button>
-                    )}
-                  </>
-                }
-                chips={
-                  <Chips<HashtagFilterKey>
-                    items={[
-                      { key: 'ALL', label: 'Tất cả', count: tagResults.length },
-                      {
-                        key: 'NEW_OPPORTUNITY',
-                        label: 'KOC Mới',
-                        count: tagStats.newCount,
-                      },
-                      {
-                        key: 'ALREADY_IN_UPBASE',
-                        label: 'Đã có tại UpBase',
-                        count: tagStats.existingCount,
-                      },
-                      {
-                        key: 'VIRAL_BREAKOUT',
-                        label: 'Video xu hướng (View ≥ Flw)',
-                        count: tagStats.viralCount,
-                      },
-                      {
-                        key: 'HAS_PHONE',
-                        label: 'Có SĐT',
-                        count: tagStats.phoneCount,
-                      },
-                    ]}
-                    value={tagFilter}
-                    onChange={setTagFilter}
-                  />
-                }
-              />
-            </div>
+                        <option value="ALL">Mọi quy mô Follower</option>
+                        <option value="NANO">Nano (&lt; 50K flw)</option>
+                        <option value="MICRO">Micro (50K – 200K flw)</option>
+                        <option value="MACRO">Macro (200K – 500K flw)</option>
+                        <option value="MEGA">Mega (&gt; 500K flw)</option>
+                      </Select>
 
-            <DataTable
-              rows={filteredTagResults}
-              columns={hashtagColumns}
-              rowKey={(r) => r.handle}
-              fitContainer
-              empty="Chưa có dữ liệu KOC theo hashtag. Chọn hoặc nhập #hashtag và nhấn nút Quét theo Hashtag để bắt đầu."
-            />
-          </Panel>
+                      <Select
+                        aria-label="Lọc theo lượt xem video"
+                        value={String(tagMinViews)}
+                        onChange={(e) => setTagMinViews(Number(e.target.value) || 0)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="0">Mọi lượt xem video</option>
+                        <option value="10000">Video ≥ 10K view</option>
+                        <option value="50000">Video ≥ 50K view</option>
+                        <option value="100000">Video ≥ 100K view</option>
+                        <option value="500000">Video ≥ 500K view</option>
+                      </Select>
+
+                      <Select
+                        aria-label="Lọc theo tỷ lệ tương tác ER"
+                        value={String(tagMinEr)}
+                        onChange={(e) => setTagMinEr(Number(e.target.value) || 0)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="0">Mọi mức ER%</option>
+                        <option value="3">ER ≥ 3%</option>
+                        <option value="5">ER ≥ 5%</option>
+                        <option value="10">ER ≥ 10%</option>
+                      </Select>
+
+                      <Select
+                        aria-label="Sắp xếp kết quả Hashtag"
+                        value={tagSortBy}
+                        onChange={(e) => setTagSortBy(e.target.value as KocSortKey)}
+                        className="h-[34px] text-xs"
+                      >
+                        <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
+                        <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
+                        <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
+                        <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
+                      </Select>
+
+                      {(tagFilter !== 'ALL' ||
+                        tagFollowerTier !== 'ALL' ||
+                        tagMinViews > 0 ||
+                        tagMinEr > 0 ||
+                        tagSortBy !== 'LATEST_DESC' ||
+                        tagSearchQuery.trim() !== '') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={RotateCcw}
+                          onClick={() => {
+                            setTagFilter('ALL');
+                            setTagFollowerTier('ALL');
+                            setTagMinViews(0);
+                            setTagMinEr(0);
+                            setTagSortBy('LATEST_DESC');
+                            setTagSearchQuery('');
+                          }}
+                        >
+                          Đặt lại lọc
+                        </Button>
+                      )}
+                    </>
+                  }
+                  chips={
+                    <Chips<HashtagFilterKey>
+                      items={[
+                        { key: 'ALL', label: 'Tất cả', count: tagResults.length },
+                        {
+                          key: 'NEW_OPPORTUNITY',
+                          label: 'KOC Mới',
+                          count: tagStats.newCount,
+                        },
+                        {
+                          key: 'ALREADY_IN_UPBASE',
+                          label: 'Đã có tại UpBase',
+                          count: tagStats.existingCount,
+                        },
+                        {
+                          key: 'VIRAL_BREAKOUT',
+                          label: 'Video xu hướng (View ≥ Flw)',
+                          count: tagStats.viralCount,
+                        },
+                        {
+                          key: 'HAS_PHONE',
+                          label: 'Có SĐT',
+                          count: tagStats.phoneCount,
+                        },
+                      ]}
+                      value={tagFilter}
+                      onChange={setTagFilter}
+                    />
+                  }
+                />
+              </div>
+
+              <DataTable
+                rows={filteredTagResults}
+                columns={hashtagColumns}
+                rowKey={(r) => r.handle}
+                fitContainer
+                empty={tagLoading ? 'Đang quét danh sách KOC theo hashtag...' : 'Không có KOC nào khớp bộ lọc.'}
+              />
+            </Panel>
+          )}
         </div>
       )}
 
@@ -2086,8 +2159,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     type="text"
                     value={videoCommentUrl}
                     onChange={(e) => {
-                      setVideoCommentUrl(e.target.value);
+                      const val = e.target.value;
+                      setVideoCommentUrl(val);
                       if (commentError) setCommentError(null);
+                      if (!val.trim() || commentData) {
+                        setCommentData(null);
+                      }
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !commentLoading) {
@@ -2177,12 +2254,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
-                <span>Chọn video mẫu (nhấn nút Cào bình luận để bắt đầu):</span>
+                <span>Video mẫu:</span>
                 {SAMPLE_VIDEO_URLS.map((item) => (
                   <button
                     key={item.url}
                     type="button"
                     onClick={() => {
+                      if (videoCommentUrl !== item.url) {
+                        setCommentData(null);
+                      }
                       setVideoCommentUrl(item.url);
                       if (commentError) setCommentError(null);
                     }}
@@ -2436,6 +2516,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           />
         </Panel>
       )}
+
+      {/* TAB 5: KIỂM TRA LINK AIR ĐA NỀN TẢNG (qua crawler-worker) */}
+      {activeTab === 'LINK_AIR_CHECK' && <LinkAirCheckerPanel onNotify={onNotify} />}
 
       <TikTokKocScraperModal
         open={scraperModalOpen}

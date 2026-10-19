@@ -168,7 +168,6 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
               <span className="font-mono">{activeProviderMeta.shortName} · {activeModelId}</span>
             </div>
             <h3 className="text-base font-semibold text-ink">{moduleTitle}</h3>
-            {moduleSubtitle && <p className="text-xs text-ink-2">{moduleSubtitle}</p>}
           </div>
 
           <button

@@ -317,7 +317,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
 
         <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
           <Field
-            label="Dán 1 hoặc nhiều link video TikTok (mỗi dòng 1 link)"
+            label="Link video TikTok"
             htmlFor="tiktok-video-inspector-input"
             error={errorMessage || undefined}
           >

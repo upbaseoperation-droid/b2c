@@ -311,14 +311,11 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
             <X className="w-5 h-5" />
           </button>
 
-          <div className="space-y-1.5 max-w-2xl">
+          <div className="max-w-2xl">
             <h3 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-2">
               <Bot className="w-5 h-5 text-accent" />
               <span>Gợi ý nhận xét tiến độ và hiệu suất</span>
             </h3>
-            <p className="text-xs text-ink-2 leading-relaxed">
-              Tổng hợp và phân tích 4 nhóm dữ liệu: Tỷ lệ thực hiện kế hoạch video, kỷ luật tuân thủ quy tắc SLA, danh mục gian hàng P3 và đề xuất nội dung trao đổi 1-on-1 cho trưởng phòng.
-            </p>
           </div>
         </div>
 

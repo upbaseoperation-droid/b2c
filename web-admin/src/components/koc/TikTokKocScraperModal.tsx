@@ -39,7 +39,6 @@ interface TikTokKocScraperModalProps {
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
-type ScrapeModeKey = 'HANDLE' | 'HASHTAG';
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   open,
@@ -49,10 +48,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   onApplyResults,
   onNotify,
 }) => {
-  const [scrapeMode, setScrapeMode] = useState<ScrapeModeKey>('HANDLE');
   const [rawInput, setRawInput] = useState(initialHandle);
-  const [hashtagInput, setHashtagInput] = useState('#kemchongnang');
-  const [period, setPeriod] = useState<PeriodKey>('30d');
+  const period: PeriodKey = '30d';
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
@@ -103,42 +100,6 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setSelectedHandle(json.results[0].handle);
     } catch {
       setErrorMsg('Không kết nối được dịch vụ lấy dữ liệu TikTok. Thử lại sau ít phút.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const runHashtagDiscovery = async (tagToFetch: string, targetPeriod: PeriodKey) => {
-    const trimmed = tagToFetch.trim();
-    if (!trimmed) {
-      setErrorMsg('Nhập một #hashtag hoặc từ khóa ngách (ví dụ: #kemchongnang) để quét KOC.');
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-
-    try {
-      const res = await fetch('/api/integrations/tiktok-koc/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hashtag: trimmed,
-          period: targetPeriod,
-          limit: 10,
-        }),
-      });
-      const json = await res.json();
-
-      if (!res.ok || !json.success || !Array.isArray(json.results) || json.results.length === 0) {
-        setErrorMsg(json.message || 'Không tìm thấy KOC nào với hashtag này.');
-        return;
-      }
-
-      setResults(json.results);
-      setSelectedHandle(json.results[0].handle);
-    } catch {
-      setErrorMsg('Không kết nối được dịch vụ quét hashtag TikTok. Thử lại sau ít phút.');
     } finally {
       setLoading(false);
     }
@@ -336,7 +297,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       <div className="space-y-4">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-start">
           <Field
-            label="Đường dẫn kênh TikTok hoặc @handle (nhập 1 hoặc nhiều kênh, mỗi dòng 1 kênh)"
+            label="Kênh TikTok (@handle hoặc link kênh)"
             htmlFor="tiktok-scraper-input"
             error={errorMsg || undefined}
           >
