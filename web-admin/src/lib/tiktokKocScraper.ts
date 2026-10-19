@@ -11,11 +11,33 @@ import {
 } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
 import {
+  compareTikTokVideoIdDesc,
   discoverRealTikTokVideoUrlsByQuery,
+  discoverTikTokChannelVideoUrls,
   fetchTikTokHtmlWithWafBypass,
+  getSharedCrawlerStore,
   inspectLiveTikTokVideoPage,
   type RealTikTokVideoAndAuthorDetail,
 } from './tiktokOpenSourceEngines';
+
+/**
+ * So sánh 2 video theo thứ tự ưu tiên Ngày air mới nhất lên trước (publishedAt giảm dần -> Snowflake videoId giảm dần -> lượt xem giảm dần).
+ */
+export function compareVideoAirDateDesc(
+  a: { publishedAt?: string; videoId?: string; views?: number },
+  b: { publishedAt?: string; videoId?: string; views?: number }
+): number {
+  const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+  const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+  const validA = Number.isFinite(timeA) ? timeA : 0;
+  const validB = Number.isFinite(timeB) ? timeB : 0;
+  if (validB !== validA) return validB - validA;
+
+  const idCmp = compareTikTokVideoIdDesc(a.videoId, b.videoId);
+  if (idCmp !== 0) return idCmp;
+
+  return (b.views || 0) - (a.views || 0);
+}
 
 export interface TikTokChannelProfile {
   handle: string;
@@ -255,6 +277,7 @@ function classifyByRealFollowers(
 /**
  * Truy vấn trực tiếp trang kênh TikTok công khai (kèm tự động giải mã SlardarWAF SHA-256)
  * để lấy thông tin thực tế từ JSON Rehydration (__UNIVERSAL_DATA_FOR_REHYDRATION__).
+ * Có bộ nhớ đệm dùng chung (TTL 30 phút) và gộp truy vấn trùng cho 30+ người dùng đồng thời.
  */
 export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
   nickname?: string;
@@ -266,36 +289,74 @@ export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
   videoCount?: number;
   isVerified?: boolean;
 } | null> {
+  const clean = handle.trim().replace(/^@+/, '').toLowerCase();
+  if (!clean) return null;
+
+  const store = getSharedCrawlerStore();
+  const now = Date.now();
+  const cached = store.profileCache.get(clean);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
+  const inFlight = store.inFlightProfile.get(clean);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const taskPromise = (async () => {
+    try {
+      const url = `https://www.tiktok.com/@${encodeURIComponent(clean)}`;
+      const fetched = await fetchTikTokHtmlWithWafBypass(url);
+      if (!fetched) return null;
+
+      const scriptMatch = fetched.html.match(
+        /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
+      );
+      if (!scriptMatch || !scriptMatch[1]) return null;
+
+      const json = JSON.parse(scriptMatch[1]);
+      const userDetail = json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo;
+      if (!userDetail?.user) return null;
+
+      const u = userDetail.user;
+      const s = userDetail.stats || {};
+
+      const profileData = {
+        nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
+        bio: typeof u.signature === 'string' ? u.signature : undefined,
+        avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : undefined,
+        followers: typeof s.followerCount === 'number' ? s.followerCount : undefined,
+        following: typeof s.followingCount === 'number' ? s.followingCount : undefined,
+        totalLikes:
+          typeof s.heartCount === 'number'
+            ? s.heartCount
+            : typeof s.heart === 'number'
+            ? s.heart
+            : undefined,
+        videoCount: typeof s.videoCount === 'number' ? s.videoCount : undefined,
+        isVerified: Boolean(u.verified),
+      };
+
+      if (store.profileCache.size >= 1000) {
+        const firstKey = store.profileCache.keys().next().value;
+        if (firstKey) store.profileCache.delete(firstKey);
+      }
+      store.profileCache.set(clean, {
+        data: profileData,
+        expiresAt: Date.now() + 30 * 60 * 1000,
+      });
+      return profileData;
+    } catch {
+      return null;
+    }
+  })();
+
+  store.inFlightProfile.set(clean, taskPromise);
   try {
-    const clean = handle.trim().replace(/^@+/, '');
-    const url = `https://www.tiktok.com/@${encodeURIComponent(clean)}`;
-    const fetched = await fetchTikTokHtmlWithWafBypass(url);
-    if (!fetched) return null;
-
-    const scriptMatch = fetched.html.match(
-      /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
-    );
-    if (!scriptMatch || !scriptMatch[1]) return null;
-
-    const json = JSON.parse(scriptMatch[1]);
-    const userDetail = json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.userInfo;
-    if (!userDetail?.user) return null;
-
-    const u = userDetail.user;
-    const s = userDetail.stats || {};
-
-    return {
-      nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
-      bio: typeof u.signature === 'string' ? u.signature : undefined,
-      avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : undefined,
-      followers: typeof s.followerCount === 'number' ? s.followerCount : undefined,
-      following: typeof s.followingCount === 'number' ? s.followingCount : undefined,
-      totalLikes: typeof s.heartCount === 'number' ? s.heartCount : typeof s.heart === 'number' ? s.heart : undefined,
-      videoCount: typeof s.videoCount === 'number' ? s.videoCount : undefined,
-      isVerified: Boolean(u.verified),
-    };
-  } catch {
-    return null;
+    return await taskPromise;
+  } finally {
+    store.inFlightProfile.delete(clean);
   }
 }
 
@@ -363,21 +424,23 @@ function buildScrapedResultFromRealData(
   const resolvedPhone = extracted.phone || existingKoc?.phone || undefined;
   const resolvedEmail = extracted.email || existingKoc?.email || undefined;
 
-  const recentVideos: TikTokVideoItem[] = realInspectedVideos.map((v) => ({
-    videoId: v.videoId,
-    videoUrl: v.videoUrl,
-    caption: v.caption,
-    hashtags: v.hashtags,
-    publishedAt: v.publishedAt,
-    musicTitle: v.musicTitle,
-    views: v.views,
-    likes: v.likes,
-    comments: v.comments,
-    shares: v.shares,
-    engagementRate: v.engagementRate,
-    isAffiliate: v.hasCartAnchor,
-    productName: v.cartAnchorTitle,
-  }));
+  const recentVideos: TikTokVideoItem[] = realInspectedVideos
+    .map((v) => ({
+      videoId: v.videoId,
+      videoUrl: v.videoUrl,
+      caption: v.caption,
+      hashtags: v.hashtags,
+      publishedAt: v.publishedAt,
+      musicTitle: v.musicTitle,
+      views: v.views,
+      likes: v.likes,
+      comments: v.comments,
+      shares: v.shares,
+      engagementRate: v.engagementRate,
+      isAffiliate: v.hasCartAnchor,
+      productName: v.cartAnchorTitle,
+    }))
+    .sort((a, b) => compareVideoAirDateDesc(a, b));
 
   const sampleCount = recentVideos.length;
   const avgViews =
@@ -493,6 +556,7 @@ export async function scrapeTikTokCreatorData(
 
   const ownVideoEntries = discoveredChannelVideos
     .filter((v) => v.handle === cleanHandle)
+    .sort((a, b) => compareTikTokVideoIdDesc(a.videoId, b.videoId))
     .slice(0, 4);
 
   const inspectedVideos = (
@@ -648,9 +712,12 @@ export async function discoverTikTokKocsByHashtag(
     pageOffset: options?.pageOffset,
   });
 
-  // Gom theo từng KOC duy nhất
+  // Gom theo từng KOC duy nhất (ưu tiên video mới đăng nhất của từng KOC)
+  const sortedDiscovered = [...rawDiscovered].sort((a, b) =>
+    compareTikTokVideoIdDesc(a.videoId, b.videoId)
+  );
   const uniqueByHandle = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
-  for (const item of rawDiscovered) {
+  for (const item of sortedDiscovered) {
     if (excludeSet.has(item.handle)) continue;
     if (!uniqueByHandle.has(item.handle)) {
       uniqueByHandle.set(item.handle, item);
@@ -699,10 +766,19 @@ export async function discoverTikTokKocsByHashtag(
     }
   }
 
-  results.sort(
-    (a, b) =>
-      b.matchedHashtagVideo.views - a.matchedHashtagVideo.views ||
-      b.matchedHashtagVideo.breakoutRatio - a.matchedHashtagVideo.breakoutRatio
+  results.sort((a, b) =>
+    compareVideoAirDateDesc(
+      {
+        publishedAt: a.matchedHashtagVideo.publishedAt,
+        videoId: a.matchedHashtagVideo.videoId,
+        views: a.matchedHashtagVideo.views,
+      },
+      {
+        publishedAt: b.matchedHashtagVideo.publishedAt,
+        videoId: b.matchedHashtagVideo.videoId,
+        views: b.matchedHashtagVideo.views,
+      }
+    )
   );
 
   return {
@@ -1013,11 +1089,19 @@ export async function discoverCompetitorKocs(
     groupedByKoc.set(item.handle, list);
   }
 
+  // Sắp xếp danh sách video của mỗi KOC theo thứ tự mới nhất trước, và ưu tiên KOC có video mới air lên đầu
+  for (const [h, list] of groupedByKoc.entries()) {
+    list.sort((a, b) => compareTikTokVideoIdDesc(a.videoId, b.videoId));
+    groupedByKoc.set(h, list);
+  }
+
   const upbaseHandleSet = new Set(
     UPBASE_FULL_KOC_MASTER.map((k) => k.channelId.toLowerCase().replace(/^@+/, ''))
   );
 
-  const kocEntries = [...groupedByKoc.entries()];
+  const kocEntries = [...groupedByKoc.entries()].sort((a, b) =>
+    compareTikTokVideoIdDesc(a[1][0]?.videoId, b[1][0]?.videoId)
+  );
   const results: TikTokCompetitorKocResult[] = [];
 
   // 3. Truy vấn trực tiếp từng trang video trên TikTok để lấy 100% số liệu thật của KOC & Video
@@ -1094,10 +1178,19 @@ export async function discoverCompetitorKocs(
     }
   }
 
-  results.sort(
-    (a, b) =>
-      b.competitorCollaboration.latestCollabViews -
-      a.competitorCollaboration.latestCollabViews
+  results.sort((a, b) =>
+    compareVideoAirDateDesc(
+      {
+        publishedAt: a.competitorCollaboration.latestCollabPublishedAt,
+        videoId: a.competitorCollaboration.latestCollabVideoId,
+        views: a.competitorCollaboration.latestCollabViews,
+      },
+      {
+        publishedAt: b.competitorCollaboration.latestCollabPublishedAt,
+        videoId: b.competitorCollaboration.latestCollabVideoId,
+        views: b.competitorCollaboration.latestCollabViews,
+      }
+    )
   );
 
   const alreadyInUpbaseCount = results.filter(
