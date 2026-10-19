@@ -175,7 +175,17 @@ export async function inspectLiveTikTokVideoPage(
     if (!handle) return null;
 
     const videoId = String(itemStruct.id || '');
-    const createTimeSec = Number(itemStruct.createTime || 0);
+    let createTimeSec = Number(itemStruct.createTime || 0);
+    if (createTimeSec <= 1000000000 && /^\d{17,22}$/.test(videoId)) {
+      try {
+        const snowflakeSec = Number(BigInt(videoId) >> BigInt(32));
+        if (snowflakeSec > 1451606400 && snowflakeSec < 2100000000) {
+          createTimeSec = snowflakeSec;
+        }
+      } catch {
+        // ignore
+      }
+    }
     const publishedAt =
       createTimeSec > 1000000000
         ? new Date(createTimeSec * 1000).toISOString().slice(0, 10)
@@ -470,8 +480,28 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
 };
 
 /**
+ * So sánh 2 mã TikTok Video ID (Snowflake 64-bit, trong đó 32 bit cao là Unix timestamp giây)
+ * theo thứ tự giảm dần (video mới đăng lên trước -> video cũ).
+ */
+export function compareTikTokVideoIdDesc(videoIdA?: string, videoIdB?: string): number {
+  const cleanA = (videoIdA || '').replace(/\D/g, '');
+  const cleanB = (videoIdB || '').replace(/\D/g, '');
+  if (!cleanA && !cleanB) return 0;
+  if (!cleanA) return 1;
+  if (!cleanB) return -1;
+  try {
+    const bigA = BigInt(cleanA);
+    const bigB = BigInt(cleanB);
+    return bigB > bigA ? 1 : bigB < bigA ? -1 : 0;
+  } catch {
+    return cleanB.localeCompare(cleanA);
+  }
+}
+
+/**
  * Tìm kiếm danh sách đường dẫn video TikTok thực tế (https://www.tiktok.com/@handle/video/videoId)
  * thông qua chỉ mục Bing Video Search (vi-VN) và danh mục URL video TikTok Việt Nam đã xác thực.
+ * Luôn ưu tiên sắp xếp các video mới lên sóng trước (theo Snowflake Video ID giảm dần).
  * Hỗ trợ excludeHandles và pageOffset để chia thành nhiều đợt quét liên tiếp không trùng lặp.
  */
 export async function discoverRealTikTokVideoUrlsByQuery(
@@ -483,6 +513,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   }
 ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> {
   const discovered = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
+  const liveCandidates = new Map<string, { handle: string; videoId: string; videoUrl: string }>();
   const excludeSet = new Set(
     (options?.excludeHandles || []).map((h) => h.trim().toLowerCase().replace(/^@+/, ''))
   );
@@ -512,21 +543,38 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       if (BING_US_WIDGET_BLACKLIST.has(handle) || excludeSet.has(handle)) continue;
       const videoId = m[2];
       const key = `${handle}_${videoId}`;
-      if (!discovered.has(key)) {
-        discovered.set(key, {
+      if (!liveCandidates.has(key)) {
+        liveCandidates.set(key, {
           handle,
           videoId,
           videoUrl: `https://www.tiktok.com/@${handle}/video/${videoId}`,
         });
       }
-      if (discovered.size >= maxUrls) break;
     }
   };
 
-  for (const q of queries) {
-    if (discovered.size >= maxUrls) break;
+  const batchModifiers = [
+    '',
+    'unboxing',
+    'tiktok shop',
+    'test thực tế',
+    'swatch',
+    'haul',
+    'có tốt không',
+    'trải nghiệm',
+    'koc review',
+    'mỹ phẩm chính hãng',
+  ];
+  const modifier = batchModifiers[pageOffset % batchModifiers.length];
+  const effectiveQueries =
+    pageOffset > 0 && modifier
+      ? [...queries.map((q) => `${q} ${modifier}`), ...queries]
+      : queries;
+
+  for (const q of effectiveQueries) {
+    if (liveCandidates.size >= maxUrls * 2) break;
     try {
-      const firstParam = pageOffset * 35;
+      const firstParam = Math.floor(pageOffset / 2) * 35;
       const asyncSearchUrl = `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
         q
       )}&async=content&first=${firstParam}&count=35&mkt=vi-VN&setlang=vi&cc=VN`;
@@ -549,44 +597,57 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   }
 
-  // Bổ sung URL video KOC Việt Nam thực tế (chưa nằm trong excludeSet) để đáp ứng đủ số lượng khi quét nhiều đợt
-  if (discovered.size < maxUrls) {
-    const joinedQuery = queries
-      .join(' ')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd');
+  const joinedQuery = queries
+    .join(' ')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
 
-    // 1. Ưu tiên nhóm khớp trực tiếp với thương hiệu / hashtag
-    for (const [catalogKey, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
-      if (joinedQuery.includes(catalogKey)) {
-        for (const item of items) {
-          const cleanH = item.handle.toLowerCase();
-          if (excludeSet.has(cleanH)) continue;
-          const key = `${cleanH}_${item.videoId}`;
-          if (!discovered.has(key)) {
-            discovered.set(key, item);
-          }
-          if (discovered.size >= maxUrls) break;
-        }
+  // Gom các video khớp trực tiếp với thương hiệu / hashtag (cả từ tìm kiếm trực tiếp và danh mục xác thực)
+  // rồi sắp xếp ưu tiên video mới air lên trước (Snowflake videoId lớn -> nhỏ)
+  const brandMatchedPool: Array<{ handle: string; videoId: string; videoUrl: string }> = [
+    ...liveCandidates.values(),
+  ];
+
+  for (const [catalogKey, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
+    if (joinedQuery.includes(catalogKey)) {
+      for (const item of items) {
+        const cleanH = item.handle.toLowerCase();
+        if (excludeSet.has(cleanH)) continue;
+        brandMatchedPool.push({ ...item, handle: cleanH });
       }
     }
+  }
 
-    // 2. Khi người dùng yêu cầu số lượng lớn (chia nhiều đợt quét > 12 KOC), lấy tiếp từ các nhóm KOC Việt Nam cùng ngành hàng
-    if (discovered.size < maxUrls) {
-      for (const [, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
-        for (const item of items) {
-          const cleanH = item.handle.toLowerCase();
-          if (excludeSet.has(cleanH)) continue;
-          const key = `${cleanH}_${item.videoId}`;
-          if (!discovered.has(key)) {
-            discovered.set(key, item);
-          }
-          if (discovered.size >= maxUrls) break;
-        }
-        if (discovered.size >= maxUrls) break;
+  brandMatchedPool.sort((a, b) => compareTikTokVideoIdDesc(a.videoId, b.videoId));
+
+  for (const item of brandMatchedPool) {
+    const key = `${item.handle}_${item.videoId}`;
+    if (!discovered.has(key)) {
+      discovered.set(key, item);
+    }
+    if (discovered.size >= maxUrls) break;
+  }
+
+  // Khi người dùng yêu cầu số lượng lớn (chia nhiều đợt quét > 12 KOC), lấy tiếp từ các nhóm KOC Việt Nam cùng ngành hàng (cũng ưu tiên video mới nhất trước)
+  if (discovered.size < maxUrls) {
+    const industryFallbackPool: Array<{ handle: string; videoId: string; videoUrl: string }> = [];
+    for (const [, items] of Object.entries(VERIFIED_VN_TIKTOK_VIDEO_URLS)) {
+      for (const item of items) {
+        const cleanH = item.handle.toLowerCase();
+        if (excludeSet.has(cleanH)) continue;
+        industryFallbackPool.push({ ...item, handle: cleanH });
       }
+    }
+    industryFallbackPool.sort((a, b) => compareTikTokVideoIdDesc(a.videoId, b.videoId));
+
+    for (const item of industryFallbackPool) {
+      const key = `${item.handle}_${item.videoId}`;
+      if (!discovered.has(key)) {
+        discovered.set(key, item);
+      }
+      if (discovered.size >= maxUrls) break;
     }
   }
 

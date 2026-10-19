@@ -23,6 +23,7 @@ import {
   buildCompetitorKocsCsv,
   buildScrapedKocsCsv,
   buildVideoCommentsCsv,
+  compareVideoAirDateDesc,
   mapScrapedResultToKocItem,
   type TikTokCommentIntentType,
   type TikTokCompetitorKocResult,
@@ -104,8 +105,8 @@ interface BatchCrawlProgress {
 
 const KOC_BATCH_SIZE = 12;
 const COMMENT_BATCH_SIZE = 40;
-const KOC_COUNT_PRESETS = [12, 24, 36, 60];
-const COMMENT_COUNT_PRESETS = [30, 60, 100, 150];
+const KOC_COUNT_PRESETS = [12, 50, 100, 200, 500];
+const COMMENT_COUNT_PRESETS = [40, 100, 200, 300, 500];
 
 const COMPETITOR_SAMPLES = [
   { handle: '@larocheposayvn', label: 'La Roche-Posay VN' },
@@ -164,7 +165,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [compFollowerTier, setCompFollowerTier] = useState<FollowerTierKey>('ALL');
   const [compMinViews, setCompMinViews] = useState<number>(0);
   const [compMinEr, setCompMinEr] = useState<number>(0);
-  const [compSortBy, setCompSortBy] = useState<KocSortKey>('VIEWS_DESC');
+  const [compSortBy, setCompSortBy] = useState<KocSortKey>('LATEST_DESC');
   const compAbortRef = useRef(false);
 
   // --- State Tab 2: Tìm KOC theo Hashtag ---
@@ -179,7 +180,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [tagFollowerTier, setTagFollowerTier] = useState<FollowerTierKey>('ALL');
   const [tagMinViews, setTagMinViews] = useState<number>(0);
   const [tagMinEr, setTagMinEr] = useState<number>(0);
-  const [tagSortBy, setTagSortBy] = useState<KocSortKey>('VIEWS_DESC');
+  const [tagSortBy, setTagSortBy] = useState<KocSortKey>('LATEST_DESC');
   const tagAbortRef = useRef(false);
 
   // --- State Tab 3: Cào Bình luận Video ---
@@ -232,7 +233,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const baseList = appendMode ? [...compResults] : [];
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
-      : Math.min(Math.max(Number(options?.targetCount ?? compTargetCount) || 12, 1), 120);
+      : Math.min(Math.max(Number(options?.targetCount ?? compTargetCount) || 12, 1), 1000);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
     const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
@@ -270,7 +271,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             period: targetPeriod,
             limit: batchLimit,
             excludeHandles: Array.from(accumulatedMap.keys()),
-            pageOffset: Math.floor(accumulatedMap.size / KOC_BATCH_SIZE),
+            pageOffset: batchIdx,
             skipProfileFetch: accumulatedMap.size > 0 && Boolean(latestProfile),
           }),
         });
@@ -297,10 +298,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           }
         }
 
-        const mergedList = Array.from(accumulatedMap.values()).sort(
-          (a, b) =>
-            b.competitorCollaboration.latestCollabViews -
-            a.competitorCollaboration.latestCollabViews
+        const mergedList = Array.from(accumulatedMap.values()).sort((a, b) =>
+          compareVideoAirDateDesc(
+            {
+              publishedAt: a.competitorCollaboration.latestCollabPublishedAt,
+              videoId: a.competitorCollaboration.latestCollabVideoId,
+              views: a.competitorCollaboration.latestCollabViews,
+            },
+            {
+              publishedAt: b.competitorCollaboration.latestCollabPublishedAt,
+              videoId: b.competitorCollaboration.latestCollabVideoId,
+              views: b.competitorCollaboration.latestCollabViews,
+            }
+          )
         );
         setCompResults(mergedList);
 
@@ -338,7 +348,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const baseList = appendMode ? [...tagResults] : [];
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
-      : Math.min(Math.max(Number(options?.targetCount ?? tagTargetCount) || 12, 1), 120);
+      : Math.min(Math.max(Number(options?.targetCount ?? tagTargetCount) || 12, 1), 1000);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
     const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
@@ -375,7 +385,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             period: targetPeriod,
             limit: batchLimit,
             excludeHandles: Array.from(accumulatedMap.keys()),
-            pageOffset: Math.floor(accumulatedMap.size / KOC_BATCH_SIZE),
+            pageOffset: batchIdx,
           }),
         });
         const json = await res.json();
@@ -398,8 +408,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         const mergedList = Array.from(accumulatedMap.values()).sort(
           (a, b) =>
-            b.matchedHashtagVideo.views - a.matchedHashtagVideo.views ||
-            b.matchedHashtagVideo.breakoutRatio - a.matchedHashtagVideo.breakoutRatio
+            compareVideoAirDateDesc(
+              {
+                publishedAt: a.matchedHashtagVideo.publishedAt,
+                videoId: a.matchedHashtagVideo.videoId,
+                views: a.matchedHashtagVideo.views,
+              },
+              {
+                publishedAt: b.matchedHashtagVideo.publishedAt,
+                videoId: b.matchedHashtagVideo.videoId,
+                views: b.matchedHashtagVideo.views,
+              }
+            ) || b.matchedHashtagVideo.breakoutRatio - a.matchedHashtagVideo.breakoutRatio
         );
         setTagResults(mergedList);
 
@@ -436,7 +456,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const existingComments = appendMode && commentData ? [...commentData.comments] : [];
     const requestedTotal = appendMode
       ? existingComments.length + (options?.targetCount || COMMENT_BATCH_SIZE)
-      : Math.min(Math.max(Number(options?.targetCount ?? commentTargetCount) || 40, 5), 300);
+      : Math.min(Math.max(Number(options?.targetCount ?? commentTargetCount) || 40, 5), 1000);
 
     const totalNeeded = Math.max(5, requestedTotal - existingComments.length);
     const totalBatches = Math.max(1, Math.ceil(totalNeeded / COMMENT_BATCH_SIZE));
@@ -618,9 +638,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         return b.engagementMetrics.engagementRate - a.engagementMetrics.engagementRate;
       }
       if (compSortBy === 'LATEST_DESC') {
-        return (
-          new Date(b.competitorCollaboration.latestCollabPublishedAt).getTime() -
-          new Date(a.competitorCollaboration.latestCollabPublishedAt).getTime()
+        return compareVideoAirDateDesc(
+          {
+            publishedAt: a.competitorCollaboration.latestCollabPublishedAt,
+            videoId: a.competitorCollaboration.latestCollabVideoId,
+            views: a.competitorCollaboration.latestCollabViews,
+          },
+          {
+            publishedAt: b.competitorCollaboration.latestCollabPublishedAt,
+            videoId: b.competitorCollaboration.latestCollabVideoId,
+            views: b.competitorCollaboration.latestCollabViews,
+          }
         );
       }
       return (
@@ -674,9 +702,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         return b.engagementMetrics.engagementRate - a.engagementMetrics.engagementRate;
       }
       if (tagSortBy === 'LATEST_DESC') {
-        return (
-          new Date(b.matchedHashtagVideo.publishedAt).getTime() -
-          new Date(a.matchedHashtagVideo.publishedAt).getTime()
+        return compareVideoAirDateDesc(
+          {
+            publishedAt: a.matchedHashtagVideo.publishedAt,
+            videoId: a.matchedHashtagVideo.videoId,
+            views: a.matchedHashtagVideo.views,
+          },
+          {
+            publishedAt: b.matchedHashtagVideo.publishedAt,
+            videoId: b.matchedHashtagVideo.videoId,
+            views: b.matchedHashtagVideo.views,
+          }
         );
       }
       return b.matchedHashtagVideo.views - a.matchedHashtagVideo.views;
@@ -1434,15 +1470,26 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       id="competitor-count-input"
                       type="number"
                       min={1}
-                      max={120}
-                      value={compTargetCount}
-                      onChange={(e) =>
-                        setCompTargetCount(
-                          Math.min(120, Math.max(1, Number(e.target.value) || 12))
-                        )
-                      }
-                      title="Nhập số lượng KOC cần quét (tối đa 120 KOC, chia đợt 12 KOC/lần)"
-                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                      max={1000}
+                      value={compTargetCount || ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setCompTargetCount(0);
+                          return;
+                        }
+                        const parsed = parseInt(raw, 10);
+                        if (!Number.isNaN(parsed)) {
+                          setCompTargetCount(Math.min(1000, Math.max(1, parsed)));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!compTargetCount || compTargetCount < 1) {
+                          setCompTargetCount(12);
+                        }
+                      }}
+                      title="Nhập số lượng KOC cần quét (tối đa 1000 KOC, hệ thống tự chia đợt 12 KOC/lần)"
+                      className="w-16 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
@@ -1646,16 +1693,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       onChange={(e) => setCompSortBy(e.target.value as KocSortKey)}
                       className="h-[34px] text-xs"
                     >
+                      <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
                       <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
                       <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
                       <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
-                      <option value="LATEST_DESC">Sắp xếp: Đăng mới nhất</option>
                     </Select>
 
                     {(compFilter !== 'ALL' ||
                       compFollowerTier !== 'ALL' ||
                       compMinViews > 0 ||
                       compMinEr > 0 ||
+                      compSortBy !== 'LATEST_DESC' ||
                       compSearchQuery.trim() !== '') && (
                       <Button
                         size="sm"
@@ -1666,6 +1714,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                           setCompFollowerTier('ALL');
                           setCompMinViews(0);
                           setCompMinEr(0);
+                          setCompSortBy('LATEST_DESC');
                           setCompSearchQuery('');
                         }}
                       >
@@ -1779,15 +1828,26 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       id="hashtag-count-input"
                       type="number"
                       min={1}
-                      max={120}
-                      value={tagTargetCount}
-                      onChange={(e) =>
-                        setTagTargetCount(
-                          Math.min(120, Math.max(1, Number(e.target.value) || 12))
-                        )
-                      }
-                      title="Nhập số lượng KOC cần quét theo Hashtag (tối đa 120 KOC, chia đợt 12 KOC/lần)"
-                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                      max={1000}
+                      value={tagTargetCount || ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setTagTargetCount(0);
+                          return;
+                        }
+                        const parsed = parseInt(raw, 10);
+                        if (!Number.isNaN(parsed)) {
+                          setTagTargetCount(Math.min(1000, Math.max(1, parsed)));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!tagTargetCount || tagTargetCount < 1) {
+                          setTagTargetCount(12);
+                        }
+                      }}
+                      title="Nhập số lượng KOC cần quét theo Hashtag (tối đa 1000 KOC, hệ thống tự chia đợt 12 KOC/lần)"
+                      className="w-16 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
@@ -1937,16 +1997,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                       onChange={(e) => setTagSortBy(e.target.value as KocSortKey)}
                       className="h-[34px] text-xs"
                     >
+                      <option value="LATEST_DESC">Sắp xếp: Ngày air mới → cũ</option>
                       <option value="VIEWS_DESC">Sắp xếp: View cao → thấp</option>
                       <option value="FOLLOWERS_DESC">Sắp xếp: Follower cao → thấp</option>
                       <option value="ER_DESC">Sắp xếp: ER% cao → thấp</option>
-                      <option value="LATEST_DESC">Sắp xếp: Đăng mới nhất</option>
                     </Select>
 
                     {(tagFilter !== 'ALL' ||
                       tagFollowerTier !== 'ALL' ||
                       tagMinViews > 0 ||
                       tagMinEr > 0 ||
+                      tagSortBy !== 'LATEST_DESC' ||
                       tagSearchQuery.trim() !== '') && (
                       <Button
                         size="sm"
@@ -1957,6 +2018,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                           setTagFollowerTier('ALL');
                           setTagMinViews(0);
                           setTagMinEr(0);
+                          setTagSortBy('LATEST_DESC');
                           setTagSearchQuery('');
                         }}
                       >
@@ -2060,16 +2122,27 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     <input
                       id="comment-count-input"
                       type="number"
-                      min={10}
-                      max={300}
-                      value={commentTargetCount}
-                      onChange={(e) =>
-                        setCommentTargetCount(
-                          Math.min(300, Math.max(10, Number(e.target.value) || 40))
-                        )
-                      }
-                      title="Nhập số lượng bình luận muốn lấy (tối đa 300, chia đợt 40 bình luận/lần)"
-                      className="w-14 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
+                      min={1}
+                      max={1000}
+                      value={commentTargetCount || ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          setCommentTargetCount(0);
+                          return;
+                        }
+                        const parsed = parseInt(raw, 10);
+                        if (!Number.isNaN(parsed)) {
+                          setCommentTargetCount(Math.min(1000, Math.max(1, parsed)));
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!commentTargetCount || commentTargetCount < 1) {
+                          setCommentTargetCount(40);
+                        }
+                      }}
+                      title="Nhập số lượng bình luận muốn lấy (tối đa 1000, hệ thống tự chia đợt 40 bình luận/lần)"
+                      className="w-16 h-6 px-1.5 rounded border border-line bg-surface text-xs text-ink text-center font-code focus:outline-none focus:border-line-strong"
                     />
                   </div>
 

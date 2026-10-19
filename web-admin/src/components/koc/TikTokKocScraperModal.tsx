@@ -389,20 +389,6 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
                 <div className="flex flex-col gap-2 lg:pt-6">
                   <div className="flex items-center gap-2">
-                    <Segmented<PeriodKey>
-                      items={[
-                        { key: '7d', label: '7 ngày' },
-                        { key: '30d', label: '30 ngày' },
-                        { key: '90d', label: '90 ngày' },
-                      ]}
-                      value={period}
-                      onChange={(p) => {
-                        setPeriod(p);
-                        if (rawInput.trim() && results.length > 0) {
-                          void runScrape(rawInput, p);
-                        }
-                      }}
-                    />
                     <Button
                       variant={results.length === 0 ? 'primary' : 'secondary'}
                       icon={loading ? RefreshCw : Search}
@@ -416,7 +402,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Thử nhanh kênh mẫu:</span>
+                <span>Chọn kênh mẫu (nhấn Lấy dữ liệu kênh để quét):</span>
                 {SAMPLE_HANDLES.map((h) => (
                   <button
                     key={h}
@@ -439,11 +425,10 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                   onClick={() => {
                     const batch = SAMPLE_HANDLES.join('\n');
                     setRawInput(batch);
-                    void runScrape(batch, period);
                   }}
                   className="px-2 py-0.5 rounded border border-line bg-surface text-accent hover:border-line-strong transition-colors font-medium ml-1"
                 >
-                  Quét mẫu 4 kênh
+                  Điền 4 kênh mẫu
                 </button>
               </div>
             </>
@@ -467,20 +452,6 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
                 <div className="flex flex-col gap-2 lg:pt-6">
                   <div className="flex items-center gap-2">
-                    <Segmented<PeriodKey>
-                      items={[
-                        { key: '7d', label: '7 ngày' },
-                        { key: '30d', label: '30 ngày' },
-                        { key: '90d', label: '90 ngày' },
-                      ]}
-                      value={period}
-                      onChange={(p) => {
-                        setPeriod(p);
-                        if (hashtagInput.trim() && results.length > 0) {
-                          void runHashtagDiscovery(hashtagInput, p);
-                        }
-                      }}
-                    />
                     <Button
                       variant="primary"
                       icon={loading ? RefreshCw : Search}
@@ -494,16 +465,19 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3">
-                <span>Thử nhanh hashtag ngách:</span>
+                <span>Chọn hashtag mẫu (nhấn Quét KOC theo Hashtag để bắt đầu):</span>
                 {SAMPLE_HASHTAGS.map((tag) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => {
                       setHashtagInput(tag);
-                      void runHashtagDiscovery(tag, period);
                     }}
-                    className="px-2 py-0.5 rounded border border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink transition-colors font-code"
+                    className={`px-2 py-0.5 rounded border text-xs transition-colors font-code ${
+                      hashtagInput.toLowerCase() === tag.toLowerCase()
+                        ? 'bg-accent-soft border-accent text-ink font-semibold'
+                        : 'border-line bg-surface text-ink-2 hover:border-line-strong hover:text-ink'
+                    }`}
                   >
                     {tag}
                   </button>
