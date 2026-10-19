@@ -953,7 +953,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="space-y-4">
           <Panel
             title="Quét danh sách KOC đang đăng video / gắn giỏ hàng cho Đối thủ (0đ)"
-            description="Nhập @handle kênh TikTok hoặc tên thương hiệu đối thủ. Hệ thống quét các KOC bên thứ ba đang đăng video nhắc tên, gắn thẻ hoặc gắn giỏ sản phẩm của đối thủ, tách SĐT/Zalo từ Bio và đối chiếu với Danh bạ KOC của UpBase."
           >
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
@@ -1185,7 +1184,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="space-y-4">
           <Panel
             title="Tìm kiếm KOC đang có video lên xu hướng theo #Hashtag / Từ khóa ngách (0đ)"
-            description="Nhập #hashtag hoặc từ khóa sản phẩm để phát hiện các kênh KOC có tỷ lệ View/Follower cao và lưu thẳng vào Danh bạ KOC mà không cần tài khoản Kalodata."
           >
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
@@ -1301,7 +1299,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="space-y-4">
           <Panel
             title="Cào Bình luận thực tế của Video TikTok & Lọc khách hỏi mua hàng (@tobyg74/tiktok-api-dl)"
-            description="Nhập đường dẫn video TikTok bất kỳ (của KOC hoặc của đối thủ). Hệ thống gọi trực tiếp API bình luận (/api/comment/list/) và Aweme Mobile Feed (v1) để tải danh sách bình luận thật và lọc các bình luận hỏi giá / xin link mua hàng."
           >
             <div className="space-y-3">
               <div className="grid lg:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
@@ -1492,7 +1489,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {/* Bảng 30 Kênh Creator đang thịnh hành thực tế trên TikTok */}
           <Panel
             title={`Danh sách Creator đang thịnh hành thực tế trên TikTok (${filteredTrendingCreators.length})`}
-            description="Dữ liệu thời gian thực từ endpoint /node/share/discover thông qua thư viện @tobyg74/tiktok-api-dl (TrendingCreators)"
             flush
             actions={
               <Button
@@ -1530,50 +1526,32 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="grid lg:grid-cols-2 gap-4">
           <Panel
             title="Cào hồ sơ & chỉ số hàng loạt Kênh KOC theo @handle"
-            description="Nhập danh sách 1–30 @handle hoặc đường dẫn kênh TikTok để lấy Follower, Tổng tim, Tổng số video, View TB, ER% và tách SĐT/Zalo/Email trong tiểu sử (Bio)."
           >
-            <div className="space-y-3">
-              <ul className="text-xs text-ink-2 space-y-1.5 list-disc pl-4">
-                <li>Tự động đọc dữ liệu trang kênh công khai TikTok (`webapp.user-detail`).</li>
-                <li>Tự động bóc tách SĐT / Zalo / Email gắn trong tiểu sử kênh (Bio).</li>
-                <li>Thống kê Lượt xem TB, Tim TB, Bình luận TB, Chia sẻ TB và ER% của các video gần nhất.</li>
-                <li>Lưu hàng loạt vào Danh bạ KOC hoặc xuất file Excel CSV.</li>
-              </ul>
-              <div className="pt-2">
-                <Button
-                  variant="primary"
-                  icon={Search}
-                  onClick={() => {
-                    setScraperInitialHandle('');
-                    setScraperModalOpen(true);
-                  }}
-                >
-                  Mở bảng Cào Kênh KOC theo @handle
-                </Button>
-              </div>
+            <div>
+              <Button
+                variant="primary"
+                icon={Search}
+                onClick={() => {
+                  setScraperInitialHandle('');
+                  setScraperModalOpen(true);
+                }}
+              >
+                Mở bảng Cào Kênh KOC theo @handle
+              </Button>
             </div>
           </Panel>
 
           <Panel
             title="Nghiệm thu hàng loạt Link Video KOC gửi (6 lớp kiểm tra)"
-            description="Dán 1 hoặc 100+ đường dẫn video TikTok do KOC bàn giao để kiểm tra ngày giờ đăng, khung hình, phụ đề lời thoại WebVTT, giỏ hàng chính hãng và mã Spark Ads."
           >
-            <div className="space-y-3">
-              <ul className="text-xs text-ink-2 space-y-1.5 list-disc pl-4">
-                <li>Giải mã ngày giờ đăng thực tế từ Snowflake Video ID (64-bit) & đối chiếu SLA.</li>
-                <li>Tải phụ đề lời thoại `.vtt` và chữ cứng CapCut để kiểm tra thông điệp USP & từ cấm sàn.</li>
-                <li>Đối soát đúng `Shop ID` và `SKU` gian hàng chính hãng do UpBase vận hành.</li>
-                <li>Kiểm tra hiệu lực mã ủy quyền Spark Ads và theo dõi lưu giữ video 30 ngày sau đăng.</li>
-              </ul>
-              <div className="pt-2">
-                <Button
-                  variant="primary"
-                  icon={FileCheck2}
-                  onClick={() => setVideoInspectorOpen(true)}
-                >
-                  Mở bảng Nghiệm thu Link Video KOC
-                </Button>
-              </div>
+            <div>
+              <Button
+                variant="primary"
+                icon={FileCheck2}
+                onClick={() => setVideoInspectorOpen(true)}
+              >
+                Mở bảng Nghiệm thu Link Video KOC
+              </Button>
             </div>
           </Panel>
         </div>

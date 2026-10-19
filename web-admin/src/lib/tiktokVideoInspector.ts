@@ -1,5 +1,6 @@
 import { BookingDealItem } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
+import { fetchTikTokHtmlWithWafBypass } from './tiktokOpenSourceEngines';
 
 export type VideoAcceptanceVerdict = 'ĐẠT_CHUẨN' | 'CẦN_KIỂM_TRA' | 'KHÔNG_ĐẠT';
 
@@ -424,33 +425,18 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
     // Tiếp tục thử qua SSR HTML
   }
 
-  // 2. Truy cập trang HTML của video để lấy đầy đủ createTime, stats, duration, music, subtitles, stickers, anchors
+  // 2. Truy cập trang HTML của video (kèm tự động giải mã SlardarWAF SHA-256) để lấy đầy đủ createTime, stats, duration, music, subtitles, stickers, anchors
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    const pageRes = await fetch(resolvedUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
-      },
-      redirect: 'follow',
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-    clearTimeout(timer);
-
-    if (pageRes.url) {
-      resolvedUrl = pageRes.url.split('?')[0];
+    const fetched = await fetchTikTokHtmlWithWafBypass(resolvedUrl, 6500);
+    if (fetched) {
+      resolvedUrl = fetched.finalUrl;
       const extracted = extractHandleAndVideoIdFromUrl(resolvedUrl);
       if (extracted.handle) urlHandle = extracted.handle;
       if (extracted.videoId) urlVideoId = extracted.videoId;
-    }
 
-    if (pageRes.ok) {
-      const html = await pageRes.text();
+      const html = fetched.html;
       const scriptMatch = html.match(
-        /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application\/json">([\s\S]*?)<\/script>/
+        /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
       );
       if (scriptMatch && scriptMatch[1]) {
         const parsed = JSON.parse(scriptMatch[1]);
