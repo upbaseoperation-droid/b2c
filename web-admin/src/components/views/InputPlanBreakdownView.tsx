@@ -76,8 +76,61 @@ import {
   ConfirmDialog,
   Presence,
   Status,
+  PageHeaderNav,
 } from '../ui';
 import { StorePlanMindmap } from './StorePlanMindmap';
+
+interface FormattedNumberInputProps {
+  value: number;
+  onChange: (val: number) => void;
+  disabled?: boolean;
+  className?: string;
+  placeholder?: string;
+  step?: number;
+}
+
+const FormattedNumberInput: React.FC<FormattedNumberInputProps> = ({
+  value,
+  onChange,
+  disabled = false,
+  className = '',
+  placeholder,
+}) => {
+  const [localText, setLocalText] = useState<string>(() => (value ? formatNumber(value) : '0'));
+  const isFocusedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      setLocalText(value ? formatNumber(value) : '0');
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const num = raw ? Number(raw) : 0;
+    setLocalText(raw ? formatNumber(num) : '');
+    onChange(num);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      disabled={disabled}
+      placeholder={placeholder}
+      value={localText}
+      onFocus={() => {
+        isFocusedRef.current = true;
+      }}
+      onBlur={() => {
+        isFocusedRef.current = false;
+        setLocalText(value ? formatNumber(value) : '0');
+      }}
+      onChange={handleChange}
+      className={className}
+    />
+  );
+};
 
 const PIC_OPTIONS = [
   'Lê Phương Thảo',
@@ -1543,20 +1596,24 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* THANH ĐIỀU HƯỚNG DUY NHẤT CỦA PLAN: TÁCH RỜI TỔNG QUAN & CHI TIẾT          */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        {/* Bên trái: Nút quay lại + Chọn nhanh gian hàng + Phiên bản (Không lặp tiêu đề) */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+      {/* ========================================================================= */}
+      {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG & PHIÊN BẢN LÊN TOPHEADER CẠNH TIÊU ĐỀ        */}
+      {/* ========================================================================= */}
+      <PageHeaderNav>
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <span className="text-slate-300 hidden sm:inline">|</span>
           <button
+            type="button"
             onClick={() => {
               setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
               setIsShowingStudio(false);
               if (planSync.isPersistent) void planSync.saveNow();
             }}
-            className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium transition cursor-pointer"
+            className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
             title="Quay lại danh sách kế hoạch tháng"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Danh sách</span>
+            <span>Danh sách</span>
           </button>
 
           <select
@@ -1568,7 +1625,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 font-semibold text-xs text-slate-900 focus:outline-none cursor-pointer max-w-[260px] truncate"
+            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[220px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {monthlyPlans.map(p => (
@@ -1578,8 +1635,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             ))}
           </select>
 
-          {/* Nút Phiên bản gọn gàng */}
-          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200/80">
+          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-sunken border border-line">
             {studioVersionSnapshots.map((snap) => {
               const isCurrent = snap.versionCode === activeVersionCode;
               return (
@@ -1589,8 +1645,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   onClick={() => handleSwitchVersionInStudio(snap)}
                   className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
                     isCurrent
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                      ? 'bg-accent text-white shadow-2xs'
+                      : 'text-ink-2 hover:text-ink hover:bg-surface'
                   }`}
                   title={`${snap.versionName}`}
                 >
@@ -1601,7 +1657,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <button
               type="button"
               onClick={() => setIsVersionHistoryModalOpen(true)}
-              className="px-2 py-0.5 rounded-md text-2xs font-semibold text-blue-700 hover:bg-white transition inline-flex items-center gap-1 cursor-pointer"
+              className="px-2 py-0.5 rounded-md text-2xs font-semibold text-accent hover:bg-surface transition inline-flex items-center gap-1 cursor-pointer"
               title="So sánh các phiên bản hoặc tạo phiên bản mới trong tháng"
             >
               <Layers className="w-3 h-3" />
@@ -1609,8 +1665,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </button>
           </div>
         </div>
+      </PageHeaderNav>
 
-        {/* Ở giữa: Chuyển đổi giữa Chỉ tiêu tháng và Phân bổ kênh */}
+      {/* ========================================================================= */}
+      {/* THANH ĐIỀU HƯỚNG QUY TRÌNH 5 BƯỚC & THAO TÁC GỌN 1 HÀNG                  */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        {/* Bên trái: 5 Bước quy trình Kế hoạch */}
         <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex-wrap gap-0.5">
           <button
             type="button"
@@ -1622,7 +1683,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             }`}
           >
             <span>1. Chỉ tiêu tháng</span>
-            <span className="text-2xs font-normal text-ink-3">
+            <span className="text-2xs font-normal text-slate-500">
               · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
             </span>
           </button>
@@ -1837,61 +1898,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4">
-          {/* Thanh trạng thái kế hoạch */}
-          <div className="bg-slate-900 text-white rounded-xl p-3 px-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
-              <span className="text-blue-300">
-                Phiên bản {activeVersionCode}
-              </span>
-              <span className="text-slate-500">·</span>
-              <span className={
-                isPlanLocked
-                  ? 'text-emerald-300'
-                  : isLayer1Locked
-                  ? 'text-blue-200'
-                  : 'text-amber-300'
-              }>
-                {isPlanLocked
-                  ? 'Đã khóa chốt'
-                  : isLayer1Locked
-                  ? 'Đã chốt chỉ tiêu tháng'
-                  : 'Đang điền chỉ tiêu'}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {!isPlanLocked && isLayer1Locked && (
-                <button
-                  type="button"
-                  onClick={handleUnlockLayer1ForEdit}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs transition cursor-pointer"
-                >
-                  <Unlock className="w-3.5 h-3.5" />
-                  <span>Mở khóa sửa chỉ tiêu</span>
-                </button>
-              )}
-              {!isLayer1Locked && (
-                <button
-                  type="button"
-                  onClick={() => handleLockLayer1AndProceed(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs shadow-xs transition cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Chốt chỉ tiêu &amp; Sang phân bổ →</span>
-                </button>
-              )}
-              {isLayer1Locked && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('ALL_SUMMARY')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition cursor-pointer"
-                >
-                  <span>Mở phân bổ chi tiết</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* 1.0 KHUNG LIÊN KẾT THỰC THỂ CHIẾN DỊCH (CAMPAIGN 1–3 THÁNG) & LỊCH TREO KEY VISUAL */}
           {(() => {
@@ -2165,20 +2171,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs text-slate-600">
-                    <span>
-                      Chế độ: <strong className="text-slate-900">Duy trì thường nhật</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCampaignForModal(null);
-                        setIsCampaignModalOpen(true);
-                      }}
-                      className="text-accent font-semibold hover:underline shrink-0 cursor-pointer"
-                    >
-                      + Khởi tạo Campaign
-                    </button>
+                  <div className="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-2 text-xs text-slate-600">
+                    Chế độ: <strong className="text-slate-900">Duy trì thường nhật</strong> (Kế hoạch định kỳ tháng {planState.month}, không áp dụng chiến dịch trọng điểm).
                   </div>
                 )}
               </div>
@@ -2196,44 +2190,31 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Ô 1: Mục tiêu NMV tổng */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-2xs font-semibold text-slate-600 block">
-                    1. Mục tiêu Doanh số (NMV)
-                  </label>
-                  <span className="text-2xs font-mono font-semibold text-emerald-700">
-                    {formatVndShort(layer1Metrics.targetNmvTotal)}
-                  </span>
-                </div>
+                <label className="text-2xs font-semibold text-slate-600 block">
+                  1. Mục tiêu Doanh số (NMV)
+                </label>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     disabled={isLayer1Locked}
-                    step={10000000}
                     value={layer1Metrics.targetNmvTotal}
-                    onChange={(e) => handleUpdateLayer1Metrics({ targetNmvTotal: Math.max(0, Number(e.target.value) || 0) })}
+                    onChange={(val) => handleUpdateLayer1Metrics({ targetNmvTotal: Math.max(0, val) })}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
               </div>
 
-              {/* Ô 2: Tổng ngân sách thúc đẩy Net (PnL) */}
+              {/* Ô 2: Tổng trần Ngân sách thúc đẩy Net (PnL) */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
                 <label className="text-2xs font-semibold text-slate-600 block">
                   2. Tổng trần Ngân sách thúc đẩy (Net)
                 </label>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     disabled={isLayer1Locked}
-                    step={5000000}
                     value={layer1Metrics.pnlTotalBudgetNet}
-                    onChange={(e) => handleUpdateLayer1Metrics({ pnlTotalBudgetNet: Math.max(0, Number(e.target.value) || 0) })}
+                    onChange={(val) => handleUpdateLayer1Metrics({ pnlTotalBudgetNet: Math.max(0, val) })}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
-                </div>
-                <div className="flex items-center justify-between text-2xs text-slate-500 mt-1 font-mono">
-                  <span>Net: <strong className="text-slate-800">{formatVndShort(layer1Metrics.pnlTotalBudgetNet)}</strong></span>
-                  <span>Gross: <strong className="text-slate-700">{formatVndShort(Math.round(layer1Metrics.pnlTotalBudgetNet * GROSS_MULTIPLIER))}</strong></span>
                 </div>
               </div>
 
@@ -2248,12 +2229,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <input
-                    type="number"
+                  <FormattedNumberInput
                     disabled={isLayer1Locked}
-                    step={5000000}
                     value={layer1Metrics.budgetAdsNet}
-                    onChange={(e) => handleUpdateLayer1Metrics({ budgetAdsNet: Math.max(0, Number(e.target.value) || 0) })}
+                    onChange={(val) => handleUpdateLayer1Metrics({ budgetAdsNet: Math.max(0, val) })}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-blue-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
@@ -2319,6 +2298,26 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       Đồng bộ sang Phân bổ
                     </button>
                   )}
+                  {!isPlanLocked && !isLayer1Locked && (
+                    <button
+                      type="button"
+                      onClick={() => handleLockLayer1AndProceed(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-2xs shadow-xs transition cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Chốt chỉ tiêu</span>
+                    </button>
+                  )}
+                  {!isPlanLocked && isLayer1Locked && (
+                    <button
+                      type="button"
+                      onClick={handleUnlockLayer1ForEdit}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
+                    >
+                      <Unlock className="w-3.5 h-3.5" />
+                      <span>Mở khóa sửa</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setIsChatOpen(true)}
@@ -2361,29 +2360,23 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={1000000}
                           value={layer1Metrics.budgetAffiliateNet}
-                          onChange={(e) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetAffiliateNet)}</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right font-mono text-slate-600">
                         {formatVndShort(Math.round(layer1Metrics.budgetAffiliateNet * GROSS_MULTIPLIER))}
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={5000000}
                           value={layer1Metrics.targetGmvAffiliate}
-                          onChange={(e) => handleUpdateLayer1Metrics({ targetGmvAffiliate: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvAffiliate: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.targetGmvAffiliate)}</div>
                       </td>
                       <td className="py-2.5 px-3.5 text-right">
                         <div className={`text-2xs font-mono font-semibold ${
@@ -2469,29 +2462,23 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={500000}
                           value={layer1Metrics.budgetSelfChannelNet}
-                          onChange={(e) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetSelfChannelNet)}</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right font-mono text-slate-600">
                         {formatVndShort(Math.round(layer1Metrics.budgetSelfChannelNet * GROSS_MULTIPLIER))}
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={5000000}
                           value={layer1Metrics.targetGmvSelfChannel}
-                          onChange={(e) => handleUpdateLayer1Metrics({ targetGmvSelfChannel: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvSelfChannel: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.targetGmvSelfChannel)}</div>
                       </td>
                       <td className="py-2.5 px-3.5 text-right">
                         <div className={`text-2xs font-mono font-semibold ${
@@ -2532,15 +2519,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={500000}
                           value={layer1Metrics.budgetMultiPlatformNet}
-                          onChange={(e) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetMultiPlatformNet)}</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right font-mono text-slate-600">
                         {formatVndShort(Math.round(layer1Metrics.budgetMultiPlatformNet * GROSS_MULTIPLIER))}
@@ -2587,29 +2571,23 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={500000}
                           value={layer1Metrics.budgetLivestreamNet}
-                          onChange={(e) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetLivestreamNet)}</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right font-mono text-slate-600">
                         {formatVndShort(Math.round(layer1Metrics.budgetLivestreamNet * GROSS_MULTIPLIER))}
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
-                        <input
-                          type="number"
+                        <FormattedNumberInput
                           disabled={isLayer1Locked}
-                          step={5000000}
                           value={layer1Metrics.targetGmvLivestream}
-                          onChange={(e) => handleUpdateLayer1Metrics({ targetGmvLivestream: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvLivestream: Math.max(0, val) })}
                           className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
                         />
-                        <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.targetGmvLivestream)}</div>
                       </td>
                       <td className="py-2.5 px-3.5 text-right">
                         <span className="text-2xs font-mono text-slate-500">
@@ -2861,17 +2839,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 >
                   <Layers className="w-3.5 h-3.5" /> Sơ đồ nhánh
                 </button>
-                <button
-                  onClick={() => {
-                    if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
-                    setViewMode('CARDS');
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                    activeTab !== 'MINDMAP' && viewMode === 'CARDS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
-                </button>
               </div>
             </div>
           </div>
@@ -2941,153 +2908,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 3. MAIN CONTENT AREA: VIEW MODE 1 - CARDS VIEW                            */}
+      {/* 3. MAIN CONTENT AREA: BẢNG PHÂN RÃ GỌN GÀNG, THOÁNG MẮT                   */}
       {/* ========================================================================= */}
-      {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'CARDS' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {visibleItems.map((item) => {
-              const itemBudgetPct = totalAllocatedBudget > 0 ? (item.totalBudget / totalAllocatedBudget) * 100 : 0;
-
-              return (
-                <div 
-                  key={item.id}
-                  className={`bg-white rounded-2xl border transition-all duration-200 hover:shadow-md p-4 flex flex-col justify-between ${
-                    item.qty > 0 ? 'border-slate-300/80 shadow-2xs' : 'border-slate-200/60 opacity-80 hover:opacity-100'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <span className="text-2xs font-code text-ink-3">
-                        {item.tierCode}
-                      </span>
-                      <span className="text-xs font-semibold font-mono text-slate-800">
-                        {formatVndShort(item.unitCost)} / slot
-                      </span>
-                    </div>
-
-                    <h3 className="font-semibold text-sm text-slate-900 leading-snug">
-                      {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
-                    </h3>
-                    <p className="text-2xs text-slate-500 mt-1 line-clamp-1">
-                      {item.notes || item.platform}
-                    </p>
-
-                    <div className="mt-3">
-                      <label className="text-2xs font-semibold text-slate-400 block mb-1">
-                        Định dạng video
-                      </label>
-                      <select
-                        value={item.contentFormat}
-                        onChange={(e) => handleUpdateItemFormat(item.id, e.target.value)}
-                        className="w-full text-xs font-medium px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 transition"
-                      >
-                        {CONTENT_FORMAT_OPTIONS.map(fmt => (
-                          <option key={fmt} value={fmt}>{fmt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="mt-2.5">
-                      <label className="text-2xs font-semibold text-slate-400 flex items-center gap-1 mb-1">
-                        <UserCheck className="w-3 h-3 text-blue-600" />
-                        Nhân sự phụ trách
-                      </label>
-                      <select
-                        value={item.assignedStaff || planState.pic}
-                        onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
-                        className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
-                          item.assignedStaff && item.assignedStaff !== planState.pic
-                            ? 'bg-blue-50/70 border-blue-300 text-blue-900'
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
-                        }`}
-                      >
-                        {PIC_OPTIONS.map(staff => (
-                          <option key={staff} value={staff}>
-                            {staff} {staff === planState.pic ? '(PIC)' : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3.5 border-t border-slate-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-slate-600">Số lượng clip:</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleAdjustItemQty(item.id, -1)}
-                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold flex items-center justify-center transition active:scale-95 shadow-2xs"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <input
-                          type="number"
-                          value={item.qty}
-                          onChange={(e) => handleUpdateItemQty(item.id, Number(e.target.value))}
-                          className="w-12 text-center text-sm font-semibold font-mono py-0.5 border border-slate-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
-                        />
-                        <button
-                          onClick={() => handleAdjustItemQty(item.id, 1)}
-                          className="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold flex items-center justify-center transition active:scale-95 shadow-2xs"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleAdjustItemQty(item.id, 5)}
-                          className="text-2xs font-semibold px-1.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition"
-                        >
-                          +5
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-slate-500">Thành tiền:</span>
-                      <span className="font-mono font-semibold text-slate-900">
-                        {formatVndShort(item.totalBudget)}
-                        <span className="text-2xs font-normal text-slate-400 ml-1">({itemBudgetPct.toFixed(1)}%)</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 4. MAIN CONTENT AREA: BẢNG PHÂN RÃ GỌN GÀNG, THOÁNG MẮT                   */}
-      {/* ========================================================================= */}
-      {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'TABLE' && (
+      {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && (
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-          {/* THANH CÔNG CỤ 1 DÒNG GỌN: GỢI Ý CƠ CẤU & KHỚP TRẦN */}
-          {!isPlanLocked && (
-            <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-2xs font-semibold text-slate-600 mr-1">Gợi ý cơ cấu:</span>
-                {([
-                  { id: 'BALANCED', label: 'Chuẩn cân bằng (KL1–KL5)' },
-                  { id: 'GMV_MAX', label: 'Đẩy số Mega (KL1–KL3 & FOC)' },
-                  { id: 'BRAND_PUSH', label: 'Đẩy nhận diện (KL4–KL6 & Brand)' },
-                  { id: 'COST_SAVER', label: 'Tối ưu chi phí (KL1–KL2 & FOC)' },
-                ] as const).map(p => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handleApplyPreset(p.id)}
-                    className={`px-2.5 py-1 rounded-lg text-2xs font-semibold border transition cursor-pointer ${
-                      planState.strategyPreset === p.id
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:text-blue-700'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-
+          {/* Nút khớp trần khi còn dư ngân sách/sản lượng */}
+          {!isPlanLocked && (budgetHeadroom > 0 || contentHeadroom > 0) && (
+            <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-end gap-2 text-xs">
               <div className="flex items-center gap-1.5 flex-wrap">
                 {budgetHeadroom > 0 && (
                   <button
@@ -3236,11 +3063,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       {/* Column 5: Unit Cost & Benchmark Reset */}
                       <td className="py-2 px-2.5 text-right align-middle">
                         <div className="flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            step="500000"
+                          <FormattedNumberInput
+                            disabled={isPlanLocked}
                             value={item.unitCost}
-                            onChange={(e) => handleUpdateItemCost(item.id, Number(e.target.value))}
+                            onChange={(val) => handleUpdateItemCost(item.id, val)}
                             className="w-full max-w-[92px] text-right text-xs font-mono font-medium px-1.5 py-1 bg-white border border-slate-200 rounded text-slate-800 focus:outline-none focus:border-blue-500"
                           />
                           {item.unitCost !== item.benchmarkCost && (

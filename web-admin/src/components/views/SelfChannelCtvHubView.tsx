@@ -2,12 +2,10 @@
 
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import React, { useState, useMemo, useRef } from 'react';
-import { Avatar, Presence, Status } from '../ui';
+import { ActionMenu, Avatar, Button, PageActions, Presence, Select, Status, Tabs, Toolbar } from '../ui';
 import {
-  Video,
   CheckCircle2,
   AlertTriangle,
-  AlertCircle,
   Plus,
   Search,
   Play,
@@ -26,7 +24,6 @@ import {
   Send,
   Building2,
   Wallet,
-  MessageSquare,
   Users,
   Truck,
   ShieldCheck,
@@ -1232,243 +1229,75 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* ========================================================================= */}
-      {/* 1. HEADER & THANH ĐIỀU PHỐI QUY TRÌNH 5 BƯỚC                              */}
-      {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center text-sm shadow-xs shrink-0">
-              <Video className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-base font-semibold text-slate-900 tracking-tight">
-                  Sản xuất Video kênh Brand &amp; Điều phối CTV / VJ
-                </h2>
-                <span className="font-mono text-xs font-medium text-slate-700">{activeAllocation.brandName}</span>
-              </div>
-            </div>
-          </div>
+      {/* Nút chính lên thanh trên; thao tác phụ vào menu */}
+      {!isCtvPartner && (
+        <PageActions>
+          <ActionMenu
+            items={[
+              { label: 'Nhận chỉ tiêu kế hoạch tháng', icon: Sparkles, onSelect: () => setIsSyncPlanModalOpen(true) },
+              ...(onOpenCtvProfile ? [{ label: 'Danh bạ & pháp lý CTV', icon: Users, onSelect: () => onOpenCtvProfile() }] : []),
+              ...(onOpenPushProducts ? [{ label: 'Sản phẩm đẩy (SKU)', icon: Tag, onSelect: onOpenPushProducts }] : []),
+            ]}
+          />
+          <Button size="sm" variant="primary" icon={Plus} onClick={() => openCreateOrAssignModal()}>
+            Giao việc video
+          </Button>
+        </PageActions>
+      )}
 
-          <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
-            {!isCtvPartner && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs">
-                <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                <span className="text-slate-500 hidden sm:inline text-2xs">Nhãn:</span>
-                <select
-                  value={selectedBrandId}
-                  onChange={(e) => {
-                    setSelectedBrandId(e.target.value);
-                    setSelectedPillarId('ALL');
-                  }}
-                  className="bg-transparent font-semibold text-slate-800 text-xs focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="ALL">Tất cả nhãn hàng ({availableAllocations.length})</option>
-                  {availableAllocations.map(a => (
-                    <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {!isCtvPartner && (
-              <button
-                type="button"
-                onClick={() => setIsSyncPlanModalOpen(true)}
-                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Nhận chỉ tiêu Kế hoạch tháng</span>
-              </button>
-            )}
-
-            {onOpenCtvProfile && !isCtvPartner && (
-              <button
-                type="button"
-                onClick={() => onOpenCtvProfile()}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-              >
-                <Users className="w-3.5 h-3.5 text-slate-500" />
-                <span>Danh bạ &amp; Pháp lý CTV</span>
-              </button>
-            )}
-
-            {onOpenPushProducts && (
-              <button
-                type="button"
-                onClick={onOpenPushProducts}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-              >
-                <Tag className="w-3.5 h-3.5 text-slate-400" />
-                <span>SP Đẩy (SKU)</span>
-              </button>
-            )}
-
-            {!isCtvPartner && (
-              <button
-                type="button"
-                onClick={() => openCreateOrAssignModal()}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Giao việc Video mới</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Thanh 5 Bước Quy Trình SOP Self-Channel trực quan */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 border-t border-slate-100 text-2xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('OVERVIEW')}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 text-left transition"
-          >
-            <div className="flex items-center justify-between font-semibold text-slate-800">
-              <span>B1. Chỉ tiêu Kế hoạch</span>
-              <span className="font-mono text-blue-700">{stats.totalTasks}/{stats.targetVideos}</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedStatus('BRAND_ORIENTATION_PENDING');
-              setActiveTab('ACTIVE_JOBS');
+      {/* Chọn nhãn hàng + tiến độ 5 bước (bấm để mở tab tương ứng) */}
+      <Toolbar
+        actions={
+          isCtvPartner && onOpenPushProducts ? (
+            <Button size="sm" icon={Tag} onClick={onOpenPushProducts}>Sản phẩm đẩy</Button>
+          ) : undefined
+        }
+      >
+        {!isCtvPartner && (
+          <Select
+            aria-label="Nhãn hàng"
+            value={selectedBrandId}
+            onChange={(e) => {
+              setSelectedBrandId(e.target.value);
+              setSelectedPillarId('ALL');
             }}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 text-left transition"
+            className="w-56"
           >
-            <div className="flex items-center justify-between font-semibold text-slate-800">
-              <span>B2. Duyệt VJ &amp; Góc quay</span>
-              <span className="font-mono text-amber-700">{stats.orientationPendingTasks} chờ</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedStatus('ALL');
-              setActiveTab('ACTIVE_JOBS');
-            }}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 text-left transition"
-          >
-            <div className="flex items-center justify-between font-semibold text-slate-800">
-              <span>B3. Gửi mẫu &amp; Kịch bản</span>
-              <span className="font-mono text-amber-700">{stats.scriptPendingTasks} kịch bản</span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('APPROVALS')}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 text-left transition"
-          >
-            <div className="flex items-center justify-between font-semibold text-slate-800">
-              <span>B4. QA 2 vòng &amp; Đăng kênh</span>
-              <span className="font-mono text-blue-700">
-                {stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('HISTORY')}
-            className="p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-slate-100 text-left transition"
-          >
-            <div className="flex items-center justify-between font-semibold text-slate-800">
-              <span>B5. Lập DNTT &amp; Thuế 10%</span>
-              <span className="font-mono text-emerald-700">{formatVnd(stats.pendingPayment)}</span>
-            </div>
-          </button>
+            <option value="ALL">Tất cả nhãn hàng ({availableAllocations.length})</option>
+            {availableAllocations.map(a => (
+              <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
+            ))}
+          </Select>
+        )}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
+          {[
+            { label: 'Chỉ tiêu', value: `${stats.totalTasks}/${stats.targetVideos}`, onClick: () => setActiveTab('OVERVIEW') },
+            { label: 'Duyệt VJ & góc quay', value: `${stats.orientationPendingTasks} chờ`, onClick: () => { setSelectedStatus('BRAND_ORIENTATION_PENDING'); setActiveTab('ACTIVE_JOBS'); } },
+            { label: 'Kịch bản', value: `${stats.scriptPendingTasks} chờ`, onClick: () => { setSelectedStatus('ALL'); setActiveTab('ACTIVE_JOBS'); } },
+            { label: 'QA & đăng kênh', value: `${stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ`, onClick: () => setActiveTab('APPROVALS') },
+            { label: 'Chờ thanh toán', value: formatVnd(stats.pendingPayment), onClick: () => setActiveTab('HISTORY') },
+          ].map((step, i) => (
+            <button key={step.label} type="button" onClick={step.onClick} className="inline-flex items-baseline gap-1.5 text-ink-3 hover:text-ink">
+              <span className="text-2xs tabular-nums">{i + 1}.</span>
+              <span>{step.label}</span>
+              <span className="font-medium text-ink tabular-nums">{step.value}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </Toolbar>
 
-      {/* ========================================================================= */}
-      {/* 2. MINIMALIST SEGMENTED TABS                                              */}
-      {/* ========================================================================= */}
-      <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs">
-        <button
-          type="button"
-          onClick={() => setActiveTab('OVERVIEW')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'OVERVIEW'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Tổng quan &amp; Pillar</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('APPROVALS')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'APPROVALS'
-              ? 'bg-blue-600 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <AlertCircle className="w-3.5 h-3.5" />
-          <span>
-            Hàng chờ Duyệt &amp; Nghiệm thu{stats.pendingApprovalsCount > 0 ? ` (${stats.pendingApprovalsCount})` : ''}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('ACTIVE_JOBS')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'ACTIVE_JOBS'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Video className="w-3.5 h-3.5" />
-          <span>Bảng điều phối công việc ({tasks.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('HISTORY')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'HISTORY'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Wallet className="w-3.5 h-3.5" />
-          <span>Bảng kê DNTT &amp; Quyết toán CTV</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('CTV_PORTAL')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'CTV_PORTAL'
-              ? 'bg-emerald-600 text-white font-semibold shadow-xs'
-              : 'text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80'
-          }`}
-        >
-          <User className="w-3.5 h-3.5" />
-          <span>Cổng làm việc CTV (Nhận việc &amp; Nộp bài)</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('DISCUSSION')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'DISCUSSION'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>Trao đổi nhanh</span>
-        </button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: 'OVERVIEW', label: 'Tổng quan & Pillar' },
+          { key: 'APPROVALS', label: 'Chờ duyệt & nghiệm thu', count: stats.pendingApprovalsCount > 0 ? stats.pendingApprovalsCount : undefined },
+          { key: 'ACTIVE_JOBS', label: 'Điều phối công việc', count: tasks.length },
+          { key: 'HISTORY', label: 'Quyết toán CTV' },
+          { key: 'CTV_PORTAL', label: 'Cổng CTV' },
+          { key: 'DISCUSSION', label: 'Trao đổi' },
+        ]}
+      />
 
       {/* ========================================================================= */}
       {/* TAB MỚI: ĐẦU VÀO PLAN FINAL ĐÃ DUYỆT & PHÂN QUYỀN NHÂN SỰ SELF-CHANNEL    */}

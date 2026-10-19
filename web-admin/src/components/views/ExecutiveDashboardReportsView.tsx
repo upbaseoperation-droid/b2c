@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { Avatar, Tabs, Modal, NumberRoll, Status } from '../ui';
+import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Select, Stat, StatRow, Status, Tabs } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -1172,238 +1172,129 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   return (
     <div className="space-y-5 pb-12 text-ink">
-      {/* THANH CÔNG CỤ NGỮ CẢNH GỌN TRÊN 1 HÀNG (KHÔNG LỒNG TAB NGANG) */}
-      <div className="bg-white rounded-xl border border-line px-4 py-2.5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 .5 text-xs font-semibold text-accent -line">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Phạm vi chuẩn: 69 Gian hàng B2C (B2C phụ trách = 1)
-          </span>
-          <span className="inline-flex items-center gap-1 .5 text-xs font-medium text-ink-2">
-            Kỳ đối soát: Tháng 10/2026
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsReportDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-ink hover:bg-ink text-white shadow-xs transition cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5 text-positive" />
-            <span>Lập báo cáo nhận xét</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSyncTikTokSeller}
-            disabled={isSyncingSeller}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sunken hover:bg-sunken text-ink transition cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeller ? 'animate-spin text-accent' : ''}`} />
-            {isSyncingSeller ? 'Đang đồng bộ...' : 'Đồng bộ TikTok Seller'}
-          </button>
-          <button
-            type="button"
-            onClick={handleExportMultiSheetExcel}
-            disabled={isExportingExcel}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition cursor-pointer disabled:opacity-50"
-          >
-            <Download className="w-3.5 h-3.5" />
-            {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel (5 Sheets)'}
-          </button>
-        </div>
-      </div>
+      {/* Thao tác chung của các báo cáo: nút chính lên thanh trên, phần còn lại vào menu */}
+      <PageActions>
+        <ActionMenu
+          items={[
+            { label: 'Lập báo cáo nhận xét', icon: FileText, onSelect: () => setIsReportDrawerOpen(true) },
+            {
+              label: isSyncingSeller ? 'Đang đồng bộ TikTok Seller…' : 'Đồng bộ TikTok Seller',
+              icon: RefreshCw,
+              disabled: isSyncingSeller,
+              onSelect: () => void handleSyncTikTokSeller(),
+            },
+          ]}
+        />
+        <Button size="sm" variant="primary" icon={Download} disabled={isExportingExcel} onClick={handleExportMultiSheetExcel}>
+          {isExportingExcel ? 'Đang xuất…' : 'Xuất Excel'}
+        </Button>
+      </PageActions>
 
       {/* ========================================================================= */}
       {/* TAB 1: THƯƠNG HIỆU (BRAND) & NGÂN SÁCH — % SPEND NET/GROSS & VIDEO AIR     */}
       {/* ========================================================================= */}
       {activeTab === 'OVERVIEW_FINANCE' && (
         <div className="space-y-5">
-          {/* BỘ LỌC NHANH CẤP THƯƠNG HIỆU (BRAND) */}
-          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
+          {/* Bộ lọc cấp thương hiệu + kỳ đối soát */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Input
                 type="text"
+                aria-label="Tìm thương hiệu hoặc PIC"
                 value={brandSearchQuery}
                 onChange={(e) => setBrandSearchQuery(e.target.value)}
                 placeholder="Tìm thương hiệu, PIC phụ trách..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
+                className="pl-8"
               />
             </div>
 
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
-            >
-              <option value="ALL">Tất cả Thương hiệu ({allBrands.length} Brands)</option>
+            <Select aria-label="Thương hiệu" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-auto">
+              <option value="ALL">Tất cả thương hiệu ({allBrands.length})</option>
               {allBrands.map((b) => (
                 <option key={b} value={b}>
-                  Thương hiệu: {b}
+                  {b}
                 </option>
               ))}
-            </select>
+            </Select>
 
-            <select
+            <Select
+              aria-label="Cơ cấu duyệt"
               value={selectedGovernance}
               onChange={(e) => setSelectedGovernance(e.target.value as typeof selectedGovernance)}
-              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
+              className="w-auto"
             >
-              <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
-              <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
-              <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi (61 gian)</option>
-            </select>
+              <option value="ALL">Cơ cấu duyệt: tất cả</option>
+              <option value="WITH_LEADER">Có Leader Ngọc Tâm (8 gian)</option>
+              <option value="DIRECT_HEAD">Trình trực tiếp Yến Nhi (61 gian)</option>
+            </Select>
 
-            <select
+            <Select
+              aria-label="Kiểm soát kế toán"
               value={selectedRiskFilter}
               onChange={(e) => setSelectedRiskFilter(e.target.value as typeof selectedRiskFilter)}
-              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
+              className="w-auto"
             >
-              <option value="ALL">Kiểm soát Kế toán: Tất cả trạng thái</option>
-              <option value="UNBUDGETED">Báo động đỏ: Chi ngoài KH (Hạn mức Net = 0đ)</option>
-              <option value="OVERBUDGET">Cảnh báo: Thực chi vượt trần Net</option>
-              <option value="SLOW_BURN">Giải ngân chậm (&lt;25% hạn mức Net)</option>
-              <option value="NORMAL">An toàn: Trong hạn mức Net</option>
-            </select>
+              <option value="ALL">Kế toán: tất cả trạng thái</option>
+              <option value="UNBUDGETED">Chi ngoài kế hoạch (hạn mức 0đ)</option>
+              <option value="OVERBUDGET">Vượt trần Net</option>
+              <option value="SLOW_BURN">Giải ngân chậm (&lt;25%)</option>
+              <option value="NORMAL">Trong hạn mức Net</option>
+            </Select>
+
+            <span className="ml-auto text-2xs text-ink-3">Kỳ đối soát: Tháng 10/2026</span>
           </div>
 
-          {/* KHỐI BÁO ĐỘNG ĐỎ & CẢNH BÁO TÀI CHÍNH TINH GỌN (CHUYỂN TIẾP SANG TAB GIAN HÀNG) */}
+          {/* Cảnh báo tài chính: một dòng, chuyển sang tab Gian hàng để xử lý */}
           {riskStores.length > 0 && (
-            <div className="bg-critical-soft border border-critical/20 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-critical text-white flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase text-critical tracking-wider">
-                      Cảnh Báo Kế Toán: {riskStores.length} Gian Hàng Vượt Trần Net / Chi Ngoài Kế Hoạch (0đ)
-                    </span>
-                    <span className="py-0.2 text-2xs font-semibold bg-critical text-white">
-                      Cần xử lý
-                    </span>
-                  </div>
-                  <p className="text-xs text-critical mt-0.5">
-                    Ghi nhận <strong className="font-semibold">{kpiSummary.unbudgetedCount} gian 0đ ngoài hạn mức</strong> và{' '}
-                    <strong className="font-semibold">{kpiSummary.overbudgetCount} gian vượt trần Order Net</strong> (Tổng chênh lệch vượt: +{formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
-                  </p>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-critical/20 bg-critical-soft px-4 py-2.5">
+              <div className="flex items-center gap-2.5 min-w-0 text-[13px] text-critical">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  <strong className="font-semibold">{riskStores.length} gian hàng cần xử lý:</strong>{' '}
+                  {kpiSummary.unbudgetedCount} gian chi ngoài hạn mức 0đ, {kpiSummary.overbudgetCount} gian vượt trần Net (vượt +
+                  {formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
+                </span>
               </div>
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="danger"
                 onClick={() => {
                   setSelectedQuadrant('OVER_SPEND');
                   handleSelectDashboardSection('STORE_SELLER');
                 }}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-critical hover:bg-critical text-white shrink-0 shadow-xs transition cursor-pointer"
               >
-                <span>Xem và xử lý tại Tab Gian Hàng</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+                Xem gian hàng
+              </Button>
             </div>
           )}
 
-          {/* KHỐI TÂM ĐIỂM ĐIỀU HÀNH KÉP: % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* TÂM ĐIỂM 1 (6 CỘT): % SPEND CHI PHÍ (NET & GROSS) */}
-            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-accent/20/80 p-5 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider bg-accent text-white px-2 py-0.5 rounded">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    Tỷ Lệ Giải Ngân Chi Phí (% Spend)
-                  </span>
-                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-                    <span className="text-3xl font-semibold text-accent font-mono tracking-tight">
-                      <NumberRoll value={`${kpiSummary.pacingNetPct}% Spend Net`} />
-                    </span>
-                    <span className="text-xs font-semibold font-mono text-ink-2">
-                      {kpiSummary.pacingGrossPct}% Spend Gross
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right font-mono shrink-0 bg-accent-soft px-3 py-2 rounded-lg border border-accent/20">
-                  <span className="text-2xs font-sans font-semibold text-accent block">
-                    Dư địa Net còn được chi
-                  </span>
-                  <strong className="text-base font-semibold text-accent">
-                    {formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
-                  </strong>
-                  <span className="block text-2xs text-critical font-semibold mt-0.5">
-                    {kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt trần / 0đ
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3.5">
-                <div className="flex items-center justify-between text-2xs font-semibold mb-1">
-                  <span className="text-ink-2">Tiến độ % Spend so với Trần Order Net (Mốc Kế toán khoá duyệt chi):</span>
-                  <span className="font-mono font-semibold text-accent">
-                    {formatVndShort(kpiSummary.totalActualSpentNet)} / {formatVndShort(kpiSummary.totalBudgetNet)} ({kpiSummary.pacingNetPct}%)
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
-                  <div
-                    className={`data-bar h-full rounded-full ${
-                      kpiSummary.pacingNetPct > 100
-                        ? 'bg-critical'
-                        : kpiSummary.pacingNetPct >= 85
-                        ? 'bg-warning'
-                        : 'bg-accent'
-                    }`}
-                    style={{ width: `${Math.min(100, Math.max(kpiSummary.pacingNetPct, 2))}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* TÂM ĐIỂM 2 (6 CỘT): SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG & % HOÀN THÀNH */}
-            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-positive/20/80 p-5 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider bg-positive text-white px-2 py-0.5 rounded">
-                    <Film className="w-3.5 h-3.5" />
-                    Số Lượng Video Đã Air Lên Sóng
-                  </span>
-                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-                    <span className="text-3xl font-semibold text-positive font-mono tracking-tight">
-                      <NumberRoll value={`${kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} Video Đã Air`} />
-                    </span>
-                    <span className="text-xs font-semibold font-mono text-positive">
-                      Đạt {kpiSummary.airedVsBookedPct}% đơn đã book ({kpiSummary.totalBookedOrders} đơn)
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right font-mono shrink-0 bg-positive-soft px-3 py-2 rounded-lg border border-positive/20">
-                  <span className="text-2xs font-sans font-semibold text-positive block">
-                    Đơn đã book chờ Air / ĐNTT
-                  </span>
-                  <strong className="text-base font-semibold text-positive">
-                    {Math.max(0, kpiSummary.totalBookedOrders - kpiSummary.totalActualAiredVideos)} đơn
-                  </strong>
-                  <span className="block text-2xs text-positive font-semibold mt-0.5">
-                    Phủ {kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian hàng
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3.5">
-                <div className="flex items-center justify-between text-2xs font-semibold mb-1">
-                  <span className="text-ink-2">Tỷ lệ Video Đã Lên Sóng / Tổng Đơn Đã Book Tháng 10:</span>
-                  <span className="font-mono font-semibold text-positive">
-                    {kpiSummary.totalActualAiredVideos} / {kpiSummary.totalBookedOrders} đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
-                  <div
-                    className="data-bar h-full bg-positive rounded-full"
-                    style={{ width: `${Math.min(100, Math.max(kpiSummary.airedVsBookedPct, 3))}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Chỉ số điều hành: giải ngân và video đã air */}
+          <StatRow size="sm">
+            <Stat
+              label="Giải ngân Net"
+              value={`${kpiSummary.pacingNetPct}%`}
+              progress={{ value: kpiSummary.totalActualSpentNet, max: kpiSummary.totalBudgetNet }}
+              note={`${formatVndShort(kpiSummary.totalActualSpentNet)} / ${formatVndShort(kpiSummary.totalBudgetNet)} · Gross ${kpiSummary.pacingGrossPct}%`}
+            />
+            <Stat
+              label="Dư địa Net còn được chi"
+              value={formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
+              note={`${kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt trần / 0đ`}
+              tone={kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount > 0 ? 'critical' : undefined}
+            />
+            <Stat
+              label="Video đã air"
+              value={kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')}
+              progress={{ value: kpiSummary.totalActualAiredVideos, max: Math.max(1, kpiSummary.totalBookedOrders) }}
+              note={`${kpiSummary.airedVsBookedPct}% của ${kpiSummary.totalBookedOrders} đơn đã book · Paid ${kpiSummary.airedVsPaidPct}%`}
+            />
+            <Stat
+              label="Đơn đã book chờ air"
+              value={Math.max(0, kpiSummary.totalBookedOrders - kpiSummary.totalActualAiredVideos)}
+              note={`Phủ ${kpiSummary.storesWithAiredCount}/${kpiSummary.storeCount} gian hàng`}
+            />
+          </StatRow>
 
           {/* HÀNG BIỂU ĐỒ 1 & 2: BIỂU ĐỒ CỘT ĐỐI SOÁT BRAND (% SPEND & SỐ VIDEO AIR) + BIỂU ĐỒ BÓC TÁCH ORDER GROWTH */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">

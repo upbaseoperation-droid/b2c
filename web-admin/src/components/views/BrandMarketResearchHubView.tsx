@@ -51,6 +51,7 @@ import { brandKey } from '../../lib/brands/types';
 import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import {
+  ActionMenu,
   Avatar,
   BrandAvatar,
   Button,
@@ -102,6 +103,39 @@ type EvidenceFilterKey =
   | 'COMPETITOR_BENCHMARK'
   | 'LIVE_WEB_DOM';
 
+/** Gợi ý thêm cho ô nghiên cứu (ngoài danh sách thương hiệu đang quản lý). */
+const EXTRA_RESEARCH_SUGGESTIONS: Array<[string, string]> = [
+  ["Nous", "Thời trang & Phụ kiện Sơ sinh Mẹ & Bé"],
+  ["BU Baby", "Thời trang & Phụ kiện Sơ sinh Mẹ & Bé"],
+  ["Lullaby", "Thời trang & Phụ kiện Sơ sinh Mẹ & Bé"],
+  ["Cocoon", "Mỹ phẩm thuần chay Việt Nam"],
+  ["Cỏ Mềm", "Mỹ phẩm thiên nhiên"],
+  ["La Roche-Posay", "Dược mỹ phẩm Pháp"],
+  ["SKIN1004", "Chăm sóc da Hàn Quốc"],
+  ["CeraVe", "Dược mỹ phẩm Mỹ"],
+  ["Cetaphil", "Chăm sóc da nhạy cảm"],
+  ["Bioderma", "Dược mỹ phẩm Pháp"],
+  ["SVR", "Dược mỹ phẩm Pháp"],
+  ["Obagi", "Dược mỹ phẩm đặc trị"],
+  ["Torriden", "Chăm sóc da Hàn Quốc"],
+  ["Keyshu", "Chăm sóc da & Làm trắng"],
+  ["Anessa", "Chống nắng Nhật Bản"],
+  ["L'Oréal", "Chăm sóc da & Tóc"],
+  ["Rom&nd", "Trang điểm Hàn Quốc"],
+  ["Judydoll", "Trang điểm"],
+  ["Colorkey", "Trang điểm"],
+  ["Maybelline", "Trang điểm"],
+  ["Mustela", "Chăm sóc da Mẹ & Bé Pháp"],
+  ["Bepanthen", "Chăm sóc da Bé Đức"],
+  ["Momo Rabbit", "Tã bỉm Hàn Quốc"],
+  ["Moony", "Tã bỉm Nhật Bản"],
+  ["D-nee", "Giặt xả & Tắm gội Mẹ Bé"],
+  ["Femfresh", "Dung dịch vệ sinh Anh Quốc"],
+  ["Lactacyd", "Dung dịch vệ sinh Pháp"],
+  ["Nerman", "Chăm sóc cá nhân Nam giới"],
+  ["Romano", "Chăm sóc cá nhân Nam giới"],
+];
+
 const QUICK_RESEARCH_BRANDS = [
   'Kutieskin',
   'Cỏ Mềm',
@@ -131,6 +165,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [hasEditedBrandQuery, setHasEditedBrandQuery] = useState<boolean>(false);
   const [customCategory, setCustomCategory] = useState<string>('');
   const [customCompetitorText, setCustomCompetitorText] = useState<string>('');
+  const [showAdvancedResearch, setShowAdvancedResearch] = useState(false);
   const [tab3CompetitorInput, setTab3CompetitorInput] = useState<string>('');
   const [dealSearchQuery, setDealSearchQuery] = useState<string>('');
   const [analyzingDossier, setAnalyzingDossier] = useState<boolean>(false);
@@ -1639,24 +1674,14 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   return (
     <div className="space-y-5">
       <PageActions>
-        {onNavigateToBrandProfile && (
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={BookOpen}
-            onClick={() => onNavigateToBrandProfile(dossier.brandName)}
-          >
-            Hồ sơ {dossier.brandName}
-          </Button>
-        )}
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={Download}
-          onClick={handleDownloadMarkdownDossier}
-        >
-          Xuất báo cáo (.MD)
-        </Button>
+        <ActionMenu
+          items={[
+            ...(onNavigateToBrandProfile
+              ? [{ label: `Mở hồ sơ ${dossier.brandName}`, icon: BookOpen, onSelect: () => onNavigateToBrandProfile(dossier.brandName) }]
+              : []),
+            { label: 'Xuất báo cáo (.md)', icon: Download, onSelect: handleDownloadMarkdownDossier },
+          ]}
+        />
         <Button
           size="sm"
           variant="primary"
@@ -1668,62 +1693,34 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         </Button>
       </PageActions>
 
-      {/* 1. KHUNG ĐỊNH DANH THƯƠNG HIỆU & BỘ ĐIỀU KHIỂN PHÂN TÍCH */}
-      <section className="bg-surface border border-line rounded-xl p-4 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-line">
+      {/* 1. ĐẦU HỒ SƠ (một hàng) + Ô NGHIÊN CỨU THƯƠNG HIỆU KHÁC */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <BrandAvatar name={dossier.brandName} size={40} />
+            <BrandAvatar name={dossier.brandName} size={32} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-base font-semibold text-ink truncate">
-                  {dossier.brandName}
-                </h2>
-                <Status tone={dossier.isUpbaseManaged ? 'positive' : 'info'}>
-                  {dossier.isUpbaseManaged
-                    ? `UpBase B2C · ${dossier.internalExecutionAudit.totalStoresCount} gian hàng`
-                    : 'Thương hiệu mở rộng'}
-                </Status>
-                <span className="text-2xs text-ink-3">
-                  {dossier.originCountry} · {dossier.fourP.priceRangeText}
-                </span>
+                <h2 className="text-base font-semibold text-ink truncate">{dossier.brandName}</h2>
+                {!dossier.isUpbaseManaged && <Status tone="info">Thương hiệu mở rộng</Status>}
               </div>
-              <div className="text-xs text-ink-2 truncate mt-0.5">
-                {dossier.category}
-                {dossier.accountPic ? ` · Quản lý: ${dossier.accountPic}` : ''}
-                {dossier.brandPicName ? ` · PIC: ${dossier.brandPicName}` : ''}
+              <div className="text-2xs text-ink-3 truncate">
+                {[
+                  dossier.category,
+                  dossier.originCountry,
+                  dossier.isUpbaseManaged ? `${dossier.internalExecutionAudit.totalStoresCount} gian hàng B2C` : '',
+                  dossier.accountPic ? `Quản lý: ${dossier.accountPic}` : '',
+                  dossier.brandPicName ? `PIC: ${dossier.brandPicName}` : '',
+                ].filter(Boolean).join(' · ')}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-2xs text-ink-3 mr-1">Chuyển nhanh:</span>
-            {QUICK_RESEARCH_BRANDS.map((name) => {
-              const isCurrent = brandKey(dossier.brandName) === brandKey(name);
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  disabled={analyzingDossier}
-                  onClick={() => void handleRunBrandAnalysis(name, [])}
-                  className={`h-7 px-2.5 rounded-full text-2xs font-medium border transition-colors ${
-                    isCurrent
-                      ? 'bg-ink text-white border-ink'
-                      : 'bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink'
-                  }`}
-                >
-                  {name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-          <Field label="Thương hiệu hoặc đối thủ cần nghiên cứu" className="md:col-span-4">
-            <div className="relative">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 md:w-72">
               <Input
                 type="text"
                 list="b2c-brand-research-list"
+                aria-label="Thương hiệu hoặc đối thủ cần nghiên cứu"
                 value={brandQuery}
                 onChange={(e) => {
                   setBrandQuery(e.target.value);
@@ -1734,7 +1731,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     void handleRunBrandAnalysis(brandQuery);
                   }
                 }}
-                placeholder="Nhập tên Brand hoặc đối thủ (VD: Kutieskin, Cocoon...)"
+                placeholder="Nghiên cứu thương hiệu khác…"
                 className="pr-8"
               />
               {brandQuery && (
@@ -1745,96 +1742,82 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     setHasEditedBrandQuery(true);
                   }}
                   title="Xóa để nhập tên mới"
+                  aria-label="Xóa tên thương hiệu"
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink text-sm px-1"
                 >
                   ×
                 </button>
               )}
               <datalist id="b2c-brand-research-list">
+                {QUICK_RESEARCH_BRANDS.map((name) => (
+                  <option key={`quick-${name}`} value={name} />
+                ))}
                 {brands.map((b) => (
                   <option key={b.id} value={b.name}>
                     {b.category}
                   </option>
                 ))}
-                <option value="Nous">Thời trang & Phụ kiện Sơ sinh Mẹ & Bé</option>
-                <option value="BU Baby">Thời trang & Phụ kiện Sơ sinh Mẹ & Bé</option>
-                <option value="Lullaby">Thời trang & Phụ kiện Sơ sinh Mẹ & Bé</option>
-                <option value="Cocoon">Mỹ phẩm thuần chay Việt Nam</option>
-                <option value="Cỏ Mềm">Mỹ phẩm thiên nhiên</option>
-                <option value="La Roche-Posay">Dược mỹ phẩm Pháp</option>
-                <option value="SKIN1004">Chăm sóc da Hàn Quốc</option>
-                <option value="CeraVe">Dược mỹ phẩm Mỹ</option>
-                <option value="Cetaphil">Chăm sóc da nhạy cảm</option>
-                <option value="Bioderma">Dược mỹ phẩm Pháp</option>
-                <option value="SVR">Dược mỹ phẩm Pháp</option>
-                <option value="Obagi">Dược mỹ phẩm đặc trị</option>
-                <option value="Torriden">Chăm sóc da Hàn Quốc</option>
-                <option value="Keyshu">Chăm sóc da & Làm trắng</option>
-                <option value="Anessa">Chống nắng Nhật Bản</option>
-                <option value="L'Oréal">Chăm sóc da & Tóc</option>
-                <option value="Rom&nd">Trang điểm Hàn Quốc</option>
-                <option value="Judydoll">Trang điểm</option>
-                <option value="Colorkey">Trang điểm</option>
-                <option value="Maybelline">Trang điểm</option>
-                <option value="Mustela">Chăm sóc da Mẹ & Bé Pháp</option>
-                <option value="Bepanthen">Chăm sóc da Bé Đức</option>
-                <option value="Momo Rabbit">Tã bỉm Hàn Quốc</option>
-                <option value="Moony">Tã bỉm Nhật Bản</option>
-                <option value="D-nee">Giặt xả & Tắm gội Mẹ Bé</option>
-                <option value="Femfresh">Dung dịch vệ sinh Anh Quốc</option>
-                <option value="Lactacyd">Dung dịch vệ sinh Pháp</option>
-                <option value="Nerman">Chăm sóc cá nhân Nam giới</option>
-                <option value="Romano">Chăm sóc cá nhân Nam giới</option>
+                {EXTRA_RESEARCH_SUGGESTIONS.map(([name, category]) => (
+                  <option key={`extra-${name}`} value={name}>
+                    {category}
+                  </option>
+                ))}
               </datalist>
             </div>
-          </Field>
-
-          <Field label="Ngành hàng" className="md:col-span-3">
-            <Input
-              type="text"
-              value={customCategory}
-              onChange={(e) => setCustomCategory(e.target.value)}
-              placeholder={dossier.category}
-            />
-          </Field>
-
-          <Field label="So sánh thêm đối thủ (tên hoặc @handle)" className="md:col-span-3">
-            <Input
-              type="text"
-              value={customCompetitorText}
-              onChange={(e) => setCustomCompetitorText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  void handleRunBrandAnalysis();
-                }
-              }}
-              placeholder="VD: Nous, Cocoon, @handle..."
-            />
-          </Field>
-
-          <div className="md:col-span-2">
             <Button
-              variant="primary"
-              className="w-full justify-center h-9"
+              variant="ghost"
+              aria-expanded={showAdvancedResearch}
+              onClick={() => setShowAdvancedResearch((v) => !v)}
+            >
+              Tùy chọn{customCategory || customCompetitorText ? ' (đang bật)' : ''}
+            </Button>
+            <Button
+              variant="secondary"
               disabled={analyzingDossier}
               icon={Search}
               onClick={() => void handleRunBrandAnalysis()}
             >
-              {analyzingDossier ? 'Đang phân tích...' : 'Phân tích'}
+              {analyzingDossier ? 'Đang phân tích…' : 'Phân tích'}
             </Button>
           </div>
         </div>
-      </section>
+
+        {showAdvancedResearch && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:max-w-2xl md:ml-auto">
+            <Field label="Ngành hàng">
+              <Input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder={dossier.category}
+              />
+            </Field>
+            <Field label="So sánh thêm đối thủ (tên hoặc @handle)">
+              <Input
+                type="text"
+                value={customCompetitorText}
+                onChange={(e) => setCustomCompetitorText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    void handleRunBrandAnalysis();
+                  }
+                }}
+                placeholder="VD: Nous, Cocoon, @handle..."
+              />
+            </Field>
+          </div>
+        )}
+      </div>
 
       {/* 2. HÀNG CHỈ SỐ TÓM TẮT */}
-      <StatRow>
+      <StatRow size="sm">
         <Stat
-          label="Khoảng giá & Giá trị đơn (AOV)"
+          label="Khoảng giá"
           value={dossier.fourP.priceRangeText}
           note={`AOV ${formatVndShort(dossier.marketLandscape.avgOrderValueVnd)} · Mua lặp lại ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày)`}
         />
         <Stat
-          label="Ngân sách & Thực chi Net (File 4.1 & 3.2)"
+          label="Ngân sách Net"
           value={
             dossier.internalExecutionAudit.totalBudgetNetVnd > 0
               ? formatVndShort(dossier.internalExecutionAudit.totalBudgetNetVnd)
@@ -1853,69 +1836,66 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               ? `Thực chi ${formatVndShort(dossier.internalExecutionAudit.totalActualSpentNetVnd)} (${dossier.internalExecutionAudit.budgetUtilizationPct}% hạn mức)`
               : 'Thương hiệu ngoài danh sách 69 gian hàng B2C'
           }
-          tone="positive"
         />
         <Stat
-          label="Tiến độ sản xuất Video KOC"
+          label="Video KOC"
           value={`${dossier.internalExecutionAudit.totalBookedOrders} book / ${dossier.internalExecutionAudit.totalAiredVideos} air`}
-          note={`Chỉ tiêu kế hoạch: ${dossier.internalExecutionAudit.totalPlannedVideos} video · Đúng lịch ${dossier.internalExecutionAudit.onTimeAirRatePct}%`}
+          note={`Chỉ tiêu ${dossier.internalExecutionAudit.totalPlannedVideos} video · Đúng lịch ${dossier.internalExecutionAudit.onTimeAirRatePct}%`}
         />
         <Stat
-          label="Quy mô nghiên cứu & Dẫn chứng"
+          label="Quy mô nghiên cứu"
           value={`${dossier.competitors.length} đối thủ · ${dossier.skuPortfolio.length} SKU`}
-          note={`${dossier.evidenceLedger.length} mã dẫn chứng đối soát [EV]`}
+          note={`${dossier.evidenceLedger.length} mã dẫn chứng [EV]`}
         />
       </StatRow>
 
       {/* 3. THANH CHUYỂN TAB CHÍNH */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs<ResearchTabKey>
-          value={activeTab}
-          onChange={setActiveTab}
+      <Tabs<ResearchTabKey>
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'BRAND_AUDIT_4P',
+            label: 'Định vị, 4P & SKU',
+            count: dossier.skuPortfolio.length,
+          },
+          {
+            key: 'INTERNAL_EXECUTION',
+            label: 'Đối soát thực thi B2C',
+            count:
+              dossier.internalExecutionAudit.totalBookedOrders ||
+              dossier.internalExecutionAudit.stores.length,
+          },
+          {
+            key: 'COMPETITOR_MATRIX',
+            label: 'Ma trận đối thủ & KOC',
+            count: dossier.competitors.length,
+          },
+          {
+            key: 'REVIEW_PAIN_MINER',
+            label: 'Đào bình luận & FAQ',
+            count: minedClusters.length,
+          },
+          {
+            key: 'EVIDENCE_AND_WEB',
+            label: 'Sổ dẫn chứng & Quét web',
+            count: dossier.evidenceLedger.length,
+          },
+        ]}
+      />
+
+      {activeTab === 'BRAND_AUDIT_4P' && (
+        <Segmented<AuditSubSectionKey>
+          value={auditSubSection}
+          onChange={setAuditSubSection}
           items={[
-            {
-              key: 'BRAND_AUDIT_4P',
-              label: 'Định vị, 4P & SKU',
-              count: dossier.skuPortfolio.length,
-            },
-            {
-              key: 'INTERNAL_EXECUTION',
-              label: 'Đối soát thực thi B2C',
-              count:
-                dossier.internalExecutionAudit.totalBookedOrders ||
-                dossier.internalExecutionAudit.stores.length,
-            },
-            {
-              key: 'COMPETITOR_MATRIX',
-              label: 'Ma trận đối thủ & KOC',
-              count: dossier.competitors.length,
-            },
-            {
-              key: 'REVIEW_PAIN_MINER',
-              label: 'Đào bình luận & FAQ',
-              count: minedClusters.length,
-            },
-            {
-              key: 'EVIDENCE_AND_WEB',
-              label: 'Sổ dẫn chứng & Quét web',
-              count: dossier.evidenceLedger.length,
-            },
+            { key: 'ALL', label: 'Tất cả mục' },
+            { key: 'STRATEGY_4P', label: 'Định vị & 4P' },
+            { key: 'SKU_KOC', label: 'SKU & Kịch bản KOC' },
+            { key: 'SEASON_SWOT', label: 'Mùa vụ & SWOT' },
           ]}
         />
-
-        {activeTab === 'BRAND_AUDIT_4P' && (
-          <Segmented<AuditSubSectionKey>
-            value={auditSubSection}
-            onChange={setAuditSubSection}
-            items={[
-              { key: 'ALL', label: 'Tất cả mục' },
-              { key: 'STRATEGY_4P', label: 'Định vị & 4P' },
-              { key: 'SKU_KOC', label: 'SKU & Kịch bản KOC' },
-              { key: 'SEASON_SWOT', label: 'Mùa vụ & SWOT' },
-            ]}
-          />
-        )}
-      </div>
+      )}
 
       {/* ===================================================================== */}
       {/* TAB 1: HỒ SƠ BÓC TÁCH BRAND, 4P, DANH MỤC SKU, MÙA VỤ & SWOT          */}

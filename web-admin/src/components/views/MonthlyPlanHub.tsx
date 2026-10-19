@@ -19,6 +19,8 @@ import {
   Pagination,
   PageActions,
   Status,
+  Avatar,
+  BrandAvatar,
   useFlipList
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
@@ -32,7 +34,16 @@ import {
   Store as StoreIcon,
   RefreshCw,
   Database,
-  FileText
+  FileText,
+  Building2,
+  Sparkles,
+  Users,
+  Target,
+  TrendingUp,
+  LayoutGrid,
+  LayoutList,
+  SlidersHorizontal,
+  CheckCircle2
 } from 'lucide-react';
 import {
   InputPlanBreakdownState,
@@ -265,6 +276,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [brandPlanPositionFilter, setBrandPlanPositionFilter] = useState<'ALL' | 'CONTENT_BRAND_MAIN' | 'PLAN_STRATEGY' | 'KEY_VISUAL_SIS'>('ALL');
   const [brandPlanStaffFilter, setBrandPlanStaffFilter] = useState<string>('ALL');
   const [brandPlanCampaignFilter, setBrandPlanCampaignFilter] = useState<'ALL' | 'HAS_CAMPAIGN' | 'NO_CAMPAIGN'>('ALL');
+  const [brandPlanStatusFilter, setBrandPlanStatusFilter] = useState<string>('ALL');
+  const [brandViewMode, setBrandViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
   const [editingBrandPlan, setEditingBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
   const [oneSheetBrandPlan, setOneSheetBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
 
@@ -289,6 +302,28 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return base.map(s => localStoreOverrides[s.id] || s);
   }, [storePortfolios, localStoreOverrides]);
 
+  const brandPlanKpis = useMemo(() => {
+    const list = brandMonthlyPlans.filter(bp => selectedMonth === 'ALL' || bp.month === selectedMonth);
+    const total = list.length;
+    const totalBudget = list.reduce((s, b) => s + (b.planStrategyPlan.targetBrandBudget || 0), 0);
+    const totalGmv = list.reduce((s, b) => s + (b.planStrategyPlan.targetBrandGmv || 0), 0);
+    const hasCampaignCount = list.filter(b => b.hasCampaign).length;
+    const alwaysOnCount = total - hasCampaignCount;
+    const completeCoverageCount = list.filter(
+      b => b.contentBrandMainPic && b.planStrategyPic && b.keyVisualSisPic
+    ).length;
+    const inExecutionCount = list.filter(b => b.status === 'IN_EXECUTION' || b.status === 'APPROVED').length;
+    return {
+      total,
+      totalBudget,
+      totalGmv,
+      hasCampaignCount,
+      alwaysOnCount,
+      completeCoverageCount,
+      inExecutionCount
+    };
+  }, [brandMonthlyPlans, selectedMonth]);
+
   const filteredBrandMonthlyPlans = useMemo(() => {
     const q = brandPlanSearch.trim().toLowerCase();
     return brandMonthlyPlans.filter(bp => {
@@ -298,6 +333,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (selectedMonth !== 'ALL' && bp.month !== selectedMonth) return false;
       if (brandPlanCampaignFilter === 'HAS_CAMPAIGN' && !bp.hasCampaign) return false;
       if (brandPlanCampaignFilter === 'NO_CAMPAIGN' && bp.hasCampaign) return false;
+      if (brandPlanStatusFilter !== 'ALL' && bp.status !== brandPlanStatusFilter) return false;
       if (brandPlanStaffFilter !== 'ALL') {
         if (brandPlanPositionFilter === 'CONTENT_BRAND_MAIN' && bp.contentBrandMainPic !== brandPlanStaffFilter) return false;
         if (brandPlanPositionFilter === 'PLAN_STRATEGY' && bp.planStrategyPic !== brandPlanStaffFilter) return false;
@@ -317,7 +353,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       }
       return true;
     });
-  }, [brandMonthlyPlans, selectedMonth, brandPlanCampaignFilter, brandPlanStaffFilter, brandPlanPositionFilter, brandPlanSearch, currentUser, effectiveStores]);
+  }, [brandMonthlyPlans, selectedMonth, brandPlanCampaignFilter, brandPlanStatusFilter, brandPlanStaffFilter, brandPlanPositionFilter, brandPlanSearch, currentUser, effectiveStores]);
 
   // Bộ lọc cho Tab Kế hoạch của riêng từng nhân sự
   const [personalRoleFilter, setPersonalRoleFilter] = useState<
@@ -1502,26 +1538,83 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       ) : activeHubTab === 'BRAND_PLANS' ? (
         /* ========================================================================= */
-        /* TAB MỚI: KẾ HOẠCH THÁNG THEO BRAND (3 VỊ TRÍ GẮN THEO BRAND)               */
+        /* TAB: KẾ HOẠCH THÁNG THEO BRAND (3 VỊ TRÍ GẮN THEO BRAND)                 */
         /* ========================================================================= */
-        <div className="space-y-4">
-          {/* 1. KHUNG TỔNG QUAN 3 VỊ TRÍ GẮN THEO BRAND */}
-          <section className="bg-surface border border-line rounded-xl p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-ink">
-                    Kế hoạch tháng theo Brand ({filteredBrandMonthlyPlans.length} thương hiệu)
-                  </h3>
+        <div key="brand-monthly-plans-root-view" className="space-y-4">
+          {/* 1. KHỐI THỐNG KÊ NHANH (KPI STRIP) CẤP BRAND */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-2xs text-ink-3">Thương hiệu B2C</div>
+                <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
+                  {brandPlanKpis.total} nhãn hàng
+                </div>
+                <div className="text-3xs text-ink-3 truncate mt-0.5">
+                  69 gian hàng phụ trách
                 </div>
               </div>
+            </div>
 
+            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-2xs text-ink-3">Ngân sách Brand ({selectedMonth})</div>
+                <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
+                  {formatVndShort(brandPlanKpis.totalBudget)}
+                </div>
+                <div className="text-3xs text-ink-3 truncate mt-0.5">
+                  Hạn mức Net toàn khối
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-2xs text-ink-3">Chiến dịch trọng điểm</div>
+                <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
+                  {brandPlanKpis.hasCampaignCount} có Campaign
+                </div>
+                <div className="text-3xs text-ink-3 truncate mt-0.5">
+                  {brandPlanKpis.alwaysOnCount} nhãn Always-on duy trì
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-surface border border-line rounded-xl p-3.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-2xs text-ink-3">Phủ 3 vị trí nghiệp vụ</div>
+                <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
+                  {brandPlanKpis.completeCoverageCount}/{brandPlanKpis.total} nhãn
+                </div>
+                <div className="text-3xs text-ink-3 truncate mt-0.5">
+                  Content · Strategy · KV/SIS
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. THANH ĐIỀU HƯỚNG & BỘ LỌC ĐA NĂNG */}
+          <Panel flush>
+            {/* Hàng 1: Phân loại vị trí & Chế độ xem */}
+            <div className="p-3 border-b border-line flex flex-wrap items-center justify-between gap-3 bg-sunken/30">
+              {/* Vị trí nghiệp vụ pills */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[
-                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: `${brandMonthlyPlans.length}` },
-                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main' },
-                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy' },
-                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS' },
+                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: brandPlanKpis.total },
+                  { key: 'CONTENT_BRAND_MAIN' as const, label: '1. Content / Brand main' },
+                  { key: 'PLAN_STRATEGY' as const, label: '2. Plan / Strategy' },
+                  { key: 'KEY_VISUAL_SIS' as const, label: '3. Key Visual / SIS' },
                 ].map(pos => {
                   const active = brandPlanPositionFilter === pos.key;
                   return (
@@ -1530,15 +1623,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       type="button"
                       onClick={() => setBrandPlanPositionFilter(pos.key)}
                       className={cx(
-                        'px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition cursor-pointer',
+                        'px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer border',
                         active
-                          ? 'bg-amber-50 border-amber-300 text-amber-950 font-semibold shadow-2xs'
-                          : 'bg-canvas border-line text-ink-2 hover:text-ink hover:border-line-strong'
+                          ? 'bg-primary text-white border-primary shadow-2xs font-semibold'
+                          : 'bg-surface border-line text-ink-2 hover:bg-sunken hover:text-ink'
                       )}
                     >
                       <span>{pos.label}</span>
-                      {pos.badge && (
-                        <span className="text-2xs text-ink-3">
+                      {pos.badge !== undefined && (
+                        <span className={cx('ml-1.5 text-2xs tabular-nums', active ? 'text-white/80' : 'text-ink-3')}>
                           ({pos.badge})
                         </span>
                       )}
@@ -1546,34 +1639,76 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   );
                 })}
               </div>
+
+              {/* Chuyển đổi Dạng Bảng / Dạng Thẻ */}
+              <div className="flex items-center gap-1 bg-surface border border-line rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setBrandViewMode('TABLE')}
+                  className={cx(
+                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer',
+                    brandViewMode === 'TABLE'
+                      ? 'bg-sunken text-ink font-semibold shadow-2xs'
+                      : 'text-ink-3 hover:text-ink'
+                  )}
+                  title="Xem dạng Bảng đối soát"
+                >
+                  <LayoutList className="w-3.5 h-3.5" />
+                  <span>Dạng bảng</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrandViewMode('CARDS')}
+                  className={cx(
+                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition cursor-pointer',
+                    brandViewMode === 'CARDS'
+                      ? 'bg-sunken text-ink font-semibold shadow-2xs'
+                      : 'text-ink-3 hover:text-ink'
+                  )}
+                  title="Xem dạng Thẻ thương hiệu"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Dạng thẻ</span>
+                </button>
+              </div>
             </div>
 
-          </section>
-
-          {/* 2. BẢNG DANH SÁCH KẾ HOẠCH THÁNG THEO BRAND */}
-          <Panel flush>
-            <div className="p-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
+            {/* Hàng 2: Ô tìm kiếm và các dropdown lọc */}
+            <div className="p-3 flex flex-wrap items-center justify-between gap-3">
               <FilterBar
                 search={{
                   value: brandPlanSearch,
                   onChange: setBrandPlanSearch,
-                  placeholder: 'Tìm thương hiệu, nhân sự...',
+                  placeholder: 'Tìm theo tên thương hiệu, mã, chuyên viên phụ trách...',
                 }}
                 filters={
                   <div className="flex flex-wrap items-center gap-2">
                     <Select
                       value={brandPlanCampaignFilter}
                       onChange={(e) => setBrandPlanCampaignFilter(e.target.value as 'ALL' | 'HAS_CAMPAIGN' | 'NO_CAMPAIGN')}
-                      aria-label="Lọc theo trạng thái Chiến dịch (Campaign)"
+                      aria-label="Lọc theo Chiến dịch"
                     >
-                      <option value="ALL">Mọi chế độ Campaign (Có &amp; Không)</option>
+                      <option value="ALL">Mọi chế độ Chiến dịch</option>
                       <option value="HAS_CAMPAIGN">Có Chiến dịch (Campaign)</option>
-                      <option value="NO_CAMPAIGN">Không có Campaign (Duy trì)</option>
+                      <option value="NO_CAMPAIGN">Always-on (Duy trì)</option>
                     </Select>
+
+                    <Select
+                      value={brandPlanStatusFilter}
+                      onChange={(e) => setBrandPlanStatusFilter(e.target.value)}
+                      aria-label="Lọc theo Trạng thái kế hoạch"
+                    >
+                      <option value="ALL">Tất cả trạng thái</option>
+                      <option value="IN_EXECUTION">Đang chạy</option>
+                      <option value="PENDING_APPROVAL">Chờ duyệt</option>
+                      <option value="APPROVED">Đã duyệt</option>
+                      <option value="DRAFT">Dự thảo</option>
+                    </Select>
+
                     <Select
                       value={brandPlanStaffFilter}
                       onChange={(e) => setBrandPlanStaffFilter(e.target.value)}
-                      aria-label="Lọc theo nhân sự phụ trách Brand"
+                      aria-label="Lọc theo nhân sự phụ trách"
                     >
                       <option value="ALL">Tất cả nhân sự ({brandPositionStaffList.length})</option>
                       {brandPositionStaffList.map(st => (
@@ -1584,146 +1719,358 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 }
                 resultCount={filteredBrandMonthlyPlans.length}
               />
+
               {currentUser?.name && brandPositionStaffList.includes(currentUser.name) && (
                 <Button
                   size="sm"
                   variant={brandPlanStaffFilter === currentUser.name ? 'primary' : 'secondary'}
                   onClick={() => setBrandPlanStaffFilter(brandPlanStaffFilter === currentUser.name ? 'ALL' : currentUser.name)}
                 >
-                  {brandPlanStaffFilter === currentUser.name ? `Đang lọc Brand của: ${currentUser.name}` : `Brand tôi phụ trách (${currentUser.name})`}
+                  {brandPlanStaffFilter === currentUser.name ? `Đang lọc: ${currentUser.name}` : `Brand tôi phụ trách (${currentUser.name})`}
                 </Button>
               )}
             </div>
 
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-3 min-w-[165px]">Thương hiệu (Brand)</th>
-                    <th className="py-2.5 px-3 min-w-[220px]">
-                      <span className="text-ink font-semibold">1. Content / Brand main</span>
-                    </th>
-                    <th className="py-2.5 px-3 min-w-[220px]">
-                      <span className="text-ink font-semibold">2. Plan / Strategy</span>
-                    </th>
-                    <th className="py-2.5 px-3 min-w-[220px]">
-                      <span className="text-ink font-semibold">3. Key Visual / SIS</span>
-                    </th>
-                    <th className="py-2.5 px-3 text-center w-28">Trạng thái</th>
-                    <th className="py-2.5 px-3 text-right w-36">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {filteredBrandMonthlyPlans.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-ink-3">
-                        Không tìm thấy kế hoạch Brand nào khớp với bộ lọc.
-                      </td>
+            {/* 3. NỘI DUNG CHÍNH: DẠNG BẢNG HOẶC DẠNG THẺ */}
+            {brandViewMode === 'TABLE' ? (
+              /* ================= DẠNG BẢNG (TABLE VIEW) ================= */
+              <div className="w-full overflow-x-auto">
+                <table key="brand-monthly-plans-table" className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-sunken/60 border-b border-line text-ink-2 font-semibold text-2xs uppercase tracking-wider">
+                      <th className="py-2.5 px-3.5 min-w-[240px]">Thương hiệu (Brand)</th>
+                      <th className="py-2.5 px-3 min-w-[130px] text-right">Ngân sách &amp; GMV</th>
+                      <th className="py-2.5 px-3 min-w-[230px]">1. Content / Brand main</th>
+                      <th className="py-2.5 px-3 min-w-[230px]">2. Plan / Strategy</th>
+                      <th className="py-2.5 px-3 min-w-[230px]">3. Key Visual / SIS</th>
+                      <th className="py-2.5 px-3 min-w-[110px] text-center">Trạng thái</th>
+                      <th className="py-2.5 px-3.5 min-w-[150px] text-right">Thao tác</th>
                     </tr>
-                  ) : (
-                    filteredBrandMonthlyPlans.map(bp => (
-                      <tr
-                        key={bp.id}
-                        onClick={() => setEditingBrandPlan(bp)}
-                        className="hover:bg-canvas transition-colors cursor-pointer group"
-                      >
-                        {/* Cột 1: Thương hiệu */}
-                        <td className="py-3 px-3 align-top">
-                          <div className="font-semibold text-ink text-xs">{bp.brandName}</div>
-                          <div className="text-2xs text-ink-3 mt-0.5">{bp.category}</div>
-                          <div className="text-2xs font-mono text-ink-3 mt-1">
-                            Kỳ: <strong className="text-ink-2">{bp.month}</strong> · {formatVndShort(bp.planStrategyPlan.targetBrandBudget || 0)}
-                          </div>
-                          <div className="mt-1 text-2xs text-ink-3">
-                            {bp.hasCampaign ? (
-                              <span
-                                className="text-ink-2 font-medium"
-                                title={bp.campaignTitle ? `${bp.campaignTitle}${bp.campaignPhaseName ? ` • ${bp.campaignPhaseName}` : ''}` : 'Có Chiến dịch'}
-                              >
-                                {bp.campaignCode || 'Campaign'}
-                                {bp.campaignPhaseName && (
-                                  <span className="text-ink-3 font-normal">
-                                    {' '}· {bp.campaignPhaseName}
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span>Duy trì (Không Campaign)</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Cột 2: Content / Brand main [theo brand] */}
-                        <td className="py-3 px-3 align-top">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="font-semibold text-ink text-xs">{bp.contentBrandMainPic}</span>
-                            <span className="text-2xs font-mono text-ink-3 tabular-nums">
-                              {bp.contentBrandMainPlan.masterContentPlanCount} Plan · {bp.contentBrandMainPlan.contentPillarsCount} Pillars · {bp.contentBrandMainPlan.heroScriptsTarget} Script
-                            </span>
-                          </div>
-                          <div className="text-2xs text-ink-2 mt-1 line-clamp-2" title={bp.contentBrandMainPlan.focusPillars}>
-                            {bp.contentBrandMainPlan.focusPillars}
-                          </div>
-                        </td>
-
-                        {/* Cột 3: Plan / Strategy [theo brand] */}
-                        <td className="py-3 px-3 align-top">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="font-semibold text-ink text-xs">{bp.planStrategyPic}</span>
-                            <span className="text-2xs font-mono text-ink-3 tabular-nums">
-                              {bp.planStrategyPlan.campaignStrategyCount} Strategy · {bp.planStrategyPlan.brandAuditCount} Audit
-                            </span>
-                          </div>
-                          <div className="text-2xs text-ink-2 mt-1 line-clamp-2" title={bp.planStrategyPlan.bigIdeaAndKeyMessage}>
-                            {bp.planStrategyPlan.bigIdeaAndKeyMessage}
-                          </div>
-                        </td>
-
-                        {/* Cột 4: Key Visual / SIS [theo brand] */}
-                        <td className="py-3 px-3 align-top">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="font-semibold text-ink text-xs">{bp.keyVisualSisPic}</span>
-                            <span className="text-2xs font-mono text-ink-3 tabular-nums">
-                              {bp.keyVisualSisPlan.kvDirectionCount} KV · {bp.keyVisualSisPlan.sisBannerPackageCount} SIS · {bp.keyVisualSisPlan.pdpSeoProductCount} PDP
-                            </span>
-                          </div>
-                          <div className="text-2xs text-ink-2 mt-1 line-clamp-2" title={bp.keyVisualSisPlan.designTheme}>
-                            {bp.keyVisualSisPlan.designTheme}
-                          </div>
-                        </td>
-
-                        {/* Cột 5: Trạng thái */}
-                        <td className="py-3 px-3 text-center align-middle">
-                          {getStatusBadge(bp.status)}
-                        </td>
-
-                        {/* Cột 6: Thao tác */}
-                        <td className="py-3 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setOneSheetBrandPlan(bp)}
-                              className="h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition cursor-pointer"
-                              title="Mở biểu mẫu 1-Sheet Monthly Content & Key Visual Plan trình Brand"
-                            >
-                              1-Sheet Trình Brand
-                            </button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setEditingBrandPlan(bp)}
-                              className="h-7 px-2.5 text-2xs font-semibold"
-                            >
-                              Nhập Plan tháng
-                            </Button>
-                          </div>
+                  </thead>
+                  <tbody key="brand-monthly-plans-tbody" className="divide-y divide-line">
+                    {filteredBrandMonthlyPlans.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-ink-3">
+                          Không tìm thấy kế hoạch Brand nào khớp với bộ lọc hiện tại.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      filteredBrandMonthlyPlans.map(bp => {
+                        const stores = effectiveStores.filter(
+                          s => s.brandName?.toLowerCase() === bp.brandName?.toLowerCase()
+                        );
+                        const budget = bp.planStrategyPlan?.targetBrandBudget || 0;
+                        const targetGmv = bp.planStrategyPlan?.targetBrandGmv || 0;
+                        const contentP = bp.contentBrandMainPlan;
+                        const strategyP = bp.planStrategyPlan;
+                        const kvP = bp.keyVisualSisPlan;
+
+                        return (
+                          <tr
+                            key={`bp-row-${bp.id}`}
+                            onClick={() => setEditingBrandPlan(bp)}
+                            className="hover:bg-canvas transition-colors cursor-pointer group"
+                          >
+                            {/* Cột 1: Thương hiệu */}
+                            <td className="py-3 px-3.5 align-middle">
+                              <div className="flex items-center gap-3">
+                                <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={36} rounded="md" />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-ink text-sm group-hover:text-accent transition-colors truncate" title={bp.brandName}>
+                                      {bp.brandName}
+                                    </span>
+                                    {bp.hasCampaign ? (
+                                      <span
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0"
+                                        title={bp.campaignTitle ? `${bp.campaignTitle}${bp.campaignPhaseName ? ` • ${bp.campaignPhaseName}` : ''}` : 'Có Chiến dịch'}
+                                      >
+                                        <Sparkles className="w-2.5 h-2.5 text-blue-600 shrink-0" />
+                                        <span>{bp.campaignCode || 'Campaign'}</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-medium bg-sunken text-ink-3 shrink-0">
+                                        Always-on
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
+                                    <span className="truncate">{bp.category}</span>
+                                    <span>•</span>
+                                    <span className="font-medium text-ink-2 shrink-0">
+                                      {stores.length > 0 ? `${stores.length} gian hàng` : '1 gian'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Cột 2: Ngân sách & GMV */}
+                            <td className="py-3 px-3 align-middle text-right tabular-nums">
+                              <div className="font-semibold text-ink text-xs">
+                                {budget > 0 ? formatVndShort(budget) : <span className="text-ink-3 font-normal">Chưa cấp</span>}
+                              </div>
+                              <div className="text-2xs text-ink-3 mt-0.5">
+                                Target: <span className="font-medium text-ink-2">{targetGmv > 0 ? formatVndShort(targetGmv) : '—'}</span>
+                              </div>
+                            </td>
+
+                            {/* Cột 3: 1. Content / Brand main */}
+                            <td className="py-3 px-3 align-middle">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Avatar name={bp.contentBrandMainPic} size={18} />
+                                    <span className="font-medium text-ink text-xs truncate">{bp.contentBrandMainPic}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Master Content Plan">
+                                      {contentP.masterContentPlanCount}P
+                                    </span>
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Content Pillars">
+                                      {contentP.contentPillarsCount}Pil
+                                    </span>
+                                    <span className="bg-accent-soft text-accent border border-accent/20 px-1 rounded font-semibold" title="Chỉ tiêu kịch bản Hero/KOL/KOC">
+                                      {contentP.heroScriptsTarget}Scr
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-2xs text-ink-3 line-clamp-1" title={contentP.focusPillars}>
+                                  {contentP.focusPillars}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Cột 4: 2. Plan / Strategy */}
+                            <td className="py-3 px-3 align-middle">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Avatar name={bp.planStrategyPic} size={18} />
+                                    <span className="font-medium text-ink text-xs truncate">{bp.planStrategyPic}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Campaign Strategy Plan">
+                                      {strategyP.campaignStrategyCount}Strat
+                                    </span>
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Brand Audit">
+                                      {strategyP.brandAuditCount}Audit
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-2xs text-ink-3 line-clamp-1" title={strategyP.bigIdeaAndKeyMessage}>
+                                  {strategyP.bigIdeaAndKeyMessage}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Cột 5: 3. Key Visual / SIS */}
+                            <td className="py-3 px-3 align-middle">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Avatar name={bp.keyVisualSisPic} size={18} />
+                                    <span className="font-medium text-ink text-xs truncate">{bp.keyVisualSisPic}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Số định hướng Key Visual">
+                                      {kvP.kvDirectionCount}KV
+                                    </span>
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Gói Banner SIS">
+                                      {kvP.sisBannerPackageCount}SIS
+                                    </span>
+                                    <span className="bg-sunken border border-line px-1 rounded" title="Khung ảnh PDP SEO">
+                                      {kvP.pdpSeoProductCount}PDP
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-2xs text-ink-3 line-clamp-1" title={kvP.designTheme}>
+                                  {kvP.designTheme}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Cột 6: Trạng thái */}
+                            <td className="py-3 px-3 text-center align-middle">
+                              {getStatusBadge(bp.status)}
+                            </td>
+
+                            {/* Cột 7: Thao tác */}
+                            <td className="py-3 px-3.5 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setOneSheetBrandPlan(bp)}
+                                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition cursor-pointer"
+                                  title="Mở biểu mẫu 1-Sheet Monthly Content & Key Visual Plan trình Brand"
+                                >
+                                  <FileText className="w-3 h-3 text-emerald-600" />
+                                  <span>1-Sheet</span>
+                                </button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setEditingBrandPlan(bp)}
+                                  className="h-7 px-2.5 text-2xs font-medium"
+                                >
+                                  Nhập Plan
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* ================= DẠNG THẺ (CARD GRID VIEW) ================= */
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredBrandMonthlyPlans.length === 0 ? (
+                  <div className="col-span-full py-12 text-center text-ink-3">
+                    Không tìm thấy kế hoạch Brand nào khớp với bộ lọc hiện tại.
+                  </div>
+                ) : (
+                  filteredBrandMonthlyPlans.map(bp => {
+                    const stores = effectiveStores.filter(
+                      s => s.brandName?.toLowerCase() === bp.brandName?.toLowerCase()
+                    );
+                    const budget = bp.planStrategyPlan?.targetBrandBudget || 0;
+                    const targetGmv = bp.planStrategyPlan?.targetBrandGmv || 0;
+                    const contentP = bp.contentBrandMainPlan;
+                    const strategyP = bp.planStrategyPlan;
+                    const kvP = bp.keyVisualSisPlan;
+
+                    return (
+                      <div
+                        key={`bp-card-${bp.id}`}
+                        className="bg-surface border border-line rounded-xl p-4 space-y-3 hover:border-line-strong transition shadow-2xs flex flex-col justify-between"
+                      >
+                        {/* Header Thẻ: Logo + Tên + Badge trạng thái */}
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={40} rounded="lg" />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-ink text-sm truncate" title={bp.brandName}>
+                                  {bp.brandName}
+                                </div>
+                                <div className="text-2xs text-ink-3 truncate">
+                                  {bp.category} · {stores.length > 0 ? `${stores.length} gian` : '1 gian'}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="shrink-0 flex flex-col items-end gap-1">
+                              {getStatusBadge(bp.status)}
+                            </div>
+                          </div>
+
+                          {/* Dòng Campaign & Tài chính */}
+                          <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-sunken/60 text-2xs">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {bp.hasCampaign ? (
+                                <span className="inline-flex items-center gap-1 font-semibold text-blue-700 truncate" title={bp.campaignTitle}>
+                                  <Sparkles className="w-3 h-3 text-blue-600 shrink-0" />
+                                  <span>{bp.campaignCode || 'Campaign'}</span>
+                                </span>
+                              ) : (
+                                <span className="text-ink-3">Always-on (Duy trì)</span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-ink-3 mr-1">Trần Net:</span>
+                              <strong className="text-ink font-semibold tabular-nums">
+                                {budget > 0 ? formatVndShort(budget) : 'Chưa cấp'}
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Ma trận 3 vị trí nghiệp vụ */}
+                        <div className="space-y-2 text-2xs">
+                          {/* 1. Content */}
+                          <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-ink-3 font-medium">1. Content / Brand main</span>
+                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
+                                <span className="bg-sunken px-1 rounded">{contentP.masterContentPlanCount}P</span>
+                                <span className="bg-sunken px-1 rounded">{contentP.contentPillarsCount}Pil</span>
+                                <span className="bg-accent-soft text-accent px-1 rounded font-semibold">{contentP.heroScriptsTarget}Scr</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-ink">
+                              <Avatar name={bp.contentBrandMainPic} size={16} />
+                              <span className="font-semibold truncate">{bp.contentBrandMainPic}</span>
+                            </div>
+                            <div className="text-3xs text-ink-3 line-clamp-1" title={contentP.focusPillars}>
+                              {contentP.focusPillars}
+                            </div>
+                          </div>
+
+                          {/* 2. Strategy */}
+                          <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-ink-3 font-medium">2. Plan / Strategy</span>
+                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
+                                <span className="bg-sunken px-1 rounded">{strategyP.campaignStrategyCount}Strat</span>
+                                <span className="bg-sunken px-1 rounded">{strategyP.brandAuditCount}Audit</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-ink">
+                              <Avatar name={bp.planStrategyPic} size={16} />
+                              <span className="font-semibold truncate">{bp.planStrategyPic}</span>
+                            </div>
+                            <div className="text-3xs text-ink-3 line-clamp-1" title={strategyP.bigIdeaAndKeyMessage}>
+                              {strategyP.bigIdeaAndKeyMessage}
+                            </div>
+                          </div>
+
+                          {/* 3. KV / SIS */}
+                          <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-ink-3 font-medium">3. Key Visual / SIS</span>
+                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
+                                <span className="bg-sunken px-1 rounded">{kvP.kvDirectionCount}KV</span>
+                                <span className="bg-sunken px-1 rounded">{kvP.sisBannerPackageCount}SIS</span>
+                                <span className="bg-sunken px-1 rounded">{kvP.pdpSeoProductCount}PDP</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-ink">
+                              <Avatar name={bp.keyVisualSisPic} size={16} />
+                              <span className="font-semibold truncate">{bp.keyVisualSisPic}</span>
+                            </div>
+                            <div className="text-3xs text-ink-3 line-clamp-1" title={kvP.designTheme}>
+                              {kvP.designTheme}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Footer Thẻ: Thao tác */}
+                        <div className="pt-2 border-t border-line flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setOneSheetBrandPlan(bp)}
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition cursor-pointer"
+                          >
+                            <FileText className="w-3 h-3 text-emerald-600" />
+                            <span>1-Sheet Trình Brand</span>
+                          </button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setEditingBrandPlan(bp)}
+                            className="h-7 px-3 text-2xs font-medium"
+                          >
+                            Nhập Plan tháng
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </Panel>
         </div>
       ) : activeHubTab === 'STORE_COEFFICIENTS' ? (

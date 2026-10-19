@@ -301,10 +301,27 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
           </div>
         )}
 
-        {discoveryResult?.bioExtracted && (
-          <div className="px-3 py-2 rounded-lg bg-surface border border-line text-2xs text-ink-2">
-            <span className="font-semibold text-ink">Tiểu sử kênh TikTok: </span>
-            {discoveryResult.bioExtracted}
+        {(discoveryResult?.bioExtracted || discoveryResult?.bioLinkExtracted) && (
+          <div className="px-3 py-2 rounded-lg bg-surface border border-line text-2xs text-ink-2 space-y-1">
+            {discoveryResult.bioExtracted && (
+              <div>
+                <span className="font-semibold text-ink">Tiểu sử kênh TikTok: </span>
+                {discoveryResult.bioExtracted}
+              </div>
+            )}
+            {discoveryResult.bioLinkExtracted && (
+              <div>
+                <span className="font-semibold text-ink">Liên kết gắn trên TikTok: </span>
+                <a
+                  href={discoveryResult.bioLinkExtracted}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent hover:underline break-all"
+                >
+                  {discoveryResult.bioLinkExtracted}
+                </a>
+              </div>
+            )}
           </div>
         )}
 
@@ -381,57 +398,73 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
                   />
                 </div>
 
-                {/* Các kết quả gợi ý tìm được để bấm chọn nhanh */}
+                {/* Các kết quả đã xác thực tồn tại để bấm chọn nhanh */}
                 {loading ? (
                   <div className="text-2xs text-ink-3 flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 animate-pulse" />
-                    Đang dò tìm tài khoản {meta.label}...
+                    Đang dò tìm và xác thực tài khoản {meta.label}...
+                  </div>
+                ) : candidates.length > 0 ? (
+                  <div className="grid gap-1.5 pt-0.5">
+                    {candidates.map((cand) => {
+                      const active =
+                        currentVal.trim().toLowerCase().replace(/^@+/, '') ===
+                          cand.handle.toLowerCase().replace(/^@+/, '') && isConfirmed;
+                      const badge = CONFIDENCE_BADGE[cand.confidence];
+
+                      return (
+                        <div
+                          key={cand.handle}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-2xs transition-colors ${
+                            active
+                              ? 'border-primary bg-accent-soft/50 text-ink'
+                              : 'border-line bg-sunken/40 text-ink-2 hover:border-line-strong'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCandidate(meta.key, cand)}
+                            className="flex-1 min-w-0 text-left space-y-0.5"
+                          >
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono font-semibold text-ink">
+                                {cand.handle}
+                              </span>
+                              {cand.displayName && (
+                                <span className="font-semibold text-ink">
+                                  · {cand.displayName}
+                                </span>
+                              )}
+                              <Status tone={badge.tone}>{badge.label}</Status>
+                              {cand.isVerifiedLive && (
+                                <Status tone="positive">Đã xác thực tồn tại</Status>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-ink-3">
+                              {cand.evidence && (
+                                <span className="text-ink-2 font-medium">{cand.evidence}</span>
+                              )}
+                              <span>· Nguồn: {cand.sourceLabel}</span>
+                            </div>
+                          </button>
+                          <a
+                            href={cand.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded border border-line bg-surface text-accent hover:text-primary hover:border-line-strong font-medium"
+                            title={`Mở ${cand.url} để kiểm tra`}
+                          >
+                            Mở link
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  candidates.length > 0 && (
-                    <div className="space-y-1.5 pt-0.5">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {candidates.map((cand) => {
-                          const active =
-                            currentVal.trim().toLowerCase().replace(/^@+/, '') ===
-                              cand.handle.toLowerCase().replace(/^@+/, '') && isConfirmed;
-                          const badge = CONFIDENCE_BADGE[cand.confidence];
-
-                          return (
-                            <div
-                              key={cand.handle}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-2xs transition-colors ${
-                                active
-                                  ? 'border-primary bg-accent-soft/50 text-ink font-medium'
-                                  : 'border-line bg-sunken/40 text-ink-2 hover:border-line-strong'
-                              }`}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCandidate(meta.key, cand)}
-                                className="inline-flex items-center gap-1.5 text-left"
-                              >
-                                <span className="font-mono font-semibold text-ink">
-                                  {cand.handle}
-                                </span>
-                                <Status tone={badge.tone}>{badge.label}</Status>
-                                <span className="text-ink-3 hidden sm:inline">
-                                  ({cand.sourceLabel})
-                                </span>
-                              </button>
-                              <a
-                                href={cand.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-0.5 text-accent hover:text-primary"
-                                title={`Mở ${cand.url} để kiểm tra`}
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </div>
-                          );
-                        })}
-                      </div>
+                  discoveryResult && (
+                    <div className="text-2xs text-ink-3">
+                      Không phát hiện tài khoản {meta.label} công khai khớp với KOC. Có thể dán trực tiếp link hoặc username nếu có.
                     </div>
                   )
                 )}

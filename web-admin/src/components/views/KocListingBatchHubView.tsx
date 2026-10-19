@@ -16,7 +16,7 @@ import {
   KocItem,
   BookingDealItem
 } from '@/lib/types';
-import { ConfirmDialog, PageActions, Button, Presence } from '../ui';
+import { ActionMenu, ConfirmDialog, PageActions, Button, Presence, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
@@ -33,9 +33,7 @@ import {
   Clock,
   ExternalLink,
   ChevronRight,
-  Film,
   Calendar,
-  Layers,
   ShieldCheck,
   RotateCcw,
   FileText,
@@ -119,7 +117,7 @@ export function KocListingBatchHubView({
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Plan vs Listing KL matrix collapse state
-  const [isKlMatrixExpanded, setIsKlMatrixExpanded] = useState<boolean>(true);
+  const [isKlMatrixExpanded, setIsKlMatrixExpanded] = useState<boolean>(false);
   const [shortlistTargetGrade, setShortlistTargetGrade] = useState<SalaryGrade | undefined>(undefined);
 
   // Bulk Selection
@@ -825,25 +823,26 @@ export function KocListingBatchHubView({
   return (
     <div className="space-y-4">
       <PageActions>
-        <Button variant="secondary" icon={FileText} onClick={() => setIsKocReportOpen(true)}>
-          Báo cáo đề xuất cơ cấu KOC
-        </Button>
+        <ActionMenu
+          items={[
+            { label: 'Báo cáo đề xuất cơ cấu KOC', icon: FileText, onSelect: () => setIsKocReportOpen(true) },
+            {
+              label: 'Thêm KOC nháp',
+              icon: Plus,
+              onSelect: () => {
+                const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
+                const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
+                handleOpenManualAddForGrade(
+                  gradeToUse,
+                  rowMatch?.benchmarkUnitCost || 4500000,
+                  rowMatch?.defaultTier || 'MICRO'
+                );
+              },
+            },
+          ]}
+        />
         <Button
-          variant="secondary"
-          icon={Plus}
-          onClick={() => {
-            const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
-            const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
-            handleOpenManualAddForGrade(
-              gradeToUse,
-              rowMatch?.benchmarkUnitCost || 4500000,
-              rowMatch?.defaultTier || 'MICRO'
-            );
-          }}
-        >
-          Thêm KOC nháp (Draft)
-        </Button>
-        <Button
+          size="sm"
           variant="primary"
           icon={Filter}
           onClick={() => {
@@ -851,42 +850,33 @@ export function KocListingBatchHubView({
             setShowShortlistModal(true);
           }}
         >
-          Lọc KOC từ kho theo KL
+          Lọc KOC theo KL
         </Button>
       </PageActions>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 pt-2 rounded-t-md">
-        <button
-          onClick={() => setActiveSubTab('LISTING_APPROVAL')}
-          className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-            activeSubTab === 'LISTING_APPROVAL'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          1. Lên danh sách nháp (Draft) → Gửi Brand &amp; Duyệt trao đổi theo KL
-          <span className="text-2xs text-slate-500">
-            ({filteredListings.length})
-          </span>
-        </button>
+      <Tabs
+        value={activeSubTab}
+        onChange={setActiveSubTab}
+        items={[
+          { key: 'LISTING_APPROVAL', label: 'Danh sách đề xuất', count: filteredListings.length },
+          { key: 'AIR_TRACKER', label: 'Video lên sóng', count: airListings.length },
+        ]}
+      />
 
-        <button
-          onClick={() => setActiveSubTab('AIR_TRACKER')}
-          className={`pb-2.5 px-3 text-xs font-semibold border-b-2 transition-colors flex items-center gap-2 ${
-            activeSubTab === 'AIR_TRACKER'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-          }`}
-        >
-          <Film className="w-3.5 h-3.5" />
-          2. Theo dõi video lên sóng &amp; giỏ hàng sàn (Sau khi chốt Deal)
-          <span className="text-2xs text-emerald-700">
-            ({airListings.length})
-          </span>
-        </button>
-      </div>
+      <StatRow size="sm">
+        <Stat
+          label="Tổng đề xuất"
+          value={metrics.total}
+          note={`${metrics.draft} nháp${metrics.dropped > 0 ? ` · ${metrics.dropped} rớt` : ''}`}
+        />
+        <Stat
+          label="Đã gửi Brand"
+          value={metrics.submitted}
+          note={metrics.brandApproved > 0 ? `${metrics.brandApproved} Brand đã duyệt` : 'Chưa có KOC được Brand duyệt'}
+        />
+        <Stat label="Đã chốt" value={metrics.finalApproved} />
+        <Stat label="Ngân sách dự kiến" value={formatVndShort(metrics.totalBudget)} note={formatVnd(metrics.totalBudget)} />
+      </StatRow>
 
       {/* ===================================================================== */}
       {/* BẢNG ĐỐI SOÁT PLAN FINAL & TIẾN ĐỘ LISTING THEO KHUNG LƯƠNG (KL1–KL7) */}
@@ -942,7 +932,7 @@ export function KocListingBatchHubView({
           <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-600">
+                <tr className="bg-slate-50/70 border-b border-slate-200 text-2xs font-semibold text-slate-600">
                   <th className="py-2.5 px-3 w-[22%]">Khung lương (KL) &amp; Đơn giá</th>
                   <th className="py-2.5 px-3 text-center bg-slate-100/70 w-[13%]">Chỉ tiêu Plan</th>
                   <th className="py-2.5 px-3 w-[28%]">Tiến độ đề xuất (Chốt · Gửi · Nháp)</th>
@@ -974,7 +964,7 @@ export function KocListingBatchHubView({
                             </span>
                           </div>
                           {row.assignedPics.length > 0 && (
-                            <span className="text-[10px] text-slate-500 truncate block max-w-[200px] mt-0.5" title={row.assignedPics.join(', ')}>
+                            <span className="text-2xs text-slate-500 truncate block max-w-[200px] mt-0.5" title={row.assignedPics.join(', ')}>
                               PIC: {row.assignedPics.join(', ')}
                             </span>
                           )}
@@ -984,7 +974,7 @@ export function KocListingBatchHubView({
                       {/* Col 2: Chỉ tiêu Plan */}
                       <td className="py-2.5 px-3 text-center tabular-nums bg-slate-50/60 font-semibold text-slate-900 text-xs leading-tight">
                         {row.planQty} KOC
-                        <span className="block text-[10px] font-normal text-slate-500">
+                        <span className="block text-2xs font-normal text-slate-500">
                           {formatVndShort(row.planBudget)}
                         </span>
                       </td>
@@ -993,7 +983,7 @@ export function KocListingBatchHubView({
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                            className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
                               row.finalApprovedCount > 0
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : 'text-slate-400 bg-slate-50'
@@ -1003,7 +993,7 @@ export function KocListingBatchHubView({
                             {row.finalApprovedCount} chốt
                           </span>
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                            className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
                               row.submittedCount > 0
                                 ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                 : 'text-slate-400 bg-slate-50'
@@ -1013,7 +1003,7 @@ export function KocListingBatchHubView({
                             {row.submittedCount} gửi Brand
                           </span>
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] ${
+                            className={`px-1.5 py-0.5 rounded text-2xs ${
                               row.draftCount > 0
                                 ? 'bg-slate-100 text-slate-800 font-medium'
                                 : 'text-slate-400'
@@ -1024,7 +1014,7 @@ export function KocListingBatchHubView({
                           </span>
                           {row.droppedCount > 0 && (
                             <span
-                              className="px-1.5 py-0.5 rounded text-[11px] bg-rose-50 text-rose-700 font-medium border border-rose-200"
+                              className="px-1.5 py-0.5 rounded text-2xs bg-rose-50 text-rose-700 font-medium border border-rose-200"
                               title="Rớt / Không đạt"
                             >
                               {row.droppedCount} rớt
@@ -1037,15 +1027,15 @@ export function KocListingBatchHubView({
                       <td className="py-2.5 px-3 text-center tabular-nums text-xs">
                         <div className="flex flex-col items-center leading-tight">
                           {row.remainingToList > 0 ? (
-                            <span className="text-[11px] font-semibold text-amber-700">
+                            <span className="text-2xs font-semibold text-amber-700">
                               Thiếu {row.remainingToList}
                             </span>
                           ) : row.planQty > 0 ? (
-                            <span className="text-[11px] font-semibold text-emerald-700">
+                            <span className="text-2xs font-semibold text-emerald-700">
                               Đủ ({row.activeListedCount}/{row.planQty})
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-400">+{row.activeListedCount}</span>
+                            <span className="text-2xs text-slate-400">+{row.activeListedCount}</span>
                           )}
                           {row.planQty > 0 && (
                             <div className="w-14 h-1 bg-slate-200 rounded-full overflow-hidden mt-0.5">
@@ -1064,7 +1054,7 @@ export function KocListingBatchHubView({
                           {formatVndShort(row.listedBudget)} / {formatVndShort(row.planBudget)}
                         </div>
                         {isOverBudget && (
-                          <div className="text-[10px] text-rose-600 font-medium">
+                          <div className="text-2xs text-rose-600 font-medium">
                             Vượt {formatVndShort(row.listedBudget - row.planBudget)}
                           </div>
                         )}
@@ -1076,7 +1066,7 @@ export function KocListingBatchHubView({
                           <button
                             type="button"
                             onClick={() => setSelectedGrade(isActiveFilter ? 'ALL' : row.code)}
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
+                            className={`px-2 py-0.5 rounded text-2xs font-semibold border transition-colors cursor-pointer ${
                               isActiveFilter
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
@@ -1090,7 +1080,7 @@ export function KocListingBatchHubView({
                               setShortlistTargetGrade(row.code);
                               setShowShortlistModal(true);
                             }}
-                            className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap"
+                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap"
                             title={`Mở bộ lọc kho KOC theo chuẩn ${row.label} để đưa vào Bản nháp (Draft)`}
                           >
                             + Nháp
@@ -1133,7 +1123,7 @@ export function KocListingBatchHubView({
                       <button
                         type="button"
                         onClick={() => setSelectedGrade('ALL')}
-                        className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer"
+                        className="text-2xs text-blue-600 hover:underline font-semibold cursor-pointer"
                       >
                         Xóa lọc
                       </button>
@@ -1144,46 +1134,6 @@ export function KocListingBatchHubView({
             </table>
           </div>
         )}
-      </div>
-
-      {/* KPI Metrics Summary Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-slate-500">Tổng đề xuất</div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-lg font-semibold text-slate-900">{metrics.total}</span>
-            {metrics.dropped > 0 && (
-              <span className="text-2xs text-rose-600 font-medium">({metrics.dropped} rớt)</span>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-slate-500">Bản nháp (Draft)</div>
-          <div className="text-lg font-semibold text-slate-700 mt-1">{metrics.draft}</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-blue-600">Đã gửi Brand</div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-lg font-semibold text-blue-700">{metrics.submitted}</span>
-            {metrics.brandApproved > 0 && (
-              <span className="text-2xs text-emerald-600 font-medium">({metrics.brandApproved} đạt)</span>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white border border-emerald-200 bg-emerald-50/40 rounded-lg p-3">
-          <div className="text-2xs font-semibold text-emerald-800">Đã chốt (Final)</div>
-          <div className="text-lg font-semibold text-emerald-900 mt-1">{metrics.finalApproved}</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-slate-500">Ngân sách dự kiến</div>
-          <div className="text-sm font-semibold text-slate-900 mt-1 truncate">
-            {formatVnd(metrics.totalBudget)}
-          </div>
-        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -1344,7 +1294,7 @@ export function KocListingBatchHubView({
           <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
                   <th className="py-2 px-2 w-7 text-center">
                     <input
                       type="checkbox"
@@ -1682,7 +1632,7 @@ export function KocListingBatchHubView({
           <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
                   <th className="py-2.5 px-3 w-[28%]">KOC &amp; Gian hàng</th>
                   <th className="py-2.5 px-3 w-[22%]">Tiến trình lên sóng</th>
                   <th className="py-2.5 px-3 w-[16%]">Lịch lên sóng</th>

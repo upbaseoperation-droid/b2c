@@ -600,8 +600,8 @@ async function verifyLiveSocialCandidate(
         }
 
         const isNameMatched =
-          checkNameIdentityMatch(shopName, bare, tiktokHandle, stageName, realName) ||
-          checkNameIdentityMatch(desc, bare, tiktokHandle, stageName, realName);
+          checkNameIdentityMatch(shopName, tiktokHandle, stageName, realName) ||
+          checkNameIdentityMatch(desc, tiktokHandle, stageName, realName);
 
         if (!explicitSource && !isNameMatched && followers < 100) {
           return null;
@@ -660,7 +660,7 @@ async function verifyLiveSocialCandidate(
         const displayName = nameMatch ? nameMatch[1].trim() : ogTitle.split('•')[0].trim();
         const statsSnippet = ogDesc.split(/[–-]\s*Xem/i)[0].replace(/\s+/g, ' ').trim();
         const followers = parseFollowerCountFromText(statsSnippet);
-        const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+        const isMatched = checkNameIdentityMatch(displayName, tiktokHandle, stageName, realName);
 
         // Filter out non-explicit handle guesses that have < 50 followers or 0 posts (random personal squats)
         if (!explicitSource && (followers < 50 || !isMatched)) {
@@ -694,7 +694,7 @@ async function verifyLiveSocialCandidate(
           .replace(/\s+/g, ' ')
           .trim();
         const followers = parseFollowerCountFromText(statsSnippet);
-        const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+        const isMatched = checkNameIdentityMatch(displayName, tiktokHandle, stageName, realName);
 
         if (!explicitSource && (followers < 20 || !isMatched)) {
           return null;
@@ -732,7 +732,7 @@ async function verifyLiveSocialCandidate(
           ? followerPhraseMatch[1]
           : cleanedDesc.split(/(?<=\D)\.\s+/)[0].slice(0, 95).trim();
         const followers = parseFollowerCountFromText(cleanedDesc);
-        const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+        const isMatched = checkNameIdentityMatch(displayName, tiktokHandle, stageName, realName);
 
         // Filter out non-explicit handle guesses that have no public follower stats ("đang ở trên Facebook") or mismatched name
         if (!explicitSource && (followers < 50 || !isMatched)) {
