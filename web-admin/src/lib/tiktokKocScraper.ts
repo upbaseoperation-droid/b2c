@@ -19,6 +19,7 @@ import {
   fetchTikTokHtmlWithWafBypass,
   getSharedCrawlerStore,
   inspectLiveTikTokVideoPage,
+  recordRejectedTargetHandles,
   type RealTikTokVideoAndAuthorDetail,
 } from './tiktokOpenSourceEngines';
 
@@ -942,6 +943,7 @@ export async function discoverTikTokKocsByHashtag(
   const results: TikTokHashtagKocResult[] = [];
 
   // 2. Truy vấn trực tiếp từng trang video trên TikTok (vượt WAF Slardar) và đối soát nội dung video khớp đúng hashtag/từ khóa
+  const rejectedInBatch: string[] = [];
   const chunkSize = 8;
   for (let i = 0; i < candidateEntries.length && results.length < limit; i += chunkSize) {
     const chunk = candidateEntries.slice(i, i + chunkSize);
@@ -949,10 +951,19 @@ export async function discoverTikTokKocsByHashtag(
       chunk.map((entry) => inspectLiveTikTokVideoPage(entry.videoUrl))
     );
 
-    for (const inspected of inspectedChunk) {
-      if (!inspected || results.length >= limit) continue;
+    for (let idx = 0; idx < chunk.length; idx++) {
+      const entry = chunk[idx];
+      const inspected = inspectedChunk[idx];
+      if (results.length >= limit) break;
+      if (!inspected) {
+        rejectedInBatch.push(entry.handle);
+        continue;
+      }
       if (excludeSet.has(inspected.author.handle)) continue;
-      if (!doesInspectedVideoMatchTarget(inspected, cleanKeyword || effectiveTag)) continue;
+      if (!doesInspectedVideoMatchTarget(inspected, cleanKeyword || effectiveTag)) {
+        rejectedInBatch.push(entry.handle, inspected.author.handle);
+        continue;
+      }
 
       const baseResult = buildScrapedResultFromRealData(
         inspected.author.handle,
@@ -977,6 +988,13 @@ export async function discoverTikTokKocsByHashtag(
           breakoutRatio,
         },
       });
+    }
+  }
+
+  if (rejectedInBatch.length > 0) {
+    recordRejectedTargetHandles(cleanKeyword || effectiveTag, rejectedInBatch);
+    if (keywordProfile.rootToken) {
+      recordRejectedTargetHandles(keywordProfile.rootToken, rejectedInBatch);
     }
   }
 
@@ -1476,8 +1494,14 @@ export async function discoverCompetitorKocs(
     Array<{ handle: string; videoId: string; videoUrl: string }>
   >();
 
+  const rejectedHandlesInBatch: string[] = [];
+
   for (const item of rawDiscoveredVideos) {
-    if (isBrandOwnedHandle(item.handle) || excludeSet.has(item.handle)) {
+    if (isBrandOwnedHandle(item.handle)) {
+      rejectedHandlesInBatch.push(item.handle);
+      continue;
+    }
+    if (excludeSet.has(item.handle)) {
       continue;
     }
     const list = groupedByKoc.get(item.handle) || [];
@@ -1500,6 +1524,11 @@ export async function discoverCompetitorKocs(
   );
   const results: TikTokCompetitorKocResult[] = [];
 
+  const matchesCompetitorTarget = (v: RealTikTokVideoAndAuthorDetail): boolean =>
+    doesInspectedVideoMatchTarget(v, targetKeywordForDiscovery) ||
+    doesInspectedVideoMatchTarget(v, cleanSearchBrand) ||
+    Boolean(competitorBrandName && doesInspectedVideoMatchTarget(v, competitorBrandName));
+
   // 3. Truy vấn trực tiếp từng trang video trên TikTok để lấy 100% số liệu thật của KOC & Video
   const chunkSize = 8;
   for (let i = 0; i < kocEntries.length && results.length < limit; i += chunkSize) {
@@ -1509,17 +1538,35 @@ export async function discoverCompetitorKocs(
     );
 
     for (let idx = 0; idx < chunk.length; idx++) {
-      const [, videos] = chunk[idx];
-      const inspected = inspectedChunk[idx];
-      if (!inspected || results.length >= limit) continue;
+      if (results.length >= limit) break;
+      const [candidateHandle, videos] = chunk[idx];
+      let inspected = inspectedChunk[idx];
 
-      const kocHandle = inspected.author.handle;
-      if (isBrandOwnedHandle(kocHandle) || excludeSet.has(kocHandle)) continue;
-      if (
-        !doesInspectedVideoMatchTarget(inspected, targetKeywordForDiscovery) &&
-        !doesInspectedVideoMatchTarget(inspected, cleanSearchBrand) &&
-        !(competitorBrandName && doesInspectedVideoMatchTarget(inspected, competitorBrandName))
-      ) {
+      if (!inspected && videos.length > 1) {
+        inspected = await inspectLiveTikTokVideoPage(videos[1].videoUrl);
+      }
+      if (!inspected) {
+        rejectedHandlesInBatch.push(candidateHandle);
+        continue;
+      }
+
+      let kocHandle = inspected.author.handle;
+      if (isBrandOwnedHandle(kocHandle)) {
+        rejectedHandlesInBatch.push(candidateHandle, kocHandle);
+        continue;
+      }
+      if (excludeSet.has(kocHandle)) continue;
+
+      if (!matchesCompetitorTarget(inspected) && videos.length > 1) {
+        const secondInspected = await inspectLiveTikTokVideoPage(videos[1].videoUrl);
+        if (secondInspected && matchesCompetitorTarget(secondInspected)) {
+          inspected = secondInspected;
+          kocHandle = secondInspected.author.handle;
+        }
+      }
+
+      if (!matchesCompetitorTarget(inspected)) {
+        rejectedHandlesInBatch.push(candidateHandle, kocHandle);
         continue;
       }
 
@@ -1578,6 +1625,13 @@ export async function discoverCompetitorKocs(
           suggestedUpbaseBrand: '',
         },
       });
+    }
+  }
+
+  if (rejectedHandlesInBatch.length > 0) {
+    recordRejectedTargetHandles(targetKeywordForDiscovery, rejectedHandlesInBatch);
+    if (keywordProfile.rootToken) {
+      recordRejectedTargetHandles(keywordProfile.rootToken, rejectedHandlesInBatch);
     }
   }
 
@@ -1714,6 +1768,16 @@ export interface TikTokVideoCommentsScrapeResult {
   comments: TikTokVideoCommentItem[];
 }
 
+export type TrendingKocCategoryKey =
+  | 'ALL'
+  | 'SKINCARE'
+  | 'MAKEUP'
+  | 'BODY_HAIR'
+  | 'MOM_BABY'
+  | 'MEN_CARE'
+  | 'HEALTH_WELLNESS'
+  | 'FASHION_LIFESTYLE';
+
 export interface TikTokTrendingCreatorItem {
   id: string;
   handle: string;
@@ -1729,6 +1793,72 @@ export interface TikTokTrendingCreatorItem {
   channelUrl: string;
   extractedPhone?: string;
   extractedEmail?: string;
+  categoryKey?: TrendingKocCategoryKey;
+  categoryLabel?: string;
+  latestVideoId?: string;
+  latestVideoUrl?: string;
+  latestVideoCaption?: string;
+  latestVideoPublishedAt?: string;
+  latestVideoViews?: number;
+  latestVideoLikes?: number;
+  engagementRate?: number;
+}
+
+/**
+ * Xuất danh sách KOC xu hướng theo ngành hàng ra file CSV (BOM UTF-8 cho Excel)
+ */
+export function buildTrendingCreatorsCsv(creators: TikTokTrendingCreatorItem[]): string {
+  const headers = [
+    'ID Kênh (@handle)',
+    'Tên kênh TikTok',
+    'Ngành hàng',
+    'Link kênh',
+    'Tick xanh',
+    'Lượt Follow',
+    'Tổng lượt thích',
+    'Tổng số video',
+    'Tỷ lệ tương tác ER (%)',
+    'SĐT / Zalo (tách từ Bio)',
+    'Email (tách từ Bio)',
+    'Tiểu sử (Bio)',
+    'Video xu hướng gần nhất (Link)',
+    'Lượt xem video xu hướng',
+    'Ngày đăng video',
+    'Nội dung video xu hướng',
+  ];
+
+  const escapeCsv = (val: unknown): string => {
+    const str = val === null || val === undefined ? '' : String(val);
+    if (/[",\r\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const rows = creators.map((c) =>
+    [
+      `@${c.handle}`,
+      c.nickname,
+      c.categoryLabel || 'Đa ngành B2C',
+      c.channelUrl,
+      c.verified ? 'Tick xanh' : 'Không',
+      c.followers,
+      c.totalLikes,
+      c.videoCount,
+      c.engagementRate ?? '',
+      c.extractedPhone || '',
+      c.extractedEmail || '',
+      c.bio,
+      c.latestVideoUrl || '',
+      c.latestVideoViews ?? '',
+      c.latestVideoPublishedAt || '',
+      c.latestVideoCaption || '',
+    ]
+      .map(escapeCsv)
+      .join(',')
+  );
+
+  return `\uFEFF${headers.map(escapeCsv).join(',')}\r\n${rows.join('\r\n')}`;
 }
 
 /**

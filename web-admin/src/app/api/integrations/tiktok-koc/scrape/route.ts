@@ -44,8 +44,9 @@ export async function GET(req: NextRequest) {
     }
 
     if (trendingParam === '1' || trendingParam === 'true') {
-      const limit = Number(searchParams.get('limit') || 30);
-      const trendingData = await fetchTikTokTrendingCreators(limit);
+      const limit = Number(searchParams.get('limit') || 20);
+      const category = searchParams.get('category') || 'ALL';
+      const trendingData = await fetchTikTokTrendingCreators(limit, { category });
       return NextResponse.json({
         success: true,
         mode: 'TRENDING_CREATORS',
@@ -127,7 +128,7 @@ export async function GET(req: NextRequest) {
  * POST /api/integrations/tiktok-koc/scrape
  * Hỗ trợ 5 chế độ:
  * 1. Cào bình luận thực tế của Video & lọc khách hỏi mua hàng ({ videoUrl: "https://..." })
- * 2. Lấy danh sách Creator đang thịnh hành thực tế trên TikTok ({ trendingCreators: true })
+ * 2. Lấy danh sách Creator đang thịnh hành thực tế trên TikTok ({ trendingCreators: true, category: "SKINCARE" })
  * 3. Quét KOC làm việc cho Đối thủ ({ competitor: "larocheposayvn" })
  * 4. Tìm KOC theo Hashtag / Từ khóa ({ hashtag: "kemchongnang" })
  * 5. Cào hàng loạt kênh theo @handle ({ rawInput: "@quinskincareholic\n@halinhofficial", videoLimit: 24 })
@@ -167,8 +168,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (trendingCreatorsFlag) {
-      const limit = Number(body.limit || 30);
-      const trendingData = await fetchTikTokTrendingCreators(limit);
+      const limit = Number(body.limit || 20);
+      const category = typeof body.category === 'string' ? body.category : 'ALL';
+      const trendingData = await fetchTikTokTrendingCreators(limit, {
+        category,
+        excludeHandles,
+        pageOffset,
+      });
       return NextResponse.json({
         success: true,
         mode: 'TRENDING_CREATORS',
