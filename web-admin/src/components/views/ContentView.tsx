@@ -15,9 +15,10 @@ import {
   FileText
 } from 'lucide-react';
 import { ScriptReviewItem, ContentItemModel, PublicationItemModel } from '../../lib/types';
-import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS } from '../../lib/mockData';
+import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS, INITIAL_DEALS } from '../../lib/mockData';
 import { ScriptReviewModal } from '../ScriptReviewModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
+import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
@@ -29,12 +30,14 @@ type ContentSubTab = 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATION
 export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles }) => {
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
   const [contentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
-  const [publications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
+  const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_ITEMS');
   const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
   const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
+  const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
+  const [inspectInitialUrl, setInspectInitialUrl] = useState<string>('');
 
   const handleApprove = (scriptId: string) => {
     setScripts(prev => prev.map(item => item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item));
@@ -68,7 +71,17 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           ]}
         />
 
-        <div className="flex items-center gap-2 self-start lg:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+          <button
+            onClick={() => {
+              setInspectInitialUrl('');
+              setIsVideoInspectorOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer"
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span>Nghiệm thu link video KOC</span>
+          </button>
           <button
             onClick={() => setIsScriptReportOpen(true)}
             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5 shrink-0 shadow-2xs"
@@ -278,6 +291,16 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   <span>Bài đăng thực tế & bàn giao mã Spark Ads</span>
                 </h3>
               </div>
+              <button
+                onClick={() => {
+                  setInspectInitialUrl('');
+                  setIsVideoInspectorOpen(true);
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Kiểm tra & Nghiệm thu link video mới</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto">
@@ -290,7 +313,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                     <th className="p-3.5 w-[140px] min-w-[140px] font-mono">Lượt xem / Thích</th>
                     <th className="p-3.5 w-[160px] min-w-[160px] font-mono">GMV thực nhận</th>
                     <th className="p-3.5 w-[140px] min-w-[140px]">Hiệu quả</th>
-                    <th className="p-3.5 pr-6 text-right w-[140px] min-w-[140px] sticky right-0 bg-slate-50 border-l border-slate-200">Đối soát</th>
+                    <th className="p-3.5 pr-6 text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Đối soát</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -344,9 +367,21 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                         </div>
                       </td>
                       <td className="p-3.5 pr-6 text-right sticky right-0 bg-white/95 border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
-                        <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Đã đối soát
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Đã đối soát
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInspectInitialUrl(pub.platformPostUrl);
+                              setIsVideoInspectorOpen(true);
+                            }}
+                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                          >
+                            Kiểm tra lại link
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -509,6 +544,16 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           ),
         ].join('\n')}
         customSystemPrompt="Rà soát toàn bộ kịch bản chờ duyệt để phát hiện từ ngữ nhạy cảm/vi phạm chính sách sàn (cam kết 100%, trị dứt điểm, thuốc đặc trị, trắng tức thì...), kiểm tra kịch bản sắp trễ SLA 24h, và đánh giá chất lượng mở đầu (Hook 3s) kèm khuyến nghị chỉnh sửa cụ thể cho từng KOC."
+      />
+
+      <TikTokVideoInspectorModal
+        isOpen={isVideoInspectorOpen}
+        onClose={() => setIsVideoInspectorOpen(false)}
+        deals={INITIAL_DEALS}
+        initialUrl={inspectInitialUrl}
+        onAddPublication={(newPub) => {
+          setPublications((prev) => [newPub, ...prev]);
+        }}
       />
     </div>
   );

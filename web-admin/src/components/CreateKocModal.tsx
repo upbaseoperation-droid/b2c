@@ -12,6 +12,8 @@ import {
   Truck,
   Users,
   FileText,
+  CloudDownload,
+  RefreshCw,
 } from 'lucide-react';
 import {
   KocItem,
@@ -23,6 +25,7 @@ import {
   getSalaryGradeFromRate,
   getSegmentFromSalaryGrade,
 } from '../lib/types';
+import type { TikTokScrapedKocResult } from '../lib/tiktokKocScraper';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -92,6 +95,57 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [cccd, setCccd] = useState('');
   const [bankName, setBankName] = useState('Techcombank');
   const [bankAccount, setBankAccount] = useState('');
+
+  // Tự động lấy dữ liệu kênh từ TikTok & Creator Marketplace
+  const [tiktokLookupInput, setTiktokLookupInput] = useState('');
+  const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
+  const [scrapedCache, setScrapedCache] = useState<TikTokScrapedKocResult | null>(null);
+
+  const handleFetchFromTikTok = async () => {
+    const query = (tiktokLookupInput || channelId).trim();
+    if (!query) {
+      setFormError('Vui lòng nhập đường dẫn kênh hoặc @handle TikTok trước khi lấy dữ liệu.');
+      return;
+    }
+    setIsFetchingTikTok(true);
+    setFormError(null);
+    try {
+      const res = await fetch(
+        `/api/integrations/tiktok-koc/scrape?handle=${encodeURIComponent(query)}&period=30d`
+      );
+      const json = await res.json();
+      if (!res.ok || !json.success || !json.data) {
+        setFormError(json.message || 'Không lấy được dữ liệu kênh TikTok.');
+        return;
+      }
+      const data: TikTokScrapedKocResult = json.data;
+      setScrapedCache(data);
+      setChannelId(`@${data.channelProfile.handle}`);
+      setStageName(data.channelProfile.nickname);
+      if (data.channelProfile.realName) setRealName(data.channelProfile.realName);
+      setFollowers(data.channelProfile.followers);
+      setGmvBestCase(data.affiliateMetrics.gmvBestCase);
+      const cls = data.affiliateMetrics.suggestedClassification;
+      setRateCardVideo(cls.rateCardVideo);
+      setSalaryGrade(cls.salaryGrade);
+      setSegment(cls.segment);
+      setTier(cls.tier);
+      setTepKenh(cls.tepKenh);
+      setKocCategory(cls.kocCategory);
+      setFemaleRatio(data.affiliateMetrics.audience.femaleRatio);
+      if (data.channelProfile.extractedPhone) {
+        setPhone(data.channelProfile.extractedPhone);
+        setZalo(data.channelProfile.extractedPhone);
+      }
+      if (data.channelProfile.location) {
+        setLocation(data.channelProfile.location);
+      }
+    } catch {
+      setFormError('Không kết nối được máy chủ khi lấy dữ liệu kênh TikTok.');
+    } finally {
+      setIsFetchingTikTok(false);
+    }
+  };
 
   // Kiểm tra trùng lặp KOC thời gian thực
   const duplicateMatch = (() => {
@@ -180,6 +234,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       channelLink: `https://www.tiktok.com/@${formattedChannel.replace('@', '')}`,
       stageName: stageName.trim(),
       realName: realName.trim(),
+      avatarUrl: scrapedCache?.channelProfile.avatarUrl,
       tier: tier,
       tierLabel:
         tier === 'TIER_1_CELEB'
@@ -195,9 +250,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       tepKenh: tepKenh,
       creatorCategory: tepKenh,
       kocCategory: kocCategory,
-      niche: '',
+      niche: scrapedCache ? scrapedCache.affiliateMetrics.topCategories.join(', ') : '',
       followers: Number(followers) || 0,
-      avgViews: 20000,
+      avgViews: scrapedCache?.engagementMetrics.avgViews || 20000,
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
       platforms: ['TIKTOK', 'SHOPEE', 'FACEBOOK'],
@@ -205,14 +260,32 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       // Shipping & Logistics
       phone: phone.trim(),
       zalo: zalo.trim() || phone.trim(),
+      email: scrapedCache?.channelProfile.extractedEmail,
       location: location,
       shippingAddress: shippingAddress.trim() || undefined,
       bookingPic: bookingPic,
       brandName: brandName,
 
-      // E-Commerce
+      // E-Commerce & Scraped TikTok data
+      bio: scrapedCache?.channelProfile.bio,
+      totalLikes: scrapedCache?.channelProfile.totalLikes,
+      videoCount: scrapedCache?.channelProfile.videoCount,
+      avgLikes: scrapedCache?.engagementMetrics.avgLikes,
+      avgComments: scrapedCache?.engagementMetrics.avgComments,
+      avgShares: scrapedCache?.engagementMetrics.avgShares,
+      engagementRate: scrapedCache?.engagementMetrics.engagementRate,
+      recentVideos: scrapedCache?.recentVideos,
+      recentRevenue: scrapedCache?.affiliateMetrics.gmv30d,
+      itemsSold: scrapedCache?.affiliateMetrics.itemsSold,
+      gpm: scrapedCache?.affiliateMetrics.gpm,
       gmvBestCase: Number(gmvBestCase) || undefined,
-      aov: 250000,
+      aov: scrapedCache?.affiliateMetrics.aov || 250000,
+      tiktokAvgCtr: scrapedCache?.affiliateMetrics.ctr,
+      tiktokAvgCvr: scrapedCache?.affiliateMetrics.cvr,
+      tiktokAvgCommissionRate: scrapedCache?.affiliateMetrics.commissionRate,
+      tiktokTopCategories: scrapedCache?.affiliateMetrics.topCategories,
+      tiktokShopRating: scrapedCache?.affiliateMetrics.shopRating,
+      tiktokCancellationRate: scrapedCache?.affiliateMetrics.cancellationRate,
 
       // Demographics
       femaleRatio: femaleRatio,
@@ -305,6 +378,43 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Tự động điền thông tin từ link kênh TikTok */}
+          <div className="p-3.5 bg-surface rounded-xl border border-line space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-ink font-semibold flex items-center gap-1.5">
+                <CloudDownload className="w-3.5 h-3.5 text-accent" />
+                Lấy thông tin tự động từ kênh TikTok &amp; Creator Marketplace
+              </span>
+              {scrapedCache && (
+                <span className="text-2xs text-positive font-medium">
+                  Đã điền dữ liệu từ @{scrapedCache.handle} ({scrapedCache.recentVideos.length} video, ER {scrapedCache.engagementMetrics.engagementRate}%)
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                placeholder="Dán link kênh (https://www.tiktok.com/@...) hoặc nhập @handle..."
+                value={tiktokLookupInput}
+                onChange={(e) => setTiktokLookupInput(e.target.value)}
+                className="flex-1 bg-canvas border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                disabled={isFetchingTikTok}
+                onClick={handleFetchFromTikTok}
+                className="px-3.5 py-2 rounded-lg bg-surface border border-line-strong hover:bg-sunken text-ink font-medium text-xs inline-flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+              >
+                {isFetchingTikTok ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CloudDownload className="w-3.5 h-3.5" />
+                )}
+                {isFetchingTikTok ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
+              </button>
+            </div>
+          </div>
 
           {/* Section 1: Channel & Stage Name & Booking Format */}
           <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">

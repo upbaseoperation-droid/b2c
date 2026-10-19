@@ -18,12 +18,14 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  CloudDownload,
   Copy,
   ExternalLink,
   FileScan,
   FileText,
   Filter,
   MessageSquare,
+  Music,
   Plus,
   QrCode,
   RefreshCw,
@@ -32,7 +34,7 @@ import {
   TrendingUp,
   Truck,
 } from 'lucide-react';
-import type { BookingDealItem, KocItem, UserProfile } from '../../lib/types';
+import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import { Avatar, Button, CHANNELS, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea, sharedTo } from '../ui';
 import type { Column, TabItem } from '../ui';
@@ -308,6 +310,49 @@ export function KocProfile({
    ========================================================================= */
 
 function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?: () => void }) {
+  const [liveVideos, setLiveVideos] = useState<TikTokVideoItem[] | undefined>(koc.recentVideos);
+  const [liveBio, setLiveBio] = useState<string | undefined>(koc.bio);
+  const [liveTotalLikes, setLiveTotalLikes] = useState<number | undefined>(koc.totalLikes);
+  const [liveVideoCount, setLiveVideoCount] = useState<number | undefined>(koc.videoCount);
+  const [liveAvgLikes, setLiveAvgLikes] = useState<number | undefined>(koc.avgLikes);
+  const [liveAvgComments, setLiveAvgComments] = useState<number | undefined>(koc.avgComments);
+  const [liveAvgShares, setLiveAvgShares] = useState<number | undefined>(koc.avgShares);
+  const [liveEr, setLiveEr] = useState<number | undefined>(koc.engagementRate);
+  const [fetchingVideos, setFetchingVideos] = useState(false);
+
+  const handleFetchChannelVideos = async () => {
+    setFetchingVideos(true);
+    try {
+      const res = await fetch(
+        `/api/integrations/tiktok-koc/scrape?handle=${encodeURIComponent(koc.channelId)}&period=30d`
+      );
+      const json = await res.json();
+      if (json.success && json.data) {
+        setLiveVideos(json.data.recentVideos);
+        setLiveBio(json.data.channelProfile?.bio);
+        setLiveTotalLikes(json.data.channelProfile?.totalLikes);
+        setLiveVideoCount(json.data.channelProfile?.videoCount);
+        setLiveAvgLikes(json.data.engagementMetrics?.avgLikes);
+        setLiveAvgComments(json.data.engagementMetrics?.avgComments);
+        setLiveAvgShares(json.data.engagementMetrics?.avgShares);
+        setLiveEr(json.data.engagementMetrics?.engagementRate);
+      }
+    } catch {
+      // Bỏ qua lỗi mạng tạm thời
+    } finally {
+      setFetchingVideos(false);
+    }
+  };
+
+  const videosToShow = liveVideos || koc.recentVideos || [];
+  const bioToShow = liveBio || koc.bio;
+  const totalLikesToShow = liveTotalLikes ?? koc.totalLikes;
+  const videoCountToShow = liveVideoCount ?? koc.videoCount;
+  const avgLikesToShow = liveAvgLikes ?? koc.avgLikes;
+  const avgCommentsToShow = liveAvgComments ?? koc.avgComments;
+  const avgSharesToShow = liveAvgShares ?? koc.avgShares;
+  const erToShow = liveEr ?? koc.engagementRate ?? 4.6;
+
   const shares = [
     { label: 'Video ngắn', value: koc.gmvShareVideo || 70, color: CHANNELS.tiktok.color },
     { label: 'Livestream', value: koc.gmvShareLive || 20, color: CHANNELS.live.color },
@@ -326,6 +371,89 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
     { city: 'Hà Nội', ratio: 42 },
     { city: 'TP.HCM', ratio: 38 },
     { city: 'Đà Nẵng & Tỉnh khác', ratio: 20 },
+  ];
+
+  const videoColumns: Column<TikTokVideoItem>[] = [
+    {
+      key: 'content',
+      header: 'Nội dung & hashtag',
+      width: 260,
+      render: (v) => (
+        <div className="grid gap-1 min-w-0 max-w-[320px]">
+          <a
+            href={v.videoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
+          >
+            <span>{v.caption}</span>
+            <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
+          </a>
+          <span className="text-2xs text-ink-3 truncate">
+            {v.hashtags.length > 0 ? v.hashtags.join(' ') : '—'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'meta',
+      header: 'Ngày đăng & nhạc nền',
+      width: 150,
+      render: (v) => (
+        <div className="grid gap-0.5 min-w-0">
+          <span className="text-xs text-ink tabular-nums">{formatDate(v.publishedAt)}</span>
+          <span className="text-2xs text-ink-3 truncate inline-flex items-center gap-1" title={v.musicTitle}>
+            <Music className="w-3 h-3 shrink-0" />
+            <span className="truncate">{v.musicTitle}</span>
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'views',
+      header: 'Lượt xem & ER',
+      align: 'right',
+      width: 105,
+      render: (v) => (
+        <div className="grid gap-0.5">
+          <span className="text-xs font-semibold text-ink tabular-nums">{formatNumber(v.views)}</span>
+          <span className="text-2xs text-ink-3 tabular-nums">ER {v.engagementRate}%</span>
+        </div>
+      ),
+    },
+    {
+      key: 'engagement',
+      header: 'Tương tác',
+      align: 'right',
+      width: 140,
+      render: (v) => (
+        <div className="grid gap-0.5">
+          <span className="text-xs text-ink tabular-nums">{formatNumber(v.likes)} tim</span>
+          <span className="text-2xs text-ink-3 tabular-nums">
+            {formatNumber(v.comments)} bình luận · {formatNumber(v.shares)} chia sẻ
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'affiliate',
+      header: 'Giỏ hàng Affiliate',
+      align: 'right',
+      width: 180,
+      render: (v) =>
+        v.isAffiliate ? (
+          <div className="grid gap-0.5">
+            <span className="text-xs font-medium text-ink truncate max-w-[190px] ml-auto" title={v.productName}>
+              {v.productName || 'Sản phẩm gắn giỏ'}
+            </span>
+            <span className="text-2xs text-positive tabular-nums">
+              GMV {formatVndShort(v.estimatedGmv || 0)} · {formatNumber(v.itemsSold || 0)} đơn
+            </span>
+          </div>
+        ) : (
+          <span className="text-2xs text-ink-3">Không gắn giỏ</span>
+        ),
+    },
   ];
 
   return (
@@ -368,6 +496,23 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
           )}
         </div>
       </div>
+
+      {/* Tiểu sử kênh TikTok (Bio) nếu đã thu thập */}
+      {bioToShow && (
+        <div className="p-3.5 rounded-xl border border-line bg-surface space-y-1">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-2xs font-medium text-ink-3">Tiểu sử kênh TikTok (Bio)</span>
+            {(totalLikesToShow || videoCountToShow) && (
+              <span className="text-2xs text-ink-3 tabular-nums">
+                {totalLikesToShow ? `Tổng ${formatFollowers(totalLikesToShow)} lượt thích` : ''}
+                {totalLikesToShow && videoCountToShow ? ' · ' : ''}
+                {videoCountToShow ? `${formatNumber(videoCountToShow)} video đã đăng` : ''}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-ink leading-relaxed">{bioToShow}</p>
+        </div>
+      )}
 
       {/* Lưới chỉ số tổng quan thương mại điện tử */}
       <div>
@@ -418,9 +563,13 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       {/* Phễu tương tác & Chuyển đổi TikTok Seller */}
       <div className="grid sm:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-line bg-surface">
-          <span className="text-2xs text-ink-3 block mb-1">Tỷ lệ tương tác kênh</span>
-          <span className="text-lg font-semibold text-ink">4.6%</span>
-          <span className="text-2xs text-ink-3 block mt-0.5">Thích, bình luận & chia sẻ</span>
+          <span className="text-2xs text-ink-3 block mb-1">Tỷ lệ tương tác kênh (ER)</span>
+          <span className="text-lg font-semibold text-ink">{erToShow}%</span>
+          <span className="text-2xs text-ink-3 block mt-0.5">
+            {avgLikesToShow
+              ? `TB ${formatNumber(avgLikesToShow)} tim · ${formatNumber(avgCommentsToShow || 0)} bình luận · ${formatNumber(avgSharesToShow || 0)} chia sẻ`
+              : 'Thích, bình luận & chia sẻ'}
+          </span>
         </div>
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">CTR nhấp giỏ hàng</span>
@@ -518,6 +667,52 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
           </div>
         </div>
       </div>
+
+      {/* Danh sách video & nội dung gần nhất trên kênh TikTok */}
+      <Panel
+        flush
+        title="Danh sách video & nội dung gần nhất trên kênh"
+        description="Theo dõi caption, hashtag, nhạc nền, tỷ lệ tương tác (ER%) và hiệu quả giỏ hàng Affiliate của các video mới đăng"
+        actions={
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={fetchingVideos ? RefreshCw : CloudDownload}
+            disabled={fetchingVideos}
+            onClick={handleFetchChannelVideos}
+          >
+            {fetchingVideos
+              ? 'Đang lấy video...'
+              : videosToShow.length > 0
+                ? 'Làm mới video'
+                : 'Lấy danh sách video'}
+          </Button>
+        }
+      >
+        {videosToShow.length > 0 ? (
+          <DataTable
+            columns={videoColumns}
+            rows={videosToShow}
+            rowKey={(v) => v.videoId}
+            compact
+          />
+        ) : (
+          <EmptyState
+            title="Chưa tải danh sách video gần nhất của kênh"
+            description="Bấm lấy danh sách video để xem caption, hashtag, nhạc nền, lượt tương tác và doanh số gắn giỏ của các video gần nhất."
+            action={
+              <Button
+                variant="secondary"
+                icon={CloudDownload}
+                disabled={fetchingVideos}
+                onClick={handleFetchChannelVideos}
+              >
+                Lấy danh sách video
+              </Button>
+            }
+          />
+        )}
+      </Panel>
     </div>
   );
 }

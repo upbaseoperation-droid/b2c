@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  tiktok-download-api:
+    image: evil0ctal/douyin_tiktok_download_api:latest
+    container_name: upbase-tiktok-crawler-api
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    # Sau khi chạy: docker compose -f docker-compose.tiktok-crawler.yml up -d
+    # Khai báo TIKTOK_CRAWLER_API_URL=http://localhost:8080 trong web-admin/.env.local
+    # Tài liệu Swagger UI trực quan tại: http://localhost:8080/docs

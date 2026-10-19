@@ -1691,7 +1691,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'api-settings',
     'knowledge-qa',
-    'audit-trail'
+    'audit-trail',
+    'tiktok-crawler'
   ],
   MANAGER: [
     'cockpit',
@@ -1730,7 +1731,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'api-settings',
     'knowledge-qa',
-    'audit-trail'
+    'audit-trail',
+    'tiktok-crawler'
   ],
   GROWTH_MANAGER: [
     'cockpit',
@@ -1757,7 +1759,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'partner-access',
     'api-settings',
     'knowledge-qa',
-    'audit-trail'
+    'audit-trail',
+    'tiktok-crawler'
   ],
   MEDIA_MANAGER: [
     'cockpit',
@@ -1784,7 +1787,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'partner-access',
     'api-settings',
     'knowledge-qa',
-    'audit-trail'
+    'audit-trail',
+    'tiktok-crawler'
   ],
   LEADER: [
     'cockpit',
@@ -1818,7 +1822,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'master-data',
     'brand-knowledge',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   BOOKING_MEMBER: [
     'cockpit',
@@ -1842,7 +1847,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'brand-knowledge',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   CONTENT_MEMBER: [
     'cockpit',
@@ -1863,7 +1869,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'push-products',
     'performance-p3',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   BRAND_MEMBER: [
     'cockpit',
@@ -1885,7 +1892,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'performance-p3',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   MEMBER: [
     'cockpit',
@@ -1909,7 +1917,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'brand-knowledge',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   GROWTH_MEMBER: [
     'input-plan',
@@ -1930,7 +1939,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'brand-knowledge',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   MEDIA_MEMBER: [
     'input-plan',
@@ -1950,7 +1960,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'brand-knowledge',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'tiktok-crawler'
   ],
   LEGAL: [
     'contracts',
@@ -2000,7 +2011,10 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 };
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
-  if ((tab === 'task-delegation' || tab === 'workload-3d') && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
+  if (
+    (tab === 'task-delegation' || tab === 'workload-3d' || tab === 'tiktok-crawler') &&
+    ROLE_ALLOWED_TABS[role]?.includes(tab)
+  ) {
     return true;
   }
   const map = getSavedRoleAllowedTabs();
@@ -2014,6 +2028,9 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const list = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
   if (ROLE_ALLOWED_TABS[role]?.includes('workload-3d') && !list.includes('workload-3d')) {
     list.push('workload-3d');
+  }
+  if (ROLE_ALLOWED_TABS[role]?.includes('tiktok-crawler') && !list.includes('tiktok-crawler')) {
+    list.push('tiktok-crawler');
   }
   return list;
 }
@@ -2052,6 +2069,7 @@ export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
   { key: 'push-products', label: 'Sản phẩm đẩy (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực, USP và tồn kho hàng mẫu.' },
   { key: 'booking', label: 'Quản lý Booking KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, chốt đơn giá, duyệt KOC và theo dõi tiến độ air.' },
+  { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ TikTok', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Quét KOC đang làm cho đối thủ, tìm KOC theo #Hashtag và nghiệm thu link video KOC gửi.' },
   { key: 'koc-listing', label: 'Listing & Air Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Đề xuất danh sách KOC theo lô và cập nhật link video.' },
   { key: 'content', label: 'Kịch bản & Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Soạn thảo và duyệt kịch bản video KOC / Self-channel.' },
   { key: 'content-angles', label: 'Góc nội dung (Content Angles)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Ma trận trụ cột nội dung & Hook 3s đầu.' },

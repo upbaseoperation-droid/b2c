@@ -542,9 +542,9 @@ export function buildStoreMonthlyPlanReport(
   const reportRoas =
     reportSpentNet > 0 ? Number((reportNmv / reportSpentNet).toFixed(2)) : 0;
 
-  const nmvAchievementPct = planNmv > 0 ? (reportNmv / planNmv) * 100 : 0;
-  const budgetBurnPct = baseBudgetNet > 0 ? (reportSpentNet / baseBudgetNet) * 100 : 0;
-  const videoAchievementPct = planTotalVideos > 0 ? (reportAiredVideos / planTotalVideos) * 100 : 0;
+  const nmvAchievementPct = planNmv > 0 ? Number(((reportNmv / planNmv) * 100).toFixed(1)) : 0;
+  const budgetBurnPct = baseBudgetNet > 0 ? Number(((reportSpentNet / baseBudgetNet) * 100).toFixed(1)) : 0;
+  const videoAchievementPct = planTotalVideos > 0 ? Number(((reportAiredVideos / planTotalVideos) * 100).toFixed(1)) : 0;
 
   const isOverbudget = baseBudgetNet > 0 && reportSpentNet > baseBudgetNet;
   const isUnbudgetedSpend = baseBudgetNet === 0 && reportSpentNet > 0;
@@ -691,9 +691,9 @@ export function buildBrandMonthlyPlanReport(
   const reportOrders = storeReports.reduce((s, r) => s + r.reportOrders, 0);
   const reportRoas = reportSpentNet > 0 ? Number((reportNmv / reportSpentNet).toFixed(2)) : 0;
 
-  const nmvAchievementPct = planNmv > 0 ? (reportNmv / planNmv) * 100 : 0;
-  const budgetBurnPct = planBudgetNet > 0 ? (reportSpentNet / planBudgetNet) * 100 : 0;
-  const videoAchievementPct = planTotalVideos > 0 ? (reportAiredVideos / planTotalVideos) * 100 : 0;
+  const nmvAchievementPct = planNmv > 0 ? Number(((reportNmv / planNmv) * 100).toFixed(1)) : 0;
+  const budgetBurnPct = planBudgetNet > 0 ? Number(((reportSpentNet / planBudgetNet) * 100).toFixed(1)) : 0;
+  const videoAchievementPct = planTotalVideos > 0 ? Number(((reportAiredVideos / planTotalVideos) * 100).toFixed(1)) : 0;
   const overbudgetStoresCount = storeReports.filter(r => r.isOverbudget || r.isUnbudgetedSpend).length;
   const unbudgetedStoresCount = storeReports.filter(r => r.isUnbudgetedSpend).length;
   const platforms = Array.from(new Set(storeReports.map(r => r.platform).filter(Boolean)));

@@ -119,6 +119,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Booking & Nội dung',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
@@ -174,6 +175,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
           ],
         },
         {
@@ -219,6 +221,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'sample-tracker', label: 'Hàng mẫu & Ads', icon: Package },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
           ],
         },
         {
@@ -270,6 +273,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
           ],
         },
@@ -323,6 +327,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
           ],
         },
         {
@@ -359,6 +364,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'task-delegation', label: 'Giao việc & định mức', icon: ClipboardList },
             { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content-angles', label: 'Góc nội dung', icon: Compass },
             { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
@@ -415,6 +421,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành & Sản phẩm',
           items: [
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'sample-tracker', label: 'Hàng mẫu & Ads', icon: Package },
             { key: 'push-products', label: 'Sản phẩm trọng tâm', icon: TrendingUp },
           ],
@@ -463,6 +470,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Chiến dịch & Công cụ',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
             { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
@@ -503,6 +511,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Chiến dịch & Công cụ',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
             { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
             { key: 'api-settings', label: 'Cấu hình API', icon: Sliders },
@@ -540,6 +549,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
             { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
             { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },

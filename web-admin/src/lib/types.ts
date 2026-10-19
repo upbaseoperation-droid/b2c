@@ -60,7 +60,8 @@ export type TabKey =
   | 'ads-report'
   | 'api-settings'
   | 'knowledge-qa'
-  | 'audit-trail';
+  | 'audit-trail'
+  | 'tiktok-crawler';
 
 export interface UserProfile {
   id: string;
@@ -550,6 +551,35 @@ export interface KocItem {
   audienceGender?: { femalePct: number; malePct: number };
   audienceTopAge?: { age18_24Pct: number; age25_34Pct: number; age35PlusPct?: number };
   audienceTopLocations?: string[];
+
+  // Dữ liệu thu thập từ kênh TikTok & TikTok Shop Creator Marketplace
+  bio?: string; // Tiểu sử kênh TikTok (chứa thông tin giới thiệu, SĐT/Email liên hệ)
+  totalLikes?: number; // Tổng lượt thích trên toàn kênh TikTok
+  videoCount?: number; // Tổng số video đã đăng trên kênh
+  avgLikes?: number; // Lượt tim trung bình trên các video gần nhất
+  avgComments?: number; // Lượt bình luận trung bình trên các video gần nhất
+  avgShares?: number; // Lượt chia sẻ trung bình trên các video gần nhất
+  engagementRate?: number; // Tỷ lệ tương tác trung bình ER% ((Tim + Bình luận + Chia sẻ) / View * 100)
+  recentVideos?: TikTokVideoItem[]; // Danh sách video & nội dung gần nhất trên kênh
+}
+
+export interface TikTokVideoItem {
+  videoId: string;
+  videoUrl: string;
+  caption: string;
+  hashtags: string[];
+  publishedAt: string;
+  musicTitle: string;
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  engagementRate: number; // ER%
+  isAffiliate: boolean;
+  productName?: string;
+  estimatedGmv?: number;
+  itemsSold?: number;
+  commissionRate?: number;
 }
 
 export type KocMasterItem = KocItem;

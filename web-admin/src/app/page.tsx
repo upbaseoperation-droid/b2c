@@ -69,6 +69,7 @@ const MarketingKnowledgeQaView = dynamic(() => import('../components/views/Marke
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
 const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
 const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
+const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCrawlerHubView').then(m => m.TikTokCrawlerHubView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { loadAccessPolicy } from '../lib/policyClient';
@@ -885,6 +886,7 @@ export default function App() {
     'api-settings': { title: 'Cấu hình API', subtitle: '' },
     'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: '' },
     'audit-trail': { title: 'Nhật ký kiểm toán', subtitle: '' },
+    'tiktok-crawler': { title: 'Crawler KOC & Đối thủ', subtitle: '' },
   };
 
   if (isLoadingAuth || !currentUser) {
@@ -1543,6 +1545,27 @@ export default function App() {
             <AuditTrailView
               currentUser={currentUser}
               onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="tiktok-crawler" currentTab={activeTab}>
+            <TikTokCrawlerHubView
+              kocs={kocs}
+              onSaveScrapedKocs={({ created, updated }) => {
+                if (created.length > 0 || updated.length > 0) {
+                  setKocs((prev) => {
+                    const updatedMap = new Map(updated.map((u) => [u.id, u]));
+                    const next = prev.map((item) => updatedMap.get(item.id) || item);
+                    return [...created, ...next];
+                  });
+                  showToast(
+                    `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
+                    'success'
+                  );
+                }
+              }}
+              onNotify={showToast}
+              onNavigateToKocMaster={() => setActiveTab('koc-master')}
             />
           </KeepAliveTab>
             </>

@@ -339,26 +339,39 @@ export function BrandProfilesView({
     {
       key: 'name',
       header: 'Thương hiệu & Sàn',
-      width: 175,
+      width: 200,
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const platforms = rep?.platforms.length ? rep.platforms : (r.master?.platforms || []);
         const count = rep?.storeCount || r.master?.storeCount || 0;
+        const category = real(r.master?.category);
         return (
-          <div className="min-w-0 max-w-[200px] leading-tight flex items-start gap-2">
-            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex">
-              <BrandAvatar name={r.name} id={r.master?.id} code={r.master?.code} size={28} />
+          <div className="min-w-0 leading-tight flex items-start gap-2.5">
+            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 mt-0.5">
+              <BrandAvatar name={r.name} id={r.master?.id} code={r.master?.code} size={32} />
             </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1 flex-wrap">
-                <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink text-xs">{r.name}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink text-xs" title={r.name}>
+                  {r.name}
+                </span>
                 <span className="text-2xs font-mono text-ink-3 shrink-0">
-                  · {count} gian
+                  ({count} gian)
                 </span>
               </div>
-              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                <span className="truncate text-2xs text-ink-3 max-w-[100px]">{real(r.master?.category) || '—'}</span>
-                {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                {category && (
+                  <span className="truncate text-2xs text-ink-3 max-w-[130px]" title={category}>
+                    {category}
+                  </span>
+                )}
+                {platforms.length > 0 && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {platforms.map(p => (
+                      <ChannelTag key={p} channel={channelOf(p)} iconOnly />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -368,39 +381,39 @@ export function BrandProfilesView({
     {
       key: 'pic',
       header: 'PIC Brand & Account',
-      width: 155,
+      width: 170,
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const acc = real(r.master?.accountPic);
         const contentMain = rep?.brandPlan?.contentBrandMainPic || real(r.master?.contentBrandMainPic) || real(r.master?.contentPic);
         const planStrat = rep?.brandPlan?.planStrategyPic || real(r.master?.planStrategyPic) || real(r.master?.brandPicName);
         const kvSis = rep?.brandPlan?.keyVisualSisPic || real(r.master?.keyVisualSisPic);
+
+        const subInfo = [
+          contentMain ? `Content: ${contentMain}` : null,
+          acc ? `Acc: ${acc}` : null,
+        ].filter(Boolean).join(' · ');
+
+        const tooltip = [
+          planStrat ? `Plan/Lead: ${planStrat}` : null,
+          contentMain ? `Content: ${contentMain}` : null,
+          kvSis ? `KV/SIS: ${kvSis}` : null,
+          acc ? `Account: ${acc}` : null,
+        ].filter(Boolean).join('\n');
+
         return (
-          <div className="grid gap-0.5 leading-tight text-2xs">
-            {planStrat && (
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-ink-3">Plan:</span>
-                <span className="font-medium text-ink truncate max-w-[100px]">{planStrat}</span>
-              </div>
-            )}
-            {contentMain && (
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-ink-3">Content:</span>
-                <span className="font-medium text-ink truncate max-w-[100px]">{contentMain}</span>
-              </div>
-            )}
-            {kvSis && (
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-ink-3">KV/SIS:</span>
-                <span className="font-medium text-ink truncate max-w-[100px]">{kvSis}</span>
-              </div>
-            )}
-            {acc && (
-              <div className="flex items-center justify-between gap-1 text-ink-3 pt-0.5 border-t border-line/60">
-                <span>Acc:</span>
-                <span className="truncate max-w-[100px]">{acc}</span>
-              </div>
-            )}
+          <div className="leading-tight text-xs space-y-0.5" title={tooltip}>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-ink truncate max-w-[135px]">
+                {planStrat || acc || 'Chưa gán'}
+              </span>
+              <span className="text-[10px] text-ink-3 px-1 py-0.2 rounded bg-sunken shrink-0">
+                Plan
+              </span>
+            </div>
+            <div className="text-2xs text-ink-3 truncate max-w-[160px]">
+              {subInfo || (kvSis ? `KV: ${kvSis}` : '—')}
+            </div>
           </div>
         );
       },
@@ -408,21 +421,28 @@ export function BrandProfilesView({
     {
       key: 'nmv',
       header: `NMV (${selectedMonth})`,
-      width: 120,
+      width: 125,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const planNmv = rep?.planNmv || 0;
         const reportNmv = rep?.reportNmv || 0;
+        const pct = planNmv > 0 ? Math.round((reportNmv / planNmv) * 100) : 0;
         return (
           <div className="leading-tight tabular-nums text-right">
-            <span className="block font-mono font-medium text-ink">
+            <span className="block font-mono font-semibold text-ink text-xs">
               {planNmv > 0 ? formatVndShort(planNmv) : 'Theo sàn'}
             </span>
-            <span className="block text-2xs font-mono text-accent font-medium mt-0.5">
-              Rep: {reportNmv > 0 ? formatVndShort(reportNmv) : '0 đ'}
-              {planNmv > 0 ? ` (${rep?.nmvAchievementPct || 0}%)` : ''}
-            </span>
+            <div className="text-2xs font-mono mt-0.5">
+              {reportNmv > 0 ? (
+                <span className="text-accent font-medium">
+                  Đạt {formatVndShort(reportNmv)}
+                  {planNmv > 0 && <span className="text-ink-3 font-normal"> ({pct}%)</span>}
+                </span>
+              ) : (
+                <span className="text-ink-3">Chưa có số</span>
+              )}
+            </div>
           </div>
         );
       },
@@ -430,23 +450,36 @@ export function BrandProfilesView({
     {
       key: 'budget',
       header: `Ngân sách Net (${selectedMonth})`,
-      width: 125,
+      width: 130,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const budget = rep?.planBudgetNet || 0;
         const spent = rep?.reportSpentNet || 0;
         const isOver = (rep?.overbudgetStoresCount || 0) > 0 || (budget > 0 && spent > budget);
-        const isUnbudgeted = (rep?.unbudgetedStoresCount || 0) > 0;
+        const isUnbudgeted = (rep?.unbudgetedStoresCount || 0) > 0 || (budget === 0 && spent > 0);
+        const burnPct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
         return (
           <div className="leading-tight tabular-nums text-right">
-            <span className="block font-mono font-medium text-ink">
-              Plan: {budget > 0 ? formatVndShort(budget) : '0 đ'}
+            <span className="block font-mono font-semibold text-ink text-xs">
+              {budget > 0 ? formatVndShort(budget) : '0 đ'}
             </span>
-            <span className={`block text-2xs font-mono mt-0.5 ${isOver || isUnbudgeted ? 'text-critical font-semibold' : 'text-ink-3'}`}>
-              Chi: {formatVndShort(spent)}
-              {isUnbudgeted ? ' · Ngoài KH' : isOver ? ' · Vượt' : budget > 0 ? ` (${rep?.budgetBurnPct || 0}%)` : ''}
-            </span>
+            <div className="flex items-center justify-end gap-1 mt-0.5 text-2xs font-mono">
+              <span className={isOver || isUnbudgeted ? 'text-critical font-medium' : 'text-ink-3'}>
+                Chi: {formatVndShort(spent)}
+              </span>
+              {isUnbudgeted ? (
+                <span className="px-1 py-0.2 rounded bg-critical-soft text-critical text-[10px] font-semibold leading-none">
+                  Ngoài KH
+                </span>
+              ) : isOver ? (
+                <span className="px-1 py-0.2 rounded bg-critical-soft text-critical text-[10px] font-semibold leading-none">
+                  Vượt NS
+                </span>
+              ) : budget > 0 ? (
+                <span className="text-ink-3">({burnPct}%)</span>
+              ) : null}
+            </div>
           </div>
         );
       },
@@ -458,14 +491,19 @@ export function BrandProfilesView({
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
+        const aired = rep?.reportAiredCount || 0;
+        const plan = rep?.planTotalVideos || 0;
+        const dealsCount = rep?.reportBookedCount || 0;
+        const ordersCount = rep?.reportTotalOrders || 0;
         return (
-          <div className="leading-tight tabular-nums text-right text-xs">
-            <span className="block font-medium text-ink">
-              Plan {rep?.planTotalVideos || 0} → Air <strong className="text-positive">{rep?.reportAiredCount || 0}</strong>
-            </span>
-            <span className="block text-2xs text-ink-3 mt-0.5">
-              {rep?.reportBookedCount || 0} deal · {formatNumber(rep?.reportTotalOrders || 0)} đơn
-            </span>
+          <div className="leading-tight tabular-nums text-right">
+            <div className="text-xs">
+              <strong className="text-positive font-semibold">{aired}</strong>
+              <span className="text-ink-3 font-normal"> / {plan > 0 ? `${plan} video` : '—'}</span>
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              {dealsCount} deal · {formatNumber(ordersCount)} đơn
+            </div>
           </div>
         );
       },
@@ -473,46 +511,50 @@ export function BrandProfilesView({
     {
       key: 'status',
       header: 'Hồ sơ tĩnh & Tệp',
-      width: 115,
+      width: 110,
       render: r => {
         if (isSyncing) return <Skeleton className="w-20" />;
+        const isComplete = r.done === r.total;
         return (
-          <div className="grid gap-0.5 justify-items-start leading-tight">
-            {r.done === r.total ? (
-              <span className="text-xs font-medium text-positive">Đủ {r.done}/{r.total} mục</span>
-            ) : (
-              <span className="text-xs font-medium text-ink-2 tabular-nums">{r.done}/{r.total} mục</span>
-            )}
-            <span className="text-2xs text-ink-3 inline-flex items-center gap-1 mt-0.5">
-              <HardDrive className="w-3 h-3 text-accent" />
-              {r.profile.products.length} SKU · {r.profile.documents.length} tệp
+          <div className="leading-tight">
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium ${
+                isComplete ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning'
+              }`}
+            >
+              {isComplete ? 'Đủ 8/8 mục' : `${r.done}/${r.total} mục`}
             </span>
+            <div className="text-2xs text-ink-3 mt-1 flex items-center gap-1">
+              <HardDrive className="w-3 h-3 text-ink-3/70" />
+              <span>{r.profile.products.length} SKU · {r.profile.documents.length} tệp</span>
+            </div>
           </div>
         );
       },
     },
     {
       key: 'drilldown',
-      header: 'Chi tiết',
-      width: 115,
+      header: 'Thao tác',
+      width: 120,
       align: 'right',
       render: r => (
-        <div className="inline-flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
           {onDrilldownToPlan && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={FileSpreadsheet}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"
+              title={`Mở Kế hoạch tháng của ${r.name}`}
               onClick={() => onDrilldownToPlan({ brandName: r.name, month: selectedMonth })}
             >
-              Plan
-            </Button>
+              <FileSpreadsheet className="w-3 h-3 text-accent" />
+              <span>Plan</span>
+            </button>
           )}
           {(onDrilldownToBooking || onOpenBooking) && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Video}
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"
+              title={`Mở Booking của ${r.name}`}
               onClick={() => {
                 if (onDrilldownToBooking) {
                   onDrilldownToBooking({ brandName: r.name, month: selectedMonth });
@@ -521,15 +563,16 @@ export function BrandProfilesView({
                 }
               }}
             >
-              Booking
-            </Button>
+              <Video className="w-3 h-3 text-positive" />
+              <span>Booking</span>
+            </button>
           )}
         </div>
       ),
     },
   ];
 
-  const activeMonthLabel = PROFILE_MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label || `Kỳ ${selectedMonth}`;
+  const activeMonthLabel = PROFILE_MONTH_OPTIONS.find(m => m.value === selectedMonth)?.shortLabel || `Tháng ${selectedMonth}`;
 
   return (
     <div className="space-y-4">

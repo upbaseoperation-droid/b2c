@@ -10,13 +10,14 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Check, FileScan, Plus, RefreshCw, UserCheck } from 'lucide-react';
+import { Check, CloudDownload, FileScan, Plus, RefreshCw, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 import { KocProfile } from '../koc/KocProfile';
+import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import {
   LEGAL_TYPE_LABEL,
   findDuplicates,
@@ -138,6 +139,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [ocrTarget, setOcrTarget] = useState<KocItem | null>(null);
   const [metricsTarget, setMetricsTarget] = useState<KocItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [scraperOpen, setScraperOpen] = useState(false);
+  const [scraperInitialHandle, setScraperInitialHandle] = useState('');
 
   // Bộ lọc
   const [search, setSearch] = useState('');
@@ -278,6 +281,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const rowActions = (k: KocItem) => [
     ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
     { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
+    {
+      label: 'Lấy dữ liệu TikTok',
+      icon: CloudDownload,
+      onSelect: () => {
+        setScraperInitialHandle(`@${k.channelId.replace(/^@/, '')}`);
+        setScraperOpen(true);
+      },
+    },
     { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
     { label: hasLegalId(k) ? 'Đọc lại giấy tờ' : 'Đọc ảnh giấy tờ', icon: FileScan, onSelect: () => setOcrTarget(k) },
   ];
@@ -468,6 +479,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ) : (
         <>
           <PageActions>
+            <Button
+              variant="secondary"
+              icon={CloudDownload}
+              onClick={() => {
+                setScraperInitialHandle('');
+                setScraperOpen(true);
+              }}
+            >
+              Lấy dữ liệu TikTok
+            </Button>
             <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
               Thêm KOC
             </Button>
@@ -631,6 +652,34 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onNotify={onNotify}
         />
       )}
+
+      <TikTokKocScraperModal
+        open={scraperOpen}
+        onClose={() => setScraperOpen(false)}
+        existingKocs={localKocs}
+        initialHandle={scraperInitialHandle}
+        onApplyResults={({ created, updated }) => {
+          setLocalKocs((prev) => {
+            const updatedMap = new Map(updated.map((u) => [u.id, u]));
+            const next = prev.map((k) => updatedMap.get(k.id) || k);
+            return [...created, ...next];
+          });
+          created.forEach((c) => onKocCreated?.(c));
+          updated.forEach((u) => onKocUpdated?.(u));
+
+          if (created.length > 0 && updated.length > 0) {
+            onNotify?.(
+              `Đã thêm ${created.length} KOC mới và cập nhật ${updated.length} hồ sơ KOC từ TikTok`,
+              'success',
+            );
+          } else if (created.length > 0) {
+            onNotify?.(`Đã thêm ${created.length} KOC từ dữ liệu TikTok vào danh bạ`, 'success');
+          } else if (updated.length > 0) {
+            onNotify?.(`Đã cập nhật dữ liệu TikTok cho ${updated.length} hồ sơ KOC`, 'success');
+          }
+        }}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

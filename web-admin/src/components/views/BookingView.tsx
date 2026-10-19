@@ -10,7 +10,8 @@ import {
   UserPlus,
   Calculator,
   Plus,
-  Upload
+  Upload,
+  Video
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -29,6 +30,7 @@ import {
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
+import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
@@ -200,6 +202,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [rejectingDeal, setRejectingDeal] = useState<BookingDealItem | null>(null);
   const [approvingDeal, setApprovingDeal] = useState<BookingDealItem | null>(null);
   const [autoAirDeal, setAutoAirDeal] = useState<BookingDealItem | null>(null);
+  const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
+  const [inspectorDeal, setInspectorDeal] = useState<BookingDealItem | null>(null);
+  const [inspectorInitialUrl, setInspectorInitialUrl] = useState<string>('');
   const [handoffForm, setHandoffForm] = useState({
     sparkAdsCode: '',
     tiktokVideoUrl: '',
@@ -551,6 +556,17 @@ export const BookingView: React.FC<BookingViewProps> = ({
           ]}
         />
         <div className="flex items-center gap-2 lg:pb-2 flex-wrap">
+          <Button
+            variant="secondary"
+            icon={Video}
+            onClick={() => {
+              setInspectorDeal(null);
+              setInspectorInitialUrl('');
+              setIsVideoInspectorOpen(true);
+            }}
+          >
+            Nghiệm thu link video
+          </Button>
           {onOpenImport && (
             <Button variant="secondary" icon={Upload} onClick={onOpenImport}>Nhập Excel</Button>
           )}
@@ -1098,7 +1114,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </div>
 
             <Field label="Link video TikTok" htmlFor="edit-url">
-              <Input id="edit-url" value={editForm.tiktokVideoUrl} onChange={e => setEditForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))} placeholder="https://www.tiktok.com/@creator/video/…" />
+              <div className="flex gap-2">
+                <Input id="edit-url" className="flex-1" value={editForm.tiktokVideoUrl} onChange={e => setEditForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))} placeholder="https://www.tiktok.com/@creator/video/…" />
+                <Button
+                  variant="secondary"
+                  icon={Video}
+                  onClick={() => {
+                    setInspectorDeal(editingDeal);
+                    setInspectorInitialUrl(editForm.tiktokVideoUrl);
+                    setIsVideoInspectorOpen(true);
+                  }}
+                >
+                  Kiểm tra link & Nghiệm thu
+                </Button>
+              </div>
             </Field>
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -1176,6 +1205,44 @@ export const BookingView: React.FC<BookingViewProps> = ({
         onClose={() => setIsCreateKocOpen(false)}
         existingKocs={localKocs}
         onKocCreated={handleCreateKocSuccess}
+      />
+
+      {/* TikTok Video Link Acceptance & Inspection Modal */}
+      <TikTokVideoInspectorModal
+        isOpen={isVideoInspectorOpen}
+        onClose={() => setIsVideoInspectorOpen(false)}
+        deals={deals}
+        initialDeal={inspectorDeal}
+        initialUrl={inspectorInitialUrl}
+        onAcceptVideoForDeal={(dealCode, inspection) => {
+          const targetDeal = deals.find(d => d.dealCode === dealCode) || inspectorDeal;
+          if (targetDeal && onUpdateDeal) {
+            onUpdateDeal({
+              ...targetDeal,
+              tiktokVideoUrl: inspection.resolvedUrl,
+              videoUrl: inspection.resolvedUrl,
+              postedDate: inspection.publishedDate,
+              postDate: inspection.publishedDate,
+              isPostOnTime: inspection.isOnTime,
+              isOnTimePost: inspection.isOnTime,
+              daysDelayed: inspection.daysDelayed,
+              viewsCount: inspection.viewsCount,
+              pipelineText: 'Nghiệm thu Ads',
+              status: 'VIDEO_VERIFIED',
+              statusLabel: 'Đã Nghiệm Thu Video',
+            });
+          }
+          if (editingDeal && editingDeal.dealCode === dealCode) {
+            setEditForm(prev => ({
+              ...prev,
+              tiktokVideoUrl: inspection.resolvedUrl,
+              viewsCount: inspection.viewsCount,
+              pipelineText: 'Nghiệm thu Ads',
+              status: 'VIDEO_VERIFIED',
+              statusLabel: 'Đã Nghiệm Thu Video',
+            }));
+          }
+        }}
       />
     </div>
   );
