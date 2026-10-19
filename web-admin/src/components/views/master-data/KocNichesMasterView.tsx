@@ -291,7 +291,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Chuyên mục ngành</label>
               <input

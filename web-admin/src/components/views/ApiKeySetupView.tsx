@@ -1303,7 +1303,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
 
                       {/* Cụm nút chọn nhanh Provider cho Mục đích này */}
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-                        <div className="inline-flex rounded-lg border border-line bg-sunken p-1 gap-1">
+                        <div className="inline-flex rounded-lg border border-line bg-sunken p-1 gap-1 max-w-full overflow-x-auto">
                           {(['GOOGLE', 'OPENAI', 'CLAUDE', 'INTERNAL'] as const).map(pid => {
                             const isSelected = route.primaryProvider === pid;
                             const label =

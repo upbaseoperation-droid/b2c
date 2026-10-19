@@ -395,7 +395,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           </select>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs max-w-full overflow-x-auto">
             <button
               onClick={() => setViewMode('CARDS')}
               title="Xem dạng thẻ kịch bản"

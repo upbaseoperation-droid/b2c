@@ -1531,7 +1531,7 @@ export function BrandProfileDetail({
             {!hideInternalRatecard && (
               <Aside title={SECTION_LABEL.RATECARD} action={editBtn('RATECARD', () => setDialog('RATECARD'))}>
                 {p.ratecard.some(r => r.maxBudget) ? (
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
                     {p.ratecard.map(r => (
                       <React.Fragment key={r.grade}>
                         <dt className="text-ink-2 font-code">{r.grade}</dt>
@@ -2390,7 +2390,7 @@ export function BrandProfileDetail({
       >
         {inspectingBooking && (
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-lg border border-line bg-canvas p-3">
                 <span className="block text-2xs text-ink-3">Chi phí Net</span>
                 <span className="mt-1 block text-sm font-semibold text-ink tabular-nums">

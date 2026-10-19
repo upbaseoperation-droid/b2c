@@ -1179,8 +1179,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
 
             {/* Keywords Table */}
-            <div className="card-enterprise overflow-hidden">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="card-enterprise overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
                     <th className="py-2.5 px-4">Từ khóa bị chặn</th>
@@ -1407,8 +1407,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
           {/* VÒNG 1: PHÊ DUYỆT DANH SÁCH KOC */}
           {approvalSubTab === 'ROUND_1_KOC' && (
             <div className="space-y-4">
-              <div className="card-enterprise overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="card-enterprise overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
                       <th className="py-2.5 px-4">KOC &amp; kênh</th>
@@ -1700,14 +1700,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
           </div>
 
           {/* Retainer Health Master Table */}
-          <div className="card-enterprise overflow-hidden">
+          <div className="card-enterprise overflow-x-auto">
             <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">Bảng theo dõi hợp đồng thương hiệu</h3>
               </div>
             </div>
 
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[640px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
                   <th className="py-2.5 px-4">Thương hiệu</th>
@@ -1853,7 +1853,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     Mức độ chặn *
@@ -2214,7 +2214,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-2xs">
                   <div className="bg-sunken p-2 rounded border border-line">
                     <span className="text-ink-3 block">Ngày lên Ref</span>
                     <strong className="text-ink">{detailedCampaignModal.keyVisualSpec.refDate || '—'}</strong>

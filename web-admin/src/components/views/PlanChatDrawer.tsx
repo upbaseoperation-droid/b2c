@@ -165,6 +165,8 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
 
   useEffect(() => {
     if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     returnFocusRef.current = (document.activeElement as HTMLElement) ?? null;
     markReadRef.current();
     const t = setTimeout(() => textareaRef.current?.focus(), 60);
@@ -176,6 +178,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     };
     window.addEventListener('keydown', onKey);
     return () => {
+      document.body.style.overflow = prevOverflow;
       clearTimeout(t);
       window.removeEventListener('keydown', onKey);
       const el = returnFocusRef.current;
@@ -388,7 +391,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         aria-modal="true"
         aria-label="Trao đổi kế hoạch"
         inert={!open}
-        className={`fixed top-0 right-0 z-[91] h-screen w-full sm:w-[420px] bg-canvas shadow-2xl border-l border-line flex flex-col transition-transform ${
+        className={`fixed top-0 right-0 z-[91] h-dvh w-full sm:w-[420px] bg-canvas shadow-2xl border-l border-line flex flex-col transition-transform ${
           open ? 'translate-x-0 duration-(--motion-slow) ease-enter' : 'translate-x-full duration-(--motion-base) ease-exit'
         }`}
       >
@@ -506,7 +509,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         </div>
 
         {/* Khung nhập */}
-        <footer className="shrink-0 bg-surface border-t border-line px-3 pt-2 pb-3">
+        <footer className="shrink-0 bg-surface border-t border-line px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex gap-1.5 mb-2 overflow-x-auto" role="radiogroup" aria-label="Loại tin">
             {TYPE_CHIPS.map(c => (
               <button

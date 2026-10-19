@@ -1083,7 +1083,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C (BỎ CHỮ PHỤ RƯỜM RÀ) */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-line bg-surface">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y lg:divide-y-0 sm:divide-x divide-line bg-surface">
               <div className="px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium">Tổng hạn mức Net B2C</div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
@@ -1172,8 +1172,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* Nội dung bảng gọn gàng, hiển thị cả người phụ trách từng mảng con */}
-            <div className="w-full">
-              <table className="w-full table-fixed text-left text-xs border-collapse">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[780px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
                     <th className="py-2.5 px-3 w-[21%]">Gian hàng &amp; Phiên bản</th>
@@ -2619,8 +2619,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           ) : (
             /* DẠNG BẢNG GỌN GÀNG KHÔNG CUỘN NGANG */
             <Panel flush>
-              <div className="w-full">
-                <table className="w-full table-fixed text-left text-xs border-collapse">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[780px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
                       <th className="py-2.5 px-2.5 w-[21%]">Kế hoạch &amp; Phiên bản</th>
@@ -2795,7 +2795,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         }
       >
         <form onSubmit={handleCreateSubmit} className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Chu kỳ tháng:">
               <Select
                 value={newPlanMonth}
@@ -2822,7 +2822,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Thương hiệu:">
               <Select
                 value={newPlanBrand}
@@ -2849,7 +2849,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Chuyên viên B2C phụ trách:">
               <Select
                 value={newPlanPic}
@@ -2871,7 +2871,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Ngân sách (VNĐ):" hint={formatVndShort(newPlanBudget)}>
               <Input
                 type="number"
@@ -2900,7 +2900,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           </div>
 
           <Field label="Định hướng phân bổ ngân sách:">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
                 { id: 'BALANCED', label: 'Cân bằng các kênh' },
                 { id: 'GMV_MAX', label: 'Tối đa GMV' },
@@ -3517,7 +3517,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Field label="Master Plan">
                     <Input
                       type="number"
@@ -3633,7 +3633,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <Field label="Số bản Strategy">
                     <Input
                       type="number"
@@ -3729,7 +3729,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <Field label="Bộ Key Visual">
                     <Input
                       type="number"

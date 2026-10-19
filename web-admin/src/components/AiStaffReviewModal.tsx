@@ -298,10 +298,10 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Gợi ý nhận xét tiến độ và hiệu suất"
-        className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+        className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
       >
         {/* Header Banner */}
-        <div className="p-5 bg-surface text-ink border-b border-line relative">
+        <div className="px-4 sm:px-6 py-4 bg-surface text-ink border-b border-line relative shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -311,16 +311,16 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
             <X className="w-5 h-5" />
           </button>
 
-          <div className="max-w-2xl">
+          <div className="max-w-2xl pr-8">
             <h3 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-2">
-              <Bot className="w-5 h-5 text-accent" />
+              <Bot className="w-5 h-5 text-accent shrink-0" />
               <span>Gợi ý nhận xét tiến độ và hiệu suất</span>
             </h3>
           </div>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs text-slate-800">
+        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 text-xs text-slate-800">
           {/* Controls Bar: Staff Selection & Review Type */}
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
@@ -693,7 +693,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50 shrink-0">
           <span className="text-2xs text-slate-500">
             Dữ liệu đối soát tự động từ Module 2 Planning &amp; Module 5 People &amp; Capacity
           </span>

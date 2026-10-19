@@ -320,7 +320,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
         }
       >
         <form id="cast-tier-form" onSubmit={handleSave} className="space-y-3.5 text-xs">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Mã bậc (Tier Code) *</label>
               <input
@@ -358,7 +358,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
             </select>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Min Cast (VNĐ)</label>
               <input
@@ -388,7 +388,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Chi phí quyền Ads</label>
               <input

@@ -258,8 +258,14 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 - Thao tác nằm cùng hàng với tab: truyền vào `Tabs actions={…}`, không tự xếp `Tabs` cạnh nút bằng `flex` (dãy tab bị nút đè). Trong `actions`: tối đa một `Button` primary + một `ActionMenu` cho phần còn lại. Màn mẫu: `ContentView.tsx`.
 - Phía trên tab chỉ được một hàng chỉ số (`StatRow`, tối đa 4 ô) và chỉ khi các số đó dùng cho mọi tab. Hàng chỉ số nằm trên tab hoặc bảng dùng `StatRow size="sm"`. Không xếp chồng thẻ cảnh báo + thẻ chỉ số lớn + biểu mẫu trước nội dung chính: nội dung chính phải bắt đầu trong nửa trên màn 1440×900.
 - Không thêm tiêu đề lớn thứ hai trong trang. Không thêm thẻ “giới thiệu phân hệ”.
-- Lề trang `px-4 sm:px-6 lg:px-8`, khoảng cách giữa các khối `space-y-6`.
+- Lề trang `px-3 sm:px-4 lg:px-6`, khoảng cách giữa các khối `space-y-5`.
 - Ô chọn vai trò ở thanh trên chỉ hiện khi chạy dev, hoặc khi đặt `NEXT_PUBLIC_ENABLE_ROLE_SWITCHER=1`.
+- **Thiết kế đáp ứng thiết bị di động & máy tính bảng (Mobile & Tablet Responsive):**
+  - **Khung nhìn & Vùng an toàn (`Viewport & Safe-Area`):** Cấu hình `viewportFit: "cover"`, `min-h-dvh` và đệm đáy `env(safe-area-inset-bottom)` trên `RootLayout`, `Sidebar`, `Modal` và `ToastStack`. Tự động áp dụng `font-size: 16px` cho ô nhập liệu trên màn hình cảm ứng `< 640px` để ngăn Safari iOS tự phóng to trang.
+  - **Menu trái (`Sidebar`) & Thanh tiêu đề (`TopHeader`):** Trên màn hình `< 1024px` (`lg`), menu trái chuyển thành ngăn kéo trượt (`w-64 max-w-[85vw] z-50`), tự khóa cuộn nền (`overflow: hidden`), đóng khi bấm nền mờ hoặc phím `Escape`. Tiêu đề trang tự co chữ (`text-base sm:text-xl`) và các khe `PageHeaderNavSlot` / `PageActionsSlot` tự xuống dòng (`flex-wrap`) khi hẹp.
+  - **Hàng chỉ số (`StatRow` & `Stat`):** Trên mobile hiển thị lưới 2 cột (`grid-cols-2 lg:grid-cols-4`), cỡ số `text-xl sm:text-[26px]` và tự ẩn `Sparkline` ở màn `< 640px` để con số tiền tệ lớn không bị cắt chữ.
+  - **Thanh điều hướng & Bộ lọc (`Tabs`, `Segmented`, `Chips`, `FilterBar`):** Thanh `Tabs` có `actions` tự xếp dọc trên mobile (`flex-col sm:flex-row`); `Segmented` và `Chips` hỗ trợ cuộn ngang mượt (`max-w-full overflow-x-auto`); `SearchInput` trong `FilterBar` tự mở rộng `w-full sm:w-auto`.
+  - **Bảng dữ liệu (`DataTable`) & Biểu mẫu (`Modal`):** Bảng ≥ 4 cột tự giữ `min-w-[480px]` / `min-w-[600px]` trên mobile kèm `overflow-x-auto overscroll-x-contain` để vuốt ngang mượt mà, trong khi trên máy tính (`lg:`+) tự động vừa khít khung nhìn (`lg:min-w-0`). Cột cố định phải (`stickyLast`) chỉ ghim từ `sm:` trở lên để không che khuất bảng trên điện thoại. Các lưới biểu mẫu đa cột luôn khai báo `grid-cols-1 sm:grid-cols-2` / `sm:grid-cols-3`.
 
 ---
 

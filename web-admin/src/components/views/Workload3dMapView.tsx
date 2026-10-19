@@ -1937,7 +1937,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                           title={`Điểm Quản lý giao: ${st.directorPts.toFixed(1)} pt`}
                         />
                       </div>
-                      <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-2xs">
                         <div className="p-1.5 rounded bg-sunken/70">
                           <div className="text-ink-3">Quy trình</div>
                           <div className="font-semibold text-ink tabular-nums">
@@ -2005,7 +2005,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                           placeholder="Nhập tên đầu việc..."
                           className="w-full h-8 px-2.5 rounded-lg bg-sunken border border-line text-xs text-ink"
                         />
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <select
                             value={quickTaskBrand}
                             onChange={e => setQuickTaskBrand(e.target.value)}
@@ -2322,7 +2322,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                       <label className="text-xs font-semibold text-ink block">
                         Hệ số quy mô Gian hàng (Bảng 2): ×{coefInfo.multiplier.toFixed(2)}
                       </label>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
                         {STORE_SCOPE_TABLE_2.map(tier => {
                           const active = Math.abs(coefInfo.multiplier - tier.coef) < 0.03;
                           return (

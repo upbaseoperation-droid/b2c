@@ -316,8 +316,8 @@ export default function PerformanceP3View({
         /* Store Matrix Tab */
         <div className="space-y-4">
           {/* Store Table */}
-          <div className="bg-surface border border-line rounded-xl overflow-hidden">
-            <table className="w-full text-left text-xs">
+          <div className="bg-surface border border-line rounded-xl overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead className="bg-canvas border-b border-line text-ink-3 font-medium">
                 <tr>
                   <th className="py-3 px-3">Tên gian hàng & kênh</th>

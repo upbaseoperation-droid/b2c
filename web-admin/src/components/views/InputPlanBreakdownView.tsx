@@ -1672,7 +1672,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2 shadow-2xs flex items-center justify-between gap-3 flex-wrap xl:flex-nowrap">
         {/* Bên trái: 5 Bước quy trình Kế hoạch */}
-        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
+        <div className="inline-flex max-w-full items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
@@ -3133,8 +3133,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </div>
           )}
 
-          <div className="w-full">
-            <table className="w-full table-fixed text-left text-xs border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[760px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
                   <th className="py-2.5 px-3 w-[23%]">Đầu việc / Khung lương KOC</th>
@@ -3391,8 +3391,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
           {/* Ma Trận Phân Rã Chi Tiết 5 Tuần Table (Gọn gàng không cuộn ngang) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-            <div className="w-full">
-              <table className="w-full table-fixed text-left text-xs border-collapse">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[900px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
                 <thead>
                   {/* Hàng Header Nhóm (Group Headers) */}
                   <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
@@ -3623,7 +3623,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                     <span className="text-2xs font-semibold text-blue-900 block  ">
                                       Bậc KOC Có Cast (KL1 - KL7)
                                     </span>
-                                    <div className="grid grid-cols-2 gap-2 text-2xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-2xs">
                                       {(['kl1', 'kl2', 'kl3', 'kl4', 'kl5', 'kl6', 'kl7'] as const).map(tierKey => (
                                         <div key={tierKey} className="flex items-center justify-between bg-white px-2 py-1 rounded border border-blue-200">
                                           <span className="font-mono font-semibold text-blue-900 ">{tierKey}</span>

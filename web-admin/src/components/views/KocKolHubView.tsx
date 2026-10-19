@@ -1619,7 +1619,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     </div>
                     <div>
                       <label className="block text-slate-600 font-medium mb-1">Ngày cấp &amp; Nơi cấp CCCD</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="text"
                           value={profileForm.issueDate}
@@ -1755,7 +1755,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     </div>
                     <div>
                       <label className="block text-slate-600 font-medium mb-1">Size trang phục / Giày</label>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         <input
                           type="text"
                           value={profileForm.clothingSize}
@@ -1774,7 +1774,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     </div>
                     <div>
                       <label className="block text-slate-600 font-medium mb-1">Thông số bé (Mẹ &amp; Bé)</label>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         <input
                           type="number"
                           value={profileForm.babyAgeMonths}
@@ -2880,7 +2880,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                     <div className="pt-2 space-y-1.5">
                       <span className="text-2xs text-slate-500 block">Phân bổ độ tuổi người mua</span>
-                      <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                         <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
                           <span className="text-2xs text-slate-400 block">18 - 24</span>
                           <span className="font-mono font-semibold text-slate-800">{activeKoc.age18_24 ?? 40}%</span>
@@ -2976,7 +2976,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
                 <div className="space-y-2">
                   <h5 className="font-semibold text-slate-900">Điều 2. Giá trị hợp đồng &amp; Phương thức thanh toán</h5>
-                  <div className="grid grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono">
                     <div>
                       <span className="text-2xs text-slate-500 block">Tổng thù lao (Gross)</span>
                       <strong className="text-slate-900 text-sm">{formatVnd(previewContractDeal.totalValue || 0)}</strong>
@@ -3167,7 +3167,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Followers hiện tại</label>
                   <input

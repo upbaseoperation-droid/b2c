@@ -153,9 +153,12 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[1px] animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[1px] animate-in fade-in duration-150"
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-2xl bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col justify-between overflow-hidden"
+        className="w-full max-w-2xl bg-white h-dvh shadow-2xl border-l border-slate-200 flex flex-col justify-between overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -343,7 +346,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
 
               {/* Nội dung báo cáo */}
               <div className="rounded-xl border border-line bg-surface overflow-hidden shadow-xs">
-                <div className="px-4 py-2.5 bg-ink text-white flex items-center justify-between gap-2">
+                <div className="px-4 py-2.5 bg-ink text-white flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs font-semibold">
                     <CheckCircle2 className="w-4 h-4 text-positive" />
                     <span>BÁO CÁO PHÂN TÍCH & ĐỀ XUẤT HÀNH ĐỘNG</span>
@@ -379,7 +382,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+        <div className="px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
           <span>
             Mọi lượt chạy đều tự động cộng dồn Token & Chi phí vào mục <strong>Cấu hình API & Công cụ</strong>.
           </span>

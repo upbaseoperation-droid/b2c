@@ -16,6 +16,7 @@ import {
   discoverRealTikTokVideoUrlsByQuery,
   discoverTikTokChannelVideoUrls,
   doesInspectedVideoMatchTarget,
+  fetchTikTokCreatorVideoListBySecUid,
   fetchTikTokHtmlWithWafBypass,
   getSharedCrawlerStore,
   inspectLiveTikTokVideoPage,
@@ -324,6 +325,7 @@ function classifyByRealFollowers(
  * Có bộ nhớ đệm dùng chung (TTL 30 phút) và gộp truy vấn trùng cho 30+ người dùng đồng thời.
  */
 export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
+  secUid?: string;
   nickname?: string;
   bio?: string;
   bioLink?: string;
@@ -368,6 +370,7 @@ export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
       const s = userDetail.stats || {};
 
       const profileData = {
+        secUid: typeof u.secUid === 'string' && u.secUid.trim() ? u.secUid.trim() : undefined,
         nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
         bio: typeof u.signature === 'string' ? u.signature : undefined,
         bioLink: typeof u.bioLink?.link === 'string' ? u.bioLink.link : undefined,
@@ -672,19 +675,39 @@ async function inspectVideoCandidatesInBatches(
   const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
   const batchSize = 10;
   const maxCandidatesToInspect = Math.min(urlList.length, Math.max(targetCount + 20, 50));
+  let triedCreatorListBySecUid = false;
 
   for (let offset = 0; offset < maxCandidatesToInspect; offset += batchSize) {
     const batch = urlList.slice(offset, offset + batchSize);
     const inspected = await Promise.all(
       batch.map((u) => inspectLiveTikTokVideoPage(u))
     );
+    let discoveredSecUid: string | undefined;
     for (const v of inspected) {
       if (!v) continue;
       if (v.author.handle.toLowerCase() !== expectedHandle.toLowerCase()) continue;
       if (!collected.has(v.videoId)) {
         collected.set(v.videoId, v);
       }
+      if (!discoveredSecUid && v.author.secUid) {
+        discoveredSecUid = v.author.secUid;
+      }
     }
+
+    // Ngay khi lấy được secUid từ 1 video của kênh (trường hợp trang @handle bị ẩn user-detail),
+    // truy vấn ngay /api/creator/item_list/ để lấy đầy đủ các video mới nhất liên tiếp theo thời gian
+    if (!triedCreatorListBySecUid && discoveredSecUid) {
+      triedCreatorListBySecUid = true;
+      const directChronological = await fetchTikTokCreatorVideoListBySecUid(
+        expectedHandle,
+        discoveredSecUid,
+        targetCount
+      );
+      for (const dv of directChronological) {
+        collected.set(dv.videoId, dv);
+      }
+    }
+
     if (collected.size >= targetCount) break;
   }
 
@@ -694,7 +717,7 @@ async function inspectVideoCandidatesInBatches(
 }
 
 /**
- * Thu thập dữ liệu thực tế 100% của KOC từ TikTok (Hồ sơ kênh + Các video công khai thực tế).
+ * Thu thập dữ liệu thực tế 100% của KOC từ TikTok (Hồ sơ kênh + Các video công khai thực tế mới nhất liên tiếp).
  * Không tự sinh SĐT giả, không tự nội suy View/Tim giả.
  */
 export async function scrapeTikTokCreatorData(
@@ -720,31 +743,59 @@ export async function scrapeTikTokCreatorData(
     ...(options?.directVideoUrls || []),
   ].filter((v) => v.handle.toLowerCase() === cleanHandle);
 
-  const [initialLivePublic, initialChannelVideos] = await Promise.all([
-    fetchLiveTikTokPublicProfile(cleanHandle),
-    discoverTikTokChannelVideoUrls(cleanHandle, { maxUrls: candidateMaxUrls }),
-  ]);
+  // 1. Lấy hồ sơ kênh thực tế trước để có secUid truy vấn danh sách video mới nhất liên tiếp
+  let livePublic = await fetchLiveTikTokPublicProfile(cleanHandle);
+  let inspectedVideos: RealTikTokVideoAndAuthorDetail[] = [];
 
-  let livePublic = initialLivePublic;
-  let candidateVideos = [...directVideosForHandle, ...initialChannelVideos];
-
-  if (
-    candidateVideos.length < targetVideoLimit &&
-    livePublic?.nickname &&
-    livePublic.nickname.trim().toLowerCase() !== cleanHandle
-  ) {
-    const extraByNickname = await discoverTikTokChannelVideoUrls(cleanHandle, {
-      nickname: livePublic.nickname,
-      maxUrls: candidateMaxUrls,
-    });
-    candidateVideos = [...candidateVideos, ...extraByNickname];
+  if (livePublic?.secUid) {
+    const [chronologicalVideos, inspectedDirect] = await Promise.all([
+      fetchTikTokCreatorVideoListBySecUid(cleanHandle, livePublic.secUid, targetVideoLimit),
+      directVideosForHandle.length > 0
+        ? inspectVideoCandidatesInBatches(
+            directVideosForHandle,
+            cleanHandle,
+            directVideosForHandle.length
+          )
+        : Promise.resolve([]),
+    ]);
+    const mergedMap = new Map<string, RealTikTokVideoAndAuthorDetail>();
+    for (const v of [...inspectedDirect, ...chronologicalVideos]) {
+      if (!mergedMap.has(v.videoId)) {
+        mergedMap.set(v.videoId, v);
+      }
+    }
+    inspectedVideos = [...mergedMap.values()]
+      .sort((a, b) => compareVideoAirDateDesc(a, b))
+      .slice(0, targetVideoLimit);
   }
 
-  let inspectedVideos = await inspectVideoCandidatesInBatches(
-    candidateVideos,
-    cleanHandle,
-    targetVideoLimit
-  );
+  // 2. Dự phòng khi chưa có secUid hoặc /api/creator/item_list/ trả về ít hơn số lượng yêu cầu
+  if (inspectedVideos.length === 0) {
+    const initialChannelVideos = await discoverTikTokChannelVideoUrls(cleanHandle, {
+      maxUrls: candidateMaxUrls,
+      secUid: livePublic?.secUid,
+    });
+    let candidateVideos = [...directVideosForHandle, ...initialChannelVideos];
+
+    if (
+      candidateVideos.length < targetVideoLimit &&
+      livePublic?.nickname &&
+      livePublic.nickname.trim().toLowerCase() !== cleanHandle
+    ) {
+      const extraByNickname = await discoverTikTokChannelVideoUrls(cleanHandle, {
+        nickname: livePublic.nickname,
+        maxUrls: candidateMaxUrls,
+      });
+      candidateVideos = [...candidateVideos, ...extraByNickname];
+    }
+
+    inspectedVideos = await inspectVideoCandidatesInBatches(
+      candidateVideos,
+      cleanHandle,
+      targetVideoLimit
+    );
+  }
+
   let usedFallbackVideosForInternalKoc = false;
 
   // Nếu kênh được yêu cầu là alias chính chủ (VD: vohalinh -> halinhofficial),
@@ -755,15 +806,26 @@ export async function scrapeTikTokCreatorData(
     );
     const fallbackHandle = resolveFallbackCreatorHandle(cleanHandle);
     if (fallbackHandle && fallbackHandle !== cleanHandle) {
-      const [fallbackProfile, fallbackUrls] = await Promise.all([
-        existingKoc ? Promise.resolve(null) : fetchLiveTikTokPublicProfile(fallbackHandle),
-        discoverTikTokChannelVideoUrls(fallbackHandle, { maxUrls: candidateMaxUrls }),
-      ]);
-      const fallbackInspected = await inspectVideoCandidatesInBatches(
-        fallbackUrls,
-        fallbackHandle,
-        targetVideoLimit
-      );
+      const fallbackProfile = await fetchLiveTikTokPublicProfile(fallbackHandle);
+      let fallbackInspected: RealTikTokVideoAndAuthorDetail[] = [];
+      if (fallbackProfile?.secUid) {
+        fallbackInspected = await fetchTikTokCreatorVideoListBySecUid(
+          fallbackHandle,
+          fallbackProfile.secUid,
+          targetVideoLimit
+        );
+      }
+      if (fallbackInspected.length === 0) {
+        const fallbackUrls = await discoverTikTokChannelVideoUrls(fallbackHandle, {
+          maxUrls: candidateMaxUrls,
+          secUid: fallbackProfile?.secUid,
+        });
+        fallbackInspected = await inspectVideoCandidatesInBatches(
+          fallbackUrls,
+          fallbackHandle,
+          targetVideoLimit
+        );
+      }
       if (fallbackInspected.length > 0) {
         inspectedVideos = fallbackInspected;
         usedFallbackVideosForInternalKoc = Boolean(existingKoc);

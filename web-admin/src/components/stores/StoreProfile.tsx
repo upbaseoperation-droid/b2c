@@ -1049,7 +1049,7 @@ export function StoreProfile({
                   </div>
                 }
               >
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
                     <span className="text-2xs text-ink-3">1. Video KOC Affiliate (Paid)</span>
                     <div className="text-sm font-semibold text-ink">

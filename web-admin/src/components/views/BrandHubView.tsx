@@ -1480,7 +1480,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-slate-100">
+                          <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full lg:w-auto shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-slate-100">
                             <div>
                               <span className="text-2xs text-slate-500 block">Hạn mức Order Net</span>
                               <span className="font-mono font-semibold text-slate-900">

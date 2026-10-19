@@ -65,9 +65,9 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       aria-modal="true"
       aria-labelledby="import-excel-title"
     >
-      <div data-motion-panel className="bg-surface border border-line rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+      <div data-motion-panel className="bg-surface border border-line rounded-xl w-full max-w-lg max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line bg-sunken shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-success-soft border border-success-line text-success flex items-center justify-center font-semibold">
               <FileSpreadsheet className="w-5 h-5 text-success" />
@@ -87,13 +87,13 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
           {!successData ? (
             <>
               {/* Dropzone */}
               <div
                 onClick={handleSimulateImport}
-                className="border-2 border-dashed border-line-strong hover:border-primary rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-sunken hover:bg-hover transition group"
+                className="border-2 border-dashed border-line-strong hover:border-primary rounded-xl p-5 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-sunken hover:bg-hover transition group"
               >
                 {isProcessing ? (
                   <div className="flex flex-col items-center py-4">
@@ -135,7 +135,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                 <p className="text-xs text-muted mt-0.5">Dữ liệu đã được nạp vào bộ nhớ đối soát</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-4 bg-success-soft rounded-xl border border-success-line">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-success-soft rounded-xl border border-success-line">
                 <div>
                   <span className="text-xs text-ink-2 block">Deals KOC cập nhật</span>
                   <span className="text-lg font-semibold text-ink tabular-nums">{successData.updatedDeals} KOC</span>

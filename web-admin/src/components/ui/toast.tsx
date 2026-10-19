@@ -112,7 +112,7 @@ export function ToastStack({
   const offsets = live.reduce<number[]>((acc, t, i) => [...acc, i === 0 ? 0 : acc[i - 1] + (heights[live[i - 1].id] ?? 44) + GAP], []);
   return (
     <div
-      className="fixed right-6 bottom-6 z-[60] w-[min(380px,calc(100vw-32px))]"
+      className="fixed right-4 sm:right-6 bottom-[max(1rem,env(safe-area-inset-bottom))] sm:bottom-6 z-[60] w-[min(380px,calc(100vw-32px))]"
       style={{ height: expanded ? expandedHeight : frontHeight + PEEK * Math.min(live.length - 1, MAX_VISIBLE - 1) }}
       onMouseEnter={() => { setExpanded(true); onPause?.(); }}
       onMouseLeave={() => { setExpanded(false); onResume?.(); }}

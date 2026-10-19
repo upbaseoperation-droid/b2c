@@ -904,8 +904,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
   return (
     <div className="space-y-6">
       <PageActions>
-        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
-          <span className="text-2xs text-slate-500 px-2 flex items-center gap-1">
+        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs max-w-full overflow-x-auto">
+          <span className="text-2xs text-slate-500 px-2 flex items-center gap-1 shrink-0">
             Góc nhìn:
           </span>
           <button
@@ -915,7 +915,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               setActiveAuthorName('Hoàng Long (Growth Lead)');
               notify('Chuyển sang góc nhìn: Growth Team', 'info');
             }}
-            className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
               activeRole === 'GROWTH'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900 font-medium'
@@ -931,7 +931,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               setActiveAuthorName('Khánh Vy (Booking Lead)');
               notify('Chuyển sang góc nhìn: B2C Team', 'info');
             }}
-            className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
               activeRole === 'B2C'
                 ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                 : 'text-slate-600 hover:text-slate-900 font-medium'
@@ -957,7 +957,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           <button
             type="button"
             onClick={() => setTimeHorizon('AVAILABLE')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               timeHorizon === 'AVAILABLE'
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -975,7 +975,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           <button
             type="button"
             onClick={() => setTimeHorizon('FUTURE')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               timeHorizon === 'FUTURE'
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -993,7 +993,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           <button
             type="button"
             onClick={() => setTimeHorizon('HISTORY')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               timeHorizon === 'HISTORY'
                 ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
@@ -1011,7 +1011,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           <button
             type="button"
             onClick={() => setTimeHorizon('ALL')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               timeHorizon === 'ALL'
                 ? 'bg-slate-200 text-slate-900 font-semibold'
                 : 'text-slate-500 hover:text-slate-800'
@@ -1021,13 +1021,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-w-full">
           {/* Quick Platform Filter */}
-          <div className="flex items-center bg-sunken p-1 rounded-lg border border-line text-xs">
+          <div className="flex items-center bg-sunken p-1 rounded-lg border border-line text-xs max-w-full overflow-x-auto">
             <button
               type="button"
               onClick={() => setSelectedPlatform('ALL')}
-              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors shrink-0 ${
                 selectedPlatform === 'ALL' ? 'bg-surface text-ink shadow-2xs font-semibold' : 'text-ink-3 hover:text-ink'
               }`}
             >
@@ -1036,7 +1036,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <button
               type="button"
               onClick={() => setSelectedPlatform('SHOPEE_MALL')}
-              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
                 selectedPlatform === 'SHOPEE_MALL' ? 'bg-surface text-ink shadow-2xs font-semibold' : 'text-ink-3 hover:text-ink'
               }`}
             >
@@ -1645,7 +1645,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 flex justify-end animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-(--motion-slow) ease-enter">
             {/* Drawer Header */}
-            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div className="p-4 sm:p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-code text-xs font-semibold text-accent">
@@ -1671,8 +1671,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             {/* Quick Actions Strip */}
-            <div className="px-5 py-3 bg-accent-soft border-b border-line flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs">
+            <div className="px-4 sm:px-6 py-3 bg-accent-soft border-b border-line flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => handleCopyKocBrief(selectedProduct)}
@@ -1723,11 +1723,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             {/* Drawer Tabs */}
-            <div className="flex border-b border-slate-200 px-5 text-xs font-semibold">
+            <div className="flex border-b border-slate-200 px-4 sm:px-6 text-xs font-semibold overflow-x-auto max-w-full">
               <button
                 type="button"
                 onClick={() => setActiveDrawerTab('SPECS')}
-                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
+                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
                   activeDrawerTab === 'SPECS'
                     ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1740,7 +1740,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <button
                 type="button"
                 onClick={() => setActiveDrawerTab('DISCUSSIONS')}
-                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
+                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
                   activeDrawerTab === 'DISCUSSIONS'
                     ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1753,7 +1753,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <button
                 type="button"
                 onClick={() => setActiveDrawerTab('CHANGE_REVIEW')}
-                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
+                className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
                   activeDrawerTab === 'CHANGE_REVIEW'
                     ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1765,7 +1765,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             {/* Drawer Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
               {activeDrawerTab === 'SPECS' && (
                 <div className="space-y-6">
                   {/* Cycle Management Card */}
@@ -2351,7 +2351,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
                     <label className="text-2xs text-slate-600 block mb-0.5">Ngày bắt đầu:</label>
                     <input
@@ -2649,7 +2649,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <span className="font-semibold text-slate-800 block text-xs">
                     Chọn khoảng ngày chu kỳ mới:
                   </span>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="text-2xs text-slate-600 block mb-0.5">Ngày bắt đầu:</label>
                       <input

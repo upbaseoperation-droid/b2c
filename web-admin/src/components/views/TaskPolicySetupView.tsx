@@ -655,26 +655,28 @@ export function TaskPolicySetupView({
               flush
               title="Bảng 2 · Hệ số quy mô & Độ phức tạp gian hàng"
             >
-              <table className="w-full text-left text-xs">
-                <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                  <tr>
-                    <th className="py-2.5 px-4 font-medium">Nhóm gian hàng</th>
-                    <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                    <th className="py-2.5 px-4 font-medium">Tiêu chí nhận diện</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {STORE_SCOPE_TABLE_2.map((r) => (
-                    <tr key={r.code} className="hover:bg-canvas">
-                      <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
-                        ×{r.coef.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="py-2.5 px-4 text-ink-2">{r.note}</td>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-xs">
+                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <tr>
+                      <th className="py-2.5 px-4 font-medium">Nhóm gian hàng</th>
+                      <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
+                      <th className="py-2.5 px-4 font-medium">Tiêu chí nhận diện</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {STORE_SCOPE_TABLE_2.map((r) => (
+                      <tr key={r.code} className="hover:bg-canvas">
+                        <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
+                          ×{r.coef.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-2.5 px-4 text-ink-2">{r.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Panel>
 
             {/* Bảng 3 & Bảng 6 */}
@@ -683,50 +685,54 @@ export function TaskPolicySetupView({
                 flush
                 title="Bảng 3 · Hệ số độ khó theo lần thực hiện"
               >
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                    <tr>
-                      <th className="py-2.5 px-4 font-medium">Mức độ</th>
-                      <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                      <th className="py-2.5 px-4 font-medium">Khi áp dụng</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {TASK_DIFFICULTY_TABLE_3.map((r) => (
-                      <tr key={r.tier} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
-                          ×{r.coef.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="py-2.5 px-4 text-ink-2">{r.criteria}</td>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-left text-xs">
+                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                      <tr>
+                        <th className="py-2.5 px-4 font-medium">Mức độ</th>
+                        <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
+                        <th className="py-2.5 px-4 font-medium">Khi áp dụng</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {TASK_DIFFICULTY_TABLE_3.map((r) => (
+                        <tr key={r.tier} className="hover:bg-canvas">
+                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                            ×{r.coef.toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="py-2.5 px-4 text-ink-2">{r.criteria}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Panel>
 
               <Panel
                 flush
                 title="Bảng 6 · Hệ số mở rộng đa sàn (Việc cấp Brand)"
               >
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                    <tr>
-                      <th className="py-2.5 px-4 font-medium">Quy mô đa sàn</th>
-                      <th className="py-2.5 px-4 font-medium text-right">Hệ số nhân</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {MULTI_PLATFORM_TABLE_6.map((r) => (
-                      <tr key={r.stores} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                        <td className="py-2.5 px-4 text-right font-mono font-semibold text-accent">
-                          ×{r.coef.toFixed(1).replace('.', ',')}
-                        </td>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-left text-xs">
+                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                      <tr>
+                        <th className="py-2.5 px-4 font-medium">Quy mô đa sàn</th>
+                        <th className="py-2.5 px-4 font-medium text-right">Hệ số nhân</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {MULTI_PLATFORM_TABLE_6.map((r) => (
+                        <tr key={r.stores} className="hover:bg-canvas">
+                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-2.5 px-4 text-right font-mono font-semibold text-accent">
+                            ×{r.coef.toFixed(1).replace('.', ',')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Panel>
             </div>
           </div>
@@ -737,34 +743,36 @@ export function TaskPolicySetupView({
               flush
               title="Bảng 4 · Yêu cầu tỷ trọng việc khó theo Level nhân sự"
             >
-              <table className="w-full text-left text-xs">
-                <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                  <tr>
-                    <th className="py-2.5 px-4 font-medium">Level nhân sự</th>
-                    <th className="py-2.5 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
-                    <th className="py-2.5 px-3 font-medium text-right">Đạt chuẩn</th>
-                    <th className="py-2.5 px-4 font-medium text-right">Không đạt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {STAFF_LEVEL_TABLE_4.map((r) => (
-                    <tr key={r.level} className="hover:bg-canvas">
-                      <td className="py-2.5 px-4 font-mono font-semibold text-ink">
-                        {r.level}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-ink-2">
-                        ≥ {r.minHardRatioPct}%
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-positive font-semibold">
-                        ×{r.passCoef.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-warning font-semibold">
-                        ×{r.failCoef.toFixed(2).replace('.', ',')}
-                      </td>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-xs">
+                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                    <tr>
+                      <th className="py-2.5 px-4 font-medium">Level nhân sự</th>
+                      <th className="py-2.5 px-3 font-medium">Tỷ trọng việc khó tối thiểu</th>
+                      <th className="py-2.5 px-3 font-medium text-right">Đạt chuẩn</th>
+                      <th className="py-2.5 px-4 font-medium text-right">Không đạt</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {STAFF_LEVEL_TABLE_4.map((r) => (
+                      <tr key={r.level} className="hover:bg-canvas">
+                        <td className="py-2.5 px-4 font-mono font-semibold text-ink">
+                          {r.level}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-ink-2">
+                          ≥ {r.minHardRatioPct}%
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-positive font-semibold">
+                          ×{r.passCoef.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-2.5 px-4 text-right font-mono text-warning font-semibold">
+                          ×{r.failCoef.toFixed(2).replace('.', ',')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Panel>
 
             {/* Bảng 5 & Vai trò */}
@@ -773,52 +781,56 @@ export function TaskPolicySetupView({
                 flush
                 title="Bảng 5 · Hệ số tiến độ hoàn thành (Timeline SLA)"
               >
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                    <tr>
-                      <th className="py-2.5 px-4 font-medium">Mức độ hoàn thành</th>
-                      <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
-                      <th className="py-2.5 px-4 font-medium">Điều kiện áp dụng</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {TIMELINE_TABLE_5.map((r) => (
-                      <tr key={r.status} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
-                          ×{r.coef.toFixed(1).replace('.', ',')}
-                        </td>
-                        <td className="py-2.5 px-4 text-ink-2">{r.condition}</td>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-left text-xs">
+                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                      <tr>
+                        <th className="py-2.5 px-4 font-medium">Mức độ hoàn thành</th>
+                        <th className="py-2.5 px-3 font-medium text-right">Hệ số</th>
+                        <th className="py-2.5 px-4 font-medium">Điều kiện áp dụng</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {TIMELINE_TABLE_5.map((r) => (
+                        <tr key={r.status} className="hover:bg-canvas">
+                          <td className="py-2.5 px-4 font-medium text-ink">{r.label}</td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                            ×{r.coef.toFixed(1).replace('.', ',')}
+                          </td>
+                          <td className="py-2.5 px-4 text-ink-2">{r.condition}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Panel>
 
               <Panel
                 flush
                 title="Quy tắc phân chia tỷ trọng theo vai trò phối hợp"
               >
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
-                    <tr>
-                      <th className="py-2.5 px-4 font-medium">Vai trò</th>
-                      <th className="py-2.5 px-3 font-medium text-right">Khung gợi ý</th>
-                      <th className="py-2.5 px-4 font-medium">Trách nhiệm chính</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {TASK_ROLE_WEIGHT_RULES.map((r) => (
-                      <tr key={r.roleKey} className="hover:bg-canvas">
-                        <td className="py-2.5 px-4 font-medium text-ink">{r.roleLabel}</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
-                          {r.suggestedWeightRange}
-                        </td>
-                        <td className="py-2.5 px-4 text-ink-2">{r.responsibilities}</td>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full min-w-[560px] text-left text-xs">
+                    <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
+                      <tr>
+                        <th className="py-2.5 px-4 font-medium">Vai trò</th>
+                        <th className="py-2.5 px-3 font-medium text-right">Khung gợi ý</th>
+                        <th className="py-2.5 px-4 font-medium">Trách nhiệm chính</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {TASK_ROLE_WEIGHT_RULES.map((r) => (
+                        <tr key={r.roleKey} className="hover:bg-canvas">
+                          <td className="py-2.5 px-4 font-medium text-ink">{r.roleLabel}</td>
+                          <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
+                            {r.suggestedWeightRange}
+                          </td>
+                          <td className="py-2.5 px-4 text-ink-2">{r.responsibilities}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </Panel>
             </div>
           </div>

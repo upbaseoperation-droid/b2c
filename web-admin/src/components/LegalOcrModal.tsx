@@ -182,9 +182,9 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
       role="dialog"
       aria-modal="true"
     >
-      <div data-motion-panel className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+      <div data-motion-panel className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line bg-sunken shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-success-soft border border-success-line text-success flex items-center justify-center font-semibold">
               <ShieldCheck className="w-5 h-5 text-success" />
@@ -208,10 +208,10 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
 
         {/* Preset Selector Bar */}
-        <div className="px-6 py-2.5 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="px-4 sm:px-6 py-2.5 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-ink-2">Dữ liệu mẫu thử nghiệm:</span>
-            <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+            <div className="inline-flex flex-wrap rounded-lg border border-line bg-surface p-0.5">
               <button
                 type="button"
                 onClick={() => handleLoadPreset('CCCD_INDIVIDUAL')}
@@ -255,7 +255,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
 
         {ocrError && (
-          <div className="mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
+          <div className="mx-4 sm:mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-danger shrink-0" />
               <span>{ocrError}</span>
@@ -265,7 +265,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         )}
 
         {/* Modal Body: 2 Columns */}
-        <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
           {/* Left Column: Upload / Preview Area */}
           <div className="lg:col-span-5 space-y-4">
             <div className="space-y-1.5">
@@ -734,13 +734,13 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-line bg-sunken flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 sm:px-6 py-4 border-t border-line bg-sunken flex flex-wrap items-center justify-between gap-2 shrink-0">
           <div className="text-xs text-muted flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
             Dữ liệu sau khi kiểm tra có thể bấm lưu trực tiếp vào Master Data hoặc hợp đồng.
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onClose}

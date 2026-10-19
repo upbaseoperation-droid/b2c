@@ -421,7 +421,7 @@ export function RatecardDialog({ open, value, busy, onClose, onSave }: { open: b
       title="Sửa trần thù lao KOC"
       footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(GRADES.map(grade => ({ grade, maxBudget: toNumber(v[grade]) })))} />}
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {GRADES.map(g => (
           <Field key={g} label={g} htmlFor={`rc-${g}`}>
             <Input id={`rc-${g}`} inputMode="numeric" className="tabular-nums" placeholder="Số tiền (đ)" value={v[g]} onChange={e => setV(p => ({ ...p, [g]: moneyInput(e.target.value) }))} />

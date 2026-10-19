@@ -1129,8 +1129,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 </div>
                 <div className="space-y-2">
                   {editForm.deliverables.map((item, idx) => (
-                    <div key={item.id} className="p-2.5 rounded-md border border-line bg-sunken/60 grid sm:grid-cols-12 gap-2 items-center text-xs">
-                      <div className="sm:col-span-5">
+                    <div key={item.id} className="p-2.5 rounded-md border border-line bg-sunken/60 grid md:grid-cols-12 gap-2 items-center text-xs">
+                      <div className="md:col-span-5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`px-1.5 py-0.5 rounded font-code text-2xs font-semibold ${
                             item.wave === 0 ? 'bg-accent-soft text-accent' : 'bg-warning-soft text-warning'
@@ -1147,11 +1147,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           PIC: <strong className="text-ink-2">{item.assignedChannelPic}</strong>
                         </div>
                       </div>
-                      <div className="sm:col-span-3 text-2xs tabular-nums">
+                      <div className="md:col-span-3 text-2xs tabular-nums">
                         <div className="text-ink-2 font-semibold">{formatVnd(item.allocatedCostVnd)} ({item.allocatedWeightPct}%)</div>
                         <div className="text-ink-3">Loại: {item.productionType}</div>
                       </div>
-                      <div className="sm:col-span-4">
+                      <div className="md:col-span-4">
                         <Select
                           value={item.lockStatus}
                           onChange={e => {

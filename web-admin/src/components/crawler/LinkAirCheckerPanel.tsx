@@ -391,7 +391,7 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
           <h4 className="text-sm font-semibold text-ink">Điều kiện nghiệm thu</h4>
           <ul className="grid gap-1.5">
             {r.checks.map((c) => (
-              <li key={c.key} className="grid grid-cols-[88px_150px_minmax(0,1fr)] gap-2 text-[13px]">
+              <li key={c.key} className="grid grid-cols-1 sm:grid-cols-[88px_150px_minmax(0,1fr)] gap-1 sm:gap-2 text-[13px]">
                 <span className={`font-medium ${CHECK_TONE[c.status]}`}>{CHECK_LABEL[c.status]}</span>
                 <span className="text-ink">{c.label}</span>
                 <span className="text-ink-2">{c.detail}</span>
@@ -403,7 +403,7 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
         {r.status === 'LIVE' && (
           <section className="grid gap-2">
             <h4 className="text-sm font-semibold text-ink">Số liệu công khai</h4>
-            <dl className="grid grid-cols-5 gap-px bg-line border border-line rounded-xl overflow-hidden">
+            <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-line border border-line rounded-xl overflow-hidden">
               {metrics.map(([label, value]) => (
                 <div key={label} className="bg-surface px-3 py-2.5 grid gap-0.5">
                   <dt className="text-2xs text-ink-3">{label}</dt>

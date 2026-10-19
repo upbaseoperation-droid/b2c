@@ -174,16 +174,16 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
       >
         <div
           data-motion-panel
-          className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+          className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
         >
           {/* Header - Enterprise Light */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 bg-slate-50/80 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shadow-2xs shrink-0">
                 <FileText className="w-5 h-5 text-accent" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h3 id="script-review-title" className="text-sm font-semibold text-slate-900">
                     Duyệt kịch bản KOC
                   </h3>
@@ -206,7 +206,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
           </div>
 
           {/* Body Content */}
-          <div className="p-6 space-y-4 max-h-[72vh] overflow-y-auto">
+          <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
             {/* Metadata Bar + Brand Profile Selector */}
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
               <div className="flex flex-wrap items-center gap-3">
@@ -514,7 +514,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
           </div>
 
           {/* Footer Actions - Enterprise Light */}
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="px-4 sm:px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
             <span className="text-xs text-slate-600">
               Trạng thái hiện tại:{' '}
               <strong className="text-slate-900">
@@ -522,7 +522,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               </strong>
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {!isRevisionMode && script.status === 'PENDING' && (
                 <button
                   onClick={() => setIsRevisionMode(true)}

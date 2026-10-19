@@ -432,14 +432,16 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           <Button variant="ghost" onClick={onClose}>
             Hủy
           </Button>
-          <Button variant="primary" icon={Zap} onClick={handleSubmit}>
-            {isOverCeiling
-              ? 'Tạo deal & trình duyệt vượt trần'
-              : dealType === 'SERVICE_ONLY'
-                ? 'Tạo deal mua thêm dịch vụ'
-                : isAutoApprovedByBrandRule
-                  ? `Chốt thẳng ${salaryGrade} & chuyển làm kịch bản`
-                  : `Tạo deal & trình ${workflowRules?.brandApproverName || 'nhãn hàng'} duyệt`}
+          <Button variant="primary" icon={Zap} onClick={handleSubmit} className="max-w-full truncate">
+            <span className="truncate">
+              {isOverCeiling
+                ? 'Tạo deal & trình duyệt vượt trần'
+                : dealType === 'SERVICE_ONLY'
+                  ? 'Tạo deal mua thêm dịch vụ'
+                  : isAutoApprovedByBrandRule
+                    ? `Chốt thẳng ${salaryGrade} & chuyển làm kịch bản`
+                    : `Tạo deal & trình ${workflowRules?.brandApproverName || 'nhãn hàng'} duyệt`}
+            </span>
           </Button>
         </>
       }
@@ -698,7 +700,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
         {dealType === 'MULTI_PLATFORM_CONTENT' && (
           <div className="p-3.5 rounded-lg bg-canvas border border-line space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-ink">
                   Hạng mục bàn giao đa kênh &amp; Phân bổ P&amp;L theo sàn
                 </span>
@@ -710,7 +712,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   Áp tỷ lệ chuẩn (70/15/15)
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 text-2xs">
+              <div className="flex flex-wrap items-center gap-1.5 text-2xs">
                 <span className="text-ink-3">Hiển thị báo giá KOC:</span>
                 <button
                   type="button"
@@ -878,7 +880,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
             <div>
               <span className="text-xs text-ink-2 font-medium block mb-1">Tổng deal (VNĐ)</span>
               <input

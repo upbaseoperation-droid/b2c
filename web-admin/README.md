@@ -113,6 +113,10 @@ Mở trình duyệt tại `http://localhost:3000`.
   - Gộp các trường dữ liệu có liên kết nghiệp vụ trực tiếp (như KOC + Gian hàng/Kênh; Tiến trình + Trách nhiệm + Cảnh báo SLA; Nghiệm thu kỹ thuật gồm Link Video + Giỏ hàng + Mã Ads) giúp người dùng nắm bắt trọn vẹn thông tin mà không cần kéo ngang màn hình trên mọi độ phân giải laptop từ 1280px đến 1920px.
 - **Bàn làm việc nhân sự (`CockpitView`):** Thêm biểu tượng trực quan cho các ô chỉ số (Khẩn cấp, Trong ngày, Hoàn tất, Tổng đầu việc), tích hợp bộ điều khiển phân đoạn `Segmented` để lọc nhanh danh sách nhiệm vụ.
 - **Tinh giản phân hệ Phân quyền (`CentralizedRbacHubView`):** Loại bỏ các thanh thông báo, card KPI thừa thãi và đoạn giải thích dài dòng; loại bỏ hoàn toàn các nút đóng vai (impersonate) nội bộ và đối tác; danh sách màn hình phân quyền theo Role hiển thị 2 cột tinh gọn, trực quan hóa trạng thái cấu hình.
+- **Chuẩn hóa Mobile & Tablet Responsive toàn diện (`360px–1023px`):**
+  - Trang bị `Viewport` (`viewportFit: 'cover'`), `min-h-dvh` và `env(safe-area-inset-bottom)` cho toàn bộ khung ứng dụng, ngăn kéo điều hướng, hộp thoại (`Modal`, `Drawer`) và thông báo (`ToastStack`); ngăn trình duyệt di động tự động phóng to khi nhập liệu.
+  - Tối ưu hóa `TopHeader`, `Sidebar` (khóa cuộn nền, đóng bằng `Escape`), `StatRow` / `Stat`, `Tabs`, `Segmented`, `Chips`, `FilterBar` và `DataTable` (vuốt ngang mượt trên mobile cho bảng nhiều cột, tự co giãn vừa khít trên màn hình máy tính).
+  - Chuẩn hóa toàn bộ lưới biểu mẫu, bảng ma trận kế hoạch tháng, hồ sơ KOC / Thương hiệu / Gian hàng / Hợp đồng hiển thị 1 cột trên điện thoại (`grid-cols-1 sm:grid-cols-*`) và không tràn ngang ở khung nhìn `360px`.
 
 ---
 

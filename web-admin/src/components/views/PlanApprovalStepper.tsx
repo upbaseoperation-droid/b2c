@@ -606,7 +606,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             </div>
 
             <div className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-ink font-semibold mb-1">Mã phiên bản mới:</label>
                   <input
@@ -647,7 +647,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 <div className="font-semibold text-ink text-2xs">
                   Chỉ tiêu và ngân sách giao mới:
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="text-2xs text-ink-2 block mb-0.5">Tổng ngân sách (VNĐ):</label>
                     <input

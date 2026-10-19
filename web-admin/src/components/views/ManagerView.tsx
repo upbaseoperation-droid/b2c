@@ -1004,7 +1004,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
                 {/* Matrix Mode Switcher */}
-                <div className="flex items-center gap-1 bg-sunken border border-line rounded-lg p-1 text-xs">
+                <div className="flex items-center gap-1 bg-sunken border border-line rounded-lg p-1 text-xs max-w-full overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setMatrixViewMode('4_TIER')}
@@ -1723,8 +1723,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
             </div>
 
-            <div className="w-full">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[680px] text-left text-xs border-collapse">
                 <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-2xs">
                   <tr>
                     <th className="py-2 px-2.5 w-[14%]">Mã Deal &amp; KOC</th>
@@ -1919,7 +1919,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     </span>
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* Tier 1 */}
                     <div className="p-2.5 bg-critical-soft border border-critical/20 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
@@ -2047,7 +2047,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-ink-2 font-semibold mb-1">Target GMV (VND)</label>
                     <input
@@ -2255,7 +2255,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần số video</label>
                           <input
@@ -2380,7 +2380,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             {/* Body */}
             <div className="p-6 space-y-4 text-xs">
               {/* Scorecard row */}
-              <div className="grid grid-cols-4 gap-3 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div className="p-3 bg-canvas rounded-xl border border-line">
                   <span className="text-2xs text-ink-3 block">Tổng Jobs</span>
                   <span className="text-lg font-semibold text-ink">{inspectStaffModal.totalJobs}</span>

@@ -2197,7 +2197,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-line/80 grid grid-cols-4 gap-1 text-center text-2xs">
+                    <div className="pt-2 border-t border-line/80 grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center text-2xs">
                       <div>
                         <span className="text-ink-3 block">Đơn hàng</span>
                         <strong className="text-ink font-mono">{camp.orders}</strong>
@@ -2926,7 +2926,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         8 Gian hàng
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20 text-center font-mono">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                         <strong className="text-xs text-positive">91,4%</strong>
@@ -2952,7 +2952,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         61 Gian hàng
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20 text-center font-mono">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                         <strong className="text-xs text-positive">86,8%</strong>
@@ -3762,7 +3762,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             />
                           </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-1 text-2xs font-mono text-center bg-canvas p-1 rounded">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-2xs font-mono text-center bg-canvas p-1 rounded">
                           <span>Air: <strong>{st.scoreAir}/35</strong></span>
                           <span>Spend: <strong>{st.scoreSpend}/25</strong></span>
                           <span>ROAS: <strong>{st.scoreEfficiency}/20</strong></span>
@@ -4108,7 +4108,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             {/* Bóc tách Tài chính Gross / Net / Thực chi */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg bg-canvas border border-line">
                 <span className="text-2xs text-ink-3 block">Hạn Mức Order Gross</span>
                 <strong className="text-sm font-mono text-ink">
@@ -4200,7 +4200,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           size="lg"
         >
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg bg-canvas border border-line">
                 <span className="text-2xs text-ink-3 block">Số Gian Hàng Phụ Trách</span>
                 <strong className="text-sm font-mono text-ink">

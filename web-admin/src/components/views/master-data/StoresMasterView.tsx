@@ -1005,7 +1005,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <label className="block text-ink-2 font-semibold mb-1">
                   Sàn / Nền tảng vận hành *
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {(['TikTok Shop', 'Shopee Mall', 'Lazada'] as const).map(p => {
                     const isSelected = quickPlatform === p;
                     return (

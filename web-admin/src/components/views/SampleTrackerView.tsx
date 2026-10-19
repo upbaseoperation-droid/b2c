@@ -190,8 +190,8 @@ export default function SampleTrackerView({
 
       {/* Main Table */}
       <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-        <div className="w-full">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-xs border-collapse">
             <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-2xs">
               <tr>
                 <th className="py-2 px-2.5 w-[18%]">KOC &amp; mã hồ sơ</th>

@@ -329,10 +329,10 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={isEditMode ? 'Cập nhật chiến dịch' : 'Tạo chiến dịch & phân kỳ tháng'}
-          className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+          className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl max-h-[92dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-canvas">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line bg-canvas shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
                 <Target className="w-4 h-4 text-accent" />
@@ -354,11 +354,11 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           </div>
 
           {/* Sub-navigation Tabs */}
-          <div className="flex items-center gap-2 px-6 pt-3 border-b border-line bg-surface">
+          <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 border-b border-line bg-surface overflow-x-auto max-w-full shrink-0">
             <button
               type="button"
               onClick={() => setActiveTab('OVERVIEW_PHASES')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
                 activeTab === 'OVERVIEW_PHASES'
                   ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
                   : 'border-transparent text-ink-2 hover:text-ink'
@@ -370,7 +370,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('STRATEGY_PROMO')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
                 activeTab === 'STRATEGY_PROMO'
                   ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
                   : 'border-transparent text-ink-2 hover:text-ink'
@@ -382,7 +382,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('KEY_VISUAL')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
                 activeTab === 'KEY_VISUAL'
                   ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
                   : 'border-transparent text-ink-2 hover:text-ink'
@@ -393,12 +393,12 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
             {activeTab === 'OVERVIEW_PHASES' && (
               <div className="space-y-4">
                 {/* Campaign Title, Code, Status */}
-                <div className="grid grid-cols-12 gap-3">
-                  <div className="col-span-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                  <div className="lg:col-span-6">
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Tên chiến dịch *
                     </label>
@@ -411,7 +411,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       required
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="lg:col-span-3">
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Mã chiến dịch *
                     </label>
@@ -424,7 +424,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                       required
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="lg:col-span-3">
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Trạng thái
                     </label>
@@ -441,7 +441,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                 </div>
 
                 {/* Brand & 3 Brand-level PICs */}
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Thương hiệu (Brand) *
@@ -494,7 +494,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                 </div>
 
                 {/* Total Campaign Financials */}
-                <div className="grid grid-cols-4 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
                   <div>
                     <label className="block text-2xs font-semibold text-ink-2 mb-1">
                       Tổng Ngân sách Chiến dịch (VNĐ)
@@ -553,7 +553,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                         Khung thời gian &amp; Chu kỳ kéo dài của Chiến dịch (1 tháng hoặc liên tháng 2–3 tháng)
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-2xs text-ink-3">Chọn nhanh:</span>
                       <button
                         type="button"
@@ -586,7 +586,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 items-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
                     <div>
                       <label className="block text-2xs font-semibold text-ink-2 mb-1">
                         Ngày bắt đầu Chiến dịch
@@ -621,7 +621,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
                   {/* Per-Month Phases Editor */}
                   <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <span className="text-xs font-semibold text-ink">
                         Phân kỳ Ngân sách, Mục tiêu GMV &amp; Vai trò giai đoạn theo từng tháng ({monthlyPhases.length} tháng):
                       </span>
@@ -635,7 +635,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                     </div>
 
                     <div className="overflow-x-auto bg-surface rounded-lg border border-line">
-                      <table className="w-full text-left border-collapse">
+                      <table className="w-full min-w-[640px] text-left border-collapse">
                         <thead>
                           <tr className="bg-canvas text-2xs font-semibold text-ink-2 border-b border-line">
                             <th className="py-2 px-2.5 w-24">Tháng</th>
@@ -730,7 +730,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   Các trường dưới đây tương ứng trực tiếp với <strong>Section 01 — Định hướng tháng &amp; Chiến dịch</strong> trên file <em>Monthly Content &amp; Key Visual Plan — Template 1 Sheet</em> trình Brand.
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Big Idea / Chủ đề chiến dịch (Monthly Theme) *
@@ -758,7 +758,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Vai trò trong Plan Năm (Role in Year Plan)
@@ -785,7 +785,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Cơ hội mùa vụ (Seasonal Opportunity)
@@ -813,7 +813,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Combo / Deal / Quà tặng trọng tâm (CTKM)
@@ -861,7 +861,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   Các trường dưới đây tương ứng trực tiếp với <strong>Section 03 — Key Visual chung của tháng</strong> trên file <em>Monthly Content &amp; Key Visual Plan — Template 1 Sheet</em> (Chủ đề, Font, Moodboard, Link Proposal, CTKM, Ngày lên Ref, Ngày Order, Ngày Treo).
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Chủ đề Key Visual (KV Theme)
@@ -901,7 +901,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
                       Thông điệp CTKM in trên Key Visual
@@ -928,7 +928,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-canvas rounded-xl border border-line">
                   <div>
                     <label className="block text-2xs font-semibold text-ink-2 mb-1">
                       1. Ngày cần lên Ref (Reference Date)
@@ -967,15 +967,15 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
             )}
 
             {/* Footer Actions */}
-            <div className="pt-3 border-t border-line flex items-center justify-between gap-3">
+            <div className="pt-3 border-t border-line flex flex-wrap items-center justify-between gap-3">
               <div className="text-2xs text-ink-3 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-positive" />
+                <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
                 <span>
                   Chiến dịch sẽ tự động liên kết với Kế hoạch tháng của thương hiệu <strong>{brand}</strong> trong các tháng:{' '}
                   <strong>{coveredMonths.join(', ')}</strong>
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}

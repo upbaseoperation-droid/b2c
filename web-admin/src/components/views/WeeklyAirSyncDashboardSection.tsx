@@ -1213,7 +1213,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                   Không có bản ghi đơn booking trong nhóm này.
                 </div>
               ) : (
-                <div className="max-h-72 overflow-y-auto rounded-lg border border-line">
+                <div className="max-h-72 overflow-y-auto overflow-x-auto rounded-lg border border-line">
                   <table className="w-full text-xs text-left">
                     <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
                       <tr>

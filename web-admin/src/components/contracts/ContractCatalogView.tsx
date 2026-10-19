@@ -417,7 +417,7 @@ export function ContractCatalogView({
       {/* Thanh công cụ lọc danh mục & thêm mẫu mới */}
       <Panel flush>
         <div className="p-4 border-b border-line flex flex-wrap items-center justify-between gap-3">
-          <div className="flex-1 min-w-[280px]">
+          <div className="flex-1 min-w-0 w-full sm:min-w-[240px]">
             <FilterBar
               search={{
                 value: search,
@@ -439,7 +439,7 @@ export function ContractCatalogView({
           )}
         </div>
 
-        <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-line">
+        <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-line">
           {/* Cột trái: Danh sách mẫu hợp đồng theo danh mục */}
           <div className="max-h-[78vh] overflow-y-auto divide-y divide-line bg-canvas/40">
             {filteredTemplates.length === 0 ? (
@@ -683,7 +683,7 @@ export function ContractCatalogView({
                           </div>
                           <div className="divide-y divide-line">
                             {groupFields.map(f => (
-                              <div key={f.key} className="px-4 py-2.5 grid md:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
+                              <div key={f.key} className="px-4 py-2.5 grid lg:grid-cols-[220px_180px_minmax(0,1fr)_90px] gap-2 items-center text-xs">
                                 <div className="min-w-0">
                                   <span className="font-medium text-ink block truncate">{f.title || f.label}</span>
                                   <span className="text-2xs text-ink-3 font-code">{f.key}</span>
@@ -806,7 +806,7 @@ export function ContractCatalogView({
           <Field label="Tên biểu mẫu hợp đồng" htmlFor="cat-edit-name">
             <Input id="cat-edit-name" value={editName} onChange={e => setEditName(e.target.value)} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Nhóm danh mục" htmlFor="cat-edit-category">
               <Select
                 id="cat-edit-category"
@@ -829,7 +829,7 @@ export function ContractCatalogView({
               </Select>
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Đối tượng ký (Bên B)" htmlFor="cat-edit-subject">
               <Select id="cat-edit-subject" value={editSubject} onChange={e => setEditSubject(e.target.value)}>
                 <option value="Cá nhân">Cá nhân</option>
@@ -887,7 +887,7 @@ export function ContractCatalogView({
 
           {editScope === 'KOC_CUSTOM' && (
             <div className="rounded-lg border border-accent/30 bg-accent-soft/30 p-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Mã KOC / ID kênh *">
                   <Input value={editKocId} onChange={e => setEditKocId(e.target.value)} placeholder="VD: koc-1 hoặc tên kênh" required />
                 </Field>
@@ -951,7 +951,7 @@ export function ContractCatalogView({
       >
         <div className="grid gap-4">
           {uploadModalMode === 'NEW' && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Mã mẫu (duy nhất)" htmlFor="up-code" hint="VD: LIV-HD, PL-IND, KOC-BBNT">
                 <Input id="up-code" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="LIV-HD" />
               </Field>
@@ -971,7 +971,7 @@ export function ContractCatalogView({
             <Input id="up-name" value={uploadName} onChange={e => setUploadName(e.target.value)} />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Nhóm danh mục" htmlFor="up-cat">
               <Select id="up-cat" value={uploadCategory} onChange={e => setUploadCategory(e.target.value as ContractCategory)}>
                 {(Object.keys(CATEGORY_LABELS) as ContractCategory[]).map(k => (
@@ -1031,7 +1031,7 @@ export function ContractCatalogView({
 
           {uploadScope === 'KOC_CUSTOM' && (
             <div className="rounded-lg border border-accent/30 bg-accent-soft/30 p-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Mã KOC / ID kênh *">
                   <Input value={uploadKocId} onChange={e => setUploadKocId(e.target.value)} placeholder="VD: koc-1 hoặc tên kênh" required />
                 </Field>

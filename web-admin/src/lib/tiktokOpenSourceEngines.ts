@@ -43,6 +43,7 @@ class ConcurrencyLimiter {
 }
 
 export interface CachedPublicProfileData {
+  secUid?: string;
   nickname?: string;
   bio?: string;
   bioLink?: string;
@@ -331,6 +332,7 @@ export interface RealTikTokVideoAndAuthorDetail {
   cartAnchorTitle?: string;
   author: {
     handle: string;
+    secUid?: string;
     nickname: string;
     bio: string;
     avatarUrl?: string;
@@ -434,6 +436,283 @@ function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>): {
 }
 
 /**
+ * Chuẩn hóa một đối tượng itemStruct thực tế của TikTok (từ webapp.video-detail hoặc /api/creator/item_list/)
+ * thành RealTikTokVideoAndAuthorDetail và lưu vào bộ nhớ đệm videoDetailCache.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | null | undefined): RealTikTokVideoAndAuthorDetail | null {
+  if (!itemStruct || !itemStruct.author || itemStruct.takeDown === 1) return null;
+
+  const u = itemStruct.author;
+  const s = itemStruct.authorStats || itemStruct.authorStatsV2 || {};
+  const stats1 = itemStruct.stats || {};
+  const stats2 = itemStruct.statsV2 || {};
+  const handle = String(u.uniqueId || '')
+    .trim()
+    .toLowerCase();
+  if (!handle) return null;
+
+  const views = Math.max(Number(stats1.playCount || 0), Number(stats2.playCount || 0));
+  const likes = Math.max(Number(stats1.diggCount || 0), Number(stats2.diggCount || 0));
+  const comments = Math.max(Number(stats1.commentCount || 0), Number(stats2.commentCount || 0));
+  const shares = Math.max(Number(stats1.shareCount || 0), Number(stats2.shareCount || 0));
+  const saves = Math.max(Number(stats1.collectCount || 0), Number(stats2.collectCount || 0));
+  const durationSeconds = Number(itemStruct.video?.duration || 0);
+
+  if (views === 0 && likes === 0 && comments === 0 && durationSeconds === 0) {
+    return null;
+  }
+
+  const videoId = String(itemStruct.id || '');
+  if (!videoId) return null;
+
+  let createTimeSec = Number(itemStruct.createTime || 0);
+  if (createTimeSec <= 1000000000 && /^\d{17,22}$/.test(videoId)) {
+    try {
+      const snowflakeSec = Number(BigInt(videoId) >> BigInt(32));
+      if (snowflakeSec > 1451606400 && snowflakeSec < 2100000000) {
+        createTimeSec = snowflakeSec;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  const publishedAt =
+    createTimeSec > 1000000000
+      ? new Date(createTimeSec * 1000).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+  const contentsDesc = Array.isArray(itemStruct.contents)
+    ? itemStruct.contents
+        .map((c: { desc?: string }) => (typeof c?.desc === 'string' ? c.desc.trim() : ''))
+        .filter(Boolean)
+        .join(' ')
+    : '';
+  const imagePostTitle =
+    typeof itemStruct.imagePost?.title === 'string' ? itemStruct.imagePost.title.trim() : '';
+  const stickerText = Array.isArray(itemStruct.stickersOnItem)
+    ? itemStruct.stickersOnItem
+        .flatMap((st: { stickerText?: string[] }) =>
+          Array.isArray(st?.stickerText) ? st.stickerText : []
+        )
+        .map((t: unknown) => (typeof t === 'string' ? t.trim() : ''))
+        .filter(Boolean)
+        .join(' ')
+    : '';
+
+  const rawCaption =
+    String(itemStruct.desc || '').trim() ||
+    imagePostTitle ||
+    contentsDesc;
+
+  const hashtagSet = new Set<string>();
+  for (const h of rawCaption.match(/#[\p{L}\p{N}_]+/gu) || []) {
+    hashtagSet.add(h.toLowerCase());
+  }
+  if (Array.isArray(itemStruct.challenges)) {
+    for (const ch of itemStruct.challenges) {
+      const title = typeof ch?.title === 'string' ? ch.title.trim().replace(/^#+/, '') : '';
+      if (title) hashtagSet.add(`#${title.toLowerCase()}`);
+    }
+  }
+  if (Array.isArray(itemStruct.textExtra)) {
+    for (const te of itemStruct.textExtra) {
+      const hn = typeof te?.hashtagName === 'string' ? te.hashtagName.trim().replace(/^#+/, '') : '';
+      if (hn) hashtagSet.add(`#${hn.toLowerCase()}`);
+    }
+  }
+  const hashtags = Array.from(hashtagSet);
+
+  const { hasCartAnchor, cartAnchorTitle } = extractTikTokShopAnchorInfo(itemStruct);
+
+  const caption =
+    rawCaption ||
+    stickerText ||
+    (cartAnchorTitle ? `Review ${cartAnchorTitle}` : '') ||
+    (hashtags.length > 0 ? `Video kênh @${handle} ${hashtags.slice(0, 4).join(' ')}` : '') ||
+    `Video kênh @${handle} (${publishedAt})`;
+
+  const engagementRate =
+    views > 0 ? Number((((likes + comments + shares) / views) * 100).toFixed(2)) : 0;
+
+  const bio = typeof u.signature === 'string' ? u.signature.trim() : '';
+  const contacts = extractContactsFromBio(bio);
+  const secUid = typeof u.secUid === 'string' && u.secUid.trim() ? u.secUid.trim() : undefined;
+
+  const canonicalUrl = `https://www.tiktok.com/@${handle}/video/${videoId}`;
+  const result: RealTikTokVideoAndAuthorDetail = {
+    videoId,
+    videoUrl: canonicalUrl,
+    caption,
+    hashtags,
+    publishedAt,
+    createTimeSec,
+    durationSeconds,
+    musicTitle: String(itemStruct.music?.title || `Nhạc nền - @${handle}`),
+    views,
+    likes,
+    comments,
+    shares,
+    saves,
+    engagementRate,
+    hasCartAnchor,
+    cartAnchorTitle,
+    author: {
+      handle,
+      secUid,
+      nickname: String(u.nickname || handle),
+      bio,
+      avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : u.avatarMedium,
+      isVerified: Boolean(u.verified),
+      followers: Number(s.followerCount || 0),
+      following: Number(s.followingCount || 0),
+      totalLikes: Number(s.heartCount ?? s.heart ?? 0),
+      videoCount: Number(s.videoCount || 0),
+      extractedPhone: contacts.phone,
+      extractedZalo: contacts.zalo,
+      extractedEmail: contacts.email,
+    },
+  };
+
+  const store = getSharedCrawlerStore();
+  setBoundedCache(
+    store.videoDetailCache,
+    canonicalUrl.toLowerCase(),
+    result,
+    VIDEO_CACHE_TTL_MS,
+    2500
+  );
+  if (secUid && !store.profileCache.has(handle)) {
+    store.profileCache.set(handle, {
+      data: {
+        secUid,
+        nickname: result.author.nickname,
+        bio: result.author.bio,
+        avatarUrl: result.author.avatarUrl,
+        followers: result.author.followers,
+        following: result.author.following,
+        totalLikes: result.author.totalLikes,
+        videoCount: result.author.videoCount,
+        isVerified: result.author.isVerified,
+      },
+      expiresAt: Date.now() + VIDEO_CACHE_TTL_MS,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Truy vấn trực tiếp danh sách video mới nhất liên tiếp theo thời gian đăng (type=1) của một kênh TikTok
+ * thông qua endpoint /api/creator/item_list/ bằng secUid của kênh.
+ */
+export async function fetchTikTokCreatorVideoListBySecUid(
+  rawHandle: string,
+  secUid: string,
+  maxItems = 40
+): Promise<RealTikTokVideoAndAuthorDetail[]> {
+  const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
+  const cleanSecUid = (secUid || '').trim();
+  if (!cleanHandle || !cleanSecUid) return [];
+
+  const targetCount = Math.min(Math.max(6, maxItems), 100);
+  const store = getSharedCrawlerStore();
+  const deviceId =
+    '7' + Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join('');
+  let cursor = Date.now();
+  const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
+  const maxPages = Math.min(Math.ceil(targetCount / 14) + 1, 8);
+
+  for (let page = 0; page < maxPages && collected.size < targetCount; page++) {
+    const currentCursor = cursor;
+    const pageData = await store.tiktokLimiter.run(async () => {
+      try {
+        const qs = new URLSearchParams({
+          aid: '1988',
+          app_language: 'vi-VN',
+          app_name: 'tiktok_web',
+          browser_language: 'vi-VN',
+          browser_name: 'Mozilla',
+          browser_online: 'true',
+          browser_platform: 'Win32',
+          browser_version: '5.0 (Windows NT 10.0; Win64; x64)',
+          channel: 'tiktok_web',
+          cookie_enabled: 'true',
+          count: '15',
+          cursor: String(currentCursor),
+          device_id: deviceId,
+          device_platform: 'web_pc',
+          focus_state: 'true',
+          from_page: 'user',
+          history_len: '2',
+          is_fullscreen: 'false',
+          is_page_visible: 'true',
+          language: 'vi-VN',
+          os: 'windows',
+          priority_region: 'VN',
+          referer: '',
+          region: 'VN',
+          screen_height: '1080',
+          screen_width: '1920',
+          secUid: cleanSecUid,
+          tz_name: 'Asia/Saigon',
+          type: '1', // 1 = Lấy lần lượt từ video mới đăng nhất trở về trước
+          verifyFp: '',
+          webcast_language: 'vi-VN',
+        });
+
+        const res = await fetch(`https://www.tiktok.com/api/creator/item_list/?${qs.toString()}`, {
+          method: 'GET',
+          headers: {
+            'User-Agent': DEFAULT_BROWSER_UA,
+            Accept: 'application/json, text/plain, */*',
+            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+            Referer: `https://www.tiktok.com/@${cleanHandle}`,
+          },
+          signal: AbortSignal.timeout(6500),
+          cache: 'no-store',
+        });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    });
+
+    const list = Array.isArray(pageData?.itemList) ? pageData.itemList : [];
+    if (list.length === 0) break;
+
+    let minCreateTimeSec = Infinity;
+    for (const rawItem of list) {
+      const parsed = parseTikTokItemStructToDetail(rawItem);
+      if (!parsed) continue;
+      if (parsed.author.handle.toLowerCase() !== cleanHandle) continue;
+      if (!collected.has(parsed.videoId)) {
+        collected.set(parsed.videoId, parsed);
+      }
+      if (parsed.createTimeSec > 0 && parsed.createTimeSec < minCreateTimeSec) {
+        minCreateTimeSec = parsed.createTimeSec;
+      }
+    }
+
+    if (!pageData?.hasMorePrevious || !Number.isFinite(minCreateTimeSec)) {
+      break;
+    }
+
+    const nextCursor = (minCreateTimeSec - 1) * 1000;
+    cursor = nextCursor < cursor ? nextCursor : cursor - 1000;
+  }
+
+  return [...collected.values()]
+    .sort(
+      (a, b) =>
+        b.createTimeSec - a.createTimeSec ||
+        compareTikTokVideoIdDesc(a.videoId, b.videoId)
+    )
+    .slice(0, targetCount);
+}
+
+/**
  * Bóc tách đồng thời cả Chỉ số Video thực tế VÀ Hồ sơ KOC thực tế từ trang Video TikTok (webapp.video-detail).
  * Có bộ nhớ đệm dùng chung (TTL 30 phút) và gộp truy vấn trùng (In-Flight Deduplication) cho 30+ người dùng đồng thời.
  */
@@ -472,143 +751,10 @@ export async function inspectLiveTikTokVideoPage(
         defaultScope?.['webapp.reflow.video.detail'];
       const itemStruct = videoDetailScope?.itemInfo?.itemStruct;
 
-      if (!itemStruct || !itemStruct.author || itemStruct.takeDown === 1) return null;
-
-      const u = itemStruct.author;
-      const s = itemStruct.authorStats || itemStruct.authorStatsV2 || {};
-      const stats1 = itemStruct.stats || {};
-      const stats2 = itemStruct.statsV2 || {};
-      const handle = String(u.uniqueId || '')
-        .trim()
-        .toLowerCase();
-      if (!handle) return null;
-
-      const views = Math.max(Number(stats1.playCount || 0), Number(stats2.playCount || 0));
-      const likes = Math.max(Number(stats1.diggCount || 0), Number(stats2.diggCount || 0));
-      const comments = Math.max(Number(stats1.commentCount || 0), Number(stats2.commentCount || 0));
-      const shares = Math.max(Number(stats1.shareCount || 0), Number(stats2.shareCount || 0));
-      const saves = Math.max(Number(stats1.collectCount || 0), Number(stats2.collectCount || 0));
-      const durationSeconds = Number(itemStruct.video?.duration || 0);
-
-      if (views === 0 && likes === 0 && comments === 0 && durationSeconds === 0) {
-        return null;
-      }
-
-      const videoId = String(itemStruct.id || '');
-      let createTimeSec = Number(itemStruct.createTime || 0);
-      if (createTimeSec <= 1000000000 && /^\d{17,22}$/.test(videoId)) {
-        try {
-          const snowflakeSec = Number(BigInt(videoId) >> BigInt(32));
-          if (snowflakeSec > 1451606400 && snowflakeSec < 2100000000) {
-            createTimeSec = snowflakeSec;
-          }
-        } catch {
-          // ignore
-        }
-      }
-      const publishedAt =
-        createTimeSec > 1000000000
-          ? new Date(createTimeSec * 1000).toISOString().slice(0, 10)
-          : new Date().toISOString().slice(0, 10);
-
-      const contentsDesc = Array.isArray(itemStruct.contents)
-        ? itemStruct.contents
-            .map((c: { desc?: string }) => (typeof c?.desc === 'string' ? c.desc.trim() : ''))
-            .filter(Boolean)
-            .join(' ')
-        : '';
-      const imagePostTitle =
-        typeof itemStruct.imagePost?.title === 'string' ? itemStruct.imagePost.title.trim() : '';
-      const stickerText = Array.isArray(itemStruct.stickersOnItem)
-        ? itemStruct.stickersOnItem
-            .flatMap((st: { stickerText?: string[] }) =>
-              Array.isArray(st?.stickerText) ? st.stickerText : []
-            )
-            .map((t: unknown) => (typeof t === 'string' ? t.trim() : ''))
-            .filter(Boolean)
-            .join(' ')
-        : '';
-
-      const rawCaption =
-        String(itemStruct.desc || '').trim() ||
-        imagePostTitle ||
-        contentsDesc;
-
-      const hashtagSet = new Set<string>();
-      for (const h of rawCaption.match(/#[\p{L}\p{N}_]+/gu) || []) {
-        hashtagSet.add(h.toLowerCase());
-      }
-      if (Array.isArray(itemStruct.challenges)) {
-        for (const ch of itemStruct.challenges) {
-          const title = typeof ch?.title === 'string' ? ch.title.trim().replace(/^#+/, '') : '';
-          if (title) hashtagSet.add(`#${title.toLowerCase()}`);
-        }
-      }
-      if (Array.isArray(itemStruct.textExtra)) {
-        for (const te of itemStruct.textExtra) {
-          const hn = typeof te?.hashtagName === 'string' ? te.hashtagName.trim().replace(/^#+/, '') : '';
-          if (hn) hashtagSet.add(`#${hn.toLowerCase()}`);
-        }
-      }
-      const hashtags = Array.from(hashtagSet);
-
-      const { hasCartAnchor, cartAnchorTitle } = extractTikTokShopAnchorInfo(itemStruct);
-
-      const caption =
-        rawCaption ||
-        stickerText ||
-        (cartAnchorTitle ? `Review ${cartAnchorTitle}` : '') ||
-        (hashtags.length > 0 ? `Video kênh @${handle} ${hashtags.slice(0, 4).join(' ')}` : '') ||
-        `Video kênh @${handle} (${publishedAt})`;
-
-      const engagementRate =
-        views > 0 ? Number((((likes + comments + shares) / views) * 100).toFixed(2)) : 0;
-
-      const bio = typeof u.signature === 'string' ? u.signature.trim() : '';
-      const contacts = extractContactsFromBio(bio);
-
-      const canonicalUrl = `https://www.tiktok.com/@${handle}/video/${videoId}`;
-      const result: RealTikTokVideoAndAuthorDetail = {
-        videoId,
-        videoUrl: canonicalUrl,
-        caption,
-        hashtags,
-        publishedAt,
-        createTimeSec,
-        durationSeconds,
-        musicTitle: String(itemStruct.music?.title || `Nhạc nền - @${handle}`),
-        views,
-        likes,
-        comments,
-        shares,
-        saves,
-        engagementRate,
-        hasCartAnchor,
-        cartAnchorTitle,
-        author: {
-          handle,
-          nickname: String(u.nickname || handle),
-          bio,
-          avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : u.avatarMedium,
-          isVerified: Boolean(u.verified),
-          followers: Number(s.followerCount || 0),
-          following: Number(s.followingCount || 0),
-          totalLikes: Number(s.heartCount ?? s.heart ?? 0),
-          videoCount: Number(s.videoCount || 0),
-          extractedPhone: contacts.phone,
-          extractedZalo: contacts.zalo,
-          extractedEmail: contacts.email,
-        },
-      };
+      const result = parseTikTokItemStructToDetail(itemStruct);
+      if (!result) return null;
 
       setBoundedCache(store.videoDetailCache, normalizedKey, result, VIDEO_CACHE_TTL_MS, 2500);
-      setBoundedCache(
-        store.videoDetailCache,
-        canonicalUrl.toLowerCase(),
-        result,
-        VIDEO_CACHE_TTL_MS,
-        2500
-      );
       return result;
     } catch {
       return null;
@@ -1395,12 +1541,39 @@ export async function discoverTikTokChannelVideoUrls(
   options?: {
     nickname?: string;
     maxUrls?: number;
+    secUid?: string;
   }
 ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> {
   const cleanHandle = rawHandle.trim().toLowerCase().replace(/^@+/, '');
   if (!cleanHandle) return [];
   const maxUrls = Math.min(Math.max(8, options?.maxUrls || 60), 120);
   const store = getSharedCrawlerStore();
+  const resolvedSecUid =
+    options?.secUid?.trim() || store.profileCache.get(cleanHandle)?.data?.secUid?.trim();
+
+  if (resolvedSecUid) {
+    const directVideos = await fetchTikTokCreatorVideoListBySecUid(
+      cleanHandle,
+      resolvedSecUid,
+      maxUrls
+    );
+    if (directVideos.length > 0) {
+      const directUrls = directVideos.map((v) => ({
+        handle: cleanHandle,
+        videoId: v.videoId,
+        videoUrl: v.videoUrl,
+      }));
+      setBoundedCache(
+        store.searchHtmlCache,
+        `channel_videos__${cleanHandle}`,
+        directUrls,
+        SEARCH_CACHE_TTL_MS,
+        500
+      );
+      return directUrls.slice(0, maxUrls);
+    }
+  }
+
   const cacheKey = `channel_videos__${cleanHandle}`;
   const now = Date.now();
   const cached = store.searchHtmlCache.get(cacheKey);

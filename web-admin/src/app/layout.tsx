@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,12 @@ const jetbrains = JetBrains_Mono({
   preload: false,
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "Upbase Ops",
   description: "Công cụ vận hành Marketing B2C của Upbase",
@@ -30,7 +36,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className={`h-full ${beVietnam.variable} ${jetbrains.variable}`}>
-      <body className="min-h-full bg-canvas text-ink flex flex-col antialiased font-sans">
+      <body className="min-h-dvh bg-canvas text-ink flex flex-col antialiased font-sans pb-[env(safe-area-inset-bottom)]">
         {children}
       </body>
     </html>

@@ -8,6 +8,7 @@ import {
   Music,
   RefreshCw,
   Search,
+  UserCheck,
 } from 'lucide-react';
 import type { KocItem, TikTokVideoItem } from '../../lib/types';
 import {
@@ -34,11 +35,12 @@ interface TikTokKocScraperModalProps {
   existingKocs: KocItem[];
   initialHandle?: string;
   onApplyResults: (payload: { created: KocItem[]; updated: KocItem[] }) => void;
+  onOpenKocInMaster?: (koc: KocItem) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
-const VIDEO_LIMIT_OPTIONS = [24, 40, 60, 80, 100] as const;
+const VIDEO_LIMIT_OPTIONS = [24, 48, 72, 100] as const;
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   open,
@@ -46,11 +48,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   existingKocs,
   initialHandle = '',
   onApplyResults,
+  onOpenKocInMaster,
   onNotify,
 }) => {
   const [rawInput, setRawInput] = useState(initialHandle);
   const period: PeriodKey = '30d';
-  const [videoLimit, setVideoLimit] = useState<number>(40);
+  const [videoLimit, setVideoLimit] = useState<number>(24);
   const [loading, setLoading] = useState(false);
   const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -63,6 +66,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     setPrevSyncKey(syncKey);
     if (open) {
       setRawInput(initialHandle);
+      setVideoLimit(24);
       setErrorMsg(null);
       setResults([]);
       setSelectedHandle('');
@@ -189,6 +193,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     return results.find((r) => r.handle === selectedHandle) || results[0];
   }, [results, selectedHandle]);
 
+  const matchedActiveKoc = useMemo(() => {
+    if (!activeResult) return undefined;
+    const clean = activeResult.handle.trim().toLowerCase().replace(/^@+/, '');
+    return existingByHandle.get(clean);
+  }, [activeResult, existingByHandle]);
+
   const handleExportCsv = () => {
     if (results.length === 0) return;
     const csvContent = buildScrapedKocsCsv(results);
@@ -312,12 +322,21 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           </Button>
           {results.length > 0 && (
             <>
+              {matchedActiveKoc && onOpenKocInMaster && (
+                <Button
+                  variant="secondary"
+                  icon={UserCheck}
+                  onClick={() => onOpenKocInMaster(matchedActiveKoc)}
+                >
+                  Mở hồ sơ danh bạ
+                </Button>
+              )}
               <Button variant="secondary" icon={Download} onClick={handleExportCsv}>
                 Xuất file CSV
               </Button>
               <Button variant="primary" icon={Check} onClick={handleSaveToMaster}>
                 {results.length === 1
-                  ? existingByHandle.has(results[0].handle)
+                  ? existingByHandle.has(results[0].handle.toLowerCase().replace(/^@+/, ''))
                     ? 'Cập nhật hồ sơ KOC'
                     : 'Thêm vào danh bạ'
                   : `Lưu ${results.length} kênh (${newCount} mới, ${updateCount} cập nhật)`}
@@ -329,7 +348,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     >
       <div className="space-y-3">
         <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_160px_auto] gap-2.5 items-center">
+          <div className="grid lg:grid-cols-[minmax(0,1fr)_185px_auto] gap-2.5 items-center">
             <input
               id="tiktok-scraper-input"
               type="text"
@@ -379,7 +398,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
             <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
             {results.map((r) => {
               const isSelected = r.handle === activeResult?.handle;
-              const isExisting = existingByHandle.has(r.handle);
+              const isExisting = existingByHandle.has(r.handle.toLowerCase().replace(/^@+/, ''));
               return (
                 <button
                   key={r.handle}
@@ -428,8 +447,20 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       @{activeResult.channelProfile.handle}
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                    {existingByHandle.has(activeResult.handle) ? (
-                      <Status tone="neutral">Đã có trong danh bạ</Status>
+                    {matchedActiveKoc ? (
+                      onOpenKocInMaster ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenKocInMaster(matchedActiveKoc)}
+                          title="Mở hồ sơ KOC trong Danh bạ KOC"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                        >
+                          <UserCheck className="w-3 h-3 shrink-0" />
+                          <span>Đã có trong danh bạ · Xem hồ sơ</span>
+                        </button>
+                      ) : (
+                        <Status tone="neutral">Đã có trong danh bạ</Status>
+                      )
                     ) : (
                       <Status tone="positive">Kênh mới</Status>
                     )}
@@ -487,19 +518,20 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               flush
               title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
               actions={
-                activeResult.recentVideos.length < 80 &&
+                activeResult.recentVideos.length < 100 &&
                 activeResult.recentVideos.length < activeResult.channelProfile.videoCount ? (
                   <Button
                     size="sm"
                     variant="secondary"
                     icon={RefreshCw}
                     disabled={loadingMoreHandle === activeResult.handle || loading}
-                    onClick={() =>
-                      handleLoadMoreVideos(
-                        activeResult.handle,
-                        Math.min(80, Math.max(activeResult.recentVideos.length + 24, 48))
-                      )
-                    }
+                    onClick={() => {
+                      const nextPreset =
+                        VIDEO_LIMIT_OPTIONS.find(
+                          (opt) => opt > activeResult.recentVideos.length
+                        ) || 100;
+                      void handleLoadMoreVideos(activeResult.handle, nextPreset);
+                    }}
                   >
                     {loadingMoreHandle === activeResult.handle
                       ? 'Đang tải thêm...'

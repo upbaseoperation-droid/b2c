@@ -731,6 +731,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navRef = useRef<HTMLElement>(null);
   const { box, ready } = useActiveBox(navRef, activeTab);
 
+  React.useEffect(() => {
+    if (!isMobileOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseMobile?.();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isMobileOpen, onCloseMobile]);
+
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);
     onCloseMobile?.();
@@ -749,16 +763,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </Presence>
 
       <aside
-        className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-(--motion-base) ease-move fixed inset-y-0 left-0 z-30 ${
+        className={`app-sidebar w-64 sm:w-60 max-w-[85vw] bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-(--motion-base) ease-move fixed inset-y-0 left-0 z-50 lg:z-30 ${
           isMobileOpen
-            ? 'translate-x-0 shadow-2xl z-50'
+            ? 'translate-x-0 shadow-2xl'
             : isCollapsed
             ? '-translate-x-full'
             : '-translate-x-full lg:translate-x-0'
         }`}
         aria-label="Điều hướng chính"
       >
-        <div className="flex flex-col min-h-0 overflow-y-auto">
+        <div className="flex flex-col min-h-0 flex-1 overflow-y-auto overscroll-contain sidebar-scrollbar">
           <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
             <BrandLogo height={22} />
 
@@ -777,8 +791,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {onCloseMobile && (
                 <button
+                  type="button"
                   onClick={onCloseMobile}
-                  className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                  className="lg:hidden h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
                   aria-label="Đóng menu"
                 >
                   <X className="w-4 h-4" />
@@ -918,7 +933,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        <div className="shrink-0 px-3 py-2.5 border-t border-line">
+        <div className="shrink-0 px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] border-t border-line">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
@@ -930,8 +945,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {onLogout && (
               <button
+                type="button"
                 onClick={onLogout}
-                className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors shrink-0"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors shrink-0"
                 title="Đăng xuất"
                 aria-label="Đăng xuất"
               >

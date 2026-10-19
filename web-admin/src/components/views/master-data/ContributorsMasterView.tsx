@@ -721,7 +721,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">
                 Số điện thoại <span className="text-critical">*</span>
@@ -747,7 +747,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Vai trò chính</label>
               <select
@@ -774,7 +774,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Định mức thù lao / video (VNĐ)</label>
               <input

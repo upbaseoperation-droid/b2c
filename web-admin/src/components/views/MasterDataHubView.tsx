@@ -1829,7 +1829,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
               <label className="block text-ink-2 font-medium mb-1">
                 Ngành hàng
@@ -1976,7 +1976,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-ink-2 font-medium mb-1">
                   Mã Brand
@@ -2156,7 +2156,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         }
       >
         <form id="product-catalog-form" onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Mã SKU *</label>
               <input
@@ -2194,7 +2194,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Thuộc thương hiệu</label>
               <select
@@ -2222,7 +2222,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-ink-2 font-medium mb-1">Tên gian hàng phân phối</label>
               <input
@@ -2249,7 +2249,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             <span className="text-2xs font-semibold text-ink block">
               Chính sách phân phối & Booking KOC
             </span>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
                 <label className="block text-ink-2 font-medium mb-1">Phân loại vai trò</label>
                 <select

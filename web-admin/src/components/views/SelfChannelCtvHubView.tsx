@@ -3692,7 +3692,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700 block">Định dạng Video cần sinh</label>
                   <select
@@ -3876,7 +3876,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setScriptVerdict('APPROVED')}
-                    className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                    className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                       scriptVerdict === 'APPROVED'
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -3888,7 +3888,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setScriptVerdict('REVISE')}
-                    className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                    className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                       scriptVerdict === 'REVISE'
                         ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -4041,7 +4041,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setVideoVerdict('APPROVED')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                     videoVerdict === 'APPROVED'
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
                       : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -4053,7 +4053,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setVideoVerdict('REVISE')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                     videoVerdict === 'REVISE'
                       ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
                       : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -4164,7 +4164,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setBrandAcceptVerdict('APPROVED')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                     brandAcceptVerdict === 'APPROVED'
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
                       : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -4176,7 +4176,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setBrandAcceptVerdict('REVISE')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-all ${
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
                     brandAcceptVerdict === 'REVISE'
                       ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
                       : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -4291,7 +4291,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <label className="font-semibold text-slate-700 block">Thời lượng (giây)</label>
                       <input

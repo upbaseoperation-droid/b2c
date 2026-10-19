@@ -275,7 +275,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       {/* ========================================================================= */}
       <div className="bg-surface border border-line rounded-xl p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search */}
-        <div className="relative flex-1 min-w-[260px]">
+        <div className="relative flex-1 min-w-0 w-full sm:min-w-[240px]">
           <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -317,8 +317,8 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       {/* 3. PARTNERS ACCOUNTS TABLE */}
       {/* ========================================================================= */}
       <div className="card-enterprise overflow-hidden">
-        <div className="w-full">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-xs border-collapse">
             <thead className="bg-canvas text-ink-3 border-b border-line text-2xs font-semibold">
               <tr>
                 <th className="py-2.5 px-3 pl-4 w-[22%]">Tài khoản &amp; Đối tác</th>
@@ -519,7 +519,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
               {/* Row 2: Partner Type */}
               <div className="space-y-1.5">
                 <label className="font-semibold text-ink-2">Loại bên thứ 3 (Partner Type) *</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => {

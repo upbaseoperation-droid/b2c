@@ -306,15 +306,14 @@ function LoginContent() {
       </aside>
 
       {/* Cột phải: Form đăng nhập */}
-      <main className="lg:col-span-7 flex flex-col justify-between items-center px-4 py-8 sm:px-8">
-        <div className="w-full lg:hidden pb-6 flex justify-center">
+      <main className="lg:col-span-7 flex flex-col justify-between items-center px-3 py-5 sm:px-8 sm:py-8">
+        <div className="w-full lg:hidden pb-4 sm:pb-6 flex justify-center">
           <BrandLogo height={26} />
         </div>
 
-        <div className="w-full max-w-[480px] my-auto bg-surface border border-line rounded-2xl p-6 sm:p-8 shadow-2xs space-y-5">
+        <div className="w-full max-w-[480px] my-auto bg-surface border border-line rounded-2xl p-4 sm:p-8 shadow-2xs space-y-4 sm:space-y-5">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Đăng nhập</h1>
-            <p className="text-2xs text-ink-3 mt-1">Truy cập không gian làm việc phòng ban Marketing B2C</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -344,7 +343,7 @@ function LoginContent() {
                   </div>
                 </div>
 
-                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-80 overflow-y-auto" role="radiogroup" aria-label="Chọn vai trò">
+                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-72 sm:max-h-80 overflow-y-auto overscroll-contain" role="radiogroup" aria-label="Chọn vai trò">
                   {USERS.map((u) => {
                     const isSelected = selectedUser === u.id;
                     const customBadge =
@@ -363,7 +362,7 @@ function LoginContent() {
                         aria-checked={isSelected}
                         onClick={() => setSelectedUser(u.id)}
                         onDoubleClick={() => handleSandboxLogin(u.id)}
-                        className={`w-full text-left px-3 py-2 flex items-center gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
+                        className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 sm:gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
                       >
                         <span
                           className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${isSelected ? 'border-accent' : 'border-line-strong'}`}
@@ -375,7 +374,7 @@ function LoginContent() {
                           <span className="block text-[13px] font-medium truncate">{u.name}</span>
                           <span className="block text-2xs text-ink-3 truncate">{u.roleTitle}</span>
                         </span>
-                        <Status tone={customBadge ? customBadge.tone : (ROLE_TONE[u.role] ?? 'neutral')}>
+                        <Status tone={customBadge ? customBadge.tone : (ROLE_TONE[u.role] ?? 'neutral')} className="hidden xs:inline-flex sm:inline-flex shrink-0">
                           {customBadge ? customBadge.label : (ROLE_LABEL[u.role] ?? u.role)}
                         </Status>
                       </button>
@@ -402,17 +401,14 @@ function LoginContent() {
               </section>
 
               {/* Kiểm tra cổng đăng nhập từ danh bạ 1.011 nhân sự */}
-              <section className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
+              <section className="p-3 sm:p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
                 <div>
                   <h3 className="text-xs font-semibold text-ink">
                     Kiểm tra đăng nhập theo Mã NV / Email (Danh bạ 1.011 nhân sự)
                   </h3>
-                  <p className="text-2xs text-ink-3 mt-0.5">
-                    Nhập mã NV bất kỳ để kiểm tra cổng chặn đăng nhập tự động theo phòng ban.
-                  </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     type="text"
                     value={staffIdentifierInput}
@@ -421,10 +417,11 @@ function LoginContent() {
                     className="flex-1 text-xs"
                   />
                   <Button
-                    size="sm"
+                    size="md"
                     variant="secondary"
                     disabled={isLoading}
                     onClick={() => handleDirectoryStaffLogin()}
+                    className="w-full sm:w-auto"
                   >
                     Đăng nhập
                   </Button>
@@ -437,7 +434,7 @@ function LoginContent() {
                       setStaffIdentifierInput('HN222');
                       handleDirectoryStaffLogin('HN222');
                     }}
-                    className="text-2xs px-2 py-1 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                    className="text-2xs px-2.5 py-1.5 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
                   >
                     HN222 · Đỗ Quyên (TP Growth)
                   </button>
@@ -447,7 +444,7 @@ function LoginContent() {
                       setStaffIdentifierInput('HN862');
                       handleDirectoryStaffLogin('HN862');
                     }}
-                    className="text-2xs px-2 py-1 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                    className="text-2xs px-2.5 py-1.5 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
                   >
                     HN862 · Đức Quảng (TP Media)
                   </button>
@@ -457,7 +454,7 @@ function LoginContent() {
                       setStaffIdentifierInput('HN782');
                       handleDirectoryStaffLogin('HN782');
                     }}
-                    className="text-2xs px-2 py-1 rounded bg-critical-soft text-critical border border-line font-medium"
+                    className="text-2xs px-2.5 py-1.5 rounded bg-critical-soft text-critical border border-line font-medium"
                   >
                     Thử HN782 · Phòng Livestream (Chặn Login)
                   </button>

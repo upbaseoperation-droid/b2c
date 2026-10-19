@@ -48,14 +48,14 @@ export function Panel({
   return (
     <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden shadow-2xs', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line bg-surface">
+        <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-4 py-3 border-b border-line bg-surface">
           <div className="min-w-0">
             {title && <h3 className="text-sm font-semibold text-ink leading-tight">{title}</h3>}
           </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          {actions && <div className="flex flex-wrap items-center gap-2 max-w-full">{actions}</div>}
         </header>
       )}
-      <div className={flush ? '' : 'p-4'}>{children}</div>
+      <div className={flush ? '' : 'p-3.5 sm:p-4'}>{children}</div>
     </section>
   );
 }
@@ -73,7 +73,7 @@ export function Chips<K extends string>({ items, value, onChange, label }: { ite
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} className="relative flex items-center gap-1.5 overflow-x-auto" role="group" aria-label={label}>
+    <div ref={ref} className="relative flex items-center gap-1.5 overflow-x-auto max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={label}>
       <SlidingIndicator box={box} ready={ready} className="rounded-full bg-ink" />
       {label && <span className="text-2xs text-ink-3 shrink-0 mr-1">{label}</span>}
       {items.map((it) => {
@@ -86,7 +86,7 @@ export function Chips<K extends string>({ items, value, onChange, label }: { ite
             data-active={on}
             onClick={() => onChange(it.key)}
             className={cx(
-              'relative h-7 px-2.5 rounded-full text-[12.5px] whitespace-nowrap border transition-colors duration-(--motion-base)',
+              'relative h-7 px-2.5 rounded-full text-[12.5px] whitespace-nowrap shrink-0 border transition-colors duration-(--motion-base)',
               on ? 'text-white border-transparent' : 'bg-transparent text-ink-2 border-line hover:border-line-strong hover:text-ink',
             )}
           >
@@ -113,7 +113,7 @@ export function SearchInput({ value, onChange, placeholder = 'Tìm kiếm', clas
         className="w-full h-[34px] pl-9 pr-8 rounded-md border border-line-strong bg-surface text-[13.5px] text-ink focus:outline-none focus:border-focus"
       />
       {value && (
-        <button type="button" onClick={() => onChange('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-ink-3 hover:text-ink" aria-label="Xóa tìm kiếm">
+        <button type="button" onClick={() => onChange('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-ink-3 hover:text-ink" aria-label="Xóa tìm kiếm">
           <X className="w-3.5 h-3.5" />
         </button>
       )}
@@ -139,9 +139,9 @@ export function FilterBar({
   return (
     <div className="grid gap-2.5">
       <div className="flex flex-wrap items-center gap-2">
-        {search && <SearchInput {...search} className="flex-1 min-w-[220px] max-w-md" />}
+        {search && <SearchInput {...search} className="w-full sm:w-auto sm:flex-1 sm:min-w-[220px] sm:max-w-md" />}
         {filters}
-        {resultCount !== undefined && <span className="ml-auto text-2xs text-ink-3 tabular-nums">{resultCount} kết quả</span>}
+        {resultCount !== undefined && <span className="ml-auto text-2xs text-ink-3 tabular-nums shrink-0">{resultCount} kết quả</span>}
       </div>
       {chips}
     </div>
@@ -197,8 +197,15 @@ export function DataTable<T>({
   const minWidth = fitContainer ? undefined : columns.reduce((s, c) => s + (c.width || 120), 0);
   const last = columns.length - 1;
   return (
-    <div className={fitContainer ? "w-full overflow-x-auto" : "overflow-x-auto"}>
-      <table className="w-full border-collapse text-xs" style={minWidth ? { minWidth } : undefined}>
+    <div className="w-full overflow-x-auto overscroll-x-contain">
+      <table
+        className={cx(
+          'w-full border-collapse text-xs',
+          fitContainer && columns.length >= 5 && 'min-w-[600px] lg:min-w-0',
+          fitContainer && columns.length === 4 && 'min-w-[480px] md:min-w-0',
+        )}
+        style={minWidth ? { minWidth } : undefined}
+      >
         <thead>
           <tr>
             {columns.map((c, i) => (
@@ -209,9 +216,9 @@ export function DataTable<T>({
                 className={cx(
                   compact
                     ? 'px-2.5 sm:px-3 py-2 text-3xs font-semibold text-ink-3 bg-sunken/40 border-b border-line'
-                    : 'px-4 py-2.5 text-2xs font-semibold text-ink-3 bg-sunken/40 border-b border-line',
+                    : 'px-3.5 sm:px-4 py-2.5 text-2xs font-semibold text-ink-3 bg-sunken/40 border-b border-line',
                   align(c.align),
-                  stickyLast && i === last && 'sticky right-0 z-10 bg-sunken/60 border-l border-line',
+                  stickyLast && i === last && 'sm:sticky sm:right-0 sm:z-10 bg-sunken border-l border-line',
                 )}
               >
                 {c.header}
@@ -240,10 +247,10 @@ export function DataTable<T>({
                   <td
                     key={c.key}
                     className={cx(
-                      compact ? 'px-2.5 sm:px-3 py-2 align-top text-ink' : 'px-4 py-3 align-top text-ink',
+                      compact ? 'px-2.5 sm:px-3 py-2 align-top text-ink' : 'px-3.5 sm:px-4 py-3 align-top text-ink',
                       align(c.align),
                       c.className,
-                      stickyLast && i === last && 'sticky right-0 bg-surface group-hover:bg-canvas border-l border-line',
+                      stickyLast && i === last && 'sm:sticky sm:right-0 bg-surface group-hover:bg-canvas border-l border-line',
                     )}
                   >
                     {c.render(row)}
@@ -310,29 +317,29 @@ export function Modal({
   }, [open, onClose]);
   if (!mounted || typeof document === 'undefined') return null;
   return createPortal(
-    <div className={cx('fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4', closing && 'pointer-events-none')} role="presentation">
+    <div className={cx('fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4', closing && 'pointer-events-none')} role="presentation">
       <div className={cx('fixed inset-0 bg-[rgb(22_23_26/0.4)]', closing ? 'motion-exit-fade' : 'animate-in fade-in duration-(--motion-base)')} onClick={onClose} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={cx('relative w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[88vh] flex flex-col overflow-hidden bg-surface rounded-xl shadow-2xl', closing ? 'motion-exit-pop' : 'animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter', MODAL_SIZE[size])}
+        className={cx('relative w-full max-h-[calc(100dvh-1rem)] sm:max-h-[88dvh] flex flex-col overflow-hidden bg-surface rounded-xl shadow-2xl', closing ? 'motion-exit-pop' : 'animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter', MODAL_SIZE[size])}
       >
-        <header className="shrink-0 flex items-start justify-between gap-4 px-5 pt-4 pb-3 border-b border-line bg-surface">
+        <header className="shrink-0 flex items-start justify-between gap-3 sm:gap-4 px-4 sm:px-5 pt-3.5 sm:pt-4 pb-3 border-b border-line bg-surface">
           <div className="min-w-0">
             <h2 id={titleId} className="text-base font-semibold text-ink">{view.title}</h2>
           </div>
-          <button type="button" data-close onClick={onClose} className="p-1 -mr-1 rounded-md text-ink-3 hover:text-ink hover:bg-sunken" aria-label="Đóng">
+          <button type="button" data-close onClick={onClose} className="h-7 w-7 inline-flex items-center justify-center -mr-1 rounded-md text-ink-3 hover:text-ink hover:bg-sunken shrink-0" aria-label="Đóng">
             <X className="w-4 h-4" />
           </button>
         </header>
         {view.children && (
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-3.5 sm:py-4">
             <div className="grid gap-4">{view.children}</div>
           </div>
         )}
-        {view.footer && <footer className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
+        {view.footer && <footer className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
       </div>
     </div>,
     document.body,
@@ -443,7 +450,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
   return (
-    <select ref={ref} className={cx(CONTROL, 'h-9 pl-3 pr-8', className)} {...rest}>
+    <select ref={ref} className={cx(CONTROL, 'h-9 pl-3 pr-8 max-w-full', className)} {...rest}>
       {children}
     </select>
   );
@@ -541,9 +548,9 @@ export function Pagination({
   const to = Math.min(page * pageSize, total);
   const nav = 'h-7 w-7 inline-flex items-center justify-center rounded-md border border-line-strong text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none';
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line text-2xs text-ink-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-4 py-3 border-t border-line text-2xs text-ink-3">
       <span className="tabular-nums">{from}–{to} trong {total}</span>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {onPageSizeChange && (
           <label className="inline-flex items-center gap-1.5">
             Mỗi trang
@@ -581,12 +588,12 @@ const noopSubscribe = () => () => {};
 
 /** Chỗ đặt nút chính của trang, nằm cuối thanh trên. Chỉ khung app (TopHeader) đặt. */
 export function PageActionsSlot() {
-  return <div id={PAGE_ACTIONS_SLOT} className="flex items-center gap-2 empty:hidden" />;
+  return <div id={PAGE_ACTIONS_SLOT} className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-full empty:hidden" />;
 }
 
 /** Chỗ đặt điều hướng phụ / bộ chọn ngữ cảnh cạnh tiêu đề trang. Chỉ khung app (TopHeader) đặt. */
 export function PageHeaderNavSlot() {
-  return <div id={PAGE_HEADER_NAV_SLOT} className="flex items-center gap-2 empty:hidden min-w-0" />;
+  return <div id={PAGE_HEADER_NAV_SLOT} className="flex flex-wrap items-center gap-1.5 sm:gap-2 empty:hidden min-w-0 max-w-full" />;
 }
 
 /**

@@ -411,7 +411,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
-        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-ink animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto text-ink animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-line">
@@ -967,7 +967,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             {/* Legal Entity Type Selector */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
               <span className="text-2xs font-medium text-muted">Hình thức pháp lý ký kết &amp; thuế:</span>
-              <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-line">
+              <div className="flex flex-wrap items-center gap-1 bg-surface p-1 rounded-lg border border-line">
                 <button
                   type="button"
                   onClick={() => setLegalType('INDIVIDUAL')}
@@ -1151,7 +1151,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-line">
             <button
               type="button"
               onClick={onClose}

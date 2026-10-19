@@ -340,43 +340,45 @@ export function ContractDocumentViewer({
   const renderTable = (table: DocTable, idx: string) => {
     if (table.variant === 'signature') {
       return (
-        <table key={idx} className="doc-signature w-full mt-7 mb-4 table-fixed border-collapse">
-          <tbody>
-            {table.rows.map((row, rIdx) => (
-              <tr key={rIdx}>
-                {row.map((cell, cIdx) => {
-                  const signer = rIdx === 0 && signingPeople ? signingPeople[cIdx] : undefined;
-                  return (
-                    <td
-                      key={cIdx}
-                      colSpan={cell.colSpan}
-                      className="w-1/2 align-top text-center px-3 pt-2 pb-16"
-                    >
-                      {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
-                      {signer && (
-                        <div
-                          className={`mt-4 inline-flex flex-col items-center rounded-md border px-3 py-2 font-sans text-[12px] ${
-                            signer.action === 2
-                              ? 'border-emerald-600/60 bg-emerald-50/90 text-emerald-900'
-                              : signer.action === 3
-                                ? 'border-red-500/60 bg-red-50 text-red-900'
-                                : 'border-amber-500/60 bg-amber-50/80 text-amber-900'
-                          }`}
-                        >
-                          <span className="font-semibold uppercase tracking-wide">
-                            {signer.action === 2 ? 'Đã ký xác nhận' : signer.status}
-                          </span>
-                          <span className="font-medium mt-0.5">{signer.name}</span>
-                          {signer.email && <span className="text-2xs opacity-75">{signer.email}</span>}
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div key={idx} className="overflow-x-auto">
+          <table className="doc-signature w-full min-w-[480px] sm:min-w-0 mt-7 mb-4 table-fixed border-collapse">
+            <tbody>
+              {table.rows.map((row, rIdx) => (
+                <tr key={rIdx}>
+                  {row.map((cell, cIdx) => {
+                    const signer = rIdx === 0 && signingPeople ? signingPeople[cIdx] : undefined;
+                    return (
+                      <td
+                        key={cIdx}
+                        colSpan={cell.colSpan}
+                        className="w-1/2 align-top text-center px-3 pt-2 pb-16"
+                      >
+                        {cell.blocks.map((b, bIdx) => renderBlock(b, `${idx}-r${rIdx}-c${cIdx}-${bIdx}`))}
+                        {signer && (
+                          <div
+                            className={`mt-4 inline-flex flex-col items-center rounded-md border px-3 py-2 font-sans text-[12px] ${
+                              signer.action === 2
+                                ? 'border-emerald-600/60 bg-emerald-50/90 text-emerald-900'
+                                : signer.action === 3
+                                  ? 'border-red-500/60 bg-red-50 text-red-900'
+                                  : 'border-amber-500/60 bg-amber-50/80 text-amber-900'
+                            }`}
+                          >
+                            <span className="font-semibold uppercase tracking-wide">
+                              {signer.action === 2 ? 'Đã ký xác nhận' : signer.status}
+                            </span>
+                            <span className="font-medium mt-0.5">{signer.name}</span>
+                            {signer.email && <span className="text-2xs opacity-75">{signer.email}</span>}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
     }
 

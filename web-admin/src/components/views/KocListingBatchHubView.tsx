@@ -929,8 +929,8 @@ export function KocListingBatchHubView({
         </div>
 
         {isKlMatrixExpanded && (
-          <div className="w-full">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-slate-200 text-2xs font-semibold text-slate-600">
                   <th className="py-2.5 px-3 w-[22%]">Khung lương (KL) &amp; Đơn giá</th>
@@ -1291,8 +1291,8 @@ export function KocListingBatchHubView({
       {activeSubTab === 'LISTING_APPROVAL' ? (
         /* TAB 1: LISTING & PARALLEL APPROVAL */
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-          <div className="w-full">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
                   <th className="py-2 px-2 w-7 text-center">
@@ -1629,8 +1629,8 @@ export function KocListingBatchHubView({
             </div>
           </div>
 
-          <div className="w-full">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[740px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
                   <th className="py-2.5 px-3 w-[28%]">KOC &amp; Gian hàng</th>
@@ -1822,7 +1822,7 @@ export function KocListingBatchHubView({
             </div>
 
             <form onSubmit={handleAddNewKoc} className="p-4 space-y-3.5 text-xs">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
                     Khung lương Plan (KL) *
@@ -1888,7 +1888,7 @@ export function KocListingBatchHubView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
                     Tên KOC *
@@ -1934,7 +1934,7 @@ export function KocListingBatchHubView({
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">Kênh</label>
                   <select
@@ -1976,7 +1976,7 @@ export function KocListingBatchHubView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
                     Thù lao đề xuất *
@@ -2070,7 +2070,7 @@ export function KocListingBatchHubView({
 
             <div className="p-4 overflow-y-auto space-y-4 text-xs flex-1">
               {/* Thanh tiến trình 3 bước của Listing */}
-              <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                 <div className={`p-2 rounded border ${inspectingListing.overallStatus === 'DRAFT' ? 'bg-white border-slate-400 font-semibold text-slate-900 shadow-2xs' : 'bg-emerald-50/60 border-emerald-200 text-emerald-800'}`}>
                   <div className="text-2xs uppercase tracking-wider">Bước 1</div>
                   <div className="mt-0.5">Lên danh sách Nháp (Draft)</div>
@@ -2328,7 +2328,7 @@ export function KocListingBatchHubView({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
                     Ngày lên sóng thực tế

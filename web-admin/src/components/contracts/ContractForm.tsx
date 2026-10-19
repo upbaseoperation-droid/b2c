@@ -550,7 +550,7 @@ export function ContractForm({
             </div>
           </div>
 
-          <div className={`grid gap-6 items-start ${showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
+          <div className={`grid grid-cols-1 gap-6 items-start ${showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
             <div className="grid gap-6 min-w-0">
               {groups.map(g => (
                 <Panel key={g.key} title={g.title}>

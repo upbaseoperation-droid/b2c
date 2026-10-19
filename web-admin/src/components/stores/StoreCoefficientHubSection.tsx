@@ -1196,7 +1196,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
 
         <div className="p-3 rounded-xl border border-line bg-surface flex flex-col justify-between">
           <div className="text-2xs text-ink-3 font-medium">Phân bổ 4 mức hệ số ({activeMonth})</div>
-          <div className="grid grid-cols-4 gap-1 mt-1 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 mt-1 text-center">
             <button
               type="button"
               onClick={() => setTierFilter(tierFilter === 'Cơ bản' ? 'ALL' : 'Cơ bản')}
@@ -1461,7 +1461,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       <td className="py-3 px-3 text-center align-middle">
                         {isManager && bulkSetupMode ? (
                           <div className="space-y-1">
-                            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-sunken border border-line">
+                            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-sunken border border-line max-w-full overflow-x-auto">
                               {STORE_COEFFICIENT_TABLE_2.rows.map(r => {
                                 const isActive = norm.tier === r.tier;
                                 return (

@@ -376,10 +376,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
           </div>
 
           {/* Quick Filters */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start lg:self-auto">
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs self-start lg:self-auto max-w-full overflow-x-auto">
             <button
               onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer ${
+              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer shrink-0 ${
                 statusFilter === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -387,7 +387,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             </button>
             <button
               onClick={() => setStatusFilter('PENDING_BREAKDOWN')}
-              className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1 cursor-pointer ${
+              className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1 cursor-pointer shrink-0 ${
                 statusFilter === 'PENDING_BREAKDOWN' ? 'bg-amber-600 text-white shadow-2xs' : 'text-amber-700 hover:text-amber-800'
               }`}
             >
@@ -395,7 +395,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             </button>
             <button
               onClick={() => setStatusFilter('PLANNED')}
-              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer ${
+              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer shrink-0 ${
                 statusFilter === 'PLANNED' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -403,7 +403,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             </button>
             <button
               onClick={() => setStatusFilter('LEAD_APPROVED')}
-              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer ${
+              className={`px-3 py-1 rounded-md font-semibold transition cursor-pointer shrink-0 ${
                 statusFilter === 'LEAD_APPROVED' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:text-emerald-800'
               }`}
             >
@@ -667,7 +667,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </span>
             </div>
 
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[640px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                   <th className="py-2.5 px-3 font-semibold">Cấp độ KOC / KOL</th>
@@ -842,9 +842,9 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
 
               {/* Reup Matrix Table */}
-              <div className="pt-2">
+              <div className="pt-2 overflow-x-auto">
                 <h5 className="text-xs font-semibold text-slate-800 mb-2">Ma trận phân phối Reup đa kênh (theo cột 211-215 Sheet 4.1):</h5>
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                       <th className="py-2 px-3">Kênh phân phối</th>
@@ -933,7 +933,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
           {/* Tab 4: Đối Soát 4 Cột & NMV Gap (Chuẩn Sheet 4.1) */}
           {channelTab === 'FOUR_STAGE' && (
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4 overflow-x-auto">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
                   <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
@@ -947,7 +947,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </span>
               </div>
 
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                     <th className="py-2.5 px-3">Hạng mục</th>

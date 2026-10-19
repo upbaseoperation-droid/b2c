@@ -943,7 +943,7 @@ export default function App() {
   if (isLoadingAuth || !currentUser) {
     return (
       // Khung ứng dụng giữ chỗ (menu trái + thanh trên + nội dung) thay cho vòng xoay toàn trang.
-      <div role="status" aria-live="polite" className="min-h-screen bg-canvas flex">
+      <div role="status" aria-live="polite" className="min-h-dvh bg-canvas flex">
         <span className="sr-only">Đang xác minh phiên làm việc…</span>
         <div aria-hidden="true" className="hidden lg:flex w-60 shrink-0 h-dvh flex-col bg-surface border-r border-line">
           <div className="h-14 px-4 flex items-center border-b border-line"><Skeleton className="h-6 w-32 rounded-md" /></div>
@@ -952,15 +952,15 @@ export default function App() {
           </div>
         </div>
         <div aria-hidden="true" className="flex-1 min-w-0">
-          <div className="h-14 px-6 flex items-center bg-surface border-b border-line"><Skeleton className="h-6 w-48 rounded-md" /></div>
-          <div className="px-4 sm:px-6 lg:px-8 py-6"><ViewLoading /></div>
+          <div className="h-14 px-4 sm:px-6 flex items-center bg-surface border-b border-line"><Skeleton className="h-6 w-48 rounded-md" /></div>
+          <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6"><ViewLoading /></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-canvas text-ink">
+    <div className="flex min-h-dvh bg-canvas text-ink">
       <ToastStack
         toasts={toastQueue.toasts}
         onDismiss={toastQueue.dismiss}
@@ -1004,12 +1004,12 @@ export default function App() {
         />
 
         {isThirdPartyPartner(currentUser) && (
-          <div className="bg-accent-soft text-ink px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-line">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-surface text-accent font-medium text-2xs border border-line">
+          <div className="bg-accent-soft text-ink px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-line">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="px-2 py-0.5 rounded bg-surface text-accent font-medium text-2xs border border-line shrink-0">
                 Đối tác: {currentUser.roleTitle}
               </span>
-              <span className="text-ink-2">
+              <span className="text-ink-2 min-w-0 break-words">
                 Đang xem với tư cách: <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.email})
                 {currentUser.linkedEntityName && (
                   <span className="text-accent font-medium"> · Phạm vi: {currentUser.linkedEntityName}</span>
@@ -1017,12 +1017,13 @@ export default function App() {
               </span>
             </div>
             <button
+              type="button"
               onClick={() => {
                 handleUserChange(USERS[0]);
                 setActiveTab('partner-access');
                 showToast('Đã quay lại tài khoản quản trị', 'info');
               }}
-              className="h-7 px-2.5 rounded-md bg-surface hover:bg-sunken text-ink border border-line-strong font-medium transition text-2xs"
+              className="h-7 px-2.5 rounded-md bg-surface hover:bg-sunken text-ink border border-line-strong font-medium transition text-2xs shrink-0"
             >
               Thoát chế độ đối tác
             </button>
@@ -1379,6 +1380,7 @@ export default function App() {
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               selectedKocId={selectedKocContext}
+              onSelectKocId={setSelectedKocContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
@@ -1619,7 +1621,12 @@ export default function App() {
                       }
                     }}
                     onNotify={showToast}
-                    onNavigateToKocMaster={() => handleSelectTab('koc-master')}
+                    onNavigateToKocMaster={(kocId?: string) => {
+                      if (kocId) {
+                        setSelectedKocContext(kocId);
+                      }
+                      handleSelectTab('koc-master');
+                    }}
                   />
                 </ErrorBoundary>
               </PageActiveContext.Provider>

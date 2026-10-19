@@ -1766,8 +1766,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           </div>
 
           {/* SOW Policy & Scope Level */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-            <div className="sm:col-span-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div className="md:col-span-6">
               <Field label="Hạng mục công việc SOW (Bảng 1)">
                 <Select
                   value={formSowStt}
@@ -1785,7 +1785,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </Field>
             </div>
 
-            <div className="sm:col-span-4">
+            <div className="md:col-span-4">
               <Field label="Cấp độ phạm vi (Bảng 2b)">
                 <Select
                   value={activeLevelConfig?.id || ''}
@@ -1805,7 +1805,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </Field>
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="md:col-span-2">
               <Field label={`SL (${selectedSowPolicy.scopeUnit})`}>
                 <Input
                   type="number"
@@ -1967,9 +1967,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 return (
                   <div
                     key={idx}
-                    className="grid grid-cols-12 gap-2 items-center bg-surface p-2 rounded-lg border border-line"
+                    className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-surface p-2 rounded-lg border border-line"
                   >
-                    <div className="col-span-5">
+                    <div className="sm:col-span-5">
                       <Select
                         value={slot.staffName}
                         onChange={e => {
@@ -1986,7 +1986,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       </Select>
                     </div>
 
-                    <div className="col-span-4">
+                    <div className="sm:col-span-4">
                       <Select
                         value={slot.role}
                         onChange={e => {
@@ -2005,7 +2005,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       </Select>
                     </div>
 
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <Input
                         type="number"
                         min={5}
@@ -2024,7 +2024,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       />
                     </div>
 
-                    <div className="col-span-1 flex items-center justify-end gap-1">
+                    <div className="sm:col-span-1 flex items-center justify-end gap-1">
                       <span className="text-xs font-mono tabular-nums text-ink-2 hidden sm:inline">
                         {personalPts.toFixed(1).replace('.', ',')}đ
                       </span>

@@ -837,7 +837,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     toggleNode('root');
                     setSelectedNode({ type: 'ROOT', data: { brandsCount: brands.length, storesCount: stores.length } });
                   }}
-                  className={`w-64 p-4 rounded-2xl cursor-pointer transition-all border shadow-sm ${
+                  className={`w-full sm:w-64 p-4 rounded-2xl cursor-pointer transition-colors border shadow-sm ${
                     expandedNodes.has('root')
                       ? 'bg-white border-accent/20 ring-2 ring-accent/20 shadow-md'
                       : 'bg-white border-line hover:border-line-strong'
@@ -895,7 +895,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                               toggleNode(brand.id);
                               setSelectedNode({ type: 'BRAND', data: brand });
                             }}
-                            className={`w-72 p-3.5 rounded-xl cursor-pointer transition-all border shadow-xs ${
+                            className={`w-full sm:w-72 p-3.5 rounded-xl cursor-pointer transition-colors border shadow-xs ${
                               isBrandExpanded
                                 ? 'bg-white border-accent/20 shadow-md ring-2 ring-accent/20'
                                 : 'bg-white border-line hover:border-line-strong'
@@ -965,7 +965,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                             toggleNode(store.id);
                                             setSelectedNode({ type: 'STORE', data: store });
                                           }}
-                                          className={`w-72 p-3.5 rounded-xl cursor-pointer transition-all border shadow-xs ${
+                                          className={`w-full sm:w-72 p-3.5 rounded-xl cursor-pointer transition-colors border shadow-xs ${
                                             isStoreExpanded
                                               ? 'bg-white border-accent/20 shadow-md ring-2 ring-accent/20'
                                               : 'bg-white border-line hover:border-line-strong'
@@ -1032,7 +1032,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                               <div className="relative">
                                                 <div className="absolute -left-8 top-5 w-8 h-0.5 bg-accent-soft" />
                                                 
-                                                <div className="w-64 bg-white border border-warning/20 rounded-xl p-3 shadow-xs">
+                                                <div className="w-full sm:w-64 bg-white border border-warning/20 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-warning/20">
                                                     <span className="text-2xs font-semibold text-warning flex items-center gap-1">
                                                       <Users className="w-3 h-3 text-warning" />
@@ -1111,7 +1111,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                               <div className="relative">
                                                 <div className="absolute -left-8 top-5 w-8 h-0.5 bg-accent-soft" />
 
-                                                <div className="w-72 bg-white border border-accent/20 rounded-xl p-3 shadow-xs">
+                                                <div className="w-full sm:w-72 bg-white border border-accent/20 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-accent/20">
                                                     <span className="text-2xs font-semibold text-accent flex items-center gap-1">
                                                       <Package className="w-3 h-3 text-accent" />

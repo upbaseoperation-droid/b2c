@@ -70,7 +70,7 @@ interface TikTokCrawlerHubViewProps {
   kocs: KocItem[];
   onSaveScrapedKocs: (payload: { created: KocItem[]; updated: KocItem[] }) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  onNavigateToKocMaster?: () => void;
+  onNavigateToKocMaster?: (kocId?: string) => void;
 }
 
 type CrawlerTabKey =
@@ -748,7 +748,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   };
 
   const [trendingHandleSearching, setTrendingHandleSearching] = useState(false);
-  const searchedTrendingHandlesRef = useRef<Set<string>>(new Set());
 
   const runTrendingCreatorsCrawl = async (
     targetCat?: TrendingKocCategoryKey,
@@ -946,16 +945,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (
-      activeTab === 'CHANNEL_AND_VIDEO_TOOLS' &&
-      trendingCreators.length === 0 &&
-      !trendingLoading
-    ) {
-      void runTrendingCreatorsCrawl();
-    }
-  }, [activeTab]);
-
   const filteredCompResults = useMemo(() => {
     const filtered = compResults.filter((r) => {
       const c = r.competitorCollaboration;
@@ -1147,31 +1136,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     });
   }, [trendingCreators, trendingFilter, trendingFollowerTier, trendingSearch, existingByHandle]);
 
-  // Nếu người dùng nhập @handle vào ô tìm kiếm của KOC xu hướng mà chưa có trong danh sách hiện tại, tự động cào kênh đó về bảng
-  useEffect(() => {
-    if (activeTab !== 'CHANNEL_AND_VIDEO_TOOLS') return;
-    const raw = trendingSearch.trim();
-    if (!raw || filteredTrendingCreators.length > 0) return;
-
-    const cleanCandidate = raw
-      .replace(/^https?:\/\/(?:www\.|m\.)?tiktok\.com\/@/i, '')
-      .replace(/^@+/, '')
-      .split(/[/?#\s]/)[0]
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]/g, '');
-
-    if (cleanCandidate.length < 3 || searchedTrendingHandlesRef.current.has(cleanCandidate)) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      searchedTrendingHandlesRef.current.add(cleanCandidate);
-      void runQuickTrendingHandleLookup(cleanCandidate);
-    }, 450);
-
-    return () => clearTimeout(timer);
-  }, [activeTab, trendingSearch, filteredTrendingCreators.length]);
-
   const compStats = useMemo(() => {
     const total = compResults.length;
     const existingCount = compResults.filter(
@@ -1299,8 +1263,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       width: 230,
       render: (r) => {
         const p = r.channelProfile;
+        const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
         const isExisting =
-          existingByHandle.has(r.handle) || r.competitorCollaboration.isAlreadyInUpbase;
+          Boolean(matchedKoc) || r.competitorCollaboration.isAlreadyInUpbase;
         return (
           <div className="flex items-start gap-2.5 min-w-0">
             <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
@@ -1316,9 +1281,23 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   <span>@{p.handle}</span>
                   <ExternalLink className="w-3 h-3 text-ink-3" />
                 </a>
-                <Status tone={isExisting ? 'neutral' : 'positive'}>
-                  {isExisting ? 'Đã có' : 'KOC Mới'}
-                </Status>
+                {matchedKoc && onNavigateToKocMaster ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToKocMaster(matchedKoc.id);
+                    }}
+                    title="Mở hồ sơ KOC trong Danh bạ KOC"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                  >
+                    <span>Đã có · Danh bạ</span>
+                  </button>
+                ) : (
+                  <Status tone={isExisting ? 'neutral' : 'positive'}>
+                    {isExisting ? 'Đã có' : 'KOC Mới'}
+                  </Status>
+                )}
               </div>
               <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
               {p.extractedPhone && (
@@ -1446,10 +1425,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelAction',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 215,
+      width: 245,
       render: (r) => {
         const p = r.channelProfile;
-        const isExisting = existingByHandle.has(r.handle);
+        const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
+        const isExisting = Boolean(matchedKoc);
         return (
           <div className="grid gap-1 justify-items-end">
             <div className="text-xs text-ink tabular-nums">
@@ -1457,16 +1437,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openBriefMatcherModal([`@${r.handle}`], competitorInput);
-                }}
-              >
-                Khớp Brief
-              </Button>
+              {matchedKoc && onNavigateToKocMaster && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigateToKocMaster(matchedKoc.id);
+                  }}
+                >
+                  Danh bạ
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -1503,7 +1485,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       width: 230,
       render: (r) => {
         const p = r.channelProfile;
-        const isExisting = existingByHandle.has(r.handle);
+        const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
+        const isExisting = Boolean(matchedKoc);
         return (
           <div className="flex items-start gap-2.5 min-w-0">
             <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
@@ -1518,9 +1501,23 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   <span>@{p.handle}</span>
                   <ExternalLink className="w-3 h-3 text-ink-3" />
                 </a>
-                <Status tone={isExisting ? 'neutral' : 'positive'}>
-                  {isExisting ? 'Đã có' : 'KOC Mới'}
-                </Status>
+                {matchedKoc && onNavigateToKocMaster ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigateToKocMaster(matchedKoc.id);
+                    }}
+                    title="Mở hồ sơ KOC trong Danh bạ KOC"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                  >
+                    <span>Đã có · Danh bạ</span>
+                  </button>
+                ) : (
+                  <Status tone={isExisting ? 'neutral' : 'positive'}>
+                    {isExisting ? 'Đã có' : 'KOC Mới'}
+                  </Status>
+                )}
               </div>
               <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
               {p.extractedPhone && (
@@ -1610,10 +1607,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelStats',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 245,
+      width: 260,
       render: (r) => {
         const p = r.channelProfile;
-        const isExisting = existingByHandle.has(r.handle);
+        const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
+        const isExisting = Boolean(matchedKoc);
         return (
           <div className="grid gap-1 justify-items-end">
             <span className="text-xs text-ink tabular-nums">
@@ -1621,13 +1619,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </span>
             <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => openBriefMatcherModal([`@${r.handle}`], hashtagInput)}
-              >
-                Khớp Brief
-              </Button>
+              {matchedKoc && onNavigateToKocMaster && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onNavigateToKocMaster(matchedKoc.id)}
+                >
+                  Danh bạ
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -1731,7 +1731,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       header: 'Kênh KOC & Ngành hàng',
       width: 240,
       render: (c) => {
-        const isExisting = existingByHandle.has(c.handle.toLowerCase());
+        const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
         return (
           <div className="flex items-start gap-2.5 min-w-0">
             <Avatar name={c.nickname} src={c.avatarUrl} size={36} />
@@ -1747,7 +1747,22 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   <ExternalLink className="w-3 h-3 text-ink-3" />
                 </a>
                 {c.verified && <Status tone="positive">Tick xanh</Status>}
-                {isExisting && <Status tone="neutral">Đã có</Status>}
+                {matchedKoc &&
+                  (onNavigateToKocMaster ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToKocMaster(matchedKoc.id);
+                      }}
+                      title="Mở hồ sơ KOC trong Danh bạ KOC"
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                    >
+                      <span>Đã có · Danh bạ</span>
+                    </button>
+                  ) : (
+                    <Status tone="neutral">Đã có</Status>
+                  ))}
               </div>
               <span className="text-2xs text-ink-2 truncate">{c.nickname}</span>
               {c.categoryLabel && (
@@ -1840,29 +1855,34 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'action',
       header: 'Thao tác',
       align: 'right',
-      width: 215,
-      render: (c) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => openBriefMatcherModal([`@${c.handle}`])}
-          >
-            Khớp Brief
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon={Search}
-            onClick={() => {
-              setScraperInitialHandle(`@${c.handle}`);
-              setScraperModalOpen(true);
-            }}
-          >
-            Cào chi tiết kênh
-          </Button>
-        </div>
-      ),
+      width: 245,
+      render: (c) => {
+        const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {matchedKoc && onNavigateToKocMaster && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onNavigateToKocMaster(matchedKoc.id)}
+              >
+                Danh bạ
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Search}
+              onClick={() => {
+                setScraperInitialHandle(`@${c.handle}`);
+                setScraperModalOpen(true);
+              }}
+            >
+              Cào chi tiết kênh
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -2897,14 +2917,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="space-y-4">
           <Panel>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex-1 min-w-[240px]">
+              <div className="flex-1 min-w-0 w-full sm:min-w-[240px]">
                 <Select
                   aria-label="Chọn ngành hàng quét KOC xu hướng"
                   value={trendingCategory}
                   onChange={(e) => {
                     const nextCat = e.target.value as TrendingKocCategoryKey;
                     setTrendingCategory(nextCat);
-                    void runTrendingCreatorsCrawl(nextCat);
+                    if (trendingCreators.length > 0) {
+                      setTrendingCreators([]);
+                    }
                   }}
                   className="w-full"
                 >
@@ -2980,131 +3002,133 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           </Panel>
 
-          <Panel
-            title={`KOC xu hướng: ${
-              TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
-              'Tất cả ngành hàng'
-            } (${filteredTrendingCreators.length}/${trendingCreators.length})`}
-            flush
-            actions={
-              <div className="flex flex-wrap items-center gap-2">
-                {trendingSearch.trim().length >= 2 && (
+          {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
+            <Panel
+              title={`KOC xu hướng: ${
+                TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
+                'Tất cả ngành hàng'
+              } (${filteredTrendingCreators.length}/${trendingCreators.length})`}
+              flush
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  {trendingSearch.trim().length >= 2 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={trendingHandleSearching ? RefreshCw : Search}
+                      disabled={trendingHandleSearching}
+                      onClick={() => void runQuickTrendingHandleLookup(trendingSearch)}
+                    >
+                      {trendingHandleSearching
+                        ? 'Đang cào kênh...'
+                        : `Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}`}
+                    </Button>
+                  )}
+                  {trendingCreators.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={trendingLoading ? RefreshCw : UserPlus}
+                      disabled={trendingLoading}
+                      onClick={() =>
+                        void runTrendingCreatorsCrawl(trendingCategory, {
+                          targetCount: KOC_BATCH_SIZE,
+                          appendMode: true,
+                        })
+                      }
+                    >
+                      {trendingLoading ? 'Đang quét thêm...' : `+ Quét thêm +${KOC_BATCH_SIZE} KOC`}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="secondary"
-                    icon={trendingHandleSearching ? RefreshCw : Search}
-                    disabled={trendingHandleSearching}
-                    onClick={() => void runQuickTrendingHandleLookup(trendingSearch)}
+                    icon={Download}
+                    onClick={handleExportTrendingCsv}
+                    disabled={filteredTrendingCreators.length === 0}
                   >
-                    {trendingHandleSearching
-                      ? 'Đang cào kênh...'
-                      : `Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}`}
+                    Xuất CSV ({filteredTrendingCreators.length})
                   </Button>
-                )}
-                {trendingCreators.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={trendingLoading ? RefreshCw : UserPlus}
-                    disabled={trendingLoading}
-                    onClick={() =>
-                      void runTrendingCreatorsCrawl(trendingCategory, {
-                        targetCount: KOC_BATCH_SIZE,
-                        appendMode: true,
-                      })
-                    }
-                  >
-                    {trendingLoading ? 'Đang quét thêm...' : `+ Quét thêm +${KOC_BATCH_SIZE} KOC`}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  onClick={handleExportTrendingCsv}
-                  disabled={filteredTrendingCreators.length === 0}
-                >
-                  Xuất CSV ({filteredTrendingCreators.length})
-                </Button>
+                </div>
+              }
+            >
+              <div className="px-4 py-3 border-b border-line bg-surface">
+                <FilterBar
+                  search={{
+                    value: trendingSearch,
+                    onChange: setTrendingSearch,
+                    placeholder: 'Tìm theo @handle (ví dụ: @duymuoi), tên kênh, nội dung tiểu sử hoặc caption video...',
+                  }}
+                  filters={
+                    <Select
+                      aria-label="Lọc KOC xu hướng theo quy mô Follower"
+                      value={trendingFollowerTier}
+                      onChange={(e) => setTrendingFollowerTier(e.target.value as FollowerTierKey)}
+                      className="h-[34px] text-xs"
+                    >
+                      <option value="ALL">Mọi quy mô Follower</option>
+                      <option value="NANO">Nano (&lt; 50K flw)</option>
+                      <option value="MICRO">Micro (50K – 200K flw)</option>
+                      <option value="MACRO">Macro (200K – 500K flw)</option>
+                      <option value="MEGA">Mega (&gt; 500K flw)</option>
+                    </Select>
+                  }
+                  chips={
+                    <Chips<TrendingFilterKey>
+                      items={[
+                        { key: 'ALL', label: 'Tất cả', count: trendingCreators.length },
+                        {
+                          key: 'NEW_OPPORTUNITY',
+                          label: 'KOC Mới',
+                          count: trendingCreators.filter(
+                            (c) => !existingByHandle.has(c.handle.toLowerCase())
+                          ).length,
+                        },
+                        {
+                          key: 'ALREADY_IN_UPBASE',
+                          label: 'Đã có tại UpBase',
+                          count: trendingCreators.filter((c) =>
+                            existingByHandle.has(c.handle.toLowerCase())
+                          ).length,
+                        },
+                        {
+                          key: 'VERIFIED',
+                          label: 'Tick xanh',
+                          count: trendingCreators.filter((c) => c.verified).length,
+                        },
+                        {
+                          key: 'HAS_CONTACT',
+                          label: 'Có SĐT / Email',
+                          count: trendingCreators.filter(
+                            (c) => Boolean(c.extractedPhone || c.extractedEmail)
+                          ).length,
+                        },
+                      ]}
+                      value={trendingFilter}
+                      onChange={setTrendingFilter}
+                    />
+                  }
+                />
               </div>
-            }
-          >
-            <div className="px-4 py-3 border-b border-line bg-surface">
-              <FilterBar
-                search={{
-                  value: trendingSearch,
-                  onChange: setTrendingSearch,
-                  placeholder: 'Tìm theo @handle (ví dụ: @duymuoi), tên kênh, nội dung tiểu sử hoặc caption video...',
-                }}
-                filters={
-                  <Select
-                    aria-label="Lọc KOC xu hướng theo quy mô Follower"
-                    value={trendingFollowerTier}
-                    onChange={(e) => setTrendingFollowerTier(e.target.value as FollowerTierKey)}
-                    className="h-[34px] text-xs"
-                  >
-                    <option value="ALL">Mọi quy mô Follower</option>
-                    <option value="NANO">Nano (&lt; 50K flw)</option>
-                    <option value="MICRO">Micro (50K – 200K flw)</option>
-                    <option value="MACRO">Macro (200K – 500K flw)</option>
-                    <option value="MEGA">Mega (&gt; 500K flw)</option>
-                  </Select>
-                }
-                chips={
-                  <Chips<TrendingFilterKey>
-                    items={[
-                      { key: 'ALL', label: 'Tất cả', count: trendingCreators.length },
-                      {
-                        key: 'NEW_OPPORTUNITY',
-                        label: 'KOC Mới',
-                        count: trendingCreators.filter(
-                          (c) => !existingByHandle.has(c.handle.toLowerCase())
-                        ).length,
-                      },
-                      {
-                        key: 'ALREADY_IN_UPBASE',
-                        label: 'Đã có tại UpBase',
-                        count: trendingCreators.filter((c) =>
-                          existingByHandle.has(c.handle.toLowerCase())
-                        ).length,
-                      },
-                      {
-                        key: 'VERIFIED',
-                        label: 'Tick xanh',
-                        count: trendingCreators.filter((c) => c.verified).length,
-                      },
-                      {
-                        key: 'HAS_CONTACT',
-                        label: 'Có SĐT / Email',
-                        count: trendingCreators.filter(
-                          (c) => Boolean(c.extractedPhone || c.extractedEmail)
-                        ).length,
-                      },
-                    ]}
-                    value={trendingFilter}
-                    onChange={setTrendingFilter}
-                  />
+
+              <DataTable
+                rows={filteredTrendingCreators}
+                columns={trendingColumns}
+                rowKey={(c) => c.handle}
+                fitContainer
+                empty={
+                  trendingLoading || trendingHandleSearching
+                    ? `Đang quét KOC xu hướng ngành "${
+                        TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
+                        'Tất cả ngành hàng'
+                      }" trên TikTok...`
+                    : trendingCreators.length > 0
+                      ? `Không tìm thấy kênh khớp "${trendingSearch.trim()}". Bấm nút "Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}" ở góc phải để quét trực tiếp từ TikTok.`
+                      : 'Chọn ngành hàng và nhấn nút Quét KOC xu hướng để tải các kênh đang thịnh hành trên TikTok.'
                 }
               />
-            </div>
-
-            <DataTable
-              rows={filteredTrendingCreators}
-              columns={trendingColumns}
-              rowKey={(c) => c.handle}
-              fitContainer
-              empty={
-                trendingLoading || trendingHandleSearching
-                  ? `Đang quét KOC xu hướng ngành "${
-                      TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
-                      'Tất cả ngành hàng'
-                    }" trên TikTok...`
-                  : trendingCreators.length > 0
-                    ? `Không tìm thấy kênh khớp "${trendingSearch.trim()}". Bấm nút "Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}" ở góc phải để quét trực tiếp từ TikTok.`
-                    : 'Chọn ngành hàng và nhấn nút Quét KOC xu hướng để tải các kênh đang thịnh hành trên TikTok.'
-              }
-            />
-          </Panel>
+            </Panel>
+          )}
         </div>
       )}
 
@@ -3117,6 +3141,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         existingKocs={kocs}
         initialHandle={scraperInitialHandle}
         onApplyResults={onSaveScrapedKocs}
+        onOpenKocInMaster={
+          onNavigateToKocMaster
+            ? (koc) => {
+                setScraperModalOpen(false);
+                onNavigateToKocMaster(koc.id);
+              }
+            : undefined
+        }
         onNotify={onNotify}
       />
 

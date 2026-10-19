@@ -115,12 +115,12 @@ export interface TabItem<K extends string> {
  * không bao giờ bị nút đè lên. Tối đa một nút primary; thao tác thứ ba trở đi vào `ActionMenu`.
  */
 export function Tabs<K extends string>({ items, value, onChange, className, actions }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string; actions?: React.ReactNode }) {
-  const list = <TabList items={items} value={value} onChange={onChange} className={actions ? 'flex-1' : cx('border-b border-line', className)} />;
+  const list = <TabList items={items} value={value} onChange={onChange} className={actions ? 'w-full sm:w-auto sm:flex-1' : cx('border-b border-line', className)} />;
   if (!actions) return list;
   return (
-    <div className={cx('flex items-end gap-4 border-b border-line', className)}>
+    <div className={cx('flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4 border-b border-line', className)}>
       {list}
-      <div className="flex items-center gap-2 shrink-0 pb-2">{actions}</div>
+      <div className="flex flex-wrap items-center gap-2 shrink-0 pb-2">{actions}</div>
     </div>
   );
 }
@@ -129,7 +129,7 @@ function TabList<K extends string>({ items, value, onChange, className }: { item
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} role="tablist" className={cx('relative flex gap-6 min-w-0 overflow-x-auto [scrollbar-width:thin]', className)}>
+    <div ref={ref} role="tablist" className={cx('relative flex gap-4 sm:gap-6 min-w-0 max-w-full overflow-x-auto [scrollbar-width:thin]', className)}>
       <SlidingIndicator box={box} ready={ready} fit="underline" className="bg-ink z-[1]" />
       {items.map((t) => {
         const on = t.key === value;
@@ -142,7 +142,7 @@ function TabList<K extends string>({ items, value, onChange, className }: { item
             data-active={on}
             onClick={() => onChange(t.key)}
             className={cx(
-              'relative -mb-px pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors',
+              'relative -mb-px pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13px] sm:text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors shrink-0',
               on ? 'text-ink' : 'text-ink-3 hover:text-ink',
             )}
           >
@@ -163,7 +163,7 @@ export function Segmented<K extends string>({ items, value, onChange }: { items:
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} className="relative inline-flex p-0.5 rounded-md bg-sunken">
+    <div ref={ref} className="relative inline-flex max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-0.5 rounded-md bg-sunken">
       <SlidingIndicator box={box} ready={ready} className="rounded-[5px] bg-surface shadow-[0_1px_2px_rgb(22_23_26/0.08)]" />
       {items.map((it) => (
         <button
@@ -173,7 +173,7 @@ export function Segmented<K extends string>({ items, value, onChange }: { items:
           aria-pressed={it.key === value}
           data-active={it.key === value}
           className={cx(
-            'relative h-7 px-3 rounded-[5px] text-[13px] whitespace-nowrap transition-colors',
+            'relative h-7 px-2.5 sm:px-3 rounded-[5px] text-[12.5px] sm:text-[13px] whitespace-nowrap shrink-0 transition-colors',
             it.key === value ? 'text-ink font-medium' : 'text-ink-3 hover:text-ink',
           )}
         >
@@ -189,11 +189,11 @@ export function Segmented<K extends string>({ items, value, onChange }: { items:
 /** Tiêu đề khối: một dòng tiêu đề, mô tả ngắn nếu thêm thông tin, thao tác bên phải. */
 export function SectionHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
       <div className="min-w-0">
         <h2 className="text-base font-semibold text-ink">{title}</h2>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2 max-w-full">{actions}</div>}
     </div>
   );
 }
@@ -231,21 +231,25 @@ export function Stat({
   const compact = useContext(StatSizeContext) === 'sm';
   const noteColor = tone === 'warning' ? 'text-warning' : tone === 'critical' ? 'text-critical' : tone === 'positive' ? 'text-positive' : 'text-ink-3';
   return (
-    <div className={cx('bg-surface grid gap-1 content-start min-w-0 transition-colors hover:bg-canvas/50', compact ? 'px-3.5 py-2.5' : 'px-4 pt-3.5 pb-4')}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[12.5px] text-ink-3 truncate" title={label}>{label}</span>
+    <div className={cx('bg-surface grid gap-1 content-start min-w-0 transition-colors hover:bg-canvas/50', compact ? 'px-3 py-2.5 sm:px-3.5' : 'px-3.5 pt-3 pb-3.5 sm:px-4 sm:pt-3.5 sm:pb-4')}>
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+        <span className="text-2xs sm:text-[12.5px] text-ink-3 truncate" title={label}>{label}</span>
         {Icon && <Icon className="w-3.5 h-3.5 text-ink-3/70 shrink-0" strokeWidth={1.75} />}
       </div>
-      <div className="flex items-end justify-between gap-3 min-w-0">
-        <span title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined} className={cx('min-w-0 truncate font-semibold text-ink tabular-nums tracking-tight', compact ? 'text-xl leading-7' : 'text-[26px] leading-8')}>
+      <div className="flex items-end justify-between gap-2 sm:gap-3 min-w-0">
+        <span title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined} className={cx('min-w-0 truncate font-semibold text-ink tabular-nums tracking-tight', compact ? 'text-lg sm:text-xl leading-6 sm:leading-7' : 'text-xl sm:text-[26px] leading-7 sm:leading-8')}>
           {typeof value === 'string' || typeof value === 'number'
             ? <NumberRoll value={value} numeric={numeric} invert={invert} formatDelta={numeric !== undefined ? deltaPercent : undefined} />
             : value}
         </span>
-        {trend && trend.length > 1 && <Sparkline data={trend} label={`Xu hướng ${label}`} />}
+        {trend && trend.length > 1 && (
+          <div className="hidden sm:block shrink-0">
+            <Sparkline data={trend} label={`Xu hướng ${label}`} />
+          </div>
+        )}
       </div>
       {progress && <Progress {...progress} label={label} className="mt-1" />}
-      {note && <span className={cx('text-2xs', noteColor)}>{note}</span>}
+      {note && <span className={cx('text-2xs break-words', noteColor)}>{note}</span>}
     </div>
   );
 }

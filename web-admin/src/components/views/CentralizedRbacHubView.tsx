@@ -1597,7 +1597,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Quick Filter Bar */}
           <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -1829,7 +1829,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Action Bar */}
           <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -2065,7 +2065,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   {/* Special Permission Checkboxes */}
                   <div className="space-y-1.5">
                     <label className="font-semibold text-ink-2">Quyền phê duyệt đặc thù:</label>
-                    <div className="grid grid-cols-2 gap-2 p-3 bg-accent-soft rounded-xl border border-accent/20">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-accent-soft rounded-xl border border-accent/20">
                       <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
                         <input
                           type="checkbox"
@@ -2150,7 +2150,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Action Bar */}
           <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 w-full sm:w-auto">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input

@@ -571,7 +571,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
           {/* Filters */}
           <div className="bg-surface rounded-xl border border-line p-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"

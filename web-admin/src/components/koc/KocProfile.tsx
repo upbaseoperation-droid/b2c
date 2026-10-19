@@ -228,7 +228,7 @@ export function KocProfile({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {onSearchSocialChannels && (
             <Button variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
               Tìm kênh MXH
@@ -511,7 +511,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
           <div className="text-right">
             <span className="text-2xs text-ink-3 block">Điểm uy tín nhà sáng tạo</span>
             <span className="font-semibold text-warning inline-flex items-center gap-1">
@@ -595,7 +595,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       </div>
 
       {/* Phễu tương tác & Chuyển đổi TikTok Seller */}
-      <div className="grid sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">Tỷ lệ tương tác kênh (ER)</span>
           <span className="text-lg font-semibold text-ink">{erToShow}%</span>
@@ -1081,7 +1081,7 @@ function CollaborationHistorySection({
         </div>
 
         {/* Tìm kiếm */}
-        <div className="relative min-w-[220px]">
+        <div className="relative w-full sm:w-auto sm:min-w-[220px]">
           <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-2.5" />
           <input
             type="text"
@@ -1780,7 +1780,7 @@ function CollaborationDetailModal({
               title={`Spark Ads: ${formatVndShort(adsGmv)}`}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4 text-xs pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
             <div className="flex items-center justify-between p-2 rounded-lg bg-positive-soft">
               <span className="text-positive font-medium">Doanh số tự nhiên (Organic)</span>
               <span className="font-semibold text-ink">{formatVndShort(organicGmv)}</span>

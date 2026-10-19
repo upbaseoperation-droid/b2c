@@ -57,6 +57,7 @@ interface KocMasterDataViewProps {
   /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả) */
   selectedBrand?: string;
   selectedKocId?: string | null;
+  onSelectKocId?: (kocId: string | null) => void;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
@@ -117,6 +118,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   allDeals,
   currentUser,
   selectedKocId = null,
+  onSelectKocId,
   onOpenQuickBookWithKoc,
   onKocUpdated,
   onKocCreated,
@@ -283,11 +285,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   const openProfile = (id: string) => {
     setOpenKocId(id);
+    onSelectKocId?.(id);
     requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
   };
 
   const openFromList = (id: string) => openShared(id, () => openProfile(id));
-  const backToList = (id: string) => closeShared(id, () => setOpenKocId(null));
+  const backToList = (id: string) =>
+    closeShared(id, () => {
+      setOpenKocId(null);
+      onSelectKocId?.(null);
+    });
 
   const rowActions = (k: KocItem) => [
     ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
@@ -502,7 +509,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   /* ------------------------------------------------------------- Render */
 
-  const openKoc = openKocId ? localKocs.find((k) => k.id === openKocId) : undefined;
+  const openKoc = useMemo(() => {
+    if (!openKocId) return undefined;
+    const cleanTarget = openKocId.trim().toLowerCase().replace(/^@+/, '');
+    return localKocs.find(
+      (k) =>
+        k.id === openKocId ||
+        (k.channelId || '').trim().toLowerCase().replace(/^@+/, '') === cleanTarget,
+    );
+  }, [localKocs, openKocId]);
   const navList = openKoc && filtered.some((k) => k.id === openKoc.id) ? filtered : localKocs;
   const navIndex = openKoc ? navList.findIndex((k) => k.id === openKoc.id) : -1;
 
@@ -738,6 +753,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         onClose={() => setScraperOpen(false)}
         existingKocs={localKocs}
         initialHandle={scraperInitialHandle}
+        onOpenKocInMaster={(koc) => {
+          setScraperOpen(false);
+          openProfile(koc.id);
+        }}
         onApplyResults={({ created, updated }) => {
           setLocalKocs((prev) => {
             const updatedMap = new Map(updated.map((u) => [u.id, u]));

@@ -199,7 +199,7 @@
 html, body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
-  min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--font-sans);
   overflow-x: clip; /* clip, không phải hidden: hidden biến body thành vùng cuộn và làm hỏng sticky */
   -webkit-font-smoothing: antialiased;
@@ -417,9 +417,10 @@ td button {
   white-space: nowrap;
 }
 
-/* Nhãn nhỏ (span có padding + bo góc) không xuống dòng */
+/* Nhãn nhỏ (span có padding + bo góc) không xuống dòng trên màn rộng; trên mobile tự cắt nếu quá dài */
 span[class*="px-"][class*="rounded"]:not([class*="block"]) {
   white-space: nowrap;
+  max-width: 100%;
 }
 
 /* Utility class cho cỡ chữ siêu nhỏ 11px */
@@ -445,7 +446,10 @@ span[class*="px-"][class*="rounded"]:not([class*="block"]) {
 .workspace-panel, .card-enterprise {
   box-shadow: 0 2px 6px rgb(22 23 26 / 0.025);
 }
-.workspace-panel > header { padding: 16px 20px; }
+.workspace-panel > header { padding: 12px 14px; }
+@media (min-width: 640px) {
+  .workspace-panel > header { padding: 16px 20px; }
+}
 .app-header { box-shadow: 0 1px 8px rgb(22 23 26 / 0.025); }
 .workspace-view { contain: layout style; }
 button { -webkit-tap-highlight-color: transparent; }
@@ -464,7 +468,15 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 }
 ::selection { background: var(--color-accent-soft); color: var(--color-accent); }
 @media (pointer: coarse) {
-  .btn-sm, .btn-md, .btn-lg { min-height: 44px; }
+  .btn-sm, .btn-md, .btn-lg { min-height: 40px; }
+  .sidebar-item { min-height: 38px; }
+}
+@media (pointer: coarse) and (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 

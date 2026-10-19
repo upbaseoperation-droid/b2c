@@ -1307,7 +1307,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </h3>
               
             </div>
-            <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg border border-line shrink-0">
+            <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg border border-line shrink-0 max-w-full overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setStaffSubView('WORKLOAD')}
@@ -1579,8 +1579,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               {/* Danh sách nhân viên thuộc khối */}
-              <div className="border border-line rounded-xl overflow-hidden max-h-[460px] overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="border border-line rounded-xl overflow-hidden max-h-[460px] overflow-y-auto overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                   <thead className="bg-canvas border-b border-line text-2xs font-medium text-ink-2 sticky top-0">
                     <tr>
                       <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
@@ -1955,7 +1955,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-ink-2 block mb-1">
                     2. Nhãn hàng liên quan
@@ -2271,7 +2271,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           <AlertTriangle className="w-3.5 h-3.5" />
                           <span>Chỉ nhập tay khi nhãn hàng đối tác mới ký chưa kịp đồng bộ vào Master Data</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="font-semibold text-ink-2 block mb-1">Tên thương hiệu *</label>
                             <input
@@ -2450,7 +2450,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-semibold text-ink-2">Ngân sách tháng (VNĐ)</label>
