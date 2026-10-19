@@ -466,7 +466,13 @@ async function discoverFromYouTubeAboutPage(
   const aboutHtml = await fetchUrlTextSafe(`https://www.youtube.com${targetChannel}/about`, 4500);
   if (!aboutHtml) return { candidates: [], rawText: '' };
 
-  const sourceLabel = `Liên kết chính thức trên kênh YouTube (${targetChannel})`;
+  let decodedChannel = targetChannel;
+  try {
+    decodedChannel = decodeURIComponent(targetChannel);
+  } catch {
+    // keep raw
+  }
+  const sourceLabel = `Liên kết chính thức trên kênh YouTube (${decodedChannel})`;
   const candidates = extractSocialLinksFromText(aboutHtml, sourceLabel, 'CAO');
   const shopeeShortCands = await unrollShopeeShortlinks(aboutHtml, sourceLabel);
   candidates.push(...shopeeShortCands);
@@ -476,22 +482,33 @@ async function discoverFromYouTubeAboutPage(
 
 function checkNameIdentityMatch(
   profileDisplayName: string,
-  handle: string,
   tiktokHandle: string,
   stageName: string,
   realName: string
 ): boolean {
-  const normProfile = stripVnAccents(profileDisplayName || '').replace(/[^a-z0-9\s]/g, ' ').trim();
-  const normHandle = stripVnAccents(handle || '').replace(/[^a-z0-9]/g, '');
-  const normTiktok = stripVnAccents(tiktokHandle || '').replace(/[^a-z0-9]/g, '');
-  const normStage = stripVnAccents(stageName || '').replace(/[^a-z0-9\s]/g, ' ').trim();
-  const normReal = stripVnAccents(realName || '').replace(/[^a-z0-9\s]/g, ' ').trim();
+  const normProfile = stripVnAccents(profileDisplayName || '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!normProfile) return false;
 
-  if (normTiktok && normHandle === normTiktok) return true;
-  if (normStage && normProfile && (normProfile.includes(normStage) || normStage.includes(normProfile))) {
+  const normProfileCompact = normProfile.replace(/\s+/g, '');
+  const normTiktok = stripVnAccents(tiktokHandle || '').replace(/[^a-z0-9]/g, '');
+  const normStage = stripVnAccents(stageName || '')
+    .replace(/\b(review|official|channel|tiktok)\b/gi, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const normReal = stripVnAccents(realName || '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (normTiktok && normProfileCompact === normTiktok) return true;
+  if (normStage && (normProfile.includes(normStage) || normStage.includes(normProfile))) {
     return true;
   }
-  if (normReal && normProfile && (normProfile.includes(normReal) || normReal.includes(normProfile))) {
+  if (normReal && (normProfile.includes(normReal) || normReal.includes(normProfile))) {
     return true;
   }
 
@@ -500,10 +517,10 @@ function checkNameIdentityMatch(
     .filter((t) => t.length >= 3 && !/^(official|review|channel|tiktok|beauty)$/i.test(t));
 
   if (tokens.length >= 2) {
-    const matchedCount = tokens.filter((t) => normProfile.includes(t) || normHandle.includes(t)).length;
+    const matchedCount = tokens.filter((t) => normProfile.includes(t)).length;
     if (matchedCount >= 2) return true;
   } else if (tokens.length === 1 && tokens[0].length >= 4) {
-    if (normProfile.includes(tokens[0]) || normHandle.includes(tokens[0])) return true;
+    if (normProfile.includes(tokens[0])) return true;
   }
 
   return false;

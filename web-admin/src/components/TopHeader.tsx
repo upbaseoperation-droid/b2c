@@ -4,7 +4,7 @@ import React from 'react';
 import { Menu, ArrowRight, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
-import { PageActionsSlot } from './ui';
+import { PageActionsSlot, PageHeaderNavSlot } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
 
 interface TopHeaderProps {
@@ -70,10 +70,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2.5 min-w-0">
-            <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
-          </div>
+        <div className="min-w-0 flex-1 flex items-center gap-2.5 flex-wrap">
+          <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight shrink-0">{title}</h1>
+          <PageHeaderNavSlot />
         </div>
       </div>
 

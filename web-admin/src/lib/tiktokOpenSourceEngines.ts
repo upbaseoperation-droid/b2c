@@ -1486,7 +1486,10 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
     if (videoCardBlocks.length > 1) {
       isStructuredCard = true;
-      blocksToScan = videoCardBlocks.slice(1).map((b) => b.slice(0, 4500));
+      blocksToScan = videoCardBlocks.slice(1).map((b) => {
+        const endAnchor = b.indexOf('</a>');
+        return endAnchor > 0 ? b.slice(0, Math.min(endAnchor, 3500)) : b.slice(0, 2800);
+      });
     } else if (webAlgoBlocks.length > 1) {
       isStructuredCard = true;
       blocksToScan = webAlgoBlocks.slice(1).map((b) => {
@@ -1495,7 +1498,10 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       });
     } else if (ddgResultBlocks.length > 1) {
       isStructuredCard = true;
-      blocksToScan = ddgResultBlocks.slice(1).map((b) => b.slice(0, 3000));
+      blocksToScan = ddgResultBlocks.slice(1).map((b) => {
+        const endClear = b.indexOf('<div class="clear"');
+        return endClear > 0 ? b.slice(0, Math.min(endClear, 3000)) : b.slice(0, 2500);
+      });
     } else if (requiredTokens.length === 0) {
       blocksToScan = [rawHtml];
     }

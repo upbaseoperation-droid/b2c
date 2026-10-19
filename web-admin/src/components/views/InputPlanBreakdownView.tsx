@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, formatNumber } from '../../lib/format';
 import {
   Layers,
   Download,
