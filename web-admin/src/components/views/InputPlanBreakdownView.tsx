@@ -1670,13 +1670,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* THANH ĐIỀU HƯỚNG QUY TRÌNH 5 BƯỚC & THAO TÁC GỌN 1 HÀNG                  */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-2 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2 shadow-2xs flex items-center justify-between gap-3 flex-wrap xl:flex-nowrap">
         {/* Bên trái: 5 Bước quy trình Kế hoạch */}
-        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex-wrap gap-0.5">
+        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'OVERVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1692,7 +1692,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             onClick={() => {
               if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
             }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               isDetailBreakdownTab
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1703,7 +1703,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('WEEKLY_MATRIX')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'WEEKLY_MATRIX'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1714,7 +1714,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('EXCEL_PREVIEW')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'EXCEL_PREVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1725,7 +1725,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('BRAND_ONE_SHEET')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
               activeTab === 'BRAND_ONE_SHEET'
                 ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'text-emerald-800 hover:bg-emerald-50'
@@ -1736,17 +1736,17 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
 
-        {/* Bên phải: Lưu + Trao đổi + Thao tác + Nút trạng thái/gửi duyệt */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Bên phải: Lưu + Trao đổi + Báo cáo + Thao tác + Nút trạng thái/gửi duyệt */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap">
           {onOpenListingForPlan && (
             <button
               type="button"
               onClick={() => onOpenListingForPlan(planState)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
+              className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
               title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Triển khai Listing KOC</span>
+              <span>Listing KOC</span>
             </button>
           )}
 
@@ -1754,9 +1754,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             type="button"
             onClick={() => setIsPlanReportOpen(true)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
+            title="Báo cáo thẩm định kế hoạch"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Báo cáo thẩm định</span>
+            <span className="hidden sm:inline">Báo cáo thẩm định</span>
+            <span className="sm:hidden">Báo cáo</span>
           </button>
 
           <button
@@ -2672,90 +2674,283 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               </div>
             </div>
 
-            {/* Cột phải (4/12): Nhân sự phụ trách & Lịch sử phiên bản */}
-            <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 p-4 space-y-3.5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <h3 className="text-xs font-semibold text-slate-900">Thông tin phụ trách &amp; Phiên bản</h3>
-                {canLeaderReview && hasLeader && leaderStatus !== 'ĐÃ_SƠ_DUYỆT' && !isPlanLocked && (
+            {/* Cột phải (4/12): Nhân sự phụ trách, Tiến độ đối soát & Chỉ số tài chính */}
+            <div className="lg:col-span-4 flex flex-col gap-3.5">
+              {/* Thẻ 1: Thông tin phụ trách & Phiên bản */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <h3 className="text-xs font-semibold text-slate-900">Thông tin phụ trách &amp; Phiên bản</h3>
+                  {canLeaderReview && hasLeader && leaderStatus !== 'ĐÃ_SƠ_DUYỆT' && !isPlanLocked && (
+                    <button
+                      onClick={() => {
+                        setLeaderReviewNote(planState.leaderNotes || '');
+                        setLeaderApprovalDecision('APPROVE');
+                        setIsLeaderApprovalModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
+                    >
+                      Leader Sơ duyệt
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-2xs text-slate-500 block">Chuyên viên B2C (PIC)</span>
+                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
+                      {planState.primaryPic || planState.pic || 'Chưa phân công'}
+                    </strong>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xs text-slate-500">Luồng duyệt B2C</span>
+                      {isLeadUser && !isPlanLocked && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextHas = !hasLeader;
+                            const defaultLeader = nextHas ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+                            setPlanState(prev => ({
+                              ...prev,
+                              hasBookingLeader: nextHas,
+                              bookingLeader: defaultLeader,
+                              leaderApprovalStatus: nextHas
+                                ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT'))
+                                : 'KHÔNG_ÁP_DỤNG'
+                            }));
+                            notify(nextHas
+                              ? `Đã bật yêu cầu Leader sơ duyệt cho gian ${planState.brandName}`
+                              : `Đã chuyển gian ${planState.brandName} sang Duyệt trực tiếp`);
+                          }}
+                          className="text-2xs text-blue-600 hover:underline font-medium cursor-pointer"
+                        >
+                          Đổi
+                        </button>
+                      )}
+                    </div>
+                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
+                      {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Trực tiếp Lead B2C'}
+                    </strong>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-2xs text-slate-500 block">Phụ trách Growth</span>
+                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
+                      {planState.growthPic || '—'}
+                    </strong>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-2xs text-slate-500 block">Trạng thái Chỉ tiêu</span>
+                    <strong className={`font-semibold mt-0.5 block truncate ${isLayer1Locked ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {isLayer1Locked ? 'Đã chốt chỉ tiêu tháng' : 'Đang điền & trao đổi'}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="text-2xs text-slate-500">
+                    Đang mở <strong className="text-slate-800">{activeVersionCode}</strong> ({studioVersionSnapshots.length} phiên bản trong tháng {planState.month})
+                  </div>
                   <button
-                    onClick={() => {
-                      setLeaderReviewNote(planState.leaderNotes || '');
-                      setLeaderApprovalDecision('APPROVE');
-                      setIsLeaderApprovalModalOpen(true);
-                    }}
-                    className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
+                    type="button"
+                    onClick={() => setIsVersionHistoryModalOpen(true)}
+                    className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
                   >
-                    Leader Sơ duyệt
+                    Lịch sử &amp; So sánh bản →
+                  </button>
+                </div>
+              </div>
+
+              {/* Thẻ 2: Tiến độ đối soát Định mức (Chỉ tiêu vs Đã phân bổ) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs font-semibold text-slate-900">Tiến độ phân bổ chi tiết</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                      channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
+                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
+                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
+                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
+                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
+                      channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample &&
+                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel &&
+                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
+                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
+                        ? 'Khớp 100%'
+                        : 'Chưa đồng bộ'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ALL_SUMMARY')}
+                    className="text-2xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>Mở phân bổ</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-2xs">
+                  {/* Paid */}
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-slate-800 block truncate">1. Video KOC trả phí (Paid)</span>
+                      <span className="text-slate-500 font-mono">
+                        {channelTotals.affiliatePaid.qty} / {layer1Metrics.qtyAffiliatePaid} video · {formatVndShort(channelTotals.affiliatePaid.budget)} / {formatVndShort(layer1Metrics.budgetAffiliateNet)}
+                      </span>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${
+                      channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}>
+                      {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet ? 'Khớp' : 'Lệch'}
+                    </span>
+                  </div>
+
+                  {/* FOC */}
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-slate-800 block truncate">2. Suất gửi mẫu FOC (0đ)</span>
+                      <span className="text-slate-500 font-mono">
+                        {channelTotals.tapFreecast.qty} / {layer1Metrics.qtyFocSample} suất mẫu
+                      </span>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
+                    }`}>
+                      {channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'Khớp' : 'Lệch'}
+                    </span>
+                  </div>
+
+                  {/* Kênh Brand */}
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-slate-800 block truncate">3. Kênh Brand (Self-channel)</span>
+                      <span className="text-slate-500 font-mono">
+                        {channelTotals.selfChannel.qty} / {layer1Metrics.qtySelfChannel} video · {formatVndShort(channelTotals.selfChannel.budget)}
+                      </span>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${
+                      channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}>
+                      {channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet ? 'Khớp' : 'Lệch'}
+                    </span>
+                  </div>
+
+                  {/* Đa sàn */}
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-slate-800 block truncate">4. Đa sàn khác (Shopee/FB/IG)</span>
+                      <span className="text-slate-500 font-mono">
+                        {channelTotals.multiPlatform.qty} / {layer1Metrics.qtyMultiPlatform} video · {formatVndShort(channelTotals.multiPlatform.budget)}
+                      </span>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${
+                      channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}>
+                      {channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet ? 'Khớp' : 'Lệch'}
+                    </span>
+                  </div>
+
+                  {/* Livestream */}
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div className="min-w-0 pr-2">
+                      <span className="font-semibold text-slate-800 block truncate">5. Phiên Livestream</span>
+                      <span className="text-slate-500 font-mono">
+                        {channelTotals.livestream.qty} / {layer1Metrics.qtyLivestreamSessions} phiên · {formatVndShort(channelTotals.livestream.budget)}
+                      </span>
+                    </div>
+                    <span className={`font-semibold shrink-0 ${
+                      channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet
+                        ? 'text-emerald-700'
+                        : 'text-amber-700'
+                    }`}>
+                      {channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet ? 'Khớp' : 'Lệch'}
+                    </span>
+                  </div>
+                </div>
+
+                {!isPlanLocked && (
+                  <button
+                    type="button"
+                    onClick={handleSyncLayer1ToLayer2}
+                    className="w-full py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer text-center"
+                  >
+                    Đồng bộ sang phân bổ chi tiết
                   </button>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-500 block">Chuyên viên B2C (PIC)</span>
-                  <strong className="text-slate-900 font-semibold mt-0.5 block">
-                    {planState.primaryPic || planState.pic || 'Chưa phân công'}
-                  </strong>
+              {/* Thẻ 3: Chỉ số Tài chính & Trần PnL */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-xs font-semibold text-slate-900">Chỉ số Tài chính &amp; PnL</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                    layer1BudgetGapVsPnl < 0
+                      ? 'bg-rose-100 text-rose-800'
+                      : layer1BudgetGapVsPnl === 0
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {layer1BudgetGapVsPnl < 0
+                      ? `Vượt ${formatVndShort(Math.abs(layer1BudgetGapVsPnl))}`
+                      : layer1BudgetGapVsPnl === 0
+                      ? 'Khớp 100% PnL'
+                      : `Dư ${formatVndShort(layer1BudgetGapVsPnl)}`}
+                  </span>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xs text-slate-500">Luồng duyệt B2C</span>
-                    {isLeadUser && !isPlanLocked && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextHas = !hasLeader;
-                          const defaultLeader = nextHas ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-                          setPlanState(prev => ({
-                            ...prev,
-                            hasBookingLeader: nextHas,
-                            bookingLeader: defaultLeader,
-                            leaderApprovalStatus: nextHas
-                              ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT'))
-                              : 'KHÔNG_ÁP_DỤNG'
-                          }));
-                          notify(nextHas
-                            ? `Đã bật yêu cầu Leader sơ duyệt cho gian ${planState.brandName}`
-                            : `Đã chuyển gian ${planState.brandName} sang Duyệt trực tiếp`);
-                        }}
-                        className="text-2xs text-blue-600 hover:underline font-medium cursor-pointer"
-                      >
-                        Đổi
-                      </button>
-                    )}
+                <div className="grid grid-cols-2 gap-2 text-2xs">
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-slate-500 block">Trần Net PnL giao</span>
+                    <strong className="text-slate-900 font-mono font-semibold text-xs mt-0.5 block">
+                      {formatVndShort(layer1Metrics.pnlTotalBudgetNet)}
+                    </strong>
                   </div>
-                  <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
-                    {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Trực tiếp Lead B2C'}
-                  </strong>
+
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-slate-500 block">Tổng Net chỉ tiêu</span>
+                    <strong className="text-blue-700 font-mono font-semibold text-xs mt-0.5 block">
+                      {formatVndShort(totalLayer1ChannelBudgetNet)}
+                    </strong>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-slate-500 block">Mục tiêu NMV</span>
+                    <strong className="text-emerald-700 font-mono font-semibold text-xs mt-0.5 block">
+                      {formatVndShort(layer1Metrics.targetNmvTotal)}
+                    </strong>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-slate-500 block">Tỷ lệ Net / NMV</span>
+                    <strong className="text-slate-900 font-mono font-semibold text-xs mt-0.5 block">
+                      {layer1Metrics.targetNmvTotal > 0
+                        ? `${((totalLayer1ChannelBudgetNet / layer1Metrics.targetNmvTotal) * 100).toFixed(1)}%`
+                        : '—'}
+                    </strong>
+                  </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-500 block">Phụ trách Growth</span>
-                  <strong className="text-slate-900 font-semibold mt-0.5 block">
-                    {planState.growthPic || '—'}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
+                  <span>Quy đổi Gross dự kiến:</span>
+                  <strong className="font-mono text-slate-800">
+                    {formatVndShort(Math.round(totalLayer1ChannelBudgetNet * GROSS_MULTIPLIER))}
                   </strong>
                 </div>
-
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-500 block">Trạng thái Chỉ tiêu</span>
-                  <strong className={`font-semibold mt-0.5 block ${isLayer1Locked ? 'text-emerald-700' : 'text-amber-700'}`}>
-                    {isLayer1Locked ? 'Đã chốt chỉ tiêu tháng' : 'Đang điền & trao đổi'}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                <div className="text-2xs text-slate-500">
-                  Đang mở <strong className="text-slate-800">{activeVersionCode}</strong> ({studioVersionSnapshots.length} phiên bản trong tháng {planState.month})
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsVersionHistoryModalOpen(true)}
-                  className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                >
-                  Lịch sử &amp; So sánh bản →
-                </button>
               </div>
             </div>
           </div>

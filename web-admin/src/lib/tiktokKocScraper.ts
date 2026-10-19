@@ -1392,7 +1392,7 @@ export async function discoverCompetitorKocs(
       : Promise.resolve(null),
     options?.skipProfileFetch
       ? Promise.resolve([])
-      : discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanCompetitorHandle}/video`], 5),
+      : discoverTikTokChannelVideoUrls(cleanCompetitorHandle, { maxUrls: 8 }),
     discoverRealTikTokVideoUrlsByQuery(
       [
         ...(keywordProfile.searchQueries || []),
@@ -1483,7 +1483,7 @@ export async function discoverCompetitorKocs(
     recommendedUpbaseBrands: preset?.recommendedUpbaseBrands || [],
   };
 
-  // 2. Gom nhóm các video thực của KOC bên thứ ba (loại trừ video đăng bởi chính kênh đối thủ / đại lý brand & các KOC đã quét ở đợt trước)
+  // 2. Gom nhóm các video thực của KOC bên thứ ba (loại trừ video đăng bởi chính kênh chính thức của đối thủ & các KOC đã quét ở đợt trước)
   const compactBrandTag = cleanCompetitorHandle.replace(/[._-]/g, '');
   const compactCoreTag = (keywordProfile.rootToken || strippedBrandCore || cleanCompetitorHandle)
     .toLowerCase()
@@ -1499,10 +1499,10 @@ export async function discoverCompetitorKocs(
     if (compactBrandTag.length >= 4 && compact.includes(compactBrandTag)) return true;
     if (
       compactCoreTag.length >= 4 &&
-      compact.includes(compactCoreTag) &&
-      /(official|vietnam|vn|store|shop|mall|hanoi|saigon|baby|kids|authentic|chinhhang)/i.test(
-        compact
-      )
+      new RegExp(
+        `^${compactCoreTag}(official|vietnam|vn|mall|global|korea|kr|japan|jp|paris|chinhhang|authentic)?$`,
+        'i'
+      ).test(compact)
     ) {
       return true;
     }

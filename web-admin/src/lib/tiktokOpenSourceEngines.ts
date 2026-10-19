@@ -827,57 +827,107 @@ const VERIFIED_VN_TIKTOK_VIDEO_URLS: Record<
     { handle: 'khvan19', videoId: '7604458740183665927', videoUrl: 'https://www.tiktok.com/@khvan19/video/7604458740183665927' },
   ],
   nous: [
-    { handle: 'embevaniiuu', videoId: '7584429040312847624', videoUrl: 'https://www.tiktok.com/@embevaniiuu/video/7584429040312847624' },
+    { handle: 'chuyennhathoday', videoId: '7696353302589738260', videoUrl: 'https://www.tiktok.com/@chuyennhathoday/video/7696353302589738260' },
+    { handle: 'miube160723', videoId: '7697619060221152532', videoUrl: 'https://www.tiktok.com/@miube160723/video/7697619060221152532' },
+    { handle: 'm.3.con3430', videoId: '7693869309398994182', videoUrl: 'https://www.tiktok.com/@m.3.con3430/video/7693869309398994182' },
+    { handle: 'sukemshopdososinh', videoId: '7692300985150049556', videoUrl: 'https://www.tiktok.com/@sukemshopdososinh/video/7692300985150049556' },
+    { handle: 'nousbabystorevinhlong', videoId: '7685322652742962450', videoUrl: 'https://www.tiktok.com/@nousbabystorevinhlong/video/7685322652742962450' },
+    { handle: 'bekemm.minisize', videoId: '7673051167055727879', videoUrl: 'https://www.tiktok.com/@bekemm.minisize/video/7673051167055727879' },
+    { handle: 'phm.nh.li1', videoId: '7670574316722851090', videoUrl: 'https://www.tiktok.com/@phm.nh.li1/video/7670574316722851090' },
+    { handle: 'c.kids3', videoId: '7668968332497882386', videoUrl: 'https://www.tiktok.com/@c.kids3/video/7668968332497882386' },
+    { handle: 'besuadeiii', videoId: '7664908993902464276', videoUrl: 'https://www.tiktok.com/@besuadeiii/video/7664908993902464276' },
+    { handle: 'combodisinh', videoId: '7660439036749778197', videoUrl: 'https://www.tiktok.com/@combodisinh/video/7660439036749778197' },
+    { handle: 'nousbabystore', videoId: '7657051530738126098', videoUrl: 'https://www.tiktok.com/@nousbabystore/video/7657051530738126098' },
+    { handle: 'mesammiiu', videoId: '7653100196607413522', videoUrl: 'https://www.tiktok.com/@mesammiiu/video/7653100196607413522' },
+    { handle: 'hathuuu163', videoId: '7651638911999085831', videoUrl: 'https://www.tiktok.com/@hathuuu163/video/7651638911999085831' },
+    { handle: 'embemeo_1792', videoId: '7650505481550597383', videoUrl: 'https://www.tiktok.com/@embemeo_1792/video/7650505481550597383' },
+    { handle: 'nhacuasua939626', videoId: '7650490243681930516', videoUrl: 'https://www.tiktok.com/@nhacuasua939626/video/7650490243681930516' },
+    { handle: '_bella.doan', videoId: '7647519695645461781', videoUrl: 'https://www.tiktok.com/@_bella.doan/video/7647519695645461781' },
+    { handle: 'noushanoi', videoId: '7646366709301005576', videoUrl: 'https://www.tiktok.com/@noushanoi/video/7646366709301005576' },
+    { handle: 'shop_quan_ao_tre_em_', videoId: '7641625064076791048', videoUrl: 'https://www.tiktok.com/@shop_quan_ao_tre_em_/video/7641625064076791048' },
+    { handle: 'jieunmommy', videoId: '7640849880579050773', videoUrl: 'https://www.tiktok.com/@jieunmommy/video/7640849880579050773' },
+    { handle: 'benkidsnous', videoId: '7636634085233839378', videoUrl: 'https://www.tiktok.com/@benkidsnous/video/7636634085233839378' },
+    { handle: 'nous_honee_lullaby_dokma', videoId: '7630684817557818644', videoUrl: 'https://www.tiktok.com/@nous_honee_lullaby_dokma/video/7630684817557818644' },
+    { handle: 'embesa2026', videoId: '7627825469592849685', videoUrl: 'https://www.tiktok.com/@embesa2026/video/7627825469592849685' },
+    { handle: 'nousbabystoredaily', videoId: '7619699870349184276', videoUrl: 'https://www.tiktok.com/@nousbabystoredaily/video/7619699870349184276' },
+    { handle: 'doomibaby', videoId: '7617774248513375495', videoUrl: 'https://www.tiktok.com/@doomibaby/video/7617774248513375495' },
     { handle: 'nhancuathungphi', videoId: '7617362466464451858', videoUrl: 'https://www.tiktok.com/@nhancuathungphi/video/7617362466464451858' },
-    { handle: '_hngoc24.8', videoId: '7591476426579266824', videoUrl: 'https://www.tiktok.com/@_hngoc24.8/video/7591476426579266824' },
-    { handle: 'nopunguyen', videoId: '7302662353278061825', videoUrl: 'https://www.tiktok.com/@nopunguyen/video/7302662353278061825' },
-    { handle: 'hyhm.2024', videoId: '7445248617218280712', videoUrl: 'https://www.tiktok.com/@hyhm.2024/video/7445248617218280712' },
+    { handle: 'ngockhanhday', videoId: '7617018526787783944', videoUrl: 'https://www.tiktok.com/@ngockhanhday/video/7617018526787783944' },
+    { handle: 'uoa_mebauvaembe', videoId: '7614525480997260552', videoUrl: 'https://www.tiktok.com/@uoa_mebauvaembe/video/7614525480997260552' },
+    { handle: 'nousbabystore6688', videoId: '7613065443732966677', videoUrl: 'https://www.tiktok.com/@nousbabystore6688/video/7613065443732966677' },
+    { handle: 'genzhocdelamcha', videoId: '7604079616076123413', videoUrl: 'https://www.tiktok.com/@genzhocdelamcha/video/7604079616076123413' },
+    { handle: '_ngathongminh_', videoId: '7602892830301850898', videoUrl: 'https://www.tiktok.com/@_ngathongminh_/video/7602892830301850898' },
+    { handle: 'ngoccattien17', videoId: '7601008901798219028', videoUrl: 'https://www.tiktok.com/@ngoccattien17/video/7601008901798219028' },
+    { handle: 'nhacomen', videoId: '7600399340108270856', videoUrl: 'https://www.tiktok.com/@nhacomen/video/7600399340108270856' },
+    { handle: 'changghinn', videoId: '7599184266999729428', videoUrl: 'https://www.tiktok.com/@changghinn/video/7599184266999729428' },
+    { handle: 'xuanquynh_me2dua', videoId: '7599180625555295509', videoUrl: 'https://www.tiktok.com/@xuanquynh_me2dua/video/7599180625555295509' },
+    { handle: 'gamaitenmo', videoId: '7597691560075087125', videoUrl: 'https://www.tiktok.com/@gamaitenmo/video/7597691560075087125' },
     { handle: 'ahy.love', videoId: '7597356117336837397', videoUrl: 'https://www.tiktok.com/@ahy.love/video/7597356117336837397' },
     { handle: 't.chieuu', videoId: '7557714413579537682', videoUrl: 'https://www.tiktok.com/@t.chieuu/video/7557714413579537682' },
-    { handle: 'phuonggthuy__', videoId: '7575497257961786631', videoUrl: 'https://www.tiktok.com/@phuonggthuy__/video/7575497257961786631' },
-    { handle: 'giadinhsociu_', videoId: '7587415001317559572', videoUrl: 'https://www.tiktok.com/@giadinhsociu_/video/7587415001317559572' },
-    { handle: '_bella.doan', videoId: '7647519695645461781', videoUrl: 'https://www.tiktok.com/@_bella.doan/video/7647519695645461781' },
-    { handle: 'c.kids3', videoId: '7668968332497882386', videoUrl: 'https://www.tiktok.com/@c.kids3/video/7668968332497882386' },
-    { handle: 'ngockhanhday', videoId: '7617018526787783944', videoUrl: 'https://www.tiktok.com/@ngockhanhday/video/7617018526787783944' },
-    { handle: 'mitao1992', videoId: '7554000846808255760', videoUrl: 'https://www.tiktok.com/@mitao1992/video/7554000846808255760' },
-    { handle: 'xuanquynh_me2dua', videoId: '7599180625555295509', videoUrl: 'https://www.tiktok.com/@xuanquynh_me2dua/video/7599180625555295509' },
-    { handle: 'dn.linh95', videoId: '7553210871120530706', videoUrl: 'https://www.tiktok.com/@dn.linh95/video/7553210871120530706' },
-    { handle: 'mesuri.daily', videoId: '7497457433955126546', videoUrl: 'https://www.tiktok.com/@mesuri.daily/video/7497457433955126546' },
-    { handle: 'besuadeiii', videoId: '7664908993902464276', videoUrl: 'https://www.tiktok.com/@besuadeiii/video/7664908993902464276' },
-    { handle: 'monniekids.official', videoId: '7556219074464795922', videoUrl: 'https://www.tiktok.com/@monniekids.official/video/7556219074464795922' },
-    { handle: 'hathuuu163', videoId: '7651638911999085831', videoUrl: 'https://www.tiktok.com/@hathuuu163/video/7651638911999085831' },
-    { handle: 'mesammiiu', videoId: '7653100196607413522', videoUrl: 'https://www.tiktok.com/@mesammiiu/video/7653100196607413522' },
-    { handle: 'chuyennhathoday', videoId: '7696353302589738260', videoUrl: 'https://www.tiktok.com/@chuyennhathoday/video/7696353302589738260' },
-    { handle: 'thegioimebimsua', videoId: '7224184969936129281', videoUrl: 'https://www.tiktok.com/@thegioimebimsua/video/7224184969936129281' },
-    { handle: 'dungnguyen_gauomi', videoId: '7516570111948393735', videoUrl: 'https://www.tiktok.com/@dungnguyen_gauomi/video/7516570111948393735' },
+    { handle: 'huyenbabo', videoId: '7595464705733299477', videoUrl: 'https://www.tiktok.com/@huyenbabo/video/7595464705733299477' },
     { handle: 'mekami_linhnguyen', videoId: '7595219404925701396', videoUrl: 'https://www.tiktok.com/@mekami_linhnguyen/video/7595219404925701396' },
-    { handle: 'thaophamm0906', videoId: '7177763911217859866', videoUrl: 'https://www.tiktok.com/@thaophamm0906/video/7177763911217859866' },
-    { handle: 'shoptienhuong', videoId: '7543963392403344658', videoUrl: 'https://www.tiktok.com/@shoptienhuong/video/7543963392403344658' },
-    { handle: 'combodisinh', videoId: '7660439036749778197', videoUrl: 'https://www.tiktok.com/@combodisinh/video/7660439036749778197' },
-    { handle: 'gamaitenmo', videoId: '7597691560075087125', videoUrl: 'https://www.tiktok.com/@gamaitenmo/video/7597691560075087125' },
-    { handle: 'babyandmommyvn', videoId: '7514712378773114132', videoUrl: 'https://www.tiktok.com/@babyandmommyvn/video/7514712378773114132' },
-    { handle: 'sukemshopdososinh', videoId: '7692300985150049556', videoUrl: 'https://www.tiktok.com/@sukemshopdososinh/video/7692300985150049556' },
-    { handle: 'mochi_iuday', videoId: '7510090024394706194', videoUrl: 'https://www.tiktok.com/@mochi_iuday/video/7510090024394706194' },
-    { handle: 'embemeo_1792', videoId: '7650505481550597383', videoUrl: 'https://www.tiktok.com/@embemeo_1792/video/7650505481550597383' },
-    { handle: 'genzhocdelamcha', videoId: '7604079616076123413', videoUrl: 'https://www.tiktok.com/@genzhocdelamcha/video/7604079616076123413' },
-    { handle: 'uoa_mebauvaembe', videoId: '7614525480997260552', videoUrl: 'https://www.tiktok.com/@uoa_mebauvaembe/video/7614525480997260552' },
-    { handle: 'jieunmommy', videoId: '7640849880579050773', videoUrl: 'https://www.tiktok.com/@jieunmommy/video/7640849880579050773' },
-    { handle: '_ngathongminh_', videoId: '7602892830301850898', videoUrl: 'https://www.tiktok.com/@_ngathongminh_/video/7602892830301850898' },
-    { handle: 'mia_min99', videoId: '7474181370558909714', videoUrl: 'https://www.tiktok.com/@mia_min99/video/7474181370558909714' },
-    { handle: 'koalababyshop', videoId: '7580354445767085330', videoUrl: 'https://www.tiktok.com/@koalababyshop/video/7580354445767085330' },
-    { handle: 'amandaquynh15', videoId: '7585910501587143957', videoUrl: 'https://www.tiktok.com/@amandaquynh15/video/7585910501587143957' },
-    { handle: 'iuemshop', videoId: '7353089098631892240', videoUrl: 'https://www.tiktok.com/@iuemshop/video/7353089098631892240' },
-    { handle: 'babymall39', videoId: '7569461966507429136', videoUrl: 'https://www.tiktok.com/@babymall39/video/7569461966507429136' },
-    { handle: 'leo.nung.ninh', videoId: '7507279753318124807', videoUrl: 'https://www.tiktok.com/@leo.nung.ninh/video/7507279753318124807' },
-    { handle: 'duong_babie', videoId: '7343792877694192898', videoUrl: 'https://www.tiktok.com/@duong_babie/video/7343792877694192898' },
-    { handle: 'chuyennhalinen', videoId: '7269404542742039814', videoUrl: 'https://www.tiktok.com/@chuyennhalinen/video/7269404542742039814' },
-    { handle: 'benkidsnous', videoId: '7636634085233839378', videoUrl: 'https://www.tiktok.com/@benkidsnous/video/7636634085233839378' },
-    { handle: 'phm.nh.li1', videoId: '7670574316722851090', videoUrl: 'https://www.tiktok.com/@phm.nh.li1/video/7670574316722851090' },
-    { handle: 'nousbabystore', videoId: '7657051530738126098', videoUrl: 'https://www.tiktok.com/@nousbabystore/video/7657051530738126098' },
-    { handle: 'nousbabystoredaily', videoId: '7619699870349184276', videoUrl: 'https://www.tiktok.com/@nousbabystoredaily/video/7619699870349184276' },
-    { handle: 'nousbabystorevinhlong', videoId: '7685322652742962450', videoUrl: 'https://www.tiktok.com/@nousbabystorevinhlong/video/7685322652742962450' },
+    { handle: 'havachong', videoId: '7595154842201394439', videoUrl: 'https://www.tiktok.com/@havachong/video/7595154842201394439' },
+    { handle: 'medau1504', videoId: '7594885446107204871', videoUrl: 'https://www.tiktok.com/@medau1504/video/7594885446107204871' },
+    { handle: 'shoptienhuong1', videoId: '7593326059190357256', videoUrl: 'https://www.tiktok.com/@shoptienhuong1/video/7593326059190357256' },
+    { handle: '_hngoc24.8', videoId: '7591476426579266824', videoUrl: 'https://www.tiktok.com/@_hngoc24.8/video/7591476426579266824' },
+    { handle: 'tuntun.day_', videoId: '7590190205714402580', videoUrl: 'https://www.tiktok.com/@tuntun.day_/video/7590190205714402580' },
+    { handle: 'dieungann01', videoId: '7589218570240904468', videoUrl: 'https://www.tiktok.com/@dieungann01/video/7589218570240904468' },
+    { handle: 'thanhhienno', videoId: '7587641171627789575', videoUrl: 'https://www.tiktok.com/@thanhhienno/video/7587641171627789575' },
+    { handle: 'giadinhsociu_', videoId: '7587415001317559572', videoUrl: 'https://www.tiktok.com/@giadinhsociu_/video/7587415001317559572' },
+    { handle: 'megau1506', videoId: '7585910501587143957', videoUrl: 'https://www.tiktok.com/@megau1506/video/7585910501587143957' },
     { handle: 'nousbabystore99', videoId: '7585229728953470228', videoUrl: 'https://www.tiktok.com/@nousbabystore99/video/7585229728953470228' },
+    { handle: 'embevaniiuu', videoId: '7584429040312847624', videoUrl: 'https://www.tiktok.com/@embevaniiuu/video/7584429040312847624' },
+    { handle: 'bobbyonesolo', videoId: '7583882153084062977', videoUrl: 'https://www.tiktok.com/@bobbyonesolo/video/7583882153084062977' },
+    { handle: 'mepepssi', videoId: '7580673351664815381', videoUrl: 'https://www.tiktok.com/@mepepssi/video/7580673351664815381' },
+    { handle: 'koalababyshop', videoId: '7580354445767085330', videoUrl: 'https://www.tiktok.com/@koalababyshop/video/7580354445767085330' },
+    { handle: 'phuonggthuy__', videoId: '7575497257961786631', videoUrl: 'https://www.tiktok.com/@phuonggthuy__/video/7575497257961786631' },
+    { handle: 'babymall39', videoId: '7569461966507429136', videoUrl: 'https://www.tiktok.com/@babymall39/video/7569461966507429136' },
+    { handle: 'dauhaycuoi1801', videoId: '7566471986377952520', videoUrl: 'https://www.tiktok.com/@dauhaycuoi1801/video/7566471986377952520' },
+    { handle: 'monniekids.official', videoId: '7556219074464795922', videoUrl: 'https://www.tiktok.com/@monniekids.official/video/7556219074464795922' },
+    { handle: 'mitao1992', videoId: '7554000846808255760', videoUrl: 'https://www.tiktok.com/@mitao1992/video/7554000846808255760' },
+    { handle: 'dn.linh95', videoId: '7553210871120530706', videoUrl: 'https://www.tiktok.com/@dn.linh95/video/7553210871120530706' },
+    { handle: 'banhmi.khaianh', videoId: '7552805099656072466', videoUrl: 'https://www.tiktok.com/@banhmi.khaianh/video/7552805099656072466' },
+    { handle: 'shoptienhuong', videoId: '7543963392403344658', videoUrl: 'https://www.tiktok.com/@shoptienhuong/video/7543963392403344658' },
+    { handle: 'megau2911', videoId: '7531028720472182024', videoUrl: 'https://www.tiktok.com/@megau2911/video/7531028720472182024' },
+    { handle: 'ngocmotchutne', videoId: '7525813788549860615', videoUrl: 'https://www.tiktok.com/@ngocmotchutne/video/7525813788549860615' },
+    { handle: 'xuanlinh94', videoId: '7519460756195249426', videoUrl: 'https://www.tiktok.com/@xuanlinh94/video/7519460756195249426' },
+    { handle: 'thanhsangnee', videoId: '7517285013767916808', videoUrl: 'https://www.tiktok.com/@thanhsangnee/video/7517285013767916808' },
+    { handle: 'dungnguyen_gauomi', videoId: '7516570111948393735', videoUrl: 'https://www.tiktok.com/@dungnguyen_gauomi/video/7516570111948393735' },
+    { handle: 'babyandmommyvn', videoId: '7514712378773114132', videoUrl: 'https://www.tiktok.com/@babyandmommyvn/video/7514712378773114132' },
+    { handle: 'mochi_iuday', videoId: '7510090024394706194', videoUrl: 'https://www.tiktok.com/@mochi_iuday/video/7510090024394706194' },
+    { handle: 'leo.nung.ninh', videoId: '7507279753318124807', videoUrl: 'https://www.tiktok.com/@leo.nung.ninh/video/7507279753318124807' },
+    { handle: 'mylan_011292', videoId: '7505281526595128594', videoUrl: 'https://www.tiktok.com/@mylan_011292/video/7505281526595128594' },
+    { handle: 'comyeu2506', videoId: '7497605843483921671', videoUrl: 'https://www.tiktok.com/@comyeu2506/video/7497605843483921671' },
+    { handle: 'mesuri.daily', videoId: '7497457433955126546', videoUrl: 'https://www.tiktok.com/@mesuri.daily/video/7497457433955126546' },
+    { handle: 'lammecungthuys', videoId: '7489399149243256119', videoUrl: 'https://www.tiktok.com/@lammecungthuys/video/7489399149243256119' },
+    { handle: 'em.tin.n', videoId: '7486497754328435976', videoUrl: 'https://www.tiktok.com/@em.tin.n/video/7486497754328435976' },
+    { handle: 'baclynne', videoId: '7480752794018778389', videoUrl: 'https://www.tiktok.com/@baclynne/video/7480752794018778389' },
+    { handle: 'mia_min99', videoId: '7474181370558909714', videoUrl: 'https://www.tiktok.com/@mia_min99/video/7474181370558909714' },
+    { handle: 'me_suzi1', videoId: '7463362373026434325', videoUrl: 'https://www.tiktok.com/@me_suzi1/video/7463362373026434325' },
     { handle: 'nousbabyhouse', videoId: '7457758749814443272', videoUrl: 'https://www.tiktok.com/@nousbabyhouse/video/7457758749814443272' },
+    { handle: 'hyhm.2024', videoId: '7445248617218280712', videoUrl: 'https://www.tiktok.com/@hyhm.2024/video/7445248617218280712' },
+    { handle: 'pikabukidsmevabe86', videoId: '7438593934357564680', videoUrl: 'https://www.tiktok.com/@pikabukidsmevabe86/video/7438593934357564680' },
+    { handle: 'tiemdocuabebe', videoId: '7392890190458588424', videoUrl: 'https://www.tiktok.com/@tiemdocuabebe/video/7392890190458588424' },
+    { handle: 'nous_babyhouse', videoId: '7386843396373105921', videoUrl: 'https://www.tiktok.com/@nous_babyhouse/video/7386843396373105921' },
+    { handle: 'babycloset_tt', videoId: '7380795918498401553', videoUrl: 'https://www.tiktok.com/@babycloset_tt/video/7380795918498401553' },
+    { handle: 'iuemshop', videoId: '7353089098631892240', videoUrl: 'https://www.tiktok.com/@iuemshop/video/7353089098631892240' },
+    { handle: 'khi.linh.nous', videoId: '7352757667745516817', videoUrl: 'https://www.tiktok.com/@khi.linh.nous/video/7352757667745516817' },
+    { handle: 'duong_babie', videoId: '7343792877694192898', videoUrl: 'https://www.tiktok.com/@duong_babie/video/7343792877694192898' },
+    { handle: 'nous_hcm', videoId: '7343089340735606023', videoUrl: 'https://www.tiktok.com/@nous_hcm/video/7343089340735606023' },
+    { handle: 'shopmekem2023', videoId: '7323487628328750344', videoUrl: 'https://www.tiktok.com/@shopmekem2023/video/7323487628328750344' },
+    { handle: 'nopunguyen', videoId: '7302662353278061825', videoUrl: 'https://www.tiktok.com/@nopunguyen/video/7302662353278061825' },
+    { handle: 'meemtho04', videoId: '7301986792310459649', videoUrl: 'https://www.tiktok.com/@meemtho04/video/7301986792310459649' },
+    { handle: 'bopstore21', videoId: '7292781823816486145', videoUrl: 'https://www.tiktok.com/@bopstore21/video/7292781823816486145' },
+    { handle: 'methienngoc', videoId: '7281515858264984833', videoUrl: 'https://www.tiktok.com/@methienngoc/video/7281515858264984833' },
+    { handle: 'ngocngongao20', videoId: '7279307892891700488', videoUrl: 'https://www.tiktok.com/@ngocngongao20/video/7279307892891700488' },
+    { handle: 'chuyennhalinen', videoId: '7269404542742039814', videoUrl: 'https://www.tiktok.com/@chuyennhalinen/video/7269404542742039814' },
+    { handle: 'taomitstore', videoId: '7260116349295267090', videoUrl: 'https://www.tiktok.com/@taomitstore/video/7260116349295267090' },
+    { handle: 'mitom9320', videoId: '7251431199627873541', videoUrl: 'https://www.tiktok.com/@mitom9320/video/7251431199627873541' },
+    { handle: 'tuticare_danang', videoId: '7238880711128698118', videoUrl: 'https://www.tiktok.com/@tuticare_danang/video/7238880711128698118' },
+    { handle: 'thegioimebimsua', videoId: '7224184969936129281', videoUrl: 'https://www.tiktok.com/@thegioimebimsua/video/7224184969936129281' },
+    { handle: 'laclackids', videoId: '7209580438044658971', videoUrl: 'https://www.tiktok.com/@laclackids/video/7209580438044658971' },
+    { handle: 'thaophamm0906', videoId: '7177763911217859866', videoUrl: 'https://www.tiktok.com/@thaophamm0906/video/7177763911217859866' },
+    { handle: 'shopbunkids2', videoId: '7175389864924319002', videoUrl: 'https://www.tiktok.com/@shopbunkids2/video/7175389864924319002' },
     { handle: 'nous.kids', videoId: '7128317305137663259', videoUrl: 'https://www.tiktok.com/@nous.kids/video/7128317305137663259' },
   ],
 };
@@ -1288,15 +1338,18 @@ export function doesInspectedVideoMatchTarget(
     norm.includes(`${profile.rootToken}_hcm`) ||
     norm.includes(`${profile.rootToken}babystore`) ||
     norm.includes(`${profile.rootToken}hanoi`) ||
+    norm.includes(`benkids${profile.rootToken}`) ||
+    norm.includes(`${profile.rootToken}benkids`) ||
     /\b(vietnam|viet nam|ha noi|hanoi|tphcm|sai gon|saigon|da nang|tiktokshopvn|xuhuong|goclamdep|reviewlamdep|mebimsua|dososinh|suatam|kemchongnang|duocmypham|chinhhang)\b/i.test(
       norm
     );
 
+  // Chỉ kiểm tra các chữ cái/dấu thanh đặc trưng riêng của tiếng Việt (không dùng ìíòóùúỳý vì trùng tiếng Pháp/Tây Ban Nha như "où")
   const hasSpecificVietnameseDiacritics =
-    /[ăằắặẳẵầấậẩẫềếệểễìíịỉĩòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
+    /[ăằắặẳẵầấậẩẫềếệểễỉĩỏõồốộổỗơờớợởỡủũưừứựửữỳỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
       combinedRaw
     );
-  // Chỉ dùng các từ tiếng Việt không dấu đủ dài/đặc trưng (không dùng từ đơn 2-3 chữ trùng tiếng Anh như me, be, set, son, hop, mac, da)
+  // Chỉ dùng các từ tiếng Việt không dấu đủ dài/đặc trưng (không dùng từ đơn 2-3 chữ trùng tiếng Anh/Pháp như me, be, set, son, hop, mac, da)
   const hasUnmistakableUnaccentedVnPhrase =
     /\b(cua minh|cho be|nha minh|khong bi|chinh hang|sua tam|sua rua mat|kem chong nang|kem duong|nuoc hoa|tay trang|duong the|xit thom|dau goi|cham soc da|trang diem|me bim|so sinh)\b/i.test(
       norm
@@ -1405,31 +1458,31 @@ export async function discoverTikTokChannelVideoUrls(
   const bingVideoUrls: string[] = [
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok.com/@${cleanHandle}/video`
-    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=0&count=35&SFX=1&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok.com/@${cleanHandle}/video`
-    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=35&count=35&SFX=2&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok.com/@${cleanHandle}/video`
-    )}&async=content&first=70&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=70&count=35&SFX=3&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok.com/@${cleanHandle}/video`
-    )}&async=content&first=105&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=105&count=35&SFX=4&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok @${cleanHandle}`
-    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=0&count=35&SFX=1&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok @${cleanHandle}`
-    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=35&count=35&SFX=2&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok @${cleanHandle}`
-    )}&async=content&first=70&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=70&count=35&SFX=3&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `site:tiktok.com/@${cleanHandle}`
-    )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=0&count=35&SFX=1&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `site:tiktok.com/@${cleanHandle}`
-    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    )}&async=content&first=35&count=35&SFX=2&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
   ];
 
   if (
@@ -1440,10 +1493,10 @@ export async function discoverTikTokChannelVideoUrls(
     bingVideoUrls.push(
       `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
         `tiktok.com/@${cleanHandle} ${options.nickname.trim()}`
-      )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+      )}&async=content&first=0&count=35&SFX=1&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`,
       `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
         `tiktok.com/@${cleanHandle} ${options.nickname.trim()}`
-      )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`
+      )}&async=content&first=35&count=35&SFX=2&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`
     );
   }
 
@@ -1501,27 +1554,6 @@ export async function discoverTikTokChannelVideoUrls(
         }
       })
     ),
-    store.searchLimiter.run(async () => {
-      try {
-        const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(
-          `site:tiktok.com/@${cleanHandle}/video`
-        )}`;
-        const res = await fetch(ddgUrl, {
-          headers: {
-            'User-Agent': DEFAULT_BROWSER_UA,
-            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
-          },
-          signal: AbortSignal.timeout(4500),
-          cache: 'no-store',
-        });
-        if (res.ok) {
-          extractOwnVideosFromHtml(await res.text());
-        }
-      } catch {
-        // ignore
-      }
-    }),
   ];
 
   await Promise.allSettled(searchTasks);
@@ -1572,7 +1604,11 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
   const targetProfile = rawTargetSeed ? buildTargetKeywordProfile(rawTargetSeed) : null;
   const requiredTokens = targetProfile?.matchTokens || [];
-  const longRequiredTokens = requiredTokens.filter((t) => t.length >= 7);
+  const longRequiredTokens = requiredTokens.filter(
+    (t) =>
+      t.length >= 9 &&
+      !/\b(baby|body|set|review|unbox|haul|sale|shop|store|kids|official|petit)\b/i.test(t)
+  );
   const isShortAmbiguousRoot = Boolean(targetProfile && targetProfile.rootToken.length <= 5);
 
   // Tự động loại trừ các @handle đã bị từ chối ở các đợt quét trước của cùng từ khóa
@@ -1710,7 +1746,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
               cardSemanticText
             );
           const hasVnHint =
-            /\b(vietnam|viet nam|vn|chinh hang|chinhhang|xuhuong|tiktokshop|mebim|me bim|sosinh|so sinh|chobe|cho be|quanao|quan ao|dososinh|do so sinh|unbox|haul|san sale|koc|sua tam|kem |serum|son |ao |quan |set |bo |bim |sua |newborn|lapomme|bubaby|lullaby|dokma)\b/i.test(
+            /\b(vietnam|viet nam|vn|chinh hang|chinhhang|xuhuong|tiktokshop|mebim|me bim|sosinh|so sinh|chobe|cho be|quanao|quan ao|dososinh|do so sinh|san sale|koc|sua tam|kem chong nang|kem duong|sua rua mat|nuoc hoa|ao |quan |bim |sua |newborn|lapomme|bubaby|lullaby|dokma|hrnee)\b/i.test(
               normCard
             );
           const hasLongToken =
@@ -1761,9 +1797,10 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
     const taskPromise = store.searchLimiter.run(async () => {
       try {
+        const sfx = Math.floor(Math.max(0, firstParam) / 35) + 1;
         const asyncSearchUrl = `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
           q
-        )}&async=content&first=${firstParam}&count=35&mkt=vi-VN&setlang=vi&cc=VN`;
+        )}&async=content&first=${firstParam}&count=35&SFX=${sfx}&cw=1920&ch=1080&mkt=vi-VN&setlang=vi&cc=VN`;
         const res = await fetch(asyncSearchUrl, {
           headers: {
             'User-Agent': DEFAULT_BROWSER_UA,
@@ -1777,8 +1814,8 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         if (!res.ok) return [];
         const html = await res.text();
         const extracted = extractUrlsFromHtml(html);
-        if (extracted.length > 0) {
-          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 500);
+        if (extracted.length > 0 || html.length > 500) {
+          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 800);
         }
         return extracted;
       } catch {
@@ -1829,56 +1866,8 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         if (!res.ok) return [];
         const html = await res.text();
         const extracted = extractUrlsFromHtml(html);
-        if (extracted.length > 0) {
-          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 500);
-        }
-        return extracted;
-      } catch {
-        return [];
-      }
-    });
-
-    store.inFlightSearchHtml.set(cacheKey, taskPromise);
-    try {
-      return await taskPromise;
-    } finally {
-      store.inFlightSearchHtml.delete(cacheKey);
-    }
-  };
-
-  const fetchOrGetCachedDdgSearch = async (
-    q: string
-  ): Promise<Array<{ handle: string; videoId: string; videoUrl: string }>> => {
-    const tokenKey = requiredTokens.slice(0, 2).join('_');
-    const cacheKey = `ddg__${q.trim().toLowerCase()}__t_${tokenKey}`;
-    const now = Date.now();
-    const cached = store.searchHtmlCache.get(cacheKey);
-    if (cached && cached.expiresAt > now) {
-      return cached.data;
-    }
-
-    const inFlight = store.inFlightSearchHtml.get(cacheKey);
-    if (inFlight) {
-      return inFlight;
-    }
-
-    const taskPromise = store.searchLimiter.run(async () => {
-      try {
-        const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}&kl=vn-vi`;
-        const res = await fetch(ddgUrl, {
-          headers: {
-            'User-Agent': DEFAULT_BROWSER_UA,
-            Accept: 'text/html,application/xhtml+xml',
-            'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
-          },
-          signal: AbortSignal.timeout(4500),
-          cache: 'no-store',
-        });
-        if (!res.ok) return [];
-        const html = await res.text();
-        const extracted = extractUrlsFromHtml(html);
-        if (extracted.length > 0) {
-          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 500);
+        if (extracted.length > 0 || html.length > 500) {
+          setBoundedCache(store.searchHtmlCache, cacheKey, extracted, SEARCH_CACHE_TTL_MS, 800);
         }
         return extracted;
       } catch {
@@ -1902,8 +1891,6 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
   const batchModifiers = [
     'review',
-    'unbox',
-    'haul',
     'chính hãng',
     'tiktok shop',
     'săn sale',
@@ -1911,23 +1898,20 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     'test thực tế',
     'koc',
     'gắn giỏ',
-    'combo',
-    'sale',
     'có tốt không',
     'khui hàng',
     'đánh giá',
     'giá rẻ',
     'xuhuong',
-    'affiliate',
     'mới nhất',
   ];
 
   // Xây dựng hàng đợi thác nước tuần tự (Progressive Waterfall Queue):
   // Nhờ searchHtmlCache + excludeSet + rejectedHandlesByTarget, các truy vấn đã chạy ở đợt trước sẽ trả kết quả từ RAM trong 0ms
   // (giúp thu hồi toàn bộ số KOC còn dư từ đợt trước mà chưa kịp inspect), sau đó tự động chảy tiếp xuống các truy vấn mới!
-  const searchTasksQueue: Array<{ q: string; first: number; mode: 'video' | 'web' | 'ddg' }> = [];
+  const searchTasksQueue: Array<{ q: string; first: number; mode: 'video' | 'web' }> = [];
   const seenTaskKeys = new Set<string>();
-  const pushTask = (q: string, first: number, mode: 'video' | 'web' | 'ddg') => {
+  const pushTask = (q: string, first: number, mode: 'video' | 'web') => {
     const k = `${mode}__${q.trim().toLowerCase()}__${first}`;
     if (!seenTaskKeys.has(k)) {
       seenTaskKeys.add(k);
@@ -1935,12 +1919,20 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   };
 
-  // Tầng 1: Toàn bộ baseQueries ở trang đầu (first=0) — nguồn KOC chất lượng và chính xác nhất
+  // Tầng 1: Toàn bộ baseQueries ở trang đầu (first=0, SFX=1) — nguồn KOC chất lượng và chính xác nhất
   for (const q of baseQueries) {
     pushTask(q, 0, 'video');
   }
 
-  // Tầng 2: Các thẻ ghép hashtag phổ biến của thương hiệu trên TikTok Việt Nam
+  // Tầng 2: Phân trang SFX=2 (first=35) cho 16 truy vấn trọng tâm đầu tiên và biến thể tiền tố "tiktok"
+  for (const q of baseQueries.slice(0, 16)) {
+    pushTask(q, 35, 'video');
+    if (q.startsWith('tiktok.com ')) {
+      pushTask(q.replace(/^tiktok\.com\s+/i, 'tiktok '), 0, 'video');
+    }
+  }
+
+  // Tầng 3: Các thẻ ghép hashtag phổ biến của thương hiệu trên TikTok Việt Nam
   const rootTerm = targetProfile?.rootToken || rawTargetSeed.trim();
   if (rootTerm && rootTerm.length >= 3) {
     const compoundHashtags = [
@@ -1964,7 +1956,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     }
   }
 
-  // Tầng 3: Kết hợp hậu tố mở rộng trực tiếp với từ khóa gốc ở first=0
+  // Tầng 4: Kết hợp hậu tố tiếng Việt mở rộng trực tiếp với từ khóa gốc
   const activeModifiers = [
     batchModifiers[pageOffset % batchModifiers.length],
     batchModifiers[(pageOffset * 2 + 1) % batchModifiers.length],
@@ -1973,11 +1965,11 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   if (rootTerm) {
     for (const mod of [...activeModifiers, ...batchModifiers]) {
       pushTask(`tiktok.com "${rootTerm}" ${mod}`, 0, 'video');
-      pushTask(`tiktok.com "${mod} ${rootTerm}"`, 0, 'video');
+      pushTask(`tiktok "${rootTerm}" ${mod}`, 0, 'video');
     }
   }
 
-  // Tầng 4: Bing Web Search & DuckDuckGo HTML Search
+  // Tầng 5: Bing Web Search
   const webSeedTerms = Array.from(
     new Set([
       ...(targetProfile?.spacedAliases?.slice(0, 4) || []),
@@ -1989,7 +1981,6 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   for (const seedTerm of webSeedTerms.slice(0, 3)) {
     const mod = activeModifiers[0] ? ` ${activeModifiers[0]}` : '';
     pushTask(`site:tiktok.com "${seedTerm}"${mod} video`, (pageOffset % 4) * 50, 'web');
-    pushTask(`site:tiktok.com "${seedTerm}" "/video/"`, 0, 'ddg');
   }
 
   const targetUniqueHandles = Math.max(maxUrls, 60);
@@ -2001,8 +1992,6 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       batchTasks.map((t) =>
         t.mode === 'web'
           ? fetchOrGetCachedWebSearch(t.q, t.first)
-          : t.mode === 'ddg'
-          ? fetchOrGetCachedDdgSearch(t.q)
           : fetchOrGetCachedSearch(t.q, t.first)
       )
     );
