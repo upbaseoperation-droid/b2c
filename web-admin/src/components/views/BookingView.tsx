@@ -16,6 +16,7 @@ import {
 import { 
   KocItem, 
   BookingDealItem, 
+  DealDeliverableItem,
   KocCandidateItem,
   StaffDetailedPlanItem,
   MonthlyStaffAllocation,
@@ -184,6 +185,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     gmv30: number;
     status: BookingDealItem['status'];
     statusLabel: string;
+    deliverables: DealDeliverableItem[];
   }>({
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     brandRejectReason: '',
@@ -194,7 +196,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
     viewsCount: 0,
     gmv30: 0,
     status: 'VIDEO_SUBMITTED',
-    statusLabel: 'Video Đã Lên Sóng'
+    statusLabel: 'Video Đã Lên Sóng',
+    deliverables: []
   });
 
   // State for Growth Handoff Modal (Bàn giao quét mã Spark Ads & setup Ads)
@@ -450,15 +453,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
       viewsCount: deal.viewsCount || 0,
       gmv30: deal.gmv30 || 0,
       status: deal.status,
-      statusLabel: deal.statusLabel
+      statusLabel: deal.statusLabel,
+      deliverables: deal.deliverables ? deal.deliverables.map(item => ({ ...item })) : []
     });
   };
 
   const handleSaveDealUpdate = () => {
     if (!editingDeal) return;
     const newGmv = Number(editForm.gmv30) || 0;
-    const totalCost = editingDeal.totalValue || 1;
-    const computedRoi = Number((newGmv / totalCost).toFixed(2));
+    const droppedCost = editForm.deliverables
+      .filter(item => item.lockStatus === 'DROPPED')
+      .reduce((sum, item) => sum + (item.allocatedCostVnd || 0), 0);
+    const effectiveTotalCost = Math.max(1, (editingDeal.totalValue || 1) - droppedCost);
+    const computedRoi = Number((newGmv / effectiveTotalCost).toFixed(2));
     const isWinner = newGmv >= 30000000;
     const isBreakEven = computedRoi >= 1.0;
 
@@ -492,7 +499,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
       hasGmv: newGmv > 0,
       isBreakEven: isBreakEven,
       status: editForm.status,
-      statusLabel: updatedStatusLabel
+      statusLabel: updatedStatusLabel,
+      deliverables: editForm.deliverables.length > 0 ? editForm.deliverables : editingDeal.deliverables,
+      finalAmount: Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - droppedCost),
     };
 
     if (onUpdateDeal) {
@@ -787,10 +796,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 empty={<EmptyState title="Không có job phù hợp" />}
                 columns={[
                   {
-                    key: 'job_koc', header: 'Job & KOC', width: 260, render: d => (
+                    key: 'job_koc', header: 'Job & KOC', width: 280, render: d => (
                       <div className="leading-tight">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-code text-2xs text-ink-3 font-semibold">{d.dealCode}</span>
+                          {d.dealType === 'SERVICE_ONLY' && (
+                            <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold">
+                              Mua thêm dịch vụ{d.sourceDealCode ? ` ← ${d.sourceDealCode}` : ''}
+                            </span>
+                          )}
+                          {d.dealType === 'MULTI_PLATFORM_CONTENT' && (
+                            <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold">
+                              Đa kênh ({d.deliverables?.length || 1} hạng mục)
+                            </span>
+                          )}
                           {d.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Top 20</span>}
                           <span className="font-medium text-ink">· {d.kocStageName}</span>
                           <span className="text-2xs font-semibold text-accent">({d.salaryGrade})</span>
@@ -801,11 +820,43 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           <span className="truncate max-w-[160px]">{d.productName || 'Sản phẩm booking'}</span>
                           {d.bookingBatch && <span>({d.bookingBatch})</span>}
                         </div>
-                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-2">
+                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-2 flex-wrap">
                           <span>Kênh: {d.kocChannelId}</span>
                           <span>•</span>
                           <span>PIC: {d.bookingPic || d.assignedStaff}</span>
+                          {d.contractAppendixCode && (
+                            <>
+                              <span>•</span>
+                              <span className="font-code text-ink-2">{d.contractAppendixCode}</span>
+                            </>
+                          )}
                         </div>
+                        {d.deliverables && d.deliverables.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {d.deliverables.map(item => (
+                              <span
+                                key={item.id}
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border ${
+                                  item.lockStatus === 'VERIFIED'
+                                    ? 'bg-positive-soft border-positive/30 text-positive'
+                                    : item.lockStatus === 'LOCKED_BY_WAVE_0'
+                                    ? 'bg-sunken border-line text-ink-3'
+                                    : item.lockStatus === 'DROPPED'
+                                    ? 'bg-critical-soft border-critical/30 text-critical line-through'
+                                    : 'bg-surface border-line-strong text-ink-2'
+                                }`}
+                                title={`Wave ${item.wave}: ${item.title} · Kênh đăng ${item.mediaChannel} → Giỏ ${item.affiliateChannel} · PIC: ${item.assignedChannelPic}`}
+                              >
+                                <span className="font-code font-semibold">W{item.wave}</span>
+                                <span>{item.mediaChannel}</span>
+                                {item.affiliateChannel !== 'Không gắn giỏ' && (
+                                  <span className="text-ink-3">→{item.affiliateChannel}</span>
+                                )}
+                                <span className="text-[10px] opacity-80">({item.assignedChannelPic.split(' ').slice(-2).join(' ')})</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ),
                   },
@@ -840,7 +891,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     },
                   },
                   {
-                    key: 'delivery', header: 'Nghiệm thu kỹ thuật', width: 140, render: d => (
+                    key: 'delivery', header: 'Nghiệm thu kỹ thuật', width: 150, render: d => (
                       <div className="grid gap-0.5 text-2xs leading-tight">
                         <div className="flex items-center gap-1">
                           <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive font-medium' : 'text-ink-2'}>
@@ -856,16 +907,26 @@ export const BookingView: React.FC<BookingViewProps> = ({
                             <span className="text-ink-3 italic">Chưa có video</span>
                           )}
                         </div>
-                        <div className="text-ink-2 truncate max-w-[130px]">
+                        <div className="text-ink-2 truncate max-w-[140px]">
                           {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3 italic">Chưa mã Ads</span>}
                         </div>
+                        {d.rightsTerms && d.rightsTerms.length > 0 && (
+                          <div className="text-[11px] text-ink-3 truncate max-w-[140px]">
+                            Bản quyền: {d.rightsTerms.length} quyền ({d.rightsTerms[0].scopeType})
+                          </div>
+                        )}
                       </div>
                     ),
                   },
                   {
-                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 110, render: d => (
+                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 120, render: d => (
                       <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
                         <span className="text-ink font-semibold">{formatVndShort(d.totalValue)}</span>
+                        {d.pricingDisplayMode && (
+                          <span className="text-[10px] text-ink-3">
+                            {d.pricingDisplayMode === 'PACKAGE_TOTAL' ? 'Gói trọn cục' : 'Tách lẻ SOW'}
+                          </span>
+                        )}
                         <span className="text-2xs text-ink-3">GMV {formatVndShort(d.gmv30)}</span>
                         <span className={(d.roi || 0) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-ink-3'}>ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
                       </div>
@@ -985,7 +1046,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
         open={!!handoffDeal}
         onClose={() => setHandoffDeal(null)}
         title="Bàn giao cho team Growth"
-        description={handoffDeal ? `${handoffDeal.dealCode} · ${handoffDeal.kocStageName} · ${handoffDeal.brandName}` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setHandoffDeal(null)}>Hủy</Button>
@@ -1016,7 +1076,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </Select>
           </Field>
         </div>
-        <Field label="Ghi chú cho Growth" hint="Đối tượng khán giả, điểm bán hàng cần nhấn khi lên chiến dịch" htmlFor="handoff-note">
+        <Field label="Ghi chú cho Growth" htmlFor="handoff-note">
           <Textarea id="handoff-note" rows={2} value={handoffForm.growthNote} onChange={e => setHandoffForm(prev => ({ ...prev, growthNote: e.target.value }))} />
         </Field>
       </Modal>
@@ -1029,7 +1089,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
         onClose={() => setEditingDeal(null)}
         size="lg"
         title={editingDeal ? `Cập nhật job ${editingDeal.dealCode}` : ''}
-        description={editingDeal ? `${editingDeal.kocStageName} · ${editingDeal.brandName || 'Upbase'} · ${editingDeal.productName || 'Sản phẩm chung'}` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditingDeal(null)}>Hủy</Button>
@@ -1039,6 +1098,131 @@ export const BookingView: React.FC<BookingViewProps> = ({
       >
         {editingDeal && (
           <>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sunken border border-line text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-ink">{editingDeal.kocStageName}</span>
+                <span>·</span>
+                <span className="text-ink-2">{editingDeal.brandName || 'Upbase'}</span>
+                {editingDeal.dealType === 'SERVICE_ONLY' && editingDeal.sourceDealCode && (
+                  <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning font-semibold">
+                    Mua thêm dịch vụ từ Deal gốc: {editingDeal.sourceDealCode}
+                  </span>
+                )}
+              </div>
+              {editingDeal.contractAppendixCode && (
+                <span className="font-code text-ink-3">Phụ lục: {editingDeal.contractAppendixCode}</span>
+              )}
+            </div>
+
+            {editForm.deliverables.length > 0 && (
+              <div className="rounded-lg border border-line bg-surface p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-ink">
+                    Hạng mục bàn giao đa nền tảng (Wave 0 → Wave 1 & Đối soát từng phần)
+                  </span>
+                  <span className="text-2xs text-ink-3">
+                    {editForm.deliverables.filter(i => i.lockStatus === 'VERIFIED').length}/{editForm.deliverables.length} hoàn tất
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {editForm.deliverables.map((item, idx) => (
+                    <div key={item.id} className="p-2.5 rounded-md border border-line bg-sunken/60 grid sm:grid-cols-12 gap-2 items-center text-xs">
+                      <div className="sm:col-span-5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`px-1.5 py-0.5 rounded font-code text-[11px] font-semibold ${
+                            item.wave === 0 ? 'bg-accent-soft text-accent' : 'bg-warning-soft text-warning'
+                          }`}>
+                            Wave {item.wave}
+                          </span>
+                          <span className="font-semibold text-ink">{item.title}</span>
+                        </div>
+                        <div className="text-2xs text-ink-3 mt-0.5">
+                          Đăng: <strong className="text-ink-2">{item.mediaChannel}</strong>
+                          {' → '}
+                          Giỏ: <strong className="text-ink-2">{item.affiliateChannel}</strong>
+                          {' · '}
+                          PIC: <strong className="text-ink-2">{item.assignedChannelPic}</strong>
+                        </div>
+                      </div>
+                      <div className="sm:col-span-3 text-2xs tabular-nums">
+                        <div className="text-ink-2 font-semibold">{formatVnd(item.allocatedCostVnd)} ({item.allocatedWeightPct}%)</div>
+                        <div className="text-ink-3">Loại: {item.productionType}</div>
+                      </div>
+                      <div className="sm:col-span-4">
+                        <Select
+                          value={item.lockStatus}
+                          onChange={e => {
+                            const nextStatus = e.target.value as DealDeliverableItem['lockStatus'];
+                            setEditForm(prev => {
+                              const nextList = prev.deliverables.map((dItem, dIdx) =>
+                                dIdx === idx ? { ...dItem, lockStatus: nextStatus } : dItem
+                              );
+                              // Tự động mở khóa các hạng mục Wave 1 khi Wave 0 đã VERIFIED
+                              const wave0Done = nextList
+                                .filter(x => x.wave === 0)
+                                .every(x => x.lockStatus === 'VERIFIED');
+                              return {
+                                ...prev,
+                                deliverables: nextList.map(x =>
+                                  x.wave === 1 && wave0Done && x.lockStatus === 'LOCKED_BY_WAVE_0'
+                                    ? { ...x, lockStatus: 'UNLOCKED' }
+                                    : x
+                                ),
+                              };
+                            });
+                          }}
+                        >
+                          <option value="LOCKED_BY_WAVE_0">Khóa chờ Wave 0</option>
+                          <option value="UNLOCKED">Đã mở khóa (Thực thi)</option>
+                          <option value="VERIFIED">Đã nghiệm thu</option>
+                          <option value="DROPPED">Hủy hạng mục (Trừ tất toán)</option>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {editForm.deliverables.some(i => i.lockStatus === 'DROPPED') && (
+                  <div className="px-2.5 py-1.5 rounded bg-warning-soft text-warning text-2xs font-medium">
+                    Khấu trừ hạng mục rớt sóng: -{formatVnd(editForm.deliverables.filter(i => i.lockStatus === 'DROPPED').reduce((s, i) => s + i.allocatedCostVnd, 0))} · Tất toán còn lại dự tính: {formatVnd(Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - editForm.deliverables.filter(i => i.lockStatus === 'DROPPED').reduce((s, i) => s + i.allocatedCostVnd, 0)))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {editingDeal.rightsTerms && editingDeal.rightsTerms.length > 0 && (
+              <div className="rounded-lg border border-line bg-surface p-3 space-y-1.5">
+                <div className="text-xs font-semibold text-ink">Thời hạn bản quyền & Quảng cáo (3 cấp: Asset / Media Channel / Deal)</div>
+                <div className="grid sm:grid-cols-3 gap-2">
+                  {editingDeal.rightsTerms.map(rt => (
+                    <div key={rt.id} className="p-2 rounded border border-line bg-sunken/50 text-2xs">
+                      <div className="font-semibold text-ink">{rt.termLabel} ({rt.scopeType})</div>
+                      <div className="text-ink-2 mt-0.5">{rt.targetMediaChannel || 'Toàn Deal'} · {rt.durationDays} ngày</div>
+                      <div className="text-ink-3">Mốc: {rt.anchorType === 'AIR_DATE' ? 'Ngày Air' : 'Nghiệm thu'} (Hết hạn: {rt.expiresAt || 'Chưa kích hoạt'})</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {editingDeal.revisions && editingDeal.revisions.length > 0 && (
+              <div className="rounded-lg border border-line bg-surface p-3 space-y-1.5">
+                <div className="text-xs font-semibold text-ink">Lịch sử đàm phán & Chốt phụ lục hợp đồng</div>
+                <div className="space-y-1">
+                  {editingDeal.revisions.map(rev => (
+                    <div key={rev.version} className="flex flex-wrap items-center justify-between gap-2 text-2xs px-2 py-1 rounded bg-sunken/50">
+                      <div>
+                        <span className="font-code font-semibold text-accent">v{rev.version}</span>
+                        <span className="text-ink-2 ml-1.5">{rev.summary}</span>
+                      </div>
+                      <div className="text-ink-3 tabular-nums">
+                        {rev.updatedBy} ({rev.updatedAt})
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Field label="Brand duyệt KOC cho job này">
               <Segmented
                 value={editForm.brandApprovalStatus}
@@ -1056,7 +1240,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </Field>
 
             {editForm.brandApprovalStatus === 'TỪ_CHỐI' && (
-              <Field label="Lý do Brand từ chối" hint="Lưu lại để báo cáo và lần sau chọn KOC phù hợp hơn" htmlFor="edit-reject">
+              <Field label="Lý do Brand từ chối" htmlFor="edit-reject">
                 <Input id="edit-reject" value={editForm.brandRejectReason} onChange={e => setEditForm(prev => ({ ...prev, brandRejectReason: e.target.value }))} placeholder="Ví dụ: tệp follower lệch định vị" />
                 <div className="flex flex-wrap gap-1.5">
                   {['Lệch định vị sản phẩm', 'Follower không khớp tệp khách', 'Giá vượt ngân sách', 'Brand cần KOC chuyên gia', 'KOC trùng lịch'].map(r => (
@@ -1103,7 +1287,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   items={[{ key: 'CHƯA_GỬI', label: 'Chưa gửi' }, { key: 'ĐANG_GIAO', label: 'Đang giao' }, { key: 'ĐÃ_NHẬN', label: 'Đã nhận' }]}
                 />
               </Field>
-              <Field label="Mã Spark Ads" hint="Chưa đối soát mã Ads sẽ gây hụt ngân sách kế hoạch">
+              <Field label="Mã Spark Ads">
                 <Segmented
                   value={editForm.adsCodeStatus}
                   onChange={(v) => setEditForm(prev => ({ ...prev, adsCodeStatus: v }))}

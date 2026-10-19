@@ -96,7 +96,10 @@ Mở trình duyệt tại `http://localhost:3000`.
 
 ---
 
-## 5. Cập nhật nâng cấp giao diện & Trải nghiệm người dùng (15/10/2026)
+## 5. Cập nhật nâng cấp giao diện & Trải nghiệm người dùng (19/10/2026)
+
+- **Kiến trúc Điều hướng & Gộp Nhóm Màn Hình (`src/lib/navGroups.ts` & `Sidebar.tsx`):** Đồng bộ 100% nhãn hiển thị giữa `Sidebar` và `TopHeader` qua `TAB_LABELS`; hợp nhất cấu hình menu theo RBAC (`INTERNAL_NAV_SECTIONS`) và gộp các màn hình cùng cụm nghiệp vụ vào `NAV_GROUPS` (*Phân việc & điều phối*, *Thương hiệu & chiến dịch*, *Nghiên cứu đối thủ*).
+- **Triệt tiêu dữ liệu trùng lặp & Phụ đề giải thích thừa (Single Source of Truth):** Mỗi thực thể chỉ quản trị tại 1 màn hình duy nhất; gỡ bỏ toàn bộ dòng phụ đề xám (`subtitle`, `description`, `hint`, `moduleSubtitle`) dưới tiêu đề; thay thế số liệu gõ cứng bằng dữ liệu tính toán động và chuẩn hóa hộp thoại sang `<Modal>`.
 
 - **Trang đăng nhập Enterprise SaaS (`/login`):** Nâng cấp bố cục 2 cột cân đối: cột trái giới thiệu hệ sinh thái B2C với 3 khối tính năng then chốt (Quản lý 69 gian hàng, Đối soát kế hoạch Gross/Net, Báo cáo Ads & Đo lường Video); cột phải là card đăng nhập tối giản, hỗ trợ Lark SSO nội bộ, đối tác Gmail và bảng chọn vai trò thử nghiệm nhanh.
 - **Thanh menu trái (`Sidebar`):** Tích hợp huy hiệu số lượng việc tồn đọng (`badgeCounts`) theo thời gian thực (hiển thị trực tiếp số việc cần xử lý ở mục *Việc của tôi*), vạch chỉ báo trượt chuẩn xác, phân nhóm danh mục tinh tế.

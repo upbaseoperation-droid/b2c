@@ -1246,9 +1246,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <h2 className="text-base font-semibold text-slate-900 tracking-tight">
                   Sản xuất Video kênh Brand &amp; Điều phối CTV / VJ
                 </h2>
-                <span className="text-xs text-slate-500">
-                  · Luồng Self-Channel 5 bước · <span className="font-mono font-medium text-slate-700">{activeAllocation.brandName}</span>
-                </span>
+                <span className="font-mono text-xs font-medium text-slate-700">{activeAllocation.brandName}</span>
               </div>
             </div>
           </div>
@@ -1406,19 +1404,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
         <button
           type="button"
-          onClick={() => setActiveTab('PLAN_FINAL_RBAC')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'PLAN_FINAL_RBAC'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Plan Final &amp; Phân quyền Content ({approvedPlanFinalsForSelfChannel.length} gian)</span>
-        </button>
-
-        <button
-          type="button"
           onClick={() => setActiveTab('APPROVALS')}
           className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'APPROVALS'
@@ -1456,19 +1441,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         >
           <Wallet className="w-3.5 h-3.5" />
           <span>Bảng kê DNTT &amp; Quyết toán CTV</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('CONTRIBUTORS')}
-          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'CONTRIBUTORS'
-              ? 'bg-slate-900 text-white font-semibold shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>Năng lực &amp; Tồn mẫu VJ ({contributors.length})</span>
         </button>
 
         <button

@@ -1501,7 +1501,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   return (
     <div className="space-y-4">
       {/* 1. Top KPI & Workload Overview Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         <button
           type="button"
           onClick={() => setLoadFilter('ALL')}
@@ -1604,21 +1604,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <span className="text-2xs text-ink-3">theo chuẩn Bảng 4</span>
           </div>
         </button>
-
-        <div className="p-3 rounded-xl bg-surface border border-line">
-          <div className="flex items-center justify-between text-2xs text-ink-3 font-medium">
-            <span>Phạm vi Liên kết 3D</span>
-            <Activity className="w-3.5 h-3.5 text-ink-2" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base font-bold text-ink tabular-nums">
-              {brands.length} Brand · {b2cStores.length} Gian
-            </span>
-          </div>
-          <div className="text-2xs text-ink-3">
-            Tổng tải: <strong className="text-ink">{summaryStats.totalPointsAll} pt</strong>
-          </div>
-        </div>
       </div>
 
       {/* 2. Control & Filter Toolbar (Single-row aligned) */}

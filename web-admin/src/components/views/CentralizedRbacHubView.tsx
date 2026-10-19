@@ -824,7 +824,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           { key: 'internal', label: 'Nhân sự nội bộ', count: filteredStaff.length },
           { key: 'matrix', label: 'Ma trận chức năng', count: matrixItems.length },
           { key: 'third-party', label: 'Đối tác ngoài' },
-          { key: 'audit', label: 'Nhật ký', count: auditLogs.length },
         ]}
         value={activeMainTab}
         onChange={(k) => setActiveMainTab(k as MainTab)}

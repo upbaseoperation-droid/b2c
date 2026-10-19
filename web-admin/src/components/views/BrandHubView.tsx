@@ -1092,8 +1092,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
           {/* Strategy Brief Context */}
           <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs">
-            <h3 className="text-xs font-semibold text-slate-900 mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <h3 className="text-xs font-semibold text-slate-900 mb-3">
               Định Hướng Chiến Lược &amp; Sản Phẩm Trọng Tâm
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

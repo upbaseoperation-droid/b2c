@@ -1072,26 +1072,22 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         <Stat
           label="Nhiệm vụ quy trình"
           value={metrics.workflowTasksCount}
-          note="Tự động từ SLA Booking, Kịch bản, Chiến dịch"
           icon={Layers}
         />
         <Stat
           label="Nhiệm vụ quản lý giao"
           value={metrics.directorTasksCount}
-          note="Nghiên cứu, đề xuất sáng kiến, điều phối"
           icon={ClipboardList}
         />
         <Stat
           label="Đạt chuẩn cơ cấu việc khó"
           value={`${metrics.passCount}/${metrics.totalStaffCount}`}
-          note="Nhân sự hưởng nguyên hệ số ×1,00 (Bảng 4)"
           tone="positive"
           icon={ShieldCheck}
         />
         <Stat
           label="Tổng quỹ điểm khối B2C"
           value={metrics.totalStaffFinalPts.toLocaleString('vi-VN')}
-          note={`${metrics.criticalOpenCount} đầu việc khẩn cấp đang mở`}
           tone={metrics.criticalOpenCount > 0 ? 'warning' : 'positive'}
           icon={BarChart3}
         />
@@ -1897,7 +1893,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <div className="sm:col-span-3">
                 <Field
                   label="Hạng mục công việc chuẩn SOW (Bảng 1 — 33 đầu việc)"
-                  hint={`Quy tắc: ${selectedSowPolicy.ruleNote}`}
                 >
                   <Select
                     value={formSowStt}

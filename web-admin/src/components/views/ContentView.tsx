@@ -67,7 +67,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
             { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
             { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
-            { key: 'PILLARS', label: 'Trụ cột nội dung' },
           ]}
         />
 
@@ -529,7 +528,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         onClose={() => setIsScriptReportOpen(false)}
         purposeId="SCRIPT_REVIEW"
         moduleTitle="Báo Cáo Rà Soát Kịch Bản, Từ Cấm Sàn & Tiến Độ Sản Xuất Video"
-        moduleSubtitle={`Tổng kho nội dung: ${contentItems.length} mã | Kịch bản chờ duyệt: ${scripts.filter(s => s.status === 'PENDING').length}/${scripts.length} | Bài đăng đối soát: ${publications.length}`}
         contextDataText={[
           `[DỮ LIỆU PHÂN HỆ: Kho Nội Dung, Kịch Bản & Video KOC]`,
           `- Tổng số kịch bản đang theo dõi: ${scripts.length} (Chờ duyệt: ${scripts.filter(s => s.status === 'PENDING').length}, Đã duyệt: ${scripts.filter(s => s.status === 'APPROVED').length}, Yêu cầu sửa: ${scripts.filter(s => s.status === 'REVISION_REQUESTED').length})`,

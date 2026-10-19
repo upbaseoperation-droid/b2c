@@ -488,9 +488,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
           onChange={setActiveTab}
           items={[
             { key: 'BRIEF_STUDIO', label: 'Quản trị Chiến dịch (Campaign) & Brief', count: campaigns.length },
-            { key: 'GUIDELINE_HUB', label: 'Quy chuẩn & từ khóa cấm', count: guidelines.length },
             { key: 'APPROVAL_GATE', label: 'Thẩm định KOC & kịch bản', count: pendingApprovals.length || undefined },
-            { key: 'RETAINER_HEALTH', label: 'Hợp đồng & hiệu quả nhãn hàng' },
           ]}
         />
 

@@ -33,7 +33,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
 | HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
 | HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng |
-| HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành đợt 1 (Shell, RBAC, Kế hoạch tháng, Dashboard) |
+| HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành toàn diện (Gộp nhóm điều hướng NAV_GROUPS, khử trùng lặp tab chéo, chuẩn hóa Modal & loại bỏ phụ đề giải thích thừa) |
 
 ## Giai đoạn 1 — Yêu cầu
 
@@ -52,13 +52,13 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 
 | Mã | Tài liệu | Trạng thái | Ghi chú |
 | --- | --- | --- | --- |
-| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn (gồm Lịch Air Tuần & Tiến độ Video), Kế hoạch tháng, Nghiên cứu Brand & Đối thủ, Booking, Hợp đồng & Cổng đối tác |
+| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn, Kế hoạch tháng 3 tab, Nhóm điều hướng `NAV_GROUPS`, Nghiên cứu Brand & Đối thủ, Booking, Hợp đồng & Cổng đối tác |
 | HUB-2.2 | User stories + tiêu chí nghiệm thu | Đang hoàn thiện | Các kịch bản nghiệp vụ theo 8 nhóm quyền |
 | HUB-2.3 | Kiến trúc tổng thể | Đang hoàn thiện | Next.js App Router, Micro-services API, State Sync |
 | HUB-2.4 | Mô hình dữ liệu | Đang hoàn thiện | Cấu trúc dữ liệu Brand, Store, Monthly Plan, KOC Master (274 KOC chủ lực chuẩn hóa) & Booking Deal (930+ lịch sử hợp tác) |
 | **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, TikTok Seller, Kalodata, Nghiên cứu Brand & Đối thủ, Crawler KOC & Đối thủ (TikTok Open-Source Engines), WeSign, OCR |
 | **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Đã hoàn thành** | Phân quyền 8 vai trò (CEO, Giám Đốc MKT, Growth/Media Head, Leader, Specialist, Legal, Finance, Brand) & Động cơ phân quyền phạm vi (Data Scoping Engine) |
-| HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, bảng sticky và component UI |
+| HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, `NAV_GROUPS` & `TAB_LABELS`, nguyên tắc Single Source of Truth và component UI |
 
 ## Mã nguồn & Sản phẩm thực thi
 

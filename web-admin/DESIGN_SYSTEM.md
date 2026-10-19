@@ -9,8 +9,11 @@ Quy chuẩn giao diện và từ ngữ cho `web-admin`. Áp dụng cho mọi mà
 
 Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → file này → thói quen của code cũ.
 
-### Cập nhật trải nghiệm 14/10/2026
+### Cập nhật trải nghiệm 19/10/2026
 
+- **Kiến trúc Điều hướng & Nhóm màn hình (`src/lib/navGroups.ts`):** Toàn bộ tên màn hình trên `Sidebar` và tiêu đề `TopHeader` lấy từ một nguồn duy nhất `TAB_LABELS`. Các màn hình cùng cụm nghiệp vụ được gộp thành 1 mục trên menu trái và chuyển đổi qua thanh `<Tabs>` ngang đầu trang (`NAV_GROUPS`: *Phân việc & điều phối* gộp `task-delegation` / `workload-3d` / `manager`; *Thương hiệu & chiến dịch* gộp `brand-knowledge` / `campaigns` / `push-products`; *Nghiên cứu & quét kênh* gộp `market-research` / `tiktok-crawler`). Menu trái giảm xuống ≤ 18 mục đối với Quản trị viên và 8–11 mục đối với Chuyên viên.
+- **Nguyên tắc Nguồn dữ liệu duy nhất (Single Source of Truth):** Mỗi thực thể hoặc bảng cấu hình chỉ đặt tại đúng 1 màn hình chuyên trách; tuyệt đối không nhân bản tab chéo giữa các màn hình (Hệ số gian hàng Bảng 2 chỉ ở `ManagerDelegationHub`; Trụ cột nội dung chỉ ở `ContentAngleSetupView`; Nhật ký kiểm toán chỉ ở `AuditTrailView`; Bảng xếp hạng tích hợp trong `ExecutiveDashboardReportsView` → Nhân sự).
+- **Cấm tuyệt đối dòng phụ đề/mô tả xám giải thích dưới tiêu đề:** `TopHeader`, `Panel`, `SectionHeader`, `Modal` và `Field` đã gỡ bỏ hoàn toàn dòng chữ phụ đề xám (`subtitle`, `description`, `hint`, `moduleSubtitle`) nhằm giữ giao diện sạch, đi thẳng vào dữ liệu và thao tác.
 - Menu trái hiển thị trọn bộ danh mục trong một màn hình (mỗi mục cao 32px, đầu trang cao 56px), không để phát sinh thanh cuộn dọc. Mục hiện tại dùng nền `accent-soft`, chữ `accent` và vạch chỉ báo.
 - Thanh tiêu đề cao tối thiểu 56px (khớp với đầu menu trái), thao tác tự xuống hàng khi thiếu chỗ. Nội dung có khoảng đệm 20–24px theo chiều dọc và căn giữa ở màn hình rộng.
 - Khung `Panel` có đệm tiêu đề 16 × 20px. Nút `.btn-md` cao 38px; nhóm `.btn-*` có chiều cao tối thiểu 44px trên thiết bị cảm ứng. Thành phần `Button` dùng kích thước riêng như bảng thành phần bên dưới.
@@ -21,11 +24,12 @@ Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → f
 
 ## 1. Nguyên tắc
 
-1. **Dữ liệu là nhân vật chính.** Bảng, con số và trạng thái nằm ở màn hình đầu. Không mở trang bằng banner giới thiệu, thẻ giải thích vai trò hay khẩu hiệu.
-2. **Một điểm nhấn mỗi vùng.** Một màu nhấn, một nút chính, một con số quan trọng. Màu chỉ dùng để báo trạng thái, không dùng để phân biệt phân hệ.
-3. **Khoảng trắng thay đường viền.** Nhóm nội dung bằng khoảng cách và tiêu đề. Chỉ đóng khung khi khối đó thao tác được độc lập (bảng, form). Không lồng khung trong khung.
-4. **Nói như đồng nghiệp.** Câu ngắn, viết hoa kiểu câu, đúng từ team dùng hằng ngày. Không quảng cáo, không cảm thán, không emoji.
-5. **Không bịa dữ liệu.** Không dùng `??` / `||` để điền số, tên, địa chỉ, SĐT, số giấy tờ hay bản ghi mẫu vào giao diện hoặc vào bản ghi khi lưu. Thiếu thì hiện “—” hoặc trạng thái rỗng nói thiếu gì. Dữ liệu mẫu chỉ nằm trong `lib/mockData.ts` và các file dataset.
+1. **Dữ liệu là nhân vật chính.** Bảng, con số và trạng thái nằm ở màn hình đầu. Không mở trang bằng banner giới thiệu, thẻ giải thích vai trò, khẩu hiệu hay dòng phụ đề xám (`subtitle`, `description`, `hint`) dưới tiêu đề.
+2. **Một nguồn dữ liệu duy nhất (Single Source of Truth).** Mỗi danh mục, bảng cấu hình hoặc chỉ số KPI chỉ xuất hiện ở một nơi duy nhất trên màn hình và một phân hệ duy nhất trong toàn hệ thống. Không lặp lại cùng một con số giữa thẻ KPI đầu trang và các ô phụ bên dưới; không nhúng lại bảng của màn hình khác thành tab phụ.
+3. **Một điểm nhấn mỗi vùng.** Một màu nhấn, một nút chính, một con số quan trọng. Màu chỉ dùng để báo trạng thái, không dùng để phân biệt phân hệ.
+4. **Khoảng trắng thay đường viền.** Nhóm nội dung bằng khoảng cách và tiêu đề. Chỉ đóng khung khi khối đó thao tác được độc lập (bảng, form). Không lồng khung trong khung.
+5. **Nói như đồng nghiệp.** Câu ngắn, viết hoa kiểu câu, đúng từ team dùng hằng ngày. Không quảng cáo, không cảm thán, không emoji, không từ ngữ AI/Smart/Engine/Cockpit.
+6. **Không bịa dữ liệu.** Không dùng `??` / `||` để điền số, tên, địa chỉ, SĐT, số giấy tờ hay bản ghi mẫu vào giao diện hoặc vào bản ghi khi lưu, và không gõ cứng số giả trong JSX. Thiếu thì hiện “—” hoặc trạng thái rỗng nói thiếu gì. Dữ liệu mẫu chỉ nằm trong `lib/mockData.ts` và các file dataset.
 
 ---
 
@@ -248,7 +252,8 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 
 ## 7. Bố cục trang
 
-- Thanh trên: tiêu đề trang (khớp tên trên menu) + mô tả một dòng nếu cần + tối đa một nút chính (`PageActions`). Thanh trên và menu trái luôn đứng yên khi cuộn: thanh trên `sticky top-0`, menu trái `fixed`. Không đặt `overflow: hidden` lên `html`/`body` hay khung chứa thanh trên (làm hỏng `sticky`); cần chặn tràn ngang thì dùng `overflow-x: clip`.
+- Thanh trên (`TopHeader`): tiêu đề trang lấy từ `TAB_LABELS[activeTab]` (khớp 100% với tên trên menu trái) + tối đa một nút chính (`PageActions`). Tuyệt đối không hiển thị dòng phụ đề giải thích dưới tiêu đề trang. Thanh trên và menu trái luôn đứng yên khi cuộn: thanh trên `sticky top-0`, menu trái `fixed`. Không đặt `overflow: hidden` lên `html`/`body` hay khung chứa thanh trên (làm hỏng `sticky`); cần chặn tràn ngang thì dùng `overflow-x: clip`.
+- Nhóm màn hình cùng cụm nghiệp vụ (`NAV_GROUPS` trong `src/lib/navGroups.ts`): hiển thị 1 mục đại diện trên menu trái và render thanh `<Tabs>` chuyển màn hình con ngay đầu vùng nội dung chính.
 - Dưới thanh trên: bộ chọn kỳ (tháng/tuần) và thao tác phụ → `Tabs` → nội dung.
 - Không thêm tiêu đề lớn thứ hai trong trang. Không thêm thẻ “giới thiệu phân hệ”.
 - Lề trang `px-4 sm:px-6 lg:px-8`, khoảng cách giữa các khối `space-y-6`.

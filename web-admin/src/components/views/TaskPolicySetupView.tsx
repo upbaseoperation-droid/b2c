@@ -459,31 +459,26 @@ export function TaskPolicySetupView({
             <Stat
               label="Tổng danh mục SOW"
               value={`${sowPolicies.length} đầu việc`}
-              note={`Chia theo ${sowGroups.length} nhóm nghiệp vụ B2C`}
             />
             <Stat
               label="Đầu việc mức Khó (1,20)"
               value={`${sowSummaryStats.hardCount} đầu việc`}
               tone="critical"
-              note="Tính vào tỷ trọng việc khó cuối tháng"
             />
             <Stat
               label="Đầu việc Tiêu chuẩn (1,00)"
               value={`${sowSummaryStats.standardCount} đầu việc`}
               tone="positive"
-              note={`${sowSummaryStats.easyCount} đầu việc mức Dễ (0,80)`}
             />
             <Stat
               label="Điểm chuẩn bình quân"
               value={`${sowSummaryStats.avgBase.toFixed(1).replace('.', ',')} pts`}
-              note="Chưa nhân hệ số gian hàng & độ khó"
             />
           </StatRow>
 
           <Panel
             flush
             title="Bảng 1 · Chính sách điểm theo danh mục công việc (33 SOW)"
-            description="Bấm vào từng dòng hoặc nút Sửa để điều chỉnh điểm chuẩn, độ khó mặc định và quy tắc nghiệm thu"
             actions={
               canManageSetup ? (
                 <Button
@@ -566,7 +561,6 @@ export function TaskPolicySetupView({
           <Panel
             flush
             title={activeCategoryConfig.tableTitle}
-            description={`Đơn vị chuẩn: ${activeCategoryConfig.unitLabel} · Điểm gốc nhóm: ${activeCategoryConfig.baseWorkloadPoints} pts`}
             actions={
               canManageSetup ? (
                 <div className="flex items-center gap-2">
@@ -641,7 +635,6 @@ export function TaskPolicySetupView({
         <div className="space-y-4">
           <Panel
             title="Công thức tính điểm Workload cá nhân & Tổng điểm tháng"
-            description="Hệ thống tự động nhân các hệ số ngay khi giao việc hoặc nghiệm thu đầu ra"
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-1">
@@ -668,7 +661,6 @@ export function TaskPolicySetupView({
             <Panel
               flush
               title="Bảng 2 · Hệ số quy mô & Độ phức tạp gian hàng"
-              description="Áp dụng theo mức độ phức tạp vận hành của từng Store/Brand"
             >
               <table className="w-full text-left text-xs">
                 <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -697,7 +689,6 @@ export function TaskPolicySetupView({
               <Panel
                 flush
                 title="Bảng 3 · Hệ số độ khó theo lần thực hiện"
-                description="Điều chỉnh khi KOC mới, đề bài mới hoặc tái sử dụng"
               >
                 <table className="w-full text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -724,7 +715,6 @@ export function TaskPolicySetupView({
               <Panel
                 flush
                 title="Bảng 6 · Hệ số mở rộng đa sàn (Việc cấp Brand)"
-                description="Áp dụng cho campaign hoặc KV/Brief triển khai trên nhiều gian hàng"
               >
                 <table className="w-full text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -753,7 +743,6 @@ export function TaskPolicySetupView({
             <Panel
               flush
               title="Bảng 4 · Yêu cầu tỷ trọng việc khó theo Level nhân sự"
-              description="Đánh giá cuối tháng dựa trên tỷ lệ điểm việc Khó trên tổng điểm"
             >
               <table className="w-full text-left text-xs">
                 <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -790,7 +779,6 @@ export function TaskPolicySetupView({
               <Panel
                 flush
                 title="Bảng 5 · Hệ số tiến độ hoàn thành (Timeline SLA)"
-                description="Áp dụng khi nghiệm thu kết quả công việc"
               >
                 <table className="w-full text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -817,7 +805,6 @@ export function TaskPolicySetupView({
               <Panel
                 flush
                 title="Quy tắc phân chia tỷ trọng theo vai trò phối hợp"
-                description="Tổng tỷ trọng của các nhân sự trong 1 đầu việc luôn bằng 100%"
               >
                 <table className="w-full text-left text-xs">
                   <thead className="bg-sunken text-2xs text-ink-3 uppercase border-b border-line">
@@ -850,7 +837,6 @@ export function TaskPolicySetupView({
         open={Boolean(editingSow)}
         onClose={() => setEditingSow(null)}
         title={editingSow ? `Chỉnh sửa đầu việc SOW #${editingSow.stt}` : ''}
-        description={editingSow?.group}
         size="md"
         footer={
           <>
@@ -981,7 +967,6 @@ export function TaskPolicySetupView({
               : `${editingLevelState.levelConfig.levelCode} · ${editingLevelState.categoryName}`
             : ''
         }
-        description="Thiết lập hệ số nhân, thời hạn SLA chuẩn và đầu ra nghiệm thu"
         size="md"
         footer={
           <>

@@ -24,6 +24,7 @@ import {
 } from './brands/brandFilesCatalog';
 import type { BrandDetail } from './types';
 import type { BrandFaq, BrandPositioning, BrandProfile } from './brands/types';
+import type { LiveAutoScrapedBrandIntelligence } from './liveBrandWebScraper';
 
 export type PriceSegmentTier = 'MASS' | 'MASSTIGE' | 'PREMIUM' | 'DERMA_CLINICAL';
 
@@ -2756,6 +2757,8 @@ export function generateBrandMarketResearchDossier(params: {
   customCategory?: string;
   customCompetitorInputs?: string[];
   liveWebInspection?: LiveWebInspectionResult | null;
+  liveAutoWebIntel?: LiveAutoScrapedBrandIntelligence | null;
+  liveMinedCommentTexts?: string[];
   savedBrandProfile?: BrandProfile | null;
   liveScrapedCompetitors?: LiveScrapedCompetitorSignal[];
   primaryLiveTikTokSignal?: LiveScrapedCompetitorSignal | null;
@@ -2795,28 +2798,43 @@ export function generateBrandMarketResearchDossier(params: {
     params.savedBrandProfile?.brandName ||
     matchedUpbaseBrand?.name ||
     brandCfg?.canonicalBrandName ||
+    params.liveAutoWebIntel?.resolvedBrandTitle ||
     params.primaryLiveTikTokSignal?.brandName ||
     rawQuery;
   aliasSet.add(normalizeKey(brandName));
 
   const subIndustryCode = detectSubIndustryForAnyBrand(
     brandName,
-    params.customCategory,
+    params.customCategory || params.liveAutoWebIntel?.detectedCategoryLabel,
     brandCfg
   );
   const subSpec = SUB_INDUSTRY_SPECS[subIndustryCode];
 
   const category =
     params.customCategory?.trim() ||
-    (brandCfg ? subSpec.categoryLabel : matchedUpbaseBrand?.category || subSpec.categoryLabel);
+    (brandCfg
+      ? subSpec.categoryLabel
+      : matchedUpbaseBrand?.category ||
+        params.liveAutoWebIntel?.detectedCategoryLabel ||
+        subSpec.categoryLabel);
 
   const originCountry =
     params.savedBrandProfile?.entity?.originCountry ||
     brandCfg?.originCountry ||
+    params.liveAutoWebIntel?.detectedOriginCountry ||
     subSpec.defaultOrigin;
 
+  const liveMedianPrice = params.liveAutoWebIntel?.priceRangeVnd?.median;
+  const inferredPriceSegment: PriceSegmentTier | undefined = liveMedianPrice
+    ? liveMedianPrice >= 500000
+      ? 'PREMIUM'
+      : liveMedianPrice >= 200000
+        ? 'MASSTIGE'
+        : 'MASS'
+    : undefined;
+
   const priceSegment: PriceSegmentTier =
-    brandCfg?.priceSegment || subSpec.priceSegment;
+    brandCfg?.priceSegment || inferredPriceSegment || subSpec.priceSegment;
 
   // Khởi tạo Sổ Dẫn chứng Xác thực (Evidence Ledger)
   const evidenceLedger: EvidenceCitation[] = [];
@@ -3214,8 +3232,47 @@ export function generateBrandMarketResearchDossier(params: {
     reliabilityTag: matchedUpbaseBrand ? 'ĐỐI SOÁT NỘI BỘ 100%' : 'NIÊM YẾT GIAN HÀNG MALL',
   });
 
-  // Ghi nhận Dẫn chứng Quét trực tiếp DOM Website (nếu có)
+  // Ghi nhận Dẫn chứng Quét trực tiếp DOM Website & Danh mục Sản phẩm tự động (nếu có)
   const liveWebEvIds: string[] = [];
+  if (params.liveAutoWebIntel) {
+    const aw = params.liveAutoWebIntel;
+    if (aw.officialWebsiteUrl) {
+      const awEvId = pushEvidence({
+        category: 'LIVE_WEB_DOM',
+        categoryLabel: 'Cào Tự động Danh mục Sản phẩm Website Chính hãng',
+        claimSupported: `Bóc tách tự động Website chính thức ${aw.officialWebsiteDomain || aw.officialWebsiteUrl}: phát hiện ${aw.scrapedProducts.length} SKU sản phẩm${aw.priceRangeVnd ? ` (${aw.priceRangeVnd.formattedRange})` : ''}`,
+        sourceDocument: `API Danh mục Sản phẩm & DOM ${aw.officialWebsiteUrl} (Cào lúc ${aw.scrapedAt.slice(0, 19).replace('T', ' ')})`,
+        exactQuoteOrMetric: `${aw.metaDescription || aw.metaTitle || aw.queriedName}${
+          aw.scrapedProducts.length > 0
+            ? ` | Sản phẩm tiêu biểu vừa cào: ${aw.scrapedProducts
+                .slice(0, 4)
+                .map((p) => `"${p.productName}" (${p.priceVnd.toLocaleString('vi-VN')}đ)`)
+                .join(' ; ')}`
+            : ''
+        }`,
+        sourceUrl: aw.officialWebsiteUrl,
+        verifiedDate: verifiedToday,
+        reliabilityTag: 'QUÉT TRỰC TIẾP DOM/HTTP',
+      });
+      liveWebEvIds.push(awEvId);
+    }
+
+    for (const snip of aw.searchSnippets.slice(0, 4)) {
+      if (snip.url === aw.officialWebsiteUrl) continue;
+      const snipEvId = pushEvidence({
+        category: 'LIVE_WEB_DOM',
+        categoryLabel: 'Cào Tự động Sàn TMĐT & Nguồn Trực tuyến',
+        claimSupported: `[${snip.domain}] ${snip.title}`,
+        sourceDocument: `Nguồn trực tuyến: ${snip.domain}`,
+        exactQuoteOrMetric: snip.snippet,
+        sourceUrl: snip.url,
+        verifiedDate: verifiedToday,
+        reliabilityTag: 'QUÉT TRỰC TIẾP DOM/HTTP',
+      });
+      liveWebEvIds.push(snipEvId);
+    }
+  }
+
   if (params.liveWebInspection) {
     const lw = params.liveWebInspection;
     const lwEvId = pushEvidence({
@@ -3236,18 +3293,21 @@ export function generateBrandMarketResearchDossier(params: {
   // =========================================================================
   // Nguồn ưu tiên:
   // (a) Sản phẩm được book thực tế trong File 3.2 (`bookedProductsSummary`)
-  // (b) Sản phẩm lưu trong `savedBrandProfile.products` / `INITIAL_BRAND_KNOWLEDGE_BASES` / `INITIAL_PUSH_PRODUCTS`
-  // (c) Danh mục SKU thật của thương hiệu/đối thủ trong `brandCfg.realSkus`
-  // (d) Sản phẩm chủ lực của Brand trong `B2C_42_BRAND_CONFIG_MAP` / `EXTERNAL_COMPETITOR_BRAND_CONFIG_MAP`
+  // (b) Sản phẩm cào tự động theo thời gian thực từ Website hãng & Sàn TMĐT (`liveAutoWebIntel.scrapedProducts`)
+  // (c) Sản phẩm lưu trong `savedBrandProfile.products` / `INITIAL_BRAND_KNOWLEDGE_BASES` / `INITIAL_PUSH_PRODUCTS`
+  // (d) Danh mục SKU thật của thương hiệu/đối thủ trong `brandCfg.realSkus`
 
-  const webDetectedPrice = params.liveWebInspection?.detectedPricesVnd?.[0];
+  const webDetectedPrice =
+    params.liveAutoWebIntel?.priceRangeVnd?.median ||
+    params.liveWebInspection?.detectedPricesVnd?.[0];
   const defaultListPrice =
+    (webDetectedPrice ? Math.round((webDetectedPrice * 1.2) / 1000) * 1000 : undefined) ||
     brandCfg?.defaultListPriceVnd ||
     matchedUpbaseBrand?.heroProducts?.[0]?.price ||
-    (webDetectedPrice ? Math.round((webDetectedPrice * 1.2) / 1000) * 1000 : 250000);
+    250000;
   const defaultDealPrice =
-    brandCfg?.defaultDealPriceVnd ||
     webDetectedPrice ||
+    brandCfg?.defaultDealPriceVnd ||
     Math.round((defaultListPrice * 0.82) / 1000) * 1000;
   const defaultAffComm =
     matchedUpbaseBrand?.stores?.[0]?.affiliateRate || 10;
@@ -3353,7 +3413,62 @@ export function generateBrandMarketResearchDossier(params: {
     });
   });
 
-  // 2.2. Bổ sung các SKU từ Push Products / Knowledge Base / BrandProfile nếu chưa có trong File 3.2
+  // 2.1b. Đưa trực tiếp các SKU vừa cào tự động theo thời gian thực từ Website hãng & Sàn TMĐT (`liveAutoWebIntel.scrapedProducts`)
+  if (params.liveAutoWebIntel?.scrapedProducts?.length) {
+    params.liveAutoWebIntel.scrapedProducts.forEach((sp, idx) => {
+      const normName = normalizeKey(sp.productName);
+      if (!normName || addedProductNames.has(normName)) return;
+      addedProductNames.add(normName);
+
+      const dPrice = sp.priceVnd;
+      const lPrice =
+        sp.originalPriceVnd && sp.originalPriceVnd > dPrice
+          ? sp.originalPriceVnd
+          : Math.round((dPrice * 1.18) / 1000) * 1000;
+      const discPct =
+        lPrice > 0 ? Math.max(5, Math.round(((lPrice - dPrice) / lPrice) * 100)) : 15;
+
+      const role: SkuFunnelRole =
+        skuPortfolio.length === 0
+          ? 'HERO_CORE'
+          : /combo|set|bộ|lốc/i.test(sp.productName)
+            ? 'VIP_BUNDLE'
+            : idx <= 2
+              ? 'TRAFFIC_DRIVER'
+              : 'CROSS_SELL';
+
+      skuPortfolio.push({
+        id: `sku-live-web-${cleanKey}-${idx + 1}`,
+        skuCode: `LIVE-${cleanKey.slice(0, 4).toUpperCase()}-${String(idx + 1).padStart(2, '0')}`,
+        productName: sp.productName,
+        role,
+        roleLabel: SKU_FUNNEL_ROLE_LABEL[role],
+        packSize: sp.productType || `Nguồn cào: ${sp.sourceDomain}`,
+        listPriceVnd: lPrice,
+        dealPriceVnd: dPrice,
+        discountPct: discPct,
+        unitEconomicsNote: `Cào trực tiếp từ ${sp.sourceDomain} lúc ${params.liveAutoWebIntel!.scrapedAt.slice(11, 19)}`,
+        affiliateCommissionPct: defaultAffComm,
+        estimatedGmvSharePct:
+          idx === 0 ? 35 : idx === 1 ? 25 : Math.max(8, Math.round(40 / Math.max(1, params.liveAutoWebIntel!.scrapedProducts.length - 2))),
+        monthlySalesEstimate: sp.soldCount
+          ? `Đã bán: ${sp.soldCount.toLocaleString('vi-VN')} SP (${sp.sourceDomain})`
+          : `Đang mở bán trực tiếp trên ${sp.sourceDomain}`,
+        avgRatingText: sp.ratingAverage
+          ? `Đánh giá: ${sp.ratingAverage}/5 (${sp.reviewCount || 0} nhận xét)`
+          : `Nguồn: ${sp.sourceDomain}`,
+        coreIngredientsOrSpecs:
+          sp.specSummary ||
+          params.liveAutoWebIntel?.metaDescription ||
+          (brandCfg?.keySpecs?.[0] ?? subSpec.rtbs[0]),
+        targetNeed: subSpec.targetAudience,
+        pdpUrl: sp.sourceUrl,
+        evidenceIds: liveWebEvIds.length > 0 ? [liveWebEvIds[0]] : [distEvId],
+      });
+    });
+  }
+
+  // 2.2. Bổ sung các SKU từ Push Products / Knowledge Base / BrandProfile nếu chưa có
   for (const pp of pushProductsForBrand) {
     const normName = normalizeKey(pp.productName);
     if (!normName || addedProductNames.has(normName)) continue;
@@ -3453,7 +3568,7 @@ export function generateBrandMarketResearchDossier(params: {
     });
   }
 
-  // 2.3. Bổ sung danh mục SKU thật từ cấu hình thương hiệu / đối thủ (`brandCfg.realSkus`)
+  // 2.3. Bổ sung danh mục SKU thật từ cấu hình thương hiệu / đối thủ (`brandCfg.realSkus`) nếu chưa đủ
   if (brandCfg?.realSkus?.length) {
     brandCfg.realSkus.forEach((rs, idx) => {
       const normName = normalizeKey(rs.productName);
@@ -3505,6 +3620,7 @@ export function generateBrandMarketResearchDossier(params: {
   // Nếu vẫn chưa có SKU nào, khởi tạo 1 dòng Hero SKU thật của Brand (kết hợp tín hiệu quét TikTok/Web nếu có)
   if (skuPortfolio.length === 0) {
     const heroName =
+      params.liveAutoWebIntel?.headings?.[0] ||
       brandCfg?.defaultHeroSkuName ||
       params.primaryLiveTikTokSignal?.topPromotedProduct ||
       params.liveWebInspection?.h1Headings?.[0] ||
@@ -3815,60 +3931,71 @@ export function generateBrandMarketResearchDossier(params: {
           ...subSpec.rtbs,
         ];
 
-  const reviewClustersWithEv: ReviewMiningCluster[] = [
-    {
-      id: `voc-${cleanKey}-pain`,
-      category: 'PAIN_POINT',
-      categoryLabel: 'Nỗi đau Khách hàng Mục tiêu',
-      topicTitle: painPointsList[0] || `Nhu cầu xử lý vấn đề thực tế ngành ${category}`,
-      mentionCount: painPointsList.length,
-      sharePct: 40,
-      sampleQuotes: painPointsList,
-      recommendedScriptHook: `Ai đang gặp tình trạng "${(painPointsList[0] || '').slice(0, 65)}" thì xem ngay giải pháp thực tế từ ${brandName}!`,
-      suggestedFaqQuestion:
-        existingFaqs[0]?.question ||
-        `Sử dụng ${heroSkuName} bao lâu thì cảm nhận được sự cải thiện thực tế?`,
-      suggestedFaqAnswer:
-        existingFaqs[0]?.answer ||
-        `Tùy theo tình trạng thực tế, khách hàng thường cảm nhận hiệu quả bước đầu sau 3–7 ngày sử dụng đều đặn đúng hướng dẫn của nhãn hàng ${brandName}.`,
-      evidenceIds: [distEvId, ...(file35EvIds[0] ? [file35EvIds[0]] : [])],
-    },
-    {
-      id: `voc-${cleanKey}-barrier`,
-      category: 'BARRIER_TO_TRIAL',
-      categoryLabel: 'Rào cản Trước Khi Xuống Tiền',
-      topicTitle: barriersList[0] || 'Lo ngại về độ an toàn, nguồn gốc chính hãng và mức giá',
-      mentionCount: barriersList.length,
-      sharePct: 35,
-      sampleQuotes: barriersList,
-      recommendedScriptHook: `Giải đáp thắc mắc lớn nhất trước khi mua ${brandName}: Cách kiểm tra hàng chính hãng và bảng thành phần an toàn!`,
-      suggestedFaqQuestion:
-        existingFaqs[1]?.question ||
-        `Sản phẩm ${brandName} trong giỏ hàng KOC có đảm bảo chính hãng 100% không?`,
-      suggestedFaqAnswer:
-        existingFaqs[1]?.answer ||
-        `Sản phẩm được gắn trực tiếp từ gian hàng chính hãng của ${brandName} do UpBase B2C vận hành, có đầy đủ tem nhãn, hóa đơn và chính sách đổi trả trên sàn.`,
-      evidenceIds: [distEvId, ...(internalPlanEvIds[0] ? [internalPlanEvIds[0]] : [])],
-    },
-    {
-      id: `voc-${cleanKey}-buying`,
-      category: 'BUYING_QUESTION',
-      categoryLabel: 'Câu hỏi Chọn Phân loại & Ưu đãi',
-      topicTitle: `Tư vấn chọn đúng dòng sản phẩm trong ${skuPortfolio.length} SKU của ${brandName}`,
-      mentionCount: skuPortfolio.length,
-      sharePct: 25,
-      sampleQuotes: skuPortfolio.slice(0, 3).map(
-        (s) => `${s.productName} (${s.dealPriceVnd.toLocaleString('vi-VN')}đ — ${s.monthlySalesEstimate})`
-      ),
-      recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} phù hợp nhu cầu và săn trọn bộ quà tặng trong phiên hôm nay!`,
-      suggestedFaqQuestion: `Nên chọn phân loại nào của ${brandName} để tiết kiệm chi phí nhất?`,
-      suggestedFaqAnswer: `Khách hàng mới có thể bắt đầu với "${heroSkuName}" (giá ưu đãi ${dealPrice.toLocaleString('vi-VN')}đ) hoặc chọn Combo trên gian hàng để nhận thêm quà tặng kèm và mã miễn phí vận chuyển.`,
-      evidenceIds: [
-        ...(bookingLedgerEvIds[0] ? [bookingLedgerEvIds[0]] : []),
-        distEvId,
-      ],
-    },
-  ];
+  const autoMinedClusters =
+    params.liveMinedCommentTexts && params.liveMinedCommentTexts.length > 0
+      ? analyzeRawCustomerCommentsToClusters(params.liveMinedCommentTexts, brandName).map((c) => ({
+          ...c,
+          evidenceIds: bookingLedgerEvIds.length > 0 ? [bookingLedgerEvIds[0]] : [distEvId],
+        }))
+      : [];
+
+  const reviewClustersWithEv: ReviewMiningCluster[] =
+    autoMinedClusters.length > 0
+      ? autoMinedClusters
+      : [
+          {
+            id: `voc-${cleanKey}-pain`,
+            category: 'PAIN_POINT',
+            categoryLabel: 'Nỗi đau Khách hàng Mục tiêu',
+            topicTitle: painPointsList[0] || `Nhu cầu xử lý vấn đề thực tế ngành ${category}`,
+            mentionCount: painPointsList.length,
+            sharePct: 40,
+            sampleQuotes: painPointsList,
+            recommendedScriptHook: `Ai đang gặp tình trạng "${(painPointsList[0] || '').slice(0, 65)}" thì xem ngay giải pháp thực tế từ ${brandName}!`,
+            suggestedFaqQuestion:
+              existingFaqs[0]?.question ||
+              `Sử dụng ${heroSkuName} bao lâu thì cảm nhận được sự cải thiện thực tế?`,
+            suggestedFaqAnswer:
+              existingFaqs[0]?.answer ||
+              `Tùy theo tình trạng thực tế, khách hàng thường cảm nhận hiệu quả bước đầu sau 3–7 ngày sử dụng đều đặn đúng hướng dẫn của nhãn hàng ${brandName}.`,
+            evidenceIds: [distEvId, ...(file35EvIds[0] ? [file35EvIds[0]] : [])],
+          },
+          {
+            id: `voc-${cleanKey}-barrier`,
+            category: 'BARRIER_TO_TRIAL',
+            categoryLabel: 'Rào cản Trước Khi Xuống Tiền',
+            topicTitle: barriersList[0] || 'Lo ngại về độ an toàn, nguồn gốc chính hãng và mức giá',
+            mentionCount: barriersList.length,
+            sharePct: 35,
+            sampleQuotes: barriersList,
+            recommendedScriptHook: `Giải đáp thắc mắc lớn nhất trước khi mua ${brandName}: Cách kiểm tra hàng chính hãng và bảng thành phần an toàn!`,
+            suggestedFaqQuestion:
+              existingFaqs[1]?.question ||
+              `Sản phẩm ${brandName} trong giỏ hàng KOC có đảm bảo chính hãng 100% không?`,
+            suggestedFaqAnswer:
+              existingFaqs[1]?.answer ||
+              `Sản phẩm được gắn trực tiếp từ gian hàng chính hãng của ${brandName} do UpBase B2C vận hành, có đầy đủ tem nhãn, hóa đơn và chính sách đổi trả trên sàn.`,
+            evidenceIds: [distEvId, ...(internalPlanEvIds[0] ? [internalPlanEvIds[0]] : [])],
+          },
+          {
+            id: `voc-${cleanKey}-buying`,
+            category: 'BUYING_QUESTION',
+            categoryLabel: 'Câu hỏi Chọn Phân loại & Ưu đãi',
+            topicTitle: `Tư vấn chọn đúng dòng sản phẩm trong ${skuPortfolio.length} SKU của ${brandName}`,
+            mentionCount: skuPortfolio.length,
+            sharePct: 25,
+            sampleQuotes: skuPortfolio.slice(0, 3).map(
+              (s) => `${s.productName} (${s.dealPriceVnd.toLocaleString('vi-VN')}đ — ${s.monthlySalesEstimate})`
+            ),
+            recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} phù hợp nhu cầu và săn trọn bộ quà tặng trong phiên hôm nay!`,
+            suggestedFaqQuestion: `Nên chọn phân loại nào của ${brandName} để tiết kiệm chi phí nhất?`,
+            suggestedFaqAnswer: `Khách hàng mới có thể bắt đầu với "${heroSkuName}" (giá ưu đãi ${dealPrice.toLocaleString('vi-VN')}đ) hoặc chọn Combo trên gian hàng để nhận thêm quà tặng kèm và mã miễn phí vận chuyển.`,
+            evidenceIds: [
+              ...(bookingLedgerEvIds[0] ? [bookingLedgerEvIds[0]] : []),
+              distEvId,
+            ],
+          },
+        ];
 
   // =========================================================================
   // 5. CHIẾN LƯỢC 4P, MARKET LANDSCAPE, SWOT & PHÂN TẦNG KOC DỰA TRÊN DỮ LIỆU THẬT
@@ -3891,6 +4018,7 @@ export function generateBrandMarketResearchDossier(params: {
       : 40;
 
   const mergedUsps = [
+    ...(params.liveAutoWebIntel?.extractedUsps || []),
     ...(params.liveWebInspection?.extractedUsps || []),
     ...(brandCfg?.keySpecs || []),
     ...rtbsList,
@@ -3909,6 +4037,8 @@ export function generateBrandMarketResearchDossier(params: {
     ...liveWebEvIds,
   ];
 
+  const liveFormattedPriceRange = params.liveAutoWebIntel?.priceRangeVnd?.formattedRange;
+
   const fourP: BrandFourPAnalysis = {
     productStrategy:
       bookedProductsSummary.length > 0
@@ -3916,17 +4046,27 @@ export function generateBrandMarketResearchDossier(params: {
             .slice(0, 3)
             .map((p) => `"${p.productName}" (${p.bookedOrderCount} đơn)`)
             .join(', ')}.`
-        : `Tập trung đẩy dòng sản phẩm chủ lực "${heroSkuName}" (${skuPortfolio.length} SKU trong hồ sơ thương hiệu ${brandName}).`,
+        : params.liveAutoWebIntel?.scrapedProducts?.length
+          ? `Đã cào trực tiếp ${params.liveAutoWebIntel.scrapedProducts.length} SKU đang mở bán của ${brandName} (${params.liveAutoWebIntel.officialWebsiteDomain || 'Sàn TMĐT'}), nổi bật là "${heroSkuName}".`
+          : `Tập trung đẩy dòng sản phẩm chủ lực "${heroSkuName}" (${skuPortfolio.length} SKU trong hồ sơ thương hiệu ${brandName}).`,
     heroSkuHighlight: heroSkuName,
     keyIngredientsOrSpecs: mergedUsps,
-    priceStrategy: `Định vị phân khúc ${PRICE_SEGMENT_LABEL[priceSegment]}. Giá niêm yết tham chiếu ${listPrice.toLocaleString('vi-VN')}đ, giá ưu đãi trên Video/Live ${dealPrice.toLocaleString('vi-VN')}đ (-${discountPct}%).`,
-    priceRangeText: `${dealPrice.toLocaleString('vi-VN')}đ – ${listPrice.toLocaleString('vi-VN')}đ`,
+    priceStrategy: `Định vị phân khúc ${PRICE_SEGMENT_LABEL[priceSegment]}. ${
+      liveFormattedPriceRange
+        ? `Khoảng giá cào thực tế trên Web/Sàn: ${liveFormattedPriceRange} (Giá trung vị: ${dealPrice.toLocaleString('vi-VN')}đ).`
+        : `Giá niêm yết tham chiếu ${listPrice.toLocaleString('vi-VN')}đ, giá ưu đãi trên Video/Live ${dealPrice.toLocaleString('vi-VN')}đ (-${discountPct}%).`
+    }`,
+    priceRangeText:
+      liveFormattedPriceRange ||
+      `${dealPrice.toLocaleString('vi-VN')}đ – ${listPrice.toLocaleString('vi-VN')}đ`,
     avgDealDiscountPct: discountPct,
     affiliateCommissionRange: `Hoa hồng Affiliate gian hàng: ${defaultAffComm}% (Organic KOC) / ${Math.max(5, defaultAffComm - 4)}% (Ads)`,
     placeStrategy:
       internalStoresAudit.length > 0
         ? `Vận hành trực tiếp ${internalStoresAudit.length} gian hàng B2C (${tiktokStoreCount} TikTok Shop, ${shopeeStoreCount} Shopee Mall): ${internalStoresAudit.map((s) => s.storeName).join(', ')}.`
-        : `Triển khai trên kênh TikTok Shop (${tiktokShare}%) và Shopee Mall (${shopeeShare}%).`,
+        : params.liveAutoWebIntel?.officialWebsiteUrl
+          ? `Phân phối trực tiếp trên Website hãng (${params.liveAutoWebIntel.officialWebsiteUrl}), TikTok Shop (${tiktokShare}%) và Sàn TMĐT (${shopeeShare}%).`
+          : `Triển khai trên kênh TikTok Shop (${tiktokShare}%) và Shopee Mall (${shopeeShare}%).`,
     channelMixRatio: {
       tiktokShopPct: tiktokShare,
       shopeeMallPct: shopeeShare,
@@ -3935,6 +4075,7 @@ export function generateBrandMarketResearchDossier(params: {
     promotionStrategy:
       'Tối ưu cơ chế Mua kèm quà tặng (Value-add Gift) và Combo tiết kiệm theo lịch sóng tuần W40–W45 để bảo vệ hình ảnh thương hiệu.',
     winningBundleMechanics: [
+      ...(params.liveAutoWebIntel?.extractedPromotions || []),
       ...(params.liveWebInspection?.extractedPromotions || []),
       ...subSpec.promotionMechanics,
     ].slice(0, 4),

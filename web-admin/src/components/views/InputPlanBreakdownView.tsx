@@ -1663,7 +1663,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         onClose={() => setIsPlanReportOpen(false)}
         purposeId="PLAN_ADS_ANALYSIS"
         moduleTitle="Báo Cáo Thẩm Định Kế Hoạch Tháng (Plan 4.1 & 4.1.1)"
-        moduleSubtitle="Đối soát hạn mức Order Gross/Net, tỷ lệ Paid KOC vs FOC và luồng phê duyệt B2C"
         contextDataText={planReportContextText}
         onNotify={onNotify}
       />
@@ -2963,66 +2962,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {isDetailBreakdownTab && (
         <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2.5 space-y-2.5">
-          {/* Thanh mốc chỉ tiêu đối chiếu trực tiếp với Phân rã chi tiết */}
-          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-2xs">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-slate-800 uppercase tracking-wide inline-flex items-center gap-1">
-                {isLayer1Locked ? <Lock className="w-3 h-3 text-emerald-600" /> : <Unlock className="w-3 h-3 text-amber-600" />}
-                <span>Mốc chỉ tiêu tháng ({activeVersionCode}):</span>
-              </span>
-              <span className={`font-mono ${
-                channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
-                  ? 'text-emerald-700'
-                  : 'text-amber-700'
-              }`}>
-                KOC trả phí: <strong>{channelTotals.affiliatePaid.qty}/{layer1Metrics.qtyAffiliatePaid}</strong> video ({formatVndShort(channelTotals.affiliatePaid.budget)}/{formatVndShort(layer1Metrics.budgetAffiliateNet)})
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className={`font-mono ${
-                channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample
-                  ? 'text-emerald-700'
-                  : 'text-amber-700'
-              }`}>
-                FOC 0đ: <strong>{channelTotals.tapFreecast.qty}/{layer1Metrics.qtyFocSample}</strong> suất
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className={`font-mono ${
-                channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
-                  ? 'text-emerald-700'
-                  : 'text-amber-700'
-              }`}>
-                Kênh Brand: <strong>{channelTotals.selfChannel.qty}/{layer1Metrics.qtySelfChannel}</strong> video ({formatVndShort(channelTotals.selfChannel.budget)}/{formatVndShort(layer1Metrics.budgetSelfChannelNet)})
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className={`font-mono ${
-                channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
-                  ? 'text-emerald-700'
-                  : 'text-amber-700'
-              }`}>
-                Đa sàn: <strong>{channelTotals.multiPlatform.qty}/{layer1Metrics.qtyMultiPlatform}</strong> video ({formatVndShort(channelTotals.multiPlatform.budget)}/{formatVndShort(layer1Metrics.budgetMultiPlatformNet)})
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {!isPlanLocked && (
-                <button
-                  type="button"
-                  onClick={handleSyncLayer1ToLayer2}
-                  className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition cursor-pointer"
-                >
-                  Khớp theo chỉ tiêu
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setActiveTab('OVERVIEW')}
-                className="px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer"
-              >
-                ← Sửa Chỉ tiêu tháng
-              </button>
-            </div>
-          </div>
-
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Bộ lọc kênh 1 dòng gọn gàng */}
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -3047,21 +2986,17 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               ))}
             </div>
 
-            {/* Bên phải: Chỉ số đối soát 1 dòng + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="text-xs text-slate-600 hidden sm:flex items-center gap-1.5">
-                <span>Đã chia:</span>
-                <strong className={`font-mono ${isOverBudget ? 'text-rose-600' : 'text-slate-900'}`}>
-                  {formatVndShort(totalCombinedBudget)}
-                </strong>
-                <span className="text-slate-400">/ {formatVndShort(planState.totalTargetBudget)}</span>
-                <span className="text-slate-300">·</span>
-                <span className={`font-mono text-2xs font-semibold tabular-nums ${
-                  isOverBudget ? 'text-rose-700' : budgetHeadroom === 0 ? 'text-emerald-700' : 'text-blue-700'
-                }`}>
-                  {isOverBudget ? `Vượt ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
-                </span>
-              </div>
+            {/* Bên phải: Thao tác khớp chỉ tiêu + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {!isPlanLocked && (
+                <button
+                  type="button"
+                  onClick={handleSyncLayer1ToLayer2}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold transition cursor-pointer"
+                >
+                  Khớp theo chỉ tiêu
+                </button>
+              )}
 
               <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
                 <button
@@ -4777,7 +4712,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         onClose={() => setIsPlanReportOpen(false)}
         purposeId="PLAN_ADS_ANALYSIS"
         moduleTitle={`Thẩm Định Kế Hoạch Tháng: ${planState.brandName} (${planState.month})`}
-        moduleSubtitle="Kiểm tra hạn mức Order Gross/Net, tỷ trọng khung lương KL1–KL7 và luồng phê duyệt B2C"
         contextDataText={planReportContextText}
         onNotify={onNotify}
       />

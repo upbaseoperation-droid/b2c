@@ -633,48 +633,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
             </div>
           </div>
         </div>
-
-        {/* Thanh tóm tắt nhanh Đo lường Token & Chi phí toàn hệ thống */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-line text-xs bg-surface-subtle/50 px-4 py-2.5 rounded-xl">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Coins className="w-4 h-4 text-warning" />
-              <span className="text-ink-3">Tổng chi phí API:</span>
-              <strong className="text-accent font-mono text-sm">
-                ${aggregatedMetrics.totalCostUsd.toFixed(4)}
-              </strong>
-              <span className="text-2xs text-positive font-semibold">
-                (≈ {Math.round(aggregatedMetrics.totalCostVnd).toLocaleString('vi-VN')} đ)
-              </span>
-            </div>
-            <div className="hidden md:inline text-line-strong">|</div>
-            <div className="flex items-center gap-1.5 text-2xs">
-              <Activity className="w-3.5 h-3.5 text-ink-3" />
-              <span className="text-ink-3">Tổng Token:</span>
-              <strong className="font-mono text-ink">
-                {aggregatedMetrics.totalTokens.toLocaleString('vi-VN')}
-              </strong>
-              <span className="text-ink-3">
-                (Vào: {aggregatedMetrics.promptTokens.toLocaleString('vi-VN')} / Ra: {aggregatedMetrics.completionTokens.toLocaleString('vi-VN')})
-              </span>
-            </div>
-            <div className="hidden lg:inline text-line-strong">|</div>
-            <div className="flex items-center gap-1 text-2xs text-ink-3">
-              <span>Đã gọi:</span>
-              <strong className="text-ink">{aggregatedMetrics.totalCalls} lượt</strong>
-              <span>({aggregatedMetrics.successCalls} thành công, {aggregatedMetrics.fallbackCalls} dự phòng)</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('metrics')}
-            className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline cursor-pointer shrink-0"
-          >
-            <span>Xem chi tiết đối soát</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
       </div>
 
       {/* ===================================================================== */}

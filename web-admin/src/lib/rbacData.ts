@@ -1685,7 +1685,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'workload-3d',
     'sample-tracker',
     'performance-p3',
-    'leaderboard',
     'brand-hub',
     'koc-hub',
     'ads-report',
@@ -1726,7 +1725,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'workload-3d',
     'sample-tracker',
     'performance-p3',
-    'leaderboard',
     'brand-hub',
     'koc-hub',
     'ads-report',
@@ -1825,7 +1823,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'master-data',
     'brand-knowledge',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1851,7 +1848,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'push-products',
     'performance-p3',
     'brand-knowledge',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1874,7 +1870,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'push-products',
     'performance-p3',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1898,7 +1893,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'overview',
     'sample-tracker',
     'performance-p3',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1924,7 +1918,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'push-products',
     'performance-p3',
     'brand-knowledge',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1947,7 +1940,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'ads-report',
     'brand-knowledge',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -1969,7 +1961,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'campaigns',
     'performance-p3',
     'brand-knowledge',
-    'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'

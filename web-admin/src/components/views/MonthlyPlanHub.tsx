@@ -818,11 +818,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
         <Tabs
           items={[
-            { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng (Tổng thể)', count: governanceStats.totalActive },
-            { key: 'BRAND_PLANS', label: 'Kế hoạch theo Brand (3 vị trí)', count: filteredBrandMonthlyPlans.length },
-            { key: 'STORE_COEFFICIENTS', label: 'Hệ số gian hàng (Bảng 2)', count: governanceStats.totalB2cManaged },
-            { key: 'PERSONAL_PLANS', label: 'Kế hoạch theo nhân sự (Việc của tôi)', count: allPersonalPackages.length },
-            { key: 'PLAN_CATALOG', label: 'Danh mục kế hoạch', count: monthlyMetrics.planCount },
+            { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalActive },
+            { key: 'BRAND_PLANS', label: 'Kế hoạch theo Brand', count: filteredBrandMonthlyPlans.length },
+            { key: 'PERSONAL_PLANS', label: 'Kế hoạch theo nhân sự', count: allPersonalPackages.length },
           ]}
           value={activeHubTab}
           onChange={setActiveHubTab}

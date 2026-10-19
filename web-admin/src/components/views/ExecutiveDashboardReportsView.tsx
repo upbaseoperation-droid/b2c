@@ -167,7 +167,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const [staffVisibleLimit, setStaffVisibleLimit] = useState<number>(12);
   const [bookedVideosVisibleLimit, setBookedVideosVisibleLimit] = useState<number>(30);
   const [sellerCreativesVisibleLimit, setSellerCreativesVisibleLimit] = useState<number>(30);
-  const [isStaff360Open, setIsStaff360Open] = useState<boolean>(true);
+  const [isStaff360Open, setIsStaff360Open] = useState<boolean>(false);
 
   // State bộ lọc tab Video
   const [videoFormatFilter, setVideoFormatFilter] = useState<string>('ALL');
@@ -320,10 +320,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       else quadSlowBoth++;
     });
 
+    const totalBookedOrders = B2C_VIDEO_PIPELINE_BREAKDOWN.reduce((sum, st) => sum + st.count, 0) || 786;
+    const settledStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
+      (st) => st.pipeline === 'Done' || st.pipeline === 'Làm ĐNTT'
+    );
+    const settledOrdersCount = settledStages.reduce((sum, st) => sum + st.count, 0);
+    const settledOrdersCost = settledStages.reduce((sum, st) => sum + st.totalCost, 0);
+    const pendingStages = B2C_VIDEO_PIPELINE_BREAKDOWN.filter(
+      (st) => st.pipeline === 'Tạm ứng' || st.pipeline === 'Chưa làm ĐNTT'
+    );
+    const pendingOrdersCount = pendingStages.reduce((sum, st) => sum + st.count, 0);
+    const pendingOrdersCost = pendingStages.reduce((sum, st) => sum + st.totalCost, 0);
+
     const pacingNetPct = totalBudgetNet > 0 ? Math.round((totalActualSpentNet / totalBudgetNet) * 1000) / 10 : 0;
     const pacingGrossPct = totalBudgetGross > 0 ? Math.round((totalActualSpentNet / totalBudgetGross) * 1000) / 10 : 0;
     const airedVsPaidPct = totalTargetPaidVideos > 0 ? Math.round((totalActualAiredVideos / totalTargetPaidVideos) * 1000) / 10 : 0;
-    const airedVsBookedPct = Math.round((totalActualAiredVideos / 786) * 1000) / 10;
+    const airedVsBookedPct = Math.round((totalActualAiredVideos / totalBookedOrders) * 1000) / 10;
     const taxAndFeeDiff = Math.max(0, totalBudgetGross - totalBudgetNet);
 
     return {
@@ -346,6 +358,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       pacingGrossPct,
       airedVsPaidPct,
       airedVsBookedPct,
+      totalBookedOrders,
+      settledOrdersCount,
+      settledOrdersCost,
+      pendingOrdersCount,
+      pendingOrdersCost,
       storesWithAiredCount,
       quadOverSpend,
       quadHighSpendLowAir,
@@ -1289,7 +1306,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="lg:col-span-6 bg-white rounded-xl border-2 border-accent/20/80 p-5 shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2uppercase tracking-wider bg-accent text-white">
+                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider bg-accent text-white px-2 py-0.5 rounded">
                     <DollarSign className="w-3.5 h-3.5" />
                     Tỷ Lệ Giải Ngân Chi Phí (% Spend)
                   </span>
@@ -1297,17 +1314,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <span className="text-3xl font-semibold text-accent font-mono tracking-tight">
                       <NumberRoll value={`${kpiSummary.pacingNetPct}% Spend Net`} />
                     </span>
-                    <span className="text-xs font-semibold font-mono text-ink-2 -line">
+                    <span className="text-xs font-semibold font-mono text-ink-2">
                       {kpiSummary.pacingGrossPct}% Spend Gross
                     </span>
                   </div>
-                  <p className="text-xs text-ink-2 mt-1">
-                    Thực chi duyệt book:{' '}
-                    <strong className="font-mono text-ink">{formatVndShort(kpiSummary.totalActualSpentNet)}</strong>{' '}
-                    / Trần Order Net Kế toán:{' '}
-                    <strong className="font-mono text-accent">{formatVndShort(kpiSummary.totalBudgetNet)}</strong>{' '}
-                    (Order Gross: <strong className="font-mono">{formatVndShort(kpiSummary.totalBudgetGross)}</strong>)
-                  </p>
                 </div>
                 <div className="text-right font-mono shrink-0 bg-accent-soft px-3 py-2 rounded-lg border border-accent/20">
                   <span className="text-2xs font-sans font-semibold text-accent block">
@@ -1322,41 +1332,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </div>
               </div>
 
-              <div className="mt-3.5 space-y-2">
-                <div>
-                  <div className="flex items-center justify-between text-2xs font-semibold mb-1">
-                    <span className="text-ink-2">Tiến độ % Spend so với Trần Order Net (Mốc Kế toán khoá duyệt chi):</span>
-                    <span className="font-mono font-semibold text-accent">
-                      {formatVndShort(kpiSummary.totalActualSpentNet)} / {formatVndShort(kpiSummary.totalBudgetNet)} ({kpiSummary.pacingNetPct}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
-                    <div
-                      className={`data-bar h-full rounded-full ${
-                        kpiSummary.pacingNetPct > 100
-                          ? 'bg-critical'
-                          : kpiSummary.pacingNetPct >= 85
-                          ? 'bg-warning'
-                          : 'bg-accent'
-                      }`}
-                      style={{ width: `${Math.min(100, Math.max(kpiSummary.pacingNetPct, 2))}%` }}
-                    />
-                  </div>
+              <div className="mt-3.5">
+                <div className="flex items-center justify-between text-2xs font-semibold mb-1">
+                  <span className="text-ink-2">Tiến độ % Spend so với Trần Order Net (Mốc Kế toán khoá duyệt chi):</span>
+                  <span className="font-mono font-semibold text-accent">
+                    {formatVndShort(kpiSummary.totalActualSpentNet)} / {formatVndShort(kpiSummary.totalBudgetNet)} ({kpiSummary.pacingNetPct}%)
+                  </span>
                 </div>
-
-                <div className="pt-2 border-t border-line grid grid-cols-3 gap-2 text-2xs">
-                  <div className="p-2 rounded-lg bg-canvas border border-line/80">
-                    <span className="text-ink-3 block">KOC Affiliate Net</span>
-                    <strong className="font-mono text-ink">{formatVndShort(kpiSummary.totalAffNet)}</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-canvas border border-line/80">
-                    <span className="text-ink-3 block">Kênh Brand Net</span>
-                    <strong className="font-mono text-positive">{formatVndShort(kpiSummary.totalSelfNet)}</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-critical-soft border border-critical/20">
-                    <span className="text-critical block">Chi vượt / Ngoài KH</span>
-                    <strong className="font-mono text-critical">+296,04 Tr ({kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian)</strong>
-                  </div>
+                <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
+                  <div
+                    className={`data-bar h-full rounded-full ${
+                      kpiSummary.pacingNetPct > 100
+                        ? 'bg-critical'
+                        : kpiSummary.pacingNetPct >= 85
+                        ? 'bg-warning'
+                        : 'bg-accent'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(kpiSummary.pacingNetPct, 2))}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -1365,7 +1358,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="lg:col-span-6 bg-white rounded-xl border-2 border-positive/20/80 p-5 shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2uppercase tracking-wider bg-positive text-white">
+                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider bg-positive text-white px-2 py-0.5 rounded">
                     <Film className="w-3.5 h-3.5" />
                     Số Lượng Video Đã Air Lên Sóng
                   </span>
@@ -1373,58 +1366,36 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <span className="text-3xl font-semibold text-positive font-mono tracking-tight">
                       <NumberRoll value={`${kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} Video Đã Air`} />
                     </span>
-                    <span className="text-xs font-semibold font-mono text-positive -positive/20">
-                      Đạt {kpiSummary.airedVsBookedPct}% đơn đã book (786 đơn)
+                    <span className="text-xs font-semibold font-mono text-positive">
+                      Đạt {kpiSummary.airedVsBookedPct}% đơn đã book ({kpiSummary.totalBookedOrders} đơn)
                     </span>
                   </div>
-                  <p className="text-xs text-ink-2 mt-1">
-                    Đạt <strong className="font-mono text-positive">{kpiSummary.airedVsPaidPct}%</strong> so với tổng chỉ tiêu Video KOC Trả phí (Paid:{' '}
-                    <strong className="font-mono text-ink">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video</strong>) · Đã phủ sóng trên{' '}
-                    <strong className="text-ink">{kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian hàng</strong>
-                  </p>
                 </div>
                 <div className="text-right font-mono shrink-0 bg-positive-soft px-3 py-2 rounded-lg border border-positive/20">
                   <span className="text-2xs font-sans font-semibold text-positive block">
                     Đơn đã book chờ Air / ĐNTT
                   </span>
                   <strong className="text-base font-semibold text-positive">
-                    {Math.max(0, 786 - kpiSummary.totalActualAiredVideos)} đơn
+                    {Math.max(0, kpiSummary.totalBookedOrders - kpiSummary.totalActualAiredVideos)} đơn
                   </strong>
                   <span className="block text-2xs text-positive font-semibold mt-0.5">
-                    23 đơn đang gửi mẫu / chờ đăng
+                    Phủ {kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian hàng
                   </span>
                 </div>
               </div>
 
-              <div className="mt-3.5 space-y-2">
-                <div>
-                  <div className="flex items-center justify-between text-2xs font-semibold mb-1">
-                    <span className="text-ink-2">Tỷ lệ Video Đã Lên Sóng / Tổng Đơn Đã Book Tháng 10:</span>
-                    <span className="font-mono font-semibold text-positive">
-                      {kpiSummary.totalActualAiredVideos} / 786 đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
-                    <div
-                      className="data-bar h-full bg-positive rounded-full"
-                      style={{ width: `${Math.min(100, Math.max(kpiSummary.airedVsBookedPct, 3))}%` }}
-                    />
-                  </div>
+              <div className="mt-3.5">
+                <div className="flex items-center justify-between text-2xs font-semibold mb-1">
+                  <span className="text-ink-2">Tỷ lệ Video Đã Lên Sóng / Tổng Đơn Đã Book Tháng 10:</span>
+                  <span className="font-mono font-semibold text-positive">
+                    {kpiSummary.totalActualAiredVideos} / {kpiSummary.totalBookedOrders} đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
+                  </span>
                 </div>
-
-                <div className="pt-2 border-t border-line grid grid-cols-3 gap-2 text-2xs">
-                  <div className="p-2 rounded-lg bg-accent-soft border border-accent/20/80">
-                    <span className="text-accent block">Chỉ tiêu Video Paid</span>
-                    <strong className="font-mono text-accent">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video (KL1–KL7)</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-accent-soft border border-accent/20/80">
-                    <span className="text-accent block">Suất mẫu miễn phí FOC</span>
-                    <strong className="font-mono text-accent">{kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')} suất (0đ)</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-positive-soft border border-positive/20/80">
-                    <span className="text-positive block">Video Kênh Brand</span>
-                    <strong className="font-mono text-positive">{kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video</strong>
-                  </div>
+                <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
+                  <div
+                    className="data-bar h-full bg-positive rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(kpiSummary.airedVsBookedPct, 3))}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -1748,24 +1719,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
           </div>
 
-          {/* ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG, ĐNTT KẾ TOÁN & XUẤT SỔ CÁI EXCEL (GỘP TỪ MỤC KẾ TOÁN) */}
+          {/* ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG & ĐNTT KẾ TOÁN */}
           <div className="bg-white rounded-xl border border-line p-5 shadow-xs space-y-3.5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
-                </h3>
-                </div>
-              <button
-                type="button"
-                onClick={handleExportMultiSheetExcel}
-                disabled={isExportingExcel}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition cursor-pointer shrink-0"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải sổ cái đối soát 5 Sheets (.xlsx)'}
-              </button>
-            </div>
+            <h3 className="text-sm font-semibold text-ink">
+              Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
+            </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="p-3.5 rounded-xl border border-positive/20 bg-positive-soft">
@@ -1774,17 +1732,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <CheckCircle2 className="w-4 h-4 text-positive" />
                 </div>
                 <div className="text-lg font-semibold text-positive font-mono">
-                  642 Đơn · 2,14 Tỷ VNĐ
+                  {kpiSummary.settledOrdersCount} Đơn · {formatVndShort(kpiSummary.settledOrdersCost)}
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl border border-warning/20 bg-warning-soft">
                 <div className="flex items-center justify-between text-xs font-semibold text-warning mb-1">
-                  <span>2. Đang tạm ứng 50% (Chờ KOC air video)</span>
+                  <span>2. Đang tạm ứng / chờ làm ĐNTT</span>
                   <AlertCircle className="w-4 h-4 text-warning" />
                 </div>
                 <div className="text-lg font-semibold text-warning font-mono">
-                  104 Đơn · 376 Triệu VNĐ
+                  {kpiSummary.pendingOrdersCount} Đơn · {formatVndShort(kpiSummary.pendingOrdersCost)}
                 </div>
               </div>
 
@@ -1794,7 +1752,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <ShoppingBag className="w-4 h-4 text-accent" />
                 </div>
                 <div className="text-lg font-semibold text-ink font-mono">
-                  212 Suất · 0đ Cát-xê
+                  {kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')} Suất · 0đ Cát-xê
                 </div>
               </div>
             </div>
@@ -2631,33 +2589,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
           </div>
 
-          {/* BẢNG ĐỐI SOÁT CHI TIẾT VIDEO BOOKING (FILE 3.2) & CREATIVE ADS TIKTOK SELLER */}
+          {/* BẢNG ĐỐI SOÁT CHI TIẾT VIDEO BOOKING (FILE 3.2) */}
           <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
             <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setVideoSubView('BOOKED_32')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    videoSubView === 'BOOKED_32'
-                      ? 'bg-accent text-white'
-                      : 'bg-sunken text-ink-2 hover:bg-sunken'
-                  }`}
-                >
-                  Sổ Cái Video Đã Booking ({filteredBookedVideos.length} bản ghi)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVideoSubView('SELLER_CREATIVES')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    videoSubView === 'SELLER_CREATIVES'
-                      ? 'bg-ink text-white'
-                      : 'bg-sunken text-ink-2 hover:bg-sunken'
-                  }`}
-                >
-                  Top Video Chạy Quảng Cáo TikTok Seller ({filteredSellerCreatives.length} video)
-                </button>
-              </div>
+              <h3 className="text-sm font-semibold text-ink">
+                Sổ Cái Video Đã Booking ({filteredBookedVideos.length} bản ghi)
+              </h3>
 
               {(videoFormatFilter !== 'ALL' || videoKlFilter !== 'ALL') && (
                 <button
@@ -2673,67 +2610,58 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               )}
             </div>
 
-            {videoSubView === 'BOOKED_32' ? (
-              <div className="overflow-x-auto max-h-[540px]">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
-                    <tr>
-                      <th className="py-2.5 px-4 font-semibold">Mã Book & Ngày Air</th>
-                      <th className="py-2.5 px-3 font-semibold">Kênh KOC (Channel ID)</th>
-                      <th className="py-2.5 px-3 font-semibold">Gian Hàng & Brand</th>
-                      <th className="py-2.5 px-3 font-semibold">Chuyên Viên (PIC)</th>
-                      <th className="py-2.5 px-3 font-semibold">Loại Hình & Định Dạng</th>
-                      <th className="py-2.5 px-3 font-semibold text-center">Bậc KL</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Cát-xê</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">GMV TikTok Seller</th>
-                      <th className="py-2.5 px-3 font-semibold text-center">ROAS</th>
-                      <th className="py-2.5 px-3 font-semibold">Trạng Thái Thanh Toán</th>
-                      <th className="py-2.5 px-4 font-semibold text-center">Link Video</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {filteredBookedVideos.slice(0, bookedVideosVisibleLimit).map((v) => (
-                      <tr
-                        key={v.code}
-                        onClick={() => setInspectVideo(v)}
-                        className="hover:bg-accent-soft transition cursor-pointer"
-                      >
-                        <td className="py-2.5 px-4 font-mono">
-                          <span className="font-semibold text-accent">{v.code}</span>
-                          <span className="block text-2xs text-ink-3">Air: {v.airDate}</span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-semibold text-ink">@{v.channelId}</div>
-                          <div className="text-2xs text-ink-3 truncate max-w-[160px]">
-                            SP: {v.productName}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-semibold text-ink">{v.storeName}</div>
-                          <div className="text-2xs text-ink-3">Brand: {v.brandName}</div>
-                        </td>
-                        <td className="py-2.5 px-3 font-semibold text-ink">{v.pic}</td>
-                        <td className="py-2.5 px-3">
-                          <span className="font-medium text-ink block">{v.format}</span>
-                          <span className="text-2xs text-ink-3">{v.videoType}</span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center">
-                          <span className="font-mono font-semibold text-2xs text-ink">
+            <div className="overflow-x-auto max-h-[540px]">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
+                  <tr>
+                    <th className="py-2.5 px-4 font-semibold">Mã Book &amp; Ngày Air</th>
+                    <th className="py-2.5 px-3 font-semibold">Kênh KOC &amp; Bậc KL</th>
+                    <th className="py-2.5 px-3 font-semibold">Gian Hàng &amp; PIC</th>
+                    <th className="py-2.5 px-3 font-semibold">Loại Hình &amp; Định Dạng</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Cát-xê</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">GMV Seller &amp; ROAS</th>
+                    <th className="py-2.5 px-3 font-semibold">Trạng Thái ĐNTT</th>
+                    <th className="py-2.5 px-4 font-semibold text-center">Link Video</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {filteredBookedVideos.slice(0, bookedVideosVisibleLimit).map((v) => (
+                    <tr
+                      key={v.code}
+                      onClick={() => setInspectVideo(v)}
+                      className="hover:bg-accent-soft transition cursor-pointer"
+                    >
+                      <td className="py-2.5 px-4 font-mono">
+                        <span className="font-semibold text-accent">{v.code}</span>
+                        <span className="block text-2xs text-ink-3">Air: {v.airDate}</span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-ink">@{v.channelId}</span>
+                          <span className="px-1.5 py-0.5 rounded bg-sunken font-mono font-semibold text-2xs text-ink">
                             {v.kl}
                           </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
-                          {formatVndShort(v.cost)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
-                          {formatVndShort(v.sellerGmv)}
-                          <span className="block text-2xs text-ink-3 font-normal">
-                            {v.sellerOrders} đơn · {v.views.toLocaleString('vi-VN')} views
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono">
+                        </div>
+                        <div className="text-2xs text-ink-3 truncate max-w-[160px]">
+                          SP: {v.productName}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-ink">{v.storeName}</div>
+                        <div className="text-2xs text-ink-3">{v.brandName} · PIC: {v.pic}</div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="font-medium text-ink block">{v.format}</span>
+                        <span className="text-2xs text-ink-3">{v.videoType}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                        {formatVndShort(v.cost)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className="font-semibold text-positive">{formatVndShort(v.sellerGmv)}</span>
                           <span
-                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
+                            className={`px-1.5 py-0.5 rounded font-semibold text-2xs ${
                               v.roas >= 4.5
                                 ? 'bg-positive-soft text-positive'
                                 : 'bg-accent-soft text-accent'
@@ -2741,143 +2669,61 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           >
                             {v.roas}x
                           </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <Status tone={v.pipeline === 'Done' ? 'positive' : v.pipeline === 'Huỷ' ? 'critical' : 'warning'}>
-                            {v.pipeline}
-                          </Status>
-                          {v.slaWarning !== 'Đúng hạn' && (
-                            <span className="block text-2xs text-critical font-semibold mt-0.5">
-                              {v.slaWarning}
-                            </span>
-                          )}
-                        </td>
-                        <td
-                          className="py-2.5 px-4 text-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {v.linkAir ? (
-                            <a
-                              href={v.linkAir}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-ink text-white text-2xs font-semibold hover:bg-accent transition"
-                            >
-                              Xem TikTok <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <span className="text-ink-3">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredBookedVideos.length > 30 && (
-                  <div className="p-3 bg-canvas border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-2 px-4">
-                    <span>
-                      Đang hiển thị <strong>{Math.min(bookedVideosVisibleLimit, filteredBookedVideos.length)}</strong> / <strong>{filteredBookedVideos.length}</strong> video đã booking
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : filteredBookedVideos.length)}
-                      className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
-                    >
-                      {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem toàn bộ ${filteredBookedVideos.length} video`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto max-h-[540px]">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
-                    <tr>
-                      <th className="py-2.5 px-4 font-semibold">Video ID & Tài Khoản TikTok</th>
-                      <th className="py-2.5 px-3 font-semibold">Chiến Dịch PGM/LGM</th>
-                      <th className="py-2.5 px-3 font-semibold">Loại Ủy Quyền</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Chi Phí Ads</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Doanh Thu GMV</th>
-                      <th className="py-2.5 px-3 font-semibold text-center">ROAS</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Đơn Hàng / CPA</th>
-                      <th className="py-2.5 px-3 font-semibold text-center">CTR / CVR</th>
-                      <th className="py-2.5 px-4 font-semibold text-center">Giữ Chân 2s / 6s</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {filteredSellerCreatives.slice(0, sellerCreativesVisibleLimit).map((c) => (
-                      <tr key={c.id} className="hover:bg-canvas transition">
-                        <td className="py-2.5 px-4">
-                          <div className="font-mono font-semibold text-ink">ID: {c.videoId}</div>
-                          <div className="text-2xs text-accent font-semibold">@{c.tiktokAccount}</div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="font-semibold text-ink">{c.campaignName}</div>
-                          <div className="text-2xs text-ink-3">Gian hàng: {c.storeName}</div>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="text-2xs font-medium text-ink-2">
-                            {c.authorizationType}
+                        </div>
+                        <span className="block text-2xs text-ink-3 font-normal">
+                          {v.sellerOrders} đơn · {v.views.toLocaleString('vi-VN')} views
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Status tone={v.pipeline === 'Done' ? 'positive' : v.pipeline === 'Huỷ' ? 'critical' : 'warning'}>
+                          {v.pipeline}
+                        </Status>
+                        {v.slaWarning !== 'Đúng hạn' && (
+                          <span className="block text-2xs text-critical font-semibold mt-0.5">
+                            {v.slaWarning}
                           </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
-                          {formatVndShort(c.cost)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
-                          {formatVndShort(c.gmv)}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono">
-                          <span
-                            className={`px-2 py-0.5 rounded font-semibold ${
-                              c.roas >= 5
-                                ? 'bg-positive-soft text-positive'
-                                : 'bg-accent-soft text-accent'
-                            }`}
+                        )}
+                      </td>
+                      <td
+                        className="py-2.5 px-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {v.linkAir ? (
+                          <a
+                            href={v.linkAir}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-ink text-white text-2xs font-semibold hover:bg-accent transition"
                           >
-                            {c.roas}x
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono">
-                          <div className="font-semibold text-ink">{c.orders} đơn</div>
-                          <div className="text-2xs text-ink-3">CPA: {formatVndShort(c.cpa)}</div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono text-2xs">
-                          <span className="text-ink font-semibold">{c.ctr}%</span> /{' '}
-                          <span className="text-positive font-semibold">{c.cvr}%</span>
-                        </td>
-                        <td className="py-2.5 px-4 text-center font-mono text-2xs">
-                          <span className=".5 text-accent font-semibold">
-                            2s: {c.hookRate2s}%
-                          </span>{' '}
-                          <span className=".5 text-accent font-semibold">
-                            6s: {c.viewRate6s}%
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredSellerCreatives.length > 30 && (
-                  <div className="p-3 bg-canvas border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-2 px-4">
-                    <span>
-                      Đang hiển thị <strong>{Math.min(sellerCreativesVisibleLimit, filteredSellerCreatives.length)}</strong> / <strong>{filteredSellerCreatives.length}</strong> dòng creative TikTok Seller
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSellerCreativesVisibleLimit(sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 30 : filteredSellerCreatives.length)}
-                      className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
-                    >
-                      {sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 'Thu gọn về 30 dòng' : `Xem toàn bộ ${filteredSellerCreatives.length} dòng`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                            Xem TikTok <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-ink-3">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredBookedVideos.length > 30 && (
+                <div className="p-3 bg-canvas border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-2 px-4">
+                  <span>
+                    Đang hiển thị <strong>{Math.min(bookedVideosVisibleLimit, filteredBookedVideos.length)}</strong> / <strong>{filteredBookedVideos.length}</strong> video đã booking
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : filteredBookedVideos.length)}
+                    className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
+                  >
+                    {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem toàn bộ ${filteredBookedVideos.length} video`}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================================= */}
       {/* ========================================================================= */}
       {/* TAB 3: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40–W45), ĐỘ ĐỒNG LOẠT & TIẾN ĐỘ VIDEO */}
       {/* ========================================================================= */}
@@ -2890,74 +2736,34 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             selectedGovernanceGlobal={selectedGovernance}
           />
 
-          {/* TRỌNG TÂM 2: PHỄU TIẾN ĐỘ PIPELINE 786 ĐƠN VIDEO & KIỂM SOÁT SLA VẬN HÀNH */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Trái 7 cột: Băng tải tiến độ thực thi & hoàn tất chứng từ 786 đơn video File 3.2 */}
-            <div className="lg:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-ink">
-                    Tiến Độ Thực Thi &amp; SLA Chứng Từ 786 Đơn Video
-                  </h3>
-                  </div>
-                <span className=".5 text-xs font-mono font-semibold text-positive -positive/20">
-                  Đã Air &amp; Done: 566/786 (72,0%)
-                </span>
-              </div>
-
-              <div className="space-y-2.5 mt-3">
-                {B2C_VIDEO_PIPELINE_BREAKDOWN.map((stage) => {
-                  const pct = Number(((stage.count / 786) * 100).toFixed(1));
-                  const isDone = stage.pipeline === 'Done';
-                  const isPendingPayment = stage.pipeline === 'Chưa làm ĐNTT';
-                  const isProcessingPayment = stage.pipeline === 'Làm ĐNTT' || stage.pipeline === 'Tạm ứng';
-                  const barColor = isDone
-                    ? 'bg-positive'
-                    : isPendingPayment
-                    ? 'bg-warning'
-                    : isProcessingPayment
-                    ? 'bg-accent'
-                    : stage.pipeline === 'Huỷ'
-                    ? 'bg-critical'
-                    : 'bg-accent';
-
-                  return (
-                    <div key={stage.pipeline} className="p-2.5 rounded-lg bg-canvas border border-line">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${barColor}`} />
-                          <span className="font-semibold text-ink">{stage.pipeline}</span>
-                          {isPendingPayment && (
-                            <span className=".5 py-0.2 text-2xs font-semibold text-warning">
-                              Cần nhắc PIC hoàn tất hồ sơ 48h
-                            </span>
-                          )}
-                        </div>
-                        <div className="font-mono text-xs">
-                          <strong className="text-ink">{stage.count} đơn</strong>{' '}
-                          <span className="text-ink-3">({pct}%)</span> ·{' '}
-                          <strong className="text-accent">{formatVndShort(stage.totalCost)}</strong>
-                        </div>
-                      </div>
-                      <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                        <div
-                          className={`data-bar h-full rounded-full ${barColor}`}
-                          style={{ width: `${Math.max(pct, 2)}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+          {/* TRỌNG TÂM 2: ĐỐI SÁNH SLA GIỮA 2 LUỒNG QUẢN TRỊ B2C */}
+          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+              <h3 className="text-sm font-semibold text-ink">
+                Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-positive hover:text-positive cursor-pointer"
+                >
+                  Mở Dashboard Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                {onNavigateToTab && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToTab('performance-p3')}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent cursor-pointer"
+                  >
+                    Mở bảng điểm 4P
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
-
-            {/* Phải 5 cột: Đối sánh SLA & Tiến độ giữa 2 luồng quản trị (8 gian có Leader vs 61 gian Trực tiếp) */}
-            <div className="lg:col-span-5 bg-white rounded-xl border border-line p-5 shadow-xs flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
-                </h3>
-                <div className="mt-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Luồng 1: 8 gian hàng có Leader Nguyễn Thị Ngọc Tâm */}
                   <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20">
                     <div className="flex items-center justify-between">
@@ -3009,29 +2815,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-positive hover:text-positive cursor-pointer"
-                >
-                  Mở Dashboard Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                {onNavigateToTab && (
-                  <button
-                    type="button"
-                    onClick={() => onNavigateToTab('performance-p3')}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent cursor-pointer"
-                  >
-                    Mở bảng điểm 4P
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -3626,131 +3409,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Bóc tách Gian hàng & Video thực tế của Nhân viên đang chọn */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
-                {/* Trái 6 cột: Danh sách các gian hàng của nhân viên này kèm % Spend & Số Video Air */}
-                <div className="lg:col-span-6 rounded-xl border border-line overflow-hidden">
-                  <div className="px-4 py-2.5 bg-canvas border-b border-line flex items-center justify-between">
-                    <span className="text-xs font-semibold text-ink">
-                      Gian Hàng Do {focusedStaffProfile.name} Phụ Trách ({focusedStaffProfile.staffStores.length} Gian)
-                    </span>
-                  </div>
-                  {focusedStaffProfile.staffStores.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-ink-3">
-                      Nhân sự thực thi chuyên biệt theo đợt Booking / FOC hỗ trợ liên gian hàng (Xem danh sách video bên phải).
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto max-h-60">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
-                          <tr>
-                            <th className="py-2 px-3">Gian Hàng</th>
-                            <th className="py-2 px-2 text-right">Trần Net</th>
-                            <th className="py-2 px-2 text-right">Thực Chi &amp; % Spend</th>
-                            <th className="py-2 px-3 text-center">Video Air / Paid</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-line">
-                          {focusedStaffProfile.staffStores.map((s) => {
-                            const net = s.budgetNet || s.monthlyBudget || 0;
-                            const spent = s.actualSpentNet || 0;
-                            const pct = net > 0 ? Math.round((spent / net) * 1000) / 10 : spent > 0 ? 999 : 0;
-                            return (
-                              <tr
-                                key={s.id}
-                                onClick={() => setInspectStore(s)}
-                                className="hover:bg-accent-soft cursor-pointer"
-                              >
-                                <td className="py-2 px-3">
-                                  <div className="font-semibold text-ink">{s.storeName}</div>
-                                  <div className="text-2xs text-ink-3">{s.platform}</div>
-                                </td>
-                                <td className="py-2 px-2 text-right font-mono text-accent font-semibold">
-                                  {formatVndShort(net)}
-                                </td>
-                                <td className="py-2 px-2 text-right font-mono">
-                                  <span className="font-semibold text-ink">{formatVndShort(spent)}</span>{' '}
-                                  <span
-                                    className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
-                                      pct > 100 ? 'bg-critical-soft text-critical' : 'bg-accent-soft text-accent'
-                                    }`}
-                                  >
-                                    {pct === 999 ? 'Ngoài KH' : `${pct}%`}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-3 text-center font-mono">
-                                  <strong className="text-positive">{s.actualAiredVideos || 0} air</strong> /{' '}
-                                  <span className="text-ink-3">{s.targetPaidVideos || 0}</span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                {/* Phải 6 cột: Danh sách các Video đã book & ROAS của nhân viên này */}
-                <div className="lg:col-span-6 rounded-xl border border-line overflow-hidden">
-                  <div className="px-4 py-2.5 bg-canvas border-b border-line flex items-center justify-between">
-                    <span className="text-xs font-semibold text-ink">
-                      Video Đã Book &amp; Hiệu Quả Bán Hàng Của {focusedStaffProfile.name}
-                    </span>
-                    <span className="text-2xs font-mono text-positive font-semibold">
-                      Tổng Air: {focusedStaffProfile.actualAiredVideos}/{focusedStaffProfile.actualBookedVideos} đơn
-                    </span>
-                  </div>
-                  {focusedStaffProfile.staffVideos.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-ink-3">
-                      Nhân sự đã thực hiện <strong>{focusedStaffProfile.actualBookedVideos} đơn book</strong> ({focusedStaffProfile.actualAiredVideos} video đã air) trên hệ thống.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto max-h-60">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
-                          <tr>
-                            <th className="py-2 px-3">Mã Book &amp; KOC</th>
-                            <th className="py-2 px-2">Gian Hàng</th>
-                            <th className="py-2 px-2 text-right">Cát-xê</th>
-                            <th className="py-2 px-2 text-right">GMV Seller</th>
-                            <th className="py-2 px-3 text-center">ROAS</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-line">
-                          {focusedStaffProfile.staffVideos.slice(0, 20).map((v) => (
-                            <tr
-                              key={v.code}
-                              onClick={() => setInspectVideo(v)}
-                              className="hover:bg-accent-soft cursor-pointer"
-                            >
-                              <td className="py-2 px-3">
-                                <div className="font-mono font-semibold text-accent">{v.code}</div>
-                                <div className="text-2xs text-ink-2">@{v.channelId} ({v.kl})</div>
-                              </td>
-                              <td className="py-2 px-2 text-2xs font-medium text-ink">{v.storeName}</td>
-                              <td className="py-2 px-2 text-right font-mono font-semibold">{formatVndShort(v.cost)}</td>
-                              <td className="py-2 px-2 text-right font-mono text-positive font-semibold">
-                                {formatVndShort(v.sellerGmv)}
-                              </td>
-                              <td className="py-2 px-3 text-center font-mono">
-                                <span
-                                  className={`text-2xs font-mono font-semibold text-ink-2${
-                                    v.roas >= 3.5 ? 'bg-positive-soft text-positive' : 'bg-sunken text-ink-2'
-                                  }`}
-                                >
-                                  {v.roas}x
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
                 </div>
               </div>
                 </>

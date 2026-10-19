@@ -687,8 +687,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             },
             { key: 'BRANDS', label: `Phân bổ Nhân sự theo Brand · ${brands.length}` },
             { key: 'COEFFICIENTS', label: `Hệ số Gian hàng (Bảng 2) · ${b2cPlanStores.length}` },
-            { key: 'STAFF', label: `Cân bằng tải & Danh bạ · ${staffList.length}` },
-            { key: 'TASKS', label: `Giao việc & Chỉ đạo · ${tasks.length}` },
             { key: 'ASSIGNMENT_HISTORY', label: `Lịch sử PIC & Bàn giao · ${INITIAL_STORE_ASSIGNMENT_HISTORY.length}` },
           ]}
         />
@@ -710,7 +708,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <ArrowRight className="w-3.5 h-3.5 text-ink-3" />
             </button>
           )}
-          <Button icon={Send} onClick={() => setIsTaskModalOpen(true)}>Giao việc</Button>
           <Button
             variant="primary"
             icon={Plus}
