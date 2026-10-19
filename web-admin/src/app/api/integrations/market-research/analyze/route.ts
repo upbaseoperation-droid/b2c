@@ -8,6 +8,7 @@ import {
   type LiveScrapedCompetitorSignal,
   type LiveWebInspectionResult,
 } from '@/lib/brandMarketResearchEngine';
+import { scrapeLiveBrandWebIntelligence } from '@/lib/liveBrandWebScraper';
 import { listProfiles } from '@/lib/brands/store';
 import { brandKey } from '@/lib/brands/types';
 import {
@@ -41,6 +42,7 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
   kocItems: LiveScrapedCompetitorKocItem[];
   rawProfile: TikTokCompetitorProfileSummary | null;
   rawResults: TikTokCompetitorKocResult[];
+  minedCommentTexts: string[];
 }> {
   try {
     const res = await discoverCompetitorKocs(brandNameOrQuery, {
@@ -53,6 +55,7 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
         kocItems: [],
         rawProfile: res.competitorProfile || null,
         rawResults: [],
+        minedCommentTexts: [],
       };
     }
 
@@ -70,6 +73,9 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
           10
       ) / 10;
 
+    const latestVideoUrl =
+      res.results[0]?.competitorCollaboration?.latestCollabVideoUrl;
+
     const signal: LiveScrapedCompetitorSignal = {
       handle: res.competitorProfile.handle || brandNameOrQuery,
       brandName:
@@ -80,8 +86,7 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
       avgEngagementRatePct: avgEr,
       topPromotedProduct:
         res.results[0]?.competitorCollaboration?.competitorProductPromoted,
-      latestVideoUrl:
-        res.results[0]?.competitorCollaboration?.latestCollabVideoUrl,
+      latestVideoUrl,
     };
 
     const kocItems: LiveScrapedCompetitorKocItem[] = res.results.map((r) => ({
@@ -96,11 +101,33 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
       publishedAt: r.competitorCollaboration.latestCollabPublishedAt,
     }));
 
+    // Tự động cào bình luận thực tế từ video dẫn đầu để phân tích tiếng nói khách hàng
+    let minedCommentTexts: string[] = [];
+    const videoWithComments = res.results.find(
+      (r) =>
+        r.competitorCollaboration?.latestCollabVideoUrl &&
+        r.competitorCollaboration.latestCollabVideoUrl.includes('/video/')
+    );
+    if (videoWithComments?.competitorCollaboration.latestCollabVideoUrl) {
+      try {
+        const scrapedComments = await scrapeTikTokVideoComments(
+          videoWithComments.competitorCollaboration.latestCollabVideoUrl,
+          35
+        );
+        minedCommentTexts = (scrapedComments.comments || [])
+          .map((c) => c.text?.trim())
+          .filter((t): t is string => Boolean(t && t.length >= 4));
+      } catch {
+        // Fallback nếu video khóa bình luận
+      }
+    }
+
     return {
       signal,
       kocItems,
       rawProfile: res.competitorProfile,
       rawResults: res.results,
+      minedCommentTexts,
     };
   } catch {
     return {
@@ -108,6 +135,7 @@ async function fetchPrimaryBrandLiveTikTok(brandNameOrQuery: string): Promise<{
       kocItems: [],
       rawProfile: null,
       rawResults: [],
+      minedCommentTexts: [],
     };
   }
 }
@@ -181,11 +209,15 @@ export async function GET(req: NextRequest) {
 
     const [
       savedBrandProfile,
+      liveAutoWebIntel,
       liveWebInspection,
       liveScrapedCompetitors,
       primaryTikTok,
     ] = await Promise.all([
       resolveSavedBrandProfile(brandQuery),
+      scrapeLiveBrandWebIntelligence(brandQuery, websiteUrl.trim() || undefined).catch(
+        () => null
+      ),
       websiteUrl.trim()
         ? inspectCompetitorWebsiteUrl(websiteUrl.trim()).catch(() => null)
         : Promise.resolve(null),
@@ -193,11 +225,21 @@ export async function GET(req: NextRequest) {
       fetchPrimaryBrandLiveTikTok(brandQuery),
     ]);
 
+    const resolvedWebInspection =
+      liveWebInspection ||
+      (liveAutoWebIntel?.officialWebsiteUrl
+        ? await inspectCompetitorWebsiteUrl(liveAutoWebIntel.officialWebsiteUrl).catch(
+            () => null
+          )
+        : null);
+
     const dossier = generateBrandMarketResearchDossier({
       brandNameOrQuery: brandQuery,
       customCategory: category,
       customCompetitorInputs,
-      liveWebInspection,
+      liveWebInspection: resolvedWebInspection,
+      liveAutoWebIntel,
+      liveMinedCommentTexts: primaryTikTok.minedCommentTexts,
       savedBrandProfile,
       liveScrapedCompetitors,
       primaryLiveTikTokSignal: primaryTikTok.signal,
@@ -226,7 +268,7 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/integrations/market-research/analyze
  * Hỗ trợ 3 chế độ:
- * 1. mode = 'BRAND_DOSSIER': Phân tích tổng thể 4P, Định vị, Thực thi nội bộ File 4.1/3.2/3.5 & Ma trận Đối thủ
+ * 1. mode = 'BRAND_DOSSIER': Phân tích tổng thể 4P, Định vị, Thực thi nội bộ File 4.1/3.2/3.5 & Ma trận Đối thủ (Cào tự động đa nguồn)
  * 2. mode = 'INSPECT_URL': Quét trực tiếp trang web thương hiệu / trang sản phẩm đối thủ
  * 3. mode = 'MINE_REVIEWS': Đào bình luận khách hàng từ link video TikTok thực tế + danh sách đánh giá Shopee/TikTok
  */
@@ -293,7 +335,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Mặc định: BRAND_DOSSIER
+    // Mặc định: BRAND_DOSSIER (Cào tự động đa nguồn)
     const brandNameOrQuery = String(body.brandName || body.query || 'Kutieskin').trim();
     const customCategory = body.category ? String(body.category).trim() : undefined;
     const websiteUrl = body.websiteUrl
@@ -308,11 +350,15 @@ export async function POST(req: NextRequest) {
 
     const [
       savedBrandProfile,
+      liveAutoWebIntel,
       liveWebInspection,
       liveScrapedCompetitors,
       primaryTikTok,
     ] = await Promise.all([
       resolveSavedBrandProfile(brandNameOrQuery),
+      scrapeLiveBrandWebIntelligence(brandNameOrQuery, websiteUrl || undefined).catch(
+        () => null
+      ),
       websiteUrl
         ? inspectCompetitorWebsiteUrl(websiteUrl).catch(() => null)
         : Promise.resolve<LiveWebInspectionResult | null>(null),
@@ -320,11 +366,21 @@ export async function POST(req: NextRequest) {
       fetchPrimaryBrandLiveTikTok(brandNameOrQuery),
     ]);
 
+    const resolvedWebInspection =
+      liveWebInspection ||
+      (liveAutoWebIntel?.officialWebsiteUrl
+        ? await inspectCompetitorWebsiteUrl(liveAutoWebIntel.officialWebsiteUrl).catch(
+            () => null
+          )
+        : null);
+
     const dossier = generateBrandMarketResearchDossier({
       brandNameOrQuery,
       customCategory,
       customCompetitorInputs: rawCompetitors,
-      liveWebInspection,
+      liveWebInspection: resolvedWebInspection,
+      liveAutoWebIntel,
+      liveMinedCommentTexts: primaryTikTok.minedCommentTexts,
       savedBrandProfile,
       liveScrapedCompetitors,
       primaryLiveTikTokSignal: primaryTikTok.signal,
