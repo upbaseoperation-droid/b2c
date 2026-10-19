@@ -509,6 +509,38 @@ function checkNameIdentityMatch(
   return false;
 }
 
+function parseFollowerCountFromText(text: string): number {
+  if (!text) return 0;
+  // Match patterns like "2.446.010 người theo dõi", "243K người theo dõi", "17,4K người theo dõi", "1,009 người theo dõi", "1.2M followers"
+  const m = text.match(/([\d.,]+)\s*([kKmM]|triệu|nghìn|ngàn)?\s*(?:người theo dõi|followers|lượt thích)/i);
+  if (!m) return 0;
+  const rawNum = m[1];
+  const suffix = (m[2] || '').toLowerCase();
+
+  if (suffix === 'k' || suffix === 'nghìn' || suffix === 'ngàn') {
+    const val = parseFloat(rawNum.replace(',', '.'));
+    return Number.isFinite(val) ? Math.round(val * 1000) : 0;
+  }
+  if (suffix === 'm' || suffix === 'triệu') {
+    const val = parseFloat(rawNum.replace(',', '.'));
+    return Number.isFinite(val) ? Math.round(val * 1_000_000) : 0;
+  }
+
+  // Otherwise remove thousand separators (. or ,)
+  const digitsOnly = rawNum.replace(/[.,]/g, '');
+  const parsed = parseInt(digitsOnly, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function isExplicitOfficialSource(sourceLabel: string): boolean {
+  return (
+    sourceLabel.includes('Bio') ||
+    sourceLabel.includes('YouTube') ||
+    sourceLabel.includes('danh bạ') ||
+    sourceLabel.includes('Đồng bộ từ tài khoản Instagram')
+  );
+}
+
 async function verifyLiveSocialCandidate(
   cand: SocialChannelCandidate,
   tiktokHandle: string,
@@ -518,6 +550,8 @@ async function verifyLiveSocialCandidate(
   const store = getSharedCrawlerStore();
   return store.searchLimiter.run(async () => {
     try {
+      const explicitSource = isExplicitOfficialSource(cand.sourceLabel);
+
       if (cand.platform === 'SHOPEE') {
         const bare = cand.handle.replace(/^@+/, '');
         const res = await fetch(
@@ -532,11 +566,10 @@ async function verifyLiveSocialCandidate(
           }
         );
         if (!res.ok) {
-          return cand.confidence === 'CAO' ? cand : null;
+          return cand.sourceLabel.includes('danh bạ') ? cand : null;
         }
         const json: any = await res.json();
         if (json?.error !== 0 || !json?.data) {
-          // Shop username does not exist on Shopee!
           return null;
         }
         const d = json.data;
@@ -545,13 +578,7 @@ async function verifyLiveSocialCandidate(
         const items = typeof d.item_count === 'number' ? d.item_count : 0;
         const desc = typeof d.description === 'string' ? d.description : '';
 
-        // Filter out dead/random buyer accounts with 0 items and < 10 followers unless explicitly extracted from KOC bio/saved
-        const isExplicitBioOrSaved =
-          cand.sourceLabel.includes('Bio') ||
-          cand.sourceLabel.includes('YouTube') ||
-          cand.sourceLabel.includes('danh bạ');
-
-        if (!isExplicitBioOrSaved && items === 0 && followers < 20) {
+        if (!explicitSource && items === 0 && followers < 20) {
           return null;
         }
 
@@ -559,16 +586,17 @@ async function verifyLiveSocialCandidate(
           checkNameIdentityMatch(shopName, bare, tiktokHandle, stageName, realName) ||
           checkNameIdentityMatch(desc, bare, tiktokHandle, stageName, realName);
 
-        if (!isExplicitBioOrSaved && !isNameMatched && followers < 100) {
+        if (!explicitSource && !isNameMatched && followers < 100) {
           return null;
         }
 
         return {
           ...cand,
           displayName: shopName,
-          confidence: isExplicitBioOrSaved || isNameMatched ? 'CAO' : 'TRUNG_BÌNH',
+          confidence: explicitSource || isNameMatched ? 'CAO' : 'TRUNG_BÌNH',
           evidence: `${followers.toLocaleString('vi-VN')} người theo dõi • ${items} sản phẩm`,
           isVerifiedLive: true,
+          followerCount: followers,
         };
       }
 
@@ -611,19 +639,24 @@ async function verifyLiveSocialCandidate(
         if (!ogTitle || rawTitle === 'Instagram' || rawTitle.includes('Page Not Found')) {
           return cand.sourceLabel.includes('danh bạ') ? cand : null;
         }
-        // Extract display name before "(@handle)"
         const nameMatch = ogTitle.match(/^(.+?)\s*\(@[a-zA-Z0-9._]+\)/);
         const displayName = nameMatch ? nameMatch[1].trim() : ogTitle.split('•')[0].trim();
-        const statsSnippet = ogDesc.split(/[–-]\s*Xem/i)[0].trim();
+        const statsSnippet = ogDesc.split(/[–-]\s*Xem/i)[0].replace(/\s+/g, ' ').trim();
+        const followers = parseFollowerCountFromText(statsSnippet);
         const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+
+        // Filter out non-explicit handle guesses that have < 50 followers or 0 posts (random personal squats)
+        if (!explicitSource && (followers < 50 || !isMatched)) {
+          return null;
+        }
 
         return {
           ...cand,
           displayName: displayName || stageName,
-          confidence:
-            cand.confidence === 'CAO' || isMatched ? 'CAO' : 'TRUNG_BÌNH',
+          confidence: explicitSource || (isMatched && followers >= 200) ? 'CAO' : 'TRUNG_BÌNH',
           evidence: statsSnippet || 'Tài khoản Instagram đang hoạt động',
           isVerifiedLive: true,
+          followerCount: followers,
         };
       }
 
@@ -639,16 +672,24 @@ async function verifyLiveSocialCandidate(
         }
         const nameMatch = ogTitle.match(/^(.+?)\s*\(@[a-zA-Z0-9._]+\)/);
         const displayName = nameMatch ? nameMatch[1].trim() : ogTitle.split('•')[0].trim();
-        const statsSnippet = ogDesc.split(/\.?\s*Xem các cuộc trò chuyện/i)[0].trim();
+        const statsSnippet = ogDesc
+          .split(/\.?\s*Xem các cuộc trò chuyện/i)[0]
+          .replace(/\s+/g, ' ')
+          .trim();
+        const followers = parseFollowerCountFromText(statsSnippet);
         const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+
+        if (!explicitSource && (followers < 20 || !isMatched)) {
+          return null;
+        }
 
         return {
           ...cand,
           displayName: displayName || stageName,
-          confidence:
-            cand.confidence === 'CAO' || isMatched ? 'CAO' : 'TRUNG_BÌNH',
+          confidence: explicitSource || (isMatched && followers >= 100) ? 'CAO' : 'TRUNG_BÌNH',
           evidence: statsSnippet || 'Tài khoản Threads đang hoạt động',
           isVerifiedLive: true,
+          followerCount: followers,
         };
       }
 
@@ -663,20 +704,31 @@ async function verifyLiveSocialCandidate(
           return cand.sourceLabel.includes('danh bạ') ? cand : null;
         }
         const displayName = ogTitle.trim();
-        // Clean ogDesc: "Võ Hà Linh. 2.446.010 người theo dõi · 119.038 người đang nói về điều này..."
-        const statsPart = ogDesc
+        const cleanedDesc = ogDesc
           .replace(new RegExp(`^${displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`, 'i'), '')
-          .split('.')[0]
+          .replace(/\s+/g, ' ')
           .trim();
+        const followerPhraseMatch = cleanedDesc.match(
+          /([\d.,]+\s*(?:[kKmM]|triệu|nghìn)?\s*người theo dõi(?:\s*·\s*[\d.,]+\s*người đang nói về điều này)?)/i
+        );
+        const statsPart = followerPhraseMatch
+          ? followerPhraseMatch[1]
+          : cleanedDesc.split(/(?<=\D)\.\s+/)[0].slice(0, 95).trim();
+        const followers = parseFollowerCountFromText(cleanedDesc);
         const isMatched = checkNameIdentityMatch(displayName, cand.handle, tiktokHandle, stageName, realName);
+
+        // Filter out non-explicit handle guesses that have no public follower stats ("đang ở trên Facebook") or mismatched name
+        if (!explicitSource && (followers < 50 || !isMatched)) {
+          return null;
+        }
 
         return {
           ...cand,
           displayName: displayName || realName || stageName,
-          confidence:
-            cand.confidence === 'CAO' || isMatched ? 'CAO' : 'TRUNG_BÌNH',
+          confidence: explicitSource || (isMatched && followers >= 500) ? 'CAO' : 'TRUNG_BÌNH',
           evidence: statsPart || 'Trang / Trang cá nhân Facebook đang hoạt động',
           isVerifiedLive: true,
+          followerCount: followers,
         };
       }
 
@@ -853,7 +905,6 @@ export async function discoverKocSocialChannels(params: {
     );
     shopeeFromBio.forEach(addCandidate);
 
-    // Nếu trong bio hoặc bioLink có trang Bio tổng hợp (linktr.ee, beacons.ai, bio.link, instabio.cc, passio.eco...)
     const bioHubMatches = [
       ...combinedBioSource.matchAll(
         /https?:\/\/(?:[a-zA-Z0-9-]+\.)?(?:linktr\.ee|beacons\.ai|bio\.link|instabio\.cc|msha\.ke|lnk\.bio|passio\.eco|carrd\.co)\/[a-zA-Z0-9._/-]*/gi
@@ -936,15 +987,13 @@ export async function discoverKocSocialChannels(params: {
       url: `https://www.threads.net/@${bareIg}`,
       displayName: igCand.displayName || stageName,
       confidence: igCand.confidence,
-      sourceLabel:
-        igCand.confidence === 'CAO'
-          ? 'Đồng bộ từ tài khoản Instagram của KOC'
-          : igCand.sourceLabel,
+      sourceLabel: isExplicitOfficialSource(igCand.sourceLabel)
+        ? 'Đồng bộ từ tài khoản Instagram của KOC'
+        : igCand.sourceLabel,
     });
   }
 
-  // 5. XÁC THỰC TỒN TẠI TRỰC TIẾP (LIVE PROFILE VERIFICATION) TRÊN TẤT CẢ CÁC KÊNH
-  // Loại bỏ hoàn toàn các link chết / 404 / tài khoản rác để chỉ đề xuất link đúng của KOC
+  // 5. XÁC THỰC TỒN TẠI TRỰC TIẾP (LIVE PROFILE VERIFICATION) & SẮP XẾP ƯU TIÊN TÀI KHOẢN CHÍNH THỨC
   const verifyPlatformList = async (platform: SocialPlatformKey): Promise<SocialChannelCandidate[]> => {
     const rawList = [...bucket[platform].values()].slice(0, 6);
     const verifiedResults = await Promise.all(
@@ -957,7 +1006,15 @@ export async function discoverKocSocialChannels(params: {
       if (a.isVerifiedLive !== b.isVerifiedLive) {
         return a.isVerifiedLive ? -1 : 1;
       }
-      return rankOrder[b.confidence] - rankOrder[a.confidence];
+      if (rankOrder[b.confidence] !== rankOrder[a.confidence]) {
+        return rankOrder[b.confidence] - rankOrder[a.confidence];
+      }
+      const aExplicit = isExplicitOfficialSource(a.sourceLabel) ? 1 : 0;
+      const bExplicit = isExplicitOfficialSource(b.sourceLabel) ? 1 : 0;
+      if (bExplicit !== aExplicit) {
+        return bExplicit - aExplicit;
+      }
+      return (b.followerCount || 0) - (a.followerCount || 0);
     });
 
     return valid.slice(0, 4);

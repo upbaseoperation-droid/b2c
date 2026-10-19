@@ -576,11 +576,17 @@ export function Pagination({
 export const PageActiveContext = React.createContext(true);
 
 const PAGE_ACTIONS_SLOT = 'page-actions';
+const PAGE_HEADER_NAV_SLOT = 'page-header-nav';
 const noopSubscribe = () => () => {};
 
 /** Chỗ đặt nút chính của trang, nằm cuối thanh trên. Chỉ khung app (TopHeader) đặt. */
 export function PageActionsSlot() {
   return <div id={PAGE_ACTIONS_SLOT} className="flex items-center gap-2 empty:hidden" />;
+}
+
+/** Chỗ đặt điều hướng phụ / bộ chọn ngữ cảnh cạnh tiêu đề trang. Chỉ khung app (TopHeader) đặt. */
+export function PageHeaderNavSlot() {
+  return <div id={PAGE_HEADER_NAV_SLOT} className="flex items-center gap-2 empty:hidden min-w-0" />;
 }
 
 /**
@@ -592,6 +598,20 @@ export function PageActions({ children }: { children: React.ReactNode }) {
   const target = useSyncExternalStore(
     noopSubscribe,
     () => document.getElementById(PAGE_ACTIONS_SLOT),
+    () => null,
+  );
+  if (!active || !target) return null;
+  return createPortal(children, target);
+}
+
+/**
+ * Đưa cụm điều hướng (nút quay lại, bộ chọn gian hàng/tháng/phiên bản) lên thẳng thanh trên cạnh tiêu đề trang.
+ */
+export function PageHeaderNav({ children }: { children: React.ReactNode }) {
+  const active = useContext(PageActiveContext);
+  const target = useSyncExternalStore(
+    noopSubscribe,
+    () => document.getElementById(PAGE_HEADER_NAV_SLOT),
     () => null,
   );
   if (!active || !target) return null;
