@@ -44,6 +44,7 @@ import { formatFollowers } from '../koc/kocUtils';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { KocChannelBriefMatcherModal } from '../koc/KocChannelBriefMatcherModal';
+import type { KocBriefAnalysisBackgroundJob } from '../../lib/kocChannelBriefAnalyzer';
 import { LinkAirCheckerPanel } from '../crawler/LinkAirCheckerPanel';
 import {
   CompetitorVideoScriptModal,
@@ -207,7 +208,39 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [briefMatcherOpen, setBriefMatcherOpen] = useState(false);
   const [briefMatcherHandles, setBriefMatcherHandles] = useState<string[]>([]);
   const [briefMatcherBrand, setBriefMatcherBrand] = useState('');
-  const [runningBriefJobsCount, setRunningBriefJobsCount] = useState(0);
+  const [briefAnalysisJobs, setBriefAnalysisJobs] = useState<KocBriefAnalysisBackgroundJob[]>([]);
+  const notifiedCompletedJobsRef = useRef<Set<string>>(new Set());
+  const runningBriefJobsCount = useMemo(
+    () =>
+      briefAnalysisJobs.filter(
+        (j) => j.status === 'QUEUED' || j.status === 'RUNNING'
+      ).length,
+    [briefAnalysisJobs]
+  );
+
+  const handleBriefJobsChange = (nextJobs: KocBriefAnalysisBackgroundJob[]) => {
+    setBriefAnalysisJobs((prev) => {
+      const prevRunningIds = new Set(
+        prev
+          .filter((j) => j.status === 'QUEUED' || j.status === 'RUNNING')
+          .map((j) => j.jobId)
+      );
+      for (const job of nextJobs) {
+        if (
+          job.status === 'COMPLETED' &&
+          prevRunningIds.has(job.jobId) &&
+          !notifiedCompletedJobsRef.current.has(job.jobId)
+        ) {
+          notifiedCompletedJobsRef.current.add(job.jobId);
+          onNotify?.(
+            `Hoàn tất phân tích ngầm ${job.handles.length} kênh KOC (${job.totalVideosScannedSoFar} video) cho Brand ${job.briefCriteria.brandName}`,
+            'success'
+          );
+        }
+      }
+      return nextJobs;
+    });
+  };
 
   const openScriptExtractorModal = (
     videoUrl: string,
@@ -1926,6 +1959,89 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         </div>
       </div>
 
+      {/* Thanh theo dõi trực tiếp các tiến trình Phân tích Kênh & Khớp Brief đang chạy ngầm */}
+      {briefAnalysisJobs.length > 0 && (
+        <div className="px-3.5 py-2.5 rounded-xl border border-accent/30 bg-surface space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <Target className="w-3.5 h-3.5 text-accent" />
+              <span>
+                Tiến trình Phân tích Kênh &amp; Khớp Brief chạy ngầm (
+                {briefAnalysisJobs.length} phiên)
+              </span>
+              {runningBriefJobsCount > 0 ? (
+                <Status tone="info">
+                  Đang quét {runningBriefJobsCount} tiến trình
+                </Status>
+              ) : (
+                <Status tone="positive">Tất cả đã hoàn tất</Status>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setBriefMatcherOpen(true)}
+            >
+              Mở bảng tiến trình &amp; Kết quả
+            </Button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-2">
+            {briefAnalysisJobs.slice(0, 4).map((job) => {
+              const isRunning =
+                job.status === 'QUEUED' || job.status === 'RUNNING';
+              return (
+                <div
+                  key={job.jobId}
+                  onClick={() => setBriefMatcherOpen(true)}
+                  className="p-2.5 rounded-lg border border-line bg-surface-2 hover:border-accent/50 cursor-pointer transition space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isRunning ? (
+                        <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin shrink-0" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-positive shrink-0" />
+                      )}
+                      <span className="font-semibold text-ink truncate">
+                        Brand: {job.briefCriteria.brandName}
+                      </span>
+                      <span className="text-2xs text-ink-3 font-code">
+                        ({job.completedHandlesCount}/{job.handles.length} kênh ·{' '}
+                        {job.totalVideosScannedSoFar} video)
+                      </span>
+                    </div>
+                    <span className="font-code text-2xs font-bold text-accent shrink-0">
+                      {job.progressPct}%
+                    </span>
+                  </div>
+
+                  <div className="h-1.5 w-full rounded-full bg-canvas overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        job.status === 'COMPLETED'
+                          ? 'bg-positive'
+                          : job.status === 'FAILED'
+                            ? 'bg-critical'
+                            : 'bg-accent'
+                      }`}
+                      style={{ width: `${Math.max(4, job.progressPct)}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 text-2xs text-ink-2">
+                    <span className="truncate">{job.currentStepLabel}</span>
+                    <span className="text-accent font-medium shrink-0">
+                      Xem báo cáo →
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* TAB 1: QUÉT KOC LÀM VIỆC CHO ĐỐI THỦ */}
       {activeTab === 'COMPETITOR_KOCS' && (
         <div className="space-y-3">
@@ -3033,12 +3149,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         onClose={() => setBriefMatcherOpen(false)}
         initialHandles={briefMatcherHandles}
         initialBrandName={briefMatcherBrand}
-        onJobsChange={(jobs) =>
-          setRunningBriefJobsCount(
-            jobs.filter((j) => j.status === 'QUEUED' || j.status === 'RUNNING')
-              .length
-          )
-        }
+        onJobsChange={handleBriefJobsChange}
       />
     </div>
   );

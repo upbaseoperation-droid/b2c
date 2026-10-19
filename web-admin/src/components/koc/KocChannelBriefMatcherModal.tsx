@@ -89,6 +89,10 @@ export const KocChannelBriefMatcherModal: React.FC<
   }, [onJobsChange]);
 
   useEffect(() => {
+    void fetchAllJobs();
+  }, [fetchAllJobs]);
+
+  useEffect(() => {
     if (!isOpen) return;
     void fetchAllJobs();
   }, [isOpen, fetchAllJobs]);
