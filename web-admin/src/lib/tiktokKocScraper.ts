@@ -11,9 +11,11 @@ import {
 } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
 import {
+  buildTargetKeywordProfile,
   compareTikTokVideoIdDesc,
   discoverRealTikTokVideoUrlsByQuery,
   discoverTikTokChannelVideoUrls,
+  doesInspectedVideoMatchTarget,
   fetchTikTokHtmlWithWafBypass,
   getSharedCrawlerStore,
   inspectLiveTikTokVideoPage,
@@ -946,14 +948,13 @@ export async function discoverTikTokKocsByHashtag(
   const effectiveTag = cleanTag || 'kemchongnang';
   const tagPageUrl = `https://www.tiktok.com/tag/${encodeURIComponent(effectiveTag)}`;
 
-  // 1. Tìm danh sách link video TikTok thực tế theo từ khóa / hashtag (bỏ qua các handle đã quét ở đợt trước)
-  const searchQueries = [
-    `tiktok ${cleanKeyword} review`,
-    `tiktok #${effectiveTag}`,
-  ];
-  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 3, {
+  // 1. Phân tách hashtag/từ khóa (kể cả từ ghép như #nousvietnam -> nous + nousvietnam) và tìm link video thực tế
+  const keywordProfile = buildTargetKeywordProfile(cleanKeyword || effectiveTag);
+  const searchQueries = keywordProfile.searchQueries;
+  const rawDiscovered = await discoverRealTikTokVideoUrlsByQuery(searchQueries, limit * 4, {
     excludeHandles: options?.excludeHandles,
     pageOffset: options?.pageOffset,
+    targetKeyword: cleanKeyword || effectiveTag,
   });
 
   // Gom theo từng KOC duy nhất (ưu tiên video mới đăng nhất của từng KOC)
@@ -966,13 +967,13 @@ export async function discoverTikTokKocsByHashtag(
     if (!uniqueByHandle.has(item.handle)) {
       uniqueByHandle.set(item.handle, item);
     }
-    if (uniqueByHandle.size >= limit + 4) break;
+    if (uniqueByHandle.size >= limit * 2 + 8) break;
   }
 
   const candidateEntries = [...uniqueByHandle.values()];
   const results: TikTokHashtagKocResult[] = [];
 
-  // 2. Truy vấn trực tiếp từng trang video trên TikTok (vượt WAF Slardar) để lấy cả hồ sơ KOC + chỉ số thực của video
+  // 2. Truy vấn trực tiếp từng trang video trên TikTok (vượt WAF Slardar) và đối soát nội dung video khớp đúng hashtag/từ khóa
   const chunkSize = 8;
   for (let i = 0; i < candidateEntries.length && results.length < limit; i += chunkSize) {
     const chunk = candidateEntries.slice(i, i + chunkSize);
@@ -983,6 +984,7 @@ export async function discoverTikTokKocsByHashtag(
     for (const inspected of inspectedChunk) {
       if (!inspected || results.length >= limit) continue;
       if (excludeSet.has(inspected.author.handle)) continue;
+      if (!doesInspectedVideoMatchTarget(inspected, cleanKeyword || effectiveTag)) continue;
 
       const baseResult = buildScrapedResultFromRealData(
         inspected.author.handle,
@@ -1267,14 +1269,15 @@ export async function discoverCompetitorKocs(
       : discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanCompetitorHandle}/video`], 5),
     discoverRealTikTokVideoUrlsByQuery(
       [
-        `tiktok ${cleanSearchBrand} review`,
-        `tiktok review ${cleanSearchBrand} chính hãng`,
-        `tiktok #${strippedBrandCore.replace(/\s+/g, '')}`,
+        `tiktok.com "${cleanSearchBrand}" review`,
+        `tiktok.com "${strippedBrandCore || cleanCompetitorHandle}" review`,
+        `tiktok.com "#${strippedBrandCore.replace(/\s+/g, '')}"`,
       ],
       limit * 4,
       {
         excludeHandles: options?.excludeHandles,
         pageOffset: options?.pageOffset,
+        targetKeyword: strippedBrandCore || cleanCompetitorHandle,
       }
     ),
   ]);
@@ -1363,6 +1366,12 @@ export async function discoverCompetitorKocs(
 
       const kocHandle = inspected.author.handle;
       if (kocHandle === cleanCompetitorHandle || excludeSet.has(kocHandle)) continue;
+      if (
+        !doesInspectedVideoMatchTarget(inspected, strippedBrandCore || cleanCompetitorHandle) &&
+        !doesInspectedVideoMatchTarget(inspected, cleanSearchBrand)
+      ) {
+        continue;
+      }
 
       const baseResult = buildScrapedResultFromRealData(
         kocHandle,
