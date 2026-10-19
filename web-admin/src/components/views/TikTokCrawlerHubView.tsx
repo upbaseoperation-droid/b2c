@@ -179,6 +179,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [scraperModalOpen, setScraperModalOpen] = useState(false);
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
   const [videoInspectorOpen, setVideoInspectorOpen] = useState(false);
+  const [scriptModalOpen, setScriptModalOpen] = useState(false);
+  const [scriptModalUrl, setScriptModalUrl] = useState('');
+  const [scriptModalContext, setScriptModalContext] = useState<
+    ScriptExtractFallbackContext | undefined
+  >(undefined);
+
+  const openScriptExtractorModal = (
+    videoUrl: string,
+    ctx?: ScriptExtractFallbackContext
+  ) => {
+    setScriptModalUrl(videoUrl);
+    setScriptModalContext(ctx);
+    setScriptModalOpen(true);
+  };
 
   // Làm mới toàn bộ kết quả từ lần trước mỗi khi người dùng nhấn vào màn hình Crawler
   const isPageActive = useContext(PageActiveContext);
@@ -1141,8 +1155,26 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span>{c.latestCollabCaption}</span>
               <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
             </a>
-            <div className="flex items-center gap-2 text-2xs text-ink-3 tabular-nums">
+            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
               <span>{formatDate(c.latestCollabPublishedAt)}</span>
+              <span>·</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openScriptExtractorModal(c.latestCollabVideoUrl, {
+                    handle: r.handle,
+                    nickname: r.channelProfile.nickname,
+                    caption: c.latestCollabCaption,
+                    productPromoted: c.competitorProductPromoted,
+                    views: c.latestCollabViews,
+                    likes: r.engagementMetrics.avgLikes,
+                  });
+                }}
+                className="text-accent hover:underline font-semibold"
+              >
+                Tách lời thoại &amp; Hook
+              </button>
               <span>·</span>
               <button
                 type="button"
@@ -1279,8 +1311,25 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span>{v.captionSnippet}</span>
               <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
             </a>
-            <div className="flex items-center gap-2 text-2xs text-ink-3 tabular-nums">
+            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
               <span>{formatDate(v.publishedAt)}</span>
+              <span>·</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openScriptExtractorModal(v.videoUrl, {
+                    handle: r.handle,
+                    nickname: r.channelProfile.nickname,
+                    caption: v.captionSnippet,
+                    views: v.views,
+                    likes: v.likes,
+                  });
+                }}
+                className="text-accent hover:underline font-semibold"
+              >
+                Tách lời thoại &amp; Hook
+              </button>
               <span>·</span>
               <button
                 type="button"
@@ -1557,6 +1606,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             }}
           >
             Cào kênh theo @handle
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={FileText}
+            onClick={() => openScriptExtractorModal('')}
+          >
+            Tách lời thoại &amp; Hook
           </Button>
           <Button
             size="sm"
@@ -2562,6 +2619,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       <TikTokVideoInspectorModal
         isOpen={videoInspectorOpen}
         onClose={() => setVideoInspectorOpen(false)}
+      />
+
+      <CompetitorVideoScriptModal
+        isOpen={scriptModalOpen}
+        onClose={() => setScriptModalOpen(false)}
+        initialUrl={scriptModalUrl}
+        fallbackContext={scriptModalContext}
+        onNotify={onNotify}
       />
     </div>
   );

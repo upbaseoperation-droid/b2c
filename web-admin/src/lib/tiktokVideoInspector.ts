@@ -3,6 +3,7 @@ import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
 import {
   compareTikTokVideoIdDesc,
   fetchTikTokHtmlWithWafBypass,
+  scrapeTikTokVideoComments,
 } from './tiktokOpenSourceEngines';
 
 export type VideoAcceptanceVerdict = 'ĐẠT_CHUẨN' | 'CẦN_KIỂM_TRA' | 'KHÔNG_ĐẠT';
@@ -1160,5 +1161,426 @@ export function buildVideoInspectionCsv(results: TikTokVideoInspectionResult[]):
 
   return '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows.map((row) => row.map(escapeCsv).join(','))].join('\n');
 }
+
+export type CompetitorHookPatternType =
+  | 'PAIN_CALLOUT'
+  | 'COMPARISON_TEST'
+  | 'PRICE_DEAL'
+  | 'MYTH_BUSTING'
+  | 'STORY_POV'
+  | 'DIRECT_REVIEW';
+
+export interface CompetitorVideoScriptSection {
+  stepIndex: number;
+  timeRange: string;
+  sectionTitle: string;
+  spokenOrTextContent: string;
+  visualAndActionNote: string;
+}
+
+export interface CompetitorVideoScriptBreakdown {
+  videoUrl: string;
+  videoId: string;
+  authorHandle: string;
+  authorNickname: string;
+  authorAvatarUrl?: string;
+  publishedTimeFormatted: string;
+  durationSeconds: number;
+  viewsCount: number;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  savesCount: number;
+  engagementRate: number;
+  musicTitle: string;
+  caption: string;
+  hashtags: string[];
+  hasCartAnchor: boolean;
+  cartAnchorTitle?: string;
+  subtitleSource: 'TIKTOK_AUTO_CAPTIONS_VTT' | 'ON_SCREEN_TEXT_AND_CAPTION';
+  subtitleSourceLabel: string;
+  onScreenStickers: string[];
+  subtitleSegments: TikTokSubtitleSegment[];
+  fullTranscriptText: string;
+  hookAnalysis: {
+    spokenHook3s: string;
+    onScreenTextHook: string;
+    hookPatternType: CompetitorHookPatternType;
+    hookPatternLabel: string;
+    whyItWorks: string;
+    upbaseAdaptationHooks: string[];
+  };
+  scriptSections: CompetitorVideoScriptSection[];
+  detectedSellingPoints: string[];
+  viewerReactions: {
+    buyingIntentRate: number;
+    topQuestionsAndComments: {
+      username: string;
+      text: string;
+      likeCount: number;
+      intentLabel: string;
+    }[];
+  };
+  readyToCopyBrief: string;
+}
+
+function classifyCompetitorHookPattern(
+  text: string
+): {
+  type: CompetitorHookPatternType;
+  label: string;
+  whyItWorks: string;
+} {
+  const lower = text.toLowerCase();
+  if (
+    /đừng mua|sai lầm|sự thật|bóc trần|cảnh báo|phí tiền|lừa|review thật|có thật sự/.test(lower)
+  ) {
+    return {
+      type: 'MYTH_BUSTING',
+      label: 'Bóc sự thật / Cảnh báo sai lầm trước khi mua',
+      whyItWorks:
+        'Kích hoạt tâm lý sợ mua nhầm (Loss Aversion) trong 3 giây đầu, buộc người xem dừng lướt để kiểm chứng.',
+    };
+  }
+  if (/so sánh|test|kiểm chứng|trước và sau|sau \d+ ngày|thử thách|camera thường/.test(lower)) {
+    return {
+      type: 'COMPARISON_TEST',
+      label: 'Test trực diện / So sánh kết quả thực tế',
+      whyItWorks:
+        'Đưa bằng chứng thị giác lên ngay 3 giây đầu giúp tăng tỷ lệ xem hết video và củng cố niềm tin vào công dụng.',
+    };
+  }
+  if (/săn sale|giá|voucher|mua 1 tặng|combo|rẻ|chốt đơn|giỏ hàng|deal/.test(lower)) {
+    return {
+      type: 'PRICE_DEAL',
+      label: 'Móc nối Giá hời / Ưu đãi giới hạn',
+      whyItWorks:
+        'Đánh thẳng vào tệp khách đã biết sản phẩm và đang chờ mức giá/quà tặng tốt nhất để bấm giỏ hàng.',
+    };
+  }
+  if (/ai bị|nỗi khổ|mụn|thâm|rôm sảy|khô da|nhạy cảm|cứu tinh|bầu|mẹ bỉm|con nhỏ/.test(lower)) {
+    return {
+      type: 'PAIN_CALLOUT',
+      label: 'Gọi thẳng nỗi đau & Vấn đề người xem đang gặp',
+      whyItWorks:
+        'Giúp thuật toán TikTok giữ chân đúng tệp khách hàng mục tiêu đang tìm giải pháp xử lý vấn đề.',
+    };
+  }
+  if (/chuyện là|hôm nay|một ngày|pov|khi bạn|chồng|mẹ chồng|đi làm/.test(lower)) {
+    return {
+      type: 'STORY_POV',
+      label: 'Tình huống đời thực / Kể chuyện dẫn dắt (Storytelling POV)',
+      whyItWorks:
+        'Tạo cảm giác tự nhiên như nội dung giải trí đời thường, giảm phản xạ bỏ qua video quảng cáo.',
+    };
+  }
+  return {
+    type: 'DIRECT_REVIEW',
+    label: 'Review trực diện kết cấu & Trải nghiệm sản phẩm',
+    whyItWorks:
+      'Đi thẳng vào sản phẩm và trải nghiệm thực tế ngay từ đầu, phù hợp tệp khách hàng tìm kiếm thông tin nhanh.',
+  };
+}
+
+export async function extractCompetitorVideoScriptAndHook(
+  rawUrl: string,
+  fallbackContext?: {
+    handle?: string;
+    nickname?: string;
+    caption?: string;
+    productPromoted?: string;
+    views?: number;
+    likes?: number;
+  }
+): Promise<CompetitorVideoScriptBreakdown> {
+  const [liveData, commentData] = await Promise.all([
+    fetchLiveTikTokVideoMetadata(rawUrl),
+    scrapeTikTokVideoComments(rawUrl, 12).catch(() => null),
+  ]);
+
+  const { handle: urlHandle, videoId: urlVideoId } = extractHandleAndVideoIdFromUrl(rawUrl);
+  const authorHandle = (
+    liveData.authorHandle ||
+    commentData?.videoInfo.authorHandle ||
+    fallbackContext?.handle ||
+    urlHandle ||
+    'koc'
+  )
+    .toLowerCase()
+    .replace(/^@+/, '');
+
+  const authorNickname =
+    liveData.authorNickname ||
+    commentData?.videoInfo.authorNickname ||
+    fallbackContext?.nickname ||
+    authorHandle;
+
+  const videoId =
+    liveData.videoId || commentData?.videoInfo.videoId || urlVideoId || '';
+  const publishedDateObj =
+    liveData.publishedDateObj ||
+    decodeTikTokVideoIdTimestamp(videoId) ||
+    new Date();
+  const formattedDate = formatVnDateTime(publishedDateObj);
+
+  const caption =
+    (liveData.caption || commentData?.videoInfo.caption || fallbackContext?.caption || '').trim();
+  const { hashtags } = extractHashtagsAndMentions(caption);
+
+  const viewsCount = Math.max(
+    liveData.viewsCount || 0,
+    commentData?.videoInfo.views || 0,
+    fallbackContext?.views || 0
+  );
+  const likesCount = Math.max(
+    liveData.likesCount || 0,
+    commentData?.videoInfo.likes || 0,
+    fallbackContext?.likes || 0
+  );
+  const commentsCount = Math.max(
+    liveData.commentsCount || 0,
+    commentData?.videoInfo.commentsCount || 0
+  );
+  const sharesCount = Math.max(
+    liveData.sharesCount || 0,
+    commentData?.videoInfo.sharesCount || 0
+  );
+  const savesCount = Math.max(
+    liveData.savesCount || 0,
+    commentData?.videoInfo.downloadsCount || 0
+  );
+  const engagementRate =
+    viewsCount > 0
+      ? Number((((likesCount + commentsCount + sharesCount) / viewsCount) * 100).toFixed(2))
+      : 0;
+
+  const durationSeconds = liveData.durationSeconds || 30;
+  const onScreenStickers = liveData.onScreenStickers || [];
+
+  // Làm sạch caption (bỏ chuỗi hashtag ở cuối để lấy câu văn thực tế)
+  const cleanCaptionSentences = caption
+    .replace(/#[\p{L}\p{N}_]+/gu, '')
+    .split(/(?<=[.!?…\n])\s+|\r?\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 6);
+
+  let subtitleSegments: TikTokSubtitleSegment[] =
+    liveData.subtitleSegments && liveData.subtitleSegments.length > 0
+      ? liveData.subtitleSegments
+      : [];
+
+  const subtitleSource: 'TIKTOK_AUTO_CAPTIONS_VTT' | 'ON_SCREEN_TEXT_AND_CAPTION' =
+    subtitleSegments.length > 0 ? 'TIKTOK_AUTO_CAPTIONS_VTT' : 'ON_SCREEN_TEXT_AND_CAPTION';
+
+  // Nếu video không đính kèm file VTT riêng, dựng các phân đoạn theo mốc giây từ Chữ trên màn hình (Stickers) + Câu trong bài đăng
+  if (subtitleSegments.length === 0) {
+    const combinedLines = [
+      ...onScreenStickers,
+      ...cleanCaptionSentences,
+    ].filter((line, idx, arr) => line && arr.indexOf(line) === idx);
+
+    if (combinedLines.length > 0) {
+      const stepSec = Math.max(3, Math.floor(durationSeconds / Math.max(1, combinedLines.length)));
+      subtitleSegments = combinedLines.map((line, idx) => {
+        const start = idx * stepSec;
+        const end = Math.min(durationSeconds, (idx + 1) * stepSec);
+        const fmt = (sec: number) =>
+          `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+        return {
+          startSec: start,
+          endSec: end,
+          timeLabel: `${fmt(start)} - ${fmt(end)}`,
+          text: line,
+        };
+      });
+    }
+  }
+
+  const fullTranscriptText =
+    subtitleSegments.length > 0
+      ? subtitleSegments.map((s) => `[${s.timeLabel}] ${s.text}`).join('\n')
+      : caption;
+
+  // Xác định câu mở đầu 3 giây đầu (Hook)
+  const first3SecSegments = subtitleSegments.filter((s) => s.startSec <= 4);
+  const spokenHook3s =
+    (first3SecSegments.length > 0
+      ? first3SecSegments.map((s) => s.text).join(' ')
+      : cleanCaptionSentences[0] || caption.slice(0, 140)) || 'Đang cập nhật câu mở đầu từ video';
+
+  const onScreenTextHook =
+    onScreenStickers[0] ||
+    cleanCaptionSentences[0] ||
+    (liveData.cartAnchorTitle ? `Gắn giỏ: ${liveData.cartAnchorTitle}` : 'Không chèn chữ nổi 3s đầu');
+
+  const hookClass = classifyCompetitorHookPattern(
+    `${spokenHook3s} ${onScreenTextHook} ${caption}`
+  );
+
+  const targetProductLabel =
+    liveData.cartAnchorTitle ||
+    fallbackContext?.productPromoted ||
+    cleanCaptionSentences[0]?.slice(0, 55) ||
+    'sản phẩm chủ lực';
+
+  const upbaseAdaptationHooks = [
+    `[Biến thể Bóc sự thật - 0-3s]: "Đừng vội chốt ${targetProductLabel} nếu bạn chưa xem kỹ điểm khác biệt thực tế này trên da!"`,
+    `[Biến thể Đánh nỗi đau - 0-3s]: "Ai đang gặp đúng tình trạng như trong clip của @${authorHandle} thì xem ngay cách xử lý chỉ sau 7 ngày này nhé."`,
+    `[Biến thể So sánh trực diện - 0-3s]: "Test cận cảnh dưới camera thường để xem liệu có đáng tiền như lời đồn hay không?"`,
+  ];
+
+  // Chia kịch bản thành 4 phần rõ ràng
+  const segCount = subtitleSegments.length;
+  const part1Text =
+    first3SecSegments.map((s) => s.text).join(' ') || spokenHook3s;
+  const part2Segs =
+    segCount >= 3
+      ? subtitleSegments.slice(1, Math.max(2, Math.ceil(segCount * 0.4)))
+      : [];
+  const part3Segs =
+    segCount >= 3
+      ? subtitleSegments.slice(
+          Math.max(2, Math.ceil(segCount * 0.4)),
+          Math.max(3, Math.ceil(segCount * 0.8))
+        )
+      : [];
+  const part4Segs =
+    segCount >= 4
+      ? subtitleSegments.slice(Math.max(3, Math.ceil(segCount * 0.8)))
+      : [];
+
+  const scriptSections: CompetitorVideoScriptSection[] = [
+    {
+      stepIndex: 1,
+      timeRange: '00:00 - 00:03',
+      sectionTitle: 'Mở đầu giữ chân (Hook 3 giây đầu)',
+      spokenOrTextContent: part1Text,
+      visualAndActionNote:
+        onScreenStickers.length > 0
+          ? `Chữ chèn trên khung hình: "${onScreenStickers[0]}" · Cận cảnh gương mặt KOC hoặc kết cấu sản phẩm ngay giây đầu.`
+          : 'Cận cảnh vấn đề hoặc giơ trực tiếp sản phẩm vào khung hình trong 3 giây đầu.',
+    },
+    {
+      stepIndex: 2,
+      timeRange: '00:03 - 00:10',
+      sectionTitle: 'Dẫn dắt vấn đề & Bối cảnh sử dụng (Problem)',
+      spokenOrTextContent:
+        part2Segs.map((s) => s.text).join(' ') ||
+        cleanCaptionSentences[1] ||
+        `Nêu tình huống thực tế khiến người xem quan tâm tới ${targetProductLabel}.`,
+      visualAndActionNote:
+        'Chuyển góc máy mô tả tình trạng trước khi dùng hoặc thói quen sai lầm thường gặp.',
+    },
+    {
+      stepIndex: 3,
+      timeRange: '00:10 - 00:25',
+      sectionTitle: 'Trải nghiệm thực tế & Luận điểm bán hàng (USP & Demo)',
+      spokenOrTextContent:
+        part3Segs.map((s) => s.text).join(' ') ||
+        cleanCaptionSentences.slice(1, 3).join(' ') ||
+        caption ||
+        `Trình bày điểm nổi bật và trải nghiệm thực tế khi dùng ${targetProductLabel}.`,
+      visualAndActionNote:
+        'Quay cận cảnh chất sản phẩm (texture), thao tác thoa/sử dụng thực tế và cảm nhận tức thì.',
+    },
+    {
+      stepIndex: 4,
+      timeRange: `00:25 - 00:${String(Math.max(28, durationSeconds)).padStart(2, '0')}`,
+      sectionTitle: 'Chốt đơn & Điều hướng Giỏ hàng (CTA)',
+      spokenOrTextContent:
+        part4Segs.map((s) => s.text).join(' ') ||
+        (liveData.hasCartAnchor
+          ? `Nhắc ưu đãi và chỉ tay xuống giỏ hàng góc trái màn hình (${liveData.cartAnchorTitle || targetProductLabel}).`
+          : 'Khuyến khích người xem để lại bình luận hoặc tham khảo sản phẩm chính hãng.'),
+      visualAndActionNote: liveData.hasCartAnchor
+        ? `Gắn thẻ giỏ hàng TikTok Shop: "${liveData.cartAnchorTitle || targetProductLabel}".`
+        : 'Chốt lại kết quả sau khi dùng và ghim bình luận đầu tiên.',
+    },
+  ];
+
+  // Bóc tách các luận điểm bán hàng (Selling Points)
+  const detectedSellingPoints: string[] = [];
+  if (liveData.cartAnchorTitle) {
+    detectedSellingPoints.push(`Sản phẩm gắn giỏ hàng: ${liveData.cartAnchorTitle}`);
+  }
+  for (const st of onScreenStickers.slice(0, 4)) {
+    detectedSellingPoints.push(`Chữ nhấn mạnh trên màn hình: "${st}"`);
+  }
+  for (const sent of cleanCaptionSentences.slice(0, 3)) {
+    if (!detectedSellingPoints.some((x) => x.includes(sent.slice(0, 20)))) {
+      detectedSellingPoints.push(sent);
+    }
+  }
+
+  const topQuestionsAndComments = (commentData?.comments || [])
+    .slice(0, 6)
+    .map((c) => ({
+      username: c.username,
+      text: c.text,
+      likeCount: c.likeCount,
+      intentLabel: c.intentLabel,
+    }));
+
+  const readyToCopyBrief = [
+    `=== BRIEF KỊCH BẢN THAM CHIẾU TỪ VIDEO THẮNG (@${authorHandle}) ===`,
+    `• Video gốc tham chiếu: ${liveData.resolvedUrl || rawUrl} (${viewsCount.toLocaleString('vi-VN')} view · ER ${engagementRate}%)`,
+    `• Công thức mở đầu: ${hookClass.label}`,
+    `• Câu Hook 3s gốc: "${spokenHook3s}"`,
+    `• Gợi ý Hook 3s cho KOC UpBase: ${upbaseAdaptationHooks[0]}`,
+    ``,
+    `[KHUNG KỊCH BẢN QUAY 4 BƯỚC]:`,
+    ...scriptSections.map(
+      (sec) =>
+        `${sec.stepIndex}. [${sec.timeRange}] ${sec.sectionTitle}:\n   - Lời thoại: ${sec.spokenOrTextContent}\n   - Hình ảnh: ${sec.visualAndActionNote}`
+    ),
+    ``,
+    `• Hashtag tham khảo: ${hashtags.join(' ') || '#review #tiktokshop'}`,
+  ].join('\n');
+
+  return {
+    videoUrl: liveData.resolvedUrl || rawUrl,
+    videoId,
+    authorHandle,
+    authorNickname,
+    authorAvatarUrl: liveData.authorAvatarUrl,
+    publishedTimeFormatted: formattedDate.formatted,
+    durationSeconds,
+    viewsCount,
+    likesCount,
+    commentsCount,
+    sharesCount,
+    savesCount,
+    engagementRate,
+    musicTitle: liveData.musicTitle || 'Âm thanh gốc - Original Sound',
+    caption,
+    hashtags,
+    hasCartAnchor: Boolean(liveData.hasCartAnchor),
+    cartAnchorTitle: liveData.cartAnchorTitle,
+    subtitleSource,
+    subtitleSourceLabel:
+      subtitleSource === 'TIKTOK_AUTO_CAPTIONS_VTT'
+        ? 'Phụ đề lời thoại WebVTT gốc từ TikTok (claInfo.captionInfos)'
+        : 'Bóc tách từ Chữ chèn trên khung hình (Stickers) & Nội dung bài đăng',
+    onScreenStickers,
+    subtitleSegments,
+    fullTranscriptText,
+    hookAnalysis: {
+      spokenHook3s,
+      onScreenTextHook,
+      hookPatternType: hookClass.type,
+      hookPatternLabel: hookClass.label,
+      whyItWorks: hookClass.whyItWorks,
+      upbaseAdaptationHooks,
+    },
+    scriptSections,
+    detectedSellingPoints,
+    viewerReactions: {
+      buyingIntentRate: commentData?.summary.buyingIntentRate || 0,
+      topQuestionsAndComments,
+    },
+    readyToCopyBrief,
+  };
+}
+
 
 

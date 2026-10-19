@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  extractCompetitorVideoScriptAndHook,
   inspectTikTokVideoBatch,
   parseTikTokVideoUrls,
   TikTokVideoInspectionResult,
@@ -9,6 +10,29 @@ import { INITIAL_DEALS } from '@/lib/mockData';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    if (body.mode === 'EXTRACT_SCRIPT') {
+      const targetUrl = String(body.url || body.videoUrl || '').trim();
+      if (!targetUrl) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Vui lòng cung cấp đường dẫn video TikTok cần tách lời thoại & Hook.',
+          },
+          { status: 400 }
+        );
+      }
+      const breakdown = await extractCompetitorVideoScriptAndHook(
+        targetUrl,
+        body.fallbackContext
+      );
+      return NextResponse.json({
+        success: true,
+        mode: 'EXTRACT_SCRIPT',
+        breakdown,
+      });
+    }
+
     const rawUrls: string | string[] = body.urls || body.url || '';
     const expectedDealCode: string | undefined = body.dealCode;
     const expectedHandle: string | undefined = body.expectedHandle;
