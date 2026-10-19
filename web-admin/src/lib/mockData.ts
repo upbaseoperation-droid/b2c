@@ -555,7 +555,91 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocBankHolder: 'Nguyễn Thị Bích Chanh',
     dnttSubmittedAt: '2026-09-21 08:30',
     isDnttOverdue10Am: false,
-    isBillSentWithin7Days: true
+    isBillSentWithin7Days: true,
+
+    // Cấu trúc Booking Đa Nền Tảng (Multi-Platform Deliverables & P&L Allocation)
+    dealType: 'MULTI_PLATFORM_CONTENT',
+    pricingDisplayMode: 'PACKAGE_TOTAL',
+    contractAppendixCode: 'PLHD-202610-CHANH-01',
+    deliverables: [
+      {
+        id: 'deliv-1-w0',
+        title: 'Video gốc TikTok 60s',
+        mediaChannel: 'TikTok',
+        affiliateChannel: 'TikTok Shop',
+        productionType: 'ORIGINAL',
+        wave: 0,
+        lockStatus: 'VERIFIED',
+        assignedChannelPic: 'Khánh Vy',
+        allocatedWeightPct: 70,
+        allocatedCostVnd: 7000000,
+        airDate: '2026-10-05',
+        publishedUrl: 'https://www.tiktok.com/@chanhreview/video/7418920192837'
+      },
+      {
+        id: 'deliv-1-w1-fb',
+        title: 'Cross-post Facebook Reels gắn link Shopee',
+        mediaChannel: 'Facebook',
+        affiliateChannel: 'Shopee',
+        productionType: 'CROSS_POST',
+        wave: 1,
+        dependsOnDeliverableId: 'deliv-1-w0',
+        lockStatus: 'UNLOCKED',
+        assignedChannelPic: 'Phạm Thị Thu Hằng',
+        allocatedWeightPct: 15,
+        allocatedCostVnd: 1500000,
+        airDate: '2026-10-06'
+      },
+      {
+        id: 'deliv-1-w1-sp',
+        title: 'Cross-post Shopee Video gắn giỏ Kutieskin Mall',
+        mediaChannel: 'Shopee Video',
+        affiliateChannel: 'Shopee',
+        productionType: 'CROSS_POST',
+        wave: 1,
+        dependsOnDeliverableId: 'deliv-1-w0',
+        lockStatus: 'UNLOCKED',
+        assignedChannelPic: 'Phạm Thị Thu Hằng',
+        allocatedWeightPct: 15,
+        allocatedCostVnd: 1500000,
+        airDate: '2026-10-06'
+      }
+    ],
+    rightsTerms: [
+      {
+        id: 'rt-1-ads',
+        termType: 'ADS_CODE',
+        termLabel: 'Cấp mã Spark Ads TikTok 60 ngày',
+        scopeType: 'ASSET',
+        targetDeliverableId: 'deliv-1-w0',
+        anchorType: 'ACCEPTANCE_DATE',
+        durationDays: 60,
+        expiresAt: '2026-12-05',
+        status: 'ACTIVE'
+      },
+      {
+        id: 'rt-1-excl',
+        termType: 'EXCLUSIVITY',
+        termLabel: 'Độc quyền ngành hàng Kem bôi da bé 30 ngày',
+        scopeType: 'DEAL',
+        anchorType: 'AIR_DATE',
+        durationDays: 30,
+        expiresAt: '2026-11-05',
+        status: 'ACTIVE'
+      }
+    ],
+    revisions: [
+      {
+        version: 2,
+        updatedAt: '2026-09-20 14:15',
+        updatedBy: 'Khánh Vy',
+        summary: 'Chốt giá gói đa sàn 10.000.000đ + tặng kèm đăng chéo Facebook Reels & Shopee Video',
+        changedFields: [
+          { fieldLabel: 'Tổng giá trị Deal', oldValue: '11.500.000 đ', newValue: '10.000.000 đ' },
+          { fieldLabel: 'Hạng mục bàn giao', oldValue: '01 Video TikTok', newValue: '01 Video TikTok (Wave 0) + 02 Cross-post FB/Shopee (Wave 1)' }
+        ]
+      }
+    ]
   },
   {
     id: 'deal-2',
@@ -651,7 +735,167 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     shippingPendingDays: 3, // Quá 2 ngày chưa gửi hàng!
     trackingCodePendingDays: 3, // Quá 3 ngày chưa có mã vận đơn!
     deliveryPendingDays: 2,
-    isDnttOverdue10Am: false
+    isDnttOverdue10Am: false,
+
+    // Cấu trúc Booking Đa Nền Tảng (Wave 0 đang làm -> Wave 1 đang khóa)
+    dealType: 'MULTI_PLATFORM_CONTENT',
+    pricingDisplayMode: 'ITEMIZED_SOW',
+    contractAppendixCode: 'PLHD-202610-URI-01',
+    deliverables: [
+      {
+        id: 'deliv-2-w0',
+        title: 'Video gốc TikTok 90s chuyên sâu',
+        mediaChannel: 'TikTok',
+        affiliateChannel: 'TikTok Shop',
+        productionType: 'ORIGINAL',
+        wave: 0,
+        lockStatus: 'UNLOCKED',
+        assignedChannelPic: 'Khánh Vy',
+        allocatedWeightPct: 70,
+        allocatedCostVnd: 10500000,
+        airDate: '2026-10-07'
+      },
+      {
+        id: 'deliv-2-w1-fb',
+        title: 'Reup Facebook Reels gắn link Shopee Mall',
+        mediaChannel: 'Facebook',
+        affiliateChannel: 'Shopee',
+        productionType: 'REUP',
+        wave: 1,
+        dependsOnDeliverableId: 'deliv-2-w0',
+        lockStatus: 'LOCKED_BY_WAVE_0',
+        assignedChannelPic: 'Lương Thị Như Quỳnh',
+        allocatedWeightPct: 15,
+        allocatedCostVnd: 2250000,
+        airDate: '2026-10-08'
+      },
+      {
+        id: 'deliv-2-w1-ig',
+        title: 'Reup Instagram Reels gắn link Bio Shopee',
+        mediaChannel: 'Instagram',
+        affiliateChannel: 'Shopee',
+        productionType: 'REUP',
+        wave: 1,
+        dependsOnDeliverableId: 'deliv-2-w0',
+        lockStatus: 'LOCKED_BY_WAVE_0',
+        assignedChannelPic: 'Lương Thị Như Quỳnh',
+        allocatedWeightPct: 15,
+        allocatedCostVnd: 2250000,
+        airDate: '2026-10-08'
+      }
+    ],
+    rightsTerms: [
+      {
+        id: 'rt-2-ads',
+        termType: 'ADS_CODE',
+        termLabel: 'Ủy quyền mã Spark Ads 60 ngày',
+        scopeType: 'ASSET',
+        targetDeliverableId: 'deliv-2-w0',
+        anchorType: 'ACCEPTANCE_DATE',
+        durationDays: 60,
+        status: 'PENDING_ANCHOR'
+      },
+      {
+        id: 'rt-2-bio',
+        termType: 'LINK_BIO_CART',
+        termLabel: 'Gắn link Bio Instagram & Ghim comment FB 30 ngày',
+        scopeType: 'MEDIA_CHANNEL',
+        targetMediaChannel: 'Instagram',
+        anchorType: 'AIR_DATE',
+        durationDays: 30,
+        status: 'PENDING_ANCHOR'
+      }
+    ]
+  },
+  {
+    id: 'deal-addon-chanh-1',
+    dealCode: 'BO261015902',
+    campaignId: 'camp-6',
+    storeId: 'ST-SO0167',
+    assignedStaffId: 'st-1',
+    jobId: 'ID261015902',
+    campaignCode: 'CAMP-BBB-ACNECARE',
+    campaignTitle: 'Gia Hạn Mã Spark Ads & Bản Quyền Hình Ảnh 30 Ngày (Từ Deal BO260611204)',
+    brandName: 'Bye Bye Blemish',
+    storeName: 'Face republic_TikTok_E2E-O',
+    productName: 'Serum Tràm Trà Tea Tree Blemish Clearing 30ml',
+    bookingBatch: 'Đợt 2',
+    bookingFormat: 'Booking Video KOC',
+    kocId: 'koc-2',
+    kocStageName: 'Chanh Beauty Review',
+    kocChannelId: '@chanhbeauty',
+    kocTier: 'TIER_3_MICRO',
+    salaryGrade: 'KL4',
+    segment: 'Mid Creator',
+    tepKenh: 'Beauty',
+    creatorCategory: 'Beauty',
+    kocCategory: 'Personal care',
+    contentPillar: 'Nỗi đau - Giải pháp',
+    brandApprovalStatus: 'ĐÃ_DUYỆT',
+    brandApprovalDate: '2026/10/12 10:00',
+    kocResponseStatus: 'ĐỒNG_Ý',
+    pipelineText: 'Nghiệm thu Ads',
+    status: 'VIDEO_VERIFIED',
+    statusLabel: 'Deal Mua Thêm Dịch Vụ (Đã Cấp Mã Gia Hạn)',
+    sampleStatus: 'ĐÃ_NHẬN',
+    adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+    sparkAdsCode: 'SPARK-CHANH-BBB-EXT30D',
+    tiktokVideoUrl: 'https://www.tiktok.com/@chanhbeauty/video/7382910481923',
+    videoUrl: 'https://www.tiktok.com/@chanhbeauty/video/7382910481923',
+    assignedStaff: 'Khánh Vy',
+    bookingPic: 'Khánh Vy',
+    growthPic: 'Nguyễn Văn Tú',
+    accountPic: 'Trần Việt Hoàng',
+    contentNote: 'Mua thêm 30 ngày mã Spark Ads và quyền cắt hình ảnh chạy Shopee Ads từ video gốc BO260611204 (ROAS đạt 9.29). Không cần gửi lại hàng mẫu.',
+    totalValue: 1200000,
+    advanceAmount: 0,
+    finalAmount: 1200000,
+    deadlinePost: '2026-10-15',
+    viewsCount: 58000,
+    affiliateGmv: 19500000,
+    gmv30: 19500000,
+    roi: 16.25,
+    publishedDays: 5,
+    isWinnerTop20: true,
+    hasGmv: true,
+    isBreakEven: true,
+    currentStage: '4_AIR_GROWTH',
+    holdingTeam: 'GROWTH',
+    holdingReason: 'Đang chạy nối tiếp chiến dịch Spark Ads tháng 10',
+    slaRemainingText: 'Trong hạn',
+    growthHandoffStatus: 'ĐÃ_GIAO_MÃ_ADS',
+    remainingSlaHours: 24,
+    isSlaWarning: false,
+    dealType: 'SERVICE_ONLY',
+    sourceDealCode: 'BO260611204',
+    pricingDisplayMode: 'ITEMIZED_SOW',
+    contractAppendixCode: 'PLHD-202610-CHANH-01',
+    rightsTerms: [
+      {
+        id: 'rt-addon-1',
+        termType: 'ADS_CODE',
+        termLabel: 'Gia hạn mã Spark Ads thêm 30 ngày (từ video BO260611204)',
+        scopeType: 'ASSET',
+        anchorType: 'ACCEPTANCE_DATE',
+        durationDays: 30,
+        expiresAt: '2026-10-24',
+        allocatedWeightPct: 60,
+        allocatedCostVnd: 720000,
+        status: 'EXPIRING_SOON'
+      },
+      {
+        id: 'rt-addon-2',
+        termType: 'IMAGE_USAGE',
+        termLabel: 'Quyền sử dụng hình ảnh chạy Ads Shopee Mall 30 ngày',
+        scopeType: 'DEAL',
+        anchorType: 'ACCEPTANCE_DATE',
+        durationDays: 30,
+        expiresAt: '2026-11-12',
+        allocatedWeightPct: 40,
+        allocatedCostVnd: 480000,
+        status: 'ACTIVE'
+      }
+    ]
   },
   // =========================================================================
   // CÁC DEAL LỊCH SỬ HỢP TÁC ĐÃ HOÀN TẤT (SHOW HIỆU QUẢ CHI TIẾT)

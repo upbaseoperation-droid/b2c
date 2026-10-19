@@ -194,15 +194,6 @@ const DEFAULT_BLACKLIST_RULES: {
   },
 ];
 
-function hashString(str: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash);
-}
-
 /**
  * Tách danh sách link video TikTok từ chuỗi nhiều dòng
  */
@@ -530,7 +521,24 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             subtitleSource = 'ON_SCREEN_TEXT_AND_CAPTION';
           }
 
-          // Kiểm tra anchor giỏ hàng sản phẩm
+          // Kiểm tra anchor giỏ hàng sản phẩm và challenges/textExtra hashtags
+          const extraHashtags: string[] = [];
+          if (Array.isArray(itemStruct.challenges)) {
+            for (const ch of itemStruct.challenges) {
+              const title = typeof ch?.title === 'string' ? ch.title.trim().replace(/^#+/, '') : '';
+              if (title) extraHashtags.push(`#${title.toLowerCase()}`);
+            }
+          }
+          if (Array.isArray(itemStruct.textExtra)) {
+            for (const te of itemStruct.textExtra) {
+              const hn =
+                typeof te?.hashtagName === 'string'
+                  ? te.hashtagName.trim().replace(/^#+/, '')
+                  : '';
+              if (hn) extraHashtags.push(`#${hn.toLowerCase()}`);
+            }
+          }
+
           const hasCartAnchor =
             anchors.length > 0 ||
             Boolean(itemStruct.isECVideo) ||
@@ -538,18 +546,29 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
           const cartAnchorTitle =
             anchors[0]?.keyword || anchors[0]?.description || undefined;
 
+          const baseDesc = String(itemStruct.desc || oembedCaption || '').trim();
+          const missingExtraTags = extraHashtags.filter(
+            (tag) => !baseDesc.toLowerCase().includes(tag)
+          );
+          const fullCaption =
+            missingExtraTags.length > 0
+              ? `${baseDesc} ${missingExtraTags.join(' ')}`.trim()
+              : baseDesc;
+
           return {
             resolvedUrl,
             videoId: itemId || urlVideoId,
             authorHandle: (author.uniqueId || urlHandle || oembedAuthorHandle || '').toLowerCase(),
             authorNickname: author.nickname || oembedAuthorName || urlHandle,
             authorAvatarUrl: author.avatarLarger || author.avatarMedium,
-            caption: itemStruct.desc || oembedCaption || '',
+            caption: fullCaption,
             publishedDateObj,
             timestampSource: createTimeSec > 0 ? 'TIKTOK_CREATE_TIME' : 'SNOWFLAKE_VIDEO_ID',
             durationSeconds: Number(video.duration) || undefined,
             resolutionRatio: video.ratio || '1080p',
-            musicTitle: music.title ? `${music.title}${music.authorName ? ` - ${music.authorName}` : ''}` : undefined,
+            musicTitle: music.title
+              ? `${music.title}${music.authorName ? ` - ${music.authorName}` : ''}`
+              : undefined,
             musicAuthor: music.authorName,
             coverUrl: video.cover || video.originCover || oembedCoverUrl,
             viewsCount: Number(stats.playCount) || 0,
@@ -583,7 +602,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
     coverUrl: oembedCoverUrl,
     publishedDateObj: decodedDate || undefined,
     timestampSource: decodedDate ? 'SNOWFLAKE_VIDEO_ID' : undefined,
-    isLiveSuccess: Boolean(oembedCaption || decodedDate),
+    isLiveSuccess: Boolean(oembedCaption),
   };
 }
 
@@ -596,7 +615,6 @@ export async function inspectTikTokVideoUrl(
   allDeals: BookingDealItem[] = []
 ): Promise<TikTokVideoInspectionResult> {
   const liveData = await fetchLiveTikTokVideoMetadata(rawUrl);
-  const seed = hashString(rawUrl);
 
   // Tìm deal khớp tự động nếu người dùng chưa chọn deal cụ thể
   const matchedDeal =
@@ -624,7 +642,7 @@ export async function inspectTikTokVideoUrl(
   const authorHandle =
     liveData.authorHandle ||
     matchedDeal?.kocChannelId?.toLowerCase().replace(/^@+/, '') ||
-    `koc_${seed % 9999}`;
+    'unknown';
 
   const authorNickname =
     liveData.authorNickname ||
@@ -632,24 +650,23 @@ export async function inspectTikTokVideoUrl(
     masterKoc?.stageName ||
     authorHandle;
 
-  const videoId =
-    liveData.videoId ||
-    `7426${String(seed).padStart(15, '0').slice(0, 15)}`;
+  const videoId = liveData.videoId || '';
+  const isValidVideoLink = Boolean(videoId);
+  const isPublicActive = Boolean(liveData.isLiveSuccess && isValidVideoLink);
+  const videoStatus: TikTokVideoInspectionResult['videoStatus'] = !isValidVideoLink
+    ? 'INVALID_LINK'
+    : isPublicActive
+    ? 'PUBLIC_ACTIVE'
+    : 'PRIVATE_OR_REMOVED';
 
   // Ngày giờ đăng: Ưu tiên createTime thực tế -> Giải mã Snowflake ID -> Ngày đăng trên Deal
-  let publishedDateObj = liveData.publishedDateObj || decodeTikTokVideoIdTimestamp(videoId);
-  let timestampSource: TikTokVideoInspectionResult['timestampSource'] =
-    liveData.timestampSource || (publishedDateObj ? 'SNOWFLAKE_VIDEO_ID' : 'ESTIMATED');
-
-  if (!publishedDateObj) {
-    timestampSource = 'ESTIMATED';
-    if (matchedDeal?.postedDate) {
-      publishedDateObj = new Date(`${matchedDeal.postedDate}T19:30:00+07:00`);
-    } else {
-      const now = new Date();
-      publishedDateObj = new Date(now.getTime() - ((seed % 5) + 1) * 86400 * 1000);
-    }
-  }
+  const publishedDateObj =
+    liveData.publishedDateObj ||
+    decodeTikTokVideoIdTimestamp(videoId) ||
+    (matchedDeal?.postedDate ? new Date(`${matchedDeal.postedDate}T19:30:00+07:00`) : new Date());
+  const timestampSource: TikTokVideoInspectionResult['timestampSource'] =
+    liveData.timestampSource ||
+    (decodeTikTokVideoIdTimestamp(videoId) ? 'SNOWFLAKE_VIDEO_ID' : 'ESTIMATED');
 
   const formattedDate = formatVnDateTime(publishedDateObj);
 
@@ -673,10 +690,9 @@ export async function inspectTikTokVideoUrl(
     }
   }
 
-  // Xây dựng Caption & Nội dung bài đăng
-  const brandName = options.brandName || matchedDeal?.brandName || masterKoc?.brandName || 'Kutieskin';
-  const productName = matchedDeal?.productName || 'Kem dưỡng dịu da cho bé';
-  const brandTag = `#${brandName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+  // Xây dựng Caption & Nội dung bài đăng thực tế từ video
+  const brandName = options.brandName || matchedDeal?.brandName || masterKoc?.brandName || '';
+  const productName = matchedDeal?.productName || liveData.cartAnchorTitle || '';
 
   const defaultCaption = liveData.caption || '';
 
@@ -709,14 +725,18 @@ export async function inspectTikTokVideoUrl(
       ? Number((((likesCount + commentsCount + sharesCount) / viewsCount) * 100).toFixed(2))
       : 0;
 
-  const hookFirst3Seconds = matchedDeal?.contentHook || '';
-
   const onScreenStickers =
     liveData.onScreenStickers && liveData.onScreenStickers.length > 0
       ? liveData.onScreenStickers
       : [];
 
   const transcriptText = liveData.transcriptText || '';
+  const hookFirst3Seconds =
+    onScreenStickers[0] ||
+    transcriptText.slice(0, 120) ||
+    defaultCaption.slice(0, 120) ||
+    matchedDeal?.contentHook ||
+    '';
 
   const subtitleSource: TikTokVideoContentCheck['subtitleSource'] =
     liveData.subtitleSource || 'ON_SCREEN_TEXT_AND_CAPTION';
@@ -740,32 +760,36 @@ export async function inspectTikTokVideoUrl(
   const cartAnchorTitle = liveData.cartAnchorTitle || '';
 
   // 1. Tầng kiểm tra Khung hình & Âm thanh gốc (Visual Keyframe & Audio Stream)
-  const firstProductAppearanceSec = (seed % 3) + 1; // 1s - 3s
+  const firstProductAppearanceSec = isPublicActive ? 2 : 0;
   const isPackagingTextMirrored = false;
   const hasCompetitorProductInFrame = false;
-  const hardSubCapCutLines = [
-    `Review thực tế ${productName} sau 7 ngày`,
-    `Ưu điểm: Thấm nhanh, dịu nhẹ, lành tính`,
-    `Săn deal chính hãng tại giỏ hàng góc trái`,
-  ];
+  const hardSubCapCutLines = onScreenStickers.length > 0 ? onScreenStickers : [];
   const visualAndAudioCheck: TikTokVisualAndAudioCheck = {
     firstProductAppearanceSec,
     isPackagingTextMirrored,
     hasCompetitorProductInFrame,
     hardSubCapCutLines,
     audioClarity: 'RÕ_RÀNG',
-    visualQualityNote: `Sản phẩm xuất hiện ngay giây thứ ${firstProductAppearanceSec}s · Bao bì rõ chữ (không bị lật gương camera trước) · Không dính sản phẩm đối thủ`,
+    visualQualityNote: isPublicActive
+      ? `Thời lượng ${durationSeconds}s · Độ phân giải ${liveData.resolutionRatio || '1080p'}${
+          onScreenStickers.length > 0 ? ` · ${onScreenStickers.length} dòng chữ trên màn hình` : ''
+        }`
+      : 'Không đọc được khung hình do video đã ẩn/xóa hoặc link không hợp lệ',
   };
 
   // 2. Tầng đối soát Mã Gian Hàng (Shop ID) & Mã Sản Phẩm (Product ID / SKU) trong Giỏ hàng
   const expectedStoreName =
-    matchedDeal?.storeName || `${brandName}_TikTok_E2E-S`;
-  const expectedPlatformStoreId = `TTS-${brandName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}-01`;
-  const detectedProductId = `1729${String(seed).slice(0, 8)}`;
+    matchedDeal?.storeName || (brandName ? `${brandName} Official Store` : '');
+  const expectedPlatformStoreId = brandName
+    ? `TTS-${brandName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}-01`
+    : '';
+  const detectedProductId = hasCartAnchor ? `SKU-${videoId.slice(-6)}` : '';
   const cartAnchorVerification: TikTokCartAnchorVerification = {
     hasCartAnchor,
-    detectedShopId: expectedPlatformStoreId,
-    detectedShopName: `${brandName} Official Store`,
+    detectedShopId: hasCartAnchor ? expectedPlatformStoreId : '',
+    detectedShopName: hasCartAnchor
+      ? expectedStoreName || cartAnchorTitle || 'TikTok Shop Anchor'
+      : 'Chưa gắn giỏ hàng',
     detectedProductId,
     detectedProductTitle: cartAnchorTitle,
     expectedStoreName,
@@ -777,15 +801,17 @@ export async function inspectTikTokVideoUrl(
   const sparkCode =
     options.sparkAdsCode?.trim() ||
     matchedDeal?.sparkAdsCode ||
-    `#${videoId.slice(-8)}A${(seed % 89) + 10}`;
+    '';
   const expireDateObj = new Date(publishedDateObj.getTime() + 60 * 86400 * 1000);
   const sparkAdsVerification: TikTokSparkAdsVerification = {
-    sparkAdsCode: sparkCode,
-    status: 'HỢP_LỆ_ĐỦ_HẠN',
-    authorizedDays: 60,
+    sparkAdsCode: sparkCode || undefined,
+    status: sparkCode ? 'HỢP_LỆ_ĐỦ_HẠN' : 'CHƯA_CẤP_MÃ',
+    authorizedDays: sparkCode ? 60 : 0,
     requiredDays: 30,
-    expiresAt: formatVnDateTime(expireDateObj).dateOnly,
-    detailNote: `Mã ủy quyền khớp với Video ID ${videoId} · Đã mở quyền chạy Ads 60 ngày (Hết hạn: ${formatVnDateTime(expireDateObj).dateOnly})`,
+    expiresAt: sparkCode ? formatVnDateTime(expireDateObj).dateOnly : undefined,
+    detailNote: sparkCode
+      ? `Mã Spark Ads (${sparkCode}) hợp lệ cho Video ID ${videoId} (Hết hạn: ${formatVnDateTime(expireDateObj).dateOnly})`
+      : 'Chưa nhập mã ủy quyền quảng cáo Spark Ads',
   };
 
   // 4. Tầng hậu kiểm Chống xóa / Ẩn video & Gỡ giỏ hàng 30 ngày
@@ -796,9 +822,13 @@ export async function inspectTikTokVideoUrl(
   const postAirRetentionCheck: TikTokPostAirRetentionCheck = {
     daysSincePublished,
     requiredRetentionDays: 30,
-    isStillPublic: true,
-    isCartStillAttached: hasCartAnchor,
-    retentionStatus: hasCartAnchor ? 'ĐANG_HIỂN_THỊ_TỐT' : 'CẢNH_BÁO_GỠ_GIỎ',
+    isStillPublic: isPublicActive,
+    isCartStillAttached: isPublicActive && hasCartAnchor,
+    retentionStatus: !isPublicActive
+      ? 'VI_PHẠM_ẨN_XÓA'
+      : hasCartAnchor
+      ? 'ĐANG_HIỂN_THỊ_TỐT'
+      : 'CẢNH_BÁO_GỠ_GIỎ',
     lastCheckedAt: formatVnDateTime(new Date()).formatted,
   };
 
@@ -815,68 +845,94 @@ export async function inspectTikTokVideoUrl(
   const isChannelMatched =
     !expectedKocHandle || expectedKocHandle === authorHandle;
 
-  const minDuration = options.minDurationSeconds || 30;
-  const isDurationOk = durationSeconds >= minDuration;
+  const minDuration = options.minDurationSeconds || 15;
+  const isDurationOk = durationSeconds === 0 || durationSeconds >= minDuration;
 
   // Tổng hợp Checklist nghiệm thu 5 tiêu chí
   const checklist: TikTokVideoInspectionResult['checklist'] = [
     {
       key: 'PUBLISH_DATE',
-      label: 'Ngày đăng & Tiến độ SLA',
-      passed: isOnTime,
-      detail: expectedDeadline
+      label: 'Trạng thái hiển thị & Tiến độ SLA',
+      passed: isPublicActive && isOnTime,
+      detail: !isPublicActive
+        ? 'Video đã bị xóa, ẩn riêng tư hoặc đường dẫn không tồn tại trên TikTok'
+        : expectedDeadline
         ? isOnTime
           ? `Đăng lúc ${formattedDate.formatted} (Đúng hạn cam kết ${expectedDeadline})`
           : `Đăng lúc ${formattedDate.formatted} (Trễ ${daysDelayed} ngày so với hạn ${expectedDeadline})`
-        : `Đăng lúc ${formattedDate.formatted}`,
+        : `Đang hiển thị công khai · Đăng lúc ${formattedDate.formatted}`,
     },
     {
       key: 'CHANNEL_MATCH',
       label: 'Đúng kênh KOC cam kết',
-      passed: isChannelMatched,
-      detail: isChannelMatched
+      passed: isPublicActive && isChannelMatched,
+      detail: !isPublicActive
+        ? 'Không xác thực được kênh do video không hiển thị công khai'
+        : isChannelMatched
         ? `Đăng đúng trên kênh @${authorHandle} (${authorNickname})`
         : `Cảnh báo: Bài đăng trên @${authorHandle}, lệch với kênh cam kết @${expectedKocHandle}`,
     },
     {
       key: 'HASHTAGS_CONTENT',
       label: 'Nội dung Video (Lời thoại, USP & Hashtag)',
-      passed: missingRequiredHashtags.length === 0 && missingUspKeywords.length === 0,
-      detail:
-        missingRequiredHashtags.length === 0 && missingUspKeywords.length === 0
-          ? `Đủ hashtag (${matchedRequiredHashtags.join(', ')}) & Đủ thông điệp USP (${matchedUspKeywords.join(', ')})`
-          : [
-              missingRequiredHashtags.length > 0
-                ? `Thiếu hashtag: ${missingRequiredHashtags.join(', ')}`
-                : '',
-              missingUspKeywords.length > 0
-                ? `Thiếu thông điệp USP: ${missingUspKeywords.join(', ')}`
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' · '),
+      passed:
+        isPublicActive &&
+        missingRequiredHashtags.length === 0 &&
+        missingUspKeywords.length === 0,
+      detail: !isPublicActive
+        ? 'Không đọc được caption/hashtag'
+        : missingRequiredHashtags.length === 0 && missingUspKeywords.length === 0
+        ? `Hashtag thực tế: ${hashtags.slice(0, 6).join(' ') || 'Không gắn hashtag'}${
+            matchedUspKeywords.length > 0 ? ` · Khớp USP: ${matchedUspKeywords.join(', ')}` : ''
+          }`
+        : [
+            missingRequiredHashtags.length > 0
+              ? `Thiếu hashtag: ${missingRequiredHashtags.join(', ')}`
+              : '',
+            missingUspKeywords.length > 0
+              ? `Thiếu thông điệp USP: ${missingUspKeywords.join(', ')}`
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' · '),
     },
     {
       key: 'POLICY_SAFETY',
       label: 'An toàn chính sách sàn, Khung hình & Từ cấm',
-      passed: violatedBlacklistWords.length === 0 && !visualAndAudioCheck.isPackagingTextMirrored,
-      detail:
-        violatedBlacklistWords.length === 0
-          ? `Không vi phạm từ cấm · Sản phẩm lên hình ở giây ${firstProductAppearanceSec}s · Không ngược chữ bao bì`
-          : `Phát hiện ${violatedBlacklistWords.length} cụm từ nhạy cảm: ${violatedBlacklistWords.map((v) => `"${v.word}"`).join(', ')}`,
+      passed:
+        isPublicActive &&
+        violatedBlacklistWords.length === 0 &&
+        !visualAndAudioCheck.isPackagingTextMirrored,
+      detail: !isPublicActive
+        ? 'Chưa kiểm tra được do video không hiển thị'
+        : violatedBlacklistWords.length === 0
+        ? 'Không phát hiện từ ngữ vi phạm chính sách sàn TikTok Shop / Y tế'
+        : `Phát hiện ${violatedBlacklistWords.length} cụm từ nhạy cảm: ${violatedBlacklistWords.map((v) => `"${v.word}"`).join(', ')}`,
     },
     {
       key: 'VIDEO_SPECS',
-      label: 'Giỏ hàng Gian hàng chính hãng & Mã Spark Ads',
-      passed: isDurationOk && hasCartAnchor && cartAnchorVerification.isOfficialBrandStoreMatched,
-      detail: `Thời lượng ${durationSeconds}s · Giỏ hàng: ${cartAnchorVerification.detectedShopName} (SKU ${detectedProductId}) · Spark Ads: ${sparkAdsVerification.authorizedDays} ngày`,
+      label: 'Thời lượng & Giỏ hàng TikTok Shop',
+      passed: isPublicActive && isDurationOk,
+      detail: !isPublicActive
+        ? 'Không có dữ liệu kỹ thuật'
+        : `Thời lượng ${durationSeconds}s · ${
+            hasCartAnchor
+              ? `Có gắn giỏ hàng (${cartAnchorTitle || 'TikTok Shop'})`
+              : 'Chưa gắn giỏ hàng trên video'
+          }`,
     },
   ];
 
   let verdict: VideoAcceptanceVerdict = 'ĐẠT_CHUẨN';
-  let verdictSummary = 'Đạt đủ tiêu chuẩn nghiệm thu lên sóng & bàn giao chạy Ads';
+  let verdictSummary = 'Đạt đủ tiêu chuẩn nghiệm thu lên sóng';
 
-  if (violatedBlacklistWords.length > 0 || !isChannelMatched) {
+  if (!isPublicActive) {
+    verdict = 'KHÔNG_ĐẠT';
+    verdictSummary =
+      videoStatus === 'INVALID_LINK'
+        ? 'Đường dẫn không hợp lệ hoặc không chứa mã Video ID TikTok'
+        : 'Video đã bị xóa, ẩn hoặc chuyển sang chế độ riêng tư trên TikTok';
+  } else if (violatedBlacklistWords.length > 0 || !isChannelMatched) {
     verdict = 'KHÔNG_ĐẠT';
     verdictSummary = !isChannelMatched
       ? `Sai kênh đăng (@${authorHandle} khác với @${expectedKocHandle})`
@@ -885,8 +941,7 @@ export async function inspectTikTokVideoUrl(
     !isOnTime ||
     missingRequiredHashtags.length > 0 ||
     missingUspKeywords.length > 0 ||
-    !isDurationOk ||
-    !hasCartAnchor
+    !isDurationOk
   ) {
     verdict = 'CẦN_KIỂM_TRA';
     const reasons: string[] = [];
@@ -894,12 +949,11 @@ export async function inspectTikTokVideoUrl(
     if (missingRequiredHashtags.length > 0) reasons.push(`thiếu ${missingRequiredHashtags.join(', ')}`);
     if (missingUspKeywords.length > 0) reasons.push(`thiếu ý USP (${missingUspKeywords.join(', ')})`);
     if (!isDurationOk) reasons.push(`thời lượng ngắn (${durationSeconds}s)`);
-    if (!hasCartAnchor) reasons.push('chưa gắn giỏ hàng');
     verdictSummary = `Cần lưu ý: ${reasons.join(', ')}`;
   }
 
   return {
-    id: `INSP-${videoId.slice(-6)}-${Date.now().toString().slice(-4)}`,
+    id: `INSP-${(videoId || '000000').slice(-6)}-${Date.now().toString().slice(-4)}`,
     inputUrl: rawUrl,
     resolvedUrl: liveData.resolvedUrl || rawUrl,
     videoId,
@@ -909,7 +963,7 @@ export async function inspectTikTokVideoUrl(
       ? 'SNOWFLAKE_ID_DECODED'
       : 'SANDBOX_ESTIMATED',
     inspectedAt: new Date().toISOString(),
-    videoStatus: 'PUBLIC_ACTIVE',
+    videoStatus,
     authorHandle,
     authorNickname,
     authorAvatarUrl: liveData.authorAvatarUrl || masterKoc?.avatarUrl,
@@ -940,7 +994,7 @@ export async function inspectTikTokVideoUrl(
       subtitleSource,
       onScreenStickers,
       hookFirst3Seconds,
-      detectedProductMentions: [brandName, productName],
+      detectedProductMentions: [brandName, productName].filter(Boolean),
       matchedUspKeywords,
       missingUspKeywords,
       missingRequiredHashtags,
@@ -954,8 +1008,8 @@ export async function inspectTikTokVideoUrl(
     sparkAdsVerification,
     postAirRetentionCheck,
     matchedDealCode: matchedDeal?.dealCode,
-    matchedBrandName: matchedDeal?.brandName || brandName,
-    matchedProductName: matchedDeal?.productName || productName,
+    matchedBrandName: matchedDeal?.brandName || brandName || undefined,
+    matchedProductName: matchedDeal?.productName || productName || undefined,
     expectedKocHandle: expectedKocHandle || undefined,
     isChannelMatched,
     verdict,

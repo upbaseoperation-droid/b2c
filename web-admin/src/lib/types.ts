@@ -616,6 +616,54 @@ export type DealStatus =
 export type BrandApprovalStatus = 'ĐÃ_DUYỆT' | 'CHỜ_DUYỆT' | 'TỪ_CHỐI';
 export type KocJobResponseStatus = 'ĐỒNG_Ý' | 'TỪ_CHỐI' | 'ĐANG_THƯƠNG_LƯỢNG';
 
+export type MediaChannelPlatform = 'TikTok' | 'Facebook' | 'Instagram' | 'Shopee Video' | 'YouTube' | 'Threads';
+export type AffiliateChannelPlatform = 'TikTok Shop' | 'Shopee' | 'Lazada' | 'Không gắn giỏ';
+export type BookingDealType = 'SINGLE_CONTENT' | 'MULTI_PLATFORM_CONTENT' | 'SERVICE_ONLY';
+export type KocPricingDisplayMode = 'PACKAGE_TOTAL' | 'ITEMIZED_SOW';
+
+export interface DealDeliverableItem {
+  id: string;
+  title: string;
+  mediaChannel: MediaChannelPlatform; // Nơi KOC đăng tải nội dung
+  affiliateChannel: AffiliateChannelPlatform; // Sàn gắn link nhận hoa hồng & chịu P&L
+  productionType: 'ORIGINAL' | 'CROSS_POST' | 'REUP';
+  wave: 0 | 1; // Wave 0: Bài gốc sản xuất trước | Wave 1: Bài phụ thuộc chờ nghiệm thu Wave 0
+  dependsOnDeliverableId?: string;
+  lockStatus: 'UNLOCKED' | 'LOCKED_BY_WAVE_0' | 'VERIFIED' | 'DROPPED';
+  assignedChannelPic: string; // Hỗ trợ Multi-PIC (mỗi sàn/kênh có thể do chuyên viên khác nhau phụ trách)
+  allocatedWeightPct: number; // Tỷ trọng phân bổ P&L định mức chuẩn (VD: 70% bài gốc, 15% reup)
+  allocatedCostVnd: number; // Chi phí P&L phân bổ cho hạng mục này
+  airDate?: string;
+  publishedUrl?: string;
+}
+
+export interface DealRightsTermItem {
+  id: string;
+  termType: 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'LINK_BIO_CART';
+  termLabel: string;
+  scopeType: 'ASSET' | 'MEDIA_CHANNEL' | 'DEAL'; // 3 tầng phạm vi: Bài lẻ | Kênh | Toàn Deal
+  targetDeliverableId?: string;
+  targetMediaChannel?: MediaChannelPlatform;
+  anchorType: 'AIR_DATE' | 'ACCEPTANCE_DATE'; // Mốc tính hạn: Ngày lên bài (Độc quyền) | Ngày nghiệm thu (Mã Ads/Hình ảnh)
+  durationDays: number;
+  expiresAt?: string;
+  allocatedWeightPct?: number;
+  allocatedCostVnd?: number;
+  status: 'ACTIVE' | 'PENDING_ANCHOR' | 'EXPIRING_SOON' | 'EXPIRED';
+}
+
+export interface DealRevisionItem {
+  version: number;
+  updatedAt: string;
+  updatedBy: string;
+  summary: string;
+  changedFields: {
+    fieldLabel: string;
+    oldValue: string;
+    newValue: string;
+  }[];
+}
+
 export interface BookingDealItem {
   id: string;
   dealCode: string; // Mã BO (ví dụ: BO260757834, BO26_CHANH_1010)
@@ -778,6 +826,17 @@ export interface BookingDealItem {
   isOnTimePost?: boolean;
   contentFormat?: string;
   signedContractUrl?: string;
+
+  // ==========================================
+  // MỞ RỘNG QUẢN LÝ BOOKING ĐA NỀN TẢNG (MULTI-PLATFORM BOOKING & P&L ALLOCATION)
+  // ==========================================
+  dealType?: BookingDealType; // Phân loại Deal: Đơn kênh | Đa nền tảng | Mua lẻ dịch vụ (Service-Only)
+  sourceDealCode?: string; // Mã Deal gốc tham chiếu (khi mua thêm mã Ads / bản quyền từ video cũ)
+  pricingDisplayMode?: KocPricingDisplayMode; // Chế độ hiển thị giá với KOC: Trọn gói (ẩn giá lẻ cho KL1-KL3) | Bóc tách từng hạng mục (KL4-KL7)
+  deliverables?: DealDeliverableItem[]; // Danh sách các bài đăng đa kênh (Tách Media Channel vs Affiliate Channel & Khóa Wave 0 -> Wave 1)
+  rightsTerms?: DealRightsTermItem[]; // Các điều khoản bản quyền, mã Ads, độc quyền theo 3 tầng (Asset / Media Channel / Deal)
+  revisions?: DealRevisionItem[]; // Lịch sử vòng đàm phán & đánh dấu trường thay đổi
+  contractAppendixCode?: string; // Mã Phụ lục hợp đồng gom theo tháng (giảm tải ký hợp đồng lẻ)
 }
 
 export interface MasterTierQuota {
