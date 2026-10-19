@@ -2,17 +2,12 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  BarChart3, 
   Video, 
   CheckCircle2, 
   AlertTriangle, 
   Upload, 
-  FileSpreadsheet, 
-  Sparkles, 
   Search, 
   Check, 
-  Layers, 
-  Award,
   Zap,
   Database,
   FileText,
@@ -27,6 +22,7 @@ import {
   UserProfile
 } from '../../lib/types';
 import { formatVndShort, formatVnd } from '../../lib/format';
+import { ActionMenu, Button, EmptyState, PageActions, Select, Skeleton, Stat, StatRow, Status, Tabs, Toolbar } from '../ui';
 
 interface WeeklyAdsReportHubViewProps {
   currentUser: UserProfile;
@@ -230,244 +226,98 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* ========================================================================= */}
-      {/* HEADER & INGESTION CONTROL */}
-      {/* ========================================================================= */}
-      <div className="bg-surface rounded-xl border border-line p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-accent" />
-              <span>Đối soát báo cáo quảng cáo tuần</span>
-            </h2>
-          </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".xlsx,.xls"
+        className="hidden"
+      />
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setIsAdsReportOpen(true)}
-              className="btn-md bg-ink hover:bg-ink-2 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5 text-positive" />
-              <span>Lập báo cáo hiệu quả Ads</span>
-            </button>
+      {/* Nút chính lên thanh trên; thao tác phụ vào menu */}
+      <PageActions>
+        <ActionMenu
+          items={[
+            { label: 'Lập báo cáo hiệu quả Ads', icon: FileText, onSelect: () => setIsAdsReportOpen(true) },
+            {
+              label: isMappingApplied ? 'Đã đồng bộ KOC & deal' : 'Đồng bộ vào danh bạ KOC',
+              icon: isMappingApplied ? Check : Database,
+              disabled: isLoading || !activeReportData || isMappingApplied,
+              onSelect: handleApplyMappingToSystem,
+            },
+          ]}
+        />
+        <Button size="sm" variant="primary" icon={Upload} disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+          {isUploading ? 'Đang tải file…' : 'Tải báo cáo (.xlsx)'}
+        </Button>
+      </PageActions>
 
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-              accept=".xlsx,.xls" 
-              className="hidden" 
-            />
-
-            <button
-              type="button"
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-md bg-surface hover:bg-sunken text-ink border border-line-strong rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5 text-ink-3" />
-              <span>{isUploading ? 'Đang tải file...' : 'Tải lên báo cáo mới (.xlsx)'}</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isLoading || !activeReportData}
-              onClick={handleApplyMappingToSystem}
-              className={`btn-md text-xs font-semibold rounded-lg flex items-center gap-1.5 transition ${
-                isMappingApplied 
-                  ? 'bg-positive-soft text-positive border border-line' 
-                  : 'bg-primary hover:bg-primary-hover text-white'
-              }`}
-            >
-              {isMappingApplied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-positive" />
-                  <span>Đã đồng bộ KOC & deal</span>
-                </>
-              ) : (
-                <>
-                  <Database className="w-3.5 h-3.5 text-white" />
-                  <span>Đồng bộ vào danh bạ KOC</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Weekly Report Selector Pills */}
-        <div className="mt-4 pt-4 border-t border-line flex items-center gap-3 overflow-x-auto pb-1">
-          <span className="text-2xs font-semibold text-ink-3 shrink-0">
-            Kỳ báo cáo đã lưu:
-          </span>
-          {reportsList.map(rep => {
-            const isSelected = selectedFileName === rep.fileName;
-            return (
-              <button
-                key={rep.id}
-                type="button"
-                onClick={() => handleParseReport(rep.fileName)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 shrink-0 border ${
-                  isSelected
-                    ? 'bg-primary text-white border-primary font-semibold'
-                    : 'bg-canvas hover:bg-sunken text-ink-2 border-line'
-                }`}
-              >
-                <FileSpreadsheet className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-ink-3'}`} />
-                <span>{rep.reportWeek}</span>
-                <span className={`text-2xs font-mono tabular-nums ${isSelected ? 'text-white/80' : 'text-ink-3'}`}>
-                  ({rep.totalRows.toLocaleString()} dòng)
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* KPI METRIC CARDS */}
-      {/* ========================================================================= */}
-      {activeReportData && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">Chi phí Ads</div>
-            <div className="text-lg font-semibold font-mono text-ink mt-1">
-              {formatVndShort(activeReportData.meta.totalSpend)}
-            </div>
-            <div className="text-2xs text-ink-3 mt-0.5 font-mono">
-              {formatVnd(activeReportData.meta.totalSpend)}
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">Doanh thu gộp (GMV)</div>
-            <div className="text-lg font-semibold font-mono text-positive mt-1">
-              {formatVndShort(activeReportData.meta.totalGmv)}
-            </div>
-            <div className="text-2xs text-positive mt-0.5 font-mono">
-              {formatVnd(activeReportData.meta.totalGmv)}
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">ROAS tổng thể</div>
-            <div className="text-lg font-semibold font-mono text-accent mt-1 flex items-baseline gap-1.5">
-              <span>{activeReportData.meta.overallRoas}x</span>
-              <span className="text-2xs font-medium text-positive font-sans">
-                Hiệu quả tốt
-              </span>
-            </div>
-            <div className="text-2xs text-ink-3 mt-0.5">
-              1đ chi phí → {activeReportData.meta.overallRoas}đ GMV
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">Số đơn hàng</div>
-            <div className="text-lg font-semibold font-mono text-ink mt-1">
-              {activeReportData.meta.totalOrders.toLocaleString()} <span className="text-xs font-normal text-ink-3">đơn</span>
-            </div>
-            <div className="text-2xs text-ink-3 mt-0.5">
-              CPA: {formatVndShort(Math.round(activeReportData.meta.totalSpend / (activeReportData.meta.totalOrders || 1)))}/đơn
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">KOC & video</div>
-            <div className="text-lg font-semibold font-mono text-ink mt-1">
-              {activeReportData.totalCreatorCount.toLocaleString()} <span className="text-xs font-normal text-ink-3">kênh</span>
-            </div>
-            <div className="text-2xs text-ink-3 mt-0.5 font-mono">
-              {activeReportData.meta.totalRows.toLocaleString()} video ads
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl border border-line p-3.5">
-            <div className="text-2xs font-medium text-ink-3">Tỷ lệ khớp danh bạ KOC</div>
-            <div className="text-lg font-semibold font-mono text-accent mt-1">
-              {activeReportData.matchRatePercent}%
-            </div>
-            <div className="text-2xs text-ink-3 mt-0.5">
-              Khớp {activeReportData.matchedKocCount} / {activeReportData.totalCreatorCount} KOC
-            </div>
-          </div>
-        </div>
+      {/* Chọn kỳ báo cáo đã lưu */}
+      {reportsList.length > 0 && (
+        <Toolbar>
+          <Select
+            aria-label="Kỳ báo cáo"
+            value={selectedFileName}
+            onChange={(e) => handleParseReport(e.target.value)}
+            className="w-auto"
+          >
+            {reportsList.map(rep => (
+              <option key={rep.id} value={rep.fileName}>
+                {rep.reportWeek} · {rep.totalRows.toLocaleString()} dòng
+              </option>
+            ))}
+          </Select>
+          {isMappingApplied && <Status tone="positive">Đã đồng bộ KOC & deal</Status>}
+        </Toolbar>
       )}
 
-      {/* ========================================================================= */}
-      {/* SUB-TABS NAVIGATION */}
-      {/* ========================================================================= */}
-      <div className="border-b border-line flex items-center justify-between gap-4">
-        <div className="flex items-center gap-1 -mb-px overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('CAMPAIGNS')}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'CAMPAIGNS'
-                ? 'border-ink text-ink'
-                : 'border-transparent text-ink-3 hover:text-ink'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Theo chiến dịch & sản phẩm</span>
-            {activeReportData && (
-              <span className="text-2xs text-ink-3 font-mono tabular-nums">
-                ({activeReportData.campaigns.length})
-              </span>
-            )}
-          </button>
+      {!activeReportData ? (
+        isLoading ? (
+          <div className="grid gap-2" aria-busy="true">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
+        ) : (
+          <EmptyState
+            title="Chưa có báo cáo Ads nào"
+            description="Tải file báo cáo quảng cáo TikTok (.xlsx) để xem chi phí, GMV, ROAS và đối soát KOC theo tuần."
+            action={
+              <Button variant="primary" icon={Upload} disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
+                Tải báo cáo (.xlsx)
+              </Button>
+            }
+          />
+        )
+      ) : (
+        <>
+          <StatRow size="sm">
+            <Stat
+              label="Chi phí Ads"
+              value={formatVndShort(activeReportData.meta.totalSpend)}
+              note={`${activeReportData.meta.totalOrders.toLocaleString()} đơn · CPA ${formatVndShort(Math.round(activeReportData.meta.totalSpend / (activeReportData.meta.totalOrders || 1)))}/đơn`}
+            />
+            <Stat label="Doanh thu gộp (GMV)" value={formatVndShort(activeReportData.meta.totalGmv)} note={formatVnd(activeReportData.meta.totalGmv)} />
+            <Stat
+              label="ROAS tổng thể"
+              value={`${activeReportData.meta.overallRoas}x`}
+              note={`1đ chi phí → ${activeReportData.meta.overallRoas}đ GMV`}
+            />
+            <Stat
+              label="Khớp danh bạ KOC"
+              value={`${activeReportData.matchRatePercent}%`}
+              note={`${activeReportData.matchedKocCount}/${activeReportData.totalCreatorCount} kênh · ${activeReportData.meta.totalRows.toLocaleString()} video ads`}
+            />
+          </StatRow>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('KOC_MAPPING')}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'KOC_MAPPING'
-                ? 'border-ink text-ink'
-                : 'border-transparent text-ink-3 hover:text-ink'
-            }`}
-          >
-            <Award className="w-4 h-4 text-warning" />
-            <span>Đối soát KOC & nhóm hiệu quả cao</span>
-            {activeReportData && (
-              <span className="text-2xs text-ink-3 font-mono tabular-nums">
-                ({activeReportData.creators.filter(c => c.isWinnerTop20).length})
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('CREATIVES')}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'CREATIVES'
-                ? 'border-ink text-ink'
-                : 'border-transparent text-ink-3 hover:text-ink'
-            }`}
-          >
-            <Video className="w-4 h-4 text-accent" />
-            <span>Chi tiết video & đối soát Spark Ads</span>
-            {activeReportData && (
-              <span className="text-2xs text-ink-3 font-mono tabular-nums">
-                (100)
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('INSIGHTS')}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'INSIGHTS'
-                ? 'border-ink text-ink'
-                : 'border-transparent text-ink-3 hover:text-ink'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-accent" />
-            <span>Gợi ý tối ưu quảng cáo</span>
-          </button>
-        </div>
-      </div>
+          <Tabs
+            value={activeTab}
+            onChange={setActiveTab}
+            items={[
+              { key: 'CAMPAIGNS', label: 'Chiến dịch & sản phẩm', count: activeReportData.campaigns.length },
+              { key: 'KOC_MAPPING', label: 'Đối soát KOC', count: activeReportData.creators.filter(c => c.isWinnerTop20).length },
+              { key: 'CREATIVES', label: 'Video & Spark Ads', count: activeReportData.topCreatives.length },
+              { key: 'INSIGHTS', label: 'Gợi ý tối ưu' },
+            ]}
+          />
+        </>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: CHIẾN DỊCH & SẢN PHẨM PGM */}

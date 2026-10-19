@@ -54,7 +54,7 @@ import {
   INITIAL_DEPARTMENT_ACCESS_RULES,
   ROLE_DISPLAY_NAME
 } from '../../lib/rbacData';
-import { Avatar, Button, Presence, Segmented, Status , ChannelTag } from '../ui';
+import { ActionMenu, Avatar, Button, PageActions, Presence, Segmented, Status, ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
@@ -690,25 +690,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             { key: 'ASSIGNMENT_HISTORY', label: `Lịch sử PIC & Bàn giao · ${INITIAL_STORE_ASSIGNMENT_HISTORY.length}` },
           ]}
         />
-        <div className="flex items-center gap-2">
+        <PageActions>
           {onNavigateToDashboard && (
-            <button
-              type="button"
-              onClick={() => onNavigateToDashboard(
-                activeSection === 'BRANDS' ? 'dashboard-brand' :
-                activeSection === 'STAFF' ? 'dashboard-staff' : 'dashboard-store'
-              )}
-              className="px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-canvas text-xs font-medium text-ink-2 hover:text-ink flex items-center gap-1.5 transition"
-            >
-              <BarChart3 className="w-3.5 h-3.5 text-brand" />
-              <span>
-                {activeSection === 'BRANDS' ? 'Xem Dashboard Thương hiệu' :
-                 activeSection === 'STAFF' ? 'Xem Dashboard Hiệu suất Nhân viên' : 'Xem Dashboard Gian hàng'}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 text-ink-3" />
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: activeSection === 'BRANDS' ? 'Xem báo cáo thương hiệu' : activeSection === 'STAFF' ? 'Xem báo cáo nhân sự' : 'Xem báo cáo gian hàng',
+                  icon: BarChart3,
+                  onSelect: () => onNavigateToDashboard(activeSection === 'BRANDS' ? 'dashboard-brand' : activeSection === 'STAFF' ? 'dashboard-staff' : 'dashboard-store'),
+                },
+              ]}
+            />
           )}
           <Button
+            size="sm"
             variant="primary"
             icon={Plus}
             onClick={() => {
@@ -737,7 +732,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           >
             Thêm nhãn hàng
           </Button>
-        </div>
+        </PageActions>
       </div>
 
       {/* ========================================================================= */}

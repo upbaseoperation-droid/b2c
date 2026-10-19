@@ -906,6 +906,9 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
   cathydoll: ['cathy doll', 'kem chống nắng cathy doll', 'sữa tắm cathy doll'],
   nabizam: ['nabizam', 'bỉm nabizam', 'tã nabizam'],
   nousvietnam: [
+    '#quanaonous',
+    '#nousbaby',
+    'nous petit',
     'nous vietnam',
     'nous việt nam',
     'nous baby',
@@ -914,15 +917,28 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
     'đồ nous',
     'quần áo nous',
     'bộ nous',
+    'set nous',
+    'body nous',
+    'khăn nous',
+    'khăn sữa nous',
+    'bao tay nous',
+    'chăn nous',
     'nous cho bé',
     'nous sơ sinh',
     'hãng nous',
     'set sơ sinh nous',
     'review đồ nous',
+    'unbox đồ nous',
     'săn sale nous',
-    'khăn sữa nous',
+    'noûs',
+    'quần áo noûs',
+    'noûs cho bé',
+    'noûs sơ sinh',
   ],
   nous: [
+    '#quanaonous',
+    '#nousbaby',
+    'nous petit',
     'nous vietnam',
     'nous việt nam',
     'nous baby',
@@ -931,13 +947,23 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
     'đồ nous',
     'quần áo nous',
     'bộ nous',
+    'set nous',
+    'body nous',
+    'khăn nous',
+    'khăn sữa nous',
+    'bao tay nous',
+    'chăn nous',
     'nous cho bé',
     'nous sơ sinh',
     'hãng nous',
     'set sơ sinh nous',
     'review đồ nous',
+    'unbox đồ nous',
     'săn sale nous',
-    'khăn sữa nous',
+    'noûs',
+    'quần áo noûs',
+    'noûs cho bé',
+    'noûs sơ sinh',
   ],
   coolmate: [
     'coolmate',
@@ -949,8 +975,30 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
   ],
 };
 
-export function stripVnAccents(str: string): string {
+export function decodeHtmlEntities(str: string): string {
   return (str || '')
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCodePoint(Number(dec));
+      } catch {
+        return '';
+      }
+    })
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try {
+        return String.fromCodePoint(parseInt(hex, 16));
+      } catch {
+        return '';
+      }
+    })
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&nbsp;/gi, ' ');
+}
+
+export function stripVnAccents(str: string): string {
+  return decodeHtmlEntities(str || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -1042,7 +1090,7 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
         ...(underscoredPhrase ? [underscoredPhrase] : []),
         ...(rawClean.includes('.') ? [asciiClean] : []),
         ...distinctiveSubTokens,
-        ...spacedAliases.map((s) => stripVnAccents(s).trim()),
+        ...spacedAliases.map((s) => stripVnAccents(s).replace(/^#+/, '').trim()),
       ].filter((t) => t.length >= 3)
     )
   );
@@ -1055,13 +1103,16 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
       ...(rawClean.includes('.') ? [`tiktok.com "@${asciiClean}"`] : []),
       ...(compactTag !== rootToken ? [`tiktok.com "#${compactTag}"`] : []),
       `tiktok.com "#${rootToken}vietnam"`,
-      ...spacedAliases.slice(0, 14).flatMap((alias) => {
+      ...spacedAliases.slice(0, 30).flatMap((alias) => {
+        if (alias.startsWith('#')) {
+          return [`tiktok.com "${alias}"`];
+        }
         const otherWords = alias
           .replace(new RegExp(`\\b${escapeRegexLiteral(rootToken)}\\b`, 'gi'), '')
           .trim();
         return [
           `tiktok.com "${alias}"`,
-          ...(otherWords ? [`tiktok.com "${rootToken}" ${otherWords}`] : []),
+          ...(otherWords && !alias.includes('û') ? [`tiktok.com "${rootToken}" ${otherWords}`] : []),
         ];
       }),
       ...distinctiveSubTokens.map((sub) => `tiktok.com "#${sub}"`),
@@ -1080,6 +1131,9 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
             `tiktok.com "${rootToken}" mẹ bỉm`,
             `tiktok.com "${rootToken}" quần áo`,
             `tiktok.com "${rootToken}" bộ`,
+            `tiktok.com "${rootToken}" bé`,
+            `tiktok.com "${rootToken}" mềm`,
+            `tiktok.com "${rootToken}" giá`,
             `tiktok.com "${rootToken}" set`,
             `tiktok.com "#${rootToken}" cho bé`,
             `tiktok.com "#${rootToken}" chính hãng`,
@@ -1113,7 +1167,12 @@ function textContainsAnyToken(rawText: string, matchTokens: string[]): boolean {
   for (const token of matchTokens) {
     if (!token) continue;
     if (token.length <= 5 && /^[a-z0-9]+$/.test(token)) {
-      const re = new RegExp(`(?:^|[^a-z0-9])${escapeRegexLiteral(token)}(?:$|[^a-z0-9]|vietnam|vn|baby|kids|mom|mama|store|shop|official|cushion)`, 'i');
+      const re = new RegExp(
+        `(?:^|[^a-z0-9]|quanao|dososinh|do|bo|set|khan|nha|hang|chuyennha|review|unbox|sale|shop|me|be|bimsua|kem|son|sua)${escapeRegexLiteral(
+          token
+        )}(?:$|[^a-z0-9]|vietnam|vn|baby|kids|mom|mama|store|shop|official|cushion|petit|newborn|sosinh|chobe|aw|ss|party|tet|hanoi|hcm|saigon|chinhhang|\\d)`,
+        'i'
+      );
       if (re.test(norm)) return true;
     } else if (norm.includes(token)) {
       return true;
@@ -1506,6 +1565,16 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       blocksToScan = [rawHtml];
     }
 
+    const pageHasExplicitTokenMatch =
+      requiredTokens.length === 0 ||
+      (videoCardBlocks.length > 1 &&
+        blocksToScan.some((b) => {
+          const t = b.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
+          const s = b.match(/mc_vtvc_title[^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
+          const o = b.match(/ourl="([^"]*)"/i)?.[1] || '';
+          return textContainsAnyToken(decodeHtmlEntities(`${t} ${s} ${o}`), requiredTokens);
+        }));
+
     for (const block of blocksToScan) {
       const b64Decoded = [...block.matchAll(/(?:[?&]|&amp;)u=a1([a-zA-Z0-9_-]+)/g)]
         .map((m) => {
@@ -1542,54 +1611,61 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         }
 
         const cardTitle = block.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
+        const cardStrong =
+          block
+            .match(/mc_vtvc_title[^>]*>([\s\S]*?)<\/div>/i)?.[1]
+            ?.replace(/<[^>]+>/g, ' ') || '';
         const cardAlt = block.match(/\balt="([^"]*)"/i)?.[1] || '';
         const cardOurl = block.match(/ourl="([^"]*)"/i)?.[1] || '';
-        const visibleCardOnly = block
-          .replace(/<div\s+class="b_factrow[\s\S]*$/i, ' ')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&amp;/g, '&');
+        const visibleCardOnly = decodeHtmlEntities(
+          block
+            .replace(/<div\s+class="b_factrow[\s\S]*$/i, ' ')
+            .replace(/<[^>]+>/g, ' ')
+        );
         const cardSemanticText =
           videoCardBlocks.length > 1
-            ? `${cardTitle} ${cardAlt} ${cardOurl}`
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&amp;/g, '&')
+            ? decodeHtmlEntities(`${cardTitle} ${cardStrong} ${cardAlt} ${cardOurl}`)
             : visibleCardOnly;
 
-        if (!textContainsAnyToken(cardSemanticText, requiredTokens)) {
+        const normCard = stripVnAccents(cardSemanticText);
+
+        // Loại bỏ ngay thẻ video nước ngoài hoặc video nhảy/nhạc/game không liên quan trước khi tốn lượt inspect
+        if (
+          /\b(pourtoi|france|parati|senegal|senegalaise|cameroun|maroc|algerie|tunisie|quebec|abidjan|dakar|congo|mali|benin|gabon|haiti|belgique|suisse|nous avons|entre nous|chez nous|avec nous|pour nous|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand|mashup|tiktok dances|dance trend|dieu nhay|nhay tiktok|lien quan|free fire|bong da)\b/i.test(
+            normCard
+          )
+        ) {
           continue;
         }
 
-        if (isStructuredCard) {
-          const normCard = stripVnAccents(cardSemanticText);
-          // Loại bỏ ngay thẻ video nước ngoài (Pháp, châu Phi Pháp ngữ, Tây Ban Nha, Mỹ, Brazil...) trước khi tốn lượt inspect
-          if (
-            /\b(pourtoi|france|parati|senegal|senegalaise|cameroun|maroc|algerie|tunisie|quebec|abidjan|dakar|congo|mali|benin|gabon|haiti|belgique|suisse|nous avons|entre nous|chez nous|avec nous|pour nous|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand)\b/i.test(
-              normCard
-            )
-          ) {
+        const hasExplicitToken = textContainsAnyToken(cardSemanticText, requiredTokens);
+        const hasVnDiacritics =
+          /[ăằắặẳẵầấậẩẫềếệểễỉĩỏõồốộổỗơờớợởỡủũưừứựửữỳỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
+            cardSemanticText
+          );
+        const hasVnHint =
+          /\b(vietnam|viet nam|vn|chinh hang|chinhhang|xuhuong|tiktokshop|mebim|me bim|sosinh|so sinh|chobe|cho be|quanao|quan ao|dososinh|do so sinh|unbox|haul|san sale|koc|sua tam|kem |serum|son |ao |quan |set |bo |bim |sua |petit|newborn|lapomme|bubaby|lullaby|dokma)\b/i.test(
+            normCard
+          );
+        const hasLongToken =
+          longRequiredTokens.length > 0 &&
+          textContainsAnyToken(cardSemanticText, longRequiredTokens);
+
+        // Cho phép ứng viên từ trang kết quả hợp lệ nếu Bing cắt ngắn tiêu đề 60 ký tự (hashtag thương hiệu nằm ở cuối caption trên TikTok)
+        // nhưng tiêu đề thẻ có dấu tiếng Việt và từ khóa ngữ cảnh review/sản phẩm (vẫn được kiểm tra 100% bằng doesInspectedVideoMatchTarget trên trang TikTok thật)
+        const isTruncatedVnProductCard =
+          videoCardBlocks.length > 1 &&
+          pageHasExplicitTokenMatch &&
+          hasVnDiacritics &&
+          hasVnHint;
+
+        if (!hasExplicitToken && !isTruncatedVnProductCard) {
+          continue;
+        }
+
+        if (isStructuredCard && isShortAmbiguousRoot && hasExplicitToken) {
+          if (!hasVnDiacritics && !hasVnHint && !hasLongToken) {
             continue;
-          }
-
-          if (isShortAmbiguousRoot) {
-            // Chỉ dùng các ký tự có dấu đặc trưng riêng của tiếng Việt (không dùng ì, í, ò, ó, ù, ú đơn lẻ vì trùng tiếng Pháp/Tây Ban Nha)
-            const hasVnDiacritics =
-              /[ăằắặẳẵầấậẩẫềếệểễỉĩỏõồốộổỗơờớợởỡủũưừứựửữỳỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
-                cardSemanticText
-              );
-            const hasVnHint =
-              /\b(vietnam|viet nam|vn|chinh hang|chinhhang|xuhuong|tiktokshop|mebim|me bim|sosinh|so sinh|chobe|cho be|quanao|quan ao|dososinh|do so sinh|unbox|haul|san sale|koc|sua tam|kem |serum|son |ao |quan |set |bo |bim |sua )\b/i.test(
-                normCard
-              );
-            const hasLongToken =
-              longRequiredTokens.length > 0 &&
-              textContainsAnyToken(cardSemanticText, longRequiredTokens);
-
-            if (!hasVnDiacritics && !hasVnHint && !hasLongToken) {
-              continue;
-            }
           }
         }
       }
@@ -1811,39 +1887,44 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     pushTask(q, 0, 'video');
   }
 
-  // Tầng 2: Toàn bộ baseQueries ở trang 2 (first=35)
-  for (const q of baseQueries) {
-    pushTask(q, 35, 'video');
+  // Tầng 2: Các thẻ ghép hashtag phổ biến của thương hiệu trên TikTok Việt Nam
+  const rootTerm = targetProfile?.rootToken || rawTargetSeed.trim();
+  if (rootTerm && rootTerm.length >= 3) {
+    const compoundHashtags = [
+      `#${rootTerm}vietnam`,
+      `#${rootTerm}vn`,
+      `#${rootTerm}baby`,
+      `#${rootTerm}official`,
+      `#${rootTerm}chinhhang`,
+      `#review${rootTerm}`,
+      `#${rootTerm}review`,
+      `#quanao${rootTerm}`,
+      `#do${rootTerm}`,
+      `#bo${rootTerm}`,
+      `#set${rootTerm}`,
+      `#kem${rootTerm}`,
+      `#son${rootTerm}`,
+      `#sua${rootTerm}`,
+    ];
+    for (const tag of compoundHashtags) {
+      pushTask(`tiktok.com "${tag}"`, 0, 'video');
+    }
   }
 
-  // Tầng 3: Kết hợp hậu tố mở rộng theo đợt hiện tại và các đợt lân cận ở first=0
+  // Tầng 3: Kết hợp hậu tố mở rộng trực tiếp với từ khóa gốc ở first=0
   const activeModifiers = [
     batchModifiers[pageOffset % batchModifiers.length],
     batchModifiers[(pageOffset * 2 + 1) % batchModifiers.length],
     batchModifiers[(pageOffset * 3 + 2) % batchModifiers.length],
   ];
-  for (const mod of activeModifiers) {
-    for (const q of baseQueries.slice(0, 12)) {
-      pushTask(`${q} ${mod}`, 0, 'video');
+  if (rootTerm) {
+    for (const mod of [...activeModifiers, ...batchModifiers]) {
+      pushTask(`tiktok.com "${rootTerm}" ${mod}`, 0, 'video');
+      pushTask(`tiktok.com "${mod} ${rootTerm}"`, 0, 'video');
     }
   }
 
-  // Tầng 4: Toàn bộ baseQueries ở trang 3 (first=70) và trang 4 (first=105)
-  for (const q of baseQueries.slice(0, 18)) {
-    pushTask(q, 70, 'video');
-  }
-  for (const q of baseQueries.slice(0, 14)) {
-    pushTask(q, 105, 'video');
-  }
-
-  // Tầng 5: Mở rộng qua toàn bộ các hậu tố còn lại ở first=0 để vét cạn khi người dùng quét 100-500 KOC
-  for (const mod of batchModifiers) {
-    for (const q of baseQueries.slice(0, 8)) {
-      pushTask(`${q} ${mod}`, 0, 'video');
-    }
-  }
-
-  // Tầng 6: Bing Web Search & DuckDuckGo HTML Search
+  // Tầng 4: Bing Web Search & DuckDuckGo HTML Search
   const webSeedTerms = Array.from(
     new Set([
       ...(targetProfile?.spacedAliases?.slice(0, 4) || []),

@@ -101,7 +101,7 @@ import {
 } from 'lucide-react';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
-import { Button, Presence, Segmented, Tabs } from '../ui';
+import { Button, Presence, Segmented, Select, Tabs } from '../ui';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
 import { ManagerDelegationHub } from './ManagerDelegationHub';
@@ -569,35 +569,31 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Thanh điều khiển: 4 phân khu tác nghiệp điều phối & quản lý (tách biệt hoàn toàn với 6 Dashboard Báo cáo) */}
-      <div className="space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-line pb-2">
-          <Tabs
-            value={activeTab}
-            onChange={(k) => setActiveTab(k as typeof activeTab)}
-            items={[
-              { key: 'DELEGATION', label: '1. Phân công Gian hàng & Nhãn hàng' },
-              { key: 'ALLOCATION', label: '2. Giao Hạn mức 4 Bậc & Duyệt Plan' },
-              { key: 'SLA_MANAGEMENT', label: '3. Xử lý Vi phạm SLA & Khóa sổ', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
-              { key: 'MINDMAP', label: '4. Sơ đồ phân cấp & Phụ trách' },
-            ]}
-          />
-
-          {activeTab === 'ALLOCATION' && (
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-2xs font-medium text-ink-3 hidden sm:inline">Kỳ kế hoạch:</span>
-              <Segmented
-                items={masterPlans.map(plan => ({
-                  key: plan.month,
-                  label: plan.monthLabel,
-                }))}
-                value={selectedMonth}
-                onChange={setSelectedMonth}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      {/* 4 phân khu điều phối (tách biệt với các báo cáo); chọn kỳ nằm cùng hàng khi ở tab hạn mức */}
+      <Tabs
+        value={activeTab}
+        onChange={(k) => setActiveTab(k as typeof activeTab)}
+        items={[
+          { key: 'DELEGATION', label: 'Phân công gian hàng' },
+          { key: 'ALLOCATION', label: 'Hạn mức & duyệt Plan' },
+          { key: 'SLA_MANAGEMENT', label: 'Vi phạm SLA', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
+          { key: 'MINDMAP', label: 'Sơ đồ phụ trách' },
+        ]}
+        actions={
+          activeTab === 'ALLOCATION' ? (
+            <Select
+              aria-label="Kỳ kế hoạch"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-auto"
+            >
+              {masterPlans.map(plan => (
+                <option key={plan.month} value={plan.month}>{plan.monthLabel}</option>
+              ))}
+            </Select>
+          ) : undefined
+        }
+      />
 
       {/* ========================================================================= */}
       {/* TAB 4: SƠ ĐỒ TỔ CHỨC & LUỒNG PHỤ TRÁCH (MASTER DATA MINDMAP VIEW)          */}

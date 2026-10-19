@@ -32,7 +32,7 @@ import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
-import { Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 
@@ -518,7 +518,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         </PageActions>
       )}
 
-      {/* Tiến độ cá nhân */}
+      {/* Tiến độ cá nhân. Tab "Kế hoạch của tôi" đã có các ô chỉ số này nên chỉ giữ ô chọn người (§7 quy tắc 9) */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-ink-2">
         {currentUser?.role === 'MANAGER' ? (
           <label className="inline-flex items-center gap-2">
@@ -536,55 +536,58 @@ export const BookingView: React.FC<BookingViewProps> = ({
         ) : (
           <span className="font-medium text-ink">{selectedStaffName}</span>
         )}
-        <span>
-          Air <strong className="font-semibold text-ink tabular-nums">{personalStaffProgress.reportVideos}/{personalStaffProgress.planVideos}</strong>
-          <span className="text-ink-3"> · {personalStaffProgress.airProgress}%</span>
-        </span>
-        <span>
-          Ngân sách <strong className="font-semibold text-ink tabular-nums">{formatVndShort(personalStaffProgress.reportBudget)} / {formatVndShort(personalStaffProgress.planBudget)}</strong>
-          <span className="text-ink-3"> · {personalStaffProgress.budgetProgress}%</span>
-        </span>
-        {personalStaffProgress.isLagging || personalStaffProgress.airProgress < 50 ? (
-          <Status tone="critical">Air dưới 50%</Status>
-        ) : (
-          <Status tone="positive">Đúng tiến độ</Status>
+        {activeSubTab !== 'MY_PLAN' && (
+          <>
+            <span>
+              Air <strong className="font-semibold text-ink tabular-nums">{personalStaffProgress.reportVideos}/{personalStaffProgress.planVideos}</strong>
+              <span className="text-ink-3"> · {personalStaffProgress.airProgress}%</span>
+            </span>
+            <span>
+              Ngân sách <strong className="font-semibold text-ink tabular-nums">{formatVndShort(personalStaffProgress.reportBudget)} / {formatVndShort(personalStaffProgress.planBudget)}</strong>
+              <span className="text-ink-3"> · {personalStaffProgress.budgetProgress}%</span>
+            </span>
+            {personalStaffProgress.isLagging || personalStaffProgress.airProgress < 50 ? (
+              <Status tone="critical">Air dưới 50%</Status>
+            ) : (
+              <Status tone="positive">Đúng tiến độ</Status>
+            )}
+          </>
         )}
       </div>
 
       {/* Tab và thao tác */}
-      <div className="flex flex-col-reverse lg:flex-row lg:items-end justify-between gap-3">
-        <Tabs
-          className="flex-1"
-          value={activeSubTab}
-          onChange={setActiveSubTab}
-          items={[
-            { key: 'MY_PLAN', label: 'Kế hoạch của tôi' },
-            { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
-            { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: deals.length },
-            { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
-          ]}
-        />
-        <div className="flex items-center gap-2 lg:pb-2 flex-wrap">
-          <Button
-            variant="secondary"
-            icon={Video}
-            onClick={() => {
-              setInspectorDeal(null);
-              setInspectorInitialUrl('');
-              setIsVideoInspectorOpen(true);
-            }}
-          >
-            Nghiệm thu link video
-          </Button>
-          {onOpenImport && (
-            <Button variant="secondary" icon={Upload} onClick={onOpenImport}>Nhập Excel</Button>
-          )}
-          {onOpenInputPlan && (
-            <Button icon={Calculator} onClick={onOpenInputPlan}>Phân rã kế hoạch</Button>
-          )}
-          <Button icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>
-        </div>
-      </div>
+      <Tabs
+        value={activeSubTab}
+        onChange={setActiveSubTab}
+        items={[
+          { key: 'MY_PLAN', label: 'Kế hoạch của tôi' },
+          { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
+          { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: deals.length },
+          { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
+        ]}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              icon={Video}
+              onClick={() => {
+                setInspectorDeal(null);
+                setInspectorInitialUrl('');
+                setIsVideoInspectorOpen(true);
+              }}
+            >
+              Nghiệm thu video
+            </Button>
+            <ActionMenu
+              items={[
+                { label: 'Thêm KOC', icon: UserPlus, onSelect: () => setIsCreateKocOpen(true) },
+                ...(onOpenImport ? [{ label: 'Nhập Excel', icon: Upload, onSelect: onOpenImport }] : []),
+                ...(onOpenInputPlan ? [{ label: 'Phân rã kế hoạch', icon: Calculator, onSelect: onOpenInputPlan }] : []),
+              ]}
+            />
+          </>
+        }
+      />
 
       {/* ========================================================================= */}
       {/* SUB-TAB 0: MY DETAILED PLAN WORKSPACE (NHÂN VIÊN LẬP VÀ TRIỂN KHAI PLAN) */}

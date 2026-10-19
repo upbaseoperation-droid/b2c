@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Select, Stat, StatRow, Status, Tabs } from '../ui';
+import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Select, Stat, StatRow, Status } from '../ui';
 import {
   TrendingUp,
   Award,
   Calendar,
   FileSpreadsheet,
   Download,
-  ShieldCheck,
   Building,
   PieChart,
   Search,
@@ -148,7 +147,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const [selectedGovernance, setSelectedGovernance] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
   const [selectedRiskFilter, setSelectedRiskFilter] = useState<'ALL' | 'UNBUDGETED' | 'OVERBUDGET' | 'SLOW_BURN' | 'NORMAL'>('ALL');
   const [selectedQuadrant, setSelectedQuadrant] = useState<'ALL' | 'OVER_SPEND' | 'HIGH_SPEND_LOW_AIR' | 'OPTIMAL' | 'SLOW_BOTH'>('ALL');
-  const [brandSortMode, setBrandSortMode] = useState<'BUDGET' | 'SPEND_PCT_DESC' | 'AIRED_DESC'>('AIRED_DESC');
+  const [brandSortMode, setBrandSortMode] = useState<'BUDGET' | 'SPENT_DESC' | 'SPEND_PCT_DESC' | 'AIRED_DESC'>('BUDGET');
   const [storeSortMode, setStoreSortMode] = useState<'DEFAULT' | 'SPEND_PCT_DESC' | 'SPEND_PCT_ASC' | 'AIRED_DESC' | 'AIRED_ASC'>('AIRED_DESC');
   // Tách biệt ô tìm kiếm theo từng Tab để tránh rò rỉ ngữ cảnh, kèm useDeferredValue chống lag phím
   const [brandSearchQuery, setBrandSearchQuery] = useState<string>('');
@@ -165,6 +164,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Phân trang hiển thị bảng để chống quá tải DOM
+  const [brandVisibleLimit, setBrandVisibleLimit] = useState<number>(16);
   const [storeVisibleLimit, setStoreVisibleLimit] = useState<number>(15);
   const [staffVisibleLimit, setStaffVisibleLimit] = useState<number>(12);
   const [bookedVideosVisibleLimit, setBookedVideosVisibleLimit] = useState<number>(30);
@@ -460,7 +460,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       map.set(s.brandName, existing);
     });
 
-    const allList = Array.from(map.values());
+    const allList = Array.from(map.values()).map((item) => {
+      let finalRisk = item.riskStatus;
+      if (finalRisk === 'NORMAL') {
+        if (item.budgetNet === 0 && item.actualSpentNet > 0) {
+          finalRisk = 'UNBUDGETED';
+        } else if (item.budgetNet > 0 && item.actualSpentNet > item.budgetNet) {
+          finalRisk = 'OVERBUDGET';
+        } else if (item.budgetNet > 0 && item.actualSpentNet / item.budgetNet < 0.25) {
+          finalRisk = 'SLOW_BURN';
+        }
+      }
+      return {
+        ...item,
+        riskStatus: finalRisk,
+      };
+    });
     const list = deferredBrandSearch.trim()
       ? allList.filter((b) => {
           const q = deferredBrandSearch.toLowerCase();
@@ -474,8 +489,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       const pctA = a.budgetNet > 0 ? (a.actualSpentNet / a.budgetNet) * 100 : a.actualSpentNet > 0 ? 999 : 0;
       const pctB = b.budgetNet > 0 ? (b.actualSpentNet / b.budgetNet) * 100 : b.actualSpentNet > 0 ? 999 : 0;
       if (brandSortMode === 'SPEND_PCT_DESC') return pctB - pctA || b.actualSpentNet - a.actualSpentNet;
+      if (brandSortMode === 'SPENT_DESC') return b.actualSpentNet - a.actualSpentNet || b.budgetNet - a.budgetNet;
       if (brandSortMode === 'AIRED_DESC') return b.airedVideos - a.airedVideos || b.actualSpentNet - a.actualSpentNet;
-      return Math.max(b.budgetGross, b.actualSpentNet) - Math.max(a.budgetGross, a.actualSpentNet);
+      return b.budgetNet - a.budgetNet || b.actualSpentNet - a.actualSpentNet;
     });
   }, [filteredStores, brandSortMode, deferredBrandSearch]);
 
@@ -1191,13 +1207,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       </PageActions>
 
       {/* ========================================================================= */}
-      {/* TAB 1: THƯƠNG HIỆU (BRAND) & NGÂN SÁCH — % SPEND NET/GROSS & VIDEO AIR     */}
+      {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}
       {/* ========================================================================= */}
       {activeTab === 'OVERVIEW_FINANCE' && (
-        <div className="space-y-5">
-          {/* Bộ lọc cấp thương hiệu + kỳ đối soát */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:w-64">
+        <div className="space-y-4">
+          {/* 1. THANH BỘ LỌC ĐIỀU HÀNH NGÂN SÁCH & PNL */}
+          <div className="bg-surface rounded-xl border border-line p-3 flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-60">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <Input
                 type="text"
@@ -1216,6 +1232,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   {b}
                 </option>
               ))}
+            </Select>
+
+            <Select
+              aria-label="Sàn TMĐT"
+              value={selectedPlatform}
+              onChange={(e) => setSelectedPlatform(e.target.value as typeof selectedPlatform)}
+              className="w-auto"
+            >
+              <option value="ALL">Tất cả sàn (69 gian)</option>
+              <option value="TikTok Shop">TikTok Shop (39 gian)</option>
+              <option value="Shopee Mall">Shopee Mall (30 gian)</option>
             </Select>
 
             <Select
@@ -1242,165 +1269,442 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <option value="NORMAL">Trong hạn mức Net</option>
             </Select>
 
-            <span className="ml-auto text-2xs text-ink-3">Kỳ đối soát: Tháng 10/2026</span>
-          </div>
-
-          {/* Cảnh báo tài chính: một dòng, chuyển sang tab Gian hàng để xử lý */}
-          {riskStores.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-critical/20 bg-critical-soft px-4 py-2.5">
-              <div className="flex items-center gap-2.5 min-w-0 text-[13px] text-critical">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>
-                  <strong className="font-semibold">{riskStores.length} gian hàng cần xử lý:</strong>{' '}
-                  {kpiSummary.unbudgetedCount} gian chi ngoài hạn mức 0đ, {kpiSummary.overbudgetCount} gian vượt trần Net (vượt +
-                  {formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
-                </span>
-              </div>
+            {(selectedBrand !== 'ALL' ||
+              selectedPlatform !== 'ALL' ||
+              selectedGovernance !== 'ALL' ||
+              selectedRiskFilter !== 'ALL' ||
+              brandSearchQuery.trim() !== '') && (
               <Button
                 size="sm"
-                variant="danger"
+                variant="ghost"
                 onClick={() => {
-                  setSelectedQuadrant('OVER_SPEND');
-                  handleSelectDashboardSection('STORE_SELLER');
+                  setSelectedBrand('ALL');
+                  setSelectedPlatform('ALL');
+                  setSelectedGovernance('ALL');
+                  setSelectedRiskFilter('ALL');
+                  setBrandSearchQuery('');
                 }}
               >
-                Xem gian hàng
+                Đặt lại lọc
               </Button>
-            </div>
-          )}
+            )}
 
-          {/* Chỉ số điều hành: giải ngân và video đã air */}
+            <span className="ml-auto text-2xs font-medium text-ink-3 font-mono">
+              Kỳ đối soát: Tháng 10/2026
+            </span>
+          </div>
+
+          {/* 2. DẢI 4 CHỈ SỐ TỔNG HỢP NGÂN SÁCH & PNL */}
           <StatRow size="sm">
             <Stat
-              label="Giải ngân Net"
-              value={`${kpiSummary.pacingNetPct}%`}
-              progress={{ value: kpiSummary.totalActualSpentNet, max: kpiSummary.totalBudgetNet }}
-              note={`${formatVndShort(kpiSummary.totalActualSpentNet)} / ${formatVndShort(kpiSummary.totalBudgetNet)} · Gross ${kpiSummary.pacingGrossPct}%`}
+              label="Mục tiêu doanh thu NMV"
+              value={formatVndShort(kpiSummary.totalTargetGmv)}
+              note={`${kpiSummary.storeCount} gian hàng (${kpiSummary.tiktokCount} TikTok · ${kpiSummary.shopeeCount} Shopee)`}
+            />
+            <Stat
+              label="Hạn mức Order Net (Kế toán)"
+              value={formatVndShort(kpiSummary.totalBudgetNet)}
+              note={`Order Gross: ${formatVndShort(kpiSummary.totalBudgetGross)} · Thuế & phí: ${formatVndShort(kpiSummary.taxAndFeeDiff)}`}
+            />
+            <Stat
+              label="Thực chi duyệt book (% Spend)"
+              value={`${formatVndShort(kpiSummary.totalActualSpentNet)} (${kpiSummary.pacingNetPct}%)`}
+              progress={{ value: kpiSummary.totalActualSpentNet, max: Math.max(1, kpiSummary.totalBudgetNet) }}
+              note={`Đạt ${kpiSummary.pacingNetPct}% trần Net · ${kpiSummary.pacingGrossPct}% trần Gross`}
             />
             <Stat
               label="Dư địa Net còn được chi"
               value={formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
-              note={`${kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt trần / 0đ`}
+              note={`${kpiSummary.unbudgetedCount} gian hạn mức 0đ · ${kpiSummary.overbudgetCount} gian vượt trần Net`}
               tone={kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount > 0 ? 'critical' : undefined}
-            />
-            <Stat
-              label="Video đã air"
-              value={kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')}
-              progress={{ value: kpiSummary.totalActualAiredVideos, max: Math.max(1, kpiSummary.totalBookedOrders) }}
-              note={`${kpiSummary.airedVsBookedPct}% của ${kpiSummary.totalBookedOrders} đơn đã book · Paid ${kpiSummary.airedVsPaidPct}%`}
-            />
-            <Stat
-              label="Đơn đã book chờ air"
-              value={Math.max(0, kpiSummary.totalBookedOrders - kpiSummary.totalActualAiredVideos)}
-              note={`Phủ ${kpiSummary.storesWithAiredCount}/${kpiSummary.storeCount} gian hàng`}
             />
           </StatRow>
 
-          {/* HÀNG BIỂU ĐỒ 1 & 2: BIỂU ĐỒ CỘT ĐỐI SOÁT BRAND (% SPEND & SỐ VIDEO AIR) + BIỂU ĐỒ BÓC TÁCH ORDER GROWTH */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
-            {/* BIỂU ĐỒ 1 (7 CỘT): ĐỐI SOÁT % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO AIR THEO THƯƠNG HIỆU */}
-            <div className="xl:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-ink">
-                    Biểu Đồ Kép Theo Thương Hiệu: % Spend Chi Phí Net &amp; Số Lượng Video Đã Air (Top 16 Brands)
+          {/* 3. BA KHỐI CÂN ĐỐI PNL: CẤU TRÚC NGÂN SÁCH · SẢN LƯỢNG NỘI DUNG · DÒNG TIỀN ĐNTT */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+            {/* Khối 3.1: Cấu trúc phân bổ Ngân sách Order Growth (Gross vs Net) */}
+            <div className="bg-surface rounded-xl border border-line p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-line">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-2">
+                    1. Cơ Cấu Ngân Sách Order Growth
                   </h3>
+                  <span className="text-2xs font-mono font-semibold text-accent">
+                    Net / Gross
+                  </span>
+                </div>
+
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-2xs text-ink-3 border-b border-line">
+                      <th className="pb-1.5 text-left font-medium">Hạng mục ngân sách</th>
+                      <th className="pb-1.5 text-right font-medium">Gross</th>
+                      <th className="pb-1.5 text-right font-medium">Trần Net</th>
+                      <th className="pb-1.5 text-right font-medium">Tỷ trọng</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line font-mono">
+                    <tr>
+                      <td className="py-2 font-sans font-medium text-ink">
+                        Video Affiliate KOC
+                      </td>
+                      <td className="py-2 text-right text-ink-3">
+                        {formatVndShort(kpiSummary.totalAffGross)}
+                      </td>
+                      <td className="py-2 text-right font-semibold text-accent">
+                        {formatVndShort(kpiSummary.totalAffNet)}
+                      </td>
+                      <td className="py-2 text-right text-ink-2">
+                        {kpiSummary.totalBudgetNet > 0
+                          ? Math.round((kpiSummary.totalAffNet / kpiSummary.totalBudgetNet) * 100)
+                          : 0}
+                        %
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 font-sans font-medium text-ink">
+                        Video Kênh Brand (Self)
+                      </td>
+                      <td className="py-2 text-right text-ink-3">
+                        {formatVndShort(kpiSummary.totalSelfGross)}
+                      </td>
+                      <td className="py-2 text-right font-semibold text-positive">
+                        {formatVndShort(kpiSummary.totalSelfNet)}
+                      </td>
+                      <td className="py-2 text-right text-ink-2">
+                        {kpiSummary.totalBudgetNet > 0
+                          ? Math.round((kpiSummary.totalSelfNet / kpiSummary.totalBudgetNet) * 100)
+                          : 0}
+                        %
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 font-sans font-medium text-ink">
+                        Phiên Livestream &amp; Host
+                      </td>
+                      <td className="py-2 text-right text-ink-3">
+                        {formatVndShort(kpiSummary.totalLiveBudget)}
+                      </td>
+                      <td className="py-2 text-right font-semibold text-warning">
+                        {formatVndShort(kpiSummary.totalLiveBudget)}
+                      </td>
+                      <td className="py-2 text-right text-ink-2">
+                        {kpiSummary.totalTargetLiveSessions} ca
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot className="border-t border-line-strong font-mono bg-canvas">
+                    <tr>
+                      <td className="pt-2 font-sans font-semibold text-ink">Tổng hạn mức</td>
+                      <td className="pt-2 text-right font-semibold text-ink-2">
+                        {formatVndShort(kpiSummary.totalBudgetGross)}
+                      </td>
+                      <td className="pt-2 text-right font-semibold text-ink">
+                        {formatVndShort(kpiSummary.totalBudgetNet)}
+                      </td>
+                      <td className="pt-2 text-right font-semibold text-ink">100%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs text-ink-3">
+                <span>Chênh lệch Thuế &amp; Phí sàn (Gross − Net):</span>
+                <strong className="font-mono text-ink">{formatVndShort(kpiSummary.taxAndFeeDiff)}</strong>
+              </div>
+            </div>
+
+            {/* Khối 3.2: Cơ cấu Sản lượng Video (Paid KOC vs FOC 0đ vs Kênh Brand) */}
+            <div className="bg-surface rounded-xl border border-line p-4 flex flex-col justify-between">
+              {(() => {
+                const totalVids =
+                  kpiSummary.totalTargetPaidVideos +
+                  kpiSummary.totalTargetFocVideos +
+                  kpiSummary.totalTargetSelfVideos;
+                const paidPct =
+                  totalVids > 0 ? Math.round((kpiSummary.totalTargetPaidVideos / totalVids) * 100) : 0;
+                const focPct =
+                  totalVids > 0 ? Math.round((kpiSummary.totalTargetFocVideos / totalVids) * 100) : 0;
+                const selfPct = Math.max(0, 100 - paidPct - focPct);
+
+                return (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-line">
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-2">
+                          2. Cơ Cấu Chỉ Tiêu &amp; Sản Lượng Video
+                        </h3>
+                        <span className="text-2xs font-mono font-semibold text-positive">
+                          Đã air: {kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} video
+                        </span>
+                      </div>
+
+                      {/* Thanh tỷ trọng 3 màu tách biệt */}
+                      <div className="w-full h-2.5 rounded-full overflow-hidden flex bg-sunken mb-3 gap-0.5">
+                        <div
+                          style={{ width: `${paidPct}%` }}
+                          className="data-bar bg-accent h-full"
+                          title={`Video KOC trả phí (Paid): ${kpiSummary.totalTargetPaidVideos}`}
+                        />
+                        <div
+                          style={{ width: `${focPct}%` }}
+                          className="data-bar bg-warning h-full"
+                          title={`Mẫu miễn phí FOC (0đ): ${kpiSummary.totalTargetFocVideos}`}
+                        />
+                        <div
+                          style={{ width: `${selfPct}%` }}
+                          className="data-bar bg-positive h-full"
+                          title={`Video kênh Brand (Self): ${kpiSummary.totalTargetSelfVideos}`}
+                        />
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center justify-between py-1.5 border-b border-line">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-accent shrink-0" />
+                            <span className="font-medium text-ink">Video KOC trả phí (KL1 → KL7)</span>
+                          </div>
+                          <div className="font-mono text-right">
+                            <strong className="text-ink">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')}</strong>{' '}
+                            <span className="text-2xs text-ink-3">({paidPct}%)</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1.5 border-b border-line">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-warning shrink-0" />
+                            <span className="font-medium text-ink">Suất gửi mẫu miễn phí (FOC 0đ)</span>
+                          </div>
+                          <div className="font-mono text-right">
+                            <strong className="text-ink">{kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')}</strong>{' '}
+                            <span className="text-2xs text-ink-3">({focPct}%)</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-positive shrink-0" />
+                            <span className="font-medium text-ink">Video xây kênh Brand (Self)</span>
+                          </div>
+                          <div className="font-mono text-right">
+                            <strong className="text-ink">{kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')}</strong>{' '}
+                            <span className="text-2xs text-ink-3">({selfPct}%)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs text-ink-3">
+                      <span>Tỷ lệ Video đã air / Đơn đã book:</span>
+                      <strong className="font-mono text-positive">
+                        {kpiSummary.totalActualAiredVideos} / {kpiSummary.totalBookedOrders} đơn ({kpiSummary.airedVsBookedPct}%)
+                      </strong>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Khối 3.3: Kiểm soát Dòng tiền ĐNTT & Cảnh báo Vượt trần Kế toán */}
+            <div className="bg-surface rounded-xl border border-line p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-line">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-2">
+                    3. Dòng Tiền ĐNTT &amp; Kỷ Luật Kế Toán
+                  </h3>
+                  <span className="text-2xs font-mono font-semibold text-ink-2">
+                    {kpiSummary.totalBookedOrders} đơn book
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  <div className="p-2.5 rounded-lg bg-positive-soft border border-positive/20 flex items-center justify-between">
+                    <div>
+                      <span className="font-semibold text-positive block">Đã nghiệm thu &amp; tất toán ĐNTT</span>
+                      <span className="text-2xs text-ink-2">Hoàn tất chứng từ thanh toán 100%</span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <strong className="text-sm text-positive block">{formatVndShort(kpiSummary.settledOrdersCost)}</strong>
+                      <span className="text-2xs text-ink-2">{kpiSummary.settledOrdersCount} đơn</span>
+                    </div>
                   </div>
-                <div className="flex flex-wrap items-center gap-1.5 text-2xs">
-                  {[
-                    { key: 'AIRED_DESC', label: 'Xếp theo Số Video Air' },
-                    { key: 'SPEND_PCT_DESC', label: 'Xếp theo % Spend cao' },
-                    { key: 'BUDGET', label: 'Xếp theo Ngân sách' }
-                  ].map((s) => (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => setBrandSortMode(s.key as typeof brandSortMode)}
-                      className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
-                        brandSortMode === s.key
-                          ? 'bg-accent text-white'
-                          : 'bg-sunken text-ink-2 hover:bg-sunken'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
+
+                  <div className="p-2.5 rounded-lg bg-warning-soft border border-warning/20 flex items-center justify-between">
+                    <div>
+                      <span className="font-semibold text-warning block">Đang tạm ứng / chờ làm ĐNTT</span>
+                      <span className="text-2xs text-ink-2">Chờ nghiệm thu link Air &amp; hóa đơn</span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <strong className="text-sm text-warning block">{formatVndShort(kpiSummary.pendingOrdersCost)}</strong>
+                      <span className="text-2xs text-ink-2">{kpiSummary.pendingOrdersCount} đơn</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-critical-soft border border-critical/20 flex items-center justify-between">
+                    <div>
+                      <span className="font-semibold text-critical block">Cảnh báo vượt trần &amp; Hạn mức 0đ</span>
+                      <span className="text-2xs text-ink-2">
+                        {kpiSummary.unbudgetedCount} gian 0đ · {kpiSummary.overbudgetCount} gian vượt Net
+                      </span>
+                    </div>
+                    <div className="text-right font-mono">
+                      <strong className="text-sm text-critical block">
+                        +{formatVndShort(
+                          riskStores.reduce(
+                            (acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)),
+                            0
+                          )
+                        )}
+                      </strong>
+                      <span className="text-2xs text-critical font-semibold">{riskStores.length} gian hàng</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {brandAggregation.slice(0, 16).map((b) => {
-                  const isOver = b.actualSpentNet > b.budgetNet;
-                  const burnVsNet =
-                    b.budgetNet > 0
-                      ? Math.round((b.actualSpentNet / b.budgetNet) * 100)
-                      : b.actualSpentNet > 0
-                      ? 999
-                      : 0;
-                  const targetPaidAndSelf = Math.max(b.paidVideos + b.selfVideos, 1);
-                  const airPct = Math.round((b.airedVideos / targetPaidAndSelf) * 100);
-                  const maxAiredAcrossBrands = Math.max(...brandAggregation.map((x) => x.airedVideos), 1);
-                  const airBarWidth = Math.min(100, Math.round((b.airedVideos / maxAiredAcrossBrands) * 100));
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Độ phủ gian hàng có video lên sóng:</span>
+                <strong className="font-mono text-ink">
+                  {kpiSummary.storesWithAiredCount} / {kpiSummary.storeCount} gian hàng
+                </strong>
+              </div>
+            </div>
+          </div>
 
-                  return (
-                    <div
-                      key={b.brandName}
-                      onClick={() => setSelectedBrand(selectedBrand === b.brandName ? 'ALL' : b.brandName)}
-                      className="p-3 rounded-xl border border-line/80 hover:border-accent/20 hover:bg-canvas transition cursor-pointer"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-ink text-sm">{b.brandName}</span>
-                          <span className="text-2xs text-ink-3">
-                            ({b.storeCount} gian: {b.tiktokStores} TT · {b.shopeeStores} SP)
-                          </span>
-                          {b.hasLeader && (
-                            <span className=".5 py-0.2 text-2xs font-semibold text-accent">
-                              Leader: Ngọc Tâm
-                            </span>
-                          )}
-                          {b.riskStatus === 'UNBUDGETED' && (
-                            <span className=".5 py-0.2 text-2xs font-semibold text-critical">
-                              Báo động đỏ 0đ
-                            </span>
-                          )}
-                          {b.riskStatus === 'OVERBUDGET' && (
-                            <span className=".5 py-0.2 text-2xs font-semibold text-warning">
-                              Vượt trần Net
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 font-mono text-2xs">
-                          <span
-                            className={`px-2 py-0.5 rounded font-semibold ${
-                              isOver
-                                ? 'bg-critical-soft text-critical'
-                                : burnVsNet >= 50
-                                ? 'bg-accent-soft text-accent'
-                                : 'bg-sunken text-ink-2'
-                            }`}
-                          >
-                            % Spend: {burnVsNet === 999 ? 'Ngoài KH (0đ)' : `${burnVsNet}% Net`}
-                          </span>
-                          <span className="font-semibold text-positive">
-                            Đã Air: {b.airedVideos} video ({airPct}% chỉ tiêu)
-                          </span>
-                        </div>
-                      </div>
+          {/* 4. BẢNG ĐỐI SOÁT NGÂN SÁCH & PNL THEO THƯƠNG HIỆU (BRAND PNL MATRIX) */}
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="px-4 py-3 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-ink">
+                  Bảng Đối Soát Ngân Sách &amp; PnL Theo Thương Hiệu ({brandAggregation.length} Thương Hiệu)
+                </h3>
+                {selectedBrand !== 'ALL' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBrand('ALL')}
+                    className="px-2 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold hover:underline cursor-pointer"
+                  >
+                    Đang lọc: {selectedBrand} (Bỏ lọc ×)
+                  </button>
+                )}
+              </div>
 
-                      {/* 2 Thanh tiến độ song song: Thanh 1 (% Spend Chi Phí Net) & Thanh 2 (Số lượng Video Đã Air) */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Cột 1: % Spend Chi phí */}
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-1">
-                            <span className="text-ink-3">
-                              Thực chi / Trần Net (Gross: {formatVndShort(b.budgetGross)}):
+              <div className="flex flex-wrap items-center gap-1.5 text-2xs">
+                {[
+                  { key: 'BUDGET', label: 'Xếp theo Hạn mức Net' },
+                  { key: 'SPENT_DESC', label: 'Xếp theo Thực chi cao nhất' },
+                  { key: 'SPEND_PCT_DESC', label: 'Xếp theo % Spend Net' },
+                  { key: 'AIRED_DESC', label: 'Xếp theo Số Video Air' },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setBrandSortMode(s.key as typeof brandSortMode)}
+                    className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
+                      brandSortMode === s.key
+                        ? 'bg-ink text-white'
+                        : 'bg-sunken text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto max-h-[600px]">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-canvas text-ink-2 uppercase text-2xs border-b border-line sticky top-0 z-10">
+                  <tr>
+                    <th className="py-2.5 px-3 font-semibold text-center w-10">#</th>
+                    <th className="py-2.5 px-3 font-semibold">Thương Hiệu &amp; Quy Mô</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Mục Tiêu NMV</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Order Gross</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Trần Order Net</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Phân Bổ Net (Aff / Brand)</th>
+                    <th className="py-2.5 px-3 font-semibold text-right bg-accent-soft/50 text-accent">
+                      Thực Chi &amp; % Spend Net
+                    </th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Dư Địa / Vượt Trần</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Video Air / Chỉ Tiêu</th>
+                    <th className="py-2.5 px-3 font-semibold">Kiểm Soát Kế Toán</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {brandAggregation.slice(0, brandVisibleLimit).map((b, idx) => {
+                    const isOver = b.actualSpentNet > b.budgetNet;
+                    const burnVsNet =
+                      b.budgetNet > 0
+                        ? Math.round((b.actualSpentNet / b.budgetNet) * 100)
+                        : b.actualSpentNet > 0
+                        ? 999
+                        : 0;
+                    const varianceNet = b.budgetNet - b.actualSpentNet;
+                    const targetPaidAndSelf = Math.max(b.paidVideos + b.selfVideos, 1);
+                    const airPct = Math.round((b.airedVideos / targetPaidAndSelf) * 100);
+                    const isSelectedBrand = selectedBrand === b.brandName;
+
+                    return (
+                      <tr
+                        key={b.brandName}
+                        onClick={() => setSelectedBrand(isSelectedBrand ? 'ALL' : b.brandName)}
+                        className={`transition cursor-pointer ${
+                          isSelectedBrand ? 'bg-accent-soft/60' : 'hover:bg-canvas'
+                        }`}
+                      >
+                        <td className="py-2.5 px-3 text-center font-mono text-ink-3">
+                          {idx + 1}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-ink">{b.brandName}</span>
+                            {b.hasLeader && (
+                              <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold">
+                                Leader: Ngọc Tâm
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-2xs text-ink-3">
+                            {b.storeCount} gian ({b.tiktokStores} TT · {b.shopeeStores} SP)
+                            {b.pics.size > 0 ? ` · PIC: ${Array.from(b.pics).slice(0, 2).join(', ')}` : ''}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-ink-2">
+                          {formatVndShort(b.targetGmv)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-ink-3">
+                          {formatVndShort(b.budgetGross)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
+                          {formatVndShort(b.budgetNet)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-2xs text-ink-2">
+                          <div>Aff: <strong className="text-ink">{formatVndShort(b.affNet)}</strong></div>
+                          <div className="text-ink-3">
+                            Brand: {formatVndShort(b.selfNet)}
+                            {b.liveBudget > 0 ? ` · Live: ${formatVndShort(b.liveBudget)}` : ''}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft/30">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={`font-semibold ${isOver ? 'text-critical' : 'text-ink'}`}>
+                              {formatVndShort(b.actualSpentNet)}
                             </span>
-                            <span className="font-mono font-semibold text-ink">
-                              {formatVndShort(b.actualSpentNet)} / {formatVndShort(b.budgetNet)}
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
+                                burnVsNet === 999 || burnVsNet > 100
+                                  ? 'bg-critical text-white'
+                                  : burnVsNet >= 45
+                                  ? 'bg-accent text-white'
+                                  : burnVsNet > 0
+                                  ? 'bg-accent-soft text-accent'
+                                  : 'bg-sunken text-ink-3'
+                              }`}
+                            >
+                              {burnVsNet === 999 ? '0đ KH' : `${burnVsNet}%`}
                             </span>
                           </div>
-                          <div className="w-full h-2.5 bg-sunken rounded-full overflow-hidden">
+                          <div className="w-28 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                             <div
                               className={`data-bar h-full rounded-full ${
                                 isOver ? 'bg-critical' : 'bg-accent'
@@ -1410,248 +1714,186 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                                   burnVsNet === 999
                                     ? 100
                                     : Math.min(100, Math.max(burnVsNet, b.actualSpentNet > 0 ? 4 : 0))
-                                }%`
+                                }%`,
                               }}
                             />
                           </div>
-                        </div>
-
-                        {/* Cột 2: Số lượng Video Đã Air */}
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-1">
-                            <span className="text-ink-3">
-                              Số lượng Video Đã Air (Paid: {b.paidVideos} · FOC: {b.focVideos}):
-                            </span>
-                            <span className="font-mono font-semibold text-positive">
-                              {b.airedVideos} video đã lên sóng
-                            </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <span
+                            className={`font-semibold ${
+                              varianceNet < 0
+                                ? 'text-critical'
+                                : varianceNet > 0
+                                ? 'text-positive'
+                                : 'text-ink-3'
+                            }`}
+                          >
+                            {varianceNet < 0
+                              ? `-${formatVndShort(Math.abs(varianceNet))}`
+                              : varianceNet > 0
+                              ? `+${formatVndShort(varianceNet)}`
+                              : '0đ'}
+                          </span>
+                          <span className="block text-2xs text-ink-3">
+                            {varianceNet < 0 ? 'Vượt trần Net' : 'Còn dư địa'}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="font-semibold text-positive">{b.airedVideos} air</span>
+                            <span className="text-2xs text-ink-3">({airPct}%)</span>
                           </div>
-                          <div className="w-full h-2.5 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className="data-bar h-full bg-positive rounded-full"
-                              style={{ width: `${Math.max(airBarWidth, b.airedVideos > 0 ? 5 : 0)}%` }}
-                            />
+                          <div className="text-2xs text-ink-3">
+                            Paid {b.paidVideos} · FOC {b.focVideos} · Brand {b.selfVideos}
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </td>
+                        <td className="py-2.5 px-3">{renderRiskBadge(b.riskStatus)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-canvas border-t-2 border-line-strong font-mono text-xs sticky bottom-0">
+                  <tr>
+                    <td className="py-2.5 px-3 text-center font-semibold text-ink">Σ</td>
+                    <td className="py-2.5 px-3 font-sans font-semibold text-ink">
+                      Tổng cộng ({brandAggregation.length} Thương hiệu · {kpiSummary.storeCount} gian hàng)
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-ink">
+                      {formatVndShort(kpiSummary.totalTargetGmv)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-ink-2">
+                      {formatVndShort(kpiSummary.totalBudgetGross)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-ink">
+                      {formatVndShort(kpiSummary.totalBudgetNet)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-2xs text-ink-2">
+                      Aff: <strong>{formatVndShort(kpiSummary.totalAffNet)}</strong> · Brand: <strong>{formatVndShort(kpiSummary.totalSelfNet)}</strong>
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-accent bg-accent-soft/40">
+                      {formatVndShort(kpiSummary.totalActualSpentNet)} ({kpiSummary.pacingNetPct}%)
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-positive">
+                      +{formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-semibold text-positive">
+                      {kpiSummary.totalActualAiredVideos} air / {kpiSummary.totalTargetPaidVideos} Paid
+                    </td>
+                    <td className="py-2.5 px-3 font-sans text-2xs font-semibold text-critical">
+                      {kpiSummary.unbudgetedCount} gian 0đ · {kpiSummary.overbudgetCount} vượt Net
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
 
-            {/* BIỂU ĐỒ 2 (5 CỘT): BÓC TÁCH CHỈ TIÊU ORDER GROWTH (GROSS/NET, PAID/FOC, AFFILIATE/BRAND/LIVE) */}
-            <div className="xl:col-span-5 space-y-5">
-              {/* Khối 2A: Bóc tách Ngân sách Order Growth */}
-              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
-                <h3 className="text-sm font-semibold text-ink mb-1">
-                  Cấu Trúc Ngân Sách Order Growth
-                </h3>
-                <div className="space-y-3.5">
-                  {/* Affiliate KOC */}
-                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-ink">1. Ngân sách Video Affiliate KOC</span>
-                      <span className="font-mono font-semibold text-accent">
-                        Net: {formatVndShort(kpiSummary.totalAffNet)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-2xs text-ink-3 mb-2">
-                      <span>Gross (Gồm thuế/phí sàn): {formatVndShort(kpiSummary.totalAffGross)}</span>
-                      <span>
-                        Chiếm{' '}
-                        {kpiSummary.totalBudgetNet > 0
-                          ? Math.round((kpiSummary.totalAffNet / kpiSummary.totalBudgetNet) * 100)
-                          : 0}
-                        % tổng Net
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                      <div
-                        className="data-bar h-full bg-accent rounded-full"
-                        style={{
-                          width: `${
-                            kpiSummary.totalBudgetNet > 0
-                              ? Math.min(100, Math.round((kpiSummary.totalAffNet / kpiSummary.totalBudgetNet) * 100))
-                              : 0
-                          }%`
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Video Kênh Brand (Self-channel) */}
-                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-ink">2. Ngân sách Video Kênh Brand (Self-channel)</span>
-                      <span className="font-mono font-semibold text-positive">
-                        Net: {formatVndShort(kpiSummary.totalSelfNet)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-2xs text-ink-3 mb-2">
-                      <span>Gross: {formatVndShort(kpiSummary.totalSelfGross)}</span>
-                      <span>Chỉ tiêu: {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video kênh Brand</span>
-                    </div>
-                    <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                      <div
-                        className="data-bar h-full bg-positive rounded-full"
-                        style={{
-                          width: `${
-                            kpiSummary.totalBudgetNet > 0
-                              ? Math.max(
-                                  4,
-                                  Math.round((kpiSummary.totalSelfNet / kpiSummary.totalBudgetNet) * 100)
-                                )
-                              : 0
-                          }%`
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Ngân sách Livestream */}
-                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-ink">3. Ngân sách Phiên Livestream & Host</span>
-                      <span className="font-mono font-semibold text-warning">
-                        {formatVndShort(kpiSummary.totalLiveBudget)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-2xs text-ink-3">
-                      <span>Tổng số ca Livestream kế hoạch:</span>
-                      <span className="font-semibold text-ink">
-                        {kpiSummary.totalTargetLiveSessions.toLocaleString('vi-VN')} phiên Live
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            {brandAggregation.length > 16 && (
+              <div className="px-4 py-2.5 border-t border-line bg-canvas flex items-center justify-between text-xs">
+                <span className="text-ink-3">
+                  Đang hiển thị <strong className="font-mono text-ink">{Math.min(brandVisibleLimit, brandAggregation.length)}</strong> / <strong className="font-mono text-ink">{brandAggregation.length}</strong> thương hiệu B2C
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setBrandVisibleLimit((prev) =>
+                      prev >= brandAggregation.length ? 16 : brandAggregation.length
+                    )
+                  }
+                  className="px-3 py-1 rounded-lg border border-line-strong bg-surface hover:bg-sunken text-ink font-semibold transition cursor-pointer"
+                >
+                  {brandVisibleLimit >= brandAggregation.length
+                    ? 'Thu gọn (16 thương hiệu)'
+                    : `Xem tất cả ${brandAggregation.length} thương hiệu`}
+                </button>
               </div>
-
-              {/* Khối 2B: Bóc tách Sản lượng Video Trả phí (Paid) vs Suất Gửi Mẫu Miễn Phí (FOC 0đ) */}
-              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
-                <h3 className="text-sm font-semibold text-ink mb-1">
-                  Bóc Tách Sản Lượng: Video KOC Trả Phí (Paid) vs Suất Mẫu Miễn Phí (FOC 0đ)
-                </h3>
-                {(() => {
-                  const totalVids =
-                    kpiSummary.totalTargetPaidVideos +
-                    kpiSummary.totalTargetFocVideos +
-                    kpiSummary.totalTargetSelfVideos;
-                  const paidPct =
-                    totalVids > 0 ? Math.round((kpiSummary.totalTargetPaidVideos / totalVids) * 100) : 0;
-                  const focPct =
-                    totalVids > 0 ? Math.round((kpiSummary.totalTargetFocVideos / totalVids) * 100) : 0;
-                  const selfPct = Math.max(0, 100 - paidPct - focPct);
-
-                  return (
-                    <div className="space-y-4">
-                      {/* Stacked Horizontal Bar */}
-                      <div className="w-full h-5 rounded-lg overflow-hidden flex border border-line">
-                        <div
-                          style={{ width: `${focPct}%` }}
-                          className="data-bar bg-accent h-full flex items-center justify-center text-2xs font-semibold text-white"
-                          title={`Mẫu miễn phí FOC (0đ): ${kpiSummary.totalTargetFocVideos}`}
-                        >
-                          {focPct > 10 ? `FOC ${focPct}%` : ''}
-                        </div>
-                        <div
-                          style={{ width: `${paidPct}%` }}
-                          className="data-bar bg-accent h-full flex items-center justify-center text-2xs font-semibold text-white"
-                          title={`Video KOC trả phí (Paid): ${kpiSummary.totalTargetPaidVideos}`}
-                        >
-                          {paidPct > 8 ? `Paid ${paidPct}%` : ''}
-                        </div>
-                        <div
-                          style={{ width: `${selfPct}%` }}
-                          className="data-bar bg-positive h-full flex items-center justify-center text-2xs font-semibold text-white"
-                          title={`Video kênh Brand (Self-channel): ${kpiSummary.totalTargetSelfVideos}`}
-                        >
-                          {selfPct > 8 ? `Brand ${selfPct}%` : ''}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2.5 text-center">
-                        <div className="p-2.5 rounded-lg bg-accent-soft border border-accent/20">
-                          <span className="text-2xs font-semibold text-accent block">
-                            Mẫu Miễn Phí (FOC 0đ)
-                          </span>
-                          <span className="text-lg font-semibold text-accent font-mono">
-                            {kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')}
-                          </span>
-                          <span className="block text-2xs text-accent mt-0.5">
-                            Đầu mối: Trần Thị Hảo & Team
-                          </span>
-                        </div>
-
-                        <div className="p-2.5 rounded-lg bg-accent-soft border border-accent/20">
-                          <span className="text-2xs font-semibold text-accent block">
-                            Video KOC Trả Phí (Paid)
-                          </span>
-                          <span className="text-lg font-semibold text-accent font-mono">
-                            {kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')}
-                          </span>
-                          <span className="block text-2xs text-accent mt-0.5">
-                            Có cát-xê (KL1 → KL7)
-                          </span>
-                        </div>
-
-                        <div className="p-2.5 rounded-lg bg-positive-soft border border-positive/20">
-                          <span className="text-2xs font-semibold text-positive block">
-                            Video Kênh Brand (Self)
-                          </span>
-                          <span className="text-lg font-semibold text-positive font-mono">
-                            {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')}
-                          </span>
-                          <span className="block text-2xs text-positive mt-0.5">
-                            Xây kênh chính hãng
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG & ĐNTT KẾ TOÁN */}
-          <div className="bg-white rounded-xl border border-line p-5 shadow-xs space-y-3.5">
-            <h3 className="text-sm font-semibold text-ink">
-              Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              <div className="p-3.5 rounded-xl border border-positive/20 bg-positive-soft">
-                <div className="flex items-center justify-between text-xs font-semibold text-positive mb-1">
-                  <span>1. Đã nghiệm thu &amp; tất toán ĐNTT 100%</span>
-                  <CheckCircle2 className="w-4 h-4 text-positive" />
+          {/* 5. DANH SÁCH GIAN HÀNG CẢNH BÁO TÀI CHÍNH (VƯỢT TRẦN NET & CHI NGOÀI KẾ HOẠCH 0Đ) */}
+          {riskStores.length > 0 && (
+            <div className="bg-surface rounded-xl border border-critical/25 overflow-hidden">
+              <div className="px-4 py-3 bg-critical-soft/60 border-b border-critical/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-critical shrink-0" />
+                  <h3 className="text-sm font-semibold text-critical">
+                    Danh Sách Gian Hàng Cần Kiểm Soát Ngân Sách ({riskStores.length} Gian Hàng: {kpiSummary.unbudgetedCount} Hạn Mức 0đ · {kpiSummary.overbudgetCount} Vượt Trần Net)
+                  </h3>
                 </div>
-                <div className="text-lg font-semibold text-positive font-mono">
-                  {kpiSummary.settledOrdersCount} Đơn · {formatVndShort(kpiSummary.settledOrdersCost)}
-                </div>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => {
+                    setSelectedQuadrant('OVER_SPEND');
+                    handleSelectDashboardSection('STORE_SELLER');
+                  }}
+                >
+                  Mở tab 69 Gian hàng
+                </Button>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-warning/20 bg-warning-soft">
-                <div className="flex items-center justify-between text-xs font-semibold text-warning mb-1">
-                  <span>2. Đang tạm ứng / chờ làm ĐNTT</span>
-                  <AlertCircle className="w-4 h-4 text-warning" />
-                </div>
-                <div className="text-lg font-semibold text-warning font-mono">
-                  {kpiSummary.pendingOrdersCount} Đơn · {formatVndShort(kpiSummary.pendingOrdersCost)}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-line bg-canvas">
-                <div className="flex items-center justify-between text-xs font-semibold text-ink mb-1">
-                  <span>3. Suất gửi mẫu miễn phí TAP FOC (0đ Cát-xê)</span>
-                  <ShoppingBag className="w-4 h-4 text-accent" />
-                </div>
-                <div className="text-lg font-semibold text-ink font-mono">
-                  {kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')} Suất · 0đ Cát-xê
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-canvas text-ink-2 uppercase text-2xs border-b border-line">
+                    <tr>
+                      <th className="py-2 px-3 font-semibold">Gian Hàng &amp; Mã VH</th>
+                      <th className="py-2 px-3 font-semibold">Thương Hiệu &amp; Sàn</th>
+                      <th className="py-2 px-3 font-semibold">PIC Phụ Trách &amp; Cấp Duyệt</th>
+                      <th className="py-2 px-3 font-semibold text-right">Trần Order Net</th>
+                      <th className="py-2 px-3 font-semibold text-right">Thực Chi Duyệt Book</th>
+                      <th className="py-2 px-3 font-semibold text-right">Số Tiền Vượt Trần</th>
+                      <th className="py-2 px-3 font-semibold text-center">Video Đã Air</th>
+                      <th className="py-2 px-3 font-semibold">Loại Cảnh Báo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {riskStores.map((st) => {
+                      const net = st.budgetNet || st.monthlyBudget || 0;
+                      const spent = st.actualSpentNet || 0;
+                      const overAmount = Math.max(0, spent - net);
+                      return (
+                        <tr
+                          key={st.id}
+                          onClick={() => setInspectStore(st)}
+                          className="hover:bg-critical-soft/30 transition cursor-pointer"
+                        >
+                          <td className="py-2 px-3">
+                            <span className="font-semibold text-ink block">{st.storeName}</span>
+                            <span className="font-mono text-2xs text-ink-3">{st.storeOperationId}</span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="font-medium text-ink">{st.brandName}</span>
+                            <span className="block text-2xs text-ink-3">{st.platform}</span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className="font-medium text-ink">{st.primaryPic || st.assignedStaff}</span>
+                            <span className="block text-2xs text-ink-3">
+                              {st.hasBookingLeader && st.bookingLeader
+                                ? `Leader: ${st.bookingLeader}`
+                                : 'Trình trực tiếp TP Yến Nhi'}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-ink">
+                            {formatVndShort(net)}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-critical">
+                            {formatVndShort(spent)}
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold text-critical">
+                            +{formatVndShort(overAmount)}
+                          </td>
+                          <td className="py-2 px-3 text-center font-mono text-positive font-semibold">
+                            {st.actualAiredVideos || 0} video
+                          </td>
+                          <td className="py-2 px-3">{renderRiskBadge(st.financialRiskStatus)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -1708,7 +1950,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <span className="text-xl font-semibold text-positive font-mono">
                   {kpiSummary.totalActualAiredVideos} Video Air
                 </span>
-                <span className="text-xs font-semibold text-positive .5">
+                <span className="text-xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft">
                   {kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian có bài
                 </span>
               </div>
@@ -1727,7 +1969,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <span className="text-xl font-semibold text-ink font-mono">
                   {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}
                 </span>
-                <span className="text-xs font-semibold text-positive .5 font-mono">
+                <span className="text-xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft font-mono">
                   ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x
                 </span>
               </div>
@@ -1857,7 +2099,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xs font-semibold text-ink-2text-white">
+                  <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-ink text-white">
                     TikTok Shop Seller Center
                   </span>
                   <h3 className="text-sm font-semibold text-ink">
@@ -2039,7 +2281,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </td>
                         <td className="py-2.5 px-3">
                           <span
-                            className={`text-2xs font-semibold text-ink-2${
+                            className={`text-2xs font-semibold px-1.5 py-0.5 rounded ${
                               st.platform === 'TikTok Shop'
                                 ? 'bg-ink text-white'
                                 : 'bg-warning-soft text-warning'
@@ -2078,7 +2320,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               {formatVndShort(spent)}
                             </span>
                             <span
-                              className={`text-2xs font-mono font-semibold text-ink-2${
+                              className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded ${
                                 burnPct === 999 || burnPct > 100
                                   ? 'bg-critical text-white'
                                   : burnPct >= 50
@@ -2123,7 +2365,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               {aired} video
                             </span>
                             {targetPaid > 0 && (
-                              <span className=".5 py-0.2 text-2xs font-semibold text-positive">
+                              <span className="px-1.5 py-0.5 rounded bg-white text-2xs font-semibold text-positive">
                                 {airVsPaidPct}% Paid
                               </span>
                             )}
@@ -2191,7 +2433,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <span className="text-xl font-semibold text-positive font-mono">
                   {kpiSummary.totalActualAiredVideos} Video
                 </span>
-                <span className="text-xs font-semibold text-positive .5">
+                <span className="text-xs font-semibold text-positive px-1.5 py-0.5 rounded bg-positive-soft">
                   Đạt {kpiSummary.airedVsBookedPct}% đơn book
                 </span>
               </div>
@@ -2224,7 +2466,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <span className="text-xl font-semibold text-ink font-mono">
                   34,8% Hook 2s
                 </span>
-                <span className="text-xs font-semibold text-accent .5">
+                <span className="text-xs font-semibold text-accent px-1.5 py-0.5 rounded bg-accent-soft">
                   CVR 4,62%
                 </span>
               </div>
@@ -2298,7 +2540,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     Biểu Đồ Hiệu Quả Theo Khung Lương KOC (TAP FOC 0đ & KL1 → KL7)
                   </h3>
                   </div>
-                <span className=".5 text-xs font-semibold text-accent">
+                <span className="px-2 py-0.5 rounded bg-accent-soft text-xs font-semibold text-accent">
                   786 Đơn Book · 2,63 Tỷ
                 </span>
               </div>
@@ -2323,14 +2565,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-semibold bg-ink text-white text-2xs">
+                          <span className="px-1.5 py-0.5 rounded font-mono font-semibold bg-ink text-white text-2xs">
                             {item.kl}
                           </span>
                           <span className="font-semibold text-ink">
                             {item.count} đơn book ({item.airedCount} đã air)
                           </span>
                           {item.kl === 'TAP UpAffiliate' && (
-                            <span className=".5 py-0.2 text-2xs font-semibold text-accent">
+                            <span className="px-1.5 py-0.5 rounded bg-accent-soft text-2xs font-semibold text-accent">
                               Suất mẫu miễn phí FOC (0đ)
                             </span>
                           )}
@@ -2665,11 +2907,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <span className="text-xs font-semibold text-accent">
                         Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
                       </span>
-                      <span className="text-2xs font-mono font-semibold bg-accent text-white">
+                      <span className="px-2 py-0.5 rounded text-2xs font-mono font-semibold bg-accent text-white">
                         8 Gian hàng
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20/70 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                         <strong className="text-xs text-positive">91,4%</strong>
@@ -2691,11 +2933,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <span className="text-xs font-semibold text-positive">
                         Luồng 2: Trình trực tiếp TP Đặng Thị Yến Nhi
                       </span>
-                      <span className="text-2xs font-mono font-semibold bg-positive text-white">
+                      <span className="px-2 py-0.5 rounded text-2xs font-mono font-semibold bg-positive text-white">
                         61 Gian hàng
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20/70 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20 text-center font-mono">
                       <div>
                         <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                         <strong className="text-xs text-positive">86,8%</strong>
@@ -2822,10 +3064,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 1: Sản lượng Video Air */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topAir.name)}
-              className="bg-white rounded-xl border-2 border-positive/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-positive/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xs font-semibold text-ink-2uppercase bg-positive text-white">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-positive text-white">
                   Top Dẫn Đầu Sản Lượng Video Air
                 </span>
                 <Film className="w-4 h-4 text-positive" />
@@ -2852,10 +3094,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 2: Kỷ luật Giải ngân % Spend Net */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topSpendDiscipline.name)}
-              className="bg-white rounded-xl border-2 border-accent/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-accent/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xs font-semibold text-ink-2uppercase bg-accent text-white">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
                   Top Kỷ Luật % Spend Net
                 </span>
                 <DollarSign className="w-4 h-4 text-accent" />
@@ -2882,10 +3124,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 3: Hiệu quả ROAS & GMV trên Chi phí */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topRoasGmv.name)}
-              className="bg-white rounded-xl border-2 border-warning/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-warning/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xs font-semibold text-ink-2uppercase bg-warning text-white">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-warning text-white">
                   Top Hiệu Quả ROAS &amp; GMV
                 </span>
                 <TrendingUp className="w-4 h-4 text-warning" />
@@ -2912,10 +3154,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 4: Điểm Hiệu Suất Tổng Hợp KPI Score */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topKpi.name)}
-              className="bg-white rounded-xl border-2 border-accent/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-accent/20 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xs font-semibold text-ink-2uppercase bg-accent text-white">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
                   Top Điểm Đánh Giá Tổng Hợp
                 </span>
                 <Award className="w-4 h-4 text-accent" />
@@ -3059,7 +3301,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     >
                       <span>{s.name}</span>
                       <span
-                        className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
+                        className={`px-1.5 py-0.5 rounded text-2xs font-mono ${
                           isSelected ? 'bg-ink text-accent' : 'bg-positive-soft text-positive'
                         }`}
                       >
@@ -3166,7 +3408,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         />
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-accent/20/60 text-2xs font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-accent/20 text-2xs font-mono flex justify-between">
                       <span>Thực chi: <strong>{formatVndShort(focusedStaffProfile.actualSpentNet)}</strong></span>
                       <span>Trần Net: <strong>{formatVndShort(focusedStaffProfile.orderBudgetNet)}</strong></span>
                     </div>
@@ -3193,7 +3435,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         />
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-positive/20/60 text-2xs font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-positive/20 text-2xs font-mono flex justify-between">
                       <span>Đã book: <strong>{focusedStaffProfile.actualBookedVideos} đơn</strong></span>
                       <span>Paid/FOC: <strong>{focusedStaffProfile.targetPaidVideos}/{focusedStaffProfile.targetFocVideos}</strong></span>
                     </div>
@@ -3220,7 +3462,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </strong>
                       </p>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-warning/20/60 text-2xs font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-warning/20 text-2xs font-mono flex justify-between">
                       <span>Target NMV: <strong>{formatVndShort(focusedStaffProfile.targetNmv)}</strong></span>
                       <span className="text-positive font-semibold">
                         Win: {focusedStaffProfile.winningVideosCount} video ({focusedStaffProfile.winRatePct}%)
@@ -3648,12 +3890,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               <div className="font-semibold text-ink flex items-center gap-1.5">
                                 {st.name}
                                 {st.roleLevel === 'HEAD' && (
-                                  <span className=".5 py-0.2 text-2xs font-semibold bg-ink text-white">
+                                  <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-ink text-white">
                                     Giám Đốc
                                   </span>
                                 )}
                                 {st.roleLevel === 'LEADER' && (
-                                  <span className=".5 py-0.2 text-2xs font-semibold text-accent">
+                                  <span className="px-1.5 py-0.5 rounded bg-accent-soft text-2xs font-semibold text-accent">
                                     Leader (8 gian)
                                   </span>
                                 )}
@@ -3679,7 +3921,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               {formatVndShort(st.actualSpentNet)}
                             </span>
                             <span
-                              className={`text-2xs font-mono font-semibold text-ink-2${
+                              className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded ${
                                 st.burnNetPct > 100
                                   ? 'bg-critical text-white'
                                   : st.burnNetPct >= 45
@@ -3979,7 +4221,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   {inspectStaff.storesList.map((stName) => (
                     <span
                       key={stName}
-                      className=".5 text-ink font-semibold text-2xs -line"
+                      className="px-2 py-0.5 rounded bg-canvas text-ink font-semibold text-2xs border border-line"
                     >
                       {stName}
                     </span>
