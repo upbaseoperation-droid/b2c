@@ -208,8 +208,8 @@ export function DataTable<T>({
                 style={!fitContainer && c.width ? { minWidth: c.width } : c.width ? { width: `${c.width}px` } : undefined}
                 className={cx(
                   compact
-                    ? 'px-2.5 sm:px-3 py-2 text-[11px] font-semibold text-ink-3 bg-sunken/40 border-b border-line'
-                    : 'px-4 py-2.5 text-[12px] font-semibold text-ink-3 bg-sunken/40 border-b border-line',
+                    ? 'px-2.5 sm:px-3 py-2 text-3xs font-semibold text-ink-3 bg-sunken/40 border-b border-line'
+                    : 'px-4 py-2.5 text-2xs font-semibold text-ink-3 bg-sunken/40 border-b border-line',
                   align(c.align),
                   stickyLast && i === last && 'sticky right-0 z-10 bg-sunken/60 border-l border-line',
                 )}
@@ -294,29 +294,32 @@ export function Modal({
   const view = open ? { title, description, children, footer } : shown;
   useEffect(() => {
     if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
     const timer = setTimeout(() => {
       const first = panelRef.current?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([data-close]):not([disabled])');
-      first?.focus();
+      first?.focus({ preventScroll: true });
     }, 50);
     return () => {
       clearTimeout(timer);
       document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
-  if (!mounted) return null;
-  return (
-    <div className={cx('fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto', closing && 'pointer-events-none')} role="presentation">
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(
+    <div className={cx('fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4', closing && 'pointer-events-none')} role="presentation">
       <div className={cx('fixed inset-0 bg-[rgb(22_23_26/0.4)]', closing ? 'motion-exit-fade' : 'animate-in fade-in duration-(--motion-base)')} onClick={onClose} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={cx('relative w-full bg-surface rounded-xl shadow-2xl my-8', closing ? 'motion-exit-pop' : 'animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter', MODAL_SIZE[size])}
+        className={cx('relative w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[88vh] flex flex-col overflow-hidden bg-surface rounded-xl shadow-2xl', closing ? 'motion-exit-pop' : 'animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter', MODAL_SIZE[size])}
       >
-        <header className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
+        <header className="shrink-0 flex items-start justify-between gap-4 px-5 pt-4 pb-3 border-b border-line bg-surface">
           <div className="min-w-0">
             <h2 id={titleId} className="text-base font-semibold text-ink">{view.title}</h2>
           </div>
@@ -324,10 +327,15 @@ export function Modal({
             <X className="w-4 h-4" />
           </button>
         </header>
-        {view.children && <div className="px-5 pb-4 grid gap-4">{view.children}</div>}
-        {view.footer && <footer className="flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
+        {view.children && (
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
+            <div className="grid gap-4">{view.children}</div>
+          </div>
+        )}
+        {view.footer && <footer className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -365,7 +373,12 @@ export function ConfirmDialog({
 }) {
   const [text, setText] = useState(reason?.defaultValue || '');
   const fieldId = useId();
-  useEffect(() => { if (open) setText(reason?.defaultValue || ''); }, [open, reason?.defaultValue]);
+  const syncKey = `${open}-${reason?.defaultValue || ''}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (prevSyncKey !== syncKey) {
+    setPrevSyncKey(syncKey);
+    if (open) setText(reason?.defaultValue || '');
+  }
   const blocked = !!reason?.required && !text.trim();
   const handleClose = () => {
     onCancel?.();
