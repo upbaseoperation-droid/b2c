@@ -505,60 +505,57 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       }
       filteredStaff.forEach(st => {
         st.assignedBrands.forEach(ab => {
-          if (activeBrandIds.size < 10) activeBrandIds.add(ab.brandId);
+          if (activeBrandIds.size < 8) activeBrandIds.add(ab.brandId);
         });
         st.assignedStores.forEach(as => {
-          if (activeStoreIds.size < 11) activeStoreIds.add(as.storeId);
+          if (activeStoreIds.size < 8) activeStoreIds.add(as.storeId);
         });
       });
       if (focusedBrandId) activeBrandIds.add(focusedBrandId);
       if (focusedStoreId) activeStoreIds.add(focusedStoreId);
     }
 
-    const visibleBrands = brands.filter(b => activeBrandIds.has(b.id));
-    const visibleStores = b2cStores.filter(s => activeStoreIds.has(s.id));
+    const visibleBrands = brands.filter(b => activeBrandIds.has(b.id)).slice(0, 8);
+    const visibleStores = b2cStores.filter(s => activeStoreIds.has(s.id)).slice(0, 8);
 
-    // A. Position Staff Nodes in 3 Vertically Separated 3D Terraces (Bậc thềm 3D)
-    // Max 9–10 staff per terrace => symmetric horizontal span => ZERO horizontal or vertical overlap!
+    // A. Position 28 Staff Nodes in a Symmetrical 4 Terraces × 7 Columns Matrix (7 × 4 = 28)
+    // Every row has at most 7 staff => ~105px horizontal space per person => ZERO overlap on any screen size!
+    // tx is normalized in [-1 .. +1], ty is exact reference Y on a 640px height canvas:
+    // - Zone 3 (Gian hàng): y = 0..104   (Store base ty = 54)
+    // - Zone 2 (Brand):     y = 104..208 (Brand base ty = 158)
+    // - Zone 1 (28 Nhân sự): y = 208..640 (4 Terraces at ty = 288, 384, 480, 576)
     const staffToRender =
       layoutMode === 'FOCUS_ORBIT' && focusedStaff ? [focusedStaff] : filteredStaff;
     const sTotal = Math.max(1, staffToRender.length);
-    const terraceCount = sTotal <= 9 ? 1 : sTotal <= 18 ? 2 : 3;
+    const maxCols = 7;
+    const terraceCount = Math.min(4, Math.ceil(sTotal / maxCols));
     const itemsPerTerrace = Math.ceil(sTotal / terraceCount);
 
-    // Calibrated 3D Y & Z coordinates so that after perspective projection:
-    // - Store Tier lands at sy ≈ 56px (inside TẦNG 3: 0..112px)
-    // - Brand Tier lands at sy ≈ 162px (inside TẦNG 2: 112..224px)
-    // - Staff Terrace 0 lands at sy ≈ 314px (inside TẦNG 1: 224..580px)
-    // - Staff Terrace 1 lands at sy ≈ 416px
-    // - Staff Terrace 2 lands at sy ≈ 518px
-    const terraceY = [30, 162, 304];
-    const terraceZ = [10, 45, 80];
-    const terraceWorldSpan = [940, 960, 990];
+    const terraceY = [288, 384, 480, 576];
+    const terraceZ = [15, 45, 75, 105];
 
     staffToRender.forEach((st, idx) => {
-      let tx = 0;
-      let ty = 162;
+      let tx = 0; // Normalized [-1 .. +1]
+      let ty = 384;
       let tz = 45;
 
-      // Compact 3D column height (max 42px in 3D space so front rows never touch back row pill cards)
-      const towerHeight = Math.max(18, Math.min(42, st.totalPts * 0.2));
-      const targetCapHeight = Math.max(16, Math.min(38, st.targetCapacityPts * 0.2));
+      // 3D column height in reference pixels (18px .. 38px so it never touches the row above)
+      const towerHeight = Math.max(18, Math.min(38, st.totalPts * 0.18));
+      const targetCapHeight = Math.max(15, Math.min(34, st.targetCapacityPts * 0.18));
 
       if (layoutMode === 'FOCUS_ORBIT' && focusedStaff && st.id === focusedStaff.id) {
         tx = 0;
-        ty = 150;
-        tz = 40;
+        ty = 360;
+        tz = 45;
       } else {
         const tIdx = Math.min(terraceCount - 1, Math.floor(idx / itemsPerTerrace));
         const colIdx = idx - tIdx * itemsPerTerrace;
         const rowLen = Math.min(itemsPerTerrace, sTotal - tIdx * itemsPerTerrace);
-        const maxSpan = terraceWorldSpan[tIdx] || 950;
-        // Keep uniform spacing and symmetric centering around X = 0
-        const spanW = rowLen <= 1 ? 0 : Math.min(maxSpan, (rowLen - 1) * (maxSpan / 9));
-        tx = rowLen <= 1 ? 0 : -spanW / 2 + (colIdx / (rowLen - 1)) * spanW;
-        ty = terraceY[tIdx];
-        tz = terraceZ[tIdx];
+        // Normalized coordinate in [-1 .. +1] across the 7 columns
+        const spanNorm = rowLen <= 1 ? 0 : Math.min(1.0, (rowLen - 1) / (maxCols - 1));
+        tx = rowLen <= 1 ? 0 : -spanNorm + (colIdx / (rowLen - 1)) * (spanNorm * 2);
+        ty = terraceY[tIdx] ?? 576;
+        tz = terraceZ[tIdx] ?? 105;
       }
 
       let colorTop = '#34d399';
@@ -610,15 +607,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       });
     });
 
-    // B. Position Brand Nodes (Middle Tier: lands squarely inside TẦNG 2 band)
+    // B. Position Brand Nodes (Middle Tier: ty = 158 inside TẦNG 2: 104..208)
     const bCount = Math.max(1, visibleBrands.length);
     visibleBrands.forEach((b, idx) => {
       const nodeId = `brand-${b.id}`;
-      const maxSpan = 880;
-      const spanW = bCount <= 1 ? 0 : Math.min(maxSpan, (bCount - 1) * (maxSpan / 9));
-      const tx = bCount <= 1 ? 0 : -spanW / 2 + (idx / (bCount - 1)) * spanW;
-      const ty = -148;
-      const tz = -25;
+      const spanNorm = bCount <= 1 ? 0 : Math.min(0.96, (bCount - 1) / 7);
+      const tx = bCount <= 1 ? 0 : -spanNorm + (idx / (bCount - 1)) * (spanNorm * 2);
+      const ty = 158;
+      const tz = -45;
 
       nodes.push({
         id: nodeId,
@@ -630,7 +626,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         tx,
         ty,
         tz,
-        towerHeight: 15,
+        towerHeight: 14,
         targetCapHeight: 0,
         colorTop: '#fcd34d',
         colorLeft: '#f59e0b',
@@ -643,15 +639,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       });
     });
 
-    // C. Position Store Nodes (Top Tier: lands squarely inside TẦNG 3 band)
+    // C. Position Store Nodes (Top Tier: ty = 54 inside TẦNG 3: 0..104)
     const stCount = Math.max(1, visibleStores.length);
     visibleStores.forEach((s, idx) => {
       const nodeId = `store-${s.id}`;
-      const maxSpan = 850;
-      const spanW = stCount <= 1 ? 0 : Math.min(maxSpan, (stCount - 1) * (maxSpan / 9));
-      const tx = stCount <= 1 ? 0 : -spanW / 2 + (idx / (stCount - 1)) * spanW;
-      const ty = -262;
-      const tz = -60;
+      const spanNorm = stCount <= 1 ? 0 : Math.min(0.96, (stCount - 1) / 7);
+      const tx = stCount <= 1 ? 0 : -spanNorm + (idx / (stCount - 1)) * (spanNorm * 2);
+      const ty = 54;
+      const tz = -90;
 
       const isTikTok = s.platform === 'TikTok Shop';
       const coef = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier;
@@ -728,14 +723,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           links.push({
             id: `link-${brandNodeId}-${storeNodeId}`,
             sourceId: brandNodeId,
-            sourceIdType: 'BRAND',
             targetId: storeNodeId,
             roleLabel: s.platform,
             linkType: 'BRAND_TO_STORE',
             color: '#94a3b8',
             weight: 1.4,
             particleSpeed: 0.004,
-          } as Link3D);
+          });
         }
       }
     });
@@ -778,8 +772,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           tx: 0,
           ty: 0,
           tz: 0,
-          towerHeight: 42,
-          targetCapHeight: 42,
+          towerHeight: 38,
+          targetCapHeight: 34,
           colorTop: '#10b981',
           colorLeft: '#059669',
           colorRight: '#047857',
@@ -802,10 +796,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   }, [staffWorkloads]);
 
   // ============================================================================
-  // 4. 3D CANVAS ENGINE (100% ALIGNED TIER BANDS & NON-OVERLAPPING PILLS)
+  // 4. AXONOMETRIC 3D CANVAS ENGINE (PIXEL-EXACT TIER ALIGNMENT & 7x4 MATRIX)
   // ============================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const canvasSizeRef = useRef({ width: 920, height: 580, dpr: 1 });
+  const canvasSizeRef = useRef({ width: 920, height: 640, dpr: 1 });
   const hoveredNodeIdRef = useRef<string | null>(null);
   const liveNodesRef = useRef<
     Map<string, { x: number; y: number; z: number; th: number; capH: number }>
@@ -813,17 +807,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
   const cameraRef = useRef({
     yaw: 0.0,
-    pitch: 0.12,
+    pitch: 0.0,
     zoom: 1.0,
     targetYaw: 0.0,
-    targetPitch: 0.12,
+    targetPitch: 0.0,
     targetZoom: 1.0,
-    fx: 0,
-    fy: 0,
-    fz: 0,
-    targetFx: 0,
-    targetFy: 0,
-    targetFz: 0,
   });
 
   const dragRef = useRef({
@@ -867,14 +855,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     layoutMode,
   ]);
 
-  const flyToNode = useCallback((nodeId: string | null, resetView = false) => {
-    // Always keep the 3D scene centered horizontally (targetFx = 0) so clicking a node never shifts the diagram off-center
-    cameraRef.current.targetFx = 0;
-    cameraRef.current.targetFy = 0;
-    cameraRef.current.targetFz = 0;
-    if (resetView || !nodeId) {
+  const flyToNode = useCallback((_nodeId: string | null, resetView = false) => {
+    if (resetView) {
       cameraRef.current.targetYaw = 0.0;
-      cameraRef.current.targetPitch = 0.12;
+      cameraRef.current.targetPitch = 0.0;
       cameraRef.current.targetZoom = 1.0;
     }
   }, []);
@@ -929,7 +913,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       strokeColor: string,
       isHighlighted: boolean
     ) => {
-      // Left 3D face
       ctx.beginPath();
       ctx.moveTo(topX - halfW, topY);
       ctx.lineTo(topX, topY + depthH);
@@ -939,7 +922,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillStyle = colorLeft;
       ctx.fill();
 
-      // Right 3D face
       ctx.beginPath();
       ctx.moveTo(topX, topY + depthH);
       ctx.lineTo(topX + halfW, topY);
@@ -949,7 +931,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillStyle = colorRight;
       ctx.fill();
 
-      // Top 3D Rhombus Cap
       ctx.beginPath();
       ctx.moveTo(topX, topY - depthH);
       ctx.lineTo(topX + halfW, topY);
@@ -981,19 +962,24 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      const yScale = height / 580;
-      const xSpread = Math.min(1.25, Math.max(0.78, (width - 96) / 790));
-      const band3Bottom = Math.round(112 * yScale);
-      const band2Bottom = Math.round(224 * yScale);
+      // Reference canvas height is 640px
+      const yScale = height / 640;
+      const padX = Math.max(52, Math.round(width * 0.075));
+      const halfUsableW = Math.max(120, (width - padX * 2) * 0.5);
+      const cx = width * 0.5;
+      const cy = height * 0.5;
+
+      const band3Bottom = Math.round(104 * yScale);
+      const band2Bottom = Math.round(208 * yScale);
 
       // 1. Clean Studio Background & Synchronized 3 Horizontal Zone Bands
       ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, width, height);
 
-      // Zone 3 (Top: Store Band)
+      // Zone 3 (Top: Store Band 0..104)
       ctx.fillStyle = '#f0f9ff';
       ctx.fillRect(0, 0, width, band3Bottom);
-      // Zone 2 (Middle: Brand Band)
+      // Zone 2 (Middle: Brand Band 104..208)
       ctx.fillStyle = '#fffbeb';
       ctx.fillRect(0, band3Bottom, width, band2Bottom - band3Bottom);
 
@@ -1015,64 +1001,47 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillText('TẦNG 2 · THƯƠNG HIỆU (BRAND)', 14, band3Bottom + Math.round(18 * yScale));
       ctx.fillStyle = '#1e293b';
       ctx.fillText(
-        'TẦNG 1 · SÀN 3 BẬC THỀM 28 NHÂN SỰ (CLICK ĐỂ XEM NHÁNH PHỤ TRÁCH)',
+        'TẦNG 1 · SÀN 28 NHÂN SỰ (4 BẬC × 7 CỘT ĐỐI XỨNG · CLICK ĐỂ XEM NHÁNH)',
         14,
         band2Bottom + Math.round(18 * yScale)
       );
 
-      const cx = width * 0.5;
-      const cy = height * 0.5;
-
-      // 2. Smooth 3D Camera
+      // 2. Smooth Axonometric 3D Camera
       const cam = cameraRef.current;
       if (isAutoRot && !dragRef.current.isDragging && !hovId) {
-        cam.targetYaw = Math.sin(time * 0.008) * 0.14;
+        cam.targetYaw = Math.sin(time * 0.01) * 0.16;
       }
-      cam.yaw += (cam.targetYaw - cam.yaw) * 0.12;
-      cam.pitch += (cam.targetPitch - cam.pitch) * 0.12;
-      cam.zoom += (cam.targetZoom - cam.zoom) * 0.12;
-      cam.fx += (cam.targetFx - cam.fx) * 0.1;
-      cam.fy += (cam.targetFy - cam.fy) * 0.1;
-      cam.fz += (cam.targetFz - cam.fz) * 0.1;
+      cam.yaw += (cam.targetYaw - cam.yaw) * 0.14;
+      cam.pitch += (cam.targetPitch - cam.pitch) * 0.14;
+      cam.zoom += (cam.targetZoom - cam.zoom) * 0.14;
 
-      const cosY = Math.cos(cam.yaw);
       const sinY = Math.sin(cam.yaw);
-      const cosP = Math.cos(cam.pitch);
+      const cosY = Math.cos(cam.yaw);
       const sinP = Math.sin(cam.pitch);
-      const fov = 1020 * cam.zoom;
-      const cameraDist = 1200;
 
-      const project3D = (wx: number, wy: number, wz: number) => {
-        const rx = wx - cam.fx;
-        const ry = wy - cam.fy;
-        const rz = wz - cam.fz;
-
-        const x1 = rx * cosY - rz * sinY;
-        const z1 = rz * cosY + rx * sinY;
-        const y2 = ry * cosP - z1 * sinP;
-        const z2 = z1 * cosP + ry * sinP;
-
-        const depth = cameraDist + z2;
-        const scale = depth > 100 ? fov / depth : 0.1;
+      // Axonometric projection:
+      // wx is normalized [-1..+1], wy is reference Y [0..640], wz is 3D terrace depth
+      const project3D = (wxNorm: number, wyRef: number, wzDepth: number) => {
+        const baseScreenX = wxNorm * halfUsableW * cosY - wzDepth * sinY * 1.1;
+        const baseScreenY = (wyRef - 320) * yScale - wzDepth * sinP * 0.85;
         return {
-          sx: cx + x1 * scale * xSpread,
-          sy: cy + y2 * scale * yScale,
-          scale,
-          depth,
+          sx: cx + baseScreenX * cam.zoom,
+          sy: cy + baseScreenY * cam.zoom,
+          scale: cam.zoom,
+          depth: 1000 - wzDepth,
         };
       };
 
-      // 3. Draw 3D Terrace Platforms for the 3 Staff Rows
-      [30, 162, 304].forEach((tyLevel, tIdx) => {
-        const tzLevel = [10, 45, 80][tIdx];
-        const spanHalf = ([940, 960, 990][tIdx] || 950) * 0.52;
-        const pLeft = project3D(-spanHalf, tyLevel + 3, tzLevel);
-        const pRight = project3D(spanHalf, tyLevel + 3, tzLevel);
+      // 3. Draw 3D Terrace Platforms for the 4 Staff Rows
+      [288, 384, 480, 576].forEach((tyLevel, tIdx) => {
+        const tzLevel = [15, 45, 75, 105][tIdx];
+        const pLeft = project3D(-1.04, tyLevel + 2, tzLevel);
+        const pRight = project3D(1.04, tyLevel + 2, tzLevel);
         ctx.beginPath();
         ctx.moveTo(pLeft.sx, pLeft.sy);
         ctx.lineTo(pRight.sx, pRight.sy);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.38)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 1.8;
         ctx.stroke();
       });
 
@@ -1104,11 +1073,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           };
           liveNodesRef.current.set(n.id, live);
         } else {
-          live.x += (n.tx - live.x) * 0.15;
-          live.y += (n.ty - live.y) * 0.15;
-          live.z += (n.tz - live.z) * 0.15;
-          live.th += (n.towerHeight - live.th) * 0.15;
-          live.capH += (n.targetCapHeight - live.capH) * 0.15;
+          live.x += (n.tx - live.x) * 0.18;
+          live.y += (n.ty - live.y) * 0.18;
+          live.z += (n.tz - live.z) * 0.18;
+          live.th += (n.towerHeight - live.th) * 0.18;
+          live.capH += (n.targetCapHeight - live.capH) * 0.18;
         }
 
         const baseProj = project3D(live.x, live.y, live.z);
@@ -1157,7 +1126,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         ctx.quadraticCurveTo(midX, midY, x2, y2);
         ctx.strokeStyle = link.color;
         ctx.lineWidth = activeId ? 2.2 : 1.0;
-        ctx.globalAlpha = activeId ? 0.88 : 0.18;
+        ctx.globalAlpha = activeId ? 0.88 : 0.16;
         ctx.stroke();
 
         if (isParticles) {
@@ -1169,7 +1138,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           ctx.beginPath();
           ctx.arc(px, py, activeId ? 3.0 : 1.8, 0, Math.PI * 2);
           ctx.fillStyle = link.color;
-          ctx.globalAlpha = activeId ? 0.95 : 0.45;
+          ctx.globalAlpha = activeId ? 0.95 : 0.42;
           ctx.fill();
         }
         ctx.globalAlpha = 1;
@@ -1189,8 +1158,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         depth: number;
       }[] = [];
 
-      // Calculate safe max pill width based on actual screen width so adjacent pills never touch
-      const maxPillW = Math.min(82, Math.max(60, Math.floor((width - 96) / 10) - 6));
+      // Because there are at most 7 Staff per row and 8 Brands/Stores per row:
+      // Staff column spacing = (halfUsableW * 2) / 6
+      // Store/Brand column spacing = (halfUsableW * 2) / 7
+      const staffSpacingPx = (halfUsableW * 2) / 6;
+      const tierSpacingPx = (halfUsableW * 2) / 7;
+      const maxStaffPillW = Math.min(92, Math.max(66, Math.floor(staffSpacingPx - 8)));
+      const maxTierPillW = Math.min(86, Math.max(58, Math.floor(tierSpacingPx - 8)));
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1201,11 +1175,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         const isHovered = hovId === node.id;
         const isConnected = !activeId || connSet.has(node.id) || node.id === activeId;
 
-        ctx.globalAlpha = isConnected ? 1.0 : node.kind === 'STAFF' ? 0.78 : 0.35;
+        ctx.globalAlpha = isConnected ? 1.0 : node.kind === 'STAFF' ? 0.8 : 0.38;
 
         if (node.kind === 'STAFF') {
-          const halfW = Math.max(10, 14 * scale);
-          const depthH = halfW * 0.44;
+          const halfW = Math.max(11, 14.5 * scale);
+          const depthH = halfW * 0.42;
 
           if (isSelected || isHovered) {
             ctx.beginPath();
@@ -1240,10 +1214,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
-          // Crisp White Pill Card right below the column base, strictly bounded by maxPillW
+          // Crisp White Pill Card below the column base
           const cardText = node.shortLabel;
           const pctText = node.metricBadge;
-          const cardW = Math.min(maxPillW, Math.max(58, cardText.length * 5.4 + 10));
+          const cardW = Math.min(maxStaffPillW, Math.max(68, cardText.length * 5.8 + 14));
           const cardH = 25;
           const cardX = sx - cardW / 2;
           const cardY = sy + depthH + 3;
@@ -1260,7 +1234,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           ctx.fillStyle = '#0f172a';
           ctx.fillText(cardText, sx, cardY + 8.5, cardW - 6);
 
-          ctx.font = '700 9px Inter, system-ui, sans-serif';
+          ctx.font = '700 9.5px Inter, system-ui, sans-serif';
           ctx.fillStyle = node.textColor;
           ctx.fillText(`${node.subLabel} · ${pctText}`, sx, cardY + 18.5, cardW - 6);
 
@@ -1273,8 +1247,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             depth,
           });
         } else if (node.kind === 'BRAND') {
-          const halfW = Math.max(9.5, 13 * scale);
-          const depthH = halfW * 0.46;
+          const halfW = Math.max(10, 12.5 * scale);
+          const depthH = halfW * 0.44;
           drawIsometricPrism(
             sx,
             sy,
@@ -1289,7 +1263,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             isSelected || isHovered
           );
 
-          const bw = Math.min(maxPillW, Math.max(52, node.shortLabel.length * 5.4 + 8));
+          const bw = Math.min(maxTierPillW, Math.max(56, node.shortLabel.length * 5.6 + 10));
           const bh = 18;
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
@@ -1313,8 +1287,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           });
         } else {
           // STORE Node: Cube on top, Pill neatly below cube inside TẦNG 3 band
-          const halfW = Math.max(8.5, 11.5 * scale);
-          const depthH = halfW * 0.45;
+          const halfW = Math.max(9, 11.5 * scale);
+          const depthH = halfW * 0.44;
           drawIsometricPrism(
             sx,
             sy,
@@ -1329,7 +1303,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             isSelected || isHovered
           );
 
-          const sw = Math.min(maxPillW, Math.max(54, node.shortLabel.length * 5.2 + 8));
+          const sw = Math.min(maxTierPillW, Math.max(58, node.shortLabel.length * 5.4 + 10));
           const sh = 18;
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
@@ -1339,7 +1313,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           ctx.lineWidth = isSelected || isHovered ? 1.8 : 1.1;
           ctx.stroke();
 
-          ctx.font = '700 9px Inter, system-ui, sans-serif';
+          ctx.font = '700 9.5px Inter, system-ui, sans-serif';
           ctx.fillStyle = node.textColor;
           ctx.fillText(node.shortLabel, sx, sy + depthH + 3 + sh / 2, sw - 6);
 
@@ -1405,12 +1379,12 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         dragRef.current.moved = true;
       }
       cameraRef.current.targetYaw = Math.max(
-        -0.35,
-        Math.min(0.35, cameraRef.current.targetYaw + dx * 0.004)
+        -0.28,
+        Math.min(0.28, cameraRef.current.targetYaw + dx * 0.004)
       );
       cameraRef.current.targetPitch = Math.max(
-        0.06,
-        Math.min(0.32, cameraRef.current.targetPitch + dy * 0.003)
+        -0.16,
+        Math.min(0.16, cameraRef.current.targetPitch + dy * 0.003)
       );
       dragRef.current.startX = e.clientX;
       dragRef.current.startY = e.clientY;
@@ -1440,8 +1414,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.08 : 0.92;
     cameraRef.current.targetZoom = Math.max(
-      0.7,
-      Math.min(1.5, cameraRef.current.targetZoom * factor)
+      0.8,
+      Math.min(1.35, cameraRef.current.targetZoom * factor)
     );
   };
 
@@ -1744,9 +1718,9 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         </div>
       </div>
 
-      {/* 3. Main 3D Viewport + Side Inspector Panel (Equal Height Aligned) */}
+      {/* 3. Main 3D Viewport + Side Inspector Panel (Equal Height 720px Aligned) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        <div className="lg:col-span-8 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[670px]">
+        <div className="lg:col-span-8 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[720px]">
           <div className="px-3 py-2 bg-sunken/60 border-b border-line flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2.5 text-2xs text-ink-2 font-medium">
               <span className="inline-flex items-center gap-1">
@@ -1801,7 +1775,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  cameraRef.current.targetZoom = Math.min(1.5, cameraRef.current.targetZoom * 1.12);
+                  cameraRef.current.targetZoom = Math.min(1.35, cameraRef.current.targetZoom * 1.12);
                 }}
                 title="Phóng to"
                 className="w-7 h-7 rounded-md bg-surface border border-line text-ink-2 hover:bg-sunken flex items-center justify-center cursor-pointer"
@@ -1812,7 +1786,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  cameraRef.current.targetZoom = Math.max(0.7, cameraRef.current.targetZoom * 0.88);
+                  cameraRef.current.targetZoom = Math.max(0.8, cameraRef.current.targetZoom * 0.88);
                 }}
                 title="Thu nhỏ"
                 className="w-7 h-7 rounded-md bg-surface border border-line text-ink-2 hover:bg-sunken flex items-center justify-center cursor-pointer"
@@ -1835,7 +1809,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             </div>
           </div>
 
-          {/* 3-Terrace Non-Overlapping 3D Canvas */}
+          {/* 4x7 Symmetrical Non-Overlapping 3D Canvas */}
           <canvas
             ref={canvasRef}
             onMouseDown={handleMouseDown}
@@ -1875,8 +1849,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           </div>
         </div>
 
-        {/* Right: Detailed Workload & Assignment Inspector Panel (4 cols, matched 670px height) */}
-        <div className="lg:col-span-4 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[670px]">
+        {/* Right: Detailed Workload & Assignment Inspector Panel (4 cols, matched 720px height) */}
+        <div className="lg:col-span-4 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[720px]">
           {!selectedNode ? (
             <div className="p-6 text-center space-y-3 my-auto">
               <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mx-auto">
