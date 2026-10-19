@@ -767,13 +767,17 @@ export interface TikTokCompetitorCollaborationInfo {
   competitorBrandName: string;
   collaborationType: 'AFFILIATE_CART' | 'PAID_BOOKING' | 'SEEDING_FOC';
   collaborationTypeLabel: string;
+  collaborationLabel?: string;
   competitorProductPromoted: string;
+  promotedProduct?: string;
   competitorVideoCount: number;
   latestCollabVideoId: string;
   latestCollabVideoUrl: string;
   latestCollabPublishedAt: string;
   latestCollabCaption: string;
   latestCollabViews: number;
+  videoViews: number;
+  videoLikes: number;
   estimatedCompetitorGmv: number;
   estimatedCompetitorOrders: number;
   isAlreadyInUpbase: boolean;
@@ -853,6 +857,12 @@ const COMPETITOR_PRESET_CATALOG: Record<
     category: 'Mỹ phẩm & Chăm sóc cá nhân',
     recommendedUpbaseBrands: ['ClubClio', 'Rejuran', "L'Occitane Việt Nam"],
   },
+  keyshulive: {
+    brandName: 'KEYSHU LIVE',
+    searchKeyword: 'mặt nạ keyshu',
+    category: 'Dược mỹ phẩm & Chăm sóc da',
+    recommendedUpbaseBrands: ['Rejuran', 'Bye Bye Blemish', 'ClubClio'],
+  },
 };
 
 /**
@@ -894,30 +904,37 @@ export async function discoverCompetitorKocs(
   );
   const preset = presetKey ? COMPETITOR_PRESET_CATALOG[presetKey] : undefined;
 
+  const strippedBrandCore = cleanCompetitorHandle
+    .replace(/(?:_|-|\.)?(official|vietnam|vn|store|shop|live|mall|channel|cosmetics|beauty)$/gi, '')
+    .replace(/[._-]+/g, ' ')
+    .trim();
+
   const cleanSearchBrand =
-    preset?.searchKeyword ||
+    preset?.searchKeyword || strippedBrandCore || cleanCompetitorHandle;
+
+  const isDirectVideoUrl = /tiktok\.com\/@[^/?#]+\/(?:video|photo)\/\d{15,22}/i.test(
     rawCompetitorInput
-      .replace(/^@+/, '')
-      .replace(/\b(official|vietnam|vn|store|shop)\b/gi, '')
-      .trim() ||
-    cleanCompetitorHandle;
+  );
 
   // 1. Chạy song song: lấy hồ sơ thực của kênh đối thủ VÀ tìm các video KOC nhắc tới đối thủ
-  const [liveCompProfile, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
+  const [liveCompProfile, directInputVideo, compOwnVideos, rawDiscoveredVideos] = await Promise.all([
     fetchLiveTikTokPublicProfile(cleanCompetitorHandle),
+    isDirectVideoUrl ? inspectLiveTikTokVideoPage(rawCompetitorInput.trim()) : Promise.resolve(null),
     discoverRealTikTokVideoUrlsByQuery([`tiktok.com/@${cleanCompetitorHandle}/video`], 5),
     discoverRealTikTokVideoUrlsByQuery(
       [
         `tiktok ${cleanSearchBrand} review`,
         `tiktok review ${cleanSearchBrand} chính hãng`,
+        `tiktok #${strippedBrandCore.replace(/\s+/g, '')}`,
       ],
       limit * 4
     ),
   ]);
 
   // Nếu trang profile @competitor chưa trả về số liệu (do chỉ mở trên trang video), lấy từ 1 video thực của chính kênh đối thủ
-  let compVideoAuthor: RealTikTokVideoAndAuthorDetail['author'] | undefined;
-  if (!liveCompProfile?.followers) {
+  let compVideoAuthor: RealTikTokVideoAndAuthorDetail['author'] | undefined =
+    directInputVideo?.author;
+  if (!liveCompProfile?.followers && !compVideoAuthor?.followers) {
     const ownVideo = compOwnVideos.find((v) => v.handle === cleanCompetitorHandle);
     if (ownVideo) {
       const inspectedOwn = await inspectLiveTikTokVideoPage(ownVideo.videoUrl);
@@ -1020,7 +1037,13 @@ export async function discoverCompetitorKocs(
           competitorBrandName,
           collaborationType,
           collaborationTypeLabel,
+          collaborationLabel: collaborationTypeLabel,
           competitorProductPromoted:
+            inspected.cartAnchorTitle ||
+            (inspected.hashtags.length > 0
+              ? inspected.hashtags.slice(0, 4).join(' ')
+              : `#${compactBrandTag}`),
+          promotedProduct:
             inspected.cartAnchorTitle ||
             (inspected.hashtags.length > 0
               ? inspected.hashtags.slice(0, 4).join(' ')
@@ -1031,6 +1054,8 @@ export async function discoverCompetitorKocs(
           latestCollabPublishedAt: inspected.publishedAt,
           latestCollabCaption: inspected.caption,
           latestCollabViews: inspected.views,
+          videoViews: inspected.views,
+          videoLikes: inspected.likes,
           estimatedCompetitorGmv: 0,
           estimatedCompetitorOrders: 0,
           isAlreadyInUpbase,

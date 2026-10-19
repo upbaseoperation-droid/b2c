@@ -75,6 +75,7 @@ type CommentFilterKey = 'ALL' | TikTokCommentIntentType;
 
 const COMPETITOR_SAMPLES = [
   { handle: '@larocheposayvn', label: 'La Roche-Posay VN' },
+  { handle: '@keyshulive', label: 'KEYSHU LIVE' },
   { handle: '@anessavietnam', label: 'Anessa Vietnam' },
   { handle: '@romand_vn', label: 'Rom&nd Vietnam' },
   { handle: '@cocoonvietnam', label: 'Cocoon Vietnam' },
