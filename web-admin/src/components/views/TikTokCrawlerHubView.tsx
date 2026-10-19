@@ -241,6 +241,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     return map;
   }, [kocs]);
 
+  const compNextPageOffsetRef = useRef(0);
+  const tagNextPageOffsetRef = useRef(0);
+
   const runCompetitorCrawl = async (
     rawComp: string,
     targetPeriod: PeriodKey,
@@ -256,6 +259,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     if (!appendMode) {
       setCompResults([]);
       setCompProfile(null);
+      compNextPageOffsetRef.current = 0;
     }
     const baseList = appendMode ? [...compResults] : [];
     const requestedTotal = appendMode
@@ -263,7 +267,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       : Math.min(Math.max(Number(options?.targetCount ?? compTargetCount) || 12, 1), 1000);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
-    const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+    const initialEstimateBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+    const maxBatches = Math.max(initialEstimateBatches + 8, Math.ceil(totalNeeded / 5));
 
     compAbortRef.current = false;
     setCompLoading(true);
@@ -274,18 +279,24 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       accumulatedMap.set(item.handle.toLowerCase(), item);
     }
     let latestProfile = appendMode ? compProfile : null;
+    let consecutiveEmptyBatches = 0;
 
     try {
-      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+      for (let batchIdx = 0; batchIdx < maxBatches; batchIdx++) {
         if (compAbortRef.current) break;
 
         const remaining = requestedTotal - accumulatedMap.size;
         if (remaining <= 0) break;
-        const batchLimit = Math.min(KOC_BATCH_SIZE, remaining);
+        const batchLimit = Math.min(20, Math.max(KOC_BATCH_SIZE, remaining));
+        const currentPageOffset = compNextPageOffsetRef.current++;
+        const displayTotalBatches = Math.max(
+          initialEstimateBatches,
+          batchIdx + Math.ceil(remaining / KOC_BATCH_SIZE)
+        );
 
         setCompBatchProgress({
           currentBatch: batchIdx + 1,
-          totalBatches,
+          totalBatches: displayTotalBatches,
           collectedCount: accumulatedMap.size,
           targetCount: requestedTotal,
         });
@@ -298,7 +309,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             period: targetPeriod,
             limit: batchLimit,
             excludeHandles: Array.from(accumulatedMap.keys()),
-            pageOffset: batchIdx,
+            pageOffset: currentPageOffset,
             skipProfileFetch: accumulatedMap.size > 0 && Boolean(latestProfile),
           }),
         });
@@ -320,6 +331,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         let addedInBatch = 0;
         for (const row of json.results as TikTokCompetitorKocResult[]) {
+          if (accumulatedMap.size >= requestedTotal) break;
           const key = row.handle.toLowerCase();
           if (!accumulatedMap.has(key)) {
             accumulatedMap.set(key, row);
@@ -345,12 +357,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         setCompBatchProgress({
           currentBatch: batchIdx + 1,
-          totalBatches,
+          totalBatches: displayTotalBatches,
           collectedCount: mergedList.length,
           targetCount: requestedTotal,
         });
 
-        if (addedInBatch === 0) break;
+        if (addedInBatch === 0) {
+          consecutiveEmptyBatches++;
+          if (consecutiveEmptyBatches >= 2) break;
+        } else {
+          consecutiveEmptyBatches = 0;
+        }
       }
 
       if (accumulatedMap.size === 0 && !compAbortRef.current) {
@@ -386,6 +403,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const appendMode = Boolean(options?.appendMode);
     if (!appendMode) {
       setTagResults([]);
+      tagNextPageOffsetRef.current = 0;
     }
     const baseList = appendMode ? [...tagResults] : [];
     const requestedTotal = appendMode
@@ -393,7 +411,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       : Math.min(Math.max(Number(options?.targetCount ?? tagTargetCount) || 12, 1), 1000);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
-    const totalBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+    const initialEstimateBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
+    const maxBatches = Math.max(initialEstimateBatches + 8, Math.ceil(totalNeeded / 5));
 
     tagAbortRef.current = false;
     setTagLoading(true);
@@ -403,18 +422,24 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     for (const item of baseList) {
       accumulatedMap.set(item.handle.toLowerCase(), item);
     }
+    let consecutiveEmptyBatches = 0;
 
     try {
-      for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+      for (let batchIdx = 0; batchIdx < maxBatches; batchIdx++) {
         if (tagAbortRef.current) break;
 
         const remaining = requestedTotal - accumulatedMap.size;
         if (remaining <= 0) break;
-        const batchLimit = Math.min(KOC_BATCH_SIZE, remaining);
+        const batchLimit = Math.min(20, Math.max(KOC_BATCH_SIZE, remaining));
+        const currentPageOffset = tagNextPageOffsetRef.current++;
+        const displayTotalBatches = Math.max(
+          initialEstimateBatches,
+          batchIdx + Math.ceil(remaining / KOC_BATCH_SIZE)
+        );
 
         setTagBatchProgress({
           currentBatch: batchIdx + 1,
-          totalBatches,
+          totalBatches: displayTotalBatches,
           collectedCount: accumulatedMap.size,
           targetCount: requestedTotal,
         });
@@ -427,7 +452,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             period: targetPeriod,
             limit: batchLimit,
             excludeHandles: Array.from(accumulatedMap.keys()),
-            pageOffset: batchIdx,
+            pageOffset: currentPageOffset,
           }),
         });
         const json = await res.json();
@@ -443,6 +468,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         let addedInBatch = 0;
         for (const row of json.results as TikTokHashtagKocResult[]) {
+          if (accumulatedMap.size >= requestedTotal) break;
           const key = row.handle.toLowerCase();
           if (!accumulatedMap.has(key)) {
             accumulatedMap.set(key, row);
@@ -469,12 +495,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         setTagBatchProgress({
           currentBatch: batchIdx + 1,
-          totalBatches,
+          totalBatches: displayTotalBatches,
           collectedCount: mergedList.length,
           targetCount: requestedTotal,
         });
 
-        if (addedInBatch === 0) break;
+        if (addedInBatch === 0) {
+          consecutiveEmptyBatches++;
+          if (consecutiveEmptyBatches >= 2) break;
+        } else {
+          consecutiveEmptyBatches = 0;
+        }
       }
 
       if (!tagAbortRef.current && accumulatedMap.size === 0) {
