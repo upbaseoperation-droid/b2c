@@ -39,6 +39,7 @@ Thumbs.db
 *.zip
 pdf_preview/
 tmp/
+*.html
 
 # Local Agent & Tooling
 .agents/

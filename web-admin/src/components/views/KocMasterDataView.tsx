@@ -10,13 +10,14 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Check, CloudDownload, FileScan, Plus, RefreshCw, UserCheck } from 'lucide-react';
+import { Check, CloudDownload, FileScan, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 import { KocProfile } from '../koc/KocProfile';
+import { KocSocialChannelsModal } from '../koc/KocSocialChannelsModal';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import {
   LEGAL_TYPE_LABEL,
@@ -80,6 +81,11 @@ export const hasKocPlatform = (
   k: KocItem,
   platform: 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads',
 ): boolean => {
+  if (platform === 'shopee' && k.shopeeChannel) return true;
+  if (platform === 'facebook' && k.facebookChannel) return true;
+  if (platform === 'instagram' && k.instagramChannel) return true;
+  if (platform === 'threads' && k.threadsChannel) return true;
+
   if (k.platforms && k.platforms.length > 0) {
     const pUpper = platform.toUpperCase();
     return k.platforms.some((p) => p.toUpperCase() === pUpper);
@@ -138,6 +144,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   // Modal
   const [ocrTarget, setOcrTarget] = useState<KocItem | null>(null);
   const [metricsTarget, setMetricsTarget] = useState<KocItem | null>(null);
+  const [socialTarget, setSocialTarget] = useState<KocItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [scraperOpen, setScraperOpen] = useState(false);
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
@@ -177,6 +184,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           k.stageName.toLowerCase().includes(q) ||
           (k.realName || '').toLowerCase().includes(q) ||
           k.channelId.toLowerCase().includes(q) ||
+          (k.shopeeChannel || '').toLowerCase().includes(q) ||
+          (k.facebookChannel || '').toLowerCase().includes(q) ||
+          (k.instagramChannel || '').toLowerCase().includes(q) ||
+          (k.threadsChannel || '').toLowerCase().includes(q) ||
           (qDigits.length >= 4 &&
             [k.phone, k.cccd, k.taxCode].some((v) => (v || '').replace(/\D/g, '').includes(qDigits)));
         if (!hit) return false;
@@ -281,6 +292,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const rowActions = (k: KocItem) => [
     ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
     { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
+    { label: 'Tìm kênh MXH', icon: Search, onSelect: () => setSocialTarget(k) },
     {
       label: 'Lấy dữ liệu TikTok',
       icon: CloudDownload,
@@ -358,12 +370,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
       align: 'center',
       width: 44,
-      render: (k) =>
-        hasKocPlatform(k, 'shopee') ? (
-          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
-        ) : (
-          <span className="text-ink-3/40 text-xs">—</span>
-        ),
+      render: (k) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSocialTarget(k);
+          }}
+          title={k.shopeeChannel ? `Shopee: ${k.shopeeChannel}` : 'Tìm & xác nhận kênh Shopee'}
+          className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-sunken mx-auto"
+        >
+          {hasKocPlatform(k, 'shopee') ? (
+            <Check className="w-4 h-4 text-positive stroke-[2.5]" />
+          ) : (
+            <span className="text-ink-3/40 text-xs">—</span>
+          )}
+        </button>
+      ),
     },
     {
       key: 'facebook',
@@ -374,12 +397,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
       align: 'center',
       width: 44,
-      render: (k) =>
-        hasKocPlatform(k, 'facebook') ? (
-          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
-        ) : (
-          <span className="text-ink-3/40 text-xs">—</span>
-        ),
+      render: (k) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSocialTarget(k);
+          }}
+          title={k.facebookChannel ? `Facebook: ${k.facebookChannel}` : 'Tìm & xác nhận kênh Facebook'}
+          className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-sunken mx-auto"
+        >
+          {hasKocPlatform(k, 'facebook') ? (
+            <Check className="w-4 h-4 text-positive stroke-[2.5]" />
+          ) : (
+            <span className="text-ink-3/40 text-xs">—</span>
+          )}
+        </button>
+      ),
     },
     {
       key: 'instagram',
@@ -390,12 +424,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
       align: 'center',
       width: 44,
-      render: (k) =>
-        hasKocPlatform(k, 'instagram') ? (
-          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
-        ) : (
-          <span className="text-ink-3/40 text-xs">—</span>
-        ),
+      render: (k) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSocialTarget(k);
+          }}
+          title={k.instagramChannel ? `Instagram: ${k.instagramChannel}` : 'Tìm & xác nhận kênh Instagram'}
+          className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-sunken mx-auto"
+        >
+          {hasKocPlatform(k, 'instagram') ? (
+            <Check className="w-4 h-4 text-positive stroke-[2.5]" />
+          ) : (
+            <span className="text-ink-3/40 text-xs">—</span>
+          )}
+        </button>
+      ),
     },
     {
       key: 'threads',
@@ -406,12 +451,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ),
       align: 'center',
       width: 44,
-      render: (k) =>
-        hasKocPlatform(k, 'threads') ? (
-          <Check className="w-4 h-4 text-positive mx-auto stroke-[2.5]" />
-        ) : (
-          <span className="text-ink-3/40 text-xs">—</span>
-        ),
+      render: (k) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSocialTarget(k);
+          }}
+          title={k.threadsChannel ? `Threads: ${k.threadsChannel}` : 'Tìm & xác nhận kênh Threads'}
+          className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-sunken mx-auto"
+        >
+          {hasKocPlatform(k, 'threads') ? (
+            <Check className="w-4 h-4 text-positive stroke-[2.5]" />
+          ) : (
+            <span className="text-ink-3/40 text-xs">—</span>
+          )}
+        </button>
+      ),
     },
     {
       key: 'docs',
@@ -473,6 +529,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onCreateBooking={onOpenQuickBookWithKoc}
           onUpdateMetrics={setMetricsTarget}
           onScanDocs={setOcrTarget}
+          onSearchSocialChannels={setSocialTarget}
           onOpenKocPortal={onOpenKocPortal}
           onSelectDealForContract={onSelectDealForContract}
         />
@@ -500,7 +557,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 search={{
                   value: search,
                   onChange: setSearch,
-                  placeholder: 'Tên kênh, tên thật, SĐT, CCCD...',
+                  placeholder: 'Tên kênh, nick Shopee/FB/IG/Threads, SĐT, CCCD...',
                 }}
                 filters={
                   <>
@@ -652,6 +709,29 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onNotify={onNotify}
         />
       )}
+
+      <KocSocialChannelsModal
+        open={!!socialTarget}
+        onClose={() => setSocialTarget(null)}
+        koc={socialTarget}
+        onConfirmSave={(kocId, updates) => {
+          const target = localKocs.find((k) => k.id === kocId);
+          if (target) {
+            applyUpdate(
+              {
+                ...target,
+                shopeeChannel: updates.shopeeChannel,
+                facebookChannel: updates.facebookChannel,
+                instagramChannel: updates.instagramChannel,
+                threadsChannel: updates.threadsChannel,
+                platforms: updates.platforms,
+              },
+              `Đã xác nhận và lưu các kênh mạng xã hội cho ${target.stageName}`,
+            );
+          }
+          setSocialTarget(null);
+        }}
+      />
 
       <TikTokKocScraperModal
         open={scraperOpen}

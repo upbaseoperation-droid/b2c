@@ -549,6 +549,7 @@ export interface KocItem {
   workedPicsList?: string; // Danh sách các PIC từng làm việc
   sharedMcnInfo?: string; // MCN / Danh sách các kênh dùng chung CCCD-MST
   contractDriveUrl?: string; // Link thư mục Hợp đồng Google Drive
+  alternatePayees?: KocPayeeProfile[]; // Danh sách các hồ sơ CCCD/MST & TK thụ hưởng từng dùng qua các đợt nghiệm thu
 
   // Mở rộng chỉ số kênh & nhân khẩu học cho KocKolHubView
   rateCardLive?: number;
@@ -593,6 +594,16 @@ export interface TikTokVideoItem {
   estimatedGmv?: number;
   itemsSold?: number;
   commissionRate?: number;
+}
+
+export interface KocPayeeProfile {
+  legalId: string; // Số CCCD (12 số) hoặc MST (10/13 số)
+  holderName: string; // Họ tên chủ tài khoản / Tên công ty MCN
+  bankName?: string;
+  bankAccount?: string;
+  taxAccountType?: string;
+  dealsCount?: number;
+  latestBrand?: string;
 }
 
 export type KocMasterItem = KocItem;

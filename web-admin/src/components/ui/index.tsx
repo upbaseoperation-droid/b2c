@@ -6,7 +6,7 @@
  * và token màu (bg-surface, text-ink-3, border-line…), không tự đặt màu Tailwind.
  */
 
-import React, { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Progress, Sparkline } from './data';
 import { NumberRoll, SlidingIndicator, deltaPercent, useActiveBox } from './motion';
@@ -109,12 +109,27 @@ export interface TabItem<K extends string> {
   tone?: 'default' | 'critical';
 }
 
-/** Tab gạch chân. Số đếm màu nhạt, không đóng khung. */
-export function Tabs<K extends string>({ items, value, onChange, className }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string }) {
+/**
+ * Tab gạch chân. Số đếm màu nhạt, không đóng khung.
+ * `actions`: thao tác của cả trang/tab, nằm bên phải cùng hàng. Dãy tab tự cuộn ngang khi chật,
+ * không bao giờ bị nút đè lên. Tối đa một nút primary; thao tác thứ ba trở đi vào `ActionMenu`.
+ */
+export function Tabs<K extends string>({ items, value, onChange, className, actions }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string; actions?: React.ReactNode }) {
+  const list = <TabList items={items} value={value} onChange={onChange} className={actions ? 'flex-1' : cx('border-b border-line', className)} />;
+  if (!actions) return list;
+  return (
+    <div className={cx('flex items-end gap-4 border-b border-line', className)}>
+      {list}
+      <div className="flex items-center gap-2 shrink-0 pb-2">{actions}</div>
+    </div>
+  );
+}
+
+function TabList<K extends string>({ items, value, onChange, className }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} role="tablist" className={cx('relative flex gap-6 border-b border-line overflow-x-auto', className)}>
+    <div ref={ref} role="tablist" className={cx('relative flex gap-6 min-w-0 overflow-x-auto [scrollbar-width:thin]', className)}>
       <SlidingIndicator box={box} ready={ready} fit="underline" className="bg-ink z-[1]" />
       {items.map((t) => {
         const on = t.key === value;
@@ -213,15 +228,16 @@ export function Stat({
   progress?: { value: number; max: number; target?: number; invert?: boolean };
   icon?: LucideIcon;
 }) {
+  const compact = useContext(StatSizeContext) === 'sm';
   const noteColor = tone === 'warning' ? 'text-warning' : tone === 'critical' ? 'text-critical' : tone === 'positive' ? 'text-positive' : 'text-ink-3';
   return (
-    <div className="bg-surface px-4 pt-3.5 pb-4 grid gap-1 content-start transition-colors hover:bg-canvas/50">
+    <div className={cx('bg-surface grid gap-1 content-start min-w-0 transition-colors hover:bg-canvas/50', compact ? 'px-3.5 py-2.5' : 'px-4 pt-3.5 pb-4')}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[12.5px] text-ink-3">{label}</span>
+        <span className="text-[12.5px] text-ink-3 truncate" title={label}>{label}</span>
         {Icon && <Icon className="w-3.5 h-3.5 text-ink-3/70 shrink-0" strokeWidth={1.75} />}
       </div>
-      <div className="flex items-end justify-between gap-3">
-        <span className="text-[26px] leading-8 font-semibold text-ink tabular-nums tracking-tight">
+      <div className="flex items-end justify-between gap-3 min-w-0">
+        <span title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined} className={cx('min-w-0 truncate font-semibold text-ink tabular-nums tracking-tight', compact ? 'text-xl leading-7' : 'text-[26px] leading-8')}>
           {typeof value === 'string' || typeof value === 'number'
             ? <NumberRoll value={value} numeric={numeric} invert={invert} formatDelta={numeric !== undefined ? deltaPercent : undefined} />
             : value}
@@ -234,10 +250,17 @@ export function Stat({
   );
 }
 
-/** Hàng chỉ số: các ô chung một khung, ngăn bằng đường kẻ mảnh. */
-export function StatRow({ children }: { children: React.ReactNode }) {
+const StatSizeContext = React.createContext<'md' | 'sm'>('md');
+
+/**
+ * Hàng chỉ số: các ô chung một khung, ngăn bằng đường kẻ mảnh. Tối đa 4 ô.
+ * : chữ số 20px, đệm gọn — dùng khi hàng chỉ số nằm trên tab hoặc bảng, để nội dung chính lên sớm.
+ */
+export function StatRow({ children, size = 'md' }: { children: React.ReactNode; size?: 'md' | 'sm' }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">{children}</div>
+    <StatSizeContext.Provider value={size}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border border-line rounded-xl overflow-hidden">{children}</div>
+    </StatSizeContext.Provider>
   );
 }
 

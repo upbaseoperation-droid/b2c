@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Search,
   Square,
+  Target,
   UserPlus,
   Users,
   Video,
@@ -42,6 +43,7 @@ import { formatDate, formatNumber } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
+import { KocChannelBriefMatcherModal } from '../koc/KocChannelBriefMatcherModal';
 import { LinkAirCheckerPanel } from '../crawler/LinkAirCheckerPanel';
 import {
   CompetitorVideoScriptModal,
@@ -202,6 +204,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [scriptModalContext, setScriptModalContext] = useState<
     ScriptExtractFallbackContext | undefined
   >(undefined);
+  const [briefMatcherOpen, setBriefMatcherOpen] = useState(false);
+  const [briefMatcherHandles, setBriefMatcherHandles] = useState<string[]>([]);
+  const [briefMatcherBrand, setBriefMatcherBrand] = useState('');
+  const [runningBriefJobsCount, setRunningBriefJobsCount] = useState(0);
 
   const openScriptExtractorModal = (
     videoUrl: string,
@@ -210,6 +216,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     setScriptModalUrl(videoUrl);
     setScriptModalContext(ctx);
     setScriptModalOpen(true);
+  };
+
+  const openBriefMatcherModal = (handles: string[], brandHint?: string) => {
+    setBriefMatcherHandles(handles);
+    if (brandHint) setBriefMatcherBrand(brandHint);
+    setBriefMatcherOpen(true);
   };
 
   // Làm mới toàn bộ kết quả từ lần trước mỗi khi người dùng nhấn vào màn hình Crawler
@@ -1415,6 +1427,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
+                  openBriefMatcherModal([`@${r.handle}`], competitorInput);
+                }}
+              >
+                Khớp Brief
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
                   setScraperInitialHandle(`@${r.handle}`);
                   setScraperModalOpen(true);
                 }}
@@ -1553,7 +1575,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelStats',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 210,
+      width: 245,
       render: (r) => {
         const p = r.channelProfile;
         const isExisting = existingByHandle.has(r.handle);
@@ -1564,6 +1586,13 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </span>
             <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => openBriefMatcherModal([`@${r.handle}`], hashtagInput)}
+              >
+                Khớp Brief
+              </Button>
               <Button
                 size="sm"
                 variant="ghost"
@@ -1776,9 +1805,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'action',
       header: 'Thao tác',
       align: 'right',
-      width: 145,
+      width: 215,
       render: (c) => (
         <div className="flex items-center justify-end gap-1.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => openBriefMatcherModal([`@${c.handle}`])}
+          >
+            Khớp Brief
+          </Button>
           <Button
             size="sm"
             variant="secondary"
@@ -1827,6 +1863,29 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         />
 
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="primary"
+            icon={Target}
+            onClick={() => {
+              const defaultHandles =
+                activeTab === 'COMPETITOR_KOCS' && compResults.length > 0
+                  ? compResults.slice(0, 5).map((r) => `@${r.handle}`)
+                  : activeTab === 'HASHTAG_DISCOVERY' && tagResults.length > 0
+                    ? tagResults.slice(0, 5).map((r) => `@${r.handle}`)
+                    : activeTab === 'CHANNEL_AND_VIDEO_TOOLS' && trendingCreators.length > 0
+                      ? trendingCreators.slice(0, 5).map((r) => `@${r.handle}`)
+                      : [];
+              openBriefMatcherModal(defaultHandles, competitorInput || hashtagInput);
+            }}
+          >
+            <span>Phân tích Kênh &amp; Khớp Brief</span>
+            {runningBriefJobsCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-white text-2xs font-bold tabular-nums animate-pulse">
+                {runningBriefJobsCount} đang chạy ngầm
+              </span>
+            )}
+          </Button>
           <Button
             size="sm"
             variant="secondary"
@@ -2967,6 +3026,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         initialUrl={scriptModalUrl}
         fallbackContext={scriptModalContext}
         onNotify={onNotify}
+      />
+
+      <KocChannelBriefMatcherModal
+        isOpen={briefMatcherOpen}
+        onClose={() => setBriefMatcherOpen(false)}
+        initialHandles={briefMatcherHandles}
+        initialBrandName={briefMatcherBrand}
+        onJobsChange={(jobs) =>
+          setRunningBriefJobsCount(
+            jobs.filter((j) => j.status === 'QUEUED' || j.status === 'RUNNING')
+              .length
+          )
+        }
       />
     </div>
   );

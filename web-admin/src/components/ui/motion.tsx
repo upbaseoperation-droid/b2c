@@ -69,11 +69,6 @@ export function NumberRoll({
   className?: string;
 }) {
   const text = String(value);
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setSettled(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
 
   // Lưu giá trị trước trong state (không dùng effect) để tính mức chênh ngay khi số đổi.
   const [track, setTrack] = useState<{ numeric?: number; delta: { id: number; diff: number; prev: number } | null }>({ numeric, delta: null });
@@ -81,33 +76,17 @@ export function NumberRoll({
     const prev = track.numeric;
     setTrack({
       numeric,
-      delta: numeric !== undefined && prev !== undefined ? { id: (track.delta?.id ?? 0) + 1, diff: numeric - prev, prev } : track.delta,
+      delta: numeric !== undefined && prev !== undefined && numeric !== prev ? { id: (track.delta?.id ?? 0) + 1, diff: numeric - prev, prev } : track.delta,
     });
   }
   const delta = track.delta;
 
-  const chars = Array.from(text);
-  let digitIndex = 0;
   const up = delta ? delta.diff > 0 : false;
   const good = invert ? !up : up;
 
   return (
-    <span className={cx('num-roll tabular-nums', className)}>
-      <span className="sr-only">{text}</span>
-      {chars.map((ch, i) => {
-        // Khóa theo vị trí tính từ phải: hàng đơn vị luôn là cùng một cột khi số dài ra/ngắn lại.
-        const key = chars.length - i;
-        if (!/\d/.test(ch)) return <span key={`c${key}`} aria-hidden="true">{ch}</span>;
-        const d = settled ? Number(ch) : 0;
-        const delay = Math.min(digitIndex++, 6) * 28;
-        return (
-          <span key={`d${key}`} className="num-roll-digit" aria-hidden="true">
-            <span className="num-roll-strip" style={{ transform: `translateY(${-d * 10}%)`, ['--roll-delay' as string]: `${delay}ms` }}>
-              {DIGITS.map((n) => <span key={n}>{n}</span>)}
-            </span>
-          </span>
-        );
-      })}
+    <span className={cx('tabular-nums', className)}>
+      <span>{text}</span>
       {delta && formatDelta && (
         <span key={delta.id} className={cx('num-roll-delta', good ? 'text-positive' : 'text-critical')}>
           {delta.diff > 0 ? '+' : ''}{formatDelta(delta.diff, delta.prev)}
@@ -137,10 +116,17 @@ export function useActiveBox(containerRef: React.RefObject<HTMLElement | null>, 
     if (!root) return;
     const measure = () => {
       const el = root.querySelector<HTMLElement>('[data-active="true"]');
-      if (!el) return setBox(null);
+      if (!el) {
+        setBox(prev => (prev === null ? prev : null));
+        return;
+      }
       const r = el.getBoundingClientRect();
       const c = root.getBoundingClientRect();
-      setBox({ x: r.left - c.left + root.scrollLeft, y: r.top - c.top + root.scrollTop, w: r.width, h: r.height });
+      const nx = Math.round(r.left - c.left + root.scrollLeft);
+      const ny = Math.round(r.top - c.top + root.scrollTop);
+      const nw = Math.round(r.width);
+      const nh = Math.round(r.height);
+      setBox(prev => (prev && prev.x === nx && prev.y === ny && prev.w === nw && prev.h === nh ? prev : { x: nx, y: ny, w: nw, h: nh }));
     };
     measure();
     const ro = new ResizeObserver(measure);

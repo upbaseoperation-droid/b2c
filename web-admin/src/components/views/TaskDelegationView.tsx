@@ -12,11 +12,8 @@ import {
   Check,
   X,
   BarChart3,
-  Eye,
-  Clock,
   Link2,
   ShieldCheck,
-  AlertCircle,
   UserPlus,
 } from 'lucide-react';
 import {
@@ -64,8 +61,6 @@ import {
   MULTI_PLATFORM_TABLE_6,
   B2C_28_STAFF_WORKLOAD_ROSTER,
   ROLE_SPLIT_PRESETS,
-  CATEGORY_BADGE_STYLE,
-  ROLE_BADGE_STYLE,
   ROLE_LABEL_MAP,
   DIFFICULTY_TIER_BADGE,
   STAFF_WORKLOAD_EXCEPTIONS_KEY,
@@ -257,12 +252,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const [formLevelId, setFormLevelId] = useState<string>('RES-L3');
   const [formAcceptedQty, setFormAcceptedQty] = useState<number>(1);
   const [formTaskDiffTier, setFormTaskDiffTier] = useState<'EASY' | 'STANDARD' | 'HARD'>('HARD');
-  const [formTimelineStatus, setFormTimelineStatus] = useState<'ON_TIME' | 'LATE_1' | 'LATE_2' | 'FAILED'>('ON_TIME');
+  const formTimelineStatus = 'ON_TIME' as const;
   const [formMultiStoreCount, setFormMultiStoreCount] = useState<number>(1);
   const [formBrand, setFormBrand] = useState<string>(brands[0]?.name || 'ClubClio');
   const [formStore, setFormStore] = useState<string>('');
-  const [formPlatformsCount, setFormPlatformsCount] = useState<number>(2);
-  const [formProductLinesCount, setFormProductLinesCount] = useState<number>(2);
+  const formPlatformsCount = 2;
+  const formProductLinesCount = 2;
   // Bảng 7 Conditional Governance Fields
   const formPlatformScope = 'TikTok, Shopee';
   const formChannelPlatform = 'TikTok / Shopee Video';
@@ -325,35 +320,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     setFormLevelId(lvl.id);
     setFormDeliverable(lvl.expectedDeliverable);
     setFormDeadlineHours(lvl.defaultSlaHours);
-  };
-
-  const handleAutoSuggestResearchLevel = (
-    platforms: number,
-    lines: number,
-    withContentBooking: boolean,
-    withBrandStrat: boolean
-  ) => {
-    setFormPlatformsCount(platforms);
-    setFormProductLinesCount(lines);
-
-    if (formCategory !== 'RESEARCH') return;
-    const researchLevels = activeCategoryConfig.levels;
-    let targetIdx = 0;
-    if (platforms >= 3 && lines >= 2) {
-      targetIdx = 4;
-    } else if (withBrandStrat) {
-      targetIdx = 3;
-    } else if (withContentBooking) {
-      targetIdx = 2;
-    } else if ((platforms === 1 && lines >= 2) || (platforms === 2 && lines === 1)) {
-      targetIdx = 1;
-    } else {
-      targetIdx = 0;
-    }
-    const matched = researchLevels[Math.min(targetIdx, researchLevels.length - 1)];
-    if (matched) {
-      handleSelectFormLevel(matched);
-    }
   };
 
   const brandStores = useMemo(() => {
@@ -731,74 +697,37 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   }
 
   // ==========================================================================
-  // COLUMNS FOR COMPACT TASK LIST TABLE (6 COLUMNS, NO CLUTTER)
+  // COLUMNS FOR COMPACT TASK LIST TABLE (5 CLEAN COLUMNS, MAX 1 STATUS BADGE)
   // ==========================================================================
   const taskColumns: Column<SlaTask>[] = [
     {
       key: 'task',
-      header: 'Công việc & Hạng mục SOW',
+      header: 'Công việc',
       render: t => {
         const cat = inferCategory(t);
         const sowLabel = t.sowName || CATEGORY_LABELS[cat];
         return (
-          <div className="min-w-0 max-w-[360px]">
-            <div className="flex items-center gap-1.5 flex-wrap mb-1">
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-sunken text-ink border border-line">
-                {t.brand}
-              </span>
-              {t.storeName && (
-                <span className="text-xs text-ink-3 truncate max-w-[140px]">
-                  · {t.storeName}
-                </span>
-              )}
-              <span className={`px-2 py-0.5 rounded text-xs font-medium border ${CATEGORY_BADGE_STYLE[cat]}`}>
-                {sowLabel}
-              </span>
-            </div>
+          <div className="min-w-0 max-w-[420px]">
             <div className="font-medium text-ink text-sm line-clamp-1">
               {t.title}
             </div>
-            {t.deliverableUrl ? (
-              <a
-                href={t.deliverableUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-positive hover:underline"
-              >
-                <ExternalLink className="w-3 h-3" /> Đã nộp kết quả nghiệm thu
-              </a>
-            ) : (
-              t.expectedDeliverable && (
-                <div className="text-xs text-ink-3 line-clamp-1 mt-0.5">
-                  Đầu ra: {t.expectedDeliverable}
-                </div>
-              )
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'source',
-      header: 'Nguồn việc',
-      width: 150,
-      render: t => {
-        const src = getTaskSource(t);
-        return src === 'DIRECTOR_ASSIGNED' ? (
-          <div>
-            <Status tone="brand">Quản lý giao</Status>
-            {t.assignedBy && (
-              <div className="text-xs text-ink-3 mt-1 truncate">
-                Giao bởi: {t.assignedBy}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <Status tone="info">Luồng quy trình</Status>
-            <div className="text-xs text-ink-3 mt-1 truncate">
-              {t.workflowStageLabel || 'Tự động từ SLA'}
+            <div className="flex items-center gap-1.5 flex-wrap text-xs text-ink-3 mt-0.5">
+              <span className="font-medium text-ink-2">{t.brand}</span>
+              {t.storeName && (
+                <span className="truncate max-w-[150px]">· {t.storeName}</span>
+              )}
+              <span>· {sowLabel}</span>
+              {t.deliverableUrl && (
+                <a
+                  href={t.deliverableUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 font-medium text-positive hover:underline"
+                >
+                  · <ExternalLink className="w-3 h-3" /> Link nghiệm thu
+                </a>
+              )}
             </div>
           </div>
         );
@@ -807,22 +736,17 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     {
       key: 'assignee',
       header: 'Người phụ trách',
-      width: 210,
+      width: 200,
       render: t => {
         const roleKey: TaskAssignmentRoleKey = t.assignmentRole || 'PIC_OWNER';
         const weight = t.contributionWeightPct ?? 100;
         return (
           <div className="flex items-center gap-2.5">
-            <Avatar name={t.pic} size={28} />
+            <Avatar name={t.pic} size={26} />
             <div className="min-w-0">
               <div className="text-sm font-medium text-ink truncate">{t.pic}</div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${ROLE_BADGE_STYLE[roleKey]}`}>
-                  {ROLE_LABEL_MAP[roleKey]}
-                </span>
-                <span className="text-xs font-mono tabular-nums text-ink-2">
-                  {weight}%
-                </span>
+              <div className="text-xs text-ink-3 truncate">
+                {ROLE_LABEL_MAP[roleKey]} · <span className="font-mono tabular-nums">{weight}%</span>
               </div>
             </div>
           </div>
@@ -831,22 +755,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     },
     {
       key: 'points',
-      header: 'Độ khó & Điểm',
+      header: 'Điểm & Phân loại',
       align: 'right',
-      width: 150,
+      width: 170,
       render: t => {
         const pts = t.calculatedWorkloadPoints ?? 2.0;
         const diffTier = t.taskDifficultyTier || 'STANDARD';
         const diffInfo = DIFFICULTY_TIER_BADGE[diffTier];
+        const src = getTaskSource(t);
         return (
           <div className="text-right">
             <div className="text-sm font-semibold font-mono tabular-nums text-ink">
-              {pts.toFixed(2).replace('.', ',')} <span className="text-xs font-normal text-ink-3">điểm</span>
+              {pts.toFixed(2).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
             </div>
-            <div className="mt-1 inline-flex items-center gap-1">
-              <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${diffInfo.cls}`}>
-                {diffInfo.label}
-              </span>
+            <div className="text-xs text-ink-3 mt-0.5">
+              {diffInfo.label} · {src === 'DIRECTOR_ASSIGNED' ? 'Quản lý giao' : 'Quy trình'}
             </div>
           </div>
         );
@@ -869,14 +792,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           t.urgency === 'done'
             ? 'Đã nghiệm thu'
             : t.urgency === 'critical'
-            ? 'Cần xử lý gấp'
-            : 'Đang triển khai';
+            ? 'Khẩn cấp'
+            : 'Đang làm';
         return (
           <div>
             <Status tone={tone}>{statusText}</Status>
-            <div className="flex items-center gap-1 text-xs text-ink-3 mt-1 font-mono tabular-nums">
-              <Clock className="w-3 h-3 shrink-0" />
-              <span>{t.urgency === 'done' ? 'Hoàn thành' : t.remainingText}</span>
+            <div className="text-xs text-ink-3 mt-0.5 font-mono tabular-nums">
+              {t.urgency === 'done' ? 'Hoàn thành' : t.remainingText}
             </div>
           </div>
         );
@@ -886,14 +808,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'actions',
       header: 'Thao tác',
       align: 'right',
-      width: 190,
+      width: 180,
       render: t => (
         <div
           className="flex items-center justify-end gap-1.5"
           onClick={e => e.stopPropagation()}
         >
           <Button
-            variant="secondary"
+            variant="ghost"
             size="sm"
             icon={Link2}
             onClick={() => {
@@ -914,9 +836,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             </Button>
           ) : (
             <Button
-              variant="ghost"
+              variant="secondary"
               size="sm"
-              icon={Eye}
               onClick={() => setSelectedTaskDetail(t)}
             >
               Chi tiết
@@ -935,19 +856,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const workloadColumns: Column<ComputedStaffRow>[] = [
     {
       key: 'staff',
-      header: 'Nhân sự & Cấp bậc',
+      header: 'Nhân sự',
       render: row => (
         <div className="flex items-center gap-2.5">
-          <Avatar name={row.name} size={32} />
+          <Avatar name={row.name} size={28} />
           <div>
-            <div className="font-medium text-ink text-sm flex items-center gap-1.5">
-              <span>{row.name}</span>
-              <span className="px-1.5 py-0.5 rounded text-xs font-mono bg-sunken text-ink-2 border border-line">
-                {row.level}
-              </span>
-            </div>
-            <div className="text-xs text-ink-3 mt-0.5">
-              {row.staffCode} · {row.roleGroup}
+            <div className="font-medium text-ink text-sm">{row.name}</div>
+            <div className="text-xs text-ink-3">
+              {row.staffCode} · {row.level} · {row.roleGroup}
             </div>
           </div>
         </div>
@@ -959,7 +875,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       render: row => (
         <div className="max-w-[220px]">
           <div className="text-xs font-medium text-ink">
-            {row.assignedStoresCount} gian hàng phụ trách
+            {row.assignedStoresCount} gian hàng
           </div>
           <div className="text-xs text-ink-3 truncate mt-0.5" title={row.keyStoresSample}>
             {row.keyStoresSample}
@@ -971,7 +887,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'workflowPts',
       header: 'Điểm Quy trình',
       align: 'right',
-      width: 130,
+      width: 125,
       render: row => (
         <div className="font-mono tabular-nums text-sm text-ink">
           {row.workflowPts.toFixed(1).replace('.', ',')}
@@ -982,9 +898,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'directorPts',
       header: 'Điểm Quản lý giao',
       align: 'right',
-      width: 140,
+      width: 135,
       render: row => (
-        <div className="font-mono tabular-nums text-sm font-medium text-accent">
+        <div className="font-mono tabular-nums text-sm font-medium text-ink">
           {row.directorPts.toFixed(1).replace('.', ',')}
         </div>
       ),
@@ -992,15 +908,15 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     {
       key: 'hardRatio',
       header: 'Tỷ lệ việc khó (Bảng 4)',
-      width: 210,
+      width: 200,
       render: row => (
         <div>
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="font-mono tabular-nums font-medium text-ink">
-              Thực tế: {row.actualHardRatioPct.toFixed(1).replace('.', ',')}%
+          <div className="flex items-center justify-between text-xs mb-1 font-mono tabular-nums">
+            <span className="font-medium text-ink">
+              {row.actualHardRatioPct.toFixed(1).replace('.', ',')}%
             </span>
-            <span className="text-ink-3 font-mono tabular-nums">
-              Chuẩn {row.level}: ≥{row.requiredHardRatioPct}%
+            <span className="text-ink-3">
+              Chuẩn ≥{row.requiredHardRatioPct}%
             </span>
           </div>
           <Progress
@@ -1013,21 +929,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     },
     {
       key: 'finalPts',
-      header: 'Hệ số & Tổng điểm',
+      header: 'Tổng điểm tháng',
       align: 'right',
-      width: 170,
+      width: 165,
       render: row => (
         <div className="text-right">
           <div className="text-sm font-semibold font-mono tabular-nums text-ink">
-            {row.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} <span className="text-xs font-normal text-ink-3">điểm</span>
+            {row.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
           </div>
           <div className="mt-0.5">
             {row.meetsHardRatio ? (
-              <Status tone="positive">Đạt chuẩn ×1,00</Status>
+              <Status tone="positive">Đạt ×1,00</Status>
             ) : row.hasException ? (
               <Status tone="info">Ngoại lệ ×1,00</Status>
             ) : (
-              <Status tone="warning">Thiếu việc khó ×0,70</Status>
+              <Status tone="warning">Hệ số ×0,70</Status>
             )}
           </div>
         </div>
@@ -1037,7 +953,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'actions',
       header: 'Thao tác',
       align: 'right',
-      width: 190,
+      width: 175,
       render: row => (
         <div
           className="flex items-center justify-end gap-1.5"
@@ -1045,7 +961,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         >
           {canManageSetup && !row.meetsHardRatio && (
             <Button
-              variant={row.hasException ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="sm"
               onClick={() => toggleManagerException(row.staffCode, row.name)}
             >
@@ -1055,7 +971,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           <Button
             variant="secondary"
             size="sm"
-            icon={Eye}
             onClick={() => setInspectingStaffMember(row.name)}
           >
             Chi tiết ({row.staffTasks.length})
@@ -1156,17 +1071,17 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               search={{
                 value: searchQuery,
                 onChange: setSearchQuery,
-                placeholder: 'Tìm tên công việc, thương hiệu, nhân sự PIC, hạng mục SOW...',
+                placeholder: 'Tìm công việc, thương hiệu, nhân sự...',
               }}
               chips={
                 <Chips
                   value={sourceFilter}
                   onChange={setSourceFilter}
                   items={[
-                    { key: 'ALL', label: 'Tất cả nguồn', count: tasks.length },
+                    { key: 'ALL', label: 'Tất cả', count: tasks.length },
                     {
                       key: 'WORKFLOW_SYSTEM',
-                      label: 'Luồng quy trình',
+                      label: 'Quy trình',
                       count: metrics.workflowTasksCount,
                     },
                     {
@@ -1184,10 +1099,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     onChange={e =>
                       setCategoryFilter(e.target.value as 'ALL' | TaskDifficultyCategoryKey)
                     }
-                    className="w-40"
+                    className="w-36"
                   >
                     <option value="ALL">Mọi nhóm SOW</option>
-                    <option value="RESEARCH">Nghiên cứu (Research)</option>
+                    <option value="RESEARCH">Nghiên cứu</option>
                     <option value="BOOKING">Booking KOC</option>
                     <option value="CONTENT">Nội dung & Video</option>
                     <option value="KEY_VISUAL">Key Visual</option>
@@ -1198,9 +1113,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   <Select
                     value={staffFilter}
                     onChange={e => setStaffFilter(e.target.value)}
-                    className="w-44"
+                    className="w-40"
                   >
-                    <option value="ALL">Tất cả nhân sự PIC</option>
+                    <option value="ALL">Mọi nhân sự</option>
                     {allAssignableStaff.map(s => (
                       <option key={s.name} value={s.name}>
                         {s.name}
@@ -1239,13 +1154,22 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               {kanbanColumns.map(col => (
                 <div
                   key={col.key}
-                  className="bg-sunken/60 border border-line rounded-lg flex flex-col max-h-[680px]"
+                  className="bg-sunken/50 border border-line rounded-lg flex flex-col max-h-[680px]"
                 >
                   <div className="px-3.5 py-2.5 border-b border-line flex items-center justify-between bg-surface rounded-t-lg">
                     <div className="flex items-center gap-2">
-                      <Status tone={col.tone}>{col.title}</Status>
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          col.tone === 'critical'
+                            ? 'bg-critical'
+                            : col.tone === 'positive'
+                            ? 'bg-positive'
+                            : 'bg-accent'
+                        }`}
+                      />
+                      <span className="text-xs font-semibold text-ink">{col.title}</span>
                     </div>
-                    <span className="text-xs font-mono tabular-nums font-semibold text-ink-2 px-2 py-0.5 rounded bg-sunken">
+                    <span className="text-xs font-mono tabular-nums text-ink-3">
                       {col.items.length}
                     </span>
                   </div>
@@ -1259,23 +1183,18 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       col.items.map(t => {
                         const cat = inferCategory(t);
                         const pts = t.calculatedWorkloadPoints ?? 2.0;
-                        const roleKey: TaskAssignmentRoleKey = t.assignmentRole || 'PIC_OWNER';
                         return (
                           <div
                             key={t.id}
                             onClick={() => setSelectedTaskDetail(t)}
-                            className="bg-surface border border-line hover:border-line-strong rounded-lg p-3.5 cursor-pointer transition space-y-2.5"
+                            className="bg-surface border border-line hover:border-line-strong rounded-lg p-3 cursor-pointer transition space-y-2"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="px-2 py-0.5 rounded text-xs font-medium bg-sunken text-ink border border-line">
-                                  {t.brand}
-                                </span>
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium border ${CATEGORY_BADGE_STYLE[cat]}`}>
-                                  {t.sowName || CATEGORY_LABELS[cat]}
-                                </span>
-                              </div>
-                              <span className="text-xs font-mono tabular-nums font-semibold text-accent">
+                            <div className="flex items-center justify-between gap-2 text-xs text-ink-3">
+                              <span className="truncate">
+                                <strong className="font-medium text-ink-2">{t.brand}</strong> ·{' '}
+                                {t.sowName || CATEGORY_LABELS[cat]}
+                              </span>
+                              <span className="font-mono tabular-nums font-semibold text-ink shrink-0">
                                 {pts.toFixed(2).replace('.', ',')} đ
                               </span>
                             </div>
@@ -1284,46 +1203,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               {t.title}
                             </div>
 
-                            {t.deliverableUrl && (
-                              <a
-                                href={t.deliverableUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={e => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-positive hover:underline"
-                              >
-                                <ExternalLink className="w-3 h-3" /> Xem file nghiệm thu
-                              </a>
-                            )}
-
                             <div className="pt-2 border-t border-line flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <Avatar name={t.pic} size={24} />
-                                <div className="min-w-0">
-                                  <div className="text-xs font-medium text-ink truncate">
-                                    {t.pic}
-                                  </div>
-                                  <div className="text-xs text-ink-3">
-                                    {ROLE_LABEL_MAP[roleKey]} ({t.contributionWeightPct ?? 100}%)
-                                  </div>
-                                </div>
+                                <Avatar name={t.pic} size={22} />
+                                <span className="text-xs font-medium text-ink truncate">
+                                  {t.pic}
+                                </span>
                               </div>
 
                               <div
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1.5 shrink-0"
                                 onClick={e => e.stopPropagation()}
                               >
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  icon={Link2}
-                                  onClick={() => {
-                                    setEditingDeliverableTask(t);
-                                    setDeliverableInputUrl(t.deliverableUrl || '');
-                                  }}
-                                >
-                                  Link
-                                </Button>
+                                <span className="text-xs font-mono text-ink-3">
+                                  {t.urgency === 'done' ? 'Hoàn thành' : t.remainingText}
+                                </span>
                                 {t.urgency !== 'done' && (
                                   <Button
                                     variant="primary"
@@ -1331,7 +1225,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                     icon={Check}
                                     onClick={() => onCompleteTask(t.id)}
                                   >
-                                    Xong
+                                    Duyệt
                                   </Button>
                                 )}
                               </div>
@@ -1367,9 +1261,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   onChange={setWorkloadLevelFilter}
                   items={[
                     { key: 'ALL', label: 'Tất cả cấp bậc', count: computedStaffWorkloads.length },
-                    { key: 'L3', label: 'L3 (≥50% việc khó)' },
-                    { key: 'L2', label: 'L2 (≥30% việc khó)' },
-                    { key: 'L1', label: 'L1 (≥15% việc khó)' },
+                    { key: 'L3', label: 'L3 (≥50%)' },
+                    { key: 'L2', label: 'L2 (≥30%)' },
+                    { key: 'L1', label: 'L1 (≥15%)' },
                     { key: 'L0.5', label: 'L0.5 (0%)' },
                   ]}
                 />
@@ -1405,17 +1299,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* MODAL 1: TASK DETAIL & FORMULA BREAKDOWN (PROGRESSIVE DISCLOSURE)    */}
+      {/* MODAL 1: TASK DETAIL & FORMULA BREAKDOWN                             */}
       {/* ==================================================================== */}
       <Modal
         open={!!selectedTaskDetail}
         onClose={() => setSelectedTaskDetail(null)}
         title={selectedTaskDetail?.title || 'Chi tiết công việc'}
-        description={
-          selectedTaskDetail
-            ? `${selectedTaskDetail.brand}${selectedTaskDetail.storeName ? ` · ${selectedTaskDetail.storeName}` : ''} · Giao bởi ${selectedTaskDetail.assignedBy || 'Hệ thống'}`
-            : ''
-        }
         size="lg"
         footer={
           selectedTaskDetail && (
@@ -1475,24 +1364,22 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         {selectedTaskDetail && (
           <div className="space-y-4">
             <div className="p-3.5 rounded-lg bg-sunken border border-line space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-xs font-medium text-ink-2">
-                  Hạng mục chuẩn SOW (Bảng 1):{' '}
+              <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-ink-2">
+                <span>
+                  Thương hiệu: <strong className="text-ink">{selectedTaskDetail.brand}</strong>
+                  {selectedTaskDetail.storeName ? ` · ${selectedTaskDetail.storeName}` : ''} · Hạng mục:{' '}
                   <strong className="text-ink">
                     {selectedTaskDetail.sowName || selectedTaskDetail.type}
                   </strong>
                 </span>
-                <Status
-                  tone={
-                    getTaskSource(selectedTaskDetail) === 'DIRECTOR_ASSIGNED'
-                      ? 'brand'
-                      : 'info'
-                  }
-                >
-                  {getTaskSource(selectedTaskDetail) === 'DIRECTOR_ASSIGNED'
-                    ? 'Quản lý giao'
-                    : 'Luồng quy trình'}
-                </Status>
+                <span>
+                  Nguồn:{' '}
+                  <strong className="text-ink">
+                    {getTaskSource(selectedTaskDetail) === 'DIRECTOR_ASSIGNED'
+                      ? 'Quản lý giao'
+                      : 'Luồng quy trình'}
+                  </strong>
+                </span>
               </div>
               <p className="text-sm text-ink">{selectedTaskDetail.description}</p>
               {selectedTaskDetail.expectedDeliverable && (
@@ -1595,7 +1482,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         open={!!editingDeliverableTask}
         onClose={() => setEditingDeliverableTask(null)}
         title="Đính kèm link kết quả nghiệm thu"
-        description={editingDeliverableTask?.title}
         size="md"
         footer={
           <div className="flex items-center justify-end gap-2">
@@ -1632,14 +1518,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         }
       >
         <div className="space-y-3">
-          <Field
-            label="Đường dẫn tài liệu nghiệm thu (Google Docs, Sheets, Drive, Lark, TikTok...)"
-            hint={
-              editingDeliverableTask?.expectedDeliverable
-                ? `Đầu ra yêu cầu: ${editingDeliverableTask.expectedDeliverable}`
-                : 'Dán đường dẫn đầy đủ bắt đầu bằng https://'
-            }
-          >
+          <Field label="Đường dẫn tài liệu nghiệm thu (Google Docs, Sheets, Drive, Lark, TikTok...)">
             <Input
               type="url"
               value={deliverableInputUrl}
@@ -1661,11 +1540,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           inspectedStaffRow
             ? `Hồ sơ tải công việc · ${inspectedStaffRow.name} (${inspectedStaffRow.level})`
             : 'Chi tiết tải công việc'
-        }
-        description={
-          inspectedStaffRow
-            ? `Mã NV: ${inspectedStaffRow.staffCode} · ${inspectedStaffRow.roleGroup} · Phụ trách ${inspectedStaffRow.assignedStoresCount} gian hàng (${inspectedStaffRow.keyStoresSample})`
-            : ''
         }
         size="lg"
         footer={
@@ -1706,7 +1580,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </div>
               <div className="p-3 rounded-lg border border-line bg-sunken">
                 <div className="text-xs text-ink-3">Điểm Quản lý giao</div>
-                <div className="text-base font-mono tabular-nums font-semibold text-accent mt-0.5">
+                <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
                   {inspectedStaffRow.directorPts.toFixed(1).replace('.', ',')} đ
                 </div>
               </div>
@@ -1731,7 +1605,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">
-                Danh sách công việc đang ghi nhận trên hệ thống ({inspectedStaffRow.staffTasks.length})
+                Danh sách công việc đang ghi nhận ({inspectedStaffRow.staffTasks.length})
               </h4>
               {inspectedStaffRow.staffTasks.length === 0 ? (
                 <div className="p-6 text-center text-xs text-ink-3 border border-line rounded-lg">
@@ -1754,7 +1628,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-sm font-mono tabular-nums font-semibold text-accent">
+                        <div className="text-sm font-mono tabular-nums font-semibold text-ink">
                           {(t.calculatedWorkloadPoints ?? 2.0).toFixed(2).replace('.', ',')} đ
                         </div>
                         <div className="text-xs text-ink-3">{t.remainingText}</div>
@@ -1769,13 +1643,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       </Modal>
 
       {/* ==================================================================== */}
-      {/* MODAL 4: MODERN TASK COMPOSER (GIAO VIỆC MỚI)                        */}
+      {/* MODAL 4: COMPACT TASK COMPOSER (GIAO VIỆC MỚI)                       */}
       {/* ==================================================================== */}
       <Modal
         open={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
-        title="Giao việc mới & Phân bổ điểm công việc"
-        size="xl"
+        title="Giao việc mới"
+        size="lg"
         footer={
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2 text-xs text-ink-2">
@@ -1784,7 +1658,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 {modalFormulaPreview.totalCasePoints.toFixed(2).replace('.', ',')} điểm
               </strong>
               <span className="text-ink-3">
-                ({modalFormulaPreview.qty} × {modalFormulaPreview.stdPoint}đ × HS phạm vi {modalFormulaPreview.scopeCoef} × HS độ khó {modalFormulaPreview.taskDiffCoef})
+                ({modalFormulaPreview.qty} × {modalFormulaPreview.stdPoint}đ × HS {modalFormulaPreview.scopeCoef} × Độ khó {modalFormulaPreview.taskDiffCoef})
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1808,109 +1682,131 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           </div>
         }
       >
-        <form onSubmit={handleSubmitNewTask} className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* LEFT COLUMN (7 COLS): TASK DETAILS & SOW SELECTION */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-sunken border border-line">
-              <span className="text-xs font-medium text-ink-2">Phân loại nguồn việc:</span>
-              <Segmented
-                value={formTaskSource}
-                onChange={setFormTaskSource}
-                items={[
-                  { key: 'DIRECTOR_ASSIGNED', label: 'Quản lý / Giám đốc giao' },
-                  { key: 'WORKFLOW_SYSTEM', label: 'Luồng quy trình (SLA)' },
-                ]}
-              />
+        <form onSubmit={handleSubmitNewTask} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <Field label="Tiêu đề công việc *">
+                <Input
+                  value={formTitle}
+                  onChange={e => setFormTitle(e.target.value)}
+                  placeholder="VD: Nghiên cứu định vị & kế hoạch Content/Booking Q2 cho ClubClio..."
+                  required
+                />
+              </Field>
             </div>
+            <Field label="Nguồn giao việc">
+              <Select
+                value={formTaskSource}
+                onChange={e =>
+                  setFormTaskSource(
+                    e.target.value as 'DIRECTOR_ASSIGNED' | 'WORKFLOW_SYSTEM'
+                  )
+                }
+              >
+                <option value="DIRECTOR_ASSIGNED">Quản lý giao</option>
+                <option value="WORKFLOW_SYSTEM">Luồng quy trình (SLA)</option>
+              </Select>
+            </Field>
+          </div>
 
-            <Field label="Tiêu đề công việc cần giao *">
-              <Input
-                value={formTitle}
-                onChange={e => setFormTitle(e.target.value)}
-                placeholder="VD: Nghiên cứu định vị & kế hoạch Content/Booking Q2 cho ClubClio..."
-                required
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Thương hiệu (Brand)">
+              <Select
+                value={formBrand}
+                onChange={e => {
+                  setFormBrand(e.target.value);
+                  setFormStore('');
+                }}
+              >
+                {brands.map(b => (
+                  <option key={b.id} value={b.name}>
+                    {b.name}
+                  </option>
+                ))}
+              </Select>
             </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Field label="Thương hiệu (Brand)">
+            <Field label="Gian hàng (Store)">
+              <Select
+                value={formStore}
+                onChange={e => setFormStore(e.target.value)}
+              >
+                <option value="">Toàn bộ Brand / Đa sàn</option>
+                {brandStores.map(s => (
+                  <option key={s.id} value={s.storeName}>
+                    {s.storeName} ({s.platform})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Ưu tiên & Hạn SLA (giờ)">
+              <div className="flex items-center gap-2">
                 <Select
-                  value={formBrand}
+                  value={formUrgency}
+                  onChange={e =>
+                    setFormUrgency(e.target.value as 'critical' | 'warning' | 'normal')
+                  }
+                >
+                  <option value="critical">Khẩn cấp</option>
+                  <option value="warning">Ưu tiên cao</option>
+                  <option value="normal">Bình thường</option>
+                </Select>
+                <Input
+                  type="number"
+                  min={1}
+                  max={720}
+                  value={formDeadlineHours}
+                  onChange={e => setFormDeadlineHours(Number(e.target.value) || 24)}
+                  className="w-20 font-mono tabular-nums"
+                  title="Số giờ SLA"
+                />
+              </div>
+            </Field>
+          </div>
+
+          {/* SOW Policy & Scope Level */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-6">
+              <Field label="Hạng mục công việc SOW (Bảng 1)">
+                <Select
+                  value={formSowStt}
                   onChange={e => {
-                    setFormBrand(e.target.value);
-                    setFormStore('');
+                    const found = sowPolicies.find(s => s.stt === Number(e.target.value));
+                    if (found) handleSelectSowPolicy(found);
                   }}
                 >
-                  {brands.map(b => (
-                    <option key={b.id} value={b.name}>
-                      {b.name}
+                  {sowPolicies.map(s => (
+                    <option key={s.stt} value={s.stt}>
+                      #{s.stt} [{s.group}] {s.name} ({s.basePoint.toFixed(1).replace('.', ',')}đ)
                     </option>
                   ))}
                 </Select>
-              </Field>
-
-              <Field label="Gian hàng (Store)">
-                <Select
-                  value={formStore}
-                  onChange={e => setFormStore(e.target.value)}
-                >
-                  <option value="">Toàn bộ Brand / Đa sàn</option>
-                  {brandStores.map(s => (
-                    <option key={s.id} value={s.storeName}>
-                      {s.storeName} ({s.platform})
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field label="Mức độ ưu tiên & Hạn SLA">
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={formUrgency}
-                    onChange={e =>
-                      setFormUrgency(e.target.value as 'critical' | 'warning' | 'normal')
-                    }
-                  >
-                    <option value="critical">Khẩn cấp</option>
-                    <option value="warning">Ưu tiên cao</option>
-                    <option value="normal">Bình thường</option>
-                  </Select>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={720}
-                    value={formDeadlineHours}
-                    onChange={e => setFormDeadlineHours(Number(e.target.value) || 24)}
-                    className="w-20 font-mono tabular-nums"
-                    title="Số giờ SLA"
-                  />
-                </div>
               </Field>
             </div>
 
-            {/* SOW Policy Selection (Bảng 1) */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div className="sm:col-span-3">
-                <Field
-                  label="Hạng mục công việc chuẩn SOW (Bảng 1 — 33 đầu việc)"
+            <div className="sm:col-span-4">
+              <Field label="Cấp độ phạm vi (Bảng 2b)">
+                <Select
+                  value={activeLevelConfig?.id || ''}
+                  onChange={e => {
+                    const found = activeCategoryConfig.levels.find(
+                      l => l.id === e.target.value
+                    );
+                    if (found) handleSelectFormLevel(found);
+                  }}
                 >
-                  <Select
-                    value={formSowStt}
-                    onChange={e => {
-                      const found = sowPolicies.find(s => s.stt === Number(e.target.value));
-                      if (found) handleSelectSowPolicy(found);
-                    }}
-                  >
-                    {sowPolicies.map(s => (
-                      <option key={s.stt} value={s.stt}>
-                        #{s.stt} [{s.group}] {s.name} — {s.basePoint.toFixed(1).replace('.', ',')} điểm/{s.scopeUnit}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
+                  {activeCategoryConfig.levels.map(lvl => (
+                    <option key={lvl.id} value={lvl.id}>
+                      {lvl.levelCode} (×{lvl.multiplier.toFixed(2).replace('.', ',')})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
 
-              <Field label={`Số lượng (${selectedSowPolicy.scopeUnit})`}>
+            <div className="sm:col-span-2">
+              <Field label={`SL (${selectedSowPolicy.scopeUnit})`}>
                 <Input
                   type="number"
                   min={1}
@@ -1921,332 +1817,233 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 />
               </Field>
             </div>
-
-            {/* Scope Level Cards (Bảng 2b) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-ink-2">
-                  Cấp độ phạm vi công việc (Bảng 2b — {activeCategoryConfig.categoryName})
-                </label>
-                {formCategory === 'RESEARCH' && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-ink-3">Gợi ý nhanh:</span>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoSuggestResearchLevel(1, 1, false, false)}
-                      className="px-2 py-0.5 rounded bg-sunken hover:bg-line text-ink-2"
-                    >
-                      1 sàn · 1 line
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoSuggestResearchLevel(2, 2, true, false)}
-                      className="px-2 py-0.5 rounded bg-sunken hover:bg-line text-ink-2"
-                    >
-                      2 sàn + Plan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoSuggestResearchLevel(3, 3, true, true)}
-                      className="px-2 py-0.5 rounded bg-sunken hover:bg-line text-ink-2"
-                    >
-                      Đa sàn tổng thể
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {activeCategoryConfig.levels.map(lvl => {
-                  const selected = lvl.id === activeLevelConfig?.id;
-                  return (
-                    <button
-                      key={lvl.id}
-                      type="button"
-                      onClick={() => handleSelectFormLevel(lvl)}
-                      className={`text-left p-2.5 rounded-lg border transition ${
-                        selected
-                          ? 'border-accent bg-accent-soft/60'
-                          : 'border-line bg-surface hover:bg-sunken/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-ink">
-                          {lvl.levelCode}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-xs font-mono tabular-nums font-semibold bg-surface border border-line text-accent">
-                          ×{lvl.multiplier.toFixed(2).replace('.', ',')}
-                        </span>
-                      </div>
-                      <div className="text-xs text-ink-3 line-clamp-1 mt-1">
-                        {lvl.scopeDescription}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Difficulty Tier (Bảng 3) & Timeline (Bảng 5) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Độ khó thực tế (Bảng 3)">
-                <Select
-                  value={formTaskDiffTier}
-                  onChange={e =>
-                    setFormTaskDiffTier(e.target.value as 'EASY' | 'STANDARD' | 'HARD')
-                  }
-                >
-                  <option value="EASY">Dễ (×0,80)</option>
-                  <option value="STANDARD">Tiêu chuẩn (×1,00)</option>
-                  <option value="HARD">Khó (×1,20)</option>
-                </Select>
-              </Field>
-
-              <Field label="Đánh giá tiến độ SLA (Bảng 5)">
-                <Select
-                  value={formTimelineStatus}
-                  onChange={e =>
-                    setFormTimelineStatus(
-                      e.target.value as 'ON_TIME' | 'LATE_1' | 'LATE_2' | 'FAILED'
-                    )
-                  }
-                >
-                  {TIMELINE_TABLE_5.map(t => (
-                    <option key={t.status} value={t.status}>
-                      {t.label} (×{t.coef.toFixed(2).replace('.', ',')})
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            {/* PROGRESSIVE DISCLOSURE: CONDITIONAL BẢNG 7 FIELDS */}
-            {(selectedSowPolicy.requiresOriginalAsset ||
-              selectedSowPolicy.requiresKocStatus ||
-              selectedSowPolicy.supportsMultiPlatform ||
-              formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier) && (
-              <div className="p-3.5 rounded-lg bg-warning-soft/50 border border-warning/30 space-y-3">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>Thông tin đối soát bắt buộc theo Bảng 7</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {selectedSowPolicy.requiresOriginalAsset && (
-                    <Field label="Mã Asset gốc / Link video gốc (Reup/Adapt) *">
-                      <Input
-                        value={formOriginalAssetRef}
-                        onChange={e => setFormOriginalAssetRef(e.target.value)}
-                        placeholder="VD: VID-CLIO-089 hoặc link gốc..."
-                        required
-                      />
-                    </Field>
-                  )}
-
-                  {selectedSowPolicy.requiresKocStatus && (
-                    <Field label="Phân loại trạng thái KOC *">
-                      <Select
-                        value={formKocStatusType}
-                        onChange={e =>
-                          setFormKocStatusType(
-                            e.target.value as 'NEW_KOC' | 'REBOOK' | 'FRAMEWORK_CONTRACT'
-                          )
-                        }
-                      >
-                        <option value="NEW_KOC">KOC mới — Book lần đầu (Khó)</option>
-                        <option value="REBOOK">KOC Book lại (Tiêu chuẩn)</option>
-                        <option value="FRAMEWORK_CONTRACT">KOC Hợp đồng nguyên tắc (Tiêu chuẩn)</option>
-                      </Select>
-                    </Field>
-                  )}
-
-                  {selectedSowPolicy.supportsMultiPlatform && (
-                    <Field label="Số gian hàng nhân bản (Bảng 6)">
-                      <Select
-                        value={formMultiStoreCount}
-                        onChange={e => setFormMultiStoreCount(Number(e.target.value))}
-                      >
-                        {MULTI_PLATFORM_TABLE_6.map(m => (
-                          <option key={m.stores} value={m.stores}>
-                            {m.label} — Hệ số ×{m.coef.toFixed(2).replace('.', ',')}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
-                  )}
-
-                  {formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier && (
-                    <Field label="Lý do điều chỉnh độ khó khác mặc định Bảng 1 *">
-                      <Input
-                        value={formDiffOverrideReason}
-                        onChange={e => setFormDiffOverrideReason(e.target.value)}
-                        placeholder="Ghi rõ lý do tăng/giảm độ khó..."
-                        required
-                      />
-                    </Field>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Đầu ra nghiệm thu kỳ vọng">
-                <Input
-                  value={formDeliverable}
-                  onChange={e => setFormDeliverable(e.target.value)}
-                  placeholder="File kết quả, link nghiệm thu..."
-                />
-              </Field>
-              <Field label="Ghi chú hướng dẫn thực thi">
-                <Input
-                  value={formDescription}
-                  onChange={e => setFormDescription(e.target.value)}
-                  placeholder="Lưu ý thêm cho nhóm phụ trách..."
-                />
-              </Field>
-            </div>
           </div>
 
-          {/* RIGHT COLUMN (5 COLS): MULTI-PIC ASSIGNMENT & WEIGHT SPLIT */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="p-4 rounded-lg border border-line bg-sunken/50 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold text-ink">
-                    Phân bổ nhân sự & Tỷ trọng
-                  </h4>
-                </div>
-                <Status tone={isWeightValid ? 'positive' : 'critical'}>
-                  Tổng: {totalContributionWeight}%
-                </Status>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Độ khó thực tế (Bảng 3)">
+              <Select
+                value={formTaskDiffTier}
+                onChange={e =>
+                  setFormTaskDiffTier(e.target.value as 'EASY' | 'STANDARD' | 'HARD')
+                }
+              >
+                <option value="EASY">Dễ (×0,80)</option>
+                <option value="STANDARD">Tiêu chuẩn (×1,00)</option>
+                <option value="HARD">Khó (×1,20)</option>
+              </Select>
+            </Field>
+
+            <Field label="Đầu ra nghiệm thu">
+              <Input
+                value={formDeliverable}
+                onChange={e => setFormDeliverable(e.target.value)}
+                placeholder="File kết quả, link nghiệm thu..."
+              />
+            </Field>
+
+            <Field label="Ghi chú thực thi">
+              <Input
+                value={formDescription}
+                onChange={e => setFormDescription(e.target.value)}
+                placeholder="Lưu ý cho người nhận việc..."
+              />
+            </Field>
+          </div>
+
+          {/* PROGRESSIVE DISCLOSURE: CONDITIONAL BẢNG 7 FIELDS */}
+          {(selectedSowPolicy.requiresOriginalAsset ||
+            selectedSowPolicy.requiresKocStatus ||
+            selectedSowPolicy.supportsMultiPlatform ||
+            formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier) && (
+            <div className="p-3 rounded-lg bg-warning-soft/50 border border-warning/30 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {selectedSowPolicy.requiresOriginalAsset && (
+                <Field label="Mã Asset gốc / Link video gốc (Reup/Adapt) *">
+                  <Input
+                    value={formOriginalAssetRef}
+                    onChange={e => setFormOriginalAssetRef(e.target.value)}
+                    placeholder="VD: VID-CLIO-089 hoặc link gốc..."
+                    required
+                  />
+                </Field>
+              )}
+
+              {selectedSowPolicy.requiresKocStatus && (
+                <Field label="Phân loại trạng thái KOC *">
+                  <Select
+                    value={formKocStatusType}
+                    onChange={e =>
+                      setFormKocStatusType(
+                        e.target.value as 'NEW_KOC' | 'REBOOK' | 'FRAMEWORK_CONTRACT'
+                      )
+                    }
+                  >
+                    <option value="NEW_KOC">KOC mới — Book lần đầu (Khó)</option>
+                    <option value="REBOOK">KOC Book lại (Tiêu chuẩn)</option>
+                    <option value="FRAMEWORK_CONTRACT">KOC Hợp đồng nguyên tắc (Tiêu chuẩn)</option>
+                  </Select>
+                </Field>
+              )}
+
+              {selectedSowPolicy.supportsMultiPlatform && (
+                <Field label="Số gian hàng nhân bản (Bảng 6)">
+                  <Select
+                    value={formMultiStoreCount}
+                    onChange={e => setFormMultiStoreCount(Number(e.target.value))}
+                  >
+                    {MULTI_PLATFORM_TABLE_6.map(m => (
+                      <option key={m.stores} value={m.stores}>
+                        {m.label} — Hệ số ×{m.coef.toFixed(2).replace('.', ',')}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+
+              {formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier && (
+                <Field label="Lý do điều chỉnh độ khó khác mặc định Bảng 1 *">
+                  <Input
+                    value={formDiffOverrideReason}
+                    onChange={e => setFormDiffOverrideReason(e.target.value)}
+                    placeholder="Ghi rõ lý do tăng/giảm độ khó..."
+                    required
+                  />
+                </Field>
+              )}
+            </div>
+          )}
+
+          {/* MULTI-PIC ASSIGNMENT & WEIGHT SPLIT */}
+          <div className="p-3.5 rounded-lg border border-line bg-sunken/40 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-ink">
+                  Phân bổ nhân sự nhận việc
+                </span>
+                <span
+                  className={`text-xs font-mono tabular-nums font-semibold ${
+                    isWeightValid ? 'text-positive' : 'text-critical'
+                  }`}
+                >
+                  (Tổng tỷ trọng: {totalContributionWeight}%)
+                </span>
               </div>
 
-              {/* Preset Split Pills */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {ROLE_SPLIT_PRESETS.map(preset => (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => applySplitPreset(preset.id)}
-                    className="px-2.5 py-1 rounded text-xs font-medium bg-surface border border-line hover:border-accent hover:text-accent transition"
+                    className="px-2 py-0.5 rounded text-xs bg-surface border border-line hover:border-accent hover:text-accent transition"
                   >
                     {preset.label}
                   </button>
                 ))}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={UserPlus}
+                  onClick={() =>
+                    setAssignees([
+                      ...assignees,
+                      {
+                        staffName: allAssignableStaff[assignees.length]?.name || 'Lê Phương Thảo',
+                        role: 'SUPPORT',
+                        weightPct: 0,
+                      },
+                    ])
+                  }
+                >
+                  Thêm người
+                </Button>
               </div>
+            </div>
 
-              {/* Assignee Slots */}
-              <div className="space-y-2.5">
-                {assignees.map((slot, idx) => {
-                  const personalPts = Number(
-                    (modalFormulaPreview.totalCasePoints * (slot.weightPct / 100)).toFixed(2)
-                  );
-                  return (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-lg bg-surface border border-line space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-medium text-ink-2">
-                          Thành viên #{idx + 1}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono tabular-nums font-semibold text-accent">
-                            +{personalPts.toFixed(2).replace('.', ',')} điểm
-                          </span>
-                          {assignees.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAssignees(assignees.filter((_, i) => i !== idx))
-                              }
-                              className="text-ink-3 hover:text-critical"
-                              title="Xóa thành viên"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-6">
-                          <Select
-                            value={slot.staffName}
-                            onChange={e => {
-                              const next = [...assignees];
-                              next[idx] = { ...slot, staffName: e.target.value };
-                              setAssignees(next);
-                            }}
-                          >
-                            {allAssignableStaff.map(s => (
-                              <option key={s.name} value={s.name}>
-                                {s.name} {s.level ? `(${s.level})` : ''}
-                              </option>
-                            ))}
-                          </Select>
-                        </div>
-
-                        <div className="col-span-4">
-                          <Select
-                            value={slot.role}
-                            onChange={e => {
-                              const next = [...assignees];
-                              next[idx] = {
-                                ...slot,
-                                role: e.target.value as TaskAssignmentRoleKey,
-                              };
-                              setAssignees(next);
-                            }}
-                          >
-                            <option value="PIC_OWNER">PIC / Owner</option>
-                            <option value="CO_PIC">Co-PIC</option>
-                            <option value="EXECUTION">Execution</option>
-                            <option value="SUPPORT">Support</option>
-                          </Select>
-                        </div>
-
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            min={5}
-                            max={100}
-                            step={5}
-                            value={slot.weightPct}
-                            onChange={e => {
-                              const next = [...assignees];
-                              next[idx] = {
-                                ...slot,
-                                weightPct: Number(e.target.value) || 0,
-                              };
-                              setAssignees(next);
-                            }}
-                            className="font-mono tabular-nums px-2 text-right"
-                          />
-                        </div>
-                      </div>
+            <div className="space-y-2">
+              {assignees.map((slot, idx) => {
+                const personalPts = Number(
+                  (modalFormulaPreview.totalCasePoints * (slot.weightPct / 100)).toFixed(2)
+                );
+                return (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-12 gap-2 items-center bg-surface p-2 rounded-lg border border-line"
+                  >
+                    <div className="col-span-5">
+                      <Select
+                        value={slot.staffName}
+                        onChange={e => {
+                          const next = [...assignees];
+                          next[idx] = { ...slot, staffName: e.target.value };
+                          setAssignees(next);
+                        }}
+                      >
+                        {allAssignableStaff.map(s => (
+                          <option key={s.name} value={s.name}>
+                            {s.name} {s.level ? `(${s.level})` : ''}
+                          </option>
+                        ))}
+                      </Select>
                     </div>
-                  );
-                })}
-              </div>
 
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={UserPlus}
-                onClick={() =>
-                  setAssignees([
-                    ...assignees,
-                    {
-                      staffName: allAssignableStaff[assignees.length]?.name || 'Lê Phương Thảo',
-                      role: 'SUPPORT',
-                      weightPct: 0,
-                    },
-                  ])
-                }
-              >
-                Thêm nhân sự phối hợp
-              </Button>
+                    <div className="col-span-4">
+                      <Select
+                        value={slot.role}
+                        onChange={e => {
+                          const next = [...assignees];
+                          next[idx] = {
+                            ...slot,
+                            role: e.target.value as TaskAssignmentRoleKey,
+                          };
+                          setAssignees(next);
+                        }}
+                      >
+                        <option value="PIC_OWNER">PIC / Owner</option>
+                        <option value="CO_PIC">Co-PIC</option>
+                        <option value="EXECUTION">Execution</option>
+                        <option value="SUPPORT">Support</option>
+                      </Select>
+                    </div>
+
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        min={5}
+                        max={100}
+                        step={5}
+                        value={slot.weightPct}
+                        onChange={e => {
+                          const next = [...assignees];
+                          next[idx] = {
+                            ...slot,
+                            weightPct: Number(e.target.value) || 0,
+                          };
+                          setAssignees(next);
+                        }}
+                        className="font-mono tabular-nums px-2 text-right"
+                      />
+                    </div>
+
+                    <div className="col-span-1 flex items-center justify-end gap-1">
+                      <span className="text-xs font-mono tabular-nums text-ink-2 hidden sm:inline">
+                        {personalPts.toFixed(1).replace('.', ',')}đ
+                      </span>
+                      {assignees.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAssignees(assignees.filter((_, i) => i !== idx))
+                          }
+                          className="text-ink-3 hover:text-critical p-1"
+                          title="Xóa thành viên"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </form>

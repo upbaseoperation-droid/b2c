@@ -45,6 +45,7 @@ class ConcurrencyLimiter {
 export interface CachedPublicProfileData {
   nickname?: string;
   bio?: string;
+  bioLink?: string;
   avatarUrl?: string;
   followers?: number;
   following?: number;
@@ -1054,24 +1055,32 @@ export function buildTargetKeywordProfile(rawInput: string): TargetKeywordProfil
       ...(rawClean.includes('.') ? [`tiktok.com "@${asciiClean}"`] : []),
       ...(compactTag !== rootToken ? [`tiktok.com "#${compactTag}"`] : []),
       `tiktok.com "#${rootToken}vietnam"`,
-      ...spacedAliases.slice(0, 14).flatMap((alias) => [
-        `tiktok.com ${alias}`,
-        `tiktok.com "${alias}"`,
-      ]),
+      ...spacedAliases.slice(0, 14).flatMap((alias) => {
+        const otherWords = alias
+          .replace(new RegExp(`\\b${escapeRegexLiteral(rootToken)}\\b`, 'gi'), '')
+          .trim();
+        return [
+          `tiktok.com "${alias}"`,
+          ...(otherWords ? [`tiktok.com "${rootToken}" ${otherWords}`] : []),
+        ];
+      }),
       ...distinctiveSubTokens.map((sub) => `tiktok.com "#${sub}"`),
-      `tiktok.com review ${primaryQueryTerm}`,
       `tiktok.com "review ${primaryQueryTerm}"`,
-      `tiktok.com ${primaryQueryTerm} chính hãng`,
-      `tiktok.com unbox ${primaryQueryTerm}`,
-      `tiktok.com ${primaryQueryTerm} tiktok shop`,
-      `tiktok.com ${primaryQueryTerm} săn sale`,
+      `tiktok.com "${primaryQueryTerm}" review`,
+      `tiktok.com "${primaryQueryTerm}" chính hãng`,
+      `tiktok.com "${primaryQueryTerm}" unbox`,
+      `tiktok.com "${primaryQueryTerm}" tiktok shop`,
+      `tiktok.com "${primaryQueryTerm}" săn sale`,
       `tiktok.com "#${rootToken}" review`,
       `tiktok.com "#${rootToken}" việt nam`,
       ...(isShortAmbiguousRoot
         ? [
-            `tiktok.com ${rootToken} cho bé`,
-            `tiktok.com ${rootToken} sơ sinh`,
-            `tiktok.com ${rootToken} mẹ bỉm`,
+            `tiktok.com "${rootToken}" cho bé`,
+            `tiktok.com "${rootToken}" sơ sinh`,
+            `tiktok.com "${rootToken}" mẹ bỉm`,
+            `tiktok.com "${rootToken}" quần áo`,
+            `tiktok.com "${rootToken}" bộ`,
+            `tiktok.com "${rootToken}" set`,
             `tiktok.com "#${rootToken}" cho bé`,
             `tiktok.com "#${rootToken}" chính hãng`,
             `tiktok.com "#${rootToken}"`,
@@ -1286,14 +1295,26 @@ export async function discoverTikTokChannelVideoUrls(
       `tiktok.com/@${cleanHandle}/video`
     )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok.com/@${cleanHandle}/video`
+    )}&async=content&first=70&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok.com/@${cleanHandle}/video`
+    )}&async=content&first=105&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok @${cleanHandle}`
     )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `tiktok @${cleanHandle}`
     )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
     `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `tiktok @${cleanHandle}`
+    )}&async=content&first=70&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
       `site:tiktok.com/@${cleanHandle}`
     )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+    `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+      `site:tiktok.com/@${cleanHandle}`
+    )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
   ];
 
   if (
@@ -1304,7 +1325,10 @@ export async function discoverTikTokChannelVideoUrls(
     bingVideoUrls.push(
       `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
         `tiktok.com/@${cleanHandle} ${options.nickname.trim()}`
-      )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`
+      )}&async=content&first=0&count=35&mkt=vi-VN&setlang=vi&cc=VN`,
+      `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
+        `tiktok.com/@${cleanHandle} ${options.nickname.trim()}`
+      )}&async=content&first=35&count=35&mkt=vi-VN&setlang=vi&cc=VN`
     );
   }
 
@@ -1315,6 +1339,9 @@ export async function discoverTikTokChannelVideoUrls(
     `https://www.bing.com/search?q=${encodeURIComponent(
       `site:tiktok.com/@${cleanHandle}/video`
     )}&count=50&first=51`,
+    `https://www.bing.com/search?q=${encodeURIComponent(
+      `site:tiktok.com/@${cleanHandle}/video`
+    )}&count=50&first=101`,
   ];
 
   const searchTasks: Array<Promise<void>> = [
@@ -1485,9 +1512,13 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         .join('\n');
 
       // Loại bỏ các tham số relatedvideo?q=... hoặc search?q=... mà Bing chèn vào thẻ để tránh khớp nhầm câu truy vấn
-      const cleanedBlock = `${block}\n${b64Decoded}`
-        .replace(/(?:relatedvideo|search)\?q=[^"&'\s<>]+/gi, '')
-        .replace(/[?&]q=[^"&'\s<>]+/gi, '')
+      const cleanB64Decoded = b64Decoded
+        .replace(/(?:relatedvideo|search)\?[^"&'\s<>]+/gi, '')
+        .replace(/[?&](?:q|pq|lq|sc)=[^"&'\s<>]+/gi, '');
+
+      const cleanedBlock = `${block}\n${cleanB64Decoded}`
+        .replace(/(?:relatedvideo|search)\?[^"&'\s<>]+/gi, '')
+        .replace(/[?&](?:q|pq|lq|sc)=[^"&'\s<>]+/gi, '')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&amp;/g, '&')
@@ -1496,17 +1527,30 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         .replace(/\\u002f/gi, '/');
 
       if (requiredTokens.length > 0) {
+        // Nếu là kết quả Bing Web (<li class="b_algo">) có dòng "Thiếu: <từ khóa>" / "Missing: <keyword>" (tức trang web không chứa từ khóa), loại bỏ ngay
+        if (
+          webAlgoBlocks.length > 1 &&
+          /(?:Thiếu|Missing|Phải bao gồm|Must include)\s*:|<s\b[^>]*>/i.test(block)
+        ) {
+          continue;
+        }
+
         const cardTitle = block.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
         const cardAlt = block.match(/\balt="([^"]*)"/i)?.[1] || '';
-        const cardVrhm = block.match(/vrhm="([^"]*)"/i)?.[1] || '';
         const cardOurl = block.match(/ourl="([^"]*)"/i)?.[1] || '';
-        const strippedVisibleText = cleanedBlock.replace(/<[^>]+>/g, ' ');
+        const visibleCardOnly = block
+          .replace(/<div\s+class="b_factrow[\s\S]*$/i, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&');
         const cardSemanticText =
           videoCardBlocks.length > 1
-            ? `${cardTitle} ${cardAlt} ${cardVrhm} ${cardOurl} ${b64Decoded}`
+            ? `${cardTitle} ${cardAlt} ${cardOurl}`
                 .replace(/&quot;/g, '"')
                 .replace(/&#39;/g, "'")
-            : strippedVisibleText;
+                .replace(/&amp;/g, '&')
+            : visibleCardOnly;
 
         if (!textContainsAnyToken(cardSemanticText, requiredTokens)) {
           continue;
@@ -1514,9 +1558,9 @@ export async function discoverRealTikTokVideoUrlsByQuery(
 
         if (isStructuredCard) {
           const normCard = stripVnAccents(cardSemanticText);
-          // Loại bỏ ngay thẻ video nước ngoài (Pháp, Tây Ban Nha, Mỹ, Brazil...) trước khi tốn lượt inspect
+          // Loại bỏ ngay thẻ video nước ngoài (Pháp, châu Phi Pháp ngữ, Tây Ban Nha, Mỹ, Brazil...) trước khi tốn lượt inspect
           if (
-            /\b(pourtoi|france|parati|nous avons|entre nous|chez nous|avec nous|pour nous|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand)\b/i.test(
+            /\b(pourtoi|france|parati|senegal|senegalaise|cameroun|maroc|algerie|tunisie|quebec|abidjan|dakar|congo|mali|benin|gabon|haiti|belgique|suisse|nous avons|entre nous|chez nous|avec nous|pour nous|je suis|brasil|brazil|mexico|espana|italia|deutschland|polska|turkiye|indonesia|malaysia|philippines|thailand)\b/i.test(
               normCard
             )
           ) {
@@ -1524,8 +1568,9 @@ export async function discoverRealTikTokVideoUrlsByQuery(
           }
 
           if (isShortAmbiguousRoot) {
+            // Chỉ dùng các ký tự có dấu đặc trưng riêng của tiếng Việt (không dùng ì, í, ò, ó, ù, ú đơn lẻ vì trùng tiếng Pháp/Tây Ban Nha)
             const hasVnDiacritics =
-              /[ăằắặẳẵầấậẩẫềếệểễìíịỉĩòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
+              /[ăằắặẳẵầấậẩẫềếệểễỉĩỏõồốộổỗơờớợởỡủũưừứựửữỳỷỹđảạẻẹỉịỏọủụỷỵ]/i.test(
                 cardSemanticText
               );
             const hasVnHint =
@@ -1721,7 +1766,6 @@ export async function discoverRealTikTokVideoUrlsByQuery(
       : queries;
 
   const batchModifiers = [
-    '',
     'review',
     'unbox',
     'haul',
@@ -1743,39 +1787,57 @@ export async function discoverRealTikTokVideoUrlsByQuery(
     'mới nhất',
   ];
 
-  const mod1 = batchModifiers[pageOffset % batchModifiers.length];
-  const mod2 = batchModifiers[(pageOffset * 2 + 1) % batchModifiers.length];
-  const modifierFirstParam = Math.floor(pageOffset / batchModifiers.length) * 35;
-  const baseFirstParam = (pageOffset % 6) * 35;
-  const secondaryFirstParam = ((pageOffset + 1) % 6) * 35;
-
-  // Xoay vòng thứ tự baseQueries theo pageOffset để mỗi đợt ưu tiên khai thác các cụm từ khóa khác nhau
-  const shift = (pageOffset * 3) % Math.max(1, baseQueries.length);
-  const rotatedBaseQueries = [
-    ...baseQueries.slice(shift),
-    ...baseQueries.slice(0, shift),
-  ];
-
+  // Xây dựng hàng đợi thác nước tuần tự (Progressive Waterfall Queue):
+  // Nhờ searchHtmlCache + excludeSet + rejectedHandlesByTarget, các truy vấn đã chạy ở đợt trước sẽ trả kết quả từ RAM trong 0ms
+  // (giúp thu hồi toàn bộ số KOC còn dư từ đợt trước mà chưa kịp inspect), sau đó tự động chảy tiếp xuống các truy vấn mới!
   const searchTasksQueue: Array<{ q: string; first: number; mode: 'video' | 'web' | 'ddg' }> = [];
+  const seenTaskKeys = new Set<string>();
+  const pushTask = (q: string, first: number, mode: 'video' | 'web' | 'ddg') => {
+    const k = `${mode}__${q.trim().toLowerCase()}__${first}`;
+    if (!seenTaskKeys.has(k)) {
+      seenTaskKeys.add(k);
+      searchTasksQueue.push({ q, first, mode });
+    }
+  };
 
-  if (pageOffset > 0 && mod1) {
-    for (const q of rotatedBaseQueries.slice(0, 8)) {
-      searchTasksQueue.push({ q: `${q} ${mod1}`, first: modifierFirstParam, mode: 'video' });
-    }
-  }
-  for (const q of rotatedBaseQueries) {
-    searchTasksQueue.push({ q, first: baseFirstParam, mode: 'video' });
-  }
-  if (mod2 && mod2 !== mod1) {
-    for (const q of rotatedBaseQueries.slice(0, 6)) {
-      searchTasksQueue.push({ q: `${q} ${mod2}`, first: 0, mode: 'video' });
-    }
-  }
-  for (const q of rotatedBaseQueries.slice(0, 6)) {
-    searchTasksQueue.push({ q, first: secondaryFirstParam, mode: 'video' });
+  // Tầng 1: Toàn bộ baseQueries ở trang đầu (first=0) — nguồn KOC chất lượng và chính xác nhất
+  for (const q of baseQueries) {
+    pushTask(q, 0, 'video');
   }
 
-  // Bổ sung truy vấn Bing Web Search + DuckDuckGo HTML Search để gom thêm các video KOC không nằm trong tab Video
+  // Tầng 2: Toàn bộ baseQueries ở trang 2 (first=35)
+  for (const q of baseQueries) {
+    pushTask(q, 35, 'video');
+  }
+
+  // Tầng 3: Kết hợp hậu tố mở rộng theo đợt hiện tại và các đợt lân cận ở first=0
+  const activeModifiers = [
+    batchModifiers[pageOffset % batchModifiers.length],
+    batchModifiers[(pageOffset * 2 + 1) % batchModifiers.length],
+    batchModifiers[(pageOffset * 3 + 2) % batchModifiers.length],
+  ];
+  for (const mod of activeModifiers) {
+    for (const q of baseQueries.slice(0, 12)) {
+      pushTask(`${q} ${mod}`, 0, 'video');
+    }
+  }
+
+  // Tầng 4: Toàn bộ baseQueries ở trang 3 (first=70) và trang 4 (first=105)
+  for (const q of baseQueries.slice(0, 18)) {
+    pushTask(q, 70, 'video');
+  }
+  for (const q of baseQueries.slice(0, 14)) {
+    pushTask(q, 105, 'video');
+  }
+
+  // Tầng 5: Mở rộng qua toàn bộ các hậu tố còn lại ở first=0 để vét cạn khi người dùng quét 100-500 KOC
+  for (const mod of batchModifiers) {
+    for (const q of baseQueries.slice(0, 8)) {
+      pushTask(`${q} ${mod}`, 0, 'video');
+    }
+  }
+
+  // Tầng 6: Bing Web Search & DuckDuckGo HTML Search
   const webSeedTerms = Array.from(
     new Set([
       ...(targetProfile?.spacedAliases?.slice(0, 4) || []),
@@ -1785,24 +1847,9 @@ export async function discoverRealTikTokVideoUrlsByQuery(
   );
 
   for (const seedTerm of webSeedTerms.slice(0, 3)) {
-    const webModifier = mod1 ? ` ${mod1}` : '';
-    searchTasksQueue.push(
-      {
-        q: `site:tiktok.com "${seedTerm}"${webModifier} video`,
-        first: (pageOffset % 5) * 50,
-        mode: 'web',
-      },
-      {
-        q: `site:tiktok.com "#${targetProfile?.rootToken || seedTerm}"${webModifier} video`,
-        first: (pageOffset % 5) * 50,
-        mode: 'web',
-      },
-      {
-        q: `site:tiktok.com "${seedTerm}"${webModifier} "/video/"`,
-        first: 0,
-        mode: 'ddg',
-      }
-    );
+    const mod = activeModifiers[0] ? ` ${activeModifiers[0]}` : '';
+    pushTask(`site:tiktok.com "${seedTerm}"${mod} video`, (pageOffset % 4) * 50, 'web');
+    pushTask(`site:tiktok.com "${seedTerm}" "/video/"`, 0, 'ddg');
   }
 
   const targetUniqueHandles = Math.max(maxUrls, 60);

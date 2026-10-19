@@ -1835,3 +1835,116 @@ export const AVAILABLE_MONTHS = [
   { value: '2026/08', label: 'Tháng 08/2026', badge: '2 Plans' }
 ];
 
+// =========================================================================
+// QUẢN LÝ TUẦN THEO CHU KỲ THÁNG (WEEK CALENDAR BY MONTH)
+// =========================================================================
+
+export interface MonthWeekOption {
+  value: string;
+  label: string;
+  isFullMonth?: boolean;
+}
+
+export function getWeeksForMonth(month: string): MonthWeekOption[] {
+  const m = month === 'ALL' ? '2026/10' : month;
+  const calendarMap: Record<string, MonthWeekOption[]> = {
+    '2026/08': [
+      { value: 'Cả tháng 08/2026 (W31 - W35)', label: 'Cả tháng 08/2026 (W31 - W35)', isFullMonth: true },
+      { value: 'W31 [28.07 - 03.08]', label: 'W31 [28.07 - 03.08]' },
+      { value: 'W32 [04.08 - 10.08]', label: 'W32 [04.08 - 10.08]' },
+      { value: 'W33 [11.08 - 17.08]', label: 'W33 [11.08 - 17.08]' },
+      { value: 'W34 [18.08 - 24.08]', label: 'W34 [18.08 - 24.08]' },
+      { value: 'W35 [25.08 - 31.08]', label: 'W35 [25.08 - 31.08]' },
+    ],
+    '2026/09': [
+      { value: 'Cả tháng 09/2026 (W36 - W40)', label: 'Cả tháng 09/2026 (W36 - W40)', isFullMonth: true },
+      { value: 'W36 [31.08 - 06.09]', label: 'W36 [31.08 - 06.09]' },
+      { value: 'W37 [07.09 - 13.09]', label: 'W37 [07.09 - 13.09]' },
+      { value: 'W38 [14.09 - 20.09]', label: 'W38 [14.09 - 20.09]' },
+      { value: 'W39 [21.09 - 27.09]', label: 'W39 [21.09 - 27.09]' },
+      { value: 'W40 [28.09 - 04.10]', label: 'W40 [28.09 - 04.10]' },
+    ],
+    '2026/10': [
+      { value: 'Cả tháng 10/2026 (W40 - W44)', label: 'Cả tháng 10/2026 (W40 - W44)', isFullMonth: true },
+      { value: 'W40 [28.09 - 04.10]', label: 'W40 [28.09 - 04.10]' },
+      { value: 'W41 [05.10 - 11.10]', label: 'W41 [05.10 - 11.10]' },
+      { value: 'W42 [12.10 - 18.10]', label: 'W42 [12.10 - 18.10]' },
+      { value: 'W43 [19.10 - 25.10]', label: 'W43 [19.10 - 25.10]' },
+      { value: 'W44 [26.10 - 01.11]', label: 'W44 [26.10 - 01.11]' },
+    ],
+    '2026/11': [
+      { value: 'Cả tháng 11/2026 (W45 - W49)', label: 'Cả tháng 11/2026 (W45 - W49)', isFullMonth: true },
+      { value: 'W45 [02.11 - 08.11]', label: 'W45 [02.11 - 08.11]' },
+      { value: 'W46 [09.11 - 15.11]', label: 'W46 [09.11 - 15.11]' },
+      { value: 'W47 [16.11 - 22.11]', label: 'W47 [16.11 - 22.11]' },
+      { value: 'W48 [23.11 - 29.11]', label: 'W48 [23.11 - 29.11]' },
+      { value: 'W49 [30.11 - 06.12]', label: 'W49 [30.11 - 06.12]' },
+    ],
+    '2026/12': [
+      { value: 'Cả tháng 12/2026 (W49 - W53)', label: 'Cả tháng 12/2026 (W49 - W53)', isFullMonth: true },
+      { value: 'W49 [30.11 - 06.12]', label: 'W49 [30.11 - 06.12]' },
+      { value: 'W50 [07.12 - 13.12]', label: 'W50 [07.12 - 13.12]' },
+      { value: 'W51 [14.12 - 20.12]', label: 'W51 [14.12 - 20.12]' },
+      { value: 'W52 [21.12 - 27.12]', label: 'W52 [21.12 - 27.12]' },
+      { value: 'W53 [28.12 - 03.01]', label: 'W53 [28.12 - 03.01]' },
+    ],
+    '2027/01': [
+      { value: 'Cả tháng 01/2027 (W01 - W05)', label: 'Cả tháng 01/2027 (W01 - W05)', isFullMonth: true },
+      { value: 'W01 [04.01 - 10.01]', label: 'W01 [04.01 - 10.01]' },
+      { value: 'W02 [11.01 - 17.01]', label: 'W02 [11.01 - 17.01]' },
+      { value: 'W03 [18.01 - 24.01]', label: 'W03 [18.01 - 24.01]' },
+      { value: 'W04 [25.01 - 31.01]', label: 'W04 [25.01 - 31.01]' },
+      { value: 'W05 [01.02 - 07.02]', label: 'W05 [01.02 - 07.02]' },
+    ],
+  };
+
+  if (calendarMap[m]) return calendarMap[m];
+
+  const parts = m.split('/');
+  const year = parseInt(parts[0], 10);
+  const monthNum = parseInt(parts[1], 10);
+  if (isNaN(year) || isNaN(monthNum)) {
+    return [{ value: `Tháng ${m}`, label: `Tháng ${m}`, isFullMonth: true }];
+  }
+  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  return [
+    { value: `Cả tháng ${pad(monthNum)}/${year} (W1 - W4)`, label: `Cả tháng ${pad(monthNum)}/${year} (W1 - W4)`, isFullMonth: true },
+    { value: `W1 [01.${pad(monthNum)} - 07.${pad(monthNum)}]`, label: `W1 [01.${pad(monthNum)} - 07.${pad(monthNum)}]` },
+    { value: `W2 [08.${pad(monthNum)} - 14.${pad(monthNum)}]`, label: `W2 [08.${pad(monthNum)} - 14.${pad(monthNum)}]` },
+    { value: `W3 [15.${pad(monthNum)} - 21.${pad(monthNum)}]`, label: `W3 [15.${pad(monthNum)} - 21.${pad(monthNum)}]` },
+    { value: `W4 [22.${pad(monthNum)} - 28.${pad(monthNum)}]`, label: `W4 [22.${pad(monthNum)} - 28.${pad(monthNum)}]` },
+  ];
+}
+
+export function buildDefaultWeeklyMatrix(month: string, picName: string = 'Khánh Vy') {
+  const weeks = getWeeksForMonth(month).filter(w => !w.isFullMonth).slice(0, 5);
+  const ratios = [
+    { affQty: 10, affBudget: 35000000, tapQty: 30, selfQty: 8, selfBudget: 3500000, multiQty: 4, multiBudget: 2500000, status: 'Đã lập', tiers: { kl1: 2, kl2: 3, kl3: 3, kl4: 1, kl5: 1, kl6: 0, kl7: 0 } },
+    { affQty: 12, affBudget: 42000000, tapQty: 35, selfQty: 10, selfBudget: 4200000, multiQty: 5, multiBudget: 3200000, status: 'Đã lập', tiers: { kl1: 2, kl2: 4, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 } },
+    { affQty: 10, affBudget: 38000000, tapQty: 25, selfQty: 8, selfBudget: 3500000, multiQty: 4, multiBudget: 2200000, status: 'Đã lập', tiers: { kl1: 1, kl2: 3, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 } },
+    { affQty: 8, affBudget: 28000000, tapQty: 20, selfQty: 6, selfBudget: 2800000, multiQty: 3, multiBudget: 1800000, status: 'Đã lập', tiers: { kl1: 2, kl2: 2, kl3: 2, kl4: 1, kl5: 1, kl6: 0, kl7: 0 } },
+    { affQty: 2, affBudget: 7000000, tapQty: 10, selfQty: 2, selfBudget: 1000000, multiQty: 1, multiBudget: 500000, status: 'Dự thảo', tiers: { kl1: 0, kl2: 1, kl3: 1, kl4: 0, kl5: 0, kl6: 0, kl7: 0 } },
+  ];
+
+  return weeks.map((w, idx) => {
+    const r = ratios[idx] || ratios[0];
+    return {
+      week: w.value,
+      affPaidQty: r.affQty,
+      affPaidBudget: r.affBudget,
+      tapFreeQty: r.tapQty,
+      selfChannelQty: r.selfQty,
+      selfChannelBudget: r.selfBudget,
+      multiQty: r.multiQty,
+      multiBudget: r.multiBudget,
+      pic: picName,
+      status: r.status,
+      tiers: { ...r.tiers },
+      tapChannels: { upAffiliate: Math.round(r.tapQty * 0.6), brand: Math.round(r.tapQty * 0.25), upbase: Math.max(1, Math.round(r.tapQty * 0.15)) },
+      selfFormats: { voice: Math.ceil(r.selfQty * 0.4), text: Math.floor(r.selfQty * 0.3), remix: Math.floor(r.selfQty * 0.2), autoScript: 1, pov: 0 },
+      multiPlatforms: { shopee: Math.ceil(r.multiQty * 0.5), facebook: Math.floor(r.multiQty * 0.3), threads: 1, instagram: 0 }
+    };
+  });
+}
+
+

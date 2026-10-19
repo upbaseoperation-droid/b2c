@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ConfirmDialog, Tabs } from '../ui';
+import { ActionMenu, Button, ConfirmDialog, Tabs } from '../ui';
 import { 
   CheckCircle, 
   RotateCcw, 
@@ -57,48 +57,37 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
   return (
     <div className="space-y-4">
-      {/* Navigation Sub-Tabs and Action Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-1">
-        <Tabs<ContentSubTab>
-          value={activeSubTab}
-          onChange={setActiveSubTab}
-          items={[
-            { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
-            { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
-            { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
-            { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
-          ]}
-        />
-
-        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
-          <button
-            onClick={() => {
-              setInspectInitialUrl('');
-              setIsVideoInspectorOpen(true);
-            }}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer"
-          >
-            <Video className="w-3.5 h-3.5" />
-            <span>Nghiệm thu link video KOC</span>
-          </button>
-          <button
-            onClick={() => setIsScriptReportOpen(true)}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5 shrink-0 shadow-2xs"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Báo cáo rà soát kịch bản & từ cấm</span>
-          </button>
-          {onNavigateToAngles && (
-            <button
-              onClick={onNavigateToAngles}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-accent-soft text-accent hover:bg-sunken border border-line transition flex items-center gap-1.5 shrink-0 shadow-2xs"
+      {/* Tab và thao tác: một nút chính, thao tác phụ vào menu */}
+      <Tabs<ContentSubTab>
+        value={activeSubTab}
+        onChange={setActiveSubTab}
+        items={[
+          { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
+          { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
+          { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
+          { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
+        ]}
+        actions={
+          <>
+            <Button
+              variant="primary"
+              icon={Video}
+              onClick={() => {
+                setInspectInitialUrl('');
+                setIsVideoInspectorOpen(true);
+              }}
             >
-              <Layers className="w-3.5 h-3.5 text-accent" />
-              <span>Thiết lập góc tiếp cận SP</span>
-            </button>
-          )}
-        </div>
-      </div>
+              Nghiệm thu video
+            </Button>
+            <ActionMenu
+              items={[
+                { label: 'Báo cáo rà soát kịch bản & từ cấm', icon: FileText, onSelect: () => setIsScriptReportOpen(true) },
+                ...(onNavigateToAngles ? [{ label: 'Thiết lập góc tiếp cận SP', icon: Layers, onSelect: onNavigateToAngles }] : []),
+              ]}
+            />
+          </>
+        }
+      />
 
       {/* View 0: Content Items Master Grid */}
       {activeSubTab === 'CONTENT_ITEMS' && (

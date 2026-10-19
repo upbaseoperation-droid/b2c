@@ -748,24 +748,17 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           {/* Khung tổng quan 3 vị trí gắn theo Brand dành cho Giám đốc */}
           <div className="bg-surface rounded-xl border border-line p-4 space-y-3">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-ink">
-                    Phân bổ nhân sự cho 3 vị trí gắn theo Brand ({brands.length} thương hiệu B2C)
-                  </h3>
-                  <span className="text-2xs font-semibold text-warning -warning/20">
-                    theo brand
-                  </span>
-                </div>
-              </div>
+              <h3 className="text-sm font-semibold text-ink">
+                Phân bổ nhân sự theo Brand ({brands.length} thương hiệu B2C)
+              </h3>
 
               {/* Bộ lọc nhanh theo vị trí gắn theo Brand */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[
-                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: `${brands.length} Brand` },
-                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main', badge: 'theo brand' },
-                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy', badge: 'theo brand' },
-                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS', badge: 'theo brand' },
+                  { key: 'ALL' as const, label: `Tất cả (${brands.length})` },
+                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main' },
+                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy' },
+                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS' },
                 ].map(roleTab => {
                   const active = selectedBrandPosRole === roleTab.key;
                   return (
@@ -773,16 +766,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       key={roleTab.key}
                       type="button"
                       onClick={() => setSelectedBrandPosRole(roleTab.key)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition ${
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                         active
-                          ? 'bg-warning-soft border-warning/20 text-warning font-semibold shadow-2xs'
+                          ? 'bg-accent-soft border-accent/30 text-accent font-semibold'
                           : 'bg-canvas border-line text-ink-2 hover:text-ink hover:border-line-strong'
                       }`}
                     >
-                      <span>{roleTab.label}</span>
-                      <span className=".5 text-2xs font-semibold text-warning">
-                        {roleTab.badge}
-                      </span>
+                      {roleTab.label}
                     </button>
                   );
                 })}
@@ -806,26 +796,18 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <span className="text-xs font-semibold text-ink truncate">{st.name}</span>
-                      <span className=".5 text-2xs font-mono font-semibold -line text-ink-2 shrink-0">
+                      <span className="text-2xs font-mono font-semibold text-ink-2 shrink-0">
                         {st.brandCount} Brand
                       </span>
                     </div>
-                    <div className="mt-1.5 flex items-center gap-1 flex-wrap text-2xs text-ink-3">
-                      {st.contentMainCount > 0 && (
-                        <span className=".5 text-warning -warning/20/70">
-                          Content: {st.contentMainCount}
-                        </span>
-                      )}
-                      {st.planStrategyCount > 0 && (
-                        <span className=".5 text-accent -accent/20/70">
-                          Plan: {st.planStrategyCount}
-                        </span>
-                      )}
-                      {st.kvSisCount > 0 && (
-                        <span className=".5 text-accent -accent/20/70">
-                          KV/SIS: {st.kvSisCount}
-                        </span>
-                      )}
+                    <div className="mt-1 text-2xs text-ink-3 truncate">
+                      {[
+                        st.contentMainCount > 0 ? `Content: ${st.contentMainCount}` : null,
+                        st.planStrategyCount > 0 ? `Plan: ${st.planStrategyCount}` : null,
+                        st.kvSisCount > 0 ? `KV: ${st.kvSisCount}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </div>
                   </button>
                 );
@@ -879,30 +861,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <thead>
                   <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
                     <th className="py-2.5 px-4 min-w-[185px]">Nhãn hàng</th>
-                    <th className="py-2.5 px-3 min-w-[200px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-ink">Content / Brand main</span>
-                        <span className="text-2xs font-mono text-ink-3">
-                          theo brand
-                        </span>
-                      </div>
-                    </th>
-                    <th className="py-2.5 px-3 min-w-[200px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-ink">Plan / Strategy</span>
-                        <span className="text-2xs font-mono text-ink-3">
-                          theo brand
-                        </span>
-                      </div>
-                    </th>
-                    <th className="py-2.5 px-3 min-w-[200px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-ink">Key Visual / SIS</span>
-                        <span className="text-2xs font-mono text-ink-3">
-                          theo brand
-                        </span>
-                      </div>
-                    </th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Content / Brand main</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Plan / Strategy</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Key Visual / SIS</th>
                     <th className="py-2.5 px-3 min-w-[195px]">Phối hợp (Account / Growth)</th>
                     <th className="py-2.5 px-3 text-center w-24">Số gian B2C</th>
                     <th className="py-2.5 px-3 text-right w-28"><span className="sr-only">Thao tác</span></th>
@@ -942,7 +903,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             </div>
                           </td>
 
-                          {/* 1. Content / Brand main [theo brand] */}
+                          {/* 1. Content / Brand main */}
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
                               <Avatar name={contentMainVal} size={22} />
@@ -955,9 +916,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                     contentPic: e.target.value,
                                   };
                                   onUpdateBrand(updated);
-                                  notify(`Đã phân bổ vị trí Content / Brand main [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                  notify(`Đã phân bổ vị trí Content / Brand main của ${brand.name} cho ${e.target.value}`);
                                 }}
-                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-warning-soft hover:bg-warning-soft border border-warning/20/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
                                 {brandPositionCandidateNames.map(name => (
                                   <option key={name} value={name}>
@@ -968,7 +929,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             </div>
                           </td>
 
-                          {/* 2. Plan / Strategy [theo brand] */}
+                          {/* 2. Plan / Strategy */}
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
                               <Avatar name={planStrategyVal} size={22} />
@@ -981,9 +942,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                     brandPicName: e.target.value,
                                   };
                                   onUpdateBrand(updated);
-                                  notify(`Đã phân bổ vị trí Plan / Strategy [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                  notify(`Đã phân bổ vị trí Plan / Strategy của ${brand.name} cho ${e.target.value}`);
                                 }}
-                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-accent-soft hover:bg-accent-soft border border-accent/20/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
                                 {brandPositionCandidateNames.map(name => (
                                   <option key={name} value={name}>
@@ -994,7 +955,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             </div>
                           </td>
 
-                          {/* 3. Key Visual / SIS [theo brand] */}
+                          {/* 3. Key Visual / SIS */}
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
                               <Avatar name={kvSisVal} size={22} />
@@ -1006,9 +967,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                     keyVisualSisPic: e.target.value,
                                   };
                                   onUpdateBrand(updated);
-                                  notify(`Đã phân bổ vị trí Key Visual / SIS [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                  notify(`Đã phân bổ vị trí Key Visual / SIS của ${brand.name} cho ${e.target.value}`);
                                 }}
-                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-accent-soft hover:bg-accent-soft border border-accent/20/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
                                 {brandPositionCandidateNames.map(name => (
                                   <option key={name} value={name}>

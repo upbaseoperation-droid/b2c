@@ -656,6 +656,18 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
   }
 }
 
+/** Nhãn của màn hình trên menu trái của vai trò này (mục con ưu tiên hơn mục cha). Dùng làm tiêu đề trang. */
+export function getNavLabelForRole(role: UserProfile['role'], tab: TabKey): string | undefined {
+  for (const sec of getNavSectionsForUserRole(role)) {
+    for (const item of sec.items) {
+      const child = item.children?.find(c => c.key === tab);
+      if (child) return child.label;
+      if (!item.children && item.key === tab) return item.label;
+    }
+  }
+  return undefined;
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabSelect,
@@ -840,7 +852,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 const ChildIcon = child.icon;
                                 const isChildActive =
                                   activeTab === child.key ||
-                                  (activeTab === 'dashboard-bi' && child.key === 'dashboard-brand');
+                                  (activeTab === 'dashboard-bi' && child.key === 'dashboard-brand') ||
+                                  (activeTab === 'dashboard-air-sync' && child.key === 'dashboard-team-sla');
                                 return (
                                   <button
                                     key={child.key}

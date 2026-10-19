@@ -82,19 +82,33 @@ export function findDuplicates(kocs: KocItem[]): Map<string, DuplicateMatch[]> {
     for (const k of kocs) {
       const key = keyOf(k);
       if (!key) continue;
-      groups.set(key, [...(groups.get(key) || []), k.id]);
+      let list = groups.get(key);
+      if (!list) {
+        list = [];
+        groups.set(key, list);
+      }
+      list.push(k.id);
     }
     for (const ids of groups.values()) {
       if (ids.length < 2) continue;
+      const sampleOthers = ids.slice(0, 15);
       for (const id of ids) {
-        const matches = result.get(id) || new Map<string, DuplicateMatch>();
-        for (const other of ids) {
-          if (other === id) continue;
-          const m = matches.get(other) || { kocId: other, stageName: byId.get(other)!.stageName, fields: [] };
-          if (!m.fields.includes(field)) m.fields.push(field);
-          matches.set(other, m);
+        let matches = result.get(id);
+        if (!matches) {
+          matches = new Map<string, DuplicateMatch>();
+          result.set(id, matches);
         }
-        result.set(id, matches);
+        for (const other of sampleOthers) {
+          if (other === id) continue;
+          let m = matches.get(other);
+          if (!m) {
+            const otherKoc = byId.get(other);
+            if (!otherKoc) continue;
+            m = { kocId: other, stageName: otherKoc.stageName, fields: [] };
+            matches.set(other, m);
+          }
+          if (!m.fields.includes(field)) m.fields.push(field);
+        }
       }
     }
   }

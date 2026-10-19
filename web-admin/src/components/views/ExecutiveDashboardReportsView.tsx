@@ -63,7 +63,6 @@ import {
 } from '../../lib/b2cAnalyticsDataset';
 import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDataset';
 import { WeeklyAirSyncDashboardSection } from './WeeklyAirSyncDashboardSection';
-import ExcelJS from 'exceljs';
 
 interface ExecutiveDashboardReportsViewProps {
   currentUser: UserProfile;
@@ -118,20 +117,23 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     return REAL_B2C_69_STORES;
   }, [storePortfolios]);
 
-  // State bộ lọc chung đồng bộ 2 chiều với Sidebar "Dashboard Quản Trị B2C"
+  // State bộ lọc chung đồng bộ 2 chiều với Sidebar "Dashboard Quản Trị B2C" (đồng bộ trực tiếp trong render, 0ms lag)
   const [activeTab, setActiveTab] = useState<DashboardMainTab>(() => {
     if (activeSidebarTab && SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]) {
       return SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab];
     }
     return 'OVERVIEW_FINANCE';
   });
-
-  React.useEffect(() => {
+  const [prevSidebarTab, setPrevSidebarTab] = useState<string | undefined>(activeSidebarTab);
+  if (activeSidebarTab !== prevSidebarTab) {
+    setPrevSidebarTab(activeSidebarTab);
     if (activeSidebarTab && SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab(SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]);
+      const nextTab = SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab];
+      if (nextTab !== activeTab) {
+        setActiveTab(nextTab);
+      }
     }
-  }, [activeSidebarTab]);
+  }
 
   const handleSelectDashboardSection = (section: DashboardMainTab) => {
     setActiveTab(section);
@@ -839,6 +841,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const handleExportMultiSheetExcel = async () => {
     try {
       setIsExportingExcel(true);
+      const ExcelJSModule = await import('exceljs');
+      const ExcelJS = ExcelJSModule.default || ExcelJSModule;
       const wb = new ExcelJS.Workbook();
       wb.creator = 'Upbase B2C Operations';
       wb.created = new Date();

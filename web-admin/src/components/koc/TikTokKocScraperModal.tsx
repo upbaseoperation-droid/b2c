@@ -38,7 +38,7 @@ interface TikTokKocScraperModalProps {
 }
 
 type PeriodKey = '7d' | '30d' | '90d';
-const VIDEO_LIMIT_OPTIONS = [12, 24, 40, 60, 80] as const;
+const VIDEO_LIMIT_OPTIONS = [24, 40, 60, 80, 100] as const;
 
 export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   open,
@@ -50,7 +50,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 }) => {
   const [rawInput, setRawInput] = useState(initialHandle);
   const period: PeriodKey = '30d';
-  const [videoLimit, setVideoLimit] = useState<number>(24);
+  const [videoLimit, setVideoLimit] = useState<number>(40);
   const [loading, setLoading] = useState(false);
   const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

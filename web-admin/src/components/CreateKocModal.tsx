@@ -14,6 +14,8 @@ import {
   FileText,
   CloudDownload,
   RefreshCw,
+  Search,
+  ExternalLink,
 } from 'lucide-react';
 import {
   KocItem,
@@ -26,6 +28,11 @@ import {
   getSegmentFromSalaryGrade,
 } from '../lib/types';
 import type { TikTokScrapedKocResult } from '../lib/tiktokKocScraper';
+import {
+  extractHandleFromSocialInput,
+  formatSocialChannelUrl,
+  type KocSocialDiscoveryResult,
+} from '../lib/kocSocialDiscovery';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -62,6 +69,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [realName, setRealName] = useState('');
   const [bookingFormat, setBookingFormat] = useState<'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'>('Booking Video KOC');
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Kênh Shopee, Facebook, Instagram, Threads
+  const [shopeeChannel, setShopeeChannel] = useState('');
+  const [facebookChannel, setFacebookChannel] = useState('');
+  const [instagramChannel, setInstagramChannel] = useState('');
+  const [threadsChannel, setThreadsChannel] = useState('');
+  const [isSearchingSocial, setIsSearchingSocial] = useState(false);
+  const [socialCandidates, setSocialCandidates] = useState<KocSocialDiscoveryResult | null>(null);
 
   // Rate Card & 4 Phân Loại Cốt Lõi
   const [rateCardVideo, setRateCardVideo] = useState<number>(3000000);
@@ -100,6 +115,53 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [tiktokLookupInput, setTiktokLookupInput] = useState('');
   const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
   const [scrapedCache, setScrapedCache] = useState<TikTokScrapedKocResult | null>(null);
+
+  const handleSearchSocialChannels = async () => {
+    const targetHandle = (channelId || tiktokLookupInput).trim();
+    const targetName = stageName.trim();
+    if (!targetHandle && !targetName) {
+      setFormError('Nhập Tên KOC hoặc TikTok Handle trước khi tìm kênh mạng xã hội.');
+      return;
+    }
+    setIsSearchingSocial(true);
+    setFormError(null);
+    try {
+      const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tiktokHandle: targetHandle,
+          stageName: targetName || targetHandle,
+          realName: realName.trim() || undefined,
+          phone: phone.trim() || undefined,
+          bio: scrapedCache?.channelProfile.bio,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        const data: KocSocialDiscoveryResult = json.data;
+        setSocialCandidates(data);
+        if (!shopeeChannel && data.candidatesByPlatform.SHOPEE[0]) {
+          setShopeeChannel(data.candidatesByPlatform.SHOPEE[0].handle);
+        }
+        if (!facebookChannel && data.candidatesByPlatform.FACEBOOK[0]) {
+          setFacebookChannel(data.candidatesByPlatform.FACEBOOK[0].handle);
+        }
+        if (!instagramChannel && data.candidatesByPlatform.INSTAGRAM[0]) {
+          setInstagramChannel(data.candidatesByPlatform.INSTAGRAM[0].handle);
+        }
+        if (!threadsChannel && data.candidatesByPlatform.THREADS[0]) {
+          setThreadsChannel(data.candidatesByPlatform.THREADS[0].handle);
+        }
+      } else {
+        setFormError(json.message || 'Không tìm được kênh mạng xã hội.');
+      }
+    } catch {
+      setFormError('Không kết nối được dịch vụ tìm kiếm kênh mạng xã hội.');
+    } finally {
+      setIsSearchingSocial(false);
+    }
+  };
 
   const handleFetchFromTikTok = async () => {
     const query = (tiktokLookupInput || channelId).trim();
@@ -228,6 +290,17 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
     const formattedChannel = channelId.startsWith('@') ? channelId : `@${channelId}`;
 
+    const cleanShopee = extractHandleFromSocialInput('SHOPEE', shopeeChannel) || undefined;
+    const cleanFb = extractHandleFromSocialInput('FACEBOOK', facebookChannel) || undefined;
+    const cleanIg = extractHandleFromSocialInput('INSTAGRAM', instagramChannel) || undefined;
+    const cleanThreads = extractHandleFromSocialInput('THREADS', threadsChannel) || undefined;
+
+    const activePlatforms: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[] = ['TIKTOK'];
+    if (cleanShopee) activePlatforms.push('SHOPEE');
+    if (cleanFb) activePlatforms.push('FACEBOOK');
+    if (cleanIg) activePlatforms.push('INSTAGRAM');
+    if (cleanThreads) activePlatforms.push('THREADS');
+
     const newKoc: KocItem = {
       id: createKocId(),
       channelId: formattedChannel,
@@ -255,7 +328,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       avgViews: scrapedCache?.engagementMetrics.avgViews || 20000,
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
-      platforms: ['TIKTOK', 'SHOPEE', 'FACEBOOK'],
+      platforms: activePlatforms,
+      shopeeChannel: cleanShopee,
+      facebookChannel: cleanFb,
+      instagramChannel: cleanIg,
+      threadsChannel: cleanThreads,
 
       // Shipping & Logistics
       phone: phone.trim(),
@@ -463,6 +540,178 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   <option value="Booking Livestream KOC">Booking Livestream KOC</option>
                   <option value="Affiliate Thuần">Affiliate Thuần</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Kênh mạng xã hội khác: Shopee, Facebook, Instagram, Threads */}
+            <div className="pt-3 border-t border-line space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-ink font-semibold text-xs">
+                  Kênh mạng xã hội khác (Shopee, Facebook, Instagram, Threads)
+                </span>
+                <button
+                  type="button"
+                  disabled={isSearchingSocial}
+                  onClick={handleSearchSocialChannels}
+                  className="px-3 py-1.5 rounded-lg bg-surface border border-line-strong hover:bg-canvas text-ink font-medium text-2xs inline-flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isSearchingSocial ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Search className="w-3.5 h-3.5 text-accent" />
+                  )}
+                  {isSearchingSocial ? 'Đang tìm kênh...' : 'Tìm nick & xác nhận'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-ink-2 font-medium text-2xs">Nick / Link Shopee:</label>
+                    {shopeeChannel.trim() && (
+                      <a
+                        href={formatSocialChannelUrl('SHOPEE', shopeeChannel)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
+                      >
+                        Kiểm tra <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="VD: megauriviu hoặc link shopee.vn/..."
+                    value={shopeeChannel}
+                    onChange={(e) => setShopeeChannel(e.target.value)}
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                  />
+                  {socialCandidates && socialCandidates.candidatesByPlatform.SHOPEE.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {socialCandidates.candidatesByPlatform.SHOPEE.slice(0, 3).map((c) => (
+                        <button
+                          key={c.handle}
+                          type="button"
+                          onClick={() => setShopeeChannel(c.handle)}
+                          className="px-2 py-0.5 rounded border border-line bg-surface hover:border-primary text-2xs font-mono text-ink-2"
+                        >
+                          {c.handle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-ink-2 font-medium text-2xs">Nick / Link Facebook:</label>
+                    {facebookChannel.trim() && (
+                      <a
+                        href={formatSocialChannelUrl('FACEBOOK', facebookChannel)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
+                      >
+                        Kiểm tra <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="VD: megauriviu hoặc link facebook.com/..."
+                    value={facebookChannel}
+                    onChange={(e) => setFacebookChannel(e.target.value)}
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                  />
+                  {socialCandidates && socialCandidates.candidatesByPlatform.FACEBOOK.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {socialCandidates.candidatesByPlatform.FACEBOOK.slice(0, 3).map((c) => (
+                        <button
+                          key={c.handle}
+                          type="button"
+                          onClick={() => setFacebookChannel(c.handle)}
+                          className="px-2 py-0.5 rounded border border-line bg-surface hover:border-primary text-2xs font-mono text-ink-2"
+                        >
+                          {c.handle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-ink-2 font-medium text-2xs">Nick / Link Instagram:</label>
+                    {instagramChannel.trim() && (
+                      <a
+                        href={formatSocialChannelUrl('INSTAGRAM', instagramChannel)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
+                      >
+                        Kiểm tra <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="VD: @megauriviu"
+                    value={instagramChannel}
+                    onChange={(e) => setInstagramChannel(e.target.value)}
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                  />
+                  {socialCandidates && socialCandidates.candidatesByPlatform.INSTAGRAM.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {socialCandidates.candidatesByPlatform.INSTAGRAM.slice(0, 3).map((c) => (
+                        <button
+                          key={c.handle}
+                          type="button"
+                          onClick={() => setInstagramChannel(c.handle)}
+                          className="px-2 py-0.5 rounded border border-line bg-surface hover:border-primary text-2xs font-mono text-ink-2"
+                        >
+                          {c.handle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-ink-2 font-medium text-2xs">Nick / Link Threads:</label>
+                    {threadsChannel.trim() && (
+                      <a
+                        href={formatSocialChannelUrl('THREADS', threadsChannel)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
+                      >
+                        Kiểm tra <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="VD: @megauriviu"
+                    value={threadsChannel}
+                    onChange={(e) => setThreadsChannel(e.target.value)}
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-1.5 text-xs text-ink font-mono focus:outline-none focus:border-primary"
+                  />
+                  {socialCandidates && socialCandidates.candidatesByPlatform.THREADS.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {socialCandidates.candidatesByPlatform.THREADS.slice(0, 3).map((c) => (
+                        <button
+                          key={c.handle}
+                          type="button"
+                          onClick={() => setThreadsChannel(c.handle)}
+                          className="px-2 py-0.5 rounded border border-line bg-surface hover:border-primary text-2xs font-mono text-ink-2"
+                        >
+                          {c.handle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

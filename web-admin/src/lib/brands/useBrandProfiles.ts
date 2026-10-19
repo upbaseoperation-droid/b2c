@@ -18,6 +18,7 @@ interface BrandProfilesCacheState {
 }
 
 let sharedCache: BrandProfilesCacheState | null = null;
+let cachedUserId: string | undefined = undefined;
 let inflightPromise: Promise<BrandProfilesCacheState> | null = null;
 let cacheGeneration = 0;
 const listeners = new Set<(state: BrandProfilesCacheState) => void>();
@@ -25,6 +26,7 @@ const listeners = new Set<(state: BrandProfilesCacheState) => void>();
 export function clearBrandProfilesCache() {
   cacheGeneration += 1;
   sharedCache = null;
+  cachedUserId = undefined;
   inflightPromise = null;
   for (const listener of listeners) listener({ profiles: [] });
 }
@@ -36,9 +38,10 @@ function notifyListeners(state: BrandProfilesCacheState) {
   }
 }
 
-export async function fetchBrandProfilesShared(force = false): Promise<BrandProfilesCacheState> {
-  if (!force && sharedCache) return sharedCache;
-  if (!force && inflightPromise) return inflightPromise;
+export async function fetchBrandProfilesShared(force = false, forUserId?: string): Promise<BrandProfilesCacheState> {
+  const userChanged = Boolean(forUserId && cachedUserId && forUserId !== cachedUserId);
+  if (!force && !userChanged && sharedCache) return sharedCache;
+  if (!force && !userChanged && inflightPromise) return inflightPromise;
 
   const generation = cacheGeneration;
   inflightPromise = fetch('/api/brands/profiles', { cache: 'no-store' })
@@ -46,6 +49,7 @@ export async function fetchBrandProfilesShared(force = false): Promise<BrandProf
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Không tải được hồ sơ thương hiệu.');
       if (generation !== cacheGeneration) throw new Error('Phạm vi tài khoản đã thay đổi. Tải lại hồ sơ.');
+      if (forUserId) cachedUserId = forUserId;
       const nextState: BrandProfilesCacheState = {
         profiles: Array.isArray(data.profiles) ? data.profiles : [],
         access: data.access,
@@ -114,8 +118,13 @@ export function useBrandProfiles(userId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setState(null);
-    setLoading(true);
+    const userChanged = Boolean(userId && cachedUserId && userId !== cachedUserId);
+    if (!sharedCache || userChanged) {
+      setLoading(true);
+    } else {
+      setState(sharedCache);
+      setLoading(false);
+    }
     const handleUpdate = (next: BrandProfilesCacheState) => {
       setState(next);
       setLoading(false);
@@ -124,7 +133,7 @@ export function useBrandProfiles(userId?: string) {
     listeners.add(handleUpdate);
 
     let cancelled = false;
-    fetchBrandProfilesShared(Boolean(userId))
+    fetchBrandProfilesShared(userChanged, userId)
       .then(next => {
         if (!cancelled) {
           setState(next);

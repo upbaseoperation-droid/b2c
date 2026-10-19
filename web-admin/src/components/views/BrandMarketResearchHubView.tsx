@@ -8,6 +8,7 @@ import {
   Download,
   ExternalLink,
   FileCheck,
+  FileSpreadsheet,
   Globe,
   MessageSquare,
   Search,
@@ -17,15 +18,23 @@ import {
 } from 'lucide-react';
 import type { BrandDetail, KocItem } from '../../lib/types';
 import {
+  PRICE_SEGMENT_LABEL,
   buildBrandResearchMarkdownReport,
   buildCompetitorMatrixCsv,
   generateBrandMarketResearchDossier,
+  type BookedProductSummaryItem,
   type BrandMarketResearchDossier,
   type BrandSkuPortfolioItem,
   type CompetitorMatrixItem,
   type EvidenceCitation,
+  type InternalStoreAuditItem,
+  type KocTierAllocationItem,
   type LiveWebInspectionResult,
+  type PlatformComplianceRuleItem,
   type ReviewMiningCluster,
+  type SearchKeywordMetricItem,
+  type SeasonalityQuarterItem,
+  type SellerAdsCampaignEvidenceItem,
   type VerifiedBookedDealEvidenceItem,
   type WinningContentAngleBlueprint,
 } from '../../lib/brandMarketResearchEngine';
@@ -39,21 +48,30 @@ import {
   useBrandProfiles,
 } from '../../lib/brands/useBrandProfiles';
 import { brandKey } from '../../lib/brands/types';
-import { formatNumber, formatVnd } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import {
   Avatar,
   BrandAvatar,
   Button,
   ChannelBar,
+  ChannelTag,
+  Chips,
   DataTable,
+  Field,
+  FilterBar,
+  Input,
+  PageActions,
   Panel,
+  Segmented,
   Stat,
   StatRow,
   Status,
   Tabs,
+  Textarea,
+  channelOf,
 } from '../ui';
-import type { Column } from '../ui';
+import type { ChipOption, Column } from '../ui';
 
 interface BrandMarketResearchHubViewProps {
   brands: BrandDetail[];
@@ -72,6 +90,30 @@ type ResearchTabKey =
   | 'REVIEW_PAIN_MINER'
   | 'EVIDENCE_AND_WEB';
 
+type AuditSubSectionKey = 'ALL' | 'STRATEGY_4P' | 'SKU_KOC' | 'SEASON_SWOT';
+
+type EvidenceFilterKey =
+  | 'ALL'
+  | 'INTERNAL_PLAN_41'
+  | 'BOOKING_LEDGER_32'
+  | 'CLINICAL_REGULATORY'
+  | 'SELLER_CENTER_ADS'
+  | 'STOREFRONT_OFFICIAL'
+  | 'COMPETITOR_BENCHMARK'
+  | 'LIVE_WEB_DOM';
+
+const QUICK_RESEARCH_BRANDS = [
+  'Kutieskin',
+  'Cỏ Mềm',
+  'Club Clio',
+  "L'Occitane",
+  'Rejuran',
+  'La Roche-Posay',
+  'Cocoon',
+  'SKIN1004',
+  'Nous',
+];
+
 export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProps> = ({
   brands,
   kocs,
@@ -81,6 +123,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   onNotify,
 }) => {
   const [activeTab, setActiveTab] = useState<ResearchTabKey>('BRAND_AUDIT_4P');
+  const [auditSubSection, setAuditSubSection] = useState<AuditSubSectionKey>('ALL');
 
   const initialBrandName =
     selectedBrand && selectedBrand !== 'ALL' ? selectedBrand : 'Kutieskin';
@@ -89,6 +132,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [customCategory, setCustomCategory] = useState<string>('');
   const [customCompetitorText, setCustomCompetitorText] = useState<string>('');
   const [tab3CompetitorInput, setTab3CompetitorInput] = useState<string>('');
+  const [dealSearchQuery, setDealSearchQuery] = useState<string>('');
   const [analyzingDossier, setAnalyzingDossier] = useState<boolean>(false);
   const [savingToProfile, setSavingToProfile] = useState<boolean>(false);
 
@@ -116,7 +160,9 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   );
 
   // --- Bộ lọc tra cứu nhanh dẫn chứng ---
-  const [selectedEvidenceFilter, setSelectedEvidenceFilter] = useState<string>('ALL');
+  const [selectedEvidenceFilter, setSelectedEvidenceFilter] =
+    useState<EvidenceFilterKey>('ALL');
+  const [evidenceSearch, setEvidenceSearch] = useState<string>('');
   const [highlightedEvidenceId, setHighlightedEvidenceId] = useState<string | null>(null);
 
   // --- State Quét KOC của Đối thủ ngay trong Tab 3 ---
@@ -186,6 +232,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   // Nhảy tới Sổ dẫn chứng và tô sáng mã [EV-xx] khi bấm vào badge
   const handleJumpToEvidence = useCallback((evId: string) => {
     setSelectedEvidenceFilter('ALL');
+    setEvidenceSearch('');
     setHighlightedEvidenceId(evId);
     setActiveTab('EVIDENCE_AND_WEB');
   }, []);
@@ -201,15 +248,18 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               <button
                 key={id}
                 type="button"
-                onClick={() => handleJumpToEvidence(id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleJumpToEvidence(id);
+                }}
                 title={
                   ev
                     ? `[${ev.id}] ${ev.sourceDocument}: ${ev.exactQuoteOrMetric}`
                     : `Xem dẫn chứng ${id}`
                 }
-                className="inline-flex items-center gap-1 rounded border border-border-default bg-bg-subtle px-1.5 py-0.5 font-mono text-xs font-medium text-accent hover:border-accent hover:bg-accent-soft transition-colors"
+                className="inline-flex items-center rounded px-1.5 py-0.5 font-code text-2xs font-medium text-accent bg-accent-soft/70 hover:bg-accent-soft transition-colors"
               >
-                [{id}]
+                {id}
               </button>
             );
           })}
@@ -219,7 +269,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     [evidenceLookup, handleJumpToEvidence]
   );
 
-  // Chạy phân tích tổng thể Brand & Đối thủ (Hỗ trợ cả khi người dùng dán tên đối thủ vào ô Đối thủ)
+  // Chạy phân tích tổng thể Brand & Đối thủ
   const handleRunBrandAnalysis = useCallback(
     async (targetBrandName?: string, overrideCompetitors?: string[]) => {
       const parsedCompetitors =
@@ -232,8 +282,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       let target = (targetBrandName ?? brandQuery).trim();
       let compList = parsedCompetitors;
 
-      // Nếu người dùng dán tên đối thủ vào ô "Đối thủ muốn nghiên cứu / so sánh" mà chưa đổi ô Brand mặc định (hoặc để trống ô Brand),
-      // tự động lấy tên đối thủ vừa dán làm đối tượng nghiên cứu chính để lập hồ sơ 5 Tab cho đối thủ đó.
       if (
         !targetBrandName &&
         parsedCompetitors.length > 0 &&
@@ -286,7 +334,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           )?.linkAir || '';
         setReviewVideoUrl(firstAirLink);
         onNotify?.(
-          `Đã lập hồ sơ nghiên cứu & trích xuất ${nextDossier.evidenceLedger?.length || 0} dẫn chứng cho ${nextDossier.brandName}`,
+          `Đã lập hồ sơ nghiên cứu và trích xuất ${nextDossier.evidenceLedger?.length || 0} dẫn chứng cho ${nextDossier.brandName}`,
           'success'
         );
       } catch (err: unknown) {
@@ -315,12 +363,12 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       });
 
       onNotify?.(
-        `Đã đồng bộ Định vị, Nỗi đau khách hàng & Đối thủ vào Hồ sơ thương hiệu ${dossier.brandName}`,
+        `Đã lưu định vị và danh sách đối thủ vào hồ sơ thương hiệu ${dossier.brandName}`,
         'success'
       );
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : 'Không lưu được vào Hồ sơ thương hiệu.';
+        err instanceof Error ? err.message : 'Không lưu được vào hồ sơ thương hiệu.';
       onNotify?.(msg, 'error');
     } finally {
       setSavingToProfile(false);
@@ -339,8 +387,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         id: `faq-research-${Date.now()}-${idx + 1}`,
         question: c.suggestedFaqQuestion,
         answer: c.suggestedFaqAnswer,
-        mention: ['Chính hãng 100%', 'Kiểm nghiệm an toàn', 'Đổi trả minh bạch'],
-        avoid: ['Cam kết khỏi 100%', 'Chữa bệnh dứt điểm'],
+        mention: ['Chính hãng', 'Kiểm nghiệm an toàn', 'Đổi trả minh bạch'],
+        avoid: ['Cam kết khỏi dứt điểm', 'Chữa bệnh'],
       }));
 
       const mergedFaqs = [...generatedFaqs, ...existingFaqs].slice(0, 20);
@@ -354,11 +402,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       });
 
       onNotify?.(
-        `Đã lưu ${generatedFaqs.length} câu hỏi khó (FAQ) vào Hồ sơ thương hiệu ${dossier.brandName}`,
+        `Đã lưu ${generatedFaqs.length} câu hỏi thường gặp vào hồ sơ thương hiệu ${dossier.brandName}`,
         'success'
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không lưu được mục Câu hỏi khó.';
+      const msg = err instanceof Error ? err.message : 'Không lưu được mục câu hỏi thường gặp.';
       onNotify?.(msg, 'error');
     } finally {
       setSavingFaqs(false);
@@ -387,7 +435,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         setScannedCompProfile(json.competitorProfile || null);
         setScannedCompKocs(resultsList);
 
-        // Cập nhật trực tiếp số KOC thực tế vừa quét được vào dòng của đối thủ trong bảng
         if (resultsList.length > 0) {
           const totalViews = resultsList.reduce(
             (s, r) => s + (r.competitorCollaboration?.latestCollabViews || 0),
@@ -400,7 +447,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 ? {
                     ...c,
                     estimatedMonthlyVideoCount: resultsList.length,
-                    storeRatingAndSoldText: `Đã quét trực tiếp: ${resultsList.length} KOC (${formatNumber(totalViews)} views mẫu)`,
+                    storeRatingAndSoldText: `Đã quét: ${resultsList.length} KOC (${formatNumber(totalViews)} xem)`,
                   }
                 : c
             ),
@@ -435,11 +482,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     [existingByHandle, onSaveScrapedKocs]
   );
 
-  // Chạy Đào bình luận khách hàng (Từ Link Video TikTok + Danh sách đánh giá)
+  // Chạy Đào bình luận khách hàng
   const handleRunReviewMining = async () => {
     if (!reviewVideoUrl.trim() && !rawReviewText.trim()) {
       onNotify?.(
-        'Vui lòng nhập Link Video TikTok hoặc dán danh sách bình luận khách hàng để bóc tách.',
+        'Vui lòng nhập link video TikTok hoặc dán danh sách bình luận khách hàng để bóc tách.',
         'warning'
       );
       return;
@@ -466,7 +513,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         scrapedFromTikTok: json.scrapedCommentsCount || 0,
       });
       onNotify?.(
-        `Đã phân tích ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận cào trực tiếp từ TikTok)`,
+        `Đã phân tích ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận từ TikTok)`,
         'success'
       );
     } catch (err: unknown) {
@@ -517,7 +564,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     link.download = `ma-tran-doi-thu-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    onNotify?.('Đã xuất file CSV Ma trận đối thủ cạnh tranh', 'success');
+    onNotify?.('Đã xuất file CSV ma trận đối thủ cạnh tranh', 'success');
   };
 
   const handleDownloadMarkdownDossier = () => {
@@ -529,7 +576,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     link.download = `ho-so-nghien-cuu-brand-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.md`;
     link.click();
     URL.revokeObjectURL(url);
-    onNotify?.('Đã tải xuống Báo cáo Nghiên cứu Thương hiệu & Dẫn chứng (.MD)', 'success');
+    onNotify?.('Đã tải xuống báo cáo nghiên cứu thương hiệu (.MD)', 'success');
   };
 
   // --- Cột bảng Ma trận Danh mục Sản phẩm (SKU Portfolio) ---
@@ -537,78 +584,151 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     () => [
       {
         key: 'product',
-        header: 'Dòng sản phẩm (SKU) & Vai trò Phễu',
+        header: 'Dòng sản phẩm (SKU)',
+        width: 240,
         render: (row) => (
-          <div className="min-w-[240px]">
-            <div className="flex flex-wrap items-center gap-1.5 mb-1">
-              <Status
-                tone={
-                  row.role === 'HERO_CORE'
-                    ? 'brand'
-                    : row.role === 'TRAFFIC_DRIVER'
-                      ? 'positive'
-                      : row.role === 'VIP_BUNDLE'
-                        ? 'warning'
-                        : 'neutral'
-                }
-              >
-                {row.roleLabel}
-              </Status>
-              <span className="font-mono text-xs text-text-muted">{row.skuCode}</span>
-              {renderEvidenceBadges(row.evidenceIds)}
-            </div>
-            <div className="text-[13px] font-semibold text-text-primary leading-snug">
-              {row.productName}
-            </div>
-            <div className="text-xs text-text-secondary mt-0.5">
-              {row.packSize} · {row.avgRatingText}
+          <div className="min-w-0">
+            <div className="font-semibold text-ink leading-snug">{row.productName}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              <span className="font-code">{row.skuCode}</span> · {row.packSize} · {row.avgRatingText}
             </div>
           </div>
         ),
       },
       {
-        key: 'pricing',
-        header: 'Giá Tham chiếu & Thực chi File 3.2',
+        key: 'role',
+        header: 'Vai trò phễu',
+        width: 155,
         render: (row) => (
-          <div className="min-w-[190px]">
-            <div className="font-mono text-[13px] font-semibold text-accent">
-              {formatVnd(row.dealPriceVnd)}{' '}
-              <span className="text-xs font-normal text-success">(-{row.discountPct}%)</span>
-            </div>
-            <div className="font-mono text-xs text-text-muted line-through">
-              Niêm yết: {formatVnd(row.listPriceVnd)}
-            </div>
-            <div className="text-xs text-text-secondary mt-1">{row.unitEconomicsNote}</div>
-          </div>
-        ),
-      },
-      {
-        key: 'commission_share',
-        header: 'Hoa hồng & Sản lượng Book',
-        align: 'right',
-        render: (row) => (
-          <div className="text-right font-mono min-w-[130px]">
-            <div className="text-[13px] font-semibold text-success">
-              HH KOC: {row.affiliateCommissionPct}%
-            </div>
-            <div className="text-xs text-text-secondary">
-              Tỷ trọng: {row.estimatedGmvSharePct}%
-            </div>
-            <div className="text-xs text-text-muted">{row.monthlySalesEstimate}</div>
+          <div>
+            <Status
+              tone={
+                row.role === 'HERO_CORE'
+                  ? 'info'
+                  : row.role === 'TRAFFIC_DRIVER'
+                    ? 'positive'
+                    : row.role === 'VIP_BUNDLE'
+                      ? 'warning'
+                      : 'neutral'
+              }
+            >
+              {row.roleLabel}
+            </Status>
+            <div className="mt-1">{renderEvidenceBadges(row.evidenceIds)}</div>
           </div>
         ),
       },
       {
         key: 'specs_need',
-        header: 'Đặc tính Sản phẩm & Tệp Khách hàng',
+        header: 'Đặc tính & Tệp khách hàng',
+        width: 280,
         render: (row) => (
-          <div className="min-w-[260px] text-[12px]">
-            <div className="text-text-primary mb-1">
-              <span className="font-medium text-text-secondary">Điểm nhấn:</span>{' '}
-              {row.coreIngredientsOrSpecs}
+          <div className="space-y-0.5">
+            <div className="text-xs text-ink line-clamp-2">{row.coreIngredientsOrSpecs}</div>
+            <div className="text-2xs text-ink-3 line-clamp-1">Tệp khách: {row.targetNeed}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'pricing',
+        header: 'Giá bán & Chiết khấu',
+        align: 'right',
+        width: 165,
+        render: (row) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-ink">
+              {formatVnd(row.dealPriceVnd)}{' '}
+              <span className="text-2xs font-medium text-positive">(-{row.discountPct}%)</span>
             </div>
-            <div className="text-text-secondary">
-              <span className="font-medium text-accent">Tệp khách:</span> {row.targetNeed}
+            <div className="text-2xs text-ink-3">
+              Niêm yết: <span className="line-through">{formatVnd(row.listPriceVnd)}</span>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'commission_share',
+        header: 'Hoa hồng & Sản lượng',
+        align: 'right',
+        width: 165,
+        render: (row) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-positive">
+              HH KOC: {row.affiliateCommissionPct}% · GMV {row.estimatedGmvSharePct}%
+            </div>
+            <div className="text-2xs text-ink-3">{row.monthlySalesEstimate}</div>
+          </div>
+        ),
+      },
+    ],
+    [renderEvidenceBadges]
+  );
+
+  // --- Cột bảng Phân bổ KOC theo Phân tầng KL1 - KL4 ---
+  const kocTierColumns = useMemo<Column<KocTierAllocationItem>[]>(
+    () => [
+      {
+        key: 'tier',
+        header: 'Phân tầng & Quy mô',
+        width: 190,
+        render: (row) => (
+          <div>
+            <div className="font-semibold text-ink">
+              <span className="font-code text-accent mr-1.5">{row.tierCode}</span>
+              {row.tierLabel}
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              Follower: {row.followerRange}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'role',
+        header: 'Vai trò chuyển đổi & Định dạng',
+        width: 280,
+        render: (row) => (
+          <div>
+            <div className="text-xs text-ink">{row.funnelRole}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              Định dạng: {row.primaryFormats.join(' · ')}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'weights',
+        header: 'Tỷ trọng NS / Số đơn',
+        align: 'right',
+        width: 150,
+        render: (row) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-ink">Ngân sách: {row.budgetWeightPct}%</div>
+            <div className="text-2xs text-ink-3">Số lượng video: {row.videoVolumeWeightPct}%</div>
+          </div>
+        ),
+      },
+      {
+        key: 'cost',
+        header: 'Đơn giá tham chiếu (File 3.2)',
+        width: 210,
+        render: (row) => (
+          <div>
+            <div className="text-xs font-medium text-ink">{row.avgBookingCostRangeVnd}</div>
+            <div className="mt-0.5">{renderEvidenceBadges(row.evidenceIds)}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'kpi',
+        header: 'Định mức KPI mục tiêu',
+        align: 'right',
+        width: 175,
+        render: (row) => (
+          <div className="text-right tabular-nums">
+            <div className="font-medium text-ink">ROAS {row.targetRoas} · CTR {row.targetCtrPct}</div>
+            <div className="text-2xs text-ink-3">
+              Hook 2s: {row.targetHookRate2sPct} · CVR {row.targetCvrPct}
             </div>
           </div>
         ),
@@ -617,36 +737,389 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     [renderEvidenceBadges]
   );
 
+  // --- Cột bảng Khung Góc Kịch bản KOC ---
+  const contentAngleColumns = useMemo<Column<WinningContentAngleBlueprint>[]>(
+    () => [
+      {
+        key: 'pillar',
+        header: 'Trụ cột kịch bản & Tệp người xem',
+        width: 220,
+        render: (row) => (
+          <div>
+            <div className="font-semibold text-ink">{row.pillarName}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              {row.targetPersona} · {row.bestKocTier}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'hook',
+        header: 'Hook 3 giây mở đầu',
+        width: 250,
+        render: (row) => (
+          <div className="text-xs font-medium text-accent leading-relaxed">
+            &ldquo;{row.hook3s}&rdquo;
+          </div>
+        ),
+      },
+      {
+        key: 'proof_rtb',
+        header: 'Cảnh quay bắt buộc & Thông điệp RTB',
+        width: 300,
+        render: (row) => (
+          <div className="space-y-0.5">
+            <div className="text-xs text-ink">Cảnh quay: {row.visualProof}</div>
+            <div className="text-2xs text-ink-3">RTB: {row.keyMessageRtb}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'cta',
+        header: 'Kêu gọi hành động (CTA)',
+        width: 200,
+        render: (row) => (
+          <div>
+            <div className="text-xs font-medium text-positive">{row.recommendedCta}</div>
+            <div className="mt-0.5">{renderEvidenceBadges(row.evidenceIds)}</div>
+          </div>
+        ),
+      },
+    ],
+    [renderEvidenceBadges]
+  );
+
+  // --- Cột bảng Lịch Mùa vụ 4 Quý ---
+  const seasonalityColumns = useMemo<Column<SeasonalityQuarterItem>[]>(
+    () => [
+      {
+        key: 'quarter',
+        header: 'Quý & Mức cầu',
+        width: 150,
+        render: (row) => (
+          <div>
+            <div className="font-semibold text-ink">{row.quarter}</div>
+            <div className="mt-1">
+              <Status
+                tone={
+                  row.demandLevel === 'ĐỈNH ĐIỂM'
+                    ? 'critical'
+                    : row.demandLevel === 'TĂNG TRƯỞNG'
+                      ? 'info'
+                      : 'neutral'
+                }
+              >
+                {row.demandLevel}
+              </Status>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'trigger',
+        header: 'Thời tiết / Sự kiện & Nhu cầu phát sinh',
+        width: 270,
+        render: (row) => (
+          <div className="space-y-0.5">
+            <div className="text-xs font-medium text-ink">{row.customerSymptomSpike}</div>
+            <div className="text-2xs text-ink-3">{row.weatherOrEventTrigger}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'sku_content',
+        header: 'SKU trọng tâm & Tuyến nội dung',
+        width: 290,
+        render: (row) => (
+          <div className="space-y-0.5">
+            <div className="text-xs text-ink">SKU: {row.prioritySkus}</div>
+            <div className="text-2xs text-ink-3">Nội dung: {row.contentFocus}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'weight',
+        header: 'Tỷ trọng ngân sách năm',
+        align: 'right',
+        width: 130,
+        render: (row) => (
+          <span className="font-semibold text-accent tabular-nums">
+            {row.recommendedBudgetWeightPct}%
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  // --- Cột bảng Từ khóa Tìm kiếm ---
+  const keywordColumns = useMemo<Column<SearchKeywordMetricItem>[]>(
+    () => [
+      {
+        key: 'keyword',
+        header: 'Từ khóa tìm kiếm',
+        width: 180,
+        render: (row) => (
+          <div>
+            <div className="font-code font-semibold text-ink">&ldquo;{row.keyword}&rdquo;</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              ~{formatNumber(row.monthlySearchVolumeEst)} lượt/tháng · Cạnh tranh: {row.competitionLevel}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'intent',
+        header: 'Ý định',
+        width: 140,
+        render: (row) => (
+          <Status
+            tone={
+              row.competitionLevel === 'CƠ HỘI NGÁCH'
+                ? 'positive'
+                : row.competitionLevel === 'CAO'
+                  ? 'warning'
+                  : 'info'
+            }
+          >
+            {row.searchIntent}
+          </Status>
+        ),
+      },
+      {
+        key: 'hook',
+        header: 'Gợi ý Hook mở đầu video',
+        render: (row) => <span className="text-xs text-ink-2">{row.recommendedVideoHook}</span>,
+      },
+    ],
+    []
+  );
+
+  // --- Cột bảng Quy chuẩn Kiểm duyệt Sàn ---
+  const complianceColumns = useMemo<Column<PlatformComplianceRuleItem>[]>(
+    () => [
+      {
+        key: 'risk',
+        header: 'Nhóm rủi ro vi phạm',
+        width: 190,
+        render: (row) => (
+          <div className="flex items-start gap-1.5 font-semibold text-critical">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{row.riskCategory}</span>
+          </div>
+        ),
+      },
+      {
+        key: 'forbidden',
+        header: 'Từ ngữ cấm dùng trên Video / Livestream',
+        width: 240,
+        render: (row) => (
+          <div>
+            <div className="font-code text-xs text-critical">
+              {row.forbiddenPhrases.map((p) => `"${p}"`).join(', ')}
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5">Chế tài: {row.platformPenaltyRisk}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'safe',
+        header: 'Cách diễn đạt an toàn thay thế',
+        render: (row) => (
+          <span className="text-xs text-positive font-medium">{row.safeAlternativePhrasing}</span>
+        ),
+      },
+    ],
+    []
+  );
+
+  // --- Cột bảng Gian hàng Nội bộ B2C (Tab 2) ---
+  const storeAuditColumns = useMemo<Column<InternalStoreAuditItem>[]>(
+    () => [
+      {
+        key: 'store',
+        header: 'Gian hàng & Nhân sự',
+        width: 220,
+        render: (st) => (
+          <div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-ink">{st.storeName}</span>
+              <ChannelTag channel={channelOf(st.platform)} />
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              <span className="font-code">{st.storeId}</span> · PIC: {st.pic} · TN: {st.leaderName}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'budget',
+        header: 'Hạn mức Net / Thực chi Net',
+        align: 'right',
+        width: 175,
+        render: (st) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-ink">
+              Thực chi: {formatVnd(st.actualSpentNetVnd)}
+            </div>
+            <div className="text-2xs text-ink-3">
+              Hạn mức: {formatVnd(st.budgetNetVnd)} ({st.utilizationPct}%)
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'videos',
+        header: 'Sản lượng Video (Plan → Book → Air)',
+        align: 'right',
+        width: 185,
+        render: (st) => (
+          <div className="text-right tabular-nums">
+            <div className="font-medium text-ink">
+              {st.totalPlannedVideos} KH → <strong className="text-accent">{st.totalBookedOrders}</strong> book →{' '}
+              <strong className="text-positive">{st.totalAiredVideos}</strong> air
+            </div>
+            <div className="text-2xs text-ink-3">
+              Paid {st.planPaidVideos} · Self {st.planSelfVideos} · FOC {st.planFocVideos}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'status',
+        header: 'Giải ngân & Lịch Air',
+        width: 175,
+        render: (st) => (
+          <div>
+            <Status
+              tone={
+                st.utilizationPct > 100
+                  ? 'critical'
+                  : st.scheduleAdherencePct >= 60
+                    ? 'positive'
+                    : 'warning'
+              }
+            >
+              Giải ngân {st.utilizationPct}% · Đúng lịch {st.scheduleAdherencePct}%
+            </Status>
+            {st.top3BurstDates.length > 0 && (
+              <div className="text-2xs text-ink-3 font-code mt-1">
+                Cao điểm: {st.top3BurstDates.join(', ')}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'diagnosis',
+        header: 'Chẩn đoán lịch Air W40–W45',
+        render: (st) => <span className="text-xs text-ink-2">{st.syncDiagnosis}</span>,
+      },
+    ],
+    []
+  );
+
+  // --- Cột bảng Cơ cấu SKU được Book thực tế (Tab 2) ---
+  const bookedProductColumns = useMemo<Column<BookedProductSummaryItem>[]>(
+    () => [
+      {
+        key: 'productName',
+        header: 'Dòng sản phẩm được book (File 3.2)',
+        width: 220,
+        render: (prod) => (
+          <div>
+            <div className="font-semibold text-ink">{prod.productName}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              Phân tầng chủ đạo: {prod.dominantTier} · {prod.dominantFormat}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'orders',
+        header: 'Số đơn book',
+        align: 'right',
+        width: 110,
+        render: (prod) => (
+          <span className="font-semibold text-ink tabular-nums">{prod.bookedOrderCount} đơn</span>
+        ),
+      },
+      {
+        key: 'spent',
+        header: 'Tổng chi thực tế',
+        align: 'right',
+        width: 150,
+        render: (prod) => (
+          <span className="font-semibold text-accent tabular-nums">
+            {formatVnd(prod.totalSpentVnd)}
+          </span>
+        ),
+      },
+      {
+        key: 'avgCost',
+        header: 'Đơn giá TB / Video',
+        align: 'right',
+        width: 150,
+        render: (prod) => (
+          <span className="text-ink tabular-nums">{formatVnd(prod.avgCostPerVideoVnd)}</span>
+        ),
+      },
+      {
+        key: 'samples',
+        header: 'Video mẫu đã lên sóng',
+        align: 'right',
+        render: (prod) => (
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {prod.sampleVideoLinks.length > 0 ? (
+              prod.sampleVideoLinks.map((url, uIdx) => (
+                <a
+                  key={uIdx}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded border border-line bg-surface px-2 py-0.5 text-2xs font-medium text-accent hover:bg-sunken"
+                >
+                  Clip #{uIdx + 1} <ExternalLink className="w-3 h-3" />
+                </a>
+              ))
+            ) : (
+              <span className="text-2xs text-ink-3">—</span>
+            )}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
   // --- Cột bảng Đơn Booking Thực tế đã lên sóng (File 3.2) ---
   const airedDealsColumns = useMemo<Column<VerifiedBookedDealEvidenceItem>[]>(
     () => [
       {
         key: 'dealCode',
-        header: 'Mã Đơn (File 3.2) & Kênh KOC',
+        header: 'Mã đơn & Kênh KOC',
+        width: 195,
         render: (row) => (
-          <div className="min-w-[180px]">
-            <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[12px] font-semibold text-accent">
-                {row.dealCode}
-              </span>
-              <Status tone="neutral">{row.klTier}</Status>
+          <div>
+            <div className="font-semibold text-ink">
+              @{row.channelId}{' '}
+              <span className="font-code text-2xs font-normal text-ink-3">· {row.klTier}</span>
             </div>
-            <div className="font-mono text-[12px] text-text-primary mt-0.5">
-              @{row.channelId}
-            </div>
-            <div className="text-xs text-text-muted">
-              Gian: {row.storeName} · PIC: {row.pic}
+            <div className="text-2xs text-ink-3 mt-0.5">
+              <span className="font-code text-accent">{row.dealCode}</span> · {row.storeName} · PIC:{' '}
+              {row.pic}
             </div>
           </div>
         ),
       },
       {
         key: 'product_format',
-        header: 'Sản phẩm Book & Định dạng',
+        header: 'Sản phẩm & Định dạng',
+        width: 200,
         render: (row) => (
-          <div className="min-w-[180px]">
-            <div className="text-[13px] font-medium text-text-primary">{row.productName}</div>
-            <div className="text-xs text-text-secondary">
+          <div>
+            <div className="font-medium text-ink">{row.productName}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">
               {row.format} · {row.videoType}
             </div>
           </div>
@@ -656,13 +1129,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         key: 'cost_air',
         header: 'Chi phí Net & Ngày Air',
         align: 'right',
+        width: 155,
         render: (row) => (
-          <div className="text-right font-mono min-w-[130px]">
-            <div className="text-[13px] font-semibold text-text-primary">
-              {formatVnd(row.costVnd)}
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-ink">{formatVnd(row.costVnd)}</div>
+            <div className="text-2xs text-ink-3">
+              Air: {row.actualAirDate} (KH: {row.plannedAirDate})
             </div>
-            <div className="text-xs text-text-secondary">Air: {row.actualAirDate}</div>
-            <div className="text-xs text-text-muted">Kế hoạch: {row.plannedAirDate}</div>
           </div>
         ),
       },
@@ -670,42 +1143,105 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         key: 'performance',
         header: 'Lượt xem & Doanh thu Seller',
         align: 'right',
+        width: 175,
         render: (row) => (
-          <div className="text-right font-mono min-w-[150px]">
+          <div className="text-right tabular-nums">
             {row.sellerGmvVnd !== undefined ? (
               <>
-                <div className="text-[12px] font-semibold text-success">
-                  GMV: {formatVnd(row.sellerGmvVnd)}
+                <div className="font-semibold text-positive">
+                  GMV: {formatVnd(row.sellerGmvVnd)} · ROAS {row.roas || 0}x
                 </div>
-                <div className="text-xs text-text-secondary">
-                  {formatNumber(row.views || 0)} views · {row.sellerOrders || 0} đơn
+                <div className="text-2xs text-ink-3">
+                  {formatNumber(row.views || 0)} xem · {row.sellerOrders || 0} đơn
                 </div>
-                <div className="text-xs text-accent">ROAS: {row.roas || 0}x</div>
               </>
             ) : (
-              <span className="text-xs text-text-muted">Đối soát lịch Air W40–W45</span>
+              <span className="text-2xs text-ink-3">Đối soát lịch Air W40–W45</span>
             )}
           </div>
         ),
       },
       {
         key: 'proofLink',
-        header: 'Bằng chứng Video Air',
+        header: 'Video Air',
         align: 'right',
+        width: 120,
         render: (row) =>
           row.linkAir ? (
             <a
               href={row.linkAir}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded border border-border-default bg-bg-surface px-2.5 py-1 text-xs font-medium text-accent hover:border-accent hover:bg-accent-soft"
+              className="inline-flex items-center gap-1 rounded-md border border-line-strong bg-surface px-2.5 h-7 text-2xs font-medium text-accent hover:bg-sunken"
             >
-              Mở Video TikTok
+              Mở video
               <ExternalLink className="h-3 w-3" />
             </a>
           ) : (
-            <span className="text-xs text-text-muted">—</span>
+            <span className="text-2xs text-ink-3">—</span>
           ),
+      },
+    ],
+    []
+  );
+
+  // --- Cột bảng Chiến dịch Ads Seller Center ---
+  const sellerAdsColumns = useMemo<Column<SellerAdsCampaignEvidenceItem>[]>(
+    () => [
+      {
+        key: 'campaign',
+        header: 'Chiến dịch TikTok Seller Center',
+        width: 240,
+        render: (camp) => (
+          <div>
+            <div className="font-semibold text-ink">{camp.campaignName}</div>
+            <div className="text-2xs text-ink-3 font-code mt-0.5">
+              ID: {camp.campaignId} · Gian: {camp.storeName}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'spend_gmv',
+        header: 'Chi phí Ads & Doanh thu GMV',
+        align: 'right',
+        width: 185,
+        render: (camp) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-positive">GMV: {formatVnd(camp.gmvVnd)}</div>
+            <div className="text-2xs text-ink-3">Chi phí Ads: {formatVnd(camp.costVnd)}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'roas_orders',
+        header: 'ROAS & Số đơn',
+        align: 'right',
+        width: 150,
+        render: (camp) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-accent">
+              ROAS {camp.roas}x · {formatNumber(camp.orders)} đơn
+            </div>
+            <div className="text-2xs text-ink-3">CPA: {formatVnd(camp.cpaVnd)}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'creative_metrics',
+        header: 'Chỉ số sáng tạo (Hook 2s · CTR · CVR)',
+        align: 'right',
+        width: 190,
+        render: (camp) => (
+          <div className="text-right tabular-nums">
+            <div className="font-medium text-ink">
+              Hook 2s: {camp.hookRate2sPct}% · Xem hết: {camp.completionRate100Pct}%
+            </div>
+            <div className="text-2xs text-ink-3">
+              CTR {camp.ctrPct}% · CVR {camp.cvrPct}%
+            </div>
+          </div>
+        ),
       },
     ],
     []
@@ -716,35 +1252,30 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     () => [
       {
         key: 'competitor',
-        header: 'Đối thủ & Kênh Chính thức',
+        header: 'Đối thủ & Kênh chính thức',
+        width: 210,
         render: (row) => (
-          <div className="flex items-start gap-2.5 min-w-[210px]">
+          <div className="flex items-start gap-2.5 min-w-0">
             <BrandAvatar name={row.competitorName} size={28} />
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[13px] font-semibold text-text-primary">
-                  {row.competitorName}
-                </span>
+                <span className="font-semibold text-ink">{row.competitorName}</span>
                 {renderEvidenceBadges(row.evidenceIds)}
               </div>
-              <div className="flex items-center gap-2 text-xs text-text-muted font-mono mt-0.5">
-                <span>{row.tiktokHandle}</span>
-                <span>·</span>
-                <span>{row.originCountry}</span>
+              <div className="text-2xs text-ink-3 font-code mt-0.5">
+                {row.tiktokHandle} · {row.originCountry} · {PRICE_SEGMENT_LABEL[row.priceSegment]}
               </div>
               {row.storeRatingAndSoldText && (
-                <div className="text-xs text-text-secondary mt-0.5">
-                  {row.storeRatingAndSoldText}
-                </div>
+                <div className="text-2xs text-ink-2 mt-0.5">{row.storeRatingAndSoldText}</div>
               )}
               {row.shopeeMallUrl && (
                 <a
                   href={row.shopeeMallUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-0.5"
+                  className="inline-flex items-center gap-1 text-2xs text-accent hover:underline mt-0.5"
                 >
-                  Gian hàng Shopee <ExternalLink className="w-3 h-3" />
+                  Shopee Mall <ExternalLink className="w-3 h-3" />
                 </a>
               )}
             </div>
@@ -753,26 +1284,23 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       },
       {
         key: 'heroSku',
-        header: 'SKU Đối đầu & Giá Tham chiếu',
+        header: 'SKU đối đầu & Giá bán',
+        width: 225,
         render: (row) => {
           const disc =
             row.listPriceVnd > 0
               ? Math.round(((row.listPriceVnd - row.dealPriceVnd) / row.listPriceVnd) * 100)
               : 0;
           return (
-            <div className="min-w-[230px]">
-              <div className="text-[12px] text-text-primary font-medium line-clamp-2 mb-1">
-                {row.heroSkuName}
-              </div>
-              <div className="flex items-center gap-2 font-mono text-[12px]">
-                <span className="font-semibold text-accent">{formatVnd(row.dealPriceVnd)}</span>
-                <span className="text-text-muted line-through text-xs">
-                  {formatVnd(row.listPriceVnd)}
-                </span>
-                {disc > 0 && <Status tone="positive">-{disc}%</Status>}
+            <div>
+              <div className="font-medium text-ink line-clamp-2">{row.heroSkuName}</div>
+              <div className="text-2xs tabular-nums mt-0.5">
+                <strong className="text-accent">{formatVnd(row.dealPriceVnd)}</strong>{' '}
+                <span className="text-ink-3 line-through">{formatVnd(row.listPriceVnd)}</span>
+                {disc > 0 && <span className="text-positive font-medium ml-1">(-{disc}%)</span>}
               </div>
               {row.pricePerUnitComparison && (
-                <div className="text-xs text-warning mt-1">{row.pricePerUnitComparison}</div>
+                <div className="text-2xs text-warning mt-0.5">{row.pricePerUnitComparison}</div>
               )}
             </div>
           );
@@ -780,16 +1308,15 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       },
       {
         key: 'koc_scale',
-        header: 'Hoa hồng & KOC Quét Thực tế',
+        header: 'Hoa hồng & KOC',
         align: 'right',
+        width: 130,
         render: (row) => (
-          <div className="text-right font-mono min-w-[140px]">
-            <div className="text-[13px] font-semibold text-success">
-              HH: {row.affiliateCommissionPct}%
-            </div>
-            <div className="text-xs text-text-secondary">
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-positive">HH: {row.affiliateCommissionPct}%</div>
+            <div className="text-2xs text-ink-3">
               {row.estimatedMonthlyVideoCount > 0
-                ? `${row.estimatedMonthlyVideoCount} KOC vừa quét`
+                ? `${row.estimatedMonthlyVideoCount} KOC đã quét`
                 : 'Chưa quét KOC'}
             </div>
           </div>
@@ -797,9 +1324,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       },
       {
         key: 'channelShare',
-        header: 'Trọng tâm Sàn',
+        header: 'Tỷ trọng sàn',
+        width: 140,
         render: (row) => (
-          <div className="min-w-[130px]">
+          <div>
             <ChannelBar
               showLegend={false}
               values={[
@@ -807,7 +1335,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 { channel: 'shopee', value: row.shopeeChannelSharePct },
               ]}
             />
-            <div className="flex justify-between text-xs text-text-muted font-mono mt-1">
+            <div className="flex justify-between text-2xs text-ink-3 tabular-nums mt-1">
               <span>TikTok {row.tiktokChannelSharePct}%</span>
               <span>Shopee {row.shopeeChannelSharePct}%</span>
             </div>
@@ -816,33 +1344,36 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       },
       {
         key: 'strengthsWeaknesses',
-        header: 'Điểm mạnh USP & Điểm yếu Khách phàn nàn',
+        header: 'Điểm mạnh & Điểm yếu khách phàn nàn',
+        width: 260,
         render: (row) => (
-          <div className="min-w-[260px] space-y-1.5 text-[12px]">
-            <div>
-              <span className="font-semibold text-success">Điểm mạnh: </span>
-              <span className="text-text-secondary">{row.keyUsps[0]}</span>
+          <div className="space-y-1">
+            <div className="text-xs text-ink line-clamp-2">
+              <strong className="text-positive font-medium">+ Mạnh: </strong>
+              {row.keyUsps[0]}
             </div>
-            <div>
-              <span className="font-semibold text-danger">Khách phàn nàn: </span>
-              <span className="text-text-secondary">{row.customerComplaints[0]}</span>
+            <div className="text-2xs text-ink-2 line-clamp-2">
+              <strong className="text-critical font-medium">− Yếu: </strong>
+              {row.customerComplaints[0]}
             </div>
           </div>
         ),
       },
       {
         key: 'counterPlay',
-        header: 'Đòn phản công cho ' + dossier.brandName,
+        header: `Phương án cạnh tranh cho ${dossier.brandName}`,
+        width: 230,
         render: (row) => (
-          <div className="min-w-[240px] text-[12px] text-text-primary bg-bg-subtle p-2 rounded border border-border-subtle">
+          <div className="text-xs text-ink-2 leading-relaxed line-clamp-3">
             {row.upbaseCounterPlay}
           </div>
         ),
       },
       {
         key: 'actions',
-        header: 'Thao tác Đối thủ',
+        header: 'Thao tác',
         align: 'right',
+        width: 195,
         render: (row) => {
           const isScanning = scanningCompetitorHandle === row.tiktokHandle;
           return (
@@ -854,7 +1385,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 icon={Search}
                 onClick={() => void handleRunBrandAnalysis(row.competitorName, [])}
               >
-                Nghiên cứu
+                Phân tích
               </Button>
               <Button
                 size="sm"
@@ -880,55 +1411,317 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     ]
   );
 
+  // --- Cột bảng KOC Quét Thực tế của Đối thủ (Tab 3) ---
+  const scannedKocColumns = useMemo<Column<TikTokCompetitorKocResult>[]>(
+    () => [
+      {
+        key: 'koc',
+        header: 'Kênh KOC & Quy mô',
+        width: 220,
+        render: (item) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar
+              name={item.channelProfile.nickname}
+              src={item.channelProfile.avatarUrl}
+              size={32}
+            />
+            <div className="min-w-0">
+              <div className="font-semibold text-ink truncate">
+                {item.channelProfile.nickname}
+              </div>
+              <div className="text-2xs text-ink-3 font-code">
+                @{item.handle} · {item.affiliateMetrics.suggestedClassification.tierLabel}
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'metrics',
+        header: 'Follower & Tương tác',
+        align: 'right',
+        width: 150,
+        render: (item) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-ink">
+              {formatFollowers(item.channelProfile.followers)} flw
+            </div>
+            <div className="text-2xs text-ink-3">
+              ER {item.engagementMetrics.engagementRate}% ·{' '}
+              {item.competitorCollaboration.competitorVideoCount} video
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'product',
+        header: 'Sản phẩm đối thủ quảng bá',
+        render: (item) => (
+          <div className="text-xs text-ink-2 line-clamp-2">
+            {item.competitorCollaboration.competitorProductPromoted}
+          </div>
+        ),
+      },
+      {
+        key: 'views',
+        header: 'Lượt xem video mẫu',
+        align: 'right',
+        width: 150,
+        render: (item) => (
+          <div className="text-right tabular-nums">
+            <div className="font-semibold text-positive">
+              {formatNumber(item.competitorCollaboration.latestCollabViews)} xem
+            </div>
+            {item.competitorCollaboration.latestCollabVideoUrl && (
+              <a
+                href={item.competitorCollaboration.latestCollabVideoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-2xs text-accent hover:underline inline-flex items-center gap-0.5"
+              >
+                Mở video <ArrowUpRight className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'action',
+        header: 'Danh bạ',
+        align: 'right',
+        width: 120,
+        render: (item) => {
+          const clean = item.handle.toLowerCase().replace(/^@+/, '');
+          const alreadySaved = existingByHandle.has(clean);
+          return (
+            <Button
+              size="sm"
+              variant={alreadySaved ? 'secondary' : 'primary'}
+              icon={alreadySaved ? Check : UserPlus}
+              onClick={() => handleSaveOneCompetitorKoc(item)}
+            >
+              {alreadySaved ? 'Cập nhật' : 'Lưu KOC'}
+            </Button>
+          );
+        },
+      },
+    ],
+    [existingByHandle, handleSaveOneCompetitorKoc]
+  );
+
+  // --- Cột bảng Sổ Dẫn chứng Xác thực [EV] (Tab 5) ---
+  const evidenceColumns = useMemo<Column<EvidenceCitation>[]>(
+    () => [
+      {
+        key: 'id',
+        header: 'Mã [EV] & Phân loại',
+        width: 195,
+        render: (ev) => (
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-code font-semibold text-accent">{ev.id}</span>
+              <Status
+                tone={
+                  ev.reliabilityTag === 'ĐỐI SOÁT NỘI BỘ 100%'
+                    ? 'positive'
+                    : ev.reliabilityTag === 'QUÉT TRỰC TIẾP DOM/HTTP'
+                      ? 'info'
+                      : ev.reliabilityTag === 'HỒ SƠ CÔNG BỐ / KIỂM ĐỊNH'
+                        ? 'warning'
+                        : 'neutral'
+                }
+              >
+                {ev.reliabilityTag}
+              </Status>
+            </div>
+            <div className="text-2xs text-ink-3 mt-1">{ev.categoryLabel}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'claim',
+        header: 'Luận điểm & Tài liệu nguồn',
+        width: 280,
+        render: (ev) => (
+          <div>
+            <div className="font-semibold text-ink">{ev.claimSupported}</div>
+            <div className="text-2xs text-ink-3 mt-0.5">{ev.sourceDocument}</div>
+          </div>
+        ),
+      },
+      {
+        key: 'quote',
+        header: 'Trích dẫn số liệu / Bằng chứng gốc',
+        render: (ev) => (
+          <div className="font-code text-xs text-ink-2 leading-relaxed">
+            {ev.exactQuoteOrMetric}
+          </div>
+        ),
+      },
+      {
+        key: 'date_link',
+        header: 'Đối soát',
+        align: 'right',
+        width: 130,
+        render: (ev) => (
+          <div className="text-right tabular-nums">
+            <div className="text-2xs text-ink-3">{ev.verifiedDate}</div>
+            {ev.sourceUrl && (
+              <a
+                href={ev.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline mt-0.5"
+              >
+                Mở nguồn <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const filteredAiredDeals = useMemo(() => {
+    const list = dossier.internalExecutionAudit.verifiedAiredDeals;
+    if (!dealSearchQuery.trim()) return list;
+    const q = dealSearchQuery.trim().toLowerCase();
+    return list.filter(
+      (d) =>
+        d.dealCode.toLowerCase().includes(q) ||
+        d.channelId.toLowerCase().includes(q) ||
+        d.productName.toLowerCase().includes(q) ||
+        d.storeName.toLowerCase().includes(q) ||
+        d.pic.toLowerCase().includes(q)
+    );
+  }, [dossier.internalExecutionAudit.verifiedAiredDeals, dealSearchQuery]);
+
+  const evidenceChipOptions = useMemo<ChipOption<EvidenceFilterKey>[]>(() => {
+    const countByCat = (cat: EvidenceFilterKey) =>
+      cat === 'ALL'
+        ? dossier.evidenceLedger.length
+        : dossier.evidenceLedger.filter((e) => e.category === cat).length;
+
+    const base: Array<{ key: EvidenceFilterKey; label: string }> = [
+      { key: 'ALL', label: 'Tất cả nguồn' },
+      { key: 'INTERNAL_PLAN_41', label: 'File 4.1 & 4.1.1' },
+      { key: 'BOOKING_LEDGER_32', label: 'File 3.2 & 3.5' },
+      { key: 'CLINICAL_REGULATORY', label: 'Pháp lý & Brief' },
+      { key: 'SELLER_CENTER_ADS', label: 'Seller Center' },
+      { key: 'STOREFRONT_OFFICIAL', label: 'Gian hàng Mall' },
+      { key: 'COMPETITOR_BENCHMARK', label: 'Đối thủ' },
+      { key: 'LIVE_WEB_DOM', label: 'DOM Website' },
+    ];
+    return base
+      .map((item) => ({ ...item, count: countByCat(item.key) }))
+      .filter((item) => item.key === 'ALL' || (item.count || 0) > 0);
+  }, [dossier.evidenceLedger]);
+
   const filteredEvidenceList = useMemo(() => {
-    if (selectedEvidenceFilter === 'ALL') return dossier.evidenceLedger;
-    return dossier.evidenceLedger.filter((ev) => ev.category === selectedEvidenceFilter);
-  }, [dossier.evidenceLedger, selectedEvidenceFilter]);
+    return dossier.evidenceLedger.filter((ev) => {
+      if (selectedEvidenceFilter !== 'ALL' && ev.category !== selectedEvidenceFilter) {
+        return false;
+      }
+      if (evidenceSearch.trim()) {
+        const q = evidenceSearch.trim().toLowerCase();
+        const hay = `${ev.id} ${ev.claimSupported} ${ev.sourceDocument} ${ev.exactQuoteOrMetric}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [dossier.evidenceLedger, selectedEvidenceFilter, evidenceSearch]);
+
+  const showStrategy4P = auditSubSection === 'ALL' || auditSubSection === 'STRATEGY_4P';
+  const showSkuKoc = auditSubSection === 'ALL' || auditSubSection === 'SKU_KOC';
+  const showSeasonSwot = auditSubSection === 'ALL' || auditSubSection === 'SEASON_SWOT';
 
   return (
-    <div className="space-y-4">
-      {/* Thanh Điều khiển Chọn Thương hiệu & Chạy Phân tích gọn gàng */}
-      <Panel
-        title="Nghiên cứu Thị trường, Thương hiệu & Đối thủ"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {onNavigateToBrandProfile && (
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={BookOpen}
-                onClick={() => onNavigateToBrandProfile(dossier.brandName)}
-              >
-                Mở Hồ sơ Brand ({dossier.brandName})
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Download}
-              onClick={handleDownloadMarkdownDossier}
-            >
-              Xuất Báo cáo (.MD)
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={savingToProfile}
-              icon={Check}
-              onClick={handleSyncPositioningToBrandProfile}
-            >
-              Lưu Định vị vào Hồ sơ Brand
-            </Button>
+    <div className="space-y-5">
+      <PageActions>
+        {onNavigateToBrandProfile && (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={BookOpen}
+            onClick={() => onNavigateToBrandProfile(dossier.brandName)}
+          >
+            Hồ sơ {dossier.brandName}
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Download}
+          onClick={handleDownloadMarkdownDossier}
+        >
+          Xuất báo cáo (.MD)
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={savingToProfile}
+          icon={Check}
+          onClick={handleSyncPositioningToBrandProfile}
+        >
+          Lưu định vị vào hồ sơ
+        </Button>
+      </PageActions>
+
+      {/* 1. KHUNG ĐỊNH DANH THƯƠNG HIỆU & BỘ ĐIỀU KHIỂN PHÂN TÍCH */}
+      <section className="bg-surface border border-line rounded-xl p-4 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-line">
+          <div className="flex items-center gap-3 min-w-0">
+            <BrandAvatar name={dossier.brandName} size={40} />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-semibold text-ink truncate">
+                  {dossier.brandName}
+                </h2>
+                <Status tone={dossier.isUpbaseManaged ? 'positive' : 'info'}>
+                  {dossier.isUpbaseManaged
+                    ? `UpBase B2C · ${dossier.internalExecutionAudit.totalStoresCount} gian hàng`
+                    : 'Thương hiệu mở rộng'}
+                </Status>
+                <span className="text-2xs text-ink-3">
+                  {dossier.originCountry} · {dossier.fourP.priceRangeText}
+                </span>
+              </div>
+              <div className="text-xs text-ink-2 truncate mt-0.5">
+                {dossier.category}
+                {dossier.accountPic ? ` · Quản lý: ${dossier.accountPic}` : ''}
+                {dossier.brandPicName ? ` · PIC: ${dossier.brandPicName}` : ''}
+              </div>
+            </div>
           </div>
-        }
-      >
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-          <div className="md:col-span-4">
-            <label className="block text-xs font-medium text-text-secondary mb-1">
-              Thương hiệu / Đối thủ cần nghiên cứu (Brand B2C hoặc Đối thủ ngoài)
-            </label>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-2xs text-ink-3 mr-1">Chuyển nhanh:</span>
+            {QUICK_RESEARCH_BRANDS.map((name) => {
+              const isCurrent = brandKey(dossier.brandName) === brandKey(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  disabled={analyzingDossier}
+                  onClick={() => void handleRunBrandAnalysis(name, [])}
+                  className={`h-7 px-2.5 rounded-full text-2xs font-medium border transition-colors ${
+                    isCurrent
+                      ? 'bg-ink text-white border-ink'
+                      : 'bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink'
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <Field label="Thương hiệu hoặc đối thủ cần nghiên cứu" className="md:col-span-4">
             <div className="relative">
-              <input
+              <Input
                 type="text"
                 list="b2c-brand-research-list"
                 value={brandQuery}
@@ -941,8 +1734,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     void handleRunBrandAnalysis(brandQuery);
                   }
                 }}
-                placeholder="Dán tên Brand hoặc Đối thủ (VD: Nous, Cocoon, Kutieskin...)"
-                className="w-full h-9 pl-3 pr-7 rounded border border-border-default bg-bg-surface text-[13px] text-text-primary focus:outline-none focus:border-accent"
+                placeholder="Nhập tên Brand hoặc đối thủ (VD: Kutieskin, Cocoon...)"
+                className="pr-8"
               />
               {brandQuery && (
                 <button
@@ -952,7 +1745,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     setHasEditedBrandQuery(true);
                   }}
                   title="Xóa để nhập tên mới"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary text-sm px-1"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink text-sm px-1"
                 >
                   ×
                 </button>
@@ -994,26 +1787,19 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 <option value="Romano">Chăm sóc cá nhân Nam giới</option>
               </datalist>
             </div>
-          </div>
+          </Field>
 
-          <div className="md:col-span-3">
-            <label className="block text-xs font-medium text-text-secondary mb-1">
-              Ngành hàng (Tùy chọn)
-            </label>
-            <input
+          <Field label="Ngành hàng" className="md:col-span-3">
+            <Input
               type="text"
               value={customCategory}
               onChange={(e) => setCustomCategory(e.target.value)}
               placeholder={dossier.category}
-              className="w-full h-9 px-3 rounded border border-border-default bg-bg-surface text-[13px] text-text-primary focus:outline-none focus:border-accent"
             />
-          </div>
+          </Field>
 
-          <div className="md:col-span-3">
-            <label className="block text-xs font-medium text-text-secondary mb-1">
-              Đối thủ muốn nghiên cứu / so sánh (Dán tên hoặc @handle)
-            </label>
-            <input
+          <Field label="So sánh thêm đối thủ (tên hoặc @handle)" className="md:col-span-3">
+            <Input
               type="text"
               value={customCompetitorText}
               onChange={(e) => setCustomCompetitorText(e.target.value)}
@@ -1022,64 +1808,66 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   void handleRunBrandAnalysis();
                 }
               }}
-              placeholder="Dán tên đối thủ (VD: Nous, Cocoon, @handle...)"
-              className="w-full h-9 px-3 rounded border border-border-default bg-bg-surface text-[13px] text-text-primary focus:outline-none focus:border-accent"
+              placeholder="VD: Nous, Cocoon, @handle..."
             />
-          </div>
+          </Field>
 
           <div className="md:col-span-2">
             <Button
               variant="primary"
-              className="w-full justify-center"
+              className="w-full justify-center h-9"
               disabled={analyzingDossier}
               icon={Search}
               onClick={() => void handleRunBrandAnalysis()}
             >
-              {analyzingDossier ? 'Đang phân tích...' : 'Phân tích ngay'}
+              {analyzingDossier ? 'Đang phân tích...' : 'Phân tích'}
             </Button>
           </div>
         </div>
-      </Panel>
+      </section>
 
-      {/* Hàng Chỉ số Tóm tắt Thương hiệu & Số lượng Dẫn chứng */}
+      {/* 2. HÀNG CHỈ SỐ TÓM TẮT */}
       <StatRow>
         <Stat
-          label={`Thương hiệu · ${dossier.originCountry}`}
-          value={dossier.brandName}
-          note={
-            dossier.isUpbaseManaged
-              ? `UpBase B2C (${dossier.internalExecutionAudit.totalStoresCount} gian hàng · PIC: ${dossier.brandPicName || dossier.accountPic || 'B2C'})`
-              : `Thương hiệu mở rộng · ${dossier.category}`
-          }
-        />
-        <Stat
-          label="Ngành hàng & Khoảng giá"
+          label="Khoảng giá & Giá trị đơn (AOV)"
           value={dossier.fourP.priceRangeText}
-          note={dossier.category}
+          note={`AOV ${formatVndShort(dossier.marketLandscape.avgOrderValueVnd)} · Mua lặp lại ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày)`}
         />
         <Stat
-          label="Đối soát Thực thi B2C (File 4.1 & 3.2)"
+          label="Ngân sách & Thực chi Net (File 4.1 & 3.2)"
           value={
             dossier.internalExecutionAudit.totalBudgetNetVnd > 0
-              ? `Net: ${formatVnd(dossier.internalExecutionAudit.totalBudgetNetVnd)}`
-              : `${dossier.internalExecutionAudit.totalBookedOrders} đơn book File 3.2`
+              ? formatVndShort(dossier.internalExecutionAudit.totalBudgetNetVnd)
+              : `${dossier.internalExecutionAudit.totalBookedOrders} đơn book`
+          }
+          progress={
+            dossier.internalExecutionAudit.totalBudgetNetVnd > 0
+              ? {
+                  value: dossier.internalExecutionAudit.totalActualSpentNetVnd,
+                  max: dossier.internalExecutionAudit.totalBudgetNetVnd,
+                }
+              : undefined
           }
           note={
             dossier.internalExecutionAudit.totalBookedOrders > 0
-              ? `Đã book ${dossier.internalExecutionAudit.totalBookedOrders} đơn (Thực chi ${formatVnd(dossier.internalExecutionAudit.totalActualSpentNetVnd)} · Air ${dossier.internalExecutionAudit.totalAiredVideos} video)`
-              : `Chỉ tiêu kế hoạch: ${dossier.internalExecutionAudit.totalPlannedVideos} video`
+              ? `Thực chi ${formatVndShort(dossier.internalExecutionAudit.totalActualSpentNetVnd)} (${dossier.internalExecutionAudit.budgetUtilizationPct}% hạn mức)`
+              : 'Thương hiệu ngoài danh sách 69 gian hàng B2C'
           }
           tone="positive"
         />
         <Stat
-          label="Sổ Dẫn chứng & Đối thủ Cùng Ngành"
-          value={`${dossier.evidenceLedger.length} dẫn chứng [EV]`}
-          note={`${dossier.competitors.length} đối thủ trực tiếp · ${dossier.skuPortfolio.length} dòng SKU`}
-          tone="warning"
+          label="Tiến độ sản xuất Video KOC"
+          value={`${dossier.internalExecutionAudit.totalBookedOrders} book / ${dossier.internalExecutionAudit.totalAiredVideos} air`}
+          note={`Chỉ tiêu kế hoạch: ${dossier.internalExecutionAudit.totalPlannedVideos} video · Đúng lịch ${dossier.internalExecutionAudit.onTimeAirRatePct}%`}
+        />
+        <Stat
+          label="Quy mô nghiên cứu & Dẫn chứng"
+          value={`${dossier.competitors.length} đối thủ · ${dossier.skuPortfolio.length} SKU`}
+          note={`${dossier.evidenceLedger.length} mã dẫn chứng đối soát [EV]`}
         />
       </StatRow>
 
-      {/* Thanh chuyển đổi 5 Tab công cụ nghiên cứu */}
+      {/* 3. THANH CHUYỂN TAB CHÍNH */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs<ResearchTabKey>
           value={activeTab}
@@ -1087,474 +1875,402 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           items={[
             {
               key: 'BRAND_AUDIT_4P',
-              label: `1. Hồ sơ Brand, 4P & SKU (${dossier.skuPortfolio.length})`,
+              label: 'Định vị, 4P & SKU',
+              count: dossier.skuPortfolio.length,
             },
             {
               key: 'INTERNAL_EXECUTION',
-              label: `2. Đối soát Thực thi & Đơn Book Thật (${
+              label: 'Đối soát thực thi B2C',
+              count:
                 dossier.internalExecutionAudit.totalBookedOrders ||
-                dossier.internalExecutionAudit.stores.length
-              })`,
+                dossier.internalExecutionAudit.stores.length,
             },
             {
               key: 'COMPETITOR_MATRIX',
-              label: `3. Ma trận Đối thủ & Quét KOC (${dossier.competitors.length})`,
+              label: 'Ma trận đối thủ & KOC',
+              count: dossier.competitors.length,
             },
             {
               key: 'REVIEW_PAIN_MINER',
-              label: `4. Đào Bình luận & Nỗi đau Khách (${minedClusters.length})`,
+              label: 'Đào bình luận & FAQ',
+              count: minedClusters.length,
             },
             {
               key: 'EVIDENCE_AND_WEB',
-              label: `5. Sổ Dẫn chứng [EV] & Quét Website (${dossier.evidenceLedger.length})`,
+              label: 'Sổ dẫn chứng & Quét web',
+              count: dossier.evidenceLedger.length,
             },
           ]}
         />
+
+        {activeTab === 'BRAND_AUDIT_4P' && (
+          <Segmented<AuditSubSectionKey>
+            value={auditSubSection}
+            onChange={setAuditSubSection}
+            items={[
+              { key: 'ALL', label: 'Tất cả mục' },
+              { key: 'STRATEGY_4P', label: 'Định vị & 4P' },
+              { key: 'SKU_KOC', label: 'SKU & Kịch bản KOC' },
+              { key: 'SEASON_SWOT', label: 'Mùa vụ & SWOT' },
+            ]}
+          />
+        )}
       </div>
 
       {/* ===================================================================== */}
       {/* TAB 1: HỒ SƠ BÓC TÁCH BRAND, 4P, DANH MỤC SKU, MÙA VỤ & SWOT          */}
       {/* ===================================================================== */}
       {activeTab === 'BRAND_AUDIT_4P' && (
-        <div className="space-y-4">
-          {/* Tóm tắt điều hành kèm mã dẫn chứng */}
-          <Panel
-            title={`Định vị Chiến lược & Tóm tắt Điều hành: ${dossier.brandName}`}
-            actions={renderEvidenceBadges(dossier.fourP.evidenceIds)}
-          >
-            <div className="space-y-3 text-[13px] text-text-primary leading-relaxed">
-              <p className="bg-bg-subtle p-3.5 rounded border border-border-subtle">
-                {dossier.executiveSummary}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                <div className="p-3 rounded border border-border-default bg-bg-surface">
-                  <div className="text-xs font-medium text-text-muted uppercase mb-1">
-                    Câu chuyện & Quy mô Vận hành
-                  </div>
-                  <div className="text-[12px] text-text-secondary">{dossier.positioning.story}</div>
-                </div>
-                <div className="p-3 rounded border border-border-default bg-bg-surface">
-                  <div className="text-xs font-medium text-text-muted uppercase mb-1">
-                    Chân dung Khách hàng Mục tiêu
-                  </div>
-                  <div className="text-[12px] text-text-secondary">
-                    {dossier.positioning.targetAudience}
-                  </div>
-                </div>
-                <div className="p-3 rounded border border-border-default bg-bg-surface">
-                  <div className="text-xs font-medium text-text-muted uppercase mb-1">
-                    Giọng điệu Nội dung (Tone of Voice)
-                  </div>
-                  <div className="text-[12px] text-text-secondary">
-                    {dossier.positioning.toneOfVoice}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Panel>
-
-          {/* Bóc tách Chiến lược 4P */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Panel
-              title="P1 — Sản phẩm & Lợi điểm Cốt lõi (Product & USP)"
-              actions={renderEvidenceBadges(dossier.fourP.evidenceIds.slice(0, 3))}
-            >
-              <p className="text-[12px] text-text-secondary mb-3">
-                {dossier.fourP.productStrategy}
-              </p>
-              <div className="space-y-1.5">
-                {dossier.fourP.keyIngredientsOrSpecs.map((spec, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 text-[12px] text-text-primary bg-bg-subtle px-2.5 py-1.5 rounded"
-                  >
-                    <span className="font-mono text-accent font-semibold">0{i + 1}.</span>
-                    <span>{spec}</span>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel
-              title="P2 & P3 — Chiến lược Giá, Hoa hồng & Kênh Phân phối (Price & Place)"
-              actions={renderEvidenceBadges(dossier.fourP.evidenceIds.slice(0, 2))}
-            >
-              <p className="text-[12px] text-text-secondary mb-3">{dossier.fourP.priceStrategy}</p>
-              <p className="text-[12px] text-text-secondary mb-3">{dossier.fourP.placeStrategy}</p>
-              <div className="p-3 rounded bg-bg-subtle border border-border-subtle">
-                <div className="text-xs font-medium text-text-muted mb-1.5">
-                  Tỷ trọng phân bổ kênh thương mại điện tử
-                </div>
-                <ChannelBar
-                  showLegend={false}
-                  values={[
-                    {
-                      channel: 'tiktok',
-                      value: dossier.fourP.channelMixRatio.tiktokShopPct,
-                    },
-                    {
-                      channel: 'shopee',
-                      value: dossier.fourP.channelMixRatio.shopeeMallPct,
-                    },
-                    {
-                      channel: 'other',
-                      value: dossier.fourP.channelMixRatio.otherChannelsPct,
-                    },
-                  ]}
-                />
-                <div className="flex justify-between text-xs font-mono text-text-secondary mt-1.5">
-                  <span>TikTok Shop: {dossier.fourP.channelMixRatio.tiktokShopPct}%</span>
-                  <span>Shopee Mall: {dossier.fourP.channelMixRatio.shopeeMallPct}%</span>
-                  <span>Khác: {dossier.fourP.channelMixRatio.otherChannelsPct}%</span>
-                </div>
-              </div>
-            </Panel>
-          </div>
-
-          {/* BẢNG MA TRẬN DANH MỤC SẢN PHẨM (SKU PORTFOLIO) */}
-          <Panel
-            title={`Danh mục Sản phẩm (SKU) Thực thi & Đối soát File 3.2 (${dossier.skuPortfolio.length} dòng SKU)`}
-          >
-            <DataTable<BrandSkuPortfolioItem>
-              columns={skuColumns}
-              rows={dossier.skuPortfolio}
-              rowKey={(r) => r.id}
-              empty="Chưa có danh mục SKU."
-            />
-          </Panel>
-
-          {/* Tâm lý khách hàng: Nỗi đau - Rào cản - Bằng chứng RTB - Cơ chế Khuyến mãi */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Panel title="Nỗi đau Khách hàng (Pain Points)">
-              <ul className="space-y-2 text-[12px] text-text-primary">
-                {(dossier.positioning.painPoints || []).map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="p-2.5 rounded bg-bg-subtle border-l-2 border-danger leading-relaxed"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-
-            <Panel title="Rào cản Ngần ngại Mua (Barriers)">
-              <ul className="space-y-2 text-[12px] text-text-primary">
-                {(dossier.positioning.barriersToTrial || []).map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="p-2.5 rounded bg-bg-subtle border-l-2 border-warning leading-relaxed"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-
-            <Panel title="Bằng chứng Tin cậy (RTBs)">
-              <ul className="space-y-2 text-[12px] text-text-primary">
-                {(dossier.positioning.rtbs || []).map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="p-2.5 rounded bg-bg-subtle border-l-2 border-success leading-relaxed"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-
-            <Panel title="P4 — Cơ chế Deal & Quà tặng (Promotion)">
-              <ul className="space-y-2 text-[12px] text-text-primary">
-                {dossier.fourP.winningBundleMechanics.map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="p-2.5 rounded bg-bg-subtle border-l-2 border-accent leading-relaxed"
-                  >
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          </div>
-
-          {/* TỪ KHÓA CHỦ ĐẠO & LỊCH MÙA VỤ 4 QUÝ */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-5">
+        <div className="space-y-5">
+          {showStrategy4P && (
+            <>
+              {/* Khối 1: Tóm tắt điều hành & 3 trụ cột định vị */}
               <Panel
-                title="Chủ đề Tìm kiếm & Hook Nội dung Trọng tâm"
-                actions={renderEvidenceBadges(dossier.marketLandscape.evidenceIds.slice(0, 2))}
+                title={`Định vị chiến lược & Tóm tắt điều hành: ${dossier.brandName}`}
+                actions={renderEvidenceBadges(dossier.fourP.evidenceIds)}
               >
-                <div className="space-y-2.5">
-                  {dossier.marketLandscape.searchKeywords.map((kw, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded border border-border-default bg-bg-surface space-y-1"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-mono text-[12px] font-semibold text-accent">
-                          &ldquo;{kw.keyword}&rdquo;
-                        </span>
-                        <Status
-                          tone={
-                            kw.competitionLevel === 'CƠ HỘI NGÁCH'
-                              ? 'positive'
-                              : kw.competitionLevel === 'CAO'
-                                ? 'warning'
-                                : 'neutral'
-                          }
-                        >
-                          {kw.searchIntent}
-                        </Status>
+                <div className="space-y-4">
+                  <div className="border-l-2 border-accent bg-canvas px-4 py-3 rounded-r-md text-xs text-ink leading-relaxed">
+                    {dossier.executiveSummary}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-line border border-line rounded-lg bg-surface">
+                    <div className="p-3.5 space-y-1">
+                      <div className="text-2xs font-semibold text-ink-3">
+                        Câu chuyện & Quy mô vận hành
                       </div>
-                      <div className="text-xs text-text-secondary">{kw.recommendedVideoHook}</div>
+                      <p className="text-xs text-ink-2 leading-relaxed">
+                        {dossier.positioning.story}
+                      </p>
                     </div>
-                  ))}
+                    <div className="p-3.5 space-y-1">
+                      <div className="text-2xs font-semibold text-ink-3">
+                        Chân dung khách hàng mục tiêu
+                      </div>
+                      <p className="text-xs text-ink-2 leading-relaxed">
+                        {dossier.positioning.targetAudience}
+                      </p>
+                    </div>
+                    <div className="p-3.5 space-y-1">
+                      <div className="text-2xs font-semibold text-ink-3">
+                        Giọng điệu nội dung (Tone of Voice)
+                      </div>
+                      <p className="text-xs text-ink-2 leading-relaxed">
+                        {dossier.positioning.toneOfVoice}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Panel>
-            </div>
 
-            <div className="lg:col-span-7">
-              <Panel title="Lịch Điểm rơi Chiến dịch & Tính Mùa vụ 12 Tháng">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {dossier.marketLandscape.seasonalityCalendar.map((q) => (
-                    <div
-                      key={q.quarter}
-                      className="p-3 rounded border border-border-default bg-bg-surface space-y-1.5"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-text-primary">
-                          {q.quarter}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <Status
-                            tone={
-                              q.demandLevel === 'ĐỈNH ĐIỂM'
-                                ? 'danger'
-                                : q.demandLevel === 'TĂNG TRƯỞNG'
-                                  ? 'brand'
-                                  : 'neutral'
-                            }
+              {/* Khối 2: Bóc tách 4P & Tâm lý khách hàng trong bố cục bảng đối xứng */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <Panel
+                  title="Phân tích chiến lược 4P (Product · Price · Place · Promotion)"
+                  className="lg:col-span-7"
+                  actions={renderEvidenceBadges(dossier.fourP.evidenceIds.slice(0, 3))}
+                >
+                  <div className="divide-y divide-line -my-2">
+                    <div className="py-3 space-y-2">
+                      <div className="text-xs font-semibold text-ink">
+                        P1 — Sản phẩm & Lợi điểm cốt lõi (USP)
+                      </div>
+                      <p className="text-xs text-ink-2 leading-relaxed">
+                        {dossier.fourP.productStrategy}
+                      </p>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                        {dossier.fourP.keyIngredientsOrSpecs.map((spec, i) => (
+                          <li
+                            key={i}
+                            className="flex items-start gap-2 text-2xs text-ink bg-canvas px-2.5 py-1.5 rounded border border-line"
                           >
-                            {q.demandLevel}
-                          </Status>
-                          <span className="font-mono text-xs font-semibold text-accent">
-                            Tỷ trọng {q.recommendedBudgetWeightPct}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-text-muted">{q.weatherOrEventTrigger}</div>
-                      <div className="text-[12px] text-text-primary">
-                        <span className="font-medium text-danger">Nhu cầu:</span>{' '}
-                        {q.customerSymptomSpike}
-                      </div>
-                      <div className="text-xs text-text-secondary">
-                        <span className="font-medium text-success">SKU trọng tâm:</span>{' '}
-                        {q.prioritySkus}
-                      </div>
-                      <div className="text-xs text-text-secondary">
-                        <span className="font-medium text-accent">Tuyến nội dung:</span>{' '}
-                        {q.contentFocus}
-                      </div>
+                            <span className="font-code text-accent font-semibold">0{i + 1}</span>
+                            <span className="leading-snug">{spec}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
-                </div>
-              </Panel>
-            </div>
-          </div>
 
-          {/* MA TRẬN SWOT CÓ DẪN CHỨNG & QUY CHUẨN KIỂM DUYỆT SÀN */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-7">
-              <Panel title="Ma trận SWOT Thực chiến (Gắn trực tiếp Dẫn chứng Đối soát)">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
-                  <div className="p-3 rounded border border-border-default bg-bg-surface space-y-2">
-                    <div className="font-semibold text-success uppercase text-xs">
-                      Điểm mạnh (Strengths)
-                    </div>
-                    {dossier.swotAndCompliance.strengths.map((s, i) => (
-                      <div key={i} className="p-2 rounded bg-bg-subtle space-y-1">
-                        <div className="text-text-primary font-medium">
-                          {s.point} {renderEvidenceBadges(s.evidenceIds)}
+                    <div className="py-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <div className="text-xs font-semibold text-ink">
+                          P2 — Chiến lược giá & Hoa hồng
                         </div>
-                        <div className="text-xs text-text-secondary">
-                          → Ứng dụng: {s.strategicImpact}
+                        <p className="text-xs text-ink-2 leading-relaxed">
+                          {dossier.fourP.priceStrategy}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="text-xs font-semibold text-ink">
+                          P3 — Kênh phân phối thương mại điện tử
+                        </div>
+                        <p className="text-xs text-ink-2 leading-relaxed">
+                          {dossier.fourP.placeStrategy}
+                        </p>
+                        <div className="pt-1">
+                          <ChannelBar
+                            values={[
+                              {
+                                channel: 'tiktok',
+                                value: dossier.fourP.channelMixRatio.tiktokShopPct,
+                              },
+                              {
+                                channel: 'shopee',
+                                value: dossier.fourP.channelMixRatio.shopeeMallPct,
+                              },
+                              {
+                                channel: 'other',
+                                value: dossier.fourP.channelMixRatio.otherChannelsPct,
+                              },
+                            ]}
+                          />
                         </div>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="py-3 space-y-1.5">
+                      <div className="text-xs font-semibold text-ink">
+                        P4 — Cơ chế Deal, Combo & Quà tặng (Promotion)
+                      </div>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {dossier.fourP.winningBundleMechanics.map((item, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-ink-2 pl-2.5 border-l-2 border-accent leading-relaxed"
+                          >
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
+                </Panel>
 
-                  <div className="p-3 rounded border border-border-default bg-bg-surface space-y-2">
-                    <div className="font-semibold text-warning uppercase text-xs">
-                      Điểm yếu & Nút thắt (Weaknesses)
-                    </div>
-                    {dossier.swotAndCompliance.weaknesses.map((w, i) => (
-                      <div key={i} className="p-2 rounded bg-bg-subtle space-y-1">
-                        <div className="text-text-primary font-medium">
-                          {w.point} {renderEvidenceBadges(w.evidenceIds)}
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          → Hệ quả: {w.strategicImpact}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-3 rounded border border-border-default bg-bg-surface space-y-2">
-                    <div className="font-semibold text-accent uppercase text-xs">
-                      Cơ hội Tăng trưởng (Opportunities)
-                    </div>
-                    {dossier.swotAndCompliance.opportunities.map((o, i) => (
-                      <div key={i} className="p-2 rounded bg-bg-subtle space-y-1">
-                        <div className="text-text-primary font-medium">
-                          {o.point} {renderEvidenceBadges(o.evidenceIds)}
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          → Đòn bẩy: {o.strategicImpact}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-3 rounded border border-border-default bg-bg-surface space-y-2">
-                    <div className="font-semibold text-danger uppercase text-xs">
-                      Thách thức & Rủi ro (Threats)
-                    </div>
-                    {dossier.swotAndCompliance.threats.map((t, i) => (
-                      <div key={i} className="p-2 rounded bg-bg-subtle space-y-1">
-                        <div className="text-text-primary font-medium">
-                          {t.point} {renderEvidenceBadges(t.evidenceIds)}
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          → Phòng vệ: {t.strategicImpact}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Panel>
-            </div>
-
-            <div className="lg:col-span-5">
-              <Panel title="Quy chuẩn Kiểm duyệt Sàn & Từ khóa Cấm (TikTok Shop / Shopee)">
-                <div className="space-y-3">
-                  {dossier.swotAndCompliance.platformComplianceRules.map((rule, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded border border-border-default bg-bg-surface space-y-1.5 text-[12px]"
-                    >
-                      <div className="flex items-center gap-1.5 font-semibold text-danger">
-                        <ShieldAlert className="w-4 h-4 shrink-0" />
-                        <span>{rule.riskCategory}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium text-text-secondary">Từ ngữ cấm dùng: </span>
-                        <span className="font-mono text-xs text-danger">
-                          {rule.forbiddenPhrases.map((p) => `"${p}"`).join(', ')}
-                        </span>
-                      </div>
-                      <div className="text-xs text-text-muted">
-                        <span className="font-medium">Rủi ro chế tài:</span>{' '}
-                        {rule.platformPenaltyRisk}
-                      </div>
-                      <div className="p-2 rounded bg-bg-subtle border-l-2 border-success text-text-primary">
-                        <span className="font-semibold text-success">Cách nói an toàn: </span>
-                        {rule.safeAlternativePhrasing}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-            </div>
-          </div>
-
-          {/* CƠ CẤU PHÂN BỔ KOC THEO PHÂN TẦNG KL1-KL4 & ĐỊNH MỨC KPI */}
-          <Panel title="Cơ cấu Phân bổ Ngân sách KOC theo Phân tầng (KL1 – KL4) từ Thực tế File 3.2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-              {dossier.kocTierStrategy.map((tier) => (
-                <div
-                  key={tier.tierCode}
-                  className="p-3.5 rounded border border-border-default bg-bg-surface flex flex-col justify-between space-y-2.5"
+                <Panel
+                  title="Tâm lý mua hàng: Nỗi đau · Rào cản · Bằng chứng tin cậy (RTB)"
+                  className="lg:col-span-5"
                 >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Status tone="brand">{tier.tierCode}</Status>
-                      {renderEvidenceBadges(tier.evidenceIds)}
+                  <div className="divide-y divide-line -my-2">
+                    <div className="py-3 space-y-1.5">
+                      <div className="text-xs font-semibold text-critical">
+                        Nỗi đau khách hàng (Pain Points)
+                      </div>
+                      <ul className="space-y-1.5">
+                        {(dossier.positioning.painPoints || []).map((item, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-ink-2 pl-2.5 border-l-2 border-critical leading-relaxed"
+                          >
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="text-[13px] font-semibold text-text-primary">
-                      {tier.tierLabel}
-                    </div>
-                    <div className="font-mono text-xs text-text-muted">
-                      Quy mô: {tier.followerRange}
-                    </div>
-                    <p className="text-[12px] text-text-secondary">{tier.funnelRole}</p>
-                  </div>
 
-                  <div className="space-y-1.5 pt-2 border-t border-border-subtle text-xs">
-                    <div className="flex justify-between font-mono">
-                      <span className="text-text-muted">Tỷ trọng chi phí:</span>
-                      <span className="font-semibold text-accent">{tier.budgetWeightPct}%</span>
+                    <div className="py-3 space-y-1.5">
+                      <div className="text-xs font-semibold text-warning">
+                        Rào cản ngần ngại thử (Barriers to Trial)
+                      </div>
+                      <ul className="space-y-1.5">
+                        {(dossier.positioning.barriersToTrial || []).map((item, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-ink-2 pl-2.5 border-l-2 border-warning leading-relaxed"
+                          >
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="flex justify-between font-mono">
-                      <span className="text-text-muted">Tỷ trọng số đơn:</span>
-                      <span className="font-semibold text-text-primary">
-                        {tier.videoVolumeWeightPct}%
-                      </span>
-                    </div>
-                    <div className="text-text-secondary">
-                      <span className="font-medium text-text-primary">Thực thi / Đơn giá:</span>{' '}
-                      {tier.avgBookingCostRangeVnd}
+
+                    <div className="py-3 space-y-1.5">
+                      <div className="text-xs font-semibold text-positive">
+                        Bằng chứng tin cậy (Reasons to Believe)
+                      </div>
+                      <ul className="space-y-1.5">
+                        {(dossier.positioning.rtbs || []).map((item, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-ink-2 pl-2.5 border-l-2 border-positive leading-relaxed"
+                          >
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </Panel>
+                </Panel>
+              </div>
+            </>
+          )}
 
-          {/* Khung Góc kịch bản KOC chuyển đổi cao */}
-          <Panel title="Khung Góc Kịch bản KOC Chuyển đổi Cao">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dossier.contentAngleBlueprints.map((angle: WinningContentAngleBlueprint, idx) => (
-                <div
-                  key={angle.id}
-                  className="p-4 rounded border border-border-default bg-bg-surface space-y-2.5 flex flex-col justify-between"
+          {showSkuKoc && (
+            <>
+              {/* BẢNG MA TRẬN DANH MỤC SẢN PHẨM (SKU PORTFOLIO) */}
+              <Panel
+                flush
+                title={`Danh mục sản phẩm (SKU) & Đối soát File 3.2 (${dossier.skuPortfolio.length} dòng SKU)`}
+              >
+                <DataTable<BrandSkuPortfolioItem>
+                  columns={skuColumns}
+                  rows={dossier.skuPortfolio}
+                  rowKey={(r) => r.id}
+                  empty="Chưa có danh mục SKU."
+                />
+              </Panel>
+
+              {/* BẢNG PHÂN BỔ NGÂN SÁCH KOC THEO PHÂN TẦNG KL1-KL4 */}
+              <Panel
+                flush
+                title="Cơ cấu phân bổ ngân sách KOC theo phân tầng (KL1 – KL4) từ thực tế File 3.2"
+              >
+                <DataTable<KocTierAllocationItem>
+                  columns={kocTierColumns}
+                  rows={dossier.kocTierStrategy}
+                  rowKey={(r) => r.tierCode}
+                  empty="Chưa có dữ liệu phân tầng KOC."
+                />
+              </Panel>
+
+              {/* BẢNG KHUNG GÓC KỊCH BẢN KOC CHUYỂN ĐỔI CAO */}
+              <Panel
+                flush
+                title={`Khung góc kịch bản KOC chuyển đổi cao (${dossier.contentAngleBlueprints.length} góc tiếp cận)`}
+              >
+                <DataTable<WinningContentAngleBlueprint>
+                  columns={contentAngleColumns}
+                  rows={dossier.contentAngleBlueprints}
+                  rowKey={(r) => r.id}
+                  empty="Chưa có khung góc kịch bản."
+                />
+              </Panel>
+            </>
+          )}
+
+          {showSeasonSwot && (
+            <>
+              {/* LỊCH MÙA VỤ 4 QUÝ & TỪ KHÓA TÌM KIẾM */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <Panel
+                  flush
+                  title="Lịch điểm rơi chiến dịch & Tính mùa vụ 12 tháng"
+                  className="lg:col-span-7"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <Status tone="brand">Góc 0{idx + 1}</Status>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-mono text-text-muted">
-                          {angle.bestKocTier}
-                        </span>
-                        {renderEvidenceBadges(angle.evidenceIds)}
+                  <DataTable<SeasonalityQuarterItem>
+                    columns={seasonalityColumns}
+                    rows={dossier.marketLandscape.seasonalityCalendar}
+                    rowKey={(r) => r.quarter}
+                    empty="Chưa có lịch mùa vụ."
+                  />
+                </Panel>
+
+                <Panel
+                  flush
+                  title="Chủ đề tìm kiếm & Hook nội dung"
+                  className="lg:col-span-5"
+                  actions={renderEvidenceBadges(dossier.marketLandscape.evidenceIds.slice(0, 2))}
+                >
+                  <DataTable<SearchKeywordMetricItem>
+                    columns={keywordColumns}
+                    rows={dossier.marketLandscape.searchKeywords}
+                    rowKey={(r) => r.keyword}
+                    empty="Chưa có từ khóa."
+                  />
+                </Panel>
+              </div>
+
+              {/* MA TRẬN SWOT 2x2 SẮC NÉT & QUY CHUẨN KIỂM DUYỆT SÀN */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <Panel
+                  title="Ma trận SWOT thực chiến (gắn dẫn chứng đối soát)"
+                  className="lg:col-span-7"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 border border-line rounded-lg overflow-hidden divide-y md:divide-y-0 md:divide-x divide-line">
+                    <div className="divide-y divide-line">
+                      <div className="p-3.5 space-y-2">
+                        <div className="text-xs font-semibold text-positive">
+                          Điểm mạnh (Strengths)
+                        </div>
+                        <ul className="space-y-2">
+                          {dossier.swotAndCompliance.strengths.map((s, i) => (
+                            <li key={i} className="text-xs space-y-0.5">
+                              <div className="font-medium text-ink">
+                                {s.point} {renderEvidenceBadges(s.evidenceIds)}
+                              </div>
+                              <div className="text-2xs text-ink-3">→ {s.strategicImpact}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-3.5 space-y-2">
+                        <div className="text-xs font-semibold text-accent">
+                          Cơ hội tăng trưởng (Opportunities)
+                        </div>
+                        <ul className="space-y-2">
+                          {dossier.swotAndCompliance.opportunities.map((o, i) => (
+                            <li key={i} className="text-xs space-y-0.5">
+                              <div className="font-medium text-ink">
+                                {o.point} {renderEvidenceBadges(o.evidenceIds)}
+                              </div>
+                              <div className="text-2xs text-ink-3">→ {o.strategicImpact}</div>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                    <div className="text-[14px] font-semibold text-text-primary">
-                      {angle.pillarName}
-                    </div>
-                    <div className="text-xs text-text-muted">
-                      Tệp người xem: {angle.targetPersona}
-                    </div>
-                    <div className="p-2.5 rounded bg-bg-subtle border border-border-subtle text-[12px] text-text-primary">
-                      <span className="font-semibold text-accent">Hook 3s đầu: </span>
-                      &ldquo;{angle.hook3s}&rdquo;
-                    </div>
-                    <div className="text-[12px] text-text-secondary">
-                      <span className="font-medium text-text-primary">Cảnh quay bắt buộc: </span>
-                      {angle.visualProof}
-                    </div>
-                    <div className="text-[12px] text-text-secondary">
-                      <span className="font-medium text-text-primary">Thông điệp RTB: </span>
-                      {angle.keyMessageRtb}
+
+                    <div className="divide-y divide-line">
+                      <div className="p-3.5 space-y-2">
+                        <div className="text-xs font-semibold text-warning">
+                          Điểm yếu & Nút thắt (Weaknesses)
+                        </div>
+                        <ul className="space-y-2">
+                          {dossier.swotAndCompliance.weaknesses.map((w, i) => (
+                            <li key={i} className="text-xs space-y-0.5">
+                              <div className="font-medium text-ink">
+                                {w.point} {renderEvidenceBadges(w.evidenceIds)}
+                              </div>
+                              <div className="text-2xs text-ink-3">→ {w.strategicImpact}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="p-3.5 space-y-2">
+                        <div className="text-xs font-semibold text-critical">
+                          Thách thức & Rủi ro (Threats)
+                        </div>
+                        <ul className="space-y-2">
+                          {dossier.swotAndCompliance.threats.map((t, i) => (
+                            <li key={i} className="text-xs space-y-0.5">
+                              <div className="font-medium text-ink">
+                                {t.point} {renderEvidenceBadges(t.evidenceIds)}
+                              </div>
+                              <div className="text-2xs text-ink-3">→ {t.strategicImpact}</div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span className="text-success font-medium">CTA: {angle.recommendedCta}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Panel>
+                </Panel>
+
+                <Panel
+                  flush
+                  title="Quy chuẩn kiểm duyệt sàn & Từ khóa cấm (TikTok / Shopee)"
+                  className="lg:col-span-5"
+                >
+                  <DataTable<PlatformComplianceRuleItem>
+                    columns={complianceColumns}
+                    rows={dossier.swotAndCompliance.platformComplianceRules}
+                    rowKey={(r) => r.riskCategory}
+                    empty="Chưa có quy chuẩn kiểm duyệt."
+                  />
+                </Panel>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1562,269 +2278,111 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* TAB 2: ĐỐI SOÁT THỰC THI NỘI BỘ B2C & ĐƠN BOOKING THẬT (FILE 4.1, 3.2 & 3.5) */}
       {/* ===================================================================== */}
       {activeTab === 'INTERNAL_EXECUTION' && (
-        <div className="space-y-4">
-          {/* Liên kết File 3.5 (Canva Brief, Google Sheet Booking, File Vận hành) nếu có */}
-          {dossier.internalExecutionAudit.brandFiles35 && (
-            <Panel
-              title={`Hồ sơ Vận hành & Canva Brief Thực tế từ File 3.5 (${dossier.internalExecutionAudit.brandFiles35.storeCode})`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 text-[12px]">
-                <div className="space-y-1 text-text-secondary">
-                  <div>
-                    <span className="font-medium text-text-primary">Mô hình vận hành: </span>
-                    <Status tone="brand">
-                      {dossier.internalExecutionAudit.brandFiles35.operatingModel ===
-                      'SPLIT_RESOURCE'
-                        ? 'Tách nguồn lực (Content & Booking)'
-                        : 'Fullstack Content + Booking'}
-                    </Status>
-                  </div>
-                  <div>
-                    <span className="font-medium text-text-primary">Nhân sự bàn giao & phụ trách: </span>
-                    {dossier.internalExecutionAudit.brandFiles35.handoverFrom || 'B2C'} →{' '}
-                    <strong>
-                      {dossier.internalExecutionAudit.brandFiles35.handoverTo || 'Phòng B2C'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {dossier.internalExecutionAudit.brandFiles35.canvaBriefUrl && (
-                    <a
-                      href={dossier.internalExecutionAudit.brandFiles35.canvaBriefUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-semibold text-accent hover:border-accent hover:bg-accent-soft"
-                    >
-                      Mở Canva Brief Sản phẩm <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  {dossier.internalExecutionAudit.brandFiles35.bookingSheetUrl && (
-                    <a
-                      href={dossier.internalExecutionAudit.brandFiles35.bookingSheetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-semibold text-success hover:border-success"
-                    >
-                      Mở Google Sheet Booking <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  {dossier.internalExecutionAudit.brandFiles35.operationFileUrl && (
-                    <a
-                      href={dossier.internalExecutionAudit.brandFiles35.operationFileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded border border-border-default bg-bg-surface px-3 py-1.5 text-xs font-medium text-text-primary hover:border-accent"
-                    >
-                      Mở File Vận hành Gian hàng <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </Panel>
-          )}
-
+        <div className="space-y-5">
           <Panel
-            title={`Sổ cái Đối soát Thực thi Nội bộ B2C (File 4.1 & 4.1.1): ${dossier.brandName}`}
-            actions={renderEvidenceBadges(dossier.internalExecutionAudit.evidenceIds)}
+            flush={dossier.internalExecutionAudit.stores.length > 0}
+            title={`Đối soát thực thi nội bộ B2C (File 4.1 & 4.1.1): ${dossier.brandName}`}
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                {dossier.internalExecutionAudit.brandFiles35?.canvaBriefUrl && (
+                  <a
+                    href={dossier.internalExecutionAudit.brandFiles35.canvaBriefUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2.5 h-7 text-2xs font-medium text-accent hover:bg-sunken"
+                  >
+                    Canva Brief <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {dossier.internalExecutionAudit.brandFiles35?.bookingSheetUrl && (
+                  <a
+                    href={dossier.internalExecutionAudit.brandFiles35.bookingSheetUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2.5 h-7 text-2xs font-medium text-positive hover:bg-sunken"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    Sheet Booking <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {dossier.internalExecutionAudit.brandFiles35?.operationFileUrl && (
+                  <a
+                    href={dossier.internalExecutionAudit.brandFiles35.operationFileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2.5 h-7 text-2xs font-medium text-ink hover:bg-sunken"
+                  >
+                    File vận hành <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+                {renderEvidenceBadges(dossier.internalExecutionAudit.evidenceIds)}
+              </div>
+            }
           >
             {dossier.internalExecutionAudit.stores.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dossier.internalExecutionAudit.stores.map((st) => (
-                  <div
-                    key={st.storeId}
-                    className="p-4 rounded border border-border-default bg-bg-surface space-y-2.5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <div className="text-[14px] font-semibold text-text-primary">
-                          {st.storeName}
-                        </div>
-                        <div className="text-xs text-text-muted font-mono">
-                          Mã gian: {st.storeId} · Sàn: {st.platform}
-                        </div>
-                      </div>
-                      <Status
-                        tone={
-                          st.utilizationPct > 100
-                            ? 'danger'
-                            : st.scheduleAdherencePct >= 60
-                              ? 'positive'
-                              : 'warning'
-                        }
-                      >
-                        Giải ngân {st.utilizationPct}% · Đúng lịch {st.scheduleAdherencePct}%
-                      </Status>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2.5 rounded bg-bg-subtle font-mono text-[12px]">
-                      <div>
-                        <div className="text-xs text-text-muted">Hạn mức Net</div>
-                        <div className="font-semibold text-text-primary">
-                          {formatVnd(st.budgetNetVnd)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-text-muted">Thực chi Net</div>
-                        <div className="font-semibold text-accent">
-                          {formatVnd(st.actualSpentNetVnd)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-text-muted">Kế hoạch Video</div>
-                        <div className="font-semibold text-text-primary">
-                          {st.totalPlannedVideos} ({st.planPaidVideos} Paid / {st.planSelfVideos}{' '}
-                          Self)
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-text-muted">Đã Book / Đã Air</div>
-                        <div className="font-semibold text-success">
-                          {st.totalBookedOrders} / {st.totalAiredVideos} video
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-[12px] text-text-secondary space-y-1">
-                      <div>
-                        <span className="font-medium text-text-primary">Nhân sự phụ trách:</span>{' '}
-                        PIC {st.pic} · Trưởng nhóm: {st.leaderName}
-                      </div>
-                      <div>
-                        <span className="font-medium text-warning">Chẩn đoán lịch Air W40–W45:</span>{' '}
-                        {st.syncDiagnosis}
-                      </div>
-                      {st.top3BurstDates.length > 0 && (
-                        <div className="font-mono text-xs text-text-muted">
-                          Ngày lên sóng tập trung cao nhất: {st.top3BurstDates.join(', ')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DataTable<InternalStoreAuditItem>
+                columns={storeAuditColumns}
+                rows={dossier.internalExecutionAudit.stores}
+                rowKey={(r) => r.storeId}
+              />
             ) : (
-              <div className="p-4 rounded bg-bg-subtle border border-border-subtle text-[13px] text-text-secondary">
-                Thương hiệu <strong>{dossier.brandName}</strong> nằm ngoài danh sách 69 gian hàng B2C
-                phụ trách = 1 trong File 4.1.
+              <div className="text-xs text-ink-2">
+                Thương hiệu <strong>{dossier.brandName}</strong> nằm ngoài danh sách 69 gian hàng
+                B2C phụ trách = 1 trong File 4.1.
               </div>
             )}
           </Panel>
 
-          {/* Thống kê Ngân sách & Đơn giá theo từng Dòng sản phẩm từ File 3.2 */}
+          {/* Cơ cấu SKU được Book thực tế trong File 3.2 */}
           {dossier.internalExecutionAudit.bookedProductsSummary.length > 0 && (
             <Panel
-              title={`Cơ cấu Dòng sản phẩm (SKU) được Book thực tế trong File 3.2 (${dossier.brandName})`}
+              flush
+              title={`Cơ cấu dòng sản phẩm (SKU) được book thực tế trong File 3.2 (${dossier.brandName})`}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {dossier.internalExecutionAudit.bookedProductsSummary.map((prod, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3.5 rounded border border-border-default bg-bg-surface space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-semibold text-text-primary">
-                        {prod.productName}
-                      </span>
-                      <Status tone="brand">{prod.bookedOrderCount} đơn book</Status>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 p-2 rounded bg-bg-subtle font-mono text-[12px]">
-                      <div>
-                        <div className="text-xs text-text-muted">Tổng chi thực tế</div>
-                        <div className="font-semibold text-accent">
-                          {formatVnd(prod.totalSpentVnd)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-text-muted">Đơn giá TB / Video</div>
-                        <div className="font-semibold text-text-primary">
-                          {formatVnd(prod.avgCostPerVideoVnd)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-text-secondary">
-                      Phân tầng chủ đạo: <strong>{prod.dominantTier}</strong> · Hình thức:{' '}
-                      {prod.dominantFormat}
-                    </div>
-                    {prod.sampleVideoLinks.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {prod.sampleVideoLinks.map((url, uIdx) => (
-                          <a
-                            key={uIdx}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded border border-border-default px-2 py-0.5 text-xs font-mono text-accent hover:bg-accent-soft"
-                          >
-                            Video mẫu #{uIdx + 1} <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <DataTable<BookedProductSummaryItem>
+                columns={bookedProductColumns}
+                rows={dossier.internalExecutionAudit.bookedProductsSummary}
+                rowKey={(r) => r.productName}
+              />
             </Panel>
           )}
 
           {/* Bảng Chứng từ Đơn Booking & Link Video TikTok đã Air thật (File 3.2) */}
           {dossier.internalExecutionAudit.verifiedAiredDeals.length > 0 && (
             <Panel
-              title={`Chứng từ Đơn Booking & Video KOC đã lên sóng thực tế (${dossier.internalExecutionAudit.verifiedAiredDeals.length} đơn từ File 3.2)`}
+              flush
+              title={`Chứng từ đơn Booking & Video KOC đã lên sóng (${filteredAiredDeals.length}/${dossier.internalExecutionAudit.verifiedAiredDeals.length} đơn File 3.2)`}
             >
+              <div className="px-4 py-3 border-b border-line bg-surface">
+                <FilterBar
+                  search={{
+                    value: dealSearchQuery,
+                    onChange: setDealSearchQuery,
+                    placeholder: 'Tìm theo mã deal, @handle KOC, sản phẩm, gian hàng hoặc PIC...',
+                  }}
+                  resultCount={filteredAiredDeals.length}
+                />
+              </div>
               <DataTable<VerifiedBookedDealEvidenceItem>
                 columns={airedDealsColumns}
-                rows={dossier.internalExecutionAudit.verifiedAiredDeals}
+                rows={filteredAiredDeals}
                 rowKey={(r) => r.dealCode}
-                empty="Chưa có dữ liệu đơn booking."
+                empty="Không có đơn booking nào khớp từ khóa."
               />
             </Panel>
           )}
 
-          {/* Chỉ hiển thị Chiến dịch Quảng cáo TikTok Seller Center khi đúng Brand */}
+          {/* Chiến dịch Quảng cáo TikTok Seller Center */}
           {dossier.internalExecutionAudit.sellerAdsCampaigns.length > 0 && (
             <Panel
-              title={`Hiệu suất Chiến dịch Quảng cáo TikTok Shop Seller Center (${dossier.brandName})`}
+              flush
+              title={`Hiệu suất chiến dịch quảng cáo TikTok Shop Seller Center (${dossier.brandName})`}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {dossier.internalExecutionAudit.sellerAdsCampaigns.map((camp) => (
-                  <div
-                    key={camp.campaignId}
-                    className="p-3.5 rounded border border-border-default bg-bg-surface space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[13px] font-semibold text-text-primary truncate">
-                        {camp.campaignName}
-                      </span>
-                      <Status tone="positive">Đúng Brand</Status>
-                    </div>
-                    <div className="text-xs text-text-muted font-mono">
-                      ID: {camp.campaignId} · Gian: {camp.storeName}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 p-2 rounded bg-bg-subtle font-mono text-xs">
-                      <div>
-                        <div className="text-text-muted">Chi phí Ads</div>
-                        <div className="font-semibold text-text-primary">
-                          {formatVnd(camp.costVnd)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-text-muted">GMV</div>
-                        <div className="font-semibold text-success">{formatVnd(camp.gmvVnd)}</div>
-                      </div>
-                      <div>
-                        <div className="text-text-muted">ROAS</div>
-                        <div className="font-semibold text-accent">{camp.roas}x</div>
-                      </div>
-                    </div>
-                    <div className="flex justify-between font-mono text-xs text-text-secondary">
-                      <span>Đơn: {formatNumber(camp.orders)}</span>
-                      <span>CPA: {formatVnd(camp.cpaVnd)}</span>
-                      <span>Hook 2s: {camp.hookRate2sPct}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DataTable<SellerAdsCampaignEvidenceItem>
+                columns={sellerAdsColumns}
+                rows={dossier.internalExecutionAudit.sellerAdsCampaigns}
+                rowKey={(r) => r.campaignId}
+              />
             </Panel>
           )}
         </div>
@@ -1834,9 +2392,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* TAB 3: MA TRẬN ĐỐI THỦ TRỰC DIỆN & QUÉT KOC ĐỐI THỦ                  */}
       {/* ===================================================================== */}
       {activeTab === 'COMPETITOR_MATRIX' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Panel
-            title={`Ma trận Đối đầu Trực diện: ${dossier.brandName} vs ${dossier.competitors.length} Đối thủ Cùng Phân khúc`}
+            flush
+            title={`Ma trận đối đầu trực diện: ${dossier.brandName} vs ${dossier.competitors.length} đối thủ cùng phân khúc`}
             actions={
               <Button
                 size="sm"
@@ -1844,13 +2403,13 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 icon={Download}
                 onClick={handleDownloadCompetitorCsv}
               >
-                Xuất bảng Excel (.CSV)
+                Xuất CSV
               </Button>
             }
           >
-            <div className="mb-4 p-3 rounded border border-border-default bg-bg-subtle flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+            <div className="px-4 py-3 border-b border-line bg-canvas/50 flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
               <div className="flex-1">
-                <input
+                <Input
                   type="text"
                   list="b2c-brand-research-list"
                   value={tab3CompetitorInput}
@@ -1860,8 +2419,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       void handleRunBrandAnalysis(tab3CompetitorInput.trim(), []);
                     }
                   }}
-                  placeholder="Dán tên đối thủ hoặc @handle TikTok cần nghiên cứu (VD: Nous, Cocoon, La Roche-Posay, SKIN1004...)"
-                  className="w-full h-9 px-3 rounded border border-border-default bg-bg-surface text-[13px] text-text-primary focus:outline-none focus:border-accent"
+                  placeholder="Nhập tên đối thủ hoặc @handle TikTok cần phân tích sâu / quét KOC (VD: Nous, Cocoon, La Roche-Posay...)"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -1876,14 +2434,12 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     }
                   }}
                 >
-                  {analyzingDossier ? 'Đang phân tích...' : 'Nghiên cứu Hồ sơ Đối thủ'}
+                  {analyzingDossier ? 'Đang phân tích...' : 'Phân tích đối thủ'}
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={
-                    Boolean(scanningCompetitorHandle) || !tab3CompetitorInput.trim()
-                  }
+                  disabled={Boolean(scanningCompetitorHandle) || !tab3CompetitorInput.trim()}
                   icon={Users}
                   onClick={() => {
                     if (tab3CompetitorInput.trim()) {
@@ -1903,89 +2459,28 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               columns={competitorColumns}
               rows={dossier.competitors}
               rowKey={(r) => r.id}
+              stickyLast
               empty="Chưa có dữ liệu đối thủ cạnh tranh."
             />
           </Panel>
 
-          {/* Kết quả Quét KOC thực tế của Đối thủ khi người dùng bấm nút "Quét KOC" */}
+          {/* Kết quả Quét KOC thực tế của Đối thủ */}
           {(scanningCompetitorHandle || scannedCompKocs.length > 0) && (
             <Panel
+              flush
               title={
                 scannedCompProfile
-                  ? `Danh sách KOC Thực tế đang làm cho Đối thủ: ${scannedCompProfile.brandName} (@${scannedCompProfile.handle})`
-                  : `Đang dò quét mạng lưới KOC của đối thủ ${scanningCompetitorHandle}...`
+                  ? `Danh sách KOC đang hợp tác với đối thủ: ${scannedCompProfile.brandName} (@${scannedCompProfile.handle})`
+                  : `Đang quét mạng lưới KOC của đối thủ ${scanningCompetitorHandle}...`
               }
             >
-              {scannedCompKocs.length === 0 ? (
-                <div className="py-6 text-center text-[13px] text-text-muted">
-                  Đang quét dữ liệu KOC từ TikTok...
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {scannedCompKocs.map((item) => {
-                    const clean = item.handle.toLowerCase().replace(/^@+/, '');
-                    const alreadySaved = existingByHandle.has(clean);
-                    return (
-                      <div
-                        key={item.handle}
-                        className="p-3.5 rounded border border-border-default bg-bg-surface flex items-start justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <Avatar
-                            name={item.channelProfile.nickname}
-                            src={item.channelProfile.avatarUrl}
-                            size={36}
-                          />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[13px] font-semibold text-text-primary truncate">
-                                {item.channelProfile.nickname}
-                              </span>
-                              <Status tone="brand">
-                                {item.affiliateMetrics.suggestedClassification.tierLabel}
-                              </Status>
-                            </div>
-                            <div className="text-xs font-mono text-text-muted">
-                              @{item.handle} · {formatFollowers(item.channelProfile.followers)} flw ·
-                              ER {item.engagementMetrics.engagementRate}%
-                            </div>
-                            <div className="text-[12px] text-text-secondary line-clamp-2 mt-1">
-                              {item.competitorCollaboration.competitorProductPromoted}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs font-mono text-text-muted mt-1">
-                              <span>
-                                {formatNumber(item.competitorCollaboration.latestCollabViews)} views
-                              </span>
-                              <span>
-                                {item.competitorCollaboration.competitorVideoCount} video
-                              </span>
-                              {item.competitorCollaboration.latestCollabVideoUrl && (
-                                <a
-                                  href={item.competitorCollaboration.latestCollabVideoUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-accent hover:underline inline-flex items-center gap-0.5"
-                                >
-                                  Xem video <ArrowUpRight className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          variant={alreadySaved ? 'secondary' : 'primary'}
-                          icon={alreadySaved ? Check : UserPlus}
-                          onClick={() => handleSaveOneCompetitorKoc(item)}
-                        >
-                          {alreadySaved ? 'Cập nhật' : 'Lưu KOC'}
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <DataTable<TikTokCompetitorKocResult>
+                columns={scannedKocColumns}
+                rows={scannedCompKocs}
+                rowKey={(r) => r.handle}
+                loading={Boolean(scanningCompetitorHandle) && scannedCompKocs.length === 0}
+                empty="Đang quét dữ liệu KOC từ TikTok..."
+              />
             </Panel>
           )}
         </div>
@@ -1995,9 +2490,54 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* TAB 4: ĐÀO BÌNH LUẬN & NỖI ĐAU KHÁCH HÀNG (REVIEW & COMMENT MINER)    */}
       {/* ===================================================================== */}
       {activeTab === 'REVIEW_PAIN_MINER' && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <Panel
-            title="Công cụ Đào Bình luận & Phân tích Nỗi đau Khách hàng"
+            title="Nguồn dữ liệu bình luận & đánh giá"
+            className="lg:col-span-4"
+          >
+            <div className="space-y-3.5">
+              <Field label="Link video TikTok của Brand hoặc đối thủ">
+                <Input
+                  type="text"
+                  value={reviewVideoUrl}
+                  onChange={(e) => setReviewVideoUrl(e.target.value)}
+                  placeholder="https://www.tiktok.com/@.../video/..."
+                  className="font-code text-xs"
+                />
+              </Field>
+
+              <Field label="Hoặc dán đánh giá Shopee / bình luận khách hàng (mỗi dòng 1 ý)">
+                <Textarea
+                  rows={6}
+                  value={rawReviewText}
+                  onChange={(e) => setRawReviewText(e.target.value)}
+                  placeholder="Dán các bình luận, câu hỏi hoặc phản hồi thực tế của khách hàng..."
+                  className="text-xs"
+                />
+              </Field>
+
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <span className="text-2xs text-ink-3">
+                  {minedStats.totalLines > 0
+                    ? `Đã phân tích ${minedStats.totalLines} dòng (${minedStats.scrapedFromTikTok} từ TikTok)`
+                    : 'Trích xuất nhóm vấn đề & FAQ'}
+                </span>
+                <Button
+                  variant="primary"
+                  disabled={miningReviews}
+                  icon={MessageSquare}
+                  onClick={() => void handleRunReviewMining()}
+                >
+                  {miningReviews ? 'Đang bóc tách...' : 'Bóc tách bình luận'}
+                </Button>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel
+            flush
+            title={`Nhóm vấn đề, nỗi đau & câu hỏi thường gặp (${minedClusters.length} cụm chủ đề)`}
+            className="lg:col-span-8"
             actions={
               <Button
                 size="sm"
@@ -2006,112 +2546,67 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 icon={Check}
                 onClick={handleSyncFaqsToBrandProfile}
               >
-                Lưu {minedClusters.length} cụm FAQ vào Hồ sơ Brand ({dossier.brandName})
+                Lưu {minedClusters.length} FAQ vào hồ sơ {dossier.brandName}
               </Button>
             }
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-5 space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-text-secondary mb-1">
-                    1. Link Video TikTok của Brand hoặc Đối thủ (Cào bình luận trực tiếp)
-                  </label>
-                  <input
-                    type="text"
-                    value={reviewVideoUrl}
-                    onChange={(e) => setReviewVideoUrl(e.target.value)}
-                    placeholder="https://www.tiktok.com/@.../video/..."
-                    className="w-full h-9 px-3 rounded border border-border-default bg-bg-surface text-[12px] font-mono text-text-primary focus:outline-none focus:border-accent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-text-secondary mb-1">
-                    2. Dán thêm đánh giá Shopee / Bình luận khách hàng (Mỗi dòng 1 bình luận)
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={rawReviewText}
-                    onChange={(e) => setRawReviewText(e.target.value)}
-                    placeholder="Dán các bình luận, câu hỏi hoặc phản hồi thực tế của khách hàng vào đây..."
-                    className="w-full p-2.5 rounded border border-border-default bg-bg-surface text-[12px] text-text-primary focus:outline-none focus:border-accent"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs text-text-muted">
-                    {minedStats.totalLines > 0
-                      ? `Đã phân tích: ${minedStats.totalLines} dòng (${minedStats.scrapedFromTikTok} cào từ TikTok)`
-                      : 'Nhập link video hoặc dán bình luận để bóc tách'}
-                  </span>
-                  <Button
-                    variant="primary"
-                    disabled={miningReviews}
-                    icon={MessageSquare}
-                    onClick={() => void handleRunReviewMining()}
-                  >
-                    {miningReviews ? 'Đang bóc tách...' : 'Bóc tách Nỗi đau & Câu hỏi'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="lg:col-span-7 space-y-3">
-                {minedClusters.map((cluster) => (
-                  <div
-                    key={cluster.id}
-                    className="p-3.5 rounded border border-border-default bg-bg-surface space-y-2"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Status
-                          tone={
-                            cluster.category === 'PAIN_POINT'
-                              ? 'danger'
-                              : cluster.category === 'BARRIER_TO_TRIAL'
-                                ? 'warning'
-                                : cluster.category === 'COMPETITOR_COMPLAINT'
-                                  ? 'brand'
-                                  : 'positive'
-                          }
-                        >
-                          {cluster.categoryLabel}
-                        </Status>
-                        <span className="text-[13px] font-semibold text-text-primary">
-                          {cluster.topicTitle}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs text-text-muted">
-                          {cluster.mentionCount} luận điểm · {cluster.sharePct}% tỷ trọng
-                        </span>
-                        {renderEvidenceBadges(cluster.evidenceIds)}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1 pl-2 border-l-2 border-border-default">
-                      {cluster.sampleQuotes.map((q, i) => (
-                        <div key={i} className="text-[12px] text-text-secondary italic">
-                          &ldquo;{q}&rdquo;
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="p-2 rounded bg-bg-subtle text-[12px]">
-                      <span className="font-semibold text-accent">
-                        Gợi ý Hook làm Video giải đáp:{' '}
+            <div className="divide-y divide-line">
+              {minedClusters.map((cluster) => (
+                <div key={cluster.id} className="p-4 space-y-2.5 hover:bg-canvas/40 transition-colors">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Status
+                        tone={
+                          cluster.category === 'PAIN_POINT'
+                            ? 'critical'
+                            : cluster.category === 'BARRIER_TO_TRIAL'
+                              ? 'warning'
+                              : cluster.category === 'COMPETITOR_COMPLAINT'
+                                ? 'info'
+                                : 'positive'
+                        }
+                      >
+                        {cluster.categoryLabel}
+                      </Status>
+                      <span className="text-sm font-semibold text-ink">
+                        {cluster.topicTitle}
                       </span>
-                      <span className="text-text-primary">{cluster.recommendedScriptHook}</span>
                     </div>
-
-                    <div className="text-xs text-text-secondary">
-                      <span className="font-medium text-text-primary">
-                        FAQ chuẩn hóa ({cluster.suggestedFaqQuestion}):{' '}
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xs text-ink-3 tabular-nums">
+                        {cluster.mentionCount} lượt nhắc · {cluster.sharePct}% tỷ trọng
                       </span>
-                      {cluster.suggestedFaqAnswer}
+                      {renderEvidenceBadges(cluster.evidenceIds)}
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {cluster.sampleQuotes.map((q, i) => (
+                      <div
+                        key={i}
+                        className="text-xs text-ink-2 italic pl-2.5 border-l-2 border-line-strong"
+                      >
+                        &ldquo;{q}&rdquo;
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
+                    <div className="p-2.5 rounded-md bg-canvas border border-line">
+                      <span className="font-semibold text-accent block mb-0.5">
+                        Gợi ý Hook làm video giải đáp
+                      </span>
+                      <span className="text-ink">{cluster.recommendedScriptHook}</span>
+                    </div>
+                    <div className="p-2.5 rounded-md bg-canvas border border-line">
+                      <span className="font-semibold text-ink block mb-0.5">
+                        FAQ: {cluster.suggestedFaqQuestion}
+                      </span>
+                      <span className="text-ink-2">{cluster.suggestedFaqAnswer}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </Panel>
         </div>
@@ -2121,121 +2616,66 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* TAB 5: SỔ DẪN CHỨNG XÁC THỰC ([EV]) & QUÉT LIVE WEBSITE              */}
       {/* ===================================================================== */}
       {activeTab === 'EVIDENCE_AND_WEB' && (
-        <div className="space-y-4">
-          {/* SỔ DẪN CHỨNG & TRUY VẾT NGUỒN XÁC THỰC */}
+        <div className="space-y-5">
           <Panel
-            title={`Sổ Dẫn chứng & Nguồn Xác thực Dữ liệu (${dossier.evidenceLedger.length} Mã dẫn chứng)`}
+            flush
+            title={`Sổ dẫn chứng & Nguồn xác thực dữ liệu (${filteredEvidenceList.length}/${dossier.evidenceLedger.length} mã dẫn chứng)`}
+            actions={
+              highlightedEvidenceId ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setHighlightedEvidenceId(null)}
+                >
+                  Bỏ đánh dấu [{highlightedEvidenceId}]
+                </Button>
+              ) : undefined
+            }
           >
-            <div className="space-y-4">
-              {/* Bộ lọc theo loại nguồn dẫn chứng */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[
-                  { id: 'ALL', label: `Tất cả nguồn (${dossier.evidenceLedger.length})` },
-                  { id: 'INTERNAL_PLAN_41', label: 'File 4.1 & 4.1.1 (Kế hoạch B2C)' },
-                  { id: 'BOOKING_LEDGER_32', label: 'File 3.2 & 3.5 (Đơn Book & Sheet)' },
-                  { id: 'CLINICAL_REGULATORY', label: 'File 3.5 Canva Brief & Pháp lý' },
-                  { id: 'SELLER_CENTER_ADS', label: 'TikTok Seller Center' },
-                  { id: 'STOREFRONT_OFFICIAL', label: 'Gian hàng Chính hãng' },
-                  { id: 'COMPETITOR_BENCHMARK', label: 'Đối soát Đối thủ' },
-                  { id: 'LIVE_WEB_DOM', label: 'Quét trực tiếp DOM Website' },
-                ].map((f) => {
-                  const active = selectedEvidenceFilter === f.id;
-                  return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setSelectedEvidenceFilter(f.id)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                        active
-                          ? 'bg-accent text-text-inverse border-accent'
-                          : 'bg-bg-subtle text-text-secondary border-border-default hover:text-text-primary'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Danh sách thẻ dẫn chứng */}
-              <div className="space-y-2.5">
-                {filteredEvidenceList.map((ev) => {
-                  const isHighlighted = highlightedEvidenceId === ev.id;
-                  return (
-                    <div
-                      key={ev.id}
-                      className={`p-3.5 rounded border transition-colors space-y-1.5 ${
-                        isHighlighted
-                          ? 'border-accent bg-accent-soft'
-                          : 'border-border-default bg-bg-surface'
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-[12px] font-semibold text-accent px-2 py-0.5 rounded bg-bg-subtle border border-border-default">
-                            [{ev.id}]
-                          </span>
-                          <Status
-                            tone={
-                              ev.reliabilityTag === 'ĐỐI SOÁT NỘI BỘ 100%'
-                                ? 'positive'
-                                : ev.reliabilityTag === 'QUÉT TRỰC TIẾP DOM/HTTP'
-                                  ? 'brand'
-                                  : ev.reliabilityTag === 'HỒ SƠ CÔNG BỐ / KIỂM ĐỊNH'
-                                    ? 'warning'
-                                    : 'neutral'
-                            }
-                          >
-                            {ev.reliabilityTag}
-                          </Status>
-                          <span className="text-[12px] font-medium text-text-secondary">
-                            {ev.categoryLabel}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-text-muted font-mono">
-                          <span>Đối soát: {ev.verifiedDate}</span>
-                          {ev.sourceUrl && (
-                            <a
-                              href={ev.sourceUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-accent hover:underline"
-                            >
-                              Mở link nguồn <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="text-[13px] font-semibold text-text-primary">
-                        Luận điểm chứng minh: {ev.claimSupported}
-                      </div>
-
-                      <div className="text-[12px] text-text-secondary">
-                        <span className="font-medium text-text-primary">Tài liệu / Nguồn gốc: </span>
-                        {ev.sourceDocument}
-                      </div>
-
-                      <div className="p-2.5 rounded bg-bg-subtle border border-border-subtle font-mono text-xs text-text-primary leading-relaxed">
-                        {ev.exactQuoteOrMetric}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="px-4 py-3 border-b border-line bg-surface">
+              <FilterBar
+                search={{
+                  value: evidenceSearch,
+                  onChange: setEvidenceSearch,
+                  placeholder: 'Tìm theo mã [EV], luận điểm, tên file nguồn hoặc số liệu...',
+                }}
+                chips={
+                  <Chips<EvidenceFilterKey>
+                    items={evidenceChipOptions}
+                    value={selectedEvidenceFilter}
+                    onChange={setSelectedEvidenceFilter}
+                  />
+                }
+                resultCount={filteredEvidenceList.length}
+              />
             </div>
+
+            <DataTable<EvidenceCitation>
+              columns={evidenceColumns}
+              rows={filteredEvidenceList}
+              rowKey={(r) => r.id}
+              rowClassName={(r) =>
+                highlightedEvidenceId === r.id ? 'bg-accent-soft/60' : undefined
+              }
+              empty="Không có dẫn chứng nào khớp bộ lọc."
+            />
           </Panel>
 
-          {/* CÔNG CỤ QUÉT TRỰC TIẾP WEBSITE / TRANG ĐÍCH ĐỂ BỔ SUNG DẪN CHỨNG LIVE DOM */}
-          <Panel title="Trình Quét Trực tiếp Website & Trang đích Thương hiệu / Đối thủ">
+          {/* CÔNG CỤ QUÉT TRỰC TIẾP WEBSITE / TRANG ĐÍCH */}
+          <Panel title="Quét trực tiếp website & trang đích thương hiệu / đối thủ">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-2">
-                <input
+                <Input
                   type="text"
                   value={inspectUrlInput}
                   onChange={(e) => setInspectUrlInput(e.target.value)}
-                  placeholder="Nhập URL website thương hiệu hoặc đối thủ..."
-                  className="flex-1 h-9 px-3 rounded border border-border-default bg-bg-surface text-[13px] font-mono text-text-primary focus:outline-none focus:border-accent"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      void handleInspectWebsiteUrl();
+                    }
+                  }}
+                  placeholder="Nhập URL website thương hiệu hoặc đối thủ (VD: https://kutieskin.vn)..."
+                  className="flex-1 font-code text-xs"
                 />
                 <Button
                   variant="primary"
@@ -2243,7 +2683,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   icon={Globe}
                   onClick={() => void handleInspectWebsiteUrl()}
                 >
-                  {inspectingUrl ? 'Đang quét...' : 'Quét Trang Đích'}
+                  {inspectingUrl ? 'Đang quét...' : 'Quét trang đích'}
                 </Button>
                 {webInspection && (
                   <Button
@@ -2258,49 +2698,49 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                       });
                       setDossier(updated);
                       onNotify?.(
-                        `Đã gộp dẫn chứng DOM từ ${webInspection.domain} vào Sổ dẫn chứng của ${dossier.brandName}`,
+                        `Đã gộp dẫn chứng DOM từ ${webInspection.domain} vào sổ dẫn chứng của ${dossier.brandName}`,
                         'success'
                       );
                     }}
                   >
-                    Gộp vào Sổ Dẫn chứng Brand
+                    Gộp vào sổ dẫn chứng
                   </Button>
                 )}
               </div>
 
               {webInspection && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="p-4 rounded border border-border-default bg-bg-surface space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[12px] font-semibold text-accent">
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-line border border-line rounded-lg bg-surface">
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-code text-xs font-semibold text-accent">
                         {webInspection.domain}
                       </span>
                       <Status tone={webInspection.isLiveFetched ? 'positive' : 'warning'}>
                         {webInspection.isLiveFetched
-                          ? `Kết nối trực tiếp (HTTP ${webInspection.httpStatus})`
-                          : 'Chế độ phân tích tên miền'}
+                          ? `HTTP ${webInspection.httpStatus}`
+                          : 'Phân tích tên miền'}
                       </Status>
                     </div>
-                    <div className="text-[14px] font-semibold text-text-primary">
+                    <div className="text-sm font-semibold text-ink">
                       {webInspection.pageTitle}
                     </div>
-                    <p className="text-[12px] text-text-secondary">
+                    <p className="text-xs text-ink-2 leading-relaxed">
                       {webInspection.metaDescription}
                     </p>
-                    <div className="text-xs text-text-muted bg-bg-subtle p-2 rounded">
+                    <div className="text-2xs text-ink-3 bg-canvas p-2.5 rounded border border-line">
                       {webInspection.summaryNote}
                     </div>
 
                     {webInspection.detectedPricesVnd.length > 0 && (
-                      <div>
-                        <div className="text-xs font-medium text-text-muted mb-1">
+                      <div className="pt-1">
+                        <div className="text-2xs font-medium text-ink-3 mb-1.5">
                           Mốc giá phát hiện trên trang:
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {webInspection.detectedPricesVnd.map((p) => (
                             <span
                               key={p}
-                              className="px-2 py-0.5 rounded bg-bg-subtle border border-border-default font-mono text-xs text-accent"
+                              className="px-2 py-0.5 rounded bg-canvas border border-line font-code text-2xs text-accent tabular-nums"
                             >
                               {formatVnd(p)}
                             </span>
@@ -2310,12 +2750,12 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     )}
                   </div>
 
-                  <div className="p-4 rounded border border-border-default bg-bg-surface space-y-3">
+                  <div className="p-4 space-y-3">
                     <div>
-                      <div className="text-xs font-medium text-text-muted uppercase mb-1">
+                      <div className="text-2xs font-semibold text-ink-3 mb-1.5">
                         Tiêu đề H1 / H2 & Danh mục phát hiện trên trang
                       </div>
-                      <ul className="space-y-1 text-[12px] text-text-primary">
+                      <ul className="space-y-1 text-xs text-ink">
                         {[...webInspection.h1Headings, ...webInspection.h2Headings]
                           .slice(0, 8)
                           .map((h, i) => (
@@ -2327,11 +2767,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     </div>
 
                     {webInspection.extractedUsps.length > 0 && (
-                      <div>
-                        <div className="text-xs font-medium text-text-muted uppercase mb-1">
-                          Tuyên bố Giá trị & USP trích xuất từ HTML
+                      <div className="pt-2 border-t border-line">
+                        <div className="text-2xs font-semibold text-ink-3 mb-1.5">
+                          Tuyên bố giá trị & USP trích xuất từ HTML
                         </div>
-                        <ul className="space-y-1 text-[12px] text-text-secondary">
+                        <ul className="space-y-1 text-xs text-ink-2">
                           {webInspection.extractedUsps.slice(0, 4).map((u, i) => (
                             <li key={i} className="line-clamp-2">
                               • {u}

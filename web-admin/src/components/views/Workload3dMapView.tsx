@@ -875,6 +875,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
     const updateSize = () => {
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = Math.max(320, Math.floor(rect.width));
       const h = Math.max(320, Math.floor(rect.height));
@@ -944,6 +945,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     };
 
     const render = () => {
+      if (document.hidden || canvas.offsetParent === null) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
       time += 1;
       const { width, height, dpr } = canvasSizeRef.current;
       const {

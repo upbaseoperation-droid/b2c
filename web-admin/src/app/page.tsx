@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
-import { Sidebar, TabKey } from '../components/Sidebar';
+import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
+import { TAB_LABELS } from '../lib/navGroups';
 import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { CockpitView } from '../components/views/CockpitView';
+import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
 
 import dynamic from 'next/dynamic';
 import type { ContractIntent } from '../components/views/ContractManagementView';
@@ -39,7 +42,6 @@ function ViewLoading() {
   );
 }
 
-const CockpitView = dynamic(() => import('../components/views/CockpitView').then(m => m.CockpitView), { loading: ViewLoading });
 const OverviewView = dynamic(() => import('../components/views/OverviewView').then(m => m.OverviewView), { loading: ViewLoading });
 const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
 const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
@@ -63,7 +65,6 @@ const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDat
 const CtvManagementView = dynamic(() => import('../components/views/CtvManagementView').then(m => m.CtvManagementView), { loading: ViewLoading });
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
-const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
@@ -74,14 +75,13 @@ const BrandMarketResearchHubView = dynamic(() => import('../components/views/Bra
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { loadAccessPolicy } from '../lib/policyClient';
-import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole, getSavedInternalStaffList } from '../lib/rbacData';
+import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
 import { 
   filterScopedStores, 
   filterScopedBrands, 
   filterScopedPlans, 
   filterScopedDeals, 
-  getUserScopeSummary, 
-  isStaffGlobalAdminOrManager 
+  getUserScopeSummary
 } from '../lib/rbacScope';
 import { Button, PageActiveContext, Skeleton, SkeletonRows, ToastStack, useToastQueue } from '../components/ui';
 
@@ -122,6 +122,27 @@ import {
   InputPlanBreakdownState
 } from '../lib/types';
 
+const FrozenTabBody = React.memo(
+  function FrozenTabBody({
+    isActive,
+    tabKey,
+    children,
+  }: {
+    isActive: boolean;
+    tabKey: TabKey;
+    children: React.ReactNode;
+  }) {
+    return (
+      <PageActiveContext.Provider value={isActive}>
+        <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
+          {children}
+        </ErrorBoundary>
+      </PageActiveContext.Provider>
+    );
+  },
+  (prev, next) => !prev.isActive && !next.isActive
+);
+
 function KeepAliveTab({
   tabKey,
   currentTab,
@@ -131,49 +152,54 @@ function KeepAliveTab({
   currentTab: TabKey;
   children: React.ReactNode;
 }) {
-  const [hasMounted, setHasMounted] = useState(tabKey === currentTab);
-  if (tabKey === currentTab && !hasMounted) {
+  const isActive = tabKey === currentTab;
+  const [hasMounted, setHasMounted] = useState(isActive);
+  if (isActive && !hasMounted) {
     setHasMounted(true);
   }
 
   if (!hasMounted) return null;
   return (
     <div
-      style={{ display: tabKey === currentTab ? 'block' : 'none' }}
+      style={{ display: isActive ? 'block' : 'none' }}
       className="workspace-view space-y-6"
     >
-      <PageActiveContext.Provider value={tabKey === currentTab}>
-        <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
-          {children}
-        </ErrorBoundary>
-      </PageActiveContext.Provider>
+      <FrozenTabBody isActive={isActive} tabKey={tabKey}>
+        {children}
+      </FrozenTabBody>
     </div>
   );
 }
 
+const ACTIVE_TAB_SESSION_KEY = 'upbase_active_tab';
+
+function resolveInitialTab(user: UserProfile | null): TabKey {
+  const targetUser = user || USERS[0];
+  if (targetUser.id.startsWith('contract-demo-')) {
+    return 'contracts';
+  }
+  const allowed = getAllowedTabsForRole(targetUser.role);
+  if (typeof window !== 'undefined') {
+    const savedTab = sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY) as TabKey | null;
+    if (savedTab && allowed.includes(savedTab)) {
+      return savedTab;
+    }
+  }
+  return getDefaultLandingTabForRole(targetUser.role);
+}
+
 export default function App() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    if (typeof window !== 'undefined') {
-      const savedUserId = localStorage.getItem('upbase_selected_user_id');
-      if (savedUserId) {
-        return USERS.find(u => u.id === savedUserId) || USERS[0];
-      }
-    }
-    return null;
-  });
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const savedUserId = localStorage.getItem('upbase_selected_user_id');
-      if (savedUserId && USERS.some(u => u.id === savedUserId)) {
-        return false;
-      }
-    }
-    return true;
-  });
-  const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(USERS[0]);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<TabKey>(() => getDefaultLandingTabForRole(USERS[0].role));
+  const hasUserNavigatedRef = useRef<boolean>(false);
   const [crawlerResetKey, setCrawlerResetKey] = useState<number>(0);
   const handleSelectTab = (tab: TabKey) => {
+    hasUserNavigatedRef.current = true;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, tab);
+    }
     if (tab === 'tiktok-crawler') {
       setCrawlerResetKey((prev) => prev + 1);
     }
@@ -199,6 +225,28 @@ export default function App() {
     window.addEventListener('upbase-rbac-updated', onRbacUpdated);
     return () => window.removeEventListener('upbase-rbac-updated', onRbacUpdated);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentUser && !isLoadingAuth) {
+      sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, activeTab);
+    }
+  }, [activeTab, currentUser, isLoadingAuth]);
+
+  // Nạp sẵn các gói giao diện trọng yếu khi trình duyệt rảnh để chuyển tab 0ms
+  useEffect(() => {
+    if (isLoadingAuth) return;
+    const timer = window.setTimeout(() => {
+      void import('../components/views/InputPlanBreakdownView');
+      void import('../components/views/BookingView');
+      void import('../components/views/ContractManagementView');
+      void import('../components/views/BrandProfilesView');
+      void import('../components/views/StoreManagementView');
+      void import('../components/views/TikTokCrawlerHubView');
+      void import('../components/views/MasterDataHubView');
+      void import('../components/views/CentralizedRbacHubView');
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [isLoadingAuth]);
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
   if (currentUser) {
@@ -227,14 +275,14 @@ export default function App() {
       } catch (error) { showToast((error as Error).message, 'error'); setIsLoadingAuth(false); return; }
       setIsLoadingAuth(false);
     }
-    setCurrentUser(newUser);
+    setCurrentUser(prev => (prev && JSON.stringify(prev) === JSON.stringify(newUser) ? prev : newUser));
     if (typeof window !== 'undefined') localStorage.setItem('upbase_selected_user_id', newUser.id);
 
     if (newUser.role === 'BRAND_PARTNER') {
       const userBrand = newUser.assignedBrands?.[0] || newUser.linkedEntityName || 'Kutieskin';
-      setSelectedBrandContext(userBrand);
+      setSelectedBrandContext(prev => (prev === userBrand ? prev : userBrand));
     } else {
-      setSelectedBrandContext('ALL');
+      setSelectedBrandContext(prev => (prev === 'ALL' ? prev : 'ALL'));
     }
 
     const defaultTab: TabKey = newUser.id.startsWith('contract-demo-')
@@ -244,6 +292,9 @@ export default function App() {
       const allowed = getAllowedTabsForRole(newUser.role);
       const isPartnerRole = ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(newUser.role);
       if (!allowed.includes(prevTab) || isPartnerRole || !isSilent || newUser.id.startsWith('contract-demo-')) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, defaultTab);
+        }
         return defaultTab;
       }
       return prevTab;
@@ -254,17 +305,22 @@ export default function App() {
     }
   }, [showToast]);
 
-  // Tải phiên đăng nhập từ cookie hoặc vai trò đã chọn ở trang /login
+  // Tải phiên đăng nhập từ cookie hoặc vai trò đã chọn ở trang /login (song song hóa auth + access-policy)
   useEffect(() => {
     async function loadUser() {
+      const hadSavedUser = typeof window !== 'undefined' && Boolean(localStorage.getItem('upbase_selected_user_id'));
+      const savedTab = typeof window !== 'undefined' ? (sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY) as TabKey | null) : null;
       try {
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
-        const res = await fetch('/api/auth/me');
+        const [res, initialPolicy] = await Promise.all([
+          fetch('/api/auth/me'),
+          loadAccessPolicy().catch(() => null),
+        ]);
 
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            let resolvedUser: UserProfile = data.user;
+            let resolvedUser: UserProfile = initialPolicy?.user || data.user;
             if (savedUserId && savedUserId !== data.user.id) {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
@@ -274,29 +330,39 @@ export default function App() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ userId: matched.id }),
                 }).catch(() => undefined);
+                const updatedPolicy = await loadAccessPolicy().catch(() => null);
+                if (updatedPolicy?.user) resolvedUser = updatedPolicy.user;
               }
-            } else {
-              // Quyền hiệu lực lấy từ máy chủ, không ghi đè bằng dữ liệu mẫu.
+            } else if (!initialPolicy) {
+              const retryPolicy = await loadAccessPolicy().catch(() => null);
+              if (retryPolicy?.user) resolvedUser = retryPolicy.user;
             }
-            const policy = await loadAccessPolicy();
-            resolvedUser = policy.user;
-            handleUserChange(resolvedUser, true);
-            setActiveTab(getDefaultLandingTabForRole(resolvedUser.role));
+            await handleUserChange(resolvedUser, true);
+            if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+              const nextDefaultTab = getDefaultLandingTabForRole(resolvedUser.role);
+              setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
+            }
             setIsLoadingAuth(false);
             return;
           }
         }
 
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
-        handleUserChange(fallbackUser, true);
-        setActiveTab(fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
+        await handleUserChange(fallbackUser, true);
+        if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+          const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
+          setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
+        }
         setIsLoadingAuth(false);
       } catch (err) {
         console.warn('Could not fetch user session, using fallback user:', err);
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
-        handleUserChange(fallbackUser, true);
-        setActiveTab(fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
+        await handleUserChange(fallbackUser, true);
+        if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+          const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
+          setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
+        }
         setIsLoadingAuth(false);
       }
     }
@@ -315,6 +381,7 @@ export default function App() {
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('upbase_selected_user_id');
+        sessionStorage.removeItem(ACTIVE_TAB_SESSION_KEY);
       }
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
@@ -327,19 +394,23 @@ export default function App() {
   const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
-  const [brands, setBrands] = useState<BrandDetail[]>([]);
-  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>([]);
+  const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
+  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  const currentUserId = currentUser?.id;
+  const currentUserRole = currentUser?.role;
   useEffect(() => {
     let cancelled = false;
     const reload = () => fetch('/api/master-data', { cache: 'no-store' }).then(async res => {
       const body = await res.json(); if (!res.ok) throw new Error(body.error);
-      if (!cancelled) { setBrands(body.data.brands); setStorePortfolios(body.data.stores); }
+      if (!cancelled) {
+        setBrands(prev => (JSON.stringify(prev) === JSON.stringify(body.data.brands) ? prev : body.data.brands));
+        setStorePortfolios(prev => (JSON.stringify(prev) === JSON.stringify(body.data.stores) ? prev : body.data.stores));
+      }
     }).catch(e => { if (!cancelled) showToast(e.message, 'error'); });
-    setBrands([]); setStorePortfolios([]);
-    if (currentUser && !isLoadingAuth) void reload();
+    if (currentUserId && !isLoadingAuth) void reload();
     window.addEventListener('upbase-master-data-updated', reload);
     return () => { cancelled = true; window.removeEventListener('upbase-master-data-updated', reload); };
-  }, [currentUser, isLoadingAuth, showToast]);
+  }, [currentUserId, currentUserRole, isLoadingAuth, showToast]);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   // Shared Plan State between Manager & Employees
@@ -495,12 +566,22 @@ export default function App() {
 
   // Mobile Drawer & Desktop Sidebar Collapse State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('upbase_sidebar_collapsed') === 'true';
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  useLayoutEffect(() => {
+    if (localStorage.getItem('upbase_sidebar_collapsed') === 'true') {
+      setIsSidebarCollapsed(true);
     }
-    return false;
-  });
+    const savedUserId = localStorage.getItem('upbase_selected_user_id');
+    const savedUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
+    if (savedUser.id !== USERS[0].id) {
+      setCurrentUser(savedUser);
+    }
+    const initialTab = resolveInitialTab(savedUser);
+    if (initialTab !== getDefaultLandingTabForRole(USERS[0].role)) {
+      setActiveTab(initialTab);
+    }
+  }, []);
 
   const handleToggleSidebarCollapse = useCallback(() => {
     setIsSidebarCollapsed(prev => {
@@ -855,48 +936,9 @@ export default function App() {
     }
   };
 
-  // Tiêu đề trang: khớp 100% tên trên menu trái (DESIGN_SYSTEM.md §7 Quy tắc 1)
-  const titles: Record<TabKey, { title: string; subtitle: string }> = {
-    cockpit: { title: 'Việc của tôi', subtitle: '' },
-    overview: { title: 'Tổng quan', subtitle: '' },
-    'input-plan': { title: 'Kế hoạch tháng', subtitle: '' },
-    'koc-listing': { title: 'Đề xuất KOC', subtitle: '' },
-    'self-channel-hub': { title: 'Cổng cộng tác viên', subtitle: '' },
-    'ctv-master': { title: 'Danh bạ CTV / VJ', subtitle: '' },
-    'master-data': { title: 'Dữ liệu gốc', subtitle: '' },
-    'push-products': { title: 'Sản phẩm đẩy', subtitle: '' },
-    stores: { title: 'Hồ sơ gian hàng', subtitle: '' },
-    campaigns: { title: 'Duyệt với nhãn hàng', subtitle: '' },
-    'brand-knowledge': { title: 'Hồ sơ thương hiệu', subtitle: '' },
-    content: { title: 'Kịch bản & video', subtitle: '' },
-    'content-angles': { title: 'Góc tiếp cận', subtitle: '' },
-    'partner-access': { title: 'Phân quyền', subtitle: '' },
-    booking: { title: 'Booking', subtitle: '' },
-    'koc-master': { title: 'Danh bạ KOC', subtitle: '' },
-    contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
-    manager: { title: 'Phân bổ & điều phối', subtitle: '' },
-    'task-delegation': { title: 'Giao việc & định mức', subtitle: '' },
-    'workload-3d': { title: 'Bản đồ 3D & Workload', subtitle: '' },
-    'sample-tracker': { title: 'Hàng mẫu & Ads', subtitle: '' },
-    'performance-p3': { title: 'Đánh giá 4P', subtitle: '' },
-    leaderboard: { title: 'Bảng xếp hạng', subtitle: '' },
-    'brand-hub': { title: 'Cổng nhãn hàng', subtitle: '' },
-    'koc-hub': { title: 'Cổng KOC', subtitle: '' },
-    'ads-report': { title: 'Báo cáo Ads TikTok', subtitle: '' },
-    'dashboard-bi': { title: 'Báo cáo tổng hợp', subtitle: '' },
-    'dashboard-brand': { title: 'Ngân sách & PnL', subtitle: '' },
-    'dashboard-store': { title: 'Gian hàng & Sàn', subtitle: '' },
-    'dashboard-video': { title: 'Hiệu quả video', subtitle: '' },
-    'dashboard-team-sla': { title: 'Lịch đăng video', subtitle: '' },
-    'dashboard-staff': { title: 'Hiệu suất nhân sự', subtitle: '' },
-    'dashboard-finance': { title: 'Đối soát & xuất file', subtitle: '' },
-    'dashboard-air-sync': { title: 'Lịch đăng video', subtitle: '' },
-    'api-settings': { title: 'Cấu hình API', subtitle: '' },
-    'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: '' },
-    'audit-trail': { title: 'Nhật ký kiểm toán', subtitle: '' },
-    'tiktok-crawler': { title: 'Crawler KOC & Đối thủ', subtitle: '' },
-    'market-research': { title: 'Nghiên cứu Brand & Đối thủ', subtitle: '' },
-  };
+  // Tiêu đề trang: khớp 100% tên trên menu trái của vai trò đang đăng nhập (DESIGN_SYSTEM.md §7 Quy tắc 1)
+  const pageTitleOf = (tab: TabKey) => (currentUser && getNavLabelForRole(currentUser.role, tab)) || TAB_LABELS[tab] || tab;
+
 
   if (isLoadingAuth || !currentUser) {
     return (
@@ -951,8 +993,7 @@ export default function App() {
             setIsQuickBookOpen(true);
           }}
           onOpenImport={() => setIsImportOpen(true)}
-          title={titles[activeTab]?.title ?? 'Bàn điều phối vận hành'}
-          subtitle={titles[activeTab]?.subtitle ?? ''}
+          title={pageTitleOf(activeTab)}
           activeTab={activeTab}
           onNavigateTab={handleSelectTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
@@ -997,7 +1038,7 @@ export default function App() {
               <div className="space-y-1.5">
                 <h2 className="text-lg font-semibold text-ink">Không có quyền truy cập màn hình này</h2>
                 <p className="text-xs text-ink-2 leading-relaxed">
-                  Tài khoản hiện tại <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-critical font-semibold">{titles[activeTab]?.title || activeTab}</strong>.
+                  Tài khoản hiện tại <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-critical font-semibold">{pageTitleOf(activeTab)}</strong>.
                 </p>
                 <div className="p-2.5 rounded-lg bg-sunken border border-line text-2xs text-ink-3">
                   Quy định bảo mật theo <strong className="font-medium">Ma trận phân quyền Upbase</strong>
@@ -1008,7 +1049,7 @@ export default function App() {
                   variant="primary"
                   onClick={() => setActiveTab(getDefaultLandingTabForRole(currentUser.role))}
                 >
-                  Quay về màn hình chính ({titles[getDefaultLandingTabForRole(currentUser.role)]?.title || 'Trang chủ'})
+                  Quay về màn hình chính ({pageTitleOf(getDefaultLandingTabForRole(currentUser.role))})
                 </Button>
               </div>
             </div>

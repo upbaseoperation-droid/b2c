@@ -1,0 +1,445 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { Check, ExternalLink, RefreshCw, Search, X } from 'lucide-react';
+import type { KocItem } from '../../lib/types';
+import {
+  extractHandleFromSocialInput,
+  formatSocialChannelUrl,
+  type KocSocialDiscoveryResult,
+  type SocialChannelCandidate,
+  type SocialConfidenceLevel,
+  type SocialPlatformKey,
+} from '../../lib/kocSocialDiscovery';
+import {
+  Avatar,
+  Button,
+  FacebookLogo,
+  Input,
+  InstagramLogo,
+  Modal,
+  ShopeeLogo,
+  Status,
+  ThreadsLogo,
+  TikTokLogo,
+} from '../ui';
+
+interface KocSocialChannelsModalProps {
+  open: boolean;
+  onClose: () => void;
+  koc: KocItem | null;
+  onConfirmSave: (
+    kocId: string,
+    updates: {
+      shopeeChannel?: string;
+      facebookChannel?: string;
+      instagramChannel?: string;
+      threadsChannel?: string;
+      platforms: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[];
+    }
+  ) => void;
+}
+
+const PLATFORM_META: Array<{
+  key: SocialPlatformKey;
+  label: string;
+  fieldKey: 'shopeeChannel' | 'facebookChannel' | 'instagramChannel' | 'threadsChannel';
+  placeholder: string;
+  renderLogo: () => React.ReactNode;
+}> = [
+  {
+    key: 'SHOPEE',
+    label: 'Shopee',
+    fieldKey: 'shopeeChannel',
+    placeholder: 'Nhập username hoặc link Shopee...',
+    renderLogo: () => <ShopeeLogo className="w-4 h-4 shrink-0" />,
+  },
+  {
+    key: 'FACEBOOK',
+    label: 'Facebook',
+    fieldKey: 'facebookChannel',
+    placeholder: 'Nhập username hoặc link Facebook...',
+    renderLogo: () => <FacebookLogo className="w-4 h-4 shrink-0" />,
+  },
+  {
+    key: 'INSTAGRAM',
+    label: 'Instagram',
+    fieldKey: 'instagramChannel',
+    placeholder: 'Nhập @username hoặc link Instagram...',
+    renderLogo: () => <InstagramLogo className="w-4 h-4 shrink-0" />,
+  },
+  {
+    key: 'THREADS',
+    label: 'Threads',
+    fieldKey: 'threadsChannel',
+    placeholder: 'Nhập @username hoặc link Threads...',
+    renderLogo: () => <ThreadsLogo className="w-4 h-4 shrink-0" />,
+  },
+];
+
+const CONFIDENCE_BADGE: Record<
+  SocialConfidenceLevel,
+  { label: string; tone: 'positive' | 'info' | 'neutral' }
+> = {
+  CAO: { label: 'Khớp cao', tone: 'positive' },
+  TRUNG_BÌNH: { label: 'Cùng tên kênh', tone: 'info' },
+  GỢI_Ý: { label: 'Gợi ý dò tìm', tone: 'neutral' },
+};
+
+export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
+  open,
+  onClose,
+  koc,
+  onConfirmSave,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [discoveryResult, setDiscoveryResult] = useState<KocSocialDiscoveryResult | null>(null);
+
+  // Giá trị người dùng chọn / chỉnh sửa trước khi bấm Xác nhận
+  const [selectedValues, setSelectedValues] = useState<Record<SocialPlatformKey, string>>({
+    SHOPEE: '',
+    FACEBOOK: '',
+    INSTAGRAM: '',
+    THREADS: '',
+  });
+
+  // Trạng thái bật/tắt xác nhận cho từng kênh
+  const [confirmedFlags, setConfirmedFlags] = useState<Record<SocialPlatformKey, boolean>>({
+    SHOPEE: false,
+    FACEBOOK: false,
+    INSTAGRAM: false,
+    THREADS: false,
+  });
+
+  const runSearch = async (target: KocItem) => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kocId: target.id,
+          tiktokHandle: target.channelId,
+          stageName: target.stageName,
+          realName: target.realName,
+          phone: target.phone,
+          bio: target.bio,
+          existingChannels: {
+            shopeeChannel: target.shopeeChannel,
+            facebookChannel: target.facebookChannel,
+            instagramChannel: target.instagramChannel,
+            threadsChannel: target.threadsChannel,
+          },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success || !json.data) {
+        setErrorMsg(json.message || 'Không dò tìm được tài khoản mạng xã hội.');
+        return;
+      }
+
+      const data: KocSocialDiscoveryResult = json.data;
+      setDiscoveryResult(data);
+
+      const nextValues: Record<SocialPlatformKey, string> = {
+        SHOPEE: target.shopeeChannel || data.candidatesByPlatform.SHOPEE[0]?.handle || '',
+        FACEBOOK: target.facebookChannel || data.candidatesByPlatform.FACEBOOK[0]?.handle || '',
+        INSTAGRAM: target.instagramChannel || data.candidatesByPlatform.INSTAGRAM[0]?.handle || '',
+        THREADS: target.threadsChannel || data.candidatesByPlatform.THREADS[0]?.handle || '',
+      };
+      setSelectedValues(nextValues);
+
+      setConfirmedFlags({
+        SHOPEE: Boolean(
+          target.shopeeChannel ||
+            data.candidatesByPlatform.SHOPEE.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+        ),
+        FACEBOOK: Boolean(
+          target.facebookChannel ||
+            data.candidatesByPlatform.FACEBOOK.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+        ),
+        INSTAGRAM: Boolean(
+          target.instagramChannel ||
+            data.candidatesByPlatform.INSTAGRAM.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+        ),
+        THREADS: Boolean(
+          target.threadsChannel ||
+            data.candidatesByPlatform.THREADS.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+        ),
+      });
+    } catch {
+      setErrorMsg('Lỗi kết nối khi dò tìm kênh mạng xã hội.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open || !koc) return;
+    setSelectedValues({
+      SHOPEE: koc.shopeeChannel || '',
+      FACEBOOK: koc.facebookChannel || '',
+      INSTAGRAM: koc.instagramChannel || '',
+      THREADS: koc.threadsChannel || '',
+    });
+    setConfirmedFlags({
+      SHOPEE: Boolean(koc.shopeeChannel),
+      FACEBOOK: Boolean(koc.facebookChannel),
+      INSTAGRAM: Boolean(koc.instagramChannel),
+      THREADS: Boolean(koc.threadsChannel),
+    });
+    runSearch(koc);
+  }, [open, koc]);
+
+  if (!koc) return null;
+
+  const handleSelectCandidate = (platform: SocialPlatformKey, cand: SocialChannelCandidate) => {
+    setSelectedValues((prev) => ({ ...prev, [platform]: cand.handle }));
+    setConfirmedFlags((prev) => ({ ...prev, [platform]: true }));
+  };
+
+  const handleInputChange = (platform: SocialPlatformKey, val: string) => {
+    setSelectedValues((prev) => ({ ...prev, [platform]: val }));
+    setConfirmedFlags((prev) => ({ ...prev, [platform]: Boolean(val.trim()) }));
+  };
+
+  const handleConfirm = () => {
+    const shopee = confirmedFlags.SHOPEE
+      ? extractHandleFromSocialInput('SHOPEE', selectedValues.SHOPEE)
+      : undefined;
+    const facebook = confirmedFlags.FACEBOOK
+      ? extractHandleFromSocialInput('FACEBOOK', selectedValues.FACEBOOK)
+      : undefined;
+    const instagram = confirmedFlags.INSTAGRAM
+      ? extractHandleFromSocialInput('INSTAGRAM', selectedValues.INSTAGRAM)
+      : undefined;
+    const threads = confirmedFlags.THREADS
+      ? extractHandleFromSocialInput('THREADS', selectedValues.THREADS)
+      : undefined;
+
+    const platforms: ('TIKTOK' | 'SHOPEE' | 'FACEBOOK' | 'INSTAGRAM' | 'THREADS')[] = ['TIKTOK'];
+    if (shopee) platforms.push('SHOPEE');
+    if (facebook) platforms.push('FACEBOOK');
+    if (instagram) platforms.push('INSTAGRAM');
+    if (threads) platforms.push('THREADS');
+
+    onConfirmSave(koc.id, {
+      shopeeChannel: shopee || undefined,
+      facebookChannel: facebook || undefined,
+      instagramChannel: instagram || undefined,
+      threadsChannel: threads || undefined,
+      platforms,
+    });
+    onClose();
+  };
+
+  const tiktokHandle = koc.channelId.replace(/^@+/, '');
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Tìm & xác nhận kênh của ${koc.stageName}`}
+      size="lg"
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <Button
+            variant="secondary"
+            icon={RefreshCw}
+            onClick={() => runSearch(koc)}
+            disabled={loading}
+          >
+            {loading ? 'Đang tìm...' : 'Quét lại'}
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              Hủy
+            </Button>
+            <Button variant="primary" icon={Check} onClick={handleConfirm} disabled={loading}>
+              Xác nhận lưu kênh
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* Thông tin gốc KOC */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-sunken/50 border border-line">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar name={koc.stageName} src={koc.avatarUrl} size={36} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-ink text-xs truncate">{koc.stageName}</span>
+                {koc.realName && koc.realName !== koc.stageName && (
+                  <span className="text-2xs text-ink-3 truncate">({koc.realName})</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-2xs text-ink-2 mt-0.5">
+                <span className="inline-flex items-center gap-1 font-medium text-ink">
+                  <TikTokLogo className="w-3.5 h-3.5" />@{tiktokHandle}
+                </span>
+                {koc.phone && <span>· SĐT: {koc.phone}</span>}
+              </div>
+            </div>
+          </div>
+          <a
+            href={koc.channelLink || `https://www.tiktok.com/@${tiktokHandle}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+          >
+            Mở kênh TikTok
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {errorMsg && (
+          <div className="px-3 py-2 rounded-lg bg-critical-soft text-critical text-xs">
+            {errorMsg}
+          </div>
+        )}
+
+        {discoveryResult?.bioExtracted && (
+          <div className="px-3 py-2 rounded-lg bg-surface border border-line text-2xs text-ink-2">
+            <span className="font-semibold text-ink">Tiểu sử kênh TikTok: </span>
+            {discoveryResult.bioExtracted}
+          </div>
+        )}
+
+        {/* Danh sách 4 nền tảng */}
+        <div className="grid gap-3">
+          {PLATFORM_META.map((meta) => {
+            const candidates = discoveryResult?.candidatesByPlatform[meta.key] || [];
+            const currentVal = selectedValues[meta.key] || '';
+            const isConfirmed = confirmedFlags[meta.key];
+            const previewUrl = formatSocialChannelUrl(meta.key, currentVal);
+
+            return (
+              <div
+                key={meta.key}
+                className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isConfirmed}
+                      onChange={(e) =>
+                        setConfirmedFlags((prev) => ({
+                          ...prev,
+                          [meta.key]: e.target.checked,
+                        }))
+                      }
+                      aria-label={`Xác nhận có kênh ${meta.label}`}
+                      className="h-4 w-4 rounded border-line-strong text-primary focus:ring-0 cursor-pointer"
+                    />
+                    {meta.renderLogo()}
+                    <span className="font-semibold text-xs text-ink">{meta.label}</span>
+                    {isConfirmed && currentVal.trim() ? (
+                      <Status tone="positive">Đã chọn xác nhận</Status>
+                    ) : (
+                      <Status tone="neutral">Chưa xác nhận</Status>
+                    )}
+                  </div>
+
+                  {currentVal.trim() && (
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                      >
+                        Kiểm tra trang {meta.label}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedValues((prev) => ({ ...prev, [meta.key]: '' }));
+                          setConfirmedFlags((prev) => ({ ...prev, [meta.key]: false }));
+                        }}
+                        className="inline-flex items-center gap-0.5 text-2xs text-ink-3 hover:text-critical"
+                        title="Bỏ kênh này"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        Không có
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Ô nhập / chỉnh sửa trực tiếp */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={currentVal}
+                    onChange={(e) => handleInputChange(meta.key, e.target.value)}
+                    placeholder={meta.placeholder}
+                    className="flex-1"
+                  />
+                </div>
+
+                {/* Các kết quả gợi ý tìm được để bấm chọn nhanh */}
+                {loading ? (
+                  <div className="text-2xs text-ink-3 flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 animate-pulse" />
+                    Đang dò tìm tài khoản {meta.label}...
+                  </div>
+                ) : (
+                  candidates.length > 0 && (
+                    <div className="space-y-1.5 pt-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {candidates.map((cand) => {
+                          const active =
+                            currentVal.trim().toLowerCase().replace(/^@+/, '') ===
+                              cand.handle.toLowerCase().replace(/^@+/, '') && isConfirmed;
+                          const badge = CONFIDENCE_BADGE[cand.confidence];
+
+                          return (
+                            <div
+                              key={cand.handle}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-2xs transition-colors ${
+                                active
+                                  ? 'border-primary bg-accent-soft/50 text-ink font-medium'
+                                  : 'border-line bg-sunken/40 text-ink-2 hover:border-line-strong'
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCandidate(meta.key, cand)}
+                                className="inline-flex items-center gap-1.5 text-left"
+                              >
+                                <span className="font-mono font-semibold text-ink">
+                                  {cand.handle}
+                                </span>
+                                <Status tone={badge.tone}>{badge.label}</Status>
+                                <span className="text-ink-3 hidden sm:inline">
+                                  ({cand.sourceLabel})
+                                </span>
+                              </button>
+                              <a
+                                href={cand.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-0.5 text-accent hover:text-primary"
+                                title={`Mở ${cand.url} để kiểm tra`}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Modal>
+  );
+};

@@ -55,13 +55,14 @@ import {
   getStorePlanWorkstreamSummary,
   buildPersonalWorkPackages,
   INITIAL_BRAND_MONTHLY_PLANS,
+  getWeeksForMonth,
   type B2cWorkstreamType,
   type StorePlanWorkstreamSummary,
   type PersonalWorkPackageItem,
 } from '../../lib/monthlyPlanData';
-import { B2C_BRAND_POSITION_STAFF_POOL } from '../../lib/realB2cBrandsData';
+import { B2C_BRAND_POSITION_STAFF_POOL, REAL_B2C_42_BRANDS } from '../../lib/realB2cBrandsData';
 import { autoBalancePlanItems, INITIAL_INPUT_PLAN_ITEMS } from '../../lib/inputPlanDefaults';
-import { INITIAL_STORE_PORTFOLIOS, INITIAL_CAMPAIGNS } from '../../lib/mockData';
+import { INITIAL_STORE_PORTFOLIOS, INITIAL_CAMPAIGNS, STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
 import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
@@ -554,30 +555,179 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     notify(`Đã phê duyệt kế hoạch cho gian hàng "${storeName}".`);
   };
 
-  // Tạo kế hoạch cho gian hàng
-  const handleCreatePlanForStore = (store: StorePortfolioItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setNewPlanMonth(selectedMonth === 'ALL' ? '2026/10' : selectedMonth);
-    setNewPlanBrand(store.brandName);
-    setNewPlanTitle(`Kế hoạch B2C ${selectedMonth === 'ALL' ? '2026/10' : selectedMonth} - ${store.storeName}`);
-    setNewPlanPic(store.b2cOwners?.[0] || store.b2cOwnerName || currentUser?.name || 'Khánh Vy');
-    setNewPlanBudget(store.monthlyBudget || 120000000);
-    setNewPlanGmv(store.monthlyTargetGmv || 800000000);
-    setIsCreateModalOpen(true);
-  };
-
   // Modal lập kế hoạch mới
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPlanMonth, setNewPlanMonth] = useState('2026/10');
-  const [newPlanWeek, setNewPlanWeek] = useState('W42 [12.10 - 18.10]');
-  const [newPlanBrand, setNewPlanBrand] = useState('Cỏ Mềm');
+  const [newPlanWeek, setNewPlanWeek] = useState('W41 [05.10 - 11.10]');
+  const [newPlanBrand, setNewPlanBrand] = useState('4PM');
+  const [newPlanStoreId, setNewPlanStoreId] = useState('');
+  const [newPlanStoreName, setNewPlanStoreName] = useState('');
   const [newPlanTitle, setNewPlanTitle] = useState('');
-  const [newPlanPic, setNewPlanPic] = useState(currentUser?.name || 'Đặng Mai Hà Linh');
+  const [newPlanPic, setNewPlanPic] = useState('Lê Phương Thảo');
   const [newPlanBudget, setNewPlanBudget] = useState(150000000);
   const [newPlanQty, setNewPlanQty] = useState(75);
   const [newPlanGmv, setNewPlanGmv] = useState(900000000);
   const [newPlanPreset, setNewPlanPreset] = useState<StrategyPreset>('BALANCED');
   const [newPlanNotes, setNewPlanNotes] = useState('');
+
+  // Danh sách tuần theo chu kỳ tháng đang chọn trong modal
+  const availableWeeks = useMemo(() => {
+    return getWeeksForMonth(newPlanMonth);
+  }, [newPlanMonth]);
+
+  // Danh mục 42 Thương hiệu chuẩn cho modal lập kế hoạch
+  const availableBrands = useMemo(() => {
+    const brandMap = new Map<string, { id: string; name: string }>();
+    REAL_B2C_42_BRANDS.forEach(b => {
+      if (b.name) {
+        brandMap.set(b.name.trim(), { id: b.id, name: b.name.trim() });
+      }
+    });
+    effectiveStores.forEach(s => {
+      if (s.brandName && !brandMap.has(s.brandName.trim())) {
+        brandMap.set(s.brandName.trim(), { id: s.brandId || s.brandName.trim(), name: s.brandName.trim() });
+      }
+    });
+    return Array.from(brandMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [effectiveStores]);
+
+  // Các gian hàng thuộc Thương hiệu đang chọn trong modal
+  const brandStoresForNewPlan = useMemo(() => {
+    if (!newPlanBrand) return [];
+    return effectiveStores.filter(
+      s => (s.brandName || '').trim().toLowerCase() === newPlanBrand.trim().toLowerCase()
+    );
+  }, [effectiveStores, newPlanBrand]);
+
+  // Danh sách chuyên viên B2C chuẩn từ STAFF_MASTER_DIRECTORY
+  const availablePics = useMemo(() => {
+    const list: Array<{ name: string; title: string }> = [];
+    const seen = new Set<string>();
+
+    if (currentUser?.name && !seen.has(currentUser.name)) {
+      seen.add(currentUser.name);
+      list.push({ name: currentUser.name, title: `${currentUser.name} (${currentUser.role || 'Đang đăng nhập'})` });
+    }
+
+    STAFF_MASTER_DIRECTORY.forEach(st => {
+      if (!seen.has(st.name)) {
+        seen.add(st.name);
+        list.push({ name: st.name, title: `${st.name} (${st.roleTitle})` });
+      }
+    });
+
+    return list;
+  }, [currentUser]);
+
+  // Mở modal lập kế hoạch từ nút "+ Tạo kế hoạch" trên thanh công cụ
+  const handleOpenCreateModal = () => {
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    const weeks = getWeeksForMonth(targetMonth);
+    const defaultWeek = weeks[1]?.value || weeks[0]?.value || '';
+    const defaultBrand = (selectedBrand !== 'ALL' ? selectedBrand : availableBrands[0]?.name) || '4PM';
+
+    setNewPlanMonth(targetMonth);
+    setNewPlanWeek(defaultWeek);
+    setNewPlanBrand(defaultBrand);
+
+    const brandStores = effectiveStores.filter(
+      s => (s.brandName || '').trim().toLowerCase() === defaultBrand.trim().toLowerCase()
+    );
+    if (brandStores.length === 1) {
+      setNewPlanStoreId(brandStores[0].id);
+      setNewPlanStoreName(brandStores[0].storeName);
+      setNewPlanPic(brandStores[0].b2cOwners?.[0] || brandStores[0].b2cOwnerName || currentUser?.name || 'Lê Phương Thảo');
+      setNewPlanTitle(`Kế hoạch B2C ${targetMonth} - ${brandStores[0].storeName}`);
+      if (brandStores[0].monthlyBudget) setNewPlanBudget(brandStores[0].monthlyBudget);
+      if (brandStores[0].monthlyTargetGmv) setNewPlanGmv(brandStores[0].monthlyTargetGmv);
+    } else {
+      setNewPlanStoreId('');
+      setNewPlanStoreName('');
+      setNewPlanPic(brandStores[0]?.b2cOwners?.[0] || brandStores[0]?.b2cOwnerName || currentUser?.name || 'Lê Phương Thảo');
+      setNewPlanTitle(`Kế hoạch B2C ${targetMonth} - ${defaultBrand}`);
+      setNewPlanBudget(150000000);
+      setNewPlanGmv(900000000);
+    }
+    setNewPlanQty(75);
+    setNewPlanNotes(`Kế hoạch khởi tạo cho chu kỳ ${targetMonth}.`);
+    setIsCreateModalOpen(true);
+  };
+
+  // Tạo kế hoạch cho từng gian hàng cụ thể trong Ma trận gian hàng
+  const handleCreatePlanForStore = (store: StorePortfolioItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    const weeks = getWeeksForMonth(targetMonth);
+    const defaultWeek = weeks[1]?.value || weeks[0]?.value || '';
+
+    setNewPlanMonth(targetMonth);
+    setNewPlanWeek(defaultWeek);
+    setNewPlanBrand(store.brandName);
+    setNewPlanStoreId(store.id);
+    setNewPlanStoreName(store.storeName);
+    setNewPlanTitle(`Kế hoạch B2C ${targetMonth} - ${store.storeName}`);
+    setNewPlanPic(store.b2cOwners?.[0] || store.b2cOwnerName || currentUser?.name || 'Lê Phương Thảo');
+    setNewPlanBudget(store.monthlyBudget || 120000000);
+    setNewPlanGmv(store.monthlyTargetGmv || 800000000);
+    setNewPlanQty(
+      store.platform === 'Shopee Mall' || String(store.platform).toUpperCase().includes('SHOPEE')
+        ? 40
+        : 60
+    );
+    setNewPlanNotes(`Kế hoạch cho gian hàng ${store.storeName} (${store.platform}) chu kỳ ${targetMonth}.`);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleMonthChange = (month: string) => {
+    setNewPlanMonth(month);
+    const weeks = getWeeksForMonth(month);
+    if (!weeks.some(w => w.value === newPlanWeek)) {
+      setNewPlanWeek(weeks[1]?.value || weeks[0]?.value || '');
+    }
+    const subject = newPlanStoreName || newPlanBrand;
+    setNewPlanTitle(`Kế hoạch B2C ${month} - ${subject}`);
+  };
+
+  const handleBrandChange = (brand: string) => {
+    setNewPlanBrand(brand);
+    const brandStores = effectiveStores.filter(
+      s => (s.brandName || '').trim().toLowerCase() === brand.trim().toLowerCase()
+    );
+    setNewPlanStoreId('');
+    setNewPlanStoreName('');
+    const targetPic = brandStores[0]?.b2cOwners?.[0] || brandStores[0]?.b2cOwnerName || newPlanPic;
+    setNewPlanPic(targetPic);
+    if (brandStores[0]?.monthlyBudget) {
+      setNewPlanBudget(brandStores[0].monthlyBudget);
+    }
+    if (brandStores[0]?.monthlyTargetGmv) {
+      setNewPlanGmv(brandStores[0].monthlyTargetGmv);
+    }
+    setNewPlanTitle(`Kế hoạch B2C ${newPlanMonth} - ${brand}`);
+  };
+
+  const handleStoreChange = (storeId: string) => {
+    setNewPlanStoreId(storeId);
+    if (!storeId) {
+      setNewPlanStoreName('');
+      setNewPlanTitle(`Kế hoạch B2C ${newPlanMonth} - ${newPlanBrand}`);
+      return;
+    }
+    const store = effectiveStores.find(s => s.id === storeId);
+    if (store) {
+      setNewPlanStoreName(store.storeName);
+      setNewPlanTitle(`Kế hoạch B2C ${newPlanMonth} - ${store.storeName}`);
+      if (store.b2cOwners?.[0] || store.b2cOwnerName) {
+        setNewPlanPic(store.b2cOwners?.[0] || store.b2cOwnerName);
+      }
+      if (store.monthlyBudget) {
+        setNewPlanBudget(store.monthlyBudget);
+      }
+      if (store.monthlyTargetGmv) {
+        setNewPlanGmv(store.monthlyTargetGmv);
+      }
+    }
+  };
 
   // Modal nhân bản kế hoạch
   const [cloningPlan, setCloningPlan] = useState<InputPlanBreakdownState | null>(null);
@@ -600,9 +750,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Danh sách thương hiệu và PIC cho bộ lọc danh mục
   const brandList = useMemo(() => {
     const set = new Set<string>();
-    scopedPlans.forEach(p => set.add(p.brandName));
-    return Array.from(set);
-  }, [scopedPlans]);
+    scopedPlans.forEach(p => { if (p.brandName) set.add(p.brandName); });
+    effectiveStores.forEach(s => { if (s.brandName) set.add(s.brandName); });
+    REAL_B2C_42_BRANDS.forEach(b => { if (b.name) set.add(b.name); });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [scopedPlans, effectiveStores]);
 
   const picList = useMemo(() => {
     const set = new Set<string>();
@@ -678,10 +830,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       newPlanPreset
     );
 
+    const subject = newPlanStoreName || newPlanBrand;
     const createdPlan: InputPlanBreakdownState = {
       id: generatePlanId(newPlanMonth),
-      title: newPlanTitle || `Kế hoạch B2C ${newPlanMonth} - ${newPlanBrand}`,
+      title: newPlanTitle || `Kế hoạch B2C ${newPlanMonth} - ${subject}`,
       brandName: newPlanBrand,
+      storeId: newPlanStoreId || undefined,
+      storeName: newPlanStoreName || undefined,
       month: newPlanMonth,
       week: newPlanWeek,
       pic: newPlanPic,
@@ -706,7 +861,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           authorName: newPlanPic,
           authorRole: 'BOOKING',
           authorTitle: 'Booking Specialist PIC',
-          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} với ngân sách trần ${formatVndShort(newPlanBudget)}, dự kiến ${newPlanQty} nội dung.`,
+          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} (${newPlanWeek}) cho ${subject} với ngân sách trần ${formatVndShort(newPlanBudget)}, dự kiến ${newPlanQty} nội dung.`,
           type: 'COMMENT',
           timestamp: new Date().toISOString(),
           tags: ['Khởi tạo', 'Ngân sách']
@@ -808,7 +963,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           variant="primary"
           size="md"
           icon={Plus}
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleOpenCreateModal}
         >
           Tạo kế hoạch
         </Button>
@@ -1968,7 +2123,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </p>
               </div>
               <div className="pt-2">
-                <Button variant="primary" icon={Plus} onClick={() => setIsCreateModalOpen(true)}>
+                <Button variant="primary" icon={Plus} onClick={handleOpenCreateModal}>
                   Lập kế hoạch tháng này
                 </Button>
               </div>
@@ -2297,23 +2452,26 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <Field label="Chu kỳ tháng:">
               <Select
                 value={newPlanMonth}
-                onChange={(e) => setNewPlanMonth(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
               >
                 <option value="2026/10">Tháng 10/2026 (Hiện tại)</option>
                 <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
                 <option value="2026/12">Tháng 12/2026</option>
                 <option value="2027/01">Tháng 01/2027</option>
                 <option value="2026/09">Tháng 09/2026</option>
+                <option value="2026/08">Tháng 08/2026</option>
               </Select>
             </Field>
 
             <Field label="Tuần áp dụng:">
-              <Input
-                type="text"
+              <Select
                 value={newPlanWeek}
                 onChange={(e) => setNewPlanWeek(e.target.value)}
-                placeholder="VD: W42 [12.10 - 18.10]"
-              />
+              >
+                {availableWeeks.map(w => (
+                  <option key={w.value} value={w.value}>{w.label}</option>
+                ))}
+              </Select>
             </Field>
           </div>
 
@@ -2321,43 +2479,50 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <Field label="Thương hiệu:">
               <Select
                 value={newPlanBrand}
-                onChange={(e) => setNewPlanBrand(e.target.value)}
+                onChange={(e) => handleBrandChange(e.target.value)}
               >
-                <option value="Cỏ Mềm">Cỏ Mềm</option>
-                <option value="Cocoon">Cocoon</option>
-                <option value="Fresh_TikTok_E2E-C">Fresh</option>
-                <option value="Face Republic_TikTok_E2E-O">Face Republic</option>
-                <option value="Senka_TikTok_E2E-C">Senka</option>
-                <option value="Clio_TikTok_E2E-C">Clio Cosmetics</option>
-                <option value="Lemonade">Lemonade</option>
-                <option value="Sunplay">Sunplay</option>
-                <option value="TM Clean_TikTok_E2E-C">TM Clean</option>
+                {availableBrands.map(b => (
+                  <option key={b.name} value={b.name}>{b.name}</option>
+                ))}
               </Select>
             </Field>
 
+            <Field label="Gian hàng áp dụng:">
+              <Select
+                value={newPlanStoreId}
+                onChange={(e) => handleStoreChange(e.target.value)}
+              >
+                <option value="">Tất cả gian / Kế hoạch cấp Brand</option>
+                {brandStoresForNewPlan.map(st => (
+                  <option key={st.id} value={st.id}>
+                    {st.storeName} ({st.platform})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Chuyên viên B2C phụ trách:">
               <Select
                 value={newPlanPic}
                 onChange={(e) => setNewPlanPic(e.target.value)}
               >
-                <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh</option>
-                <option value="Phương Thảo">Phương Thảo</option>
-                <option value="Khánh Vy">Khánh Vy</option>
-                <option value="Nguyễn Thu Trang">Nguyễn Thu Trang</option>
-                <option value="Trần Minh Đức">Trần Minh Đức</option>
-                <option value="Đặng Thị Yến Nhi">Đặng Thị Yến Nhi (Trưởng phòng)</option>
+                {availablePics.map(p => (
+                  <option key={p.name} value={p.name}>{p.title}</option>
+                ))}
               </Select>
             </Field>
-          </div>
 
-          <Field label="Tiêu đề kế hoạch:">
-            <Input
-              type="text"
-              value={newPlanTitle}
-              onChange={(e) => setNewPlanTitle(e.target.value)}
-              placeholder={`VD: Kế hoạch B2C ${newPlanMonth} - ${newPlanBrand}`}
-            />
-          </Field>
+            <Field label="Tiêu đề kế hoạch:">
+              <Input
+                type="text"
+                value={newPlanTitle}
+                onChange={(e) => setNewPlanTitle(e.target.value)}
+                placeholder={`VD: Kế hoạch B2C ${newPlanMonth} - ${newPlanStoreName || newPlanBrand}`}
+              />
+            </Field>
+          </div>
 
           <div className="grid grid-cols-3 gap-3">
             <Field label="Ngân sách (VNĐ):" hint={formatVndShort(newPlanBudget)}>
@@ -2430,7 +2595,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           open={!!cloningPlan}
           onClose={() => setCloningPlan(null)}
           title="Nhân bản kế hoạch"
-          description={`Nhân bản kế hoạch "${cloningPlan.title}" (${cloningPlan.brandName}) sang tháng mới.`}
           size="md"
           footer={
             <div className="flex items-center justify-end gap-2 w-full">

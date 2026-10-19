@@ -1,8 +1,15 @@
 import type { AccessPolicy } from './server/accessPolicy';
 let serverPolicy: AccessPolicy | null = null;
+let lastRbacSignature = '';
 export function hydrateRbacPolicy(policy: AccessPolicy, user?: UserProfile) {
   serverPolicy = policy;
-  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('upbase-rbac-updated', { detail: user }));
+  if (typeof window !== 'undefined') {
+    const nextSignature = JSON.stringify({ policy, user });
+    if (nextSignature !== lastRbacSignature) {
+      lastRbacSignature = nextSignature;
+      window.dispatchEvent(new CustomEvent('upbase-rbac-updated', { detail: user }));
+    }
+  }
 }
 import { 
   UserRole, 

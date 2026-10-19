@@ -13,7 +13,6 @@ interface TopHeaderProps {
   onOpenQuickBook?: () => void;
   onOpenImport?: () => void;
   title: string;
-  subtitle?: string;
   activeTab?: TabKey;
   selectedBrand?: string;
   onBrandChange?: (brand: string) => void;
@@ -28,7 +27,6 @@ interface TopHeaderProps {
 export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
   title,
-  subtitle,
   activeTab,
   onNavigateTab,
   onToggleMobileSidebar,

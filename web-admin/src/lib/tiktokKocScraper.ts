@@ -326,6 +326,7 @@ function classifyByRealFollowers(
 export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
   nickname?: string;
   bio?: string;
+  bioLink?: string;
   avatarUrl?: string;
   followers?: number;
   following?: number;
@@ -369,6 +370,7 @@ export async function fetchLiveTikTokPublicProfile(handle: string): Promise<{
       const profileData = {
         nickname: typeof u.nickname === 'string' ? u.nickname : undefined,
         bio: typeof u.signature === 'string' ? u.signature : undefined,
+        bioLink: typeof u.bioLink?.link === 'string' ? u.bioLink.link : undefined,
         avatarUrl: typeof u.avatarLarger === 'string' ? u.avatarLarger : undefined,
         followers: typeof s.followerCount === 'number' ? s.followerCount : undefined,
         following: typeof s.followingCount === 'number' ? s.followingCount : undefined,
@@ -656,7 +658,7 @@ function buildScrapedResultFromRealData(
 async function inspectVideoCandidatesInBatches(
   candidates: Array<{ handle: string; videoId: string; videoUrl: string }>,
   expectedHandle: string,
-  targetCount = 24
+  targetCount = 40
 ): Promise<RealTikTokVideoAndAuthorDetail[]> {
   const uniqueUrls = new Map<string, string>();
   for (const c of candidates) {
@@ -669,7 +671,7 @@ async function inspectVideoCandidatesInBatches(
 
   const collected = new Map<string, RealTikTokVideoAndAuthorDetail>();
   const batchSize = 10;
-  const maxCandidatesToInspect = Math.min(urlList.length, Math.max(targetCount + 14, 30));
+  const maxCandidatesToInspect = Math.min(urlList.length, Math.max(targetCount + 20, 50));
 
   for (let offset = 0; offset < maxCandidatesToInspect; offset += batchSize) {
     const batch = urlList.slice(offset, offset + batchSize);
@@ -709,8 +711,8 @@ export async function scrapeTikTokCreatorData(
     .toLowerCase()
     .replace(/^@+/, '');
 
-  const targetVideoLimit = Math.min(Math.max(options?.videoLimit || 24, 6), 80);
-  const candidateMaxUrls = Math.min(Math.max(targetVideoLimit * 2, 60), 120);
+  const targetVideoLimit = Math.min(Math.max(options?.videoLimit || 40, 6), 100);
+  const candidateMaxUrls = Math.min(Math.max(targetVideoLimit * 2, 80), 160);
 
   const inlineDirectVideos = extractDirectVideoUrlsFromInput(rawHandle);
   const directVideosForHandle = [

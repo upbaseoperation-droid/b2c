@@ -64,6 +64,7 @@ import {
   INITIAL_MONTHLY_PLANS,
   getPlanVersionSnapshots,
   enrichPlanWithVersions,
+  buildDefaultWeeklyMatrix,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
@@ -242,89 +243,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     | 'BRAND_ONE_SHEET'
   >('OVERVIEW');
 
-  // Ma trận phân rã 5 tuần thực tế (W41 -> W45) chia tách 4 khối cột nghiệp vụ độc lập
-  const [weeklyMatrix, setWeeklyMatrix] = useState([
-    {
-      week: 'W41 [02.10 - 08.10]',
-      affPaidQty: 10,
-      affPaidBudget: 35000000,
-      tapFreeQty: 30,
-      selfChannelQty: 8,
-      selfChannelBudget: 3500000,
-      multiQty: 4,
-      multiBudget: 2500000,
-      pic: 'Khánh Vy',
-      status: 'Đã lập',
-      tiers: { kl1: 2, kl2: 3, kl3: 3, kl4: 1, kl5: 1, kl6: 0, kl7: 0 },
-      tapChannels: { upAffiliate: 18, brand: 8, upbase: 4 },
-      selfFormats: { voice: 3, text: 2, remix: 2, autoScript: 1, pov: 0 },
-      multiPlatforms: { shopee: 2, facebook: 1, threads: 1, instagram: 0 }
-    },
-    {
-      week: 'W42 [09.10 - 15.10]',
-      affPaidQty: 12,
-      affPaidBudget: 42000000,
-      tapFreeQty: 35,
-      selfChannelQty: 10,
-      selfChannelBudget: 4200000,
-      multiQty: 5,
-      multiBudget: 3200000,
-      pic: 'Khánh Vy',
-      status: 'Đã lập',
-      tiers: { kl1: 2, kl2: 4, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 },
-      tapChannels: { upAffiliate: 20, brand: 10, upbase: 5 },
-      selfFormats: { voice: 4, text: 2, remix: 2, autoScript: 1, pov: 1 },
-      multiPlatforms: { shopee: 2, facebook: 2, threads: 1, instagram: 0 }
-    },
-    {
-      week: 'W43 [16.10 - 22.10]',
-      affPaidQty: 10,
-      affPaidBudget: 38000000,
-      tapFreeQty: 25,
-      selfChannelQty: 8,
-      selfChannelBudget: 3500000,
-      multiQty: 4,
-      multiBudget: 2200000,
-      pic: 'Khánh Vy',
-      status: 'Đã lập',
-      tiers: { kl1: 1, kl2: 3, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 },
-      tapChannels: { upAffiliate: 15, brand: 7, upbase: 3 },
-      selfFormats: { voice: 3, text: 2, remix: 2, autoScript: 1, pov: 0 },
-      multiPlatforms: { shopee: 2, facebook: 1, threads: 1, instagram: 0 }
-    },
-    {
-      week: 'W44 [23.10 - 29.10]',
-      affPaidQty: 8,
-      affPaidBudget: 28000000,
-      tapFreeQty: 20,
-      selfChannelQty: 6,
-      selfChannelBudget: 2800000,
-      multiQty: 3,
-      multiBudget: 1800000,
-      pic: 'Khánh Vy',
-      status: 'Đã lập',
-      tiers: { kl1: 2, kl2: 2, kl3: 2, kl4: 1, kl5: 1, kl6: 0, kl7: 0 },
-      tapChannels: { upAffiliate: 12, brand: 5, upbase: 3 },
-      selfFormats: { voice: 2, text: 2, remix: 1, autoScript: 1, pov: 0 },
-      multiPlatforms: { shopee: 1, facebook: 1, threads: 1, instagram: 0 }
-    },
-    {
-      week: 'W45 [30.10 - 05.11]',
-      affPaidQty: 2,
-      affPaidBudget: 7000000,
-      tapFreeQty: 10,
-      selfChannelQty: 2,
-      selfChannelBudget: 1000000,
-      multiQty: 1,
-      multiBudget: 500000,
-      pic: 'Khánh Vy',
-      status: 'Dự thảo',
-      tiers: { kl1: 0, kl2: 1, kl3: 1, kl4: 0, kl5: 0, kl6: 0, kl7: 0 },
-      tapChannels: { upAffiliate: 6, brand: 3, upbase: 1 },
-      selfFormats: { voice: 1, text: 0, remix: 1, autoScript: 0, pov: 0 },
-      multiPlatforms: { shopee: 1, facebook: 0, threads: 0, instagram: 0 }
-    }
-  ]);
+  // Ma trận phân rã 5 tuần thực tế chia tách 4 khối cột nghiệp vụ độc lập
+  const [weeklyMatrix, setWeeklyMatrix] = useState(() =>
+    buildDefaultWeeklyMatrix(INITIAL_MONTHLY_PLANS[0]?.month || '2026/10', INITIAL_MONTHLY_PLANS[0]?.pic || 'Khánh Vy')
+  );
 
   const [expandedWeekIndex, setExpandedWeekIndex] = useState<number | null>(null);
 
@@ -382,88 +304,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   };
 
   const handleResetWeeklyMatrix = () => {
-    setWeeklyMatrix([
-      {
-        week: 'W41 [02.10 - 08.10]',
-        affPaidQty: 10,
-        affPaidBudget: 35000000,
-        tapFreeQty: 30,
-        selfChannelQty: 8,
-        selfChannelBudget: 3500000,
-        multiQty: 4,
-        multiBudget: 2500000,
-        pic: 'Khánh Vy',
-        status: 'Đã lập',
-        tiers: { kl1: 2, kl2: 3, kl3: 3, kl4: 1, kl5: 1, kl6: 0, kl7: 0 },
-        tapChannels: { upAffiliate: 18, brand: 8, upbase: 4 },
-        selfFormats: { voice: 3, text: 2, remix: 2, autoScript: 1, pov: 0 },
-        multiPlatforms: { shopee: 2, facebook: 1, threads: 1, instagram: 0 }
-      },
-      {
-        week: 'W42 [09.10 - 15.10]',
-        affPaidQty: 12,
-        affPaidBudget: 42000000,
-        tapFreeQty: 35,
-        selfChannelQty: 10,
-        selfChannelBudget: 4200000,
-        multiQty: 5,
-        multiBudget: 3200000,
-        pic: 'Khánh Vy',
-        status: 'Đã lập',
-        tiers: { kl1: 2, kl2: 4, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 },
-        tapChannels: { upAffiliate: 20, brand: 10, upbase: 5 },
-        selfFormats: { voice: 4, text: 2, remix: 2, autoScript: 1, pov: 1 },
-        multiPlatforms: { shopee: 2, facebook: 2, threads: 1, instagram: 0 }
-      },
-      {
-        week: 'W43 [16.10 - 22.10]',
-        affPaidQty: 10,
-        affPaidBudget: 38000000,
-        tapFreeQty: 25,
-        selfChannelQty: 8,
-        selfChannelBudget: 3500000,
-        multiQty: 4,
-        multiBudget: 2200000,
-        pic: 'Khánh Vy',
-        status: 'Đã lập',
-        tiers: { kl1: 1, kl2: 3, kl3: 3, kl4: 2, kl5: 1, kl6: 0, kl7: 0 },
-        tapChannels: { upAffiliate: 15, brand: 7, upbase: 3 },
-        selfFormats: { voice: 3, text: 2, remix: 2, autoScript: 1, pov: 0 },
-        multiPlatforms: { shopee: 2, facebook: 1, threads: 1, instagram: 0 }
-      },
-      {
-        week: 'W44 [23.10 - 29.10]',
-        affPaidQty: 8,
-        affPaidBudget: 28000000,
-        tapFreeQty: 20,
-        selfChannelQty: 6,
-        selfChannelBudget: 2800000,
-        multiQty: 3,
-        multiBudget: 1800000,
-        pic: 'Khánh Vy',
-        status: 'Đã lập',
-        tiers: { kl1: 2, kl2: 2, kl3: 2, kl4: 1, kl5: 1, kl6: 0, kl7: 0 },
-        tapChannels: { upAffiliate: 12, brand: 5, upbase: 3 },
-        selfFormats: { voice: 2, text: 2, remix: 1, autoScript: 1, pov: 0 },
-        multiPlatforms: { shopee: 1, facebook: 1, threads: 1, instagram: 0 }
-      },
-      {
-        week: 'W45 [30.10 - 05.11]',
-        affPaidQty: 2,
-        affPaidBudget: 7000000,
-        tapFreeQty: 10,
-        selfChannelQty: 2,
-        selfChannelBudget: 1000000,
-        multiQty: 1,
-        multiBudget: 500000,
-        pic: 'Khánh Vy',
-        status: 'Dự thảo',
-        tiers: { kl1: 0, kl2: 1, kl3: 1, kl4: 0, kl5: 0, kl6: 0, kl7: 0 },
-        tapChannels: { upAffiliate: 6, brand: 3, upbase: 1 },
-        selfFormats: { voice: 1, text: 0, remix: 1, autoScript: 0, pov: 0 },
-        multiPlatforms: { shopee: 1, facebook: 0, threads: 0, instagram: 0 }
-      }
-    ]);
+    setWeeklyMatrix(buildDefaultWeeklyMatrix(planState.month || '2026/10', planState.pic || 'Khánh Vy'));
     if (onNotify) onNotify('Đã khôi phục ma trận phân rã 5 tuần về phân bổ chuẩn!');
   };
 
@@ -1565,6 +1406,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           onOpenPlanReport={() => setIsPlanReportOpen(true)}
         onSelectPlan={(selected, options) => {
           setPlanState(selected);
+          setWeeklyMatrix(buildDefaultWeeklyMatrix(selected.month || '2026/10', selected.pic || 'Khánh Vy'));
           if (options?.focusStaffName) {
             setFocusedStaffFilter(options.focusStaffName);
             if (options.focusWorkstream === 'AFFILIATE_PAID') setActiveTab('AFFILIATE_PAID');
@@ -1580,6 +1422,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         onCreatePlan={(newPlan) => {
           setMonthlyPlans(prev => [newPlan, ...prev]);
           setPlanState(newPlan);
+          setWeeklyMatrix(buildDefaultWeeklyMatrix(newPlan.month || '2026/10', newPlan.pic || 'Khánh Vy'));
           setIsShowingStudio(true);
         }}
         onClonePlan={(sourcePlan, targetMonth) => {

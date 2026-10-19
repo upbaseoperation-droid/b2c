@@ -36,7 +36,30 @@ import {
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
-import { Avatar, Button, CHANNELS, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea, sharedTo } from '../ui';
+import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
+import {
+  Avatar,
+  Button,
+  CHANNELS,
+  DataTable,
+  EmptyState,
+  FacebookLogo,
+  Field,
+  InstagramLogo,
+  Modal,
+  Panel,
+  Person,
+  SectionHeader,
+  ShopeeLogo,
+  Stat,
+  StatRow,
+  Status,
+  Tabs,
+  Textarea,
+  ThreadsLogo,
+  TikTokLogo,
+  sharedTo,
+} from '../ui';
 import type { Column, TabItem } from '../ui';
 import {
   LEGAL_TYPE_LABEL,
@@ -81,6 +104,7 @@ export interface KocProfileProps {
   onCreateBooking?: (koc: KocItem) => void;
   onUpdateMetrics?: (koc: KocItem) => void;
   onScanDocs?: (koc: KocItem) => void;
+  onSearchSocialChannels?: (koc: KocItem) => void;
   onOpenKocPortal?: (kocId: string) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
@@ -104,6 +128,7 @@ export function KocProfile({
   onCreateBooking,
   onUpdateMetrics,
   onScanDocs,
+  onSearchSocialChannels,
   onOpenKocPortal,
   onSelectDealForContract,
 }: KocProfileProps) {
@@ -204,6 +229,11 @@ export function KocProfile({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onSearchSocialChannels && (
+            <Button variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
+              Tìm kênh MXH
+            </Button>
+          )}
           {koc.bankAccount && (
             <Button variant="secondary" icon={QrCode} onClick={() => setVietQrDeal(koc)}>
               Mã QR VietQR
@@ -281,7 +311,7 @@ export function KocProfile({
 
         {/* Cột tra cứu (Phải) */}
         <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0 shadow-xs">
-          <ShippingAndContactPanel koc={koc} />
+          <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} />
           <LegalPaymentPanel koc={koc} currentUser={currentUser} onScanDocs={onScanDocs} onOpenQr={() => setVietQrDeal(koc)} />
           <OperationalNotesPanel koc={koc} />
         </aside>
@@ -1202,12 +1232,141 @@ function ActiveDealsSection({
    4. CỘT PHẢI: LIÊN HỆ & HẬU CẦN GỬI MẪU (SAMPLE SHIPPING LOGISTICS)
    ========================================================================= */
 
-function ShippingAndContactPanel({ koc }: { koc: KocItem }) {
+function ShippingAndContactPanel({
+  koc,
+  onSearchSocialChannels,
+}: {
+  koc: KocItem;
+  onSearchSocialChannels?: (k: KocItem) => void;
+}) {
   const prefs = koc.samplePreferences;
+  const tiktokHandle = koc.channelId.replace(/^@+/, '');
 
   return (
-    <AsideSection title="Liên hệ & Hậu cần gửi mẫu (FOC)">
+    <AsideSection
+      title="Liên hệ & Hậu cần gửi mẫu (FOC)"
+      actions={
+        onSearchSocialChannels && (
+          <Button size="sm" variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
+            Tìm kênh MXH
+          </Button>
+        )
+      }
+    >
       <dl className="grid gap-3 text-xs">
+        {/* Kênh mạng xã hội của KOC */}
+        <div className="p-2.5 rounded-lg border border-line bg-sunken/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-semibold text-ink-2">Kênh mạng xã hội đã liên kết</span>
+            {onSearchSocialChannels && (
+              <button
+                type="button"
+                onClick={() => onSearchSocialChannels(koc)}
+                className="text-2xs font-medium text-accent hover:underline"
+              >
+                Dò tìm & xác nhận
+              </button>
+            )}
+          </div>
+          <div className="grid gap-1.5 text-2xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-ink-3">
+                <TikTokLogo className="w-3.5 h-3.5 shrink-0" />
+                TikTok
+              </span>
+              <a
+                href={koc.channelLink || `https://www.tiktok.com/@${tiktokHandle}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+              >
+                @{tiktokHandle}
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-ink-3">
+                <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
+                Shopee
+              </span>
+              {koc.shopeeChannel ? (
+                <a
+                  href={formatSocialChannelUrl('SHOPEE', koc.shopeeChannel)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+                >
+                  {koc.shopeeChannel}
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-ink-3">Chưa xác nhận</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-ink-3">
+                <FacebookLogo className="w-3.5 h-3.5 shrink-0" />
+                Facebook
+              </span>
+              {koc.facebookChannel ? (
+                <a
+                  href={formatSocialChannelUrl('FACEBOOK', koc.facebookChannel)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+                >
+                  {koc.facebookChannel}
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-ink-3">Chưa xác nhận</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-ink-3">
+                <InstagramLogo className="w-3.5 h-3.5 shrink-0" />
+                Instagram
+              </span>
+              {koc.instagramChannel ? (
+                <a
+                  href={formatSocialChannelUrl('INSTAGRAM', koc.instagramChannel)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+                >
+                  {koc.instagramChannel}
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-ink-3">Chưa xác nhận</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-ink-3">
+                <ThreadsLogo className="w-3.5 h-3.5 shrink-0" />
+                Threads
+              </span>
+              {koc.threadsChannel ? (
+                <a
+                  href={formatSocialChannelUrl('THREADS', koc.threadsChannel)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono font-medium text-accent hover:underline inline-flex items-center gap-1 truncate max-w-[180px]"
+                >
+                  {koc.threadsChannel}
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-ink-3">Chưa xác nhận</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Liên hệ trao đổi */}
         <InfoRow label="Số điện thoại">{koc.phone}</InfoRow>
         <InfoRow label="Zalo trao đổi">
@@ -1390,6 +1549,30 @@ function LegalPaymentPanel({
           </InfoRow>
           {koc.sharedMcnInfo && (
             <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
+          )}
+          {koc.alternatePayees && koc.alternatePayees.length > 1 && (
+            <InfoRow label={`Lịch sử CCCD / TK thụ hưởng (${koc.alternatePayees.length})`}>
+              <div className="space-y-1.5 mt-0.5">
+                {koc.alternatePayees.map((p, idx) => (
+                  <div
+                    key={`${p.legalId}-${idx}`}
+                    className="p-2 rounded border border-line bg-sunken/30 text-2xs space-y-0.5"
+                  >
+                    <div className="font-medium text-ink flex items-center justify-between gap-2">
+                      <span>{p.holderName || 'Chưa rõ tên chủ TK'}</span>
+                      {idx === 0 && (
+                        <span className="text-accent font-semibold">Mặc định</span>
+                      )}
+                    </div>
+                    <div className="text-ink-2">
+                      CCCD/MST: <span className="num font-medium">{show(p.legalId)}</span>
+                      {p.bankName ? ` · ${p.bankName}` : ''}
+                      {p.bankAccount ? ` (${show(p.bankAccount)})` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </InfoRow>
           )}
           {koc.contractDriveUrl && (
             <InfoRow label="Hồ sơ hợp đồng">

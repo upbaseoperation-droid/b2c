@@ -420,16 +420,9 @@ export function TaskPolicySetupView({
             Quay lại bảng công việc
           </Button>
           <div className="h-4 w-px bg-line hidden sm:block" />
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-ink">
-                Cấu hình định mức &amp; Chính sách điểm SOW
-              </h2>
-              <Status tone={canManageSetup ? 'positive' : 'neutral'}>
-                {canManageSetup ? 'Quyền chỉnh sửa' : 'Chế độ tra cứu'}
-              </Status>
-            </div>
-          </div>
+          <h2 className="text-base font-semibold text-ink">
+            Cấu hình định mức &amp; Chính sách điểm SOW
+          </h2>
         </div>
 
         <Segmented<SetupSectionKey>

@@ -65,7 +65,7 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 ## 3. Cổng tích hợp API
 
 - **Lark Suite & Larkbase:** Xác thực SSO và đồng bộ kế hoạch tháng từ File 4.1 Plan order tổng (`/api/integrations/larkbase/booking-plans`).
-- **TikTok Shop Open API, Thu thập dữ liệu KOC & Nghiệm thu Video TikTok:** Đồng bộ doanh thu, GMV và đơn hàng từ Seller Center (`/api/tiktok-seller/sync`), thu thập thông tin kênh, video và chỉ số bán hàng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), kiểm tra và nghiệm thu link video KOC gửi (`/api/integrations/tiktok-koc/inspect-video`).
+- **TikTok Shop Open API, Thu thập dữ liệu KOC, Nghiệm thu Video & Phân tích sâu Kênh KOC khớp Brief chạy ngầm:** Đồng bộ doanh thu, GMV và đơn hàng từ Seller Center (`/api/tiktok-seller/sync`), thu thập thông tin kênh, video và chỉ số bán hàng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), kiểm tra và nghiệm thu link video KOC gửi kèm kịch bản (`/api/integrations/tiktok-koc/inspect-video`), hàng đợi chạy ngầm quét sâu 25–80 video/kênh KOC & chấm điểm khớp Brief Brand (`/api/integrations/tiktok-koc/channel-brief-analysis`).
 - **Nghiên cứu Thị trường, Thương hiệu & Đối thủ:** Bóc tách hồ sơ 4P, lập ma trận đối thủ, đào bình luận khách hàng và quét trực tiếp trang đích (`/api/integrations/market-research/analyze`).
 - **Kalodata:** Tra cứu creator và khám phá thị trường (`/api/integrations/kalodata/*`).
 - **WeSign:** Đồng bộ trạng thái hợp đồng ký điện tử (`/api/contracts/integrations/wesign/*`).

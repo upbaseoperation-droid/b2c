@@ -343,7 +343,7 @@ async function run() {
     const row = ws32.getRow(r);
     const dealCode = cleanStr(cellVal(row.getCell(1)));
     const rawKoc = cleanStr(cellVal(row.getCell(2)));
-    const handle = normHandle(rawKoc);
+    const handle = normHandle(rawKoc) || (dealCode ? `unassigned_${dealCode.toLowerCase()}` : '');
     if (!handle || !dealCode || EXISTING_DEAL_CODES.has(dealCode)) continue;
 
     const storeName = cleanStr(cellVal(row.getCell(3)));
@@ -476,6 +476,14 @@ async function run() {
     });
   }
 
+  function normalizeLegalIdDigits(raw) {
+    const d = cleanStr(raw).replace(/\D/g, '');
+    if (!d || d.length < 7) return '';
+    if (d.length === 9) return '0' + d; // 9-digit MST missing leading zero (e.g. 319611331 -> 0319611331)
+    if (d.length === 11) return '0' + d; // 11-digit CCCD missing leading zero (e.g. 79301014377 -> 079301014377)
+    return d;
+  }
+
   const selectedHandles = new Set();
   const selectedMaster = [];
 
@@ -487,22 +495,9 @@ async function run() {
     }
   }
 
-  // Group 1: Top 220 by value (GMV + Spent)
+  // Push ALL KOCs from Master (4,811 KOCs), ordered by value (GMV + Spent) first so flagship KOCs appear on first pages
   const byValue = [...masterRows].sort((a, b) => (b.totalGmv30d * 2 + b.totalSpent) - (a.totalGmv30d * 2 + a.totalSpent));
-  byValue.slice(0, 220).forEach(addRow);
-
-  // Group 2: Shared CCCD/MST pairs (top 45)
-  masterRows.filter(m => m.sharedMcnInfo && (m.cccd || m.taxCode)).slice(0, 45).forEach(addRow);
-
-  // Group 3: Missing legal docs with Paid booking history (top 35)
-  masterRows.filter(m => !m.cccd && !m.taxCode && m.totalSpent > 0).slice(0, 35).forEach(addRow);
-
-  // Group 4: FOC / TAP UpAffiliate with high FOC count or GMV (top 40)
-  masterRows
-    .filter(m => (m.klRaw === 'TAP UpAffiliate' || m.totalFocVideos > 0) && (m.totalGmv30d > 0 || m.totalFocVideos >= 3))
-    .sort((a, b) => (b.totalGmv30d + b.totalFocVideos * 1000000) - (a.totalGmv30d + a.totalFocVideos * 1000000))
-    .slice(0, 40)
-    .forEach(addRow);
+  byValue.forEach(addRow);
 
   const builtKocs = [];
   const builtDeals = [];
@@ -512,14 +507,13 @@ async function run() {
   const megaDeals = dealsByHandle.get('megauriviu') || [];
   let dealCounter = 1;
 
-  function appendDealsForKoc(kocId, stageName, channelId, tier, salaryGrade, segment, defaultTep, defaultCat, dList) {
-    // Sort deals by GMV desc, then cost desc, then airDateIso desc, take up to 5
+  function appendDealsForKoc(kocId, stageName, channelId, tier, salaryGrade, segment, defaultTep, defaultCat, dList, maxDeals = 2) {
     const sorted = [...dList].sort((a, b) => {
       if (b.gmv30 !== a.gmv30) return b.gmv30 - a.gmv30;
       if (b.cost !== a.cost) return b.cost - a.cost;
       return b.airDateIso.localeCompare(a.airDateIso);
     });
-    const picked = sorted.slice(0, 5);
+    const picked = sorted.slice(0, maxDeals);
     for (const d of picked) {
       let code = d.dealCode;
       if (seenDealCodes.has(code)) {
@@ -619,18 +613,24 @@ async function run() {
     }
   }
 
-  // Append megauriviu deals to koc-1
-  appendDealsForKoc(
-    'koc-1',
-    'Mega Uri Review',
-    'megauriviu',
-    'TIER_2_MACRO',
-    'KL6',
-    'Key Creator',
-    'Review Nữ',
-    'Personal care',
-    megaDeals
-  );
+  // Append all deals for existing handles in koc-1..koc-20
+  for (const [existHandle, existKocId] of EXISTING_KOC_HANDLE_MAP.entries()) {
+    const existDeals = dealsByHandle.get(existHandle) || [];
+    if (existDeals.length > 0) {
+      appendDealsForKoc(
+        existKocId,
+        existHandle === 'megauriviu' ? 'Mega Uri Review' : prettifyStageName(existHandle, existDeals[0].bankHolder),
+        existHandle,
+        'TIER_2_MACRO',
+        'KL6',
+        'Key Creator',
+        'Review Nữ',
+        'Personal care',
+        existDeals,
+        Infinity
+      );
+    }
+  }
 
   for (let i = 0; i < selectedMaster.length; i++) {
     const m = selectedMaster[i];
@@ -672,9 +672,42 @@ async function run() {
       ? Number((totalPastGmv / totalPastCost).toFixed(2))
       : (info34.roi30 > 0 ? Number(info34.roi30.toFixed(2)) : (totalPastGmv > 0 ? 8.5 : 1.8));
 
-    const cccdClean = cleanStr(m.cccd);
-    const mstClean = cleanStr(m.taxCode);
+    const cccdClean = normalizeLegalIdDigits(m.cccd);
+    const mstClean = normalizeLegalIdDigits(m.taxCode);
     const hasDocs = Boolean(cccdClean || mstClean);
+
+    // Collect distinct historical payees (CCCD/MST + Holder) from deals
+    const payeeMap = new Map();
+    if (cccdClean || mstClean) {
+      const primaryId = cccdClean || mstClean;
+      payeeMap.set(primaryId, {
+        legalId: primaryId,
+        holderName: holderClean || realName,
+        ...(m.bankName ? { bankName: m.bankName } : {}),
+        ...(m.bankAccount ? { bankAccount: m.bankAccount } : {}),
+        ...(m.taxAccountType ? { taxAccountType: m.taxAccountType } : {}),
+        dealsCount: 1,
+        ...(m.latestBrand ? { latestBrand: m.latestBrand } : {})
+      });
+    }
+    for (const d of dList) {
+      const lid = normalizeLegalIdDigits(d.cccdOrMst);
+      if (!lid) continue;
+      if (!payeeMap.has(lid)) {
+        payeeMap.set(lid, {
+          legalId: lid,
+          holderName: d.bankHolder || holderClean || realName,
+          ...(d.bankName ? { bankName: d.bankName } : {}),
+          ...(d.bankAcc ? { bankAccount: d.bankAcc } : {}),
+          ...(d.taxAccType ? { taxAccountType: d.taxAccType } : {}),
+          dealsCount: 1,
+          ...(d.brandName ? { latestBrand: d.brandName } : {})
+        });
+      } else {
+        payeeMap.get(lid).dealsCount++;
+      }
+    }
+    const alternatePayees = payeeMap.size > 1 ? [...payeeMap.values()] : undefined;
 
     const fem = info34.femaleRatio > 0 ? info34.femaleRatio : 78;
     const mal = info34.maleRatio > 0 ? info34.maleRatio : Math.max(0, 100 - fem);
@@ -752,14 +785,29 @@ async function run() {
       ...(m.picList ? { workedPicsList: m.picList } : {}),
       ...(m.sharedMcnInfo ? { sharedMcnInfo: m.sharedMcnInfo } : {}),
       ...(m.contractDriveUrl && m.contractDriveUrl.startsWith('http') ? { contractDriveUrl: m.contractDriveUrl } : {}),
+      ...(alternatePayees ? { alternatePayees } : {}),
       ...(info34.videoCount > 0 ? { videoCount: info34.videoCount } : {})
     };
 
     builtKocs.push(kocObj);
-    appendDealsForKoc(kocId, stageName, m.handle, tier, salaryGrade, segment, tepKenh, kocCategory, dList);
+    // Push 100% of raw video deals for every KOC
+    appendDealsForKoc(kocId, stageName, m.handle, tier, salaryGrade, segment, tepKenh, kocCategory, dList, Infinity);
   }
 
-  const tsContent = `// AUTO-GENERATED TỪ DỮ LIỆU CHUẨN HÓA KOC & LỊCH SỬ HỢP TÁC B2C 2026
+  // Also push any remaining deals in File 3.2 whose handle was not in Master KOC
+  for (const [h, dList] of dealsByHandle.entries()) {
+    if (EXISTING_KOC_HANDLE_MAP.has(h) || selectedHandles.has(h)) continue;
+    const sample = dList[0] || {};
+    const rate = sample.cost || 0;
+    const salaryGrade = normalizeSalaryGrade(sample.kl, rate);
+    const { tier, segment } = getTierFromSalaryGrade(salaryGrade);
+    const tepKenh = normalizeTepKenh(sample.tepKenh);
+    const kocCategory = normalizeKocCategory(sample.kocCat, tepKenh, 'Personal care');
+    const stageName = prettifyStageName(sample.rawKoc || h, sample.bankHolder);
+    appendDealsForKoc(`koc-raw-${h}`, stageName, h, tier, salaryGrade, segment, tepKenh, kocCategory, dList, Infinity);
+  }
+
+  const tsContent = `// AUTO-GENERATED TỪ TOÀN BỘ DỮ LIỆU CHUẨN HÓA KOC & LỊCH SỬ HỢP TÁC B2C 2026
 // Nguồn:
 // 1. Danh_Ba_Chuan_Hoa_Master_KOC_KOL_B2C_2026.xlsx (4.811 KOC Master)
 // 2. B2C_Quản lý Booking_3.4 KOCs tổng hợp.xlsx (Chỉ số TikTok Seller / Kalodata)
@@ -774,7 +822,7 @@ export const REAL_KOC_COOPERATION_DEALS: BookingDealItem[] = JSON.parse(${JSON.s
 
   fs.writeFileSync(OUT_FILE, tsContent, 'utf8');
   console.log(`✅ Đã xuất thành công:`);
-  console.log(`   - ${builtKocs.length} KOC chủ lực chuẩn hóa -> REAL_FLAGSHIP_KOCS`);
+  console.log(`   - ${builtKocs.length} KOC chuẩn hóa (100% Master KOC) -> REAL_FLAGSHIP_KOCS`);
   console.log(`   - ${builtDeals.length} Deal lịch sử hợp tác thực tế -> REAL_KOC_COOPERATION_DEALS`);
   console.log(`   - File: ${OUT_FILE}`);
 }

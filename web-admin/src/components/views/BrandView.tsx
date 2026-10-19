@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { Tabs, PageActions, Button, Presence } from '../ui';
+import { Tabs, PageActions, Button, Presence, BrandAvatar, Modal, SearchInput, Segmented } from '../ui';
 import {
   Target,
   ArrowRight,
@@ -24,14 +24,16 @@ import {
   ExternalLink,
   Building,
   Flame,
-  Filter,
   X,
   Video,
   FolderOpen,
   Calendar,
   Layers,
   Palette,
-  Edit3
+  Edit3,
+  Table as TableIcon,
+  LayoutGrid,
+  Eye,
 } from 'lucide-react';
 import {
   CampaignItem,
@@ -60,7 +62,6 @@ import {
   getBrandRatecardCeiling,
   brandProfileToKnowledgeBase,
 } from '../../lib/brands/useBrandProfiles';
-import { BrandAvatar } from '../ui';
 
 interface BrandViewProps {
   campaigns?: CampaignItem[];
@@ -98,9 +99,11 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'ACTIVE' | 'UPCOMING' | 'DRAFT'>('ALL');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<'ALL' | '2026/09' | '2026/10' | '2026/11'>('2026/10');
   const [durationFilter, setDurationFilter] = useState<'ALL' | 'SINGLE_MONTH' | 'MULTI_MONTH'>('ALL');
-  const [showCoverageMatrix, setShowCoverageMatrix] = useState<boolean>(true);
+  const [showCoverageMatrix, setShowCoverageMatrix] = useState<boolean>(false);
   const [searchCampaign, setSearchCampaign] = useState('');
   const [handoffSuccessModal, setHandoffSuccessModal] = useState<CampaignItem | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [detailedCampaignModal, setDetailedCampaignModal] = useState<CampaignItem | null>(null);
 
   // Tab 2: Brand Guideline & Asset State — Synchronized with live BrandProfile API (/api/brands/profiles)
   const [localGuidelinesFallback, setLocalGuidelinesFallback] = useState<BrandGuidelineAsset[]>(INITIAL_BRAND_GUIDELINES);
@@ -557,146 +560,148 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
           </div>
 
-          {/* Filter Bar: Month + Duration + Status + Search */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {/* Month Filter */}
-              <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                <span className="text-slate-500 font-semibold flex items-center gap-1 mr-1">
-                  <Calendar className="w-3.5 h-3.5 text-accent" /> Chu kỳ tháng:
-                </span>
-                {([
-                  { key: 'ALL', label: 'Tất cả các tháng' },
-                  { key: '2026/09', label: 'Tháng 09/2026' },
-                  { key: '2026/10', label: 'Tháng 10/2026 (Hiện tại)' },
-                  { key: '2026/11', label: 'Tháng 11/2026' },
-                ] as const).map(m => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => setSelectedMonthFilter(m.key)}
-                    className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
-                      selectedMonthFilter === m.key
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
+          {/* Unified Compact Toolbar: Search + Filters + Mode Toggle */}
+          <div className="bg-surface p-3 rounded-xl border border-line flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+            {/* Left controls */}
+            <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+              <SearchInput
+                value={searchCampaign}
+                onChange={setSearchCampaign}
+                placeholder="Tìm mã, chiến dịch, thương hiệu..."
+                className="w-56 sm:w-64"
+              />
+
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-ink-3 text-2xs font-medium">Tháng:</span>
+                <select
+                  value={selectedMonthFilter}
+                  onChange={(e) => setSelectedMonthFilter(e.target.value as 'ALL' | '2026/09' | '2026/10' | '2026/11')}
+                  className="h-8 px-2 rounded-md bg-sunken border border-line text-xs font-medium text-ink focus:outline-none focus:border-accent"
+                >
+                  <option value="ALL">Tất cả các tháng</option>
+                  <option value="2026/09">Tháng 09/2026</option>
+                  <option value="2026/10">Tháng 10/2026 (Hiện tại)</option>
+                  <option value="2026/11">Tháng 11/2026</option>
+                </select>
               </div>
 
-              {/* Duration Filter */}
-              <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                <span className="text-slate-500 font-semibold mr-1">Quy mô thời gian:</span>
-                {([
-                  { key: 'ALL', label: 'Tất cả' },
-                  { key: 'SINGLE_MONTH', label: '1 Tháng (Ngắn hạn)' },
-                  { key: 'MULTI_MONTH', label: 'Liên tháng (2–3 tháng)' },
-                ] as const).map(d => (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => setDurationFilter(d.key)}
-                    className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
-                      durationFilter === d.key
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-ink-3 text-2xs font-medium">Quy mô:</span>
+                <select
+                  value={durationFilter}
+                  onChange={(e) => setDurationFilter(e.target.value as 'ALL' | 'SINGLE_MONTH' | 'MULTI_MONTH')}
+                  className="h-8 px-2 rounded-md bg-sunken border border-line text-xs font-medium text-ink focus:outline-none focus:border-accent"
+                >
+                  <option value="ALL">Tất cả quy mô</option>
+                  <option value="SINGLE_MONTH">1 Tháng (Ngắn hạn)</option>
+                  <option value="MULTI_MONTH">Liên tháng (2–3 tháng)</option>
+                </select>
               </div>
-            </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-              <div className="flex items-center gap-2 overflow-x-auto text-xs">
-                <span className="text-slate-400 text-xs flex items-center gap-1">
-                  <Filter className="w-3.5 h-3.5" /> Trạng thái:
-                </span>
-                {([
+              <Segmented
+                items={[
                   { key: 'ALL', label: 'Tất cả' },
                   { key: 'ACTIVE', label: 'Đang chạy' },
-                  { key: 'UPCOMING', label: 'Kế hoạch sắp chạy' },
-                  { key: 'DRAFT', label: 'Brief chờ bàn giao' },
-                ] as const).map(tab => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setSelectedFilter(tab.key)}
-                    className={`px-3 py-1 rounded-md font-medium transition cursor-pointer ${
-                      selectedFilter === tab.key
-                        ? 'bg-blue-600 text-white font-semibold'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+                  { key: 'UPCOMING', label: 'Kế hoạch' },
+                  { key: 'DRAFT', label: 'Brief nháp' },
+                ]}
+                value={selectedFilter}
+                onChange={(k) => setSelectedFilter(k as 'ALL' | 'ACTIVE' | 'UPCOMING' | 'DRAFT')}
+              />
+            </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Right controls: Coverage Matrix toggle + View Mode toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCoverageMatrix(v => !v)}
+                className={`h-8 px-2.5 rounded-md text-xs font-medium border transition cursor-pointer flex items-center gap-1.5 ${
+                  showCoverageMatrix
+                    ? 'bg-accent-soft text-accent border-accent/30 font-semibold'
+                    : 'bg-surface text-ink-2 border-line hover:text-ink hover:bg-sunken'
+                }`}
+                title="Bật/tắt đối soát thương hiệu có hoặc không có chiến dịch"
+              >
+                <Building className="w-3.5 h-3.5" />
+                <span>Đối soát Brand</span>
+                <span className="text-2xs px-1.5 py-0.5 rounded-full bg-sunken text-ink font-semibold">
+                  {brandCoverageForMonth.withCampaign.length}/{brandCoverageForMonth.withCampaign.length + brandCoverageForMonth.withoutCampaign.length}
+                </span>
+              </button>
+
+              <div className="flex items-center p-0.5 rounded-md bg-sunken border border-line">
                 <button
                   type="button"
-                  onClick={() => setShowCoverageMatrix(v => !v)}
-                  className="px-3 py-1.5 rounded-md text-xs font-semibold border border-line bg-accent-soft text-accent hover:opacity-90 transition cursor-pointer whitespace-nowrap"
+                  onClick={() => setViewMode('table')}
+                  className={`p-1.5 rounded transition ${
+                    viewMode === 'table' ? 'bg-surface text-ink shadow-2xs font-semibold' : 'text-ink-3 hover:text-ink'
+                  }`}
+                  title="Xem dạng Bảng"
                 >
-                  {showCoverageMatrix ? 'Ẩn đối soát Brand Có/Không Campaign' : 'Xem đối soát Brand Có/Không Campaign'}
+                  <TableIcon className="w-3.5 h-3.5" />
                 </button>
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Tìm mã chiến dịch, thương hiệu..."
-                    value={searchCampaign}
-                    onChange={(e) => setSearchCampaign(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded transition ${
+                    viewMode === 'grid' ? 'bg-surface text-ink shadow-2xs font-semibold' : 'text-ink-3 hover:text-ink'
+                  }`}
+                  title="Xem dạng Lưới"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Bảng Đối Soát Thương Hiệu Có Campaign vs Không Có Campaign (Duy trì Always-on) trong tháng */}
+          {/* Bảng Đối Soát Thương Hiệu Có Campaign vs Không Có Campaign (Mặc định ẩn) */}
           {showCoverageMatrix && (
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2 flex-wrap">
-                    <span>Đối soát trạng thái Chiến dịch theo Thương hiệu — Chu kỳ {brandCoverageForMonth.targetMonth}</span>
-                    <span className="text-2xs font-medium text-positive">
-                      · {brandCoverageForMonth.withCampaign.length} Brand CÓ Campaign
-                    </span>
-                    <span className="text-2xs font-medium text-ink-3">
-                      · {brandCoverageForMonth.withoutCampaign.length} Brand KHÔNG có Campaign (Chạy duy trì tháng)
-                    </span>
+            <div className="p-4 rounded-xl border border-line bg-sunken/40 space-y-3 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-accent" />
+                  <h4 className="text-xs font-semibold text-ink">
+                    Đối soát trạng thái Chiến dịch theo Thương hiệu — Chu kỳ {brandCoverageForMonth.targetMonth}
                   </h4>
-                  
+                  <span className="text-2xs font-medium text-positive">
+                    ({brandCoverageForMonth.withCampaign.length} Brand CÓ Chiến dịch
+                  </span>
+                  <span className="text-2xs font-medium text-ink-3">
+                    · {brandCoverageForMonth.withoutCampaign.length} Brand Duy trì)
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCoverageMatrix(false)}
+                  className="text-ink-3 hover:text-ink p-1 rounded transition cursor-pointer"
+                  title="Đóng bảng đối soát"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 {/* Cột 1: Brand CÓ Campaign trong tháng */}
-                <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="font-semibold text-emerald-800">
-                      Thương hiệu ĐANG CÓ Campaign ({brandCoverageForMonth.targetMonth})
+                <div className="p-3 bg-surface rounded-lg border border-line space-y-2">
+                  <div className="flex items-center justify-between border-b border-line pb-1.5">
+                    <span className="font-semibold text-positive text-2xs">
+                      Đang có chiến dịch ({brandCoverageForMonth.withCampaign.length})
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                     {brandCoverageForMonth.withCampaign.map(({ brandName, campaign }) => {
                       const covered = campaign.coveredMonths || getCoveredMonthsFromRange(campaign.startDate, campaign.endDate);
                       return (
                         <button
                           key={brandName}
                           type="button"
-                          onClick={() => handleOpenEditModal(campaign)}
-                          title={`Nhấn để xem/cập nhật ${campaign.title}`}
-                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-semibold text-2xs flex items-center gap-1.5 transition cursor-pointer"
+                          onClick={() => setDetailedCampaignModal(campaign)}
+                          className="px-2 py-1 rounded bg-positive-soft/50 hover:bg-positive-soft border border-positive/30 text-ink font-medium text-2xs flex items-center gap-1.5 transition cursor-pointer"
+                          title={`Xem chi tiết ${campaign.title}`}
                         >
+                          <BrandAvatar name={brandName} size={14} rounded="sm" />
                           <span>{brandName}</span>
-                          <span className="text-ink-3 font-code text-2xs">
+                          <span className="text-ink-3 font-code text-3xs">
                             · {campaign.code} ({covered.length}T)
                           </span>
                         </button>
@@ -706,22 +711,24 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 </div>
 
                 {/* Cột 2: Brand KHÔNG CÓ Campaign trong tháng */}
-                <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="font-semibold text-slate-700">
-                      Thương hiệu không có Campaign ({brandCoverageForMonth.targetMonth}) — Duy trì thường nhật
+                <div className="p-3 bg-surface rounded-lg border border-line space-y-2">
+                  <div className="flex items-center justify-between border-b border-line pb-1.5">
+                    <span className="font-semibold text-ink-2 text-2xs">
+                      Duy trì thường nhật ({brandCoverageForMonth.withoutCampaign.length})
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                     {brandCoverageForMonth.withoutCampaign.map(brandName => (
                       <button
                         key={brandName}
                         type="button"
                         onClick={() => handleOpenCreateModal(brandName)}
-                        className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-700 font-medium text-2xs flex items-center gap-1 transition cursor-pointer"
+                        className="px-2 py-1 rounded bg-sunken hover:bg-accent-soft hover:text-accent border border-line text-ink-2 text-2xs flex items-center gap-1 transition cursor-pointer"
+                        title="Bấm để khởi tạo chiến dịch mới cho brand này"
                       >
+                        <BrandAvatar name={brandName} size={14} rounded="sm" />
                         <span>{brandName}</span>
-                        <span className="text-2xs text-slate-400">(Duy trì • + Tạo Campaign)</span>
+                        <span className="text-3xs text-ink-3">+ Tạo</span>
                       </button>
                     ))}
                   </div>
@@ -730,275 +737,258 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
           )}
 
-          {/* Campaign Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {filteredCampaigns.map((c) => {
-              const budgetPercent = Math.min(100, Math.round((c.spentBudget / (c.budget || 1)) * 100));
-              const gmvPercent = Math.min(100, Math.round((c.currentGmv / (c.targetGmv || 1)) * 100));
-              const coveredMonths = c.coveredMonths && c.coveredMonths.length > 0
-                ? c.coveredMonths
-                : getCoveredMonthsFromRange(c.startDate, c.endDate);
-              const isMultiMonth = coveredMonths.length >= 2;
+          {/* CHẾ ĐỘ XEM: BẢNG (TABLE VIEW) */}
+          {viewMode === 'table' ? (
+            <div className="bg-surface rounded-xl border border-line overflow-hidden shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead>
+                    <tr className="bg-sunken/40 border-b border-line text-ink-3 font-semibold text-2xs">
+                      <th className="py-2.5 px-3">Mã & Chiến dịch</th>
+                      <th className="py-2.5 px-3">Thương hiệu</th>
+                      <th className="py-2.5 px-3">Thời gian</th>
+                      <th className="py-2.5 px-3">Ngân sách</th>
+                      <th className="py-2.5 px-3">Mục tiêu GMV</th>
+                      <th className="py-2.5 px-3">CIR</th>
+                      <th className="py-2.5 px-3">Trạng thái</th>
+                      <th className="py-2.5 px-3">Bàn giao nội dung</th>
+                      <th className="py-2.5 px-3 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {filteredCampaigns.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-10 text-center text-ink-3">
+                          Không tìm thấy chiến dịch nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCampaigns.map((c) => {
+                        const budgetPercent = Math.min(100, Math.round((c.spentBudget / (c.budget || 1)) * 100));
+                        const gmvPercent = Math.min(100, Math.round((c.currentGmv / (c.targetGmv || 1)) * 100));
+                        const coveredMonths = c.coveredMonths && c.coveredMonths.length > 0
+                          ? c.coveredMonths
+                          : getCoveredMonthsFromRange(c.startDate, c.endDate);
+                        const isMultiMonth = coveredMonths.length >= 2;
 
-              return (
-                <div key={c.id} className="card-enterprise p-5 space-y-4 flex flex-col justify-between">
-                  <div className="space-y-3">
-                    {/* Header */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-2xs font-code font-semibold text-accent">
-                          {c.code}
-                        </span>
-                        <span className="text-xs font-semibold text-ink">· {c.brand}</span>
-                        <span
-                          className={`text-2xs font-medium ${
-                            isMultiMonth
-                              ? 'text-accent'
-                              : 'text-ink-3'
-                          }`}
-                        >
-                          · {isMultiMonth
-                            ? `Liên tháng • ${coveredMonths.length} tháng (${coveredMonths.join(' → ')})`
-                            : `1 tháng (${coveredMonths[0] || '2026/10'})`}
+                        return (
+                          <tr key={c.id} className="hover:bg-canvas transition-colors">
+                            <td className="py-2.5 px-3">
+                              <div className="font-code font-semibold text-accent text-2xs">{c.code}</div>
+                              <div className="font-medium text-ink max-w-[220px] truncate" title={c.title}>
+                                {c.title}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 font-medium text-ink">
+                                <BrandAvatar name={c.brand} size={18} rounded="sm" />
+                                <span>{c.brand}</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <div className="text-2xs text-ink-2 font-medium">{c.startDate} → {c.endDate}</div>
+                              <span className={`inline-block text-3xs px-1.5 py-0.5 rounded font-medium mt-0.5 ${
+                                isMultiMonth ? 'bg-accent-soft text-accent' : 'bg-sunken text-ink-3'
+                              }`}>
+                                {isMultiMonth ? `Liên tháng (${coveredMonths.length}T)` : '1 tháng'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">
+                              <div className="flex items-center justify-between text-2xs mb-1">
+                                <span className="font-medium text-ink">{formatVndShort(c.spentBudget)}</span>
+                                <span className="text-ink-3 text-3xs">/ {formatVndShort(c.budget)} ({budgetPercent}%)</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-sunken rounded-full overflow-hidden">
+                                <div className="h-full bg-accent rounded-full" style={{ width: `${budgetPercent}%` }} />
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap min-w-[130px]">
+                              <div className="flex items-center justify-between text-2xs mb-1">
+                                <span className="font-medium text-positive">{formatVndShort(c.currentGmv)}</span>
+                                <span className="text-ink-3 text-3xs">/ {formatVndShort(c.targetGmv)} ({gmvPercent}%)</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-sunken rounded-full overflow-hidden">
+                                <div className="h-full bg-positive rounded-full" style={{ width: `${gmvPercent}%` }} />
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <span className="font-semibold text-accent text-xs">
+                                {c.targetCir ? `${c.targetCir}%` : '—'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
+                                c.status === 'ACTIVE'
+                                  ? 'bg-positive-soft text-positive'
+                                  : c.status === 'COMPLETED'
+                                    ? 'bg-sunken text-ink-2'
+                                    : 'bg-warning-soft text-warning'
+                              }`}>
+                                {c.status === 'ACTIVE' ? 'Đang chạy' : c.status === 'COMPLETED' ? 'Hoàn thành' : 'Kế hoạch'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              {c.briefStatus === 'HANDED_OFF_TO_CONTENT' || c.briefStatus === 'IN_PRODUCTION' || c.briefStatus === 'COMPLETED' ? (
+                                <span className="inline-flex items-center gap-1 text-2xs text-positive font-medium">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Đã giao ({c.contentPic || 'Quỳnh Như'})</span>
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleHandoff(c.id)}
+                                  className="inline-flex items-center gap-1 px-2 py-1 rounded text-2xs font-semibold bg-primary hover:bg-primary-hover text-white transition cursor-pointer"
+                                  title="Bàn giao nội dung sang nhóm kịch bản"
+                                >
+                                  <Send className="w-3 h-3" />
+                                  <span>Bàn giao</span>
+                                </button>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailedCampaignModal(c)}
+                                  className="px-2 py-1 rounded text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken border border-line transition cursor-pointer flex items-center gap-1"
+                                  title="Xem chi tiết chiến dịch"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span>Chi tiết</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(c)}
+                                  className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
+                                  title="Sửa / Phân kỳ"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            /* CHẾ ĐỘ XEM: LƯỚI THẺ (GRID VIEW) TINH GỌN */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCampaigns.map((c) => {
+                const budgetPercent = Math.min(100, Math.round((c.spentBudget / (c.budget || 1)) * 100));
+                const gmvPercent = Math.min(100, Math.round((c.currentGmv / (c.targetGmv || 1)) * 100));
+                const coveredMonths = c.coveredMonths && c.coveredMonths.length > 0
+                  ? c.coveredMonths
+                  : getCoveredMonthsFromRange(c.startDate, c.endDate);
+                const isMultiMonth = coveredMonths.length >= 2;
+
+                return (
+                  <div key={c.id} className="bg-surface rounded-xl border border-line p-4 space-y-3 flex flex-col justify-between hover:border-line-strong transition shadow-2xs">
+                    <div className="space-y-2.5">
+                      {/* Card Header */}
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <BrandAvatar name={c.brand} size={18} rounded="sm" />
+                          <span className="font-semibold text-ink text-xs truncate">{c.brand}</span>
+                          <span className="text-3xs font-code text-accent font-semibold">{c.code}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-3xs font-semibold shrink-0 ${
+                          c.status === 'ACTIVE'
+                            ? 'bg-positive-soft text-positive'
+                            : c.status === 'COMPLETED'
+                              ? 'bg-sunken text-ink-2'
+                              : 'bg-warning-soft text-warning'
+                        }`}>
+                          {c.status === 'ACTIVE' ? 'Đang chạy' : c.status === 'COMPLETED' ? 'Hoàn thành' : 'Kế hoạch'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+
+                      {/* Title & Dates */}
+                      <div>
+                        <h3 className="text-xs font-semibold text-ink line-clamp-1" title={c.title}>
+                          {c.title}
+                        </h3>
+                        <div className="flex items-center justify-between text-3xs text-ink-3 mt-1">
+                          <span>{c.startDate} → {c.endDate}</span>
+                          <span className={isMultiMonth ? 'text-accent font-medium' : ''}>
+                            {isMultiMonth ? `Liên tháng (${coveredMonths.length}T)` : '1 tháng'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Big Idea Preview */}
+                      {c.bigIdea && (
+                        <div className="px-2.5 py-1.5 rounded-md bg-sunken/60 text-2xs text-ink-2 italic line-clamp-2">
+                          &ldquo;{c.bigIdea}&rdquo;
+                        </div>
+                      )}
+
+                      {/* Progress Bars */}
+                      <div className="space-y-2 pt-1 border-t border-line text-2xs">
+                        <div>
+                          <div className="flex justify-between text-3xs mb-0.5">
+                            <span className="text-ink-3">Ngân sách:</span>
+                            <span className="font-medium text-ink">{formatVndShort(c.spentBudget)} / {formatVndShort(c.budget)} ({budgetPercent}%)</span>
+                          </div>
+                          <div className="w-full h-1 bg-sunken rounded-full overflow-hidden">
+                            <div className="h-full bg-accent rounded-full" style={{ width: `${budgetPercent}%` }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-3xs mb-0.5">
+                            <span className="text-ink-3">GMV:</span>
+                            <span className="font-medium text-positive">{formatVndShort(c.currentGmv)} / {formatVndShort(c.targetGmv)} ({gmvPercent}%)</span>
+                          </div>
+                          <div className="w-full h-1 bg-sunken rounded-full overflow-hidden">
+                            <div className="h-full bg-positive rounded-full" style={{ width: `${gmvPercent}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex items-center justify-between pt-2.5 border-t border-line mt-1">
+                      <div className="text-2xs">
+                        {c.briefStatus === 'HANDED_OFF_TO_CONTENT' || c.briefStatus === 'IN_PRODUCTION' || c.briefStatus === 'COMPLETED' ? (
+                          <span className="text-positive font-medium flex items-center gap-1 text-3xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Đã giao ({c.contentPic || 'Quỳnh Như'})</span>
+                          </span>
+                        ) : (
+                          <span className="text-ink-3 text-3xs font-medium flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-warning" />
+                            <span>Brief nháp</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setDetailedCampaignModal(c)}
+                          className="px-2 py-1 rounded text-2xs font-medium text-ink-2 hover:text-ink hover:bg-sunken border border-line transition cursor-pointer"
+                        >
+                          Xem chi tiết
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(c)}
-                          className="px-2.5 py-1 rounded text-2xs font-semibold bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 flex items-center gap-1 transition cursor-pointer"
+                          className="p-1 rounded text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
+                          title="Sửa / Phân kỳ"
                         >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Sửa / Phân kỳ</span>
+                          <Edit3 className="w-3.5 h-3.5" />
                         </button>
-                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                          c.status === 'ACTIVE'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : c.status === 'COMPLETED'
-                              ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}>
-                          {c.status === 'ACTIVE' ? 'Đang chạy' : c.status === 'COMPLETED' ? 'Đã hoàn thành' : 'Kế hoạch'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{c.title}</h3>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
-                        <span>
-                          Khung ngày: <strong className="text-slate-700">{c.startDate} → {c.endDate}</strong>
-                        </span>
-                        {c.brandStrategyPic && (
-                          <span>
-                            Strategy PIC: <strong className="text-slate-700">{c.brandStrategyPic}</strong>
-                          </span>
-                        )}
-                        {c.kvPic && (
-                          <span>
-                            KV/SIS PIC: <strong className="text-slate-700">{c.kvPic}</strong>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Big Idea, Strategy & CTKM Box */}
-                    <div className="card-inner-box p-3 space-y-1.5 text-xs">
-                      <div>
-                        <span className="text-slate-500 font-semibold">Big Idea / Chủ đề:</span>{' '}
-                        <span className="text-slate-900 font-semibold italic">&ldquo;{c.bigIdea}&rdquo;</span>
-                      </div>
-                      {c.keyMessage && (
-                        <div>
-                          <span className="text-slate-500 font-semibold">Thông điệp trọng tâm:</span>{' '}
-                          <span className="text-slate-800">{c.keyMessage}</span>
-                        </div>
-                      )}
-                      {c.roleInYearPlan && (
-                        <div>
-                          <span className="text-slate-500 font-semibold">Vai trò trong Plan năm:</span>{' '}
-                          <span className="text-slate-700">{c.roleInYearPlan}</span>
-                        </div>
-                      )}
-                      {c.comboPromoOffer && (
-                        <div className="p-2 rounded bg-amber-50/80 border border-amber-200 text-amber-950">
-                          <span className="font-semibold">CTKM / Combo / Quà tặng:</span> {c.comboPromoOffer}
-                        </div>
-                      )}
-                      <div>
-                        <span className="text-slate-500 font-semibold">Khách hàng mục tiêu:</span>{' '}
-                        <span className="text-slate-700">{c.targetAudience}</span>
-                      </div>
-                      {c.heroSkus && c.heroSkus.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                          <span className="text-slate-500 font-semibold">Hero SKU:</span>
-                          <span className="text-2xs text-ink-2 font-code">
-                            {c.heroSkus.join(' · ')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Key Visual Spec Box (Section 03 Template 1 Sheet) */}
-                    {c.keyVisualSpec && (
-                      <div className="p-3 rounded-lg bg-accent-soft border border-line space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-ink flex items-center gap-1.5">
-                            <Palette className="w-3.5 h-3.5 text-accent" />
-                            <span>Key Visual Chiến dịch: {c.keyVisualSpec.theme}</span>
-                          </span>
-                          {c.keyVisualSpec.fonts && (
-                            <span className="text-2xs text-accent font-medium">
-                              Font: {c.keyVisualSpec.fonts}
-                            </span>
-                          )}
-                        </div>
-                        {c.keyVisualSpec.promoTextOnKv && (
-                          <div className="text-2xs text-ink-2">
-                            <span className="font-semibold">Text CTKM trên KV:</span> &ldquo;{c.keyVisualSpec.promoTextOnKv}&rdquo;
-                          </div>
-                        )}
-                        <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
-                          <div className="bg-white px-2 py-1 rounded border border-line">
-                            <span className="text-slate-500 block">Ngày lên Ref</span>
-                            <strong className="text-slate-800">{c.keyVisualSpec.refDate || '—'}</strong>
-                          </div>
-                          <div className="bg-white px-2 py-1 rounded border border-line">
-                            <span className="text-slate-500 block">Ngày Order KV</span>
-                            <strong className="text-slate-800">{c.keyVisualSpec.orderDate || '—'}</strong>
-                          </div>
-                          <div className="bg-white px-2 py-1 rounded border border-emerald-200">
-                            <span className="text-emerald-700 block font-semibold">Ngày treo KV</span>
-                            <strong className="text-emerald-800">{c.keyVisualSpec.hangDate || '—'}</strong>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Bảng Phân kỳ theo từng tháng (Monthly Phases Breakdown) */}
-                    {c.monthlyPhases && c.monthlyPhases.length > 0 && (
-                      <div className="rounded-lg border border-line overflow-hidden text-xs">
-                        <div className="bg-accent-soft px-3 py-1.5 border-b border-line flex items-center justify-between">
-                          <span className="font-semibold text-ink text-2xs">
-                            Phân kỳ triển khai theo từng tháng ({c.monthlyPhases.length} tháng)
-                          </span>
-                        </div>
-                        <div className="divide-y divide-slate-100 bg-white">
-                          {c.monthlyPhases.map(p => {
-                            const isSelectedMonth = selectedMonthFilter !== 'ALL' && p.month === selectedMonthFilter;
-                            return (
-                              <div
-                                key={p.month}
-                                className={`px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                                  isSelectedMonth ? 'bg-accent-soft' : ''
-                                }`}
-                              >
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-accent font-code font-semibold text-2xs">
-                                      {p.month}
-                                    </span>
-                                    <span className="font-semibold text-slate-900 text-xs">· {p.phaseName}</span>
-                                  </div>
-                                  {p.saleMilestones && (
-                                    <p className="text-2xs text-slate-500">Mốc sale: {p.saleMilestones}</p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0 text-2xs">
-                                  <div className="text-right">
-                                    <span className="text-slate-400 block">Ngân sách tháng</span>
-                                    <strong className="text-slate-900">{formatVndShort(p.allocatedBudget)}</strong>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-slate-400 block">Mục tiêu GMV</span>
-                                    <strong className="text-emerald-700">{formatVndShort(p.targetGmv)}</strong>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-slate-400 block">Số KOC</span>
-                                    <strong className="text-blue-700">{p.targetKocCount} KOC</strong>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* CIR & Financials */}
-                    <div className="space-y-2 pt-1 text-xs">
-                      {c.targetCir && (
-                        <div className="flex items-center justify-between text-2xs pb-1 border-b border-slate-100">
-                          <span className="text-slate-500">Mục tiêu CIR tổng chiến dịch (Chi phí / Doanh thu):</span>
-                          <span className="font-semibold text-blue-700">{c.targetCir}%</span>
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="flex justify-between text-2xs mb-1">
-                          <span className="text-slate-500">
-                            Tổng ngân sách Chiến dịch: <strong className="text-slate-800">{formatVndShort(c.spentBudget)}</strong> / {formatVndShort(c.budget)}
-                          </span>
-                          <span className="font-semibold text-blue-600">{budgetPercent}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="data-bar h-full bg-blue-600 rounded-full" style={{ width: `${budgetPercent}%` }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between text-2xs mb-1">
-                          <span className="text-slate-500">
-                            Tổng GMV đạt: <strong className="text-emerald-700">{formatVndShort(c.currentGmv)}</strong> / {formatVndShort(c.targetGmv)}
-                          </span>
-                          <span className="font-semibold text-emerald-600">{gmvPercent}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="data-bar h-full bg-emerald-500 rounded-full" style={{ width: `${gmvPercent}%` }} />
-                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Status & SLA Action */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-200 mt-2">
-                    <div className="text-xs flex items-center gap-1.5">
-                      {c.briefStatus === 'HANDED_OFF_TO_CONTENT' || c.briefStatus === 'IN_PRODUCTION' || c.briefStatus === 'COMPLETED' ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span className="text-slate-700 font-medium">
-                            Đã bàn giao nội dung ({c.contentPic || 'Quỳnh Như'})
-                          </span>
-                          <span className="text-positive text-2xs font-medium flex items-center gap-1">
-                            · <Clock className="w-3 h-3" /> Đúng cam kết 24h
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-4 h-4 text-amber-500" />
-                          <span className="text-slate-500 font-medium">Brief nháp — Chưa bàn giao</span>
-                        </>
-                      )}
-                    </div>
-
-                    {c.briefStatus === 'DRAFT' ? (
-                      <button
-                        onClick={() => handleHandoff(c.id)}
-                        className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Bàn giao nội dung</span>
-                      </button>
-                    ) : (
-                      <span className="text-ink-3 text-2xs font-medium flex items-center gap-1">
-                        <span>Đang đồng bộ {coveredMonths.length} tháng</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -2027,34 +2017,287 @@ export const BrandView: React.FC<BrandViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL: THÔNG BÁO BÀN GIAO THÀNH CÔNG                                      */}
       {/* ========================================================================= */}
-      <Presence show={!!handoffSuccessModal}>
       {handoffSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-sm shadow-2xl p-5 space-y-4 text-center animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
+        <Modal
+          open={!!handoffSuccessModal}
+          onClose={() => setHandoffSuccessModal(null)}
+          title="Bàn giao brief thành công"
+          size="sm"
+          footer={
+            <div className="flex justify-end w-full">
+              <Button variant="primary" onClick={() => setHandoffSuccessModal(null)}>
+                Đóng
+              </Button>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Đã bàn giao brief</h3>
-              <p className="text-xs text-slate-600 mt-1">
-                Chiến dịch <strong>{handoffSuccessModal.title}</strong> đã được bàn giao sang nhóm nội dung.
-              </p>
+          }
+        >
+          <div className="space-y-3 text-center text-xs">
+            <div className="w-10 h-10 rounded-full bg-positive-soft text-positive flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-            <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs text-left space-y-1">
+            <p className="text-ink">
+              Chiến dịch <strong>{handoffSuccessModal.title}</strong> đã được bàn giao sang nhóm nội dung.
+            </p>
+            <div className="p-3 bg-sunken rounded border border-line text-left space-y-1 text-2xs">
               <p><strong>SLA phản hồi:</strong> 24 giờ</p>
               <p><strong>Phụ trách nội dung:</strong> Quỳnh Như</p>
               <p><strong>Bước kế tiếp:</strong> Lập góc tiếp cận &amp; chọn danh sách KOC</p>
             </div>
-            <button
-              onClick={() => setHandoffSuccessModal(null)}
-              className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs rounded transition"
-            >
-              Đóng
-            </button>
           </div>
-        </div>
+        </Modal>
       )}
-      </Presence>
+
+      {/* ========================================================================= */}
+      {/* MODAL: CHI TIẾT CHIẾN DỊCH (CAMPAIGN DETAIL MODAL)                        */}
+      {/* ========================================================================= */}
+      {detailedCampaignModal && (
+        <Modal
+          open={!!detailedCampaignModal}
+          onClose={() => setDetailedCampaignModal(null)}
+          title={`Chi tiết chiến dịch ${detailedCampaignModal.title} (${detailedCampaignModal.code})`}
+          size="xl"
+          footer={
+            <div className="flex items-center justify-end gap-2 w-full">
+              <Button variant="secondary" onClick={() => setDetailedCampaignModal(null)}>
+                Đóng
+              </Button>
+              {detailedCampaignModal.briefStatus === 'DRAFT' && (
+                <Button
+                  variant="primary"
+                  icon={Send}
+                  onClick={() => {
+                    const cid = detailedCampaignModal.id;
+                    setDetailedCampaignModal(null);
+                    handleHandoff(cid);
+                  }}
+                >
+                  Bàn giao nội dung
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                icon={Edit3}
+                onClick={() => {
+                  const camp = detailedCampaignModal;
+                  setDetailedCampaignModal(null);
+                  handleOpenEditModal(camp);
+                }}
+              >
+                Sửa / Phân kỳ
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            {/* Header Overview Strip */}
+            <div className="p-3 rounded-lg bg-sunken border border-line flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <BrandAvatar name={detailedCampaignModal.brand} size={28} rounded="md" />
+                <div>
+                  <div className="font-semibold text-ink text-sm flex items-center gap-2">
+                    <span>{detailedCampaignModal.brand}</span>
+                    <span className="text-2xs font-code font-normal text-ink-3">· {detailedCampaignModal.code}</span>
+                  </div>
+                  <div className="text-2xs text-ink-3">
+                    Thời gian: {detailedCampaignModal.startDate} → {detailedCampaignModal.endDate}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                  detailedCampaignModal.status === 'ACTIVE'
+                    ? 'bg-positive-soft text-positive'
+                    : detailedCampaignModal.status === 'COMPLETED'
+                      ? 'bg-sunken text-ink-2'
+                      : 'bg-warning-soft text-warning'
+                }`}>
+                  {detailedCampaignModal.status === 'ACTIVE' ? 'Đang chạy' : detailedCampaignModal.status === 'COMPLETED' ? 'Hoàn thành' : 'Kế hoạch'}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                  detailedCampaignModal.briefStatus === 'HANDED_OFF_TO_CONTENT' || detailedCampaignModal.briefStatus === 'IN_PRODUCTION' || detailedCampaignModal.briefStatus === 'COMPLETED'
+                    ? 'bg-positive-soft text-positive'
+                    : 'bg-sunken text-ink-3'
+                }`}>
+                  {detailedCampaignModal.briefStatus === 'HANDED_OFF_TO_CONTENT' || detailedCampaignModal.briefStatus === 'IN_PRODUCTION' || detailedCampaignModal.briefStatus === 'COMPLETED'
+                    ? `Đã giao (${detailedCampaignModal.contentPic || 'Quỳnh Như'})`
+                    : 'Brief nháp'}
+                </span>
+              </div>
+            </div>
+
+            {/* Strategic Overview & Content Rules */}
+            <div className="p-4 rounded-lg bg-surface border border-line space-y-2.5">
+              <h4 className="font-semibold text-ink text-xs flex items-center gap-1.5">
+                <Target className="w-4 h-4 text-accent" />
+                <span>Định hướng chiến lược &amp; Nội dung</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <span className="text-ink-3 block text-2xs">Big Idea / Chủ đề:</span>
+                  <span className="font-semibold text-ink italic">&ldquo;{detailedCampaignModal.bigIdea}&rdquo;</span>
+                </div>
+                {detailedCampaignModal.keyMessage && (
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Thông điệp trọng tâm:</span>
+                    <span className="text-ink">{detailedCampaignModal.keyMessage}</span>
+                  </div>
+                )}
+                {detailedCampaignModal.roleInYearPlan && (
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Vai trò trong Plan năm:</span>
+                    <span className="text-ink">{detailedCampaignModal.roleInYearPlan}</span>
+                  </div>
+                )}
+                {detailedCampaignModal.targetAudience && (
+                  <div>
+                    <span className="text-ink-3 block text-2xs">Khách hàng mục tiêu:</span>
+                    <span className="text-ink">{detailedCampaignModal.targetAudience}</span>
+                  </div>
+                )}
+              </div>
+
+              {detailedCampaignModal.comboPromoOffer && (
+                <div className="p-2.5 rounded bg-warning-soft border border-warning/30 text-ink">
+                  <span className="font-semibold">CTKM / Combo / Quà tặng:</span>{' '}
+                  <span>{detailedCampaignModal.comboPromoOffer}</span>
+                </div>
+              )}
+
+              {detailedCampaignModal.heroSkus && detailedCampaignModal.heroSkus.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-ink-3 text-2xs">Hero SKU:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {detailedCampaignModal.heroSkus.map(sku => (
+                      <span key={sku} className="px-2 py-0.5 rounded bg-sunken text-ink font-code text-2xs">
+                        {sku}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-line text-2xs text-ink-3">
+                {detailedCampaignModal.brandStrategyPic && (
+                  <span>Strategy PIC: <strong className="text-ink">{detailedCampaignModal.brandStrategyPic}</strong></span>
+                )}
+                {detailedCampaignModal.kvPic && (
+                  <span>KV/SIS PIC: <strong className="text-ink">{detailedCampaignModal.kvPic}</strong></span>
+                )}
+                {detailedCampaignModal.contentPic && (
+                  <span>Content PIC: <strong className="text-ink">{detailedCampaignModal.contentPic}</strong></span>
+                )}
+              </div>
+            </div>
+
+            {/* Key Visual Spec */}
+            {detailedCampaignModal.keyVisualSpec && (
+              <div className="p-4 rounded-lg bg-surface border border-line space-y-2.5">
+                <h4 className="font-semibold text-ink text-xs flex items-center gap-1.5">
+                  <Palette className="w-4 h-4 text-accent" />
+                  <span>Quy chuẩn Key Visual (KV &amp; SIS)</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-2xs">
+                  <div>
+                    <span className="text-ink-3 block">Chủ đề thiết kế:</span>
+                    <strong className="text-ink">{detailedCampaignModal.keyVisualSpec.theme}</strong>
+                  </div>
+                  {detailedCampaignModal.keyVisualSpec.fonts && (
+                    <div>
+                      <span className="text-ink-3 block">Font chữ:</span>
+                      <strong className="text-ink">{detailedCampaignModal.keyVisualSpec.fonts}</strong>
+                    </div>
+                  )}
+                  {detailedCampaignModal.keyVisualSpec.promoTextOnKv && (
+                    <div className="sm:col-span-2">
+                      <span className="text-ink-3 block">Text CTKM trên KV:</span>
+                      <span className="text-ink italic">&ldquo;{detailedCampaignModal.keyVisualSpec.promoTextOnKv}&rdquo;</span>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
+                  <div className="bg-sunken p-2 rounded border border-line">
+                    <span className="text-ink-3 block">Ngày lên Ref</span>
+                    <strong className="text-ink">{detailedCampaignModal.keyVisualSpec.refDate || '—'}</strong>
+                  </div>
+                  <div className="bg-sunken p-2 rounded border border-line">
+                    <span className="text-ink-3 block">Ngày Order KV</span>
+                    <strong className="text-ink">{detailedCampaignModal.keyVisualSpec.orderDate || '—'}</strong>
+                  </div>
+                  <div className="bg-positive-soft p-2 rounded border border-positive/30">
+                    <span className="text-positive block font-semibold">Ngày treo KV</span>
+                    <strong className="text-positive font-semibold">{detailedCampaignModal.keyVisualSpec.hangDate || '—'}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Monthly Phases Breakdown */}
+            {detailedCampaignModal.monthlyPhases && detailedCampaignModal.monthlyPhases.length > 0 && (
+              <div className="rounded-lg border border-line overflow-hidden">
+                <div className="bg-sunken/60 px-4 py-2 border-b border-line flex items-center justify-between">
+                  <h4 className="font-semibold text-ink text-xs flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    <span>Phân kỳ thực thi theo từng tháng ({detailedCampaignModal.monthlyPhases.length} tháng)</span>
+                  </h4>
+                </div>
+                <div className="divide-y divide-line bg-surface">
+                  {detailedCampaignModal.monthlyPhases.map(p => (
+                    <div key={p.month} className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-accent font-code font-semibold text-xs">{p.month}</span>
+                          <span className="font-semibold text-ink text-xs">· {p.phaseName}</span>
+                        </div>
+                        {p.saleMilestones && (
+                          <p className="text-2xs text-ink-3 mt-0.5">Mốc sale: {p.saleMilestones}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0 text-2xs">
+                        <div className="text-right">
+                          <span className="text-ink-3 block">Ngân sách</span>
+                          <strong className="text-ink">{formatVndShort(p.allocatedBudget)}</strong>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-ink-3 block">Mục tiêu GMV</span>
+                          <strong className="text-positive">{formatVndShort(p.targetGmv)}</strong>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-ink-3 block">Số KOC</span>
+                          <strong className="text-accent">{p.targetKocCount} KOC</strong>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Financial Summary Strip */}
+            <div className="p-3 rounded-lg bg-surface border border-line grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <span className="text-ink-3 block text-2xs">Tổng ngân sách:</span>
+                <strong className="text-ink text-sm">{formatVndShort(detailedCampaignModal.budget)}</strong>
+                <span className="text-3xs text-ink-3 block">Đã chi: {formatVndShort(detailedCampaignModal.spentBudget)}</span>
+              </div>
+              <div>
+                <span className="text-ink-3 block text-2xs">Mục tiêu GMV:</span>
+                <strong className="text-positive text-sm">{formatVndShort(detailedCampaignModal.targetGmv)}</strong>
+                <span className="text-3xs text-ink-3 block">Đạt: {formatVndShort(detailedCampaignModal.currentGmv)}</span>
+              </div>
+              <div>
+                <span className="text-ink-3 block text-2xs">CIR mục tiêu:</span>
+                <strong className="text-accent text-sm">{detailedCampaignModal.targetCir ? `${detailedCampaignModal.targetCir}%` : '—'}</strong>
+              </div>
+              <div>
+                <span className="text-ink-3 block text-2xs">Thời lượng:</span>
+                <strong className="text-ink text-sm">
+                  {getCoveredMonthsFromRange(detailedCampaignModal.startDate, detailedCampaignModal.endDate).length} tháng
+                </strong>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: KIỂM TRA KỊCH BẢN                                                  */}
