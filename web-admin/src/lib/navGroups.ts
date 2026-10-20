@@ -56,6 +56,14 @@ export interface NavGroupDefinition {
 
 export const NAV_GROUPS: NavGroupDefinition[] = [
   {
+    id: 'dashboard',
+    label: 'Báo cáo & Dashboard',
+    tabs: [
+      { key: 'dashboard-bi', label: TAB_LABELS['dashboard-bi'] },
+      { key: 'ads-report', label: TAB_LABELS['ads-report'] },
+    ],
+  },
+  {
     id: 'delegation',
     label: 'Điều phối & Giao việc',
     tabs: [
@@ -83,6 +91,18 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
   },
 ];
 
+export const DASHBOARD_EXEC_TAB_KEYS: TabKey[] = [
+  'overview',
+  'dashboard-bi',
+  'dashboard-brand',
+  'dashboard-air-sync',
+  'dashboard-store',
+  'dashboard-video',
+  'dashboard-team-sla',
+  'dashboard-staff',
+  'dashboard-finance',
+];
+
 export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   overview: 'dashboard-brand',
   'dashboard-bi': 'dashboard-brand',
@@ -91,6 +111,14 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'content-angles': 'brand-knowledge',
 };
 
+export function resolveNavGroupTabKey(tab: TabKey): TabKey {
+  if (DASHBOARD_EXEC_TAB_KEYS.includes(tab)) {
+    return 'dashboard-bi';
+  }
+  return tab;
+}
+
 export function getNavGroupForTab(tab: TabKey): NavGroupDefinition | null {
-  return NAV_GROUPS.find((g) => g.tabs.some((t) => t.key === tab)) ?? null;
+  const resolved = resolveNavGroupTabKey(tab);
+  return NAV_GROUPS.find((g) => g.tabs.some((t) => t.key === resolved)) ?? null;
 }

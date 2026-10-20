@@ -18,6 +18,7 @@ import {
   Stat,
   StatRow,
   Status,
+  Tabs,
 } from '../ui';
 import {
   TrendingUp,
@@ -1223,20 +1224,18 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         </Button>
       </PageActions>
 
-      {/* Thanh chuyển nhanh góc nhìn Dashboard điều hành */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <Segmented
-          items={[
-            { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
-            { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
-            { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
-            { key: 'TEAM_SLA', label: 'Lịch đăng video' },
-            { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
-          ]}
-          value={activeTab}
-          onChange={handleSelectDashboardSection}
-        />
-      </div>
+      {/* Thanh tab chuyển nhanh góc nhìn Dashboard điều hành */}
+      <Tabs<DashboardMainTab>
+        items={[
+          { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
+          { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
+          { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
+          { key: 'TEAM_SLA', label: 'Lịch đăng video' },
+          { key: 'STAFF_EFFICIENCY', label: 'Hiệu suất nhân sự' },
+        ]}
+        value={activeTab}
+        onChange={handleSelectDashboardSection}
+      />
 
       {/* ========================================================================= */}
       {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useR
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
-import { TAB_LABELS, getNavGroupForTab } from '../lib/navGroups';
+import { TAB_LABELS, getNavGroupForTab, DASHBOARD_EXEC_TAB_KEYS } from '../lib/navGroups';
 import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
@@ -294,7 +294,12 @@ export default function App() {
     if (!isSilent) {
       setIsLoadingAuth(true);
       try {
-        if (!newUser.id.startsWith('contract-demo-')) {
+        const isLocalPreview =
+          newUser.id.startsWith('contract-demo-') ||
+          newUser.id.startsWith('preview-role-') ||
+          newUser.id.startsWith('tpa-') ||
+          newUser.id.startsWith('staff-');
+        if (!isLocalPreview) {
           const partner = !!newUser.partnerType || newUser.role.endsWith('_PARTNER');
           const known = USERS.some(u => u.id === newUser.id);
           const res = await fetch(partner ? '/api/auth/partner/login' : '/api/auth/lark/sandbox', {
@@ -302,9 +307,9 @@ export default function App() {
             body: JSON.stringify(partner ? { email: newUser.email } : known ? { userId: newUser.id } : { staffIdentifier: newUser.email || newUser.staffCode }),
           });
           const body = await res.json(); if (!res.ok) throw new Error(body.error || 'Không chuyển được tài khoản.');
+          const policy = await loadAccessPolicy();
+          newUser = policy.user;
         }
-        const policy = await loadAccessPolicy();
-        newUser = policy.user;
       } catch (error) { showToast((error as Error).message, 'error'); setIsLoadingAuth(false); return; }
       setIsLoadingAuth(false);
     }
@@ -977,7 +982,12 @@ export default function App() {
 
   // Màn thuộc nhóm (NAV_GROUPS): menu trái giữ 1 mục, các màn con chuyển qua thanh Tabs đầu trang.
   const activeGroupTabs = currentUser
-    ? (getNavGroupForTab(activeTab)?.tabs ?? []).filter((t) => isTabAllowedForRole(currentUser.role, t.key))
+    ? (getNavGroupForTab(activeTab)?.tabs ?? []).filter(
+        (t) =>
+          isTabAllowedForRole(currentUser.role, t.key) ||
+          (t.key === 'dashboard-bi' &&
+            DASHBOARD_EXEC_TAB_KEYS.some((k) => isTabAllowedForRole(currentUser.role, k)))
+      )
     : [];
 
 

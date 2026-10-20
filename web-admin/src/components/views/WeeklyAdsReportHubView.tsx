@@ -252,24 +252,53 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
         </Button>
       </PageActions>
 
-      {/* Chọn kỳ báo cáo đã lưu */}
-      {reportsList.length > 0 && (
-        <Toolbar>
-          <Select
-            aria-label="Kỳ báo cáo"
-            value={selectedFileName}
-            onChange={(e) => handleParseReport(e.target.value)}
-            className="w-auto"
-          >
-            {reportsList.map(rep => (
-              <option key={rep.id} value={rep.fileName}>
-                {rep.reportWeek} · {rep.totalRows.toLocaleString()} dòng
-              </option>
-            ))}
-          </Select>
-          {isMappingApplied && <Status tone="positive">Đã đồng bộ KOC & deal</Status>}
-        </Toolbar>
-      )}
+      {/* Thanh tab con đặt đầu trang kèm bộ chọn kỳ báo cáo */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line">
+        <div className="-mb-px min-w-0 flex-1">
+          <Tabs
+            value={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'CAMPAIGNS',
+                label: 'Chiến dịch & sản phẩm',
+                count: activeReportData?.campaigns.length,
+              },
+              {
+                key: 'KOC_MAPPING',
+                label: 'Đối soát KOC',
+                count: activeReportData
+                  ? activeReportData.creators.filter((c) => c.isWinnerTop20).length
+                  : undefined,
+              },
+              {
+                key: 'CREATIVES',
+                label: 'Video & Spark Ads',
+                count: activeReportData?.topCreatives.length,
+              },
+              { key: 'INSIGHTS', label: 'Gợi ý tối ưu' },
+            ]}
+          />
+        </div>
+
+        {reportsList.length > 0 && (
+          <div className="flex items-center gap-2 py-1 shrink-0">
+            <Select
+              aria-label="Kỳ báo cáo"
+              value={selectedFileName}
+              onChange={(e) => handleParseReport(e.target.value)}
+              className="w-auto h-7 text-xs py-0"
+            >
+              {reportsList.map((rep) => (
+                <option key={rep.id} value={rep.fileName}>
+                  {rep.reportWeek} · {rep.totalRows.toLocaleString()} dòng
+                </option>
+              ))}
+            </Select>
+            {isMappingApplied && <Status tone="positive">Đã đồng bộ KOC & deal</Status>}
+          </div>
+        )}
+      </div>
 
       {!activeReportData ? (
         isLoading ? (
@@ -286,37 +315,24 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
           />
         )
       ) : (
-        <>
-          <StatRow size="sm">
-            <Stat
-              label="Chi phí Ads"
-              value={formatVndShort(activeReportData.meta.totalSpend)}
-              note={`${activeReportData.meta.totalOrders.toLocaleString()} đơn · CPA ${formatVndShort(Math.round(activeReportData.meta.totalSpend / (activeReportData.meta.totalOrders || 1)))}/đơn`}
-            />
-            <Stat label="Doanh thu gộp (GMV)" value={formatVndShort(activeReportData.meta.totalGmv)} note={formatVnd(activeReportData.meta.totalGmv)} />
-            <Stat
-              label="ROAS tổng thể"
-              value={`${activeReportData.meta.overallRoas}x`}
-              note={`1đ chi phí → ${activeReportData.meta.overallRoas}đ GMV`}
-            />
-            <Stat
-              label="Khớp danh bạ KOC"
-              value={`${activeReportData.matchRatePercent}%`}
-              note={`${activeReportData.matchedKocCount}/${activeReportData.totalCreatorCount} kênh · ${activeReportData.meta.totalRows.toLocaleString()} video ads`}
-            />
-          </StatRow>
-
-          <Tabs
-            value={activeTab}
-            onChange={setActiveTab}
-            items={[
-              { key: 'CAMPAIGNS', label: 'Chiến dịch & sản phẩm', count: activeReportData.campaigns.length },
-              { key: 'KOC_MAPPING', label: 'Đối soát KOC', count: activeReportData.creators.filter(c => c.isWinnerTop20).length },
-              { key: 'CREATIVES', label: 'Video & Spark Ads', count: activeReportData.topCreatives.length },
-              { key: 'INSIGHTS', label: 'Gợi ý tối ưu' },
-            ]}
+        <StatRow size="sm">
+          <Stat
+            label="Chi phí Ads"
+            value={formatVndShort(activeReportData.meta.totalSpend)}
+            note={`${activeReportData.meta.totalOrders.toLocaleString()} đơn · CPA ${formatVndShort(Math.round(activeReportData.meta.totalSpend / (activeReportData.meta.totalOrders || 1)))}/đơn`}
           />
-        </>
+          <Stat label="Doanh thu gộp (GMV)" value={formatVndShort(activeReportData.meta.totalGmv)} note={formatVnd(activeReportData.meta.totalGmv)} />
+          <Stat
+            label="ROAS tổng thể"
+            value={`${activeReportData.meta.overallRoas}x`}
+            note={`1đ chi phí → ${activeReportData.meta.overallRoas}đ GMV`}
+          />
+          <Stat
+            label="Khớp danh bạ KOC"
+            value={`${activeReportData.matchRatePercent}%`}
+            note={`${activeReportData.matchedKocCount}/${activeReportData.totalCreatorCount} kênh · ${activeReportData.meta.totalRows.toLocaleString()} video ads`}
+          />
+        </StatRow>
       )}
 
       {/* ========================================================================= */}

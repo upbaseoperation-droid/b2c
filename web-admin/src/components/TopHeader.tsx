@@ -4,6 +4,7 @@ import React from 'react';
 import { Menu, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
+import { resolveNavGroupTabKey } from '../lib/navGroups';
 import { PageActionsSlot, PageHeaderNavSlot, Segmented } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
 
@@ -78,7 +79,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
             <Segmented<TabKey>
               items={groupTabs}
-              value={activeTab}
+              value={resolveNavGroupTabKey(activeTab)}
               onChange={onNavigateTab}
             />
           )}

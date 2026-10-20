@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
 import { getAllowedTabsForRole } from '../lib/rbacData';
-import { NAV_GROUPS } from '../lib/navGroups';
+import { NAV_GROUPS, DASHBOARD_EXEC_TAB_KEYS } from '../lib/navGroups';
 import { Avatar, BrandLogo, Presence, SlidingIndicator, useActiveBox } from './ui';
 export type { TabKey };
 
@@ -69,14 +69,23 @@ interface SidebarProps {
   badgeCounts?: Partial<Record<TabKey, number | string>>;
 }
 
+export const DASHBOARD_TAB_KEYS: TabKey[] = [
+  ...DASHBOARD_EXEC_TAB_KEYS,
+  'ads-report',
+];
+
 const GROUP_TABS: Record<string, TabKey[]> = Object.fromEntries(
-  NAV_GROUPS.map((g) => [g.id, g.tabs.map((t) => t.key)])
+  NAV_GROUPS.map((g) => [
+    g.id,
+    g.id === 'dashboard' ? DASHBOARD_TAB_KEYS : g.tabs.map((t) => t.key),
+  ])
 );
 const groupLabel = (id: string) => NAV_GROUPS.find((g) => g.id === id)?.label ?? id;
 
 // Mục menu dùng chung cho mọi vai trò: đổi nhãn/icon/gộp nhóm chỉ sửa một chỗ.
 const NAV = {
   cockpit: { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+  dashboard: { key: 'dashboard-bi', label: groupLabel('dashboard'), icon: LayoutDashboard, group: 'dashboard' },
   inputPlan: { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
   delegation: { key: 'task-delegation', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
   brand: { key: 'brand-knowledge', label: groupLabel('brand'), icon: BookOpen, group: 'brand' },
@@ -97,177 +106,87 @@ const NAV = {
   audit: { key: 'audit-trail', label: 'Nhật ký kiểm toán', icon: ShieldCheck },
 } satisfies Record<string, NavItem>;
 
-const DASH = {
-  brand: { key: 'dashboard-brand', label: 'Ngân sách & PnL', icon: Building2 },
-  store: { key: 'dashboard-store', label: 'Gian hàng & Sàn', icon: Store },
-  sla: { key: 'dashboard-team-sla', label: 'Lịch đăng video', icon: Calendar },
-  video: { key: 'dashboard-video', label: 'Hiệu quả video', icon: Film },
-  staff: { key: 'dashboard-staff', label: 'Hiệu suất nhân sự', icon: Users },
-  finance: { key: 'dashboard-finance', label: 'Đối soát & xuất file', icon: FileSpreadsheet },
-  ads: { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-} satisfies Record<string, NavItem>;
-
-const dashboard = (children: NavItem[]): NavItem => ({
-  key: children[0].key,
-  label: 'Báo cáo & Dashboard',
-  icon: LayoutDashboard,
-  children,
-});
-
-const ALL_DASHBOARDS = [DASH.brand, DASH.store, DASH.sla, DASH.video, DASH.staff, DASH.finance, DASH.ads];
-
 /** Màn đặt ở chân menu (cạnh tài khoản) thay vì chiếm một dòng trong danh sách. */
 const FOOTER_ITEMS: NavItem[] = [
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
   { key: 'api-settings', label: 'Cấu hình API', icon: Sliders },
 ];
 
-export const DASHBOARD_TAB_KEYS: TabKey[] = [
-  'dashboard-bi',
-  'dashboard-brand',
-  'dashboard-air-sync',
-  'dashboard-store',
-  'dashboard-video',
-  'dashboard-team-sla',
-  'dashboard-staff',
-  'dashboard-finance',
-  'ads-report',
-];
-
-// Danh mục điều hướng theo vai trò — mục hiển thị cuối cùng còn được lọc theo phân quyền (getAllowedTabsForRole).
+// Danh mục điều hướng chuẩn — mục hiển thị thực tế được lọc động theo phân quyền (getAllowedTabsForRole).
 function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
-  switch (role) {
-    case 'ADMIN':
-    case 'MANAGER':
-      return [
-        { items: [NAV.cockpit, dashboard(ALL_DASHBOARDS)] },
-        { title: 'Kế hoạch & Phân bổ', items: [NAV.inputPlan, NAV.delegation, NAV.campaigns, NAV.brand, NAV.research] },
-        { title: 'Booking & Nội dung', items: [NAV.booking, NAV.content, NAV.kocListing, NAV.selfChannel] },
-        { title: 'Hợp đồng & Hiệu suất', items: [NAV.contracts, NAV.samples, NAV.pushProducts, NAV.performance] },
-        { title: 'Hệ thống', items: [NAV.masterData, NAV.partnerAccess, NAV.audit] },
-      ];
-
-    case 'GROWTH_MANAGER':
-      return [
-        { items: [NAV.cockpit, dashboard(ALL_DASHBOARDS)] },
-        { title: 'Quản trị Khối Growth', items: [NAV.delegation, NAV.inputPlan, NAV.brand, NAV.research] },
-        { title: 'Chiến dịch & Hợp đồng', items: [NAV.campaigns, NAV.contracts, NAV.performance] },
-        { title: 'Hệ thống', items: [NAV.masterData, NAV.partnerAccess, NAV.audit] },
-      ];
-
-    case 'MEDIA_MANAGER':
-      return [
-        { items: [NAV.cockpit, dashboard(ALL_DASHBOARDS)] },
-        { title: 'Quản trị Khối Media', items: [NAV.delegation, NAV.inputPlan, NAV.samples, NAV.research] },
-        { title: 'Gian hàng & Hợp đồng', items: [NAV.brand, NAV.campaigns, NAV.contracts, NAV.performance] },
-        { title: 'Hệ thống', items: [NAV.masterData, NAV.partnerAccess, NAV.audit] },
-      ];
-
-    case 'LEADER':
-      return [
-        { items: [NAV.cockpit, dashboard(ALL_DASHBOARDS)] },
-        { title: 'Kế hoạch & Phân bổ', items: [NAV.inputPlan, NAV.delegation, NAV.brand, NAV.research] },
-        { title: 'Booking & Hợp đồng', items: [NAV.booking, NAV.content, NAV.contracts, NAV.samples] },
-        { title: 'Hệ thống', items: [NAV.masterData] },
-      ];
-
-    case 'BOOKING_MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.store, DASH.sla, DASH.video, DASH.staff, DASH.ads])] },
-        { title: 'Kế hoạch & Đợt chạy', items: [NAV.inputPlan, NAV.delegation, NAV.brand, NAV.kocListing] },
-        { title: 'Booking & KOC', items: [NAV.booking, NAV.research, NAV.contracts, NAV.samples] },
-      ];
-
-    case 'CONTENT_MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.sla, DASH.video, DASH.staff, DASH.ads])] },
-        { title: 'Sáng tạo & Kịch bản', items: [NAV.delegation, NAV.content, NAV.research, NAV.ctvMaster, NAV.selfChannel] },
-        { title: 'Làm việc với Brand', items: [NAV.campaigns, NAV.brand, NAV.pushProducts, NAV.samples, NAV.performance] },
-      ];
-
-    case 'BRAND_MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.brand, DASH.store, DASH.sla, DASH.video, DASH.ads])] },
-        { title: 'Kế hoạch & Brand', items: [NAV.inputPlan, NAV.delegation, NAV.campaigns, NAV.brand, NAV.research] },
-        { title: 'Vận hành & Sản phẩm', items: [NAV.content, NAV.samples, NAV.pushProducts, NAV.performance] },
-      ];
-
-    case 'GROWTH_MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.brand, DASH.store, DASH.sla, DASH.video, DASH.staff, DASH.ads])] },
-        { title: 'Kế hoạch & Doanh số', items: [NAV.inputPlan, NAV.delegation, NAV.brand, NAV.campaigns, NAV.research, NAV.performance] },
-      ];
-
-    case 'MEDIA_MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.brand, DASH.store, DASH.sla, DASH.video, DASH.staff, DASH.ads])] },
-        { title: 'Kế hoạch & Chiến dịch', items: [NAV.inputPlan, NAV.delegation, NAV.campaigns, NAV.research, NAV.performance] },
-      ];
-
-    case 'MEMBER':
-      return [
-        { items: [NAV.cockpit, dashboard([DASH.store, DASH.sla, DASH.video, DASH.staff])] },
-        { title: 'Kế hoạch', items: [NAV.inputPlan, NAV.delegation, NAV.brand] },
-        { title: 'Vận hành Booking & KOC', items: [NAV.booking, NAV.research, NAV.content, NAV.ctvMaster] },
-        { title: 'Hợp đồng & Hiệu suất', items: [NAV.contracts, NAV.samples, NAV.performance] },
-      ];
-
-    case 'LEGAL':
-      return [
-        {
-          title: 'Pháp chế & Hợp đồng',
-          items: [{ ...NAV.contracts, label: 'Hợp đồng & Biểu mẫu' }, NAV.audit],
-        },
-      ];
-
-    case 'FINANCE':
-      return [
-        {
-          title: 'Tài chính & Kế toán',
-          items: [{ ...NAV.contracts, label: 'Hợp đồng & Duyệt chi' }, DASH.finance, NAV.audit],
-        },
-      ];
-
-    case 'SIGN_ADMIN':
-      return [
-        {
-          title: 'Hành chính & Ký số',
-          items: [{ ...NAV.contracts, label: 'Hợp đồng & Trình ký' }, NAV.audit],
-        },
-      ];
-
-    case 'BRAND_PARTNER':
-      return [
-        {
-          title: 'Cổng thương hiệu',
-          items: [
-            { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-            NAV.kocListing,
-            NAV.pushProducts,
-            NAV.content,
-          ],
-        },
-      ];
-
-    case 'KOC_PARTNER':
-      return [
-        {
-          title: 'Không gian KOC / KOL',
-          items: [{ key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', icon: Users }],
-        },
-      ];
-
-    case 'CTV_PARTNER':
-      return [
-        {
-          title: 'Không gian CTV video',
-          items: [{ ...NAV.selfChannel, label: 'Cộng tác viên video', icon: Video }],
-        },
-      ];
-
-    default:
-      return [{ items: [NAV.cockpit] }];
+  if (role === 'BRAND_PARTNER') {
+    return [
+      {
+        title: 'Cổng thương hiệu',
+        items: [
+          { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
+          NAV.kocListing,
+          NAV.pushProducts,
+          NAV.content,
+          NAV.campaigns,
+          NAV.samples,
+          NAV.dashboard,
+        ],
+      },
+    ];
   }
+
+  if (role === 'KOC_PARTNER') {
+    return [
+      {
+        title: 'Không gian KOC / KOL',
+        items: [
+          { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', icon: Users },
+          NAV.content,
+          NAV.contracts,
+          NAV.samples,
+        ],
+      },
+    ];
+  }
+
+  if (role === 'CTV_PARTNER') {
+    return [
+      {
+        title: 'Không gian CTV video',
+        items: [
+          { ...NAV.selfChannel, label: 'Cộng tác viên video', icon: Video },
+          NAV.content,
+          NAV.samples,
+          NAV.pushProducts,
+        ],
+      },
+    ];
+  }
+
+  const contractsNav: NavItem =
+    role === 'LEGAL'
+      ? { ...NAV.contracts, label: 'Hợp đồng & Biểu mẫu' }
+      : role === 'FINANCE'
+      ? { ...NAV.contracts, label: 'Hợp đồng & Duyệt chi' }
+      : role === 'SIGN_ADMIN'
+      ? { ...NAV.contracts, label: 'Hợp đồng & Trình ký' }
+      : NAV.contracts;
+
+  return [
+    { items: [NAV.cockpit, NAV.dashboard] },
+    {
+      title: 'Kế hoạch & Phân bổ',
+      items: [NAV.inputPlan, NAV.delegation, NAV.campaigns, NAV.brand, NAV.research],
+    },
+    {
+      title: 'Booking & Nội dung',
+      items: [NAV.booking, NAV.content, NAV.kocListing, NAV.selfChannel, NAV.ctvMaster],
+    },
+    {
+      title: 'Hợp đồng & Hiệu suất',
+      items: [contractsNav, NAV.samples, NAV.pushProducts, NAV.performance],
+    },
+    {
+      title: 'Hệ thống',
+      items: [NAV.masterData, NAV.partnerAccess, NAV.audit],
+    },
+  ];
 }
 
 /** Nhãn của màn hình trên menu trái của vai trò này (mục con ưu tiên hơn mục cha, màn trong nhóm lấy nhãn nhóm). Dùng làm tiêu đề trang. */
