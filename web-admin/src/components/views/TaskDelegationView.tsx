@@ -1636,28 +1636,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'Duyệt ngoại lệ (Giữ hệ số ×1,00)'}
                 </Button>
               )}
-              {inspectedStaffRow && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    const staffCode = inspectedStaffRow.staffCode;
-                    setInspectingStaffMember(null);
-                    window.dispatchEvent(
-                      new CustomEvent('upbase-navigate-tab', { detail: 'workload-3d' })
-                    );
-                    setTimeout(() => {
-                      window.dispatchEvent(
-                        new CustomEvent('upbase-focus-3d-node', {
-                          detail: `staff-${staffCode}`,
-                        })
-                      );
-                    }, 120);
-                  }}
-                >
-                  Xem trên Bản đồ 3D
-                </Button>
-              )}
             </div>
             <div className="flex items-center gap-2">
               {inspectedStaffRow && (

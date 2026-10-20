@@ -108,6 +108,8 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
   const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>('GOOGLE');
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
   const [showApiSetup, setShowApiSetup] = useState<boolean>(false);
+  const [customUrlInput, setCustomUrlInput] = useState<string>('');
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Giá trị người dùng chọn / chỉnh sửa trước khi bấm Xác nhận
   const [selectedValues, setSelectedValues] = useState<Record<SocialPlatformKey, string>>({
@@ -158,22 +160,36 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
         : workspaceCfg.providers[provider]?.apiKey || '';
     const baseUrl =
       provider === 'INTERNAL' ? undefined : workspaceCfg.providers[provider]?.baseUrl;
+    const systemInstruction = effective.purpose.systemInstruction;
 
-    return { provider, model, apiKey, baseUrl };
+    return { provider, model, apiKey, baseUrl, systemInstruction };
   };
 
   const runSearch = async (
     target: KocItem,
     provOverride?: ApiProviderId,
-    modelOverride?: string
+    modelOverride?: string,
+    customUrlOverride?: string
   ) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 12000);
+
     setLoading(true);
     setErrorMsg(null);
     try {
       const llmConfig = resolveLlmConfig(provOverride, modelOverride);
+      const effectiveCustomUrl =
+        customUrlOverride !== undefined ? customUrlOverride : customUrlInput;
       const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           kocId: target.id,
           tiktokHandle: target.channelId,
@@ -182,6 +198,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
           phone: target.phone,
           niche: target.niche || target.kocCategory,
           bio: target.bio,
+          customUrl: effectiveCustomUrl.trim() || undefined,
           llmConfig,
           existingChannels: {
             shopeeChannel: target.shopeeChannel,
@@ -249,15 +266,25 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
             data.candidatesByPlatform.THREADS.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
         ),
       });
-    } catch {
-      setErrorMsg('Lỗi kết nối khi dò tìm kênh mạng xã hội.');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        setErrorMsg('Quá thời gian phản hồi (Timeout). Bạn có thể dán link trực tiếp hoặc nhập thủ công.');
+      } else {
+        setErrorMsg('Lỗi kết nối khi dò tìm kênh mạng xã hội.');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!open || !koc) return;
+    if (!open || !koc) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      return;
+    }
     const workspaceCfg = loadApiWorkspaceConfig();
     const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
     const initProv = effective.primaryProvider === 'INTERNAL' ? 'GOOGLE' : effective.primaryProvider;
@@ -280,6 +307,12 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
       THREADS: Boolean(koc.threadsChannel),
     });
     void runSearch(koc, initProv, initModel);
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, koc]);
 
@@ -455,6 +488,31 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               }}
             />
           )}
+
+          {/* Ô nhập đường dẫn link trực tiếp để bóc tách kênh ngay */}
+          <div className="flex items-center gap-2 pt-2 border-t border-line">
+            <Input
+              value={customUrlInput}
+              onChange={(e) => setCustomUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void runSearch(koc, undefined, undefined, customUrlInput);
+                }
+              }}
+              placeholder="Dán link KOC (Link Bio Beacons/Linktree, Facebook, Instagram, Shopee...) để phân tích ngay"
+              className="flex-1 text-xs"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Search}
+              onClick={() => void runSearch(koc, undefined, undefined, customUrlInput)}
+              disabled={loading || !customUrlInput.trim()}
+            >
+              Phân tích link
+            </Button>
+          </div>
 
           {discoveryResult?.llmAnalysis && (
             <div className="pt-2 border-t border-line flex flex-col gap-1 text-2xs text-ink-2">

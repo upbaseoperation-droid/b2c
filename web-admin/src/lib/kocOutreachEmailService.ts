@@ -28,7 +28,12 @@ export interface KocEmailTemplateItem {
   usageCount: number;
 }
 
-export type EmailDeliveryMode = 'WEBHOOK_GMAIL' | 'RESEND_API' | 'SMTP_RELAY';
+export type EmailDeliveryMode =
+  | 'LARK_SMTP'
+  | 'LARK_OPEN_API'
+  | 'WEBHOOK_GMAIL'
+  | 'RESEND_API'
+  | 'SMTP_RELAY';
 
 export interface KocEmailServerConfig {
   deliveryMode: EmailDeliveryMode;
@@ -36,6 +41,16 @@ export interface KocEmailServerConfig {
   senderEmail: string;
   replyToEmail: string;
   defaultCcEmails: string;
+  // Cấu hình Lark Mail (Lark Suite UpBase)
+  larkMailboxEmail: string;
+  larkAppPassword: string;
+  larkSmtpHost: string;
+  larkSmtpPort: number;
+  larkAppId: string;
+  larkAppSecret: string;
+  larkAnycrossWebhookUrl: string;
+  larkNotifyBotWebhookUrl: string;
+  // Cấu hình dự phòng / bên thứ 3
   resendApiKey: string;
   webhookUrl: string;
   smtpHost: string;
@@ -63,8 +78,8 @@ export interface KocEmailOutreachLogItem {
   templateName: string;
   subject: string;
   body: string;
-  channelMethod: 'SYSTEM_DIRECT' | 'GMAIL_WEB' | 'MAILTO_CLIENT' | 'COPIED';
-  deliveryStatus: 'SENT' | 'QUEUED_LOGGED' | 'OPENED_GMAIL' | 'COPIED' | 'FAILED';
+  channelMethod: 'SYSTEM_DIRECT' | 'LARK_MAIL_WEB' | 'GMAIL_WEB' | 'MAILTO_CLIENT' | 'COPIED';
+  deliveryStatus: 'SENT' | 'QUEUED_LOGGED' | 'OPENED_LARK' | 'OPENED_GMAIL' | 'COPIED' | 'FAILED';
   sentBy: string;
   errorMessage?: string;
 }
@@ -113,15 +128,23 @@ export const KOC_EMAIL_MERGE_VARIABLES: MergeVariableMeta[] = [
 ];
 
 export const DEFAULT_EMAIL_SERVER_CONFIG: KocEmailServerConfig = {
-  deliveryMode: 'WEBHOOK_GMAIL',
+  deliveryMode: 'LARK_SMTP',
   senderName: 'Phòng Booking B2C - UpBase',
   senderEmail: 'booking.b2c@upbase.vn',
   replyToEmail: 'booking.b2c@upbase.vn',
   defaultCcEmails: 'nhi.dty@upbase.vn',
+  larkMailboxEmail: 'booking.b2c@upbase.vn',
+  larkAppPassword: '',
+  larkSmtpHost: 'smtp.larksuite.com',
+  larkSmtpPort: 465,
+  larkAppId: 'cli_aa45bfd4edf85f05',
+  larkAppSecret: '',
+  larkAnycrossWebhookUrl: '',
+  larkNotifyBotWebhookUrl: '',
   resendApiKey: '',
   webhookUrl: '',
-  smtpHost: 'smtp.gmail.com',
-  smtpPort: 587,
+  smtpHost: 'smtp.larksuite.com',
+  smtpPort: 465,
   smtpUser: 'booking.b2c@upbase.vn',
   smtpPass: '',
   signatureBlock: `Trân trọng,\nPhòng Phát Triển Đối Tác KOC/KOL Khối B2C — UpBase Vietnam\nĐịa chỉ: Tầng 9, Tòa nhà UpBase, Hà Nội / TP. Hồ Chí Minh\nWebsite: https://upbase.vn`,
@@ -615,4 +638,8 @@ export function buildMailtoUrl(params: {
   query.push(`subject=${encodeURIComponent(params.subject)}`);
   query.push(`body=${encodeURIComponent(params.body)}`);
   return `mailto:${encodeURIComponent(params.to.trim())}?${query.join('&')}`;
+}
+
+export function buildLarkMailWebUrl(): string {
+  return 'https://mail.larksuite.com/';
 }

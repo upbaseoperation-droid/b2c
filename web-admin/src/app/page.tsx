@@ -234,7 +234,14 @@ export default function App() {
 
   const handleSelectTab = useCallback((tab: TabKey, options?: { keepReturnContext?: boolean }) => {
     hasUserNavigatedRef.current = true;
-    const resolvedTab: TabKey = tab === 'content-angles' ? 'brand-knowledge' : tab;
+    const resolvedTab: TabKey =
+      tab === 'content-angles'
+        ? 'brand-knowledge'
+        : tab === 'workload-3d' || tab === 'performance-p3'
+          ? 'manager'
+          : tab === 'audit-trail'
+            ? 'partner-access'
+            : tab;
     if (tab === 'content-angles') {
       setBrandInitialDetailTab('PRODUCTS');
     } else if (tab === 'brand-knowledge') {

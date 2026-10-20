@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   CheckCircle2,
   Copy,
-  Edit3,
   ExternalLink,
-  Eye,
   FileText,
   History,
   Lock,
@@ -45,7 +43,7 @@ import {
   type KocEmailTemplateStatus,
   type KocOutreachEmailState,
 } from '../../lib/kocOutreachEmailService';
-import { Button, Field, Input, Modal, Select, Status, Tabs, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Segmented, Select, Status, Tabs, Textarea } from '../ui';
 
 export interface KocOutreachEmailModalProps {
   open: boolean;
@@ -141,14 +139,6 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   const [activePreviewRowId, setActivePreviewRowId] = useState<string>('');
   const [recipientFilter, setRecipientFilter] = useState<'ALL' | 'HAS_EMAIL' | 'NO_EMAIL'>('ALL');
 
-  // Khởi tạo danh sách chọn khi mở Modal
-  useEffect(() => {
-    if (!open) return;
-    const ids = candidateRows.map((r) => r.id);
-    setSelectedRecipientRowIds(ids);
-    setActivePreviewRowId(ids[0] || '');
-  }, [open, candidateRows]);
-
   // Tra cứu KOC gốc trong Danh bạ để lấy email dự phòng nếu cột AO trong Sheet chưa có
   const kocByHandleMap = useMemo(() => {
     const map = new Map<string, KocItem>();
@@ -161,16 +151,27 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
   // Bản nháp sửa Email nhanh cho từng dòng KOC ngay trong Modal
   const [emailDraftByRowId, setEmailDraftByRowId] = useState<Record<string, string>>({});
+  const wasOpenRef = useRef<boolean>(false);
 
+  // Chỉ khởi tạo danh sách chọn & bản nháp email khi bắt đầu mở Modal (không reset khi đang gõ email)
   useEffect(() => {
-    if (!open) return;
-    const map: Record<string, string> = {};
-    for (const r of candidateRows) {
-      const clean = normalizeTikTokId(r.idKenh).toLowerCase();
-      const matched = kocByHandleMap.get(clean);
-      map[r.id] = (r.email || matched?.email || '').trim();
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
     }
-    setEmailDraftByRowId(map);
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true;
+      const ids = candidateRows.map((r) => r.id);
+      setSelectedRecipientRowIds(ids);
+      setActivePreviewRowId(ids[0] || '');
+      const map: Record<string, string> = {};
+      for (const r of candidateRows) {
+        const clean = normalizeTikTokId(r.idKenh).toLowerCase();
+        const matched = kocByHandleMap.get(clean);
+        map[r.id] = (r.email || matched?.email || '').trim();
+      }
+      setEmailDraftByRowId(map);
+    }
   }, [open, candidateRows, kocByHandleMap]);
 
   const getEffectiveRowEmail = (row: StaffListingSheetRow): string => {
@@ -326,6 +327,14 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   }, [emailState.logs]);
 
   // Lưu email người dùng vừa gõ vào cột AO của Sheet
+  const handleUpdateDraftEmailForRow = (row: StaffListingSheetRow, newEmail: string) => {
+    setEmailDraftByRowId((prev) => ({ ...prev, [row.id]: newEmail }));
+    const trimmed = newEmail.trim();
+    if (trimmed.includes('@') || trimmed === '') {
+      onUpdateRowFields(row.id, { email: trimmed });
+    }
+  };
+
   const handleCommitEmailForRow = (row: StaffListingSheetRow, newEmail: string) => {
     const trimmed = newEmail.trim();
     setEmailDraftByRowId((prev) => ({ ...prev, [row.id]: trimmed }));
@@ -834,28 +843,30 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     <Modal
       open={open}
       onClose={onClose}
-      title={`Gửi Mail Mời Hợp Tác KOC & Quản Lý Mẫu Thư — ${activeStoreName} (${activeMonth})`}
+      title={`Gửi thư mời hợp tác KOC — ${activeStoreName} (${activeMonth})`}
       size="3xl"
       footer={
         activeTab === 'COMPOSE' ? (
           <div className="w-full flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
               <span>
-                Đã chọn: <strong className="text-ink">{selectedRecipientRowIds.length}</strong> KOC
+                Đã chọn <strong className="text-ink tabular-nums">{selectedRecipientRowIds.length}</strong> KOC
               </span>
               <span>·</span>
               <span>
-                Đủ Email hợp lệ:{' '}
-                <strong className="text-emerald-700">{selectedRowsWithValidEmail.length}</strong> KOC
+                Đủ email:{' '}
+                <strong className="text-positive tabular-nums">
+                  {selectedRowsWithValidEmail.length}/{selectedRecipientRowIds.length}
+                </strong>
               </span>
               {selectedRecipientRowIds.length > selectedRowsWithValidEmail.length && (
-                <span className="text-amber-700 font-medium">
-                  (Còn {selectedRecipientRowIds.length - selectedRowsWithValidEmail.length} KOC chưa điền Email ở cột trái)
+                <span className="text-warning font-medium">
+                  (Thiếu {selectedRecipientRowIds.length - selectedRowsWithValidEmail.length} email)
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <Button variant="ghost" onClick={onClose}>
                 Đóng
               </Button>
@@ -864,7 +875,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 icon={Copy}
                 onClick={() => void handleCopyRenderedEmail('FULL')}
               >
-                Copy thư KOC đang xem
+                Copy thư
               </Button>
               <Button
                 variant="secondary"
@@ -878,7 +889,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 icon={ExternalLink}
                 onClick={handleOpenGmailForCurrentPreview}
               >
-                Mở Gmail soạn sẵn
+                Mở Gmail
               </Button>
               <Button
                 variant="primary"
@@ -887,8 +898,8 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 onClick={() => void handleSendBatchDirect()}
               >
                 {isSendingBatch
-                  ? 'Đang gửi qua Lark Mail...'
-                  : `Gửi trực tiếp qua Lark / Hệ thống (${selectedRowsWithValidEmail.length} KOC)`}
+                  ? 'Đang gửi...'
+                  : `Gửi thư mời (${selectedRowsWithValidEmail.length} KOC)`}
               </Button>
             </div>
           </div>
@@ -913,7 +924,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 icon={Check}
                 onClick={handleSaveTemplateChanges}
               >
-                Lưu & Phê duyệt mẫu thư
+                Lưu & phê duyệt mẫu
               </Button>
             </div>
           </div>
@@ -929,128 +940,101 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         )
       }
     >
-      <div className="space-y-4">
-        {/* Thanh chuyển Tab + Công tắc quyền Trưởng phòng quản lý mẫu */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+      <div className="space-y-3.5">
+        {/* Thanh chuyển Tab ghim cố định đầu hộp thoại */}
+        <div className="sticky -top-3.5 sm:-top-4 z-10 bg-surface pt-1 -mx-4 sm:-mx-5 px-4 sm:px-5">
           <Tabs
             value={activeTab}
             onChange={setActiveTab}
             items={[
               {
                 key: 'COMPOSE',
-                label: '1. Soạn & Gửi thư mời KOC',
+                label: 'Soạn & gửi thư',
                 count: candidateRows.length,
               },
               {
                 key: 'TEMPLATES',
-                label: '2. Quản lý Mẫu thư (Trưởng phòng)',
+                label: 'Mẫu thư chuẩn',
                 count: emailState.templates.length,
               },
               {
                 key: 'SETTINGS_LOGS',
-                label: '3. Cấu hình Lark Mail & Nhật ký',
+                label: 'Cấu hình & nhật ký',
                 count: emailState.logs.length,
               },
             ]}
+            actions={
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('SETTINGS_LOGS')}
+                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-2xs font-medium bg-sunken text-ink-2 border border-line hover:text-ink transition-colors"
+                  title="Cấu hình kết nối Lark Mail"
+                >
+                  <Mail className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="truncate max-w-[200px]">
+                    {emailState.serverConfig.deliveryMode === 'LARK_SMTP'
+                      ? 'Lark SMTP'
+                      : emailState.serverConfig.deliveryMode === 'LARK_OPEN_API'
+                        ? 'Lark API'
+                        : emailState.serverConfig.deliveryMode === 'RESEND_API'
+                          ? 'Resend'
+                          : emailState.serverConfig.deliveryMode === 'WEBHOOK_GMAIL'
+                            ? 'Gmail Webhook'
+                            : 'SMTP'}
+                    {' · '}
+                    {emailState.serverConfig.larkMailboxEmail ||
+                      emailState.serverConfig.senderEmail}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagerModeEnabled((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-2xs font-medium border transition-colors ${
+                    managerModeEnabled
+                      ? 'bg-positive-soft text-positive border-positive/30'
+                      : 'bg-sunken text-ink-2 border-line hover:text-ink'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {managerModeEnabled
+                      ? 'Quyền Trưởng phòng: Bật'
+                      : 'Chế độ Chuyên viên'}
+                  </span>
+                </button>
+              </>
+            }
           />
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Settings}
-              onClick={() => setActiveTab('SETTINGS_LOGS')}
-            >
-              Setup Lark Mail
-            </Button>
-            <button
-              type="button"
-              onClick={() => setManagerModeEnabled((v) => !v)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                managerModeEnabled
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-sunken text-ink-2 border-line hover:text-ink'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>
-                {managerModeEnabled
-                  ? 'Quyền Trưởng phòng: Đang bật (Toàn quyền sửa/khóa mẫu)'
-                  : 'Chế độ Chuyên viên (Bấm để bật quyền Trưởng phòng)'}
-              </span>
-            </button>
-          </div>
         </div>
 
         {/* ================================================================= */}
         {/* TAB 1: SOẠN & GỬI THƯ MỜI HỢP TÁC KOC                             */}
         {/* ================================================================= */}
         {activeTab === 'COMPOSE' && (
-          <div className="space-y-3">
-            {/* Thanh trạng thái kết nối Lark Mail ngay trên màn hình soạn thư */}
-            <div className="px-3.5 py-2 rounded-lg bg-sunken border border-line flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex flex-wrap items-center gap-2 text-ink-2">
-                <Mail className="w-3.5 h-3.5 text-accent shrink-0" />
-                <span>
-                  Đầu mối gửi mail đang bật:{' '}
-                  <strong className="text-ink">
-                    {emailState.serverConfig.deliveryMode === 'LARK_SMTP'
-                      ? `Lark Mail SMTP (${emailState.serverConfig.larkSmtpHost || 'smtp.larksuite.com'}:${emailState.serverConfig.larkSmtpPort || 465})`
-                      : emailState.serverConfig.deliveryMode === 'LARK_OPEN_API'
-                        ? `Lark Open Platform API (${emailState.serverConfig.larkAppId || 'cli_aa45bfd4edf85f05'})`
-                        : emailState.serverConfig.deliveryMode === 'RESEND_API'
-                          ? 'Resend Email API'
-                          : emailState.serverConfig.deliveryMode === 'WEBHOOK_GMAIL'
-                            ? 'Webhook Gmail Apps Script'
-                            : `SMTP Relay (${emailState.serverConfig.smtpHost})`}
-                  </strong>
-                </span>
-                <span>·</span>
-                <span>
-                  Hòm thư gửi:{' '}
-                  <strong className="font-mono text-ink">
-                    {emailState.serverConfig.larkMailboxEmail ||
-                      emailState.serverConfig.senderEmail}
-                  </strong>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('SETTINGS_LOGS')}
-                  className="text-xs font-semibold text-accent hover:underline"
-                >
-                  Cấu hình kết nối Lark Mail →
-                </button>
-              </div>
-            </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Cột trái (5 cột): Danh sách KOC người nhận & Điền nhanh Email Cột AO */}
-            <div className="lg:col-span-5 flex flex-col border border-line rounded-xl overflow-hidden bg-surface">
-              <div className="p-3 bg-sunken border-b border-line space-y-2">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            {/* Cột trái (5 cột): Danh sách KOC người nhận & Điền nhanh Email */}
+            <div className="lg:col-span-5 min-w-0 flex flex-col border border-line rounded-xl overflow-hidden bg-surface">
+              <div className="p-3 bg-sunken/70 border-b border-line space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-ink">
                     Danh sách KOC nhận thư ({filteredCandidateRows.length})
                   </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedRecipientRowIds(
-                          selectedRecipientRowIds.length === candidateRows.length
-                            ? []
-                            : candidateRows.map((r) => r.id)
-                        )
-                      }
-                      className="text-2xs font-medium text-accent hover:underline"
-                    >
-                      {selectedRecipientRowIds.length === candidateRows.length
-                        ? 'Bỏ chọn tất cả'
-                        : 'Chọn tất cả'}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedRecipientRowIds(
+                        selectedRecipientRowIds.length === candidateRows.length
+                          ? []
+                          : candidateRows.map((r) => r.id)
+                      )
+                    }
+                    className="text-2xs font-medium text-accent hover:underline"
+                  >
+                    {selectedRecipientRowIds.length === candidateRows.length
+                      ? 'Bỏ chọn tất cả'
+                      : 'Chọn tất cả'}
+                  </button>
                 </div>
 
                 {/* Bộ lọc nhanh trạng thái có Email */}
@@ -1060,13 +1044,13 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       { key: 'ALL', label: `Tất cả (${candidateRows.length})` },
                       {
                         key: 'HAS_EMAIL',
-                        label: `Có Email (${
+                        label: `Có email (${
                           candidateRows.filter((r) => getEffectiveRowEmail(r).includes('@')).length
                         })`,
                       },
                       {
                         key: 'NO_EMAIL',
-                        label: `Thiếu Email (${
+                        label: `Thiếu email (${
                           candidateRows.filter((r) => !getEffectiveRowEmail(r).includes('@')).length
                         })`,
                       },
@@ -1076,7 +1060,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       key={tab.key}
                       type="button"
                       onClick={() => setRecipientFilter(tab.key)}
-                      className={`h-7 px-2 rounded text-2xs font-medium border transition-colors ${
+                      className={`h-7 px-2 rounded-md text-2xs font-medium border transition-colors ${
                         recipientFilter === tab.key
                           ? 'bg-ink text-white border-ink'
                           : 'bg-surface text-ink-2 border-line hover:bg-sunken'
@@ -1088,7 +1072,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
               </div>
 
-              <div className="divide-y divide-line max-h-[500px] overflow-y-auto">
+              <div className="divide-y divide-line max-h-[460px] overflow-y-auto">
                 {filteredCandidateRows.length === 0 ? (
                   <div className="p-6 text-center text-xs text-ink-3">
                     Không có KOC nào trong bộ lọc này.
@@ -1108,12 +1092,12 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                         onClick={() => setActivePreviewRowId(row.id)}
                         className={`p-2.5 transition-colors cursor-pointer ${
                           isPreviewing
-                            ? 'bg-accent-soft/35 border-l-2 border-l-ink'
-                            : 'hover:bg-sunken/50'
+                            ? 'bg-accent-soft/45 border-l-2 border-l-accent'
+                            : 'hover:bg-canvas'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0 flex-1">
                             <input
                               type="checkbox"
                               checked={isChecked}
@@ -1125,14 +1109,17 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                                     : [...prev, row.id]
                                 )
                               }
-                              className="mt-1 rounded border-line shrink-0"
+                              className="mt-0.5 rounded border-line shrink-0"
                             />
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs font-semibold text-ink truncate">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-baseline gap-1.5 min-w-0">
+                                <span
+                                  className="text-xs font-semibold text-ink truncate"
+                                  title={row.tenKenh || row.idKenh}
+                                >
                                   {row.tenKenh || row.idKenh || 'Chưa rõ tên'}
                                 </span>
-                                <span className="text-2xs font-mono text-ink-3">
+                                <span className="text-2xs font-code text-ink-3 shrink-0">
                                   @{normalizeTikTokId(row.idKenh)}
                                 </span>
                               </div>
@@ -1146,24 +1133,18 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-end gap-1 shrink-0">
+                          <div className="shrink-0">
                             {prevSentLog ? (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Đã gửi mail
-                              </span>
+                              <Status tone="positive">Đã gửi</Status>
                             ) : hasValidEmail ? (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200">
-                                Sẵn sàng
-                              </span>
+                              <Status tone="info">Sẵn sàng</Status>
                             ) : (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                                Thiếu Email
-                              </span>
+                              <Status tone="warning">Thiếu email</Status>
                             )}
                           </div>
                         </div>
 
-                        {/* Ô nhập/cập nhật nhanh Email (Cột AO) ngay tại danh sách */}
+                        {/* Ô nhập/cập nhật nhanh Email ngay tại danh sách */}
                         <div
                           className="mt-2 flex items-center gap-1.5"
                           onClick={(e) => e.stopPropagation()}
@@ -1173,17 +1154,14 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                             type="email"
                             value={emailVal}
                             onChange={(e) =>
-                              setEmailDraftByRowId((prev) => ({
-                                ...prev,
-                                [row.id]: e.target.value,
-                              }))
+                              handleUpdateDraftEmailForRow(row, e.target.value)
                             }
                             onBlur={(e) => handleCommitEmailForRow(row, e.target.value)}
-                            placeholder="Nhập email KOC (tự lưu vào Cột AO)..."
-                            className={`w-full h-7 px-2 rounded border text-xs focus:outline-none ${
+                            placeholder="Nhập địa chỉ email KOC (VD: koc@gmail.com)..."
+                            className={`w-full h-7 px-2.5 rounded-md border text-xs focus:outline-none ${
                               hasValidEmail
-                                ? 'border-line bg-surface text-ink focus:border-ink'
-                                : 'border-amber-300 bg-amber-50/40 text-ink focus:border-amber-600'
+                                ? 'border-line-strong bg-surface text-ink focus:border-focus'
+                                : 'border-warning/40 bg-warning-soft/30 text-ink focus:border-warning'
                             }`}
                           />
                         </div>
@@ -1195,61 +1173,61 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
             </div>
 
             {/* Cột phải (7 cột): Chọn mẫu thư, Biến cá nhân hóa & Khung Xem Trước / Chỉnh sửa */}
-            <div className="lg:col-span-7 space-y-3">
+            <div className="lg:col-span-7 min-w-0 space-y-3">
               {/* Khối 1: Chọn Mẫu thư & Đầu mối PIC liên hệ */}
-              <div className="p-3 rounded-xl bg-sunken border border-line space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-                  <div className="sm:col-span-8">
-                    <Field label="Mẫu thư mời hợp tác (Đã chuẩn hóa theo Phòng Booking)">
+              <div className="p-3 rounded-xl bg-sunken/70 border border-line space-y-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-9 min-w-0">
+                    <Field label="Mẫu thư mời hợp tác">
                       <Select
                         value={currentComposeTemplate.id}
                         onChange={(e) => handleSelectComposeTemplate(e.target.value)}
+                        className="w-full"
                       >
                         {approvedTemplates.map((tpl) => (
                           <option key={tpl.id} value={tpl.id}>
                             [{tpl.code}] {tpl.name}
-                            {tpl.isLockedByManager ? ' 🔒' : ''}
+                            {tpl.isLockedByManager ? ' (Khóa chuẩn)' : ''}
                           </option>
                         ))}
                       </Select>
                     </Field>
                   </div>
-                  <div className="sm:col-span-4 flex items-center gap-1.5">
+                  <div className="sm:col-span-3">
                     <Button
                       variant="secondary"
-                      size="sm"
                       onClick={handleAutoMatchTemplateForPreviewRow}
-                      className="w-full"
+                      className="w-full h-9"
                     >
-                      Khớp mẫu theo KOC
+                      Khớp mẫu KOC
                     </Button>
                   </div>
                 </div>
 
                 {/* Đầu mối chuyên viên gửi & CC */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <Field label="Tên PIC ({{ten_pic}})">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  <Field label="Người liên hệ (PIC)">
                     <Input
                       value={picName}
                       onChange={(e) => setPicName(e.target.value)}
                       placeholder="Tên chuyên viên"
                     />
                   </Field>
-                  <Field label="SĐT / Zalo ({{sdt_pic}})">
+                  <Field label="SĐT / Zalo">
                     <Input
                       value={picPhone}
                       onChange={(e) => setPicPhone(e.target.value)}
-                      placeholder="SĐT/Zalo liên hệ"
+                      placeholder="SĐT / Zalo"
                     />
                   </Field>
-                  <Field label="Email PIC ({{email_pic}})">
+                  <Field label="Email liên hệ">
                     <Input
                       value={picEmail}
                       onChange={(e) => setPicEmail(e.target.value)}
-                      placeholder="thao.lp@upbase.vn"
+                      placeholder="booking.b2c@upbase.vn"
                     />
                   </Field>
-                  <Field label="CC (Leader / Quản lý)">
+                  <Field label="CC quản lý">
                     <Input
                       value={ccEmails}
                       onChange={(e) => setCcEmails(e.target.value)}
@@ -1259,25 +1237,25 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
 
                 {/* Lời nhắn bổ sung & Tùy chọn hiển thị giá */}
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
-                  <div className="sm:col-span-8">
-                    <Field label="Lời nhắn riêng / Ghi chú bổ sung ({{ghi_chu_rieng}})">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                  <div className="sm:col-span-8 min-w-0">
+                    <Field label="Lời nhắn bổ sung cho KOC">
                       <Input
                         value={customNoteForKoc}
                         onChange={(e) => setCustomNoteForKoc(e.target.value)}
-                        placeholder="VD: Nhãn hàng ưu tiên gửi kèm bộ quà tặng giới hạn cho 10 khán giả đầu tiên..."
+                        placeholder="VD: Nhãn hàng ưu tiên gửi kèm bộ quà tặng giới hạn..."
                       />
                     </Field>
                   </div>
                   <div className="sm:col-span-4">
-                    <label className="flex items-center gap-2 h-9 px-2.5 rounded-md border border-line bg-surface text-xs text-ink cursor-pointer select-none">
+                    <label className="flex items-center gap-2 h-9 px-3 rounded-md border border-line-strong bg-surface text-xs text-ink cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={hideExactFeeInEmail}
                         onChange={(e) => setHideExactFeeInEmail(e.target.checked)}
-                        className="rounded border-line"
+                        className="rounded border-line shrink-0"
                       />
-                      <span>Ẩn giá Net (Báo qua Zalo)</span>
+                      <span className="truncate">Ẩn giá Net (Báo Zalo)</span>
                     </label>
                   </div>
                 </div>
@@ -1285,39 +1263,23 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
 
               {/* Khối 2: Thanh chuyển chế độ Xem trước thư đã trộn vs Sửa khung mẫu */}
               <div className="border border-line rounded-xl overflow-hidden bg-surface">
-                <div className="px-3.5 py-2.5 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setComposeMode('PREVIEW_MERGED')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                        composeMode === 'PREVIEW_MERGED'
-                          ? 'bg-ink text-white border-ink'
-                          : 'bg-surface text-ink-2 border-line hover:text-ink'
-                      }`}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>
-                        Xem trước thư của:{' '}
-                        {activePreviewRow?.tenKenh || activePreviewRow?.idKenh || 'KOC'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setComposeMode('EDIT_TEMPLATE')}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                        composeMode === 'EDIT_TEMPLATE'
-                          ? 'bg-ink text-white border-ink'
-                          : 'bg-surface text-ink-2 border-line hover:text-ink'
-                      }`}
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>
-                        Khung mẫu biến động{' '}
-                        {isComposeTemplateLockedForStaff ? '(Đã khóa bởi Trưởng phòng)' : ''}
-                      </span>
-                    </button>
-                  </div>
+                <div className="px-3 py-2 bg-sunken/70 border-b border-line flex flex-wrap items-center justify-between gap-2">
+                  <Segmented
+                    value={composeMode}
+                    onChange={setComposeMode}
+                    items={[
+                      {
+                        key: 'PREVIEW_MERGED',
+                        label: 'Xem trước thư',
+                      },
+                      {
+                        key: 'EDIT_TEMPLATE',
+                        label: isComposeTemplateLockedForStaff
+                          ? 'Khung mẫu gốc (Đã khóa)'
+                          : 'Khung mẫu gốc',
+                      },
+                    ]}
+                  />
 
                   <div className="flex items-center gap-1.5">
                     <Button
@@ -1326,7 +1288,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       icon={Copy}
                       onClick={() => void handleCopyRenderedEmail('SUBJECT')}
                     >
-                      Copy Tiêu đề
+                      Copy tiêu đề
                     </Button>
                     <Button
                       variant="secondary"
@@ -1334,7 +1296,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       icon={Copy}
                       onClick={() => void handleCopyRenderedEmail('BODY')}
                     >
-                      Copy Nội dung
+                      Copy nội dung
                     </Button>
                     <Button
                       variant="secondary"
@@ -1348,37 +1310,67 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
 
                 {composeMode === 'PREVIEW_MERGED' ? (
-                  <div className="p-3.5 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-sunken/70 p-2.5 rounded-lg border border-line">
-                      <div>
-                        <span className="text-ink-3">Người nhận (To): </span>
-                        <strong className="text-ink font-mono">
-                          {renderedPreview.recipientEmail || 'Chưa điền Email (Nhập ở cột trái)'}
-                        </strong>
+                  <div className="divide-y divide-line">
+                    {/* Thông tin người nhận (Có ô điền trực tiếp Email KOC) & Tiêu đề thư */}
+                    <div className="px-3.5 py-2.5 bg-canvas/60 space-y-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                        <div className="sm:col-span-7 flex items-center gap-2 min-w-0">
+                          <label className="text-ink-3 font-medium shrink-0">
+                            Người nhận (To):
+                          </label>
+                          {activePreviewRow ? (
+                            <input
+                              type="email"
+                              value={
+                                emailDraftByRowId[activePreviewRow.id] ??
+                                activePreviewRow.email ??
+                                ''
+                              }
+                              onChange={(e) =>
+                                handleUpdateDraftEmailForRow(
+                                  activePreviewRow,
+                                  e.target.value
+                                )
+                              }
+                              onBlur={(e) =>
+                                handleCommitEmailForRow(
+                                  activePreviewRow,
+                                  e.target.value
+                                )
+                              }
+                              placeholder={`Điền email của ${activePreviewRow.tenKenh || activePreviewRow.idKenh}...`}
+                              className={`flex-1 min-w-0 h-8 px-2.5 rounded-md border text-xs font-code focus:outline-none ${
+                                renderedPreview.recipientEmail.includes('@')
+                                  ? 'border-line-strong bg-surface text-ink focus:border-focus'
+                                  : 'border-warning bg-warning-soft/35 text-ink focus:border-warning'
+                              }`}
+                            />
+                          ) : (
+                            <span className="text-ink-3">—</span>
+                          )}
+                        </div>
+                        <div className="sm:col-span-5 min-w-0 truncate sm:text-right">
+                          <span className="text-ink-3">Kênh KOC: </span>
+                          <strong className="text-ink">
+                            {activePreviewRow?.tenKenh || activePreviewRow?.idKenh || '—'}
+                          </strong>{' '}
+                          <span className="text-ink-3 font-code">
+                            (@{normalizeTikTokId(activePreviewRow?.idKenh || '')})
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-ink-3">Kênh KOC: </span>
-                        <strong className="text-ink">
-                          {activePreviewRow?.tenKenh} (@
-                          {normalizeTikTokId(activePreviewRow?.idKenh || '')})
+
+                      <div className="flex items-baseline gap-1.5 pt-1.5 border-t border-line/70">
+                        <span className="text-ink-3 shrink-0">Tiêu đề:</span>
+                        <strong className="text-ink font-semibold break-words">
+                          {renderedPreview.subject}
                         </strong>
                       </div>
                     </div>
 
-                    <div>
-                      <div className="text-2xs font-semibold text-ink-3 uppercase tracking-wider mb-1">
-                        Tiêu đề thư (Đã trộn dữ liệu thực tế)
-                      </div>
-                      <div className="p-2.5 rounded-lg border border-line bg-sunken/40 text-xs font-semibold text-ink">
-                        {renderedPreview.subject}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-2xs font-semibold text-ink-3 uppercase tracking-wider mb-1">
-                        Nội dung thư gửi KOC
-                      </div>
-                      <pre className="p-3 rounded-lg border border-line bg-surface text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed max-h-[290px] overflow-y-auto">
+                    {/* Nội dung thư gửi KOC */}
+                    <div className="p-3.5">
+                      <pre className="text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed max-h-[250px] overflow-y-auto">
                         {renderedPreview.body}
                       </pre>
                     </div>
@@ -1386,12 +1378,12 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 ) : (
                   <div className="p-3.5 space-y-3">
                     {isComposeTemplateLockedForStaff && (
-                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs text-amber-900">
+                      <div className="p-2.5 rounded-lg bg-warning-soft border border-warning/30 flex items-center justify-between gap-2 text-xs text-warning">
                         <div className="flex items-center gap-1.5">
                           <Lock className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             Mẫu chuẩn này đã được Trưởng phòng khóa cấu trúc. Bạn có thể nhập vào ô
-                            &ldquo;Lời nhắn riêng&rdquo; ở trên hoặc bật quyền Trưởng phòng để chỉnh sửa.
+                            &ldquo;Lời nhắn bổ sung&rdquo; ở trên hoặc bật quyền Trưởng phòng để chỉnh sửa.
                           </span>
                         </div>
                         <Button
@@ -1399,12 +1391,12 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                           size="sm"
                           onClick={() => setActiveTab('TEMPLATES')}
                         >
-                          Mở Quản lý mẫu
+                          Mở mẫu thư
                         </Button>
                       </div>
                     )}
 
-                    <Field label="Tiêu đề mẫu (Chứa biến {{...}})">
+                    <Field label="Tiêu đề mẫu">
                       <Input
                         value={composeSubjectDraft}
                         disabled={isComposeTemplateLockedForStaff}
@@ -1412,9 +1404,9 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       />
                     </Field>
 
-                    <Field label="Nội dung mẫu (Chứa biến {{...}})">
+                    <Field label="Nội dung mẫu">
                       <Textarea
-                        rows={10}
+                        rows={8}
                         value={composeBodyDraft}
                         disabled={isComposeTemplateLockedForStaff}
                         onChange={(e) => setComposeBodyDraft(e.target.value)}
@@ -1424,7 +1416,6 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 )}
               </div>
             </div>
-          </div>
           </div>
         )}
 
@@ -1465,19 +1456,14 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-2xs font-bold text-ink-3">
+                            <span className="font-code text-2xs font-semibold text-ink-3">
                               [{tpl.code}]
                             </span>
                             {tpl.isDefaultForCategory && (
                               <Status tone="positive">Mặc định</Status>
                             )}
                             {tpl.isLockedByManager && (
-                              <span
-                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200"
-                                title="Trưởng phòng khóa mẫu chuẩn"
-                              >
-                                <Lock className="w-2.5 h-2.5" /> Khóa chuẩn
-                              </span>
+                              <Status tone="warning">Khóa chuẩn</Status>
                             )}
                           </div>
                           <div className="text-xs font-semibold text-ink mt-1 leading-snug">
@@ -1522,10 +1508,10 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
             </div>
 
             {/* Trình biên tập mẫu thư dành cho Trưởng phòng bên phải (8 cột) */}
-            <div className="lg:col-span-8 space-y-3">
+            <div className="lg:col-span-8 min-w-0 space-y-3">
               <div className="p-3.5 rounded-xl border border-line bg-surface space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="sm:col-span-3">
+                  <div className="sm:col-span-3 min-w-0">
                     <Field label="Mã mẫu thư">
                       <Input
                         value={tplForm.code}
@@ -1535,7 +1521,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       />
                     </Field>
                   </div>
-                  <div className="sm:col-span-9">
+                  <div className="sm:col-span-9 min-w-0">
                     <Field label="Tên mẫu thư mời hợp tác">
                       <Input
                         value={tplForm.name}
@@ -1557,6 +1543,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                           category: e.target.value as KocEmailTemplateCategory,
                         }))
                       }
+                      className="w-full"
                     >
                       {Object.entries(KOC_EMAIL_CATEGORY_LABELS).map(([k, label]) => (
                         <option key={k} value={k}>
@@ -1572,6 +1559,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       onChange={(e) =>
                         setTplForm((prev) => ({ ...prev, brandScope: e.target.value }))
                       }
+                      className="w-full"
                     >
                       <option value="ALL">Dùng chung cả 42 Thương hiệu B2C</option>
                       {uniqueBrandNames.map((b) => (
@@ -1591,6 +1579,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                           status: e.target.value as KocEmailTemplateStatus,
                         }))
                       }
+                      className="w-full"
                     >
                       <option value="APPROVED">Đã duyệt áp dụng (APPROVED)</option>
                       <option value="DRAFT">Bản nháp (DRAFT)</option>
@@ -1694,7 +1683,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         {activeTab === 'SETTINGS_LOGS' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Cấu hình đầu mối gửi mail bên trái (5 cột) */}
-            <div className="lg:col-span-5 p-3.5 rounded-xl border border-line bg-surface space-y-3">
+            <div className="lg:col-span-5 min-w-0 p-3.5 rounded-xl border border-line bg-surface space-y-3">
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
                 <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                   <Settings className="w-4 h-4 text-ink-2" />
@@ -1725,6 +1714,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                       deliveryMode: e.target.value as EmailDeliveryMode,
                     }))
                   }
+                  className="w-full"
                 >
                   <option value="LARK_SMTP">
                     Lark Mail SMTP (smtp.larksuite.com:465 — Mật khẩu ứng dụng Lark)

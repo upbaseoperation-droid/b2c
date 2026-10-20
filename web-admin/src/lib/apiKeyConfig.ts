@@ -734,21 +734,29 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
     },
     KOC_MATCHING: {
       purposeId: 'KOC_MATCHING',
-      title: '6. Sàng lọc & Đề xuất danh sách KOC theo Nhãn hàng',
-      departmentTag: 'Booking & Listing',
-      usedInScreens: ['Đề xuất KOC', 'Booking', 'Hồ sơ thương hiệu'],
+      title: '6. Dò tìm & Khớp kênh Mạng xã hội KOC (Shopee, Facebook, Instagram, Threads)',
+      departmentTag: 'Booking & KOC',
+      usedInScreens: ['Danh bạ KOC', 'Hồ sơ KOC', 'Dò tìm đa kênh'],
       description:
-        'Đối chiếu định vị nhãn hàng, sản phẩm chủ lực (SKU) và ngân sách được giao để gợi ý cơ cấu KOC theo khung lương (KL1–KL7) và tệp kênh phù hợp cho đợt Listing ngày 10-20-30.',
+        'Dò tìm và đối soát tài khoản mạng xã hội (Shopee Video, Fanpage Facebook, Instagram, Threads) của KOC dựa trên tiểu sử TikTok, link Bio Beacons/Linktree và Google Search để liên kết vào hồ sơ danh bạ.',
       primaryProvider: 'GOOGLE',
       primaryModel: 'gemini-3.8-flash',
-      fallbackProvider: 'CLAUDE',
-      fallbackModel: 'claude-sonnet-5-5',
-      temperature: 0.3,
-      maxTokens: 1800,
-      systemInstruction:
-        'Dựa trên ngân sách Order Net của gian hàng và định vị thương hiệu, hãy đề xuất tỷ trọng phân bổ số lượng KOC theo khung lương chuẩn Upbase (TAP 0đ, KL1 <500k, KL2 500k-1.5M, KL3 1.5M-3M, KL4 3M-5M, KL5 5M-10M) và chọn tệp kênh trong 25 tệp chuẩn (Mẹ bé, Bác sỹ/chuyên gia, Review Nữ, Unboxing...) để tối ưu CIR và GMV.',
+      fallbackProvider: 'OPENAI',
+      fallbackModel: 'gpt-6.1-sol',
+      temperature: 0.1,
+      maxTokens: 1200,
+      systemInstruction: `Bạn là chuyên gia dữ liệu KOC/KOL tại Việt Nam. Nhiệm vụ của bạn là tìm chính xác tài khoản Shopee, Facebook, Instagram và Threads chính thức của KOC dựa trên thông tin định danh, tiểu sử TikTok (bao gồm cả các từ viết lách như "phở bò" = Facebook, "ig/ins" = Instagram, "sóp pi" = Shopee, "thờ rét" = Threads) và kết quả tìm kiếm.
+Chỉ trả về duy nhất 1 khối JSON hợp lệ theo cấu trúc:
+{
+  "summary": "Tóm tắt ngắn gọn 1-2 câu về các dấu hiệu nhận diện kênh tìm được",
+  "SHOPEE": [{ "handle": "username_shopee", "url": "https://shopee.vn/...", "displayName": "Tên shop", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "FACEBOOK": [{ "handle": "username_fb", "url": "https://www.facebook.com/...", "displayName": "Tên FB", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "INSTAGRAM": [{ "handle": "@username_ig", "url": "https://www.instagram.com/...", "displayName": "Tên IG", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "THREADS": [{ "handle": "@username_threads", "url": "https://www.threads.net/@...", "displayName": "Tên Threads", "confidence": "CAO", "reason": "Lý do khớp" }]
+}
+Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng rỗng []. Không tự bịa đặt tài khoản.`,
       sampleInputText:
-        'Nhãn hàng: La Roche-Posay Vietnam Official (Ngành Dược mỹ phẩm - Tone Bác sĩ / Chuyên gia da liễu)\nSản phẩm đẩy: Kem dưỡng phục hồi Cicaplast Baume B5+\nNgân sách Order Net giao tháng 10: 45.000.000 VNĐ\nMục tiêu cam kết: Tối thiểu 25 video lên sóng (bao gồm cả Paid KOC và FOC), tỷ lệ chi phí CIR mục tiêu <= 18%.',
+        'THÔNG TIN ĐỊNH DANH KOC CẦN TÌM KÊNH MẠNG XÃ HỘI:\n- TikTok Handle: @megauriviu\n- Nghệ danh / Tên kênh: Mega Uri Review\n- Họ tên thật: Phạm Ngọc Hiếu An\n- SĐT: 0399675534\n- Ngành hàng: Mỹ phẩm, Skincare\n- Link liên quan: https://www.facebook.com/phamngochieuan',
     },
     KOC_HISTORY_EVALUATION: {
       purposeId: 'KOC_HISTORY_EVALUATION',
@@ -788,11 +796,11 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
     },
     BRAND_MARKET_RESEARCH: {
       purposeId: 'BRAND_MARKET_RESEARCH',
-      title: '9. Nghiên cứu thị trường, phân tích 4P nhãn hàng & đào bình luận',
+      title: '9. Nghiên cứu thương hiệu, đối thủ & bình luận khách hàng',
       departmentTag: 'Chiến lược & Thương hiệu',
       usedInScreens: ['Nghiên cứu thị trường & đối thủ', 'Hồ sơ thương hiệu'],
       description:
-        'Tổng hợp hồ sơ 4P của thương hiệu, đối chiếu ma trận đối thủ cạnh tranh trên TikTok Shop/Shopee Mall, bóc tách bình luận nỗi đau khách hàng và đề xuất chiến lược định vị.',
+        'Tìm kiếm thông tin thương hiệu, sản phẩm, giá bán, đối thủ trên mạng và lọc bình luận khách hàng trên TikTok Shop / Shopee.',
       primaryProvider: 'GOOGLE',
       primaryModel: 'gemini-3.8-flash',
       fallbackProvider: 'OPENAI',
@@ -800,9 +808,9 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       temperature: 0.25,
       maxTokens: 2800,
       systemInstruction:
-        'Bạn là Chuyên gia Nghiên cứu Thị trường & Cạnh tranh Thương mại Điện tử B2C. BẮT BUỘC ưu tiên khai thác dữ liệu từ khối [KẾT QUẢ TÌM KIẾM TRÊN MẠNG TRƯỚC KHI PHÂN TÍCH], bảng sản phẩm (SKU), ma trận đối thủ cạnh tranh và bình luận khách hàng trên Web/TikTok Shop/Shopee Mall. Trình bày báo cáo chuyên nghiệp bằng Markdown có tiêu đề phân mục (#, ##) và Bảng đối sánh (| ... |) rõ ràng gồm: (1) Dữ liệu thực tế thu thập từ Web & Sàn TMĐT, (2) Ma trận 4P & Phễu sản phẩm định giá (Hero/Traffic/Bundle SKU), (3) Bảng đối sánh trực diện đối thủ cạnh tranh (Giá bán, đơn giá/ml, hoa hồng Affiliate, điểm yếu khách phàn nàn 1-3 sao và chiến thuật đánh chặn), (4) Kịch bản Video KOC & Kế hoạch phân bổ ngân sách KL1-KL5 + FOC.',
+        'Dựa vào dữ liệu tìm kiếm trên mạng, danh sách sản phẩm, giá bán, đối thủ và bình luận khách hàng, hãy tổng hợp ngắn gọn bằng bảng (| ... |) và gạch đầu dòng: (1) Thông tin từ web và sàn TMĐT, (2) Danh mục sản phẩm và giá bán, (3) Bảng so sánh đối thủ (giá bán, hoa hồng, điểm khách phàn nàn, hướng cạnh tranh), (4) Kịch bản video KOC và phân bổ ngân sách KL1–KL4 kết hợp gửi mẫu FOC. Không dùng từ ngữ quảng cáo sáo rỗng hay thuật ngữ tiếng Anh không cần thiết.',
       sampleInputText:
-        'Thương hiệu: Kutieskin (Chăm sóc da Mẹ & Bé)\nKhoảng giá chủ lực: 85.000đ - 245.000đ | SKU mũi nhọn: Kem mẩn ngứa hăm (95.000đ), Kem chàm sữa (215.000đ).\nĐối thủ trực diện: Bepanthen, Mustela, Cỏ Mềm.\nCụm bình luận khách hàng nhiều nhất: Sợ chứa corticoid (42%), Hỏi trẻ sơ sinh 1 tháng tuổi bôi mặt được không (31%).',
+        'Thương hiệu: Kutieskin (Chăm sóc da Mẹ & Bé)\nKhoảng giá: 85.000đ - 245.000đ | Sản phẩm chính: Kem mẩn ngứa hăm (95.000đ), Kem chàm sữa (215.000đ).\nĐối thủ: Bepanthen, Mustela, Cỏ Mềm.\nBình luận khách hàng: Sợ chứa corticoid (42%), Hỏi trẻ sơ sinh 1 tháng tuổi bôi mặt được không (31%).',
     },
   },
   updatedAt: '2026-10-20T12:00:00.000Z',

@@ -1889,16 +1889,13 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'manager',
     'task-delegation',
-    'workload-3d',
     'sample-tracker',
-    'performance-p3',
     'brand-hub',
     'koc-hub',
     'ads-report',
     'api-settings',
     'cloudflare-admin',
     'knowledge-qa',
-    'audit-trail',
     'tiktok-crawler',
     'market-research'
   ],
@@ -1931,16 +1928,13 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'manager',
     'task-delegation',
-    'workload-3d',
     'sample-tracker',
-    'performance-p3',
     'brand-hub',
     'koc-hub',
     'ads-report',
     'api-settings',
     'cloudflare-admin',
     'knowledge-qa',
-    'audit-trail',
     'tiktok-crawler',
     'market-research'
   ],
@@ -1948,7 +1942,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'manager',
     'task-delegation',
-    'workload-3d',
     'input-plan',
     'overview',
     'dashboard-bi',
@@ -1965,12 +1958,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'push-products',
     'ads-report',
-    'performance-p3',
     'master-data',
     'partner-access',
     'api-settings',
     'knowledge-qa',
-    'audit-trail',
     'tiktok-crawler',
     'market-research'
   ],
@@ -1978,7 +1969,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'manager',
     'task-delegation',
-    'workload-3d',
     'input-plan',
     'ads-report',
     'sample-tracker',
@@ -1995,12 +1985,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'campaigns',
     'contracts',
     'brand-knowledge',
-    'performance-p3',
     'master-data',
     'partner-access',
     'api-settings',
     'knowledge-qa',
-    'audit-trail',
     'tiktok-crawler',
     'market-research'
   ],
@@ -2016,10 +2004,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-staff',
     'dashboard-finance',
     'ads-report',
-    'performance-p3',
     'manager',
     'task-delegation',
-    'workload-3d',
     'input-plan',
     'koc-listing',
     'approved-booking-list',
@@ -2056,7 +2042,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'sample-tracker',
     'push-products',
-    'performance-p3',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
@@ -2075,7 +2060,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'sample-tracker',
     'push-products',
-    'performance-p3',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -2097,7 +2081,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'overview',
     'sample-tracker',
-    'performance-p3',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
@@ -2119,7 +2102,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'sample-tracker',
     'push-products',
-    'performance-p3',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
@@ -2136,7 +2118,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-air-sync',
     'stores',
     'campaigns',
-    'performance-p3',
     'ads-report',
     'brand-knowledge',
     'knowledge-qa',
@@ -2154,24 +2135,20 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-video',
     'dashboard-air-sync',
     'campaigns',
-    'performance-p3',
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
     'market-research'
   ],
   LEGAL: [
-    'contracts',
-    'audit-trail'
+    'contracts'
   ],
   FINANCE: [
     'contracts',
-    'dashboard-finance',
-    'audit-trail'
+    'dashboard-finance'
   ],
   SIGN_ADMIN: [
-    'contracts',
-    'audit-trail'
+    'contracts'
   ],
   BRAND_PARTNER: [
     'brand-hub',
@@ -2212,7 +2189,13 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
  * Màn hình điều hành dành cho cấp quản lý: so sánh năng suất giữa nhân sự, tải việc toàn đội, SLA team, BI toàn khối.
  * Chuyên viên thực thi không được mở mặc định; Admin vẫn có thể bật lại cho từng vai trò tại màn Phân quyền.
  */
-export const LEADERSHIP_ONLY_SCREENS: TabKey[] = ['workload-3d', 'dashboard-bi', 'dashboard-team-sla', 'dashboard-staff'];
+export const HIDDEN_SYSTEM_SCREENS: TabKey[] = [
+  'workload-3d',
+  'performance-p3',
+  'audit-trail',
+];
+
+export const LEADERSHIP_ONLY_SCREENS: TabKey[] = ['dashboard-bi', 'dashboard-team-sla', 'dashboard-staff'];
 
 export const SPECIALIST_MEMBER_ROLE_IDS: UserRole[] = [
   'BOOKING_MEMBER',
@@ -2264,12 +2247,12 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'tiktok-crawler',
   'market-research',
   'task-delegation',
-  'workload-3d',
   'contracts',
   'cloudflare-admin',
 ];
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
+  if (HIDDEN_SYSTEM_SCREENS.includes(tab)) return false;
   if (CORE_SYNCED_ROLE_TABS.includes(tab) && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
     return true;
   }
@@ -2283,7 +2266,9 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
 
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
-  const base = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
+  const base = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])].filter(
+    (t) => !HIDDEN_SYSTEM_SCREENS.includes(t)
+  );
   for (const coreTab of CORE_SYNCED_ROLE_TABS) {
     if (ROLE_ALLOWED_TABS[role]?.includes(coreTab) && !base.includes(coreTab)) {
       base.push(coreTab);
@@ -2329,8 +2314,6 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
   { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
   { key: 'task-delegation', label: 'Giao việc & Định mức Task', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Giao việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research.' },
-  { key: 'workload-3d', label: 'Bản đồ 3D & Workload', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Trực quan hóa không gian 3D phân bổ Nhân sự, Thương hiệu, Gian hàng và Cột tải trọng công việc (Workload Point).' },
-  { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Tính điểm khối lượng công việc, nghiệm thu KPI và quỹ thưởng P3 nhân sự.' },
   { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
   { key: 'push-products', label: 'Sản phẩm trọng tâm (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch, Điều Phối & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực theo Brand & Gian hàng, USP, tồn kho và hạn mức hàng mẫu.' },
   { key: 'booking', label: 'Quản lý Booking KOC (Pipeline 5 Bước · Mẫu & Mã Ads)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, duyệt KOC, vận đơn gửi mẫu (Bước 3), thu thập & bàn giao mã Spark Ads (Bước 4) và quyết toán.' },
@@ -2347,7 +2330,6 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'ads-report', label: 'Báo cáo Ads TikTok', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Báo cáo hiệu quả chạy quảng cáo GMV, ROAS, CPA.' },
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
   { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
-  { key: 'audit-trail', label: 'Nhật ký kiểm toán (Audit Trail)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Theo dõi lịch sử đăng nhập, thay đổi phân quyền và thao tác nhạy cảm.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
   { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
   { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản lý kết nối Cloudflare R2 và tệp đính kèm của 42 thương hiệu B2C.' },
@@ -2359,9 +2341,11 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
 // để màn hình Phân quyền luôn tự động cập nhật khi hệ thống mở rộng tính năng.
 export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = (() => {
   const knownKeys = new Set<TabKey>(BASE_SYSTEM_SCREENS.map((s) => s.key));
+  const hiddenSet = new Set<TabKey>(HIDDEN_SYSTEM_SCREENS);
   const autoDiscovered: SystemScreenCatalogItem[] = [];
   for (const [rawKey, label] of Object.entries(TAB_LABELS) as Array<[TabKey, string]>) {
     if (knownKeys.has(rawKey)) continue;
+    if (hiddenSet.has(rawKey)) continue;
     if (rawKey in TAB_ALIASES) continue;
     autoDiscovered.push({
       key: rawKey,

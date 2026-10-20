@@ -189,7 +189,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hệ thống',
-      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin, NAV.audit],
+      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin],
     },
   ];
 }

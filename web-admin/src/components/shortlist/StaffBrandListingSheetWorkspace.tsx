@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Columns,
   Copy,
   Download,
@@ -16,6 +17,7 @@ import {
   Plus,
   Search,
   Send,
+  Settings,
   Trash2,
   UserPlus,
 } from 'lucide-react';
@@ -50,6 +52,7 @@ import {
   saveStaffSheetCollection,
   type StaffBrandSheetCollection,
   type StaffListingColumnKey,
+  type StaffListingColumnMeta,
   type StaffListingSheetRow,
 } from '../../lib/staffBrandListingSheet';
 import {
@@ -61,7 +64,39 @@ import {
   loadKocOutreachEmailState,
 } from '../../lib/kocOutreachEmailService';
 import { KocOutreachEmailModal } from './KocOutreachEmailModal';
-import { Avatar, Button, Field, Input, Modal, Panel, Select, Status } from '../ui';
+import { ActionMenu, Avatar, Button, Field, Input, Modal, Select, Status } from '../ui';
+
+const UI_HEADER_OVERRIDES: Partial<Record<StaffListingColumnKey, string>> = {
+  ngayDien: 'Ngày điền',
+  dot: 'Đợt',
+  nhanSuDien: 'Nhân sự điền',
+  idKenh: 'ID kênh',
+  linkKenh: 'Link kênh',
+  tepKenh: 'Tệp kênh',
+  tenKenh: 'Tên kênh KOC',
+  phiBookingKemThue: 'Phí kèm thuế TNCN',
+  leaderNote: 'Ghi chú Leader',
+  lyDoTuChoi: 'Lý do từ chối',
+  gmvDaHopTac: 'GMV đã hợp tác',
+  doanhSo: 'Doanh số 30d',
+  aov: 'AOV',
+  viewTrungBinh: 'View TB video',
+  giaChotCuoi: 'Chi phí chốt cuối',
+  ngayAirChot: 'Ngày air chốt',
+  linkAirNghiemThu: 'Link nghiệm thu',
+  ngayAirReal: 'Ngày air thực tế',
+  viewsNghiemThu: 'Views 30 ngày',
+  gmvNghiemThu: 'GMV 30 ngày',
+  donHangNghiemThu: 'Đơn hàng 30 ngày',
+  roiNghiemThu: 'ROI 30 ngày',
+};
+
+function getDisplayHeader(col: StaffListingColumnMeta): string {
+  return (
+    UI_HEADER_OVERRIDES[col.key] ||
+    col.header.replace(/[🎃🌸]/g, '').replace(/\s*\(Bổ sung thêm\)/gi, '').trim()
+  );
+}
 
 export interface StaffBrandListingSheetWorkspaceProps {
   kocs: KocItem[];
@@ -246,6 +281,24 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   const [rowSearchQuery, setRowSearchQuery] = useState<string>('');
   const [isGoogleSheetModalOpen, setIsGoogleSheetModalOpen] = useState(false);
   const [googleSheetUrlDraft, setGoogleSheetUrlDraft] = useState('');
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isExportMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!exportMenuRef.current?.contains(e.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsExportMenuOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isExportMenuOpen]);
 
   // Hộp thoại Gửi Mail Mời Hợp Tác KOC & Quản Lý Mẫu Thư
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
@@ -695,181 +748,123 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   };
 
   return (
-    <div className="space-y-4">
-      {/* 1. Thanh chọn Tháng & Các Sheet Brand đang làm việc */}
-      <Panel
-        title="Sheet Listing Theo Brand (Không gian làm việc nhân viên)"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={FileText}
-              onClick={() => handleOpenOutreachForSelection('TEMPLATES')}
+    <div className="space-y-3">
+      {/* Khung làm việc tích hợp: Chọn Sheet + Chỉ số + Thanh công cụ + Bảng dữ liệu */}
+      <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
+        {/* Tầng 1: Ngữ cảnh Tháng / Gian hàng + Tab chuyển nhanh Sheet + Chỉ số tóm tắt */}
+        <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <select
+              value={activeMonth}
+              onChange={(e) => onChangeMonth(e.target.value)}
+              aria-label="Chọn tháng"
+              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
             >
-              Quản lý mẫu mail
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Mail}
-              onClick={() => handleOpenOutreachForSelection('COMPOSE')}
-            >
-              Gửi mail mời KOC (
-              {selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length}
-              )
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Link2}
-              onClick={() => {
-                setGoogleSheetUrlDraft(currentGoogleSheetUrl);
-                setIsGoogleSheetModalOpen(true);
-              }}
-            >
-              {currentGoogleSheetUrl ? 'Đã gắn Google Sheet' : 'Gắn link Google Sheet'}
-            </Button>
-            {onOpenShortlistFilterModal && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Search}
-                onClick={onOpenShortlistFilterModal}
-              >
-                Lọc đề xuất nâng cao
-              </Button>
-            )}
-            <Button
-              variant="primary"
-              size="sm"
-              icon={UserPlus}
-              onClick={() => setIsDirectoryPickerOpen(true)}
-            >
-              Chọn từ Danh bạ KOC
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-3">
-          {/* Chọn Tháng + Chọn Gian hàng/Brand + Thống kê nhanh */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-            <div className="lg:col-span-2">
-              <Field label="Tháng">
-                <Select
-                  value={activeMonth}
-                  onChange={(e) => onChangeMonth(e.target.value)}
-                >
-                  {MONTH_OPTIONS.map((m) => (
-                    <option key={m} value={m}>
-                      Tháng {m}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
+              {MONTH_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  Tháng {m}
+                </option>
+              ))}
+            </select>
 
-            <div className="lg:col-span-5">
-              <Field label="Chọn Brand / Gian hàng (Mỗi Brand 1 Sheet riêng)">
-                <Select
-                  value={activeStoreName}
-                  onChange={(e) => onChangeStore(e.target.value)}
-                >
-                  {b2cStores.map((st) => {
-                    const c = (
-                      collection.sheets[makeSheetKey(activeMonth, st.storeName)] || []
-                    ).length;
-                    return (
-                      <option key={st.id} value={st.storeName}>
-                        {st.brandName} — {st.storeName} ({c} KOC)
-                      </option>
-                    );
-                  })}
-                </Select>
-              </Field>
-            </div>
+            <select
+              value={activeStoreName}
+              onChange={(e) => onChangeStore(e.target.value)}
+              aria-label="Chọn Brand / Gian hàng"
+              className="h-7 px-2.5 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[230px] truncate shrink-0 focus:outline-none focus:border-ink"
+            >
+              {b2cStores.map((st) => {
+                const c = (
+                  collection.sheets[makeSheetKey(activeMonth, st.storeName)] || []
+                ).length;
+                return (
+                  <option key={st.id} value={st.storeName}>
+                    {st.brandName} — {st.storeName} ({c} KOC)
+                  </option>
+                );
+              })}
+            </select>
 
-            <div className="lg:col-span-5 grid grid-cols-4 gap-2 bg-sunken p-2.5 rounded-lg border border-line text-center">
-              <div>
-                <div className="text-2xs text-ink-3">Số KOC trong Sheet</div>
-                <div className="text-sm font-bold text-ink tabular-nums">
-                  {sheetStats.totalCount}
-                </div>
-              </div>
-              <div>
-                <div className="text-2xs text-ink-3">Tổng Giá Net</div>
-                <div className="text-sm font-bold text-ink tabular-nums">
-                  {formatVndShort(sheetStats.totalNet)}
-                </div>
-              </div>
-              <div>
-                <div className="text-2xs text-ink-3">Phí kèm thuế (Gross)</div>
-                <div className="text-sm font-bold text-accent tabular-nums">
-                  {formatVndShort(sheetStats.totalGross)}
-                </div>
-              </div>
-              <div>
-                <div className="text-2xs text-ink-3">Brand chọn (Yes)</div>
-                <div className="text-sm font-bold text-positive tabular-nums">
-                  {sheetStats.brandApprovedCount}/{sheetStats.totalCount}
-                </div>
-              </div>
-            </div>
-          </div>
+            <span className="h-4 w-px bg-line mx-0.5 shrink-0" />
 
-          {/* Dải Tab chuyển nhanh giữa các Sheet Brand giống Excel Sheet Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-line">
-            <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wider shrink-0 mr-1">
-              Sheet tháng {activeMonth}:
-            </span>
-            {activeMonthBrandSheets.map((sh) => {
-              const isCurrent = sh.storeName === activeStoreName;
-              return (
-                <button
-                  key={sh.storeName}
-                  type="button"
-                  onClick={() => onChangeStore(sh.storeName)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors shrink-0 ${
-                    isCurrent
-                      ? 'bg-ink text-white border-ink'
-                      : 'bg-surface text-ink-2 border-line hover:bg-sunken'
-                  }`}
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate max-w-[180px]">{sh.storeName}</span>
-                  <span
-                    className={`px-1.5 py-0.2 rounded text-2xs tabular-nums ${
-                      isCurrent ? 'bg-white/20 text-white' : 'bg-sunken text-ink-3'
+            <div className="flex items-center gap-1 shrink-0">
+              {activeMonthBrandSheets.map((sh) => {
+                const isCurrent = sh.storeName === activeStoreName;
+                return (
+                  <button
+                    key={sh.storeName}
+                    type="button"
+                    onClick={() => onChangeStore(sh.storeName)}
+                    className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-xs font-medium border transition-colors shrink-0 ${
+                      isCurrent
+                        ? 'bg-ink text-white border-ink'
+                        : 'bg-surface text-ink-2 border-line hover:bg-sunken hover:text-ink'
                     }`}
                   >
-                    {sh.count}
-                  </span>
-                </button>
-              );
-            })}
+                    <FileSpreadsheet className="w-3 h-3 shrink-0" />
+                    <span className="truncate max-w-[140px]">{sh.storeName}</span>
+                    <span
+                      className={`px-1 rounded text-[10px] tabular-nums ${
+                        isCurrent ? 'bg-white/20 text-white' : 'bg-sunken text-ink-3'
+                      }`}
+                    >
+                      {sh.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Cụm chỉ số tóm tắt gọn trên 1 dòng */}
+          <div className="flex items-center gap-3 px-2.5 py-1 rounded-md bg-surface border border-line text-xs shrink-0">
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">KOC:</span>
+              <strong className="text-ink tabular-nums">{sheetStats.totalCount}</strong>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">Net:</span>
+              <strong className="text-ink tabular-nums">
+                {formatVndShort(sheetStats.totalNet)}
+              </strong>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">Gross:</span>
+              <strong className="text-accent tabular-nums">
+                {formatVndShort(sheetStats.totalGross)}
+              </strong>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">Brand chọn:</span>
+              <strong className="text-positive tabular-nums">
+                {sheetStats.brandApprovedCount}/{sheetStats.totalCount}
+              </strong>
+            </div>
           </div>
         </div>
-      </Panel>
 
-      {/* 2. Thanh công cụ lọc dòng, bật/tắt 48 cột & Copy gửi Brand */}
-      <div className="bg-surface border border-line rounded-xl p-3 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-56">
-              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
+        {/* Tầng 2: Thanh công cụ Lọc + Cột hiển thị + Thao tác nghiệp vụ (Gói gọn 1 hàng) */}
+        <div className="px-3 py-2 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+          {/* Bên trái: Tìm kiếm, Lọc, Chế độ cột */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="relative w-48 sm:w-52">
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={rowSearchQuery}
                 onChange={(e) => setRowSearchQuery(e.target.value)}
                 placeholder="Tìm ID kênh, tên KOC, SP..."
-                className="w-full h-8 pl-8 pr-2.5 text-xs rounded-md border border-line bg-surface text-ink focus:outline-none focus:border-ink"
+                className="w-full h-7 pl-7 pr-2 text-xs rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
               />
             </div>
 
             <select
               value={filterDot}
               onChange={(e) => setFilterDot(e.target.value)}
-              className="h-8 px-2.5 text-xs rounded-md border border-line bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
             >
               <option value="ALL">Tất cả đợt</option>
               {DOT_LISTING_OPTIONS.map((d) => (
@@ -882,19 +877,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             <select
               value={filterBrandChon}
               onChange={(e) => setFilterBrandChon(e.target.value)}
-              className="h-8 px-2.5 text-xs rounded-md border border-line bg-surface text-ink"
+              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
             >
               <option value="ALL">Brand chọn: Tất cả</option>
               {BRAND_CHON_OPTIONS.map((b) => (
                 <option key={b} value={b}>
-                  Brand chọn: {b}
+                  Brand: {b}
                 </option>
               ))}
             </select>
-
-            <Button variant="secondary" size="sm" icon={Plus} onClick={handleAddBlankRow}>
-              Thêm dòng trống
-            </Button>
 
             <Button
               variant="secondary"
@@ -902,49 +893,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               icon={Columns}
               onClick={() => setIsColumnPickerOpen((v) => !v)}
             >
-              Cột hiển thị ({visibleColumns.length}/{STAFF_LISTING_COLUMNS.length})
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={CheckCircle2}
-              onClick={handleSelectAllBrandApproved}
-            >
-              Chọn dòng Brand duyệt ({sheetStats.brandApprovedCount})
-            </Button>
-
-            <Button
-              variant="primary"
-              size="sm"
-              icon={ArrowRight}
-              onClick={() => handleTransferToApprovedBookingList(true)}
-            >
-              Chuyển qua List duyệt book (
-              {selectedRowIds.length > 0
-                ? selectedRowIds.length
-                : sheetStats.brandApprovedCount}
-              )
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={ExternalLink}
-              onClick={handleOpenApprovedBookingListScreen}
-            >
-              Mở List duyệt book
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Mail}
-              onClick={() => handleOpenOutreachForSelection('COMPOSE')}
-            >
-              Gửi mail mời KOC (
-              {selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length}
-              )
+              Cột ({visibleColumns.length}/{STAFF_LISTING_COLUMNS.length})
             </Button>
 
             {selectedRowIds.length > 0 && (
@@ -959,93 +908,218 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             )}
           </div>
 
-          {/* Cụm nút Copy chuẩn Google Sheet / Excel & Xuất file */}
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center gap-1.5 text-xs text-ink-2 cursor-pointer select-none px-2 py-1 rounded bg-sunken border border-line">
-              <input
-                type="checkbox"
-                checked={copyWithHeaders}
-                onChange={(e) => setCopyWithHeaders(e.target.checked)}
-                className="rounded border-line"
-              />
-              Kèm tiêu đề cột
-            </label>
-
-            <label className="inline-flex items-center gap-1.5 text-xs text-ink-2 cursor-pointer select-none px-2 py-1 rounded bg-sunken border border-line">
-              <input
-                type="checkbox"
-                checked={copyWithFormulas}
-                onChange={(e) => setCopyWithFormulas(e.target.checked)}
-                className="rounded border-line"
-              />
-              Giữ công thức Google Sheet
-            </label>
+          {/* Bên phải: Thêm KOC, Gửi mail, Copy/Xuất file, Chuyển List duyệt book */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button variant="secondary" size="sm" icon={Plus} onClick={handleAddBlankRow}>
+              Thêm dòng
+            </Button>
 
             <Button
               variant="secondary"
               size="sm"
-              icon={Copy}
-              onClick={() => void handleCopyTsv('BRAND_WORKING_COLS')}
+              icon={UserPlus}
+              onClick={() => setIsDirectoryPickerOpen(true)}
             >
-              Copy bản gửi Brand (Working file)
+              Chọn từ Danh bạ
             </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Mail}
+              onClick={() => handleOpenOutreachForSelection('COMPOSE')}
+            >
+              Gửi mail ({selectedRowIds.length > 0 ? selectedRowIds.length : displayedRows.length})
+            </Button>
+
+            {/* Menu gộp Copy & Xuất dữ liệu */}
+            <div ref={exportMenuRef} className="relative inline-block">
+              <button
+                type="button"
+                onClick={() => setIsExportMenuOpen((v) => !v)}
+                className="h-7 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken inline-flex items-center gap-1.5 transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5 text-ink-3" />
+                <span>Copy / Xuất</span>
+                <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
+              </button>
+
+              {isExportMenuOpen && (
+                <div className="absolute right-0 top-8 z-40 w-64 p-1.5 bg-surface border border-line rounded-lg shadow-lg text-xs space-y-1">
+                  <div className="px-2 py-1.5 bg-sunken rounded border border-line space-y-1.5">
+                    <label className="flex items-center gap-2 text-ink-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={copyWithHeaders}
+                        onChange={(e) => setCopyWithHeaders(e.target.checked)}
+                        className="rounded border-line"
+                      />
+                      <span>Kèm tiêu đề cột</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-ink-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={copyWithFormulas}
+                        onChange={(e) => setCopyWithFormulas(e.target.checked)}
+                        className="rounded border-line"
+                      />
+                      <span>Giữ công thức Google Sheet</span>
+                    </label>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExportMenuOpen(false);
+                      void handleCopyTsv('BRAND_WORKING_COLS');
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-ink hover:bg-sunken font-medium"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                    <span>Copy bản gửi Brand (Working file)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExportMenuOpen(false);
+                      void handleCopyTsv('VISIBLE_COLS');
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-ink hover:bg-sunken"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                    <span>Copy bảng đang bật ({visibleColumns.length} cột)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExportMenuOpen(false);
+                      void handleCopyAndOpenGoogleSheet();
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-ink hover:bg-sunken"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                    <span>Copy &amp; Mở Google Sheet</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsExportMenuOpen(false);
+                      downloadStaffSheetCsv(rows, visibleColumns, activeStoreName, activeMonth);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-ink hover:bg-sunken"
+                  >
+                    <Download className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                    <span>Xuất file CSV / Excel</span>
+                  </button>
+
+                  <div className="border-t border-line pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsExportMenuOpen(false);
+                        setGoogleSheetUrlDraft(currentGoogleSheetUrl);
+                        setIsGoogleSheetModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-ink-2 hover:bg-sunken hover:text-ink"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                      <span>
+                        {currentGoogleSheetUrl
+                          ? 'Đổi link Google Sheet'
+                          : 'Gắn link Google Sheet'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Button
               variant="primary"
               size="sm"
-              icon={Copy}
-              onClick={() => void handleCopyTsv('VISIBLE_COLS')}
+              icon={ArrowRight}
+              onClick={() => handleTransferToApprovedBookingList(true)}
             >
-              Copy bảng ({visibleColumns.length} cột)
+              Chuyển List duyệt book (
+              {selectedRowIds.length > 0
+                ? selectedRowIds.length
+                : sheetStats.brandApprovedCount}
+              )
             </Button>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={ExternalLink}
-              onClick={() => void handleCopyAndOpenGoogleSheet()}
-            >
-              Copy & Mở Google Sheet
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Download}
-              onClick={() =>
-                downloadStaffSheetCsv(rows, visibleColumns, activeStoreName, activeMonth)
-              }
-            >
-              Xuất CSV / Excel
-            </Button>
-
-            {onSyncRowsToSystemListings && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Send}
-                onClick={handlePushToSystemListing}
-              >
-                Chuyển sang Theo dõi Air
-              </Button>
-            )}
+            <ActionMenu
+              label="Tiện ích khác"
+              items={[
+                {
+                  label: `Chọn dòng Brand duyệt (${sheetStats.brandApprovedCount})`,
+                  icon: CheckCircle2,
+                  onSelect: handleSelectAllBrandApproved,
+                },
+                {
+                  label: 'Mở màn hình List duyệt book',
+                  icon: ExternalLink,
+                  onSelect: handleOpenApprovedBookingListScreen,
+                },
+                ...(onSyncRowsToSystemListings
+                  ? [
+                      {
+                        label: 'Chuyển sang Theo dõi Air',
+                        icon: Send,
+                        onSelect: handlePushToSystemListing,
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Quản lý mẫu mail mời KOC',
+                  icon: FileText,
+                  onSelect: () => handleOpenOutreachForSelection('TEMPLATES'),
+                },
+                {
+                  label: 'Cấu hình Lark Mail & Lịch sử gửi',
+                  icon: Settings,
+                  onSelect: () => handleOpenOutreachForSelection('SETTINGS_LOGS'),
+                },
+                {
+                  label: currentGoogleSheetUrl
+                    ? 'Đã gắn link Google Sheet (Sửa)'
+                    : 'Gắn link Google Sheet',
+                  icon: Link2,
+                  onSelect: () => {
+                    setGoogleSheetUrlDraft(currentGoogleSheetUrl);
+                    setIsGoogleSheetModalOpen(true);
+                  },
+                },
+                ...(onOpenShortlistFilterModal
+                  ? [
+                      {
+                        label: 'Lọc đề xuất KOC nâng cao',
+                        icon: Search,
+                        onSelect: onOpenShortlistFilterModal,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </div>
         </div>
 
-        {/* Khung bật/tắt 48 cột tùy ý */}
+        {/* Khung bật/tắt cột tùy ý (chỉ hiện khi bấm nút Cột) */}
         {isColumnPickerOpen && (
-          <div className="p-3 rounded-lg bg-sunken border border-line space-y-2.5">
+          <div className="p-3 bg-sunken border-b border-line space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
-              <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-                <span>Bật / tắt 48 cột theo Template hệ thống (Cột B → AW):</span>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-ink">
+                <span>Cấu hình cột hiển thị:</span>
                 <span className="px-1.5 py-0.5 rounded text-2xs border bg-emerald-50 text-emerald-700 border-emerald-200">
-                  Tự động: Hệ thống lấy từ Danh bạ
+                  Tự động: Lấy từ Danh bạ
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-2xs border bg-sky-50 text-sky-700 border-sky-200">
-                  Công thức: Tự tính toán
+                  Công thức: Tự tính
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-2xs border bg-amber-50 text-amber-800 border-amber-200">
-                  NV điền: Nhân viên nhập/chọn
+                  NV điền: Nhập/chọn
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -1054,26 +1128,26 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   size="sm"
                   onClick={() => applyColumnPreset('ALL_48')}
                 >
-                  Bật tất cả 48 cột
+                  Tất cả ({STAFF_LISTING_COLUMNS.length} cột)
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => applyColumnPreset('BRAND_WORKING_FILE')}
                 >
-                  Chỉ bật cột gửi Brand (Working file - 32 cột)
+                  Bản gửi Brand (32 cột)
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => applyColumnPreset('LARK_BASE')}
                 >
-                  Bộ cột Lark Base (46 cột)
+                  Lark Base (46 cột)
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 max-h-60 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 max-h-56 overflow-y-auto pr-1">
               {STAFF_LISTING_COLUMNS.map((col) => {
                 const checked = visibleColumnKeys.includes(col.key);
                 const badge = FILL_MODE_BADGE[col.fillMode];
@@ -1097,7 +1171,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         [{col.excelCol}]
                       </span>
                       <span className="truncate" title={col.header}>
-                        {col.header}
+                        {getDisplayHeader(col)}
                       </span>
                     </span>
                     <span
@@ -1111,15 +1185,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
             </div>
           </div>
         )}
-      </div>
 
-      {/* 3. Bảng dữ liệu Sheet Listing 48 cột (Tự động điền + Nhân viên chỉnh sửa trực tiếp) */}
-      <div className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="overflow-x-auto max-h-[68vh]">
+        {/* Tầng 3: Bảng dữ liệu Sheet Listing */}
+        <div className="overflow-x-auto max-h-[74vh]">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
               <tr>
-                <th className="sticky left-0 z-30 bg-sunken px-2.5 py-2 border-r border-line w-10 text-center">
+                <th className="sticky left-0 z-30 bg-sunken px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
                   <input
                     type="checkbox"
                     checked={
@@ -1130,32 +1202,36 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     className="rounded border-line"
                   />
                 </th>
-                <th className="sticky left-10 z-30 bg-sunken px-2 py-2 border-r border-line w-10 text-center font-mono text-2xs text-ink-3">
+                <th className="sticky left-[38px] z-30 bg-sunken px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3">
                   STT
                 </th>
                 {visibleColumns.map((col) => {
                   const badge = FILL_MODE_BADGE[col.fillMode];
                   const isStickyId = col.key === 'idKenh';
+                  const displayHeader = getDisplayHeader(col);
                   return (
                     <th
                       key={col.key}
                       style={{ minWidth: col.width }}
-                      className={`px-2.5 py-2 border-r border-line text-left align-top ${
-                        isStickyId ? 'sticky left-[76px] z-30 bg-sunken shadow-[1px_0_0_0_var(--line)]' : ''
+                      title={`Cột ${col.excelCol}: ${col.header}`}
+                      className={`px-2 py-1.5 border-r border-line text-left align-top ${
+                        isStickyId
+                          ? 'sticky left-[76px] z-30 bg-sunken shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
+                          : ''
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 mb-0.5">
                         <span className="font-mono text-[10px] text-ink-3">
-                          Cột {col.excelCol}
+                          {col.excelCol}
                         </span>
                         <span
-                          className={`px-1.5 py-0.2 rounded text-[9px] font-medium border ${badge.className}`}
+                          className={`px-1 py-0.2 rounded text-[9px] font-medium border ${badge.className}`}
                         >
                           {badge.label}
                         </span>
                       </div>
-                      <div className="font-semibold text-ink leading-snug">
-                        {col.header}
+                      <div className="font-semibold text-ink leading-tight truncate">
+                        {displayHeader}
                       </div>
                     </th>
                   );
@@ -1206,7 +1282,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         isSelected ? 'bg-accent-soft/30' : 'hover:bg-sunken/50'
                       } transition-colors`}
                     >
-                      <td className="sticky left-0 z-10 bg-surface px-2.5 py-1.5 border-r border-line text-center">
+                      <td className="sticky left-0 z-10 bg-surface px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1214,7 +1290,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           className="rounded border-line"
                         />
                       </td>
-                      <td className="sticky left-10 z-10 bg-surface px-2 py-1.5 border-r border-line text-center font-mono text-2xs text-ink-3 tabular-nums">
+                      <td className="sticky left-[38px] z-10 bg-surface px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3 tabular-nums">
                         {rIdx + 1}
                       </td>
 
@@ -1222,7 +1298,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         const isStickyId = col.key === 'idKenh';
                         const cellBaseClass = `px-2 py-1.5 border-r border-line align-middle ${
                           isStickyId
-                            ? 'sticky left-[76px] z-10 bg-surface shadow-[1px_0_0_0_var(--line)]'
+                            ? 'sticky left-[76px] z-10 bg-surface shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
                             : ''
                         }`;
 
@@ -1874,7 +1950,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         initialTab={outreachModalTab}
         targetRows={
           singleOutreachRow
-            ? [singleOutreachRow]
+            ? [rows.find((r) => r.id === singleOutreachRow.id) || singleOutreachRow]
             : selectedRowIds.length > 0
               ? displayedRows.filter((r) => selectedRowIds.includes(r.id))
               : displayedRows

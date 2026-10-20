@@ -847,7 +847,7 @@ function buildBrandMarketResearchInternalReport(
   const webEvidenceSection =
     webSearchLines.length > 0
       ? [
-          '## I. Dữ Liệu Thực Tế Thu Thập Từ Web & Sàn TMĐT',
+          '## I. Thông tin tìm thấy trên Web & Sàn TMĐT',
           ...webSearchLines.map(l => (l.startsWith('•') || l.startsWith('-') ? `- ${l.replace(/^[•-]\s*/, '')}` : `- ${l}`)),
           '',
         ]
@@ -856,15 +856,15 @@ function buildBrandMarketResearchInternalReport(
   if (researchMode === 'COMPETITOR_DEEP_DIVE' || focusCompetitorName) {
     const primaryComp = compList[0];
     return [
-      `# Báo Cáo Đối Đầu Trực Tiếp: ${dossier.brandName} vs ${
+      `# So sánh: ${dossier.brandName} và ${
         focusCompetitorName || compList.map(c => c.competitorName).join(', ')
       }`,
-      `**Ngành hàng:** ${dossier.category} · **Phân khúc giá:** ${dossier.fourP.priceRangeText} · **Kênh trọng tâm:** TikTok Shop (${dossier.fourP.channelMixRatio.tiktokShopPct}%) & Shopee Mall (${dossier.fourP.channelMixRatio.shopeeMallPct}%)`,
-      ...(customQuestion ? [`> **Trọng tâm phân tích:** ${customQuestion}`] : []),
+      `**Ngành hàng:** ${dossier.category} · **Khoảng giá:** ${dossier.fourP.priceRangeText} · **Kênh bán:** TikTok Shop (${dossier.fourP.channelMixRatio.tiktokShopPct}%) & Shopee Mall (${dossier.fourP.channelMixRatio.shopeeMallPct}%)`,
+      ...(customQuestion ? [`> **Yêu cầu:** ${customQuestion}`] : []),
       '',
       ...webEvidenceSection,
-      '## II. Ma Trận So Sánh Trực Diện (Head-to-Head Matrix)',
-      '| Tiêu chí đối sánh | ' +
+      '## II. Bảng so sánh',
+      '| Tiêu chí | ' +
         `**${dossier.brandName}** (${dossier.originCountry}) | ` +
         compList.slice(0, 3).map(c => `**${c.competitorName}** (${c.originCountry})`).join(' | ') +
         ' |',
@@ -872,76 +872,76 @@ function buildBrandMarketResearchInternalReport(
       `| **Kênh TikTok / Shopee** | \`${primaryTikTokHandle}\` | ` +
         compList.slice(0, 3).map(c => `\`${c.tiktokHandle}\``).join(' | ') +
         ' |',
-      `| **Sản phẩm chủ lực (Hero SKU)** | ${heroSku ? `${heroSku.productName} (${heroSku.packSize})` : dossier.fourP.heroSkuHighlight} | ` +
+      `| **Sản phẩm chính** | ${heroSku ? `${heroSku.productName} (${heroSku.packSize})` : dossier.fourP.heroSkuHighlight} | ` +
         compList.slice(0, 3).map(c => c.heroSkuName).join(' | ') +
         ' |',
-      `| **Giá bán thực tế (Deal / Niêm yết)** | **${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText}** ${heroSku ? `*(Niêm yết: ${formatVnd(heroSku.listPriceVnd)}, -${heroSku.discountPct}%)*` : ''} | ` +
+      `| **Giá bán (Niêm yết)** | **${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText}** ${heroSku ? `*(Niêm yết: ${formatVnd(heroSku.listPriceVnd)}, -${heroSku.discountPct}%)*` : ''} | ` +
         compList
           .slice(0, 3)
           .map(c => `**${formatVnd(c.dealPriceVnd)}** *(Niêm yết: ${formatVnd(c.listPriceVnd)})*`)
           .join(' | ') +
         ' |',
-      `| **Đơn giá / Dung tích** | ${heroSku?.unitEconomicsNote || 'Chuẩn phân khúc'} | ` +
+      `| **Đơn giá / Dung tích** | ${heroSku?.unitEconomicsNote || 'Theo phân khúc'} | ` +
         compList.slice(0, 3).map(c => c.pricePerUnitComparison || 'Tương đương').join(' | ') +
         ' |',
-      `| **Hoa hồng Affiliate KOC** | **${dossier.fourP.affiliateCommissionRange}** | ` +
+      `| **Hoa hồng KOC** | **${dossier.fourP.affiliateCommissionRange}** | ` +
         compList.slice(0, 3).map(c => `**${c.affiliateCommissionPct}%**`).join(' | ') +
         ' |',
-      `| **Vị thế & Tỷ trọng TikTok** | **${dossier.marketLandscape.estimatedBrandPositionText}** (TikTok ${dossier.fourP.channelMixRatio.tiktokShopPct}%) | ` +
+      `| **Tỷ trọng kênh** | TikTok ${dossier.fourP.channelMixRatio.tiktokShopPct}% · Shopee ${dossier.fourP.channelMixRatio.shopeeMallPct}% | ` +
         compList.slice(0, 3).map(c => `TikTok ${c.tiktokChannelSharePct}% · Shopee ${c.shopeeChannelSharePct}%`).join(' | ') +
         ' |',
-      `| **Cơ cấu Video KOC / tháng** | ${dossier.fourP.promotionStrategy} | ` +
+      `| **Số lượng video / tháng** | ${dossier.fourP.promotionStrategy} | ` +
         compList.slice(0, 3).map(c => `${c.estimatedMonthlyVideoCount} video/tháng`).join(' | ') +
         ' |',
       '',
-      '## III. Mổ Xẻ Điểm Yếu Đối Thủ & Chiến Thuật Đánh Chặn',
+      '## III. Điểm mạnh, Điểm khách phàn nàn & Hướng cạnh tranh',
       ...compList.slice(0, 4).flatMap((c, idx) => [
-        `### ${idx + 1}. Đối thủ ${c.competitorName} (\`${c.tiktokHandle}\` · Giá chủ lực: ${formatVnd(c.dealPriceVnd)})`,
-        `- **Lợi thế đang giữ của đối thủ:** ${c.keyUsps.join('; ')}.`,
-        `- **Điểm khách hàng phàn nàn nhiều nhất (Review 1–3 sao):** ${c.customerComplaints.join('; ')}.`,
-        `- **Kịch bản phản công cho ${dossier.brandName}:** ${c.upbaseCounterPlay}`,
+        `### ${idx + 1}. ${c.competitorName} (\`${c.tiktokHandle}\` · Giá: ${formatVnd(c.dealPriceVnd)})`,
+        `- **Điểm mạnh của đối thủ:** ${c.keyUsps.join('; ')}.`,
+        `- **Điểm khách phàn nàn:** ${c.customerComplaints.join('; ')}.`,
+        `- **Hướng làm nội dung cho ${dossier.brandName}:** ${c.upbaseCounterPlay}`,
         '',
       ]),
-      '## IV. Kế Hoạch Hành Động Cho Đội Booking & Content B2C',
-      `- **Chiến thuật Sản phẩm & Giá (Product & Price):** Đẩy mạnh **${heroSku?.productName || dossier.brandName}** ở mức giá chốt đơn **${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText}**, kết hợp cơ chế *${dossier.fourP.winningBundleMechanics[0] || 'Mua kèm quà tặng mini'}* để giữ AOV quanh mốc **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}**.`,
-      `- **Chiến thuật Kịch bản Video (Visual & Hook):** Quay cận cảnh chất sản phẩm (texture) trên nền da thật và bảng đối chiếu chi phí mỗi lần sử dụng của **${heroSku?.productName || dossier.brandName}** để đánh trực diện vào nhược điểm khách hay phàn nàn ở **${primaryComp?.competitorName || 'đối thủ'}** (*${primaryComp?.customerComplaints?.[0] || 'giá cao, thấm chậm'}*).`,
-      `- **Chính sách Hoa hồng & KOC (Affiliate):** Thiết lập hoa hồng mở từ **${(heroSku?.affiliateCommissionPct || 12) + 2}%** cho SKU phễu **${trafficSku?.productName || heroSku?.productName || ''}** kèm suất gửi mẫu miễn phí (FOC) để thu hút tệp KOC đang gắn giỏ hàng cho **${primaryComp?.competitorName || 'đối thủ'}**.`,
+      '## IV. Việc cần làm cho đội Booking & Content',
+      `- **Sản phẩm & Giá bán:** Đẩy **${heroSku?.productName || dossier.brandName}** ở mức giá **${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText}**, kết hợp *${dossier.fourP.winningBundleMechanics[0] || 'quà tặng kèm'}* (giá trị đơn TB khoảng **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}**).`,
+      `- **Nội dung video:** Quay rõ chất sản phẩm trên da thật và so sánh chi phí sử dụng của **${heroSku?.productName || dossier.brandName}** để giải quyết điểm khách hay phàn nàn ở **${primaryComp?.competitorName || 'đối thủ'}** (*${primaryComp?.customerComplaints?.[0] || 'giá cao, thấm chậm'}*).`,
+      `- **Hoa hồng & Gửi mẫu KOC:** Đặt hoa hồng từ **${(heroSku?.affiliateCommissionPct || 12) + 2}%** cho sản phẩm kéo khách **${trafficSku?.productName || heroSku?.productName || ''}** kèm gửi mẫu miễn phí (FOC) cho nhóm KOC đang làm cùng ngành hàng với **${primaryComp?.competitorName || 'đối thủ'}**.`,
     ].join('\n');
   }
 
   if (researchMode === 'CONTENT_HOOKS_5') {
     return [
-      `# Chiến Lược Nội Dung & 5 Kịch Bản Video Chuyển Đổi — ${dossier.brandName}`,
-      `**Ngành hàng:** ${dossier.category} · **Tệp khách hàng:** ${dossier.positioning.targetAudience}`,
-      ...(customQuestion ? [`> **Yêu cầu kịch bản cụ thể:** ${customQuestion}`] : []),
+      `# 5 Kịch bản video mẫu — ${dossier.brandName}`,
+      `**Ngành hàng:** ${dossier.category} · **Khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
+      ...(customQuestion ? [`> **Yêu cầu:** ${customQuestion}`] : []),
       '',
       ...webEvidenceSection,
-      '## I. Định Hướng Thông Điệp & Quy Chuẩn Kiểm Duyệt Sàn',
-      `- **Định vị cốt lõi (Core Proposition):** ${dossier.positioning.slogan} — ${dossier.positioning.story}`,
-      `- **Giọng điệu thể hiện (Tone of Voice):** ${dossier.positioning.toneOfVoice}`,
-      `- **Bảo chứng thuyết phục (RTBs bắt buộc cài vào video):** ${(dossier.positioning.rtbs || []).join(' | ')}`,
-      `- **Từ ngữ cấm tuyệt đối trên TikTok Shop:** ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).map(p => `\`${p}\``).join(', ')}`,
-      `- **Cách diễn đạt an toàn thay thế:** ${dossier.swotAndCompliance.platformComplianceRules.map(r => r.safeAlternativePhrasing).join(' | ')}`,
+      '## I. Thông tin chính & Từ cấm trên sàn',
+      `- **Định vị:** ${dossier.positioning.slogan} — ${dossier.positioning.story}`,
+      `- **Giọng điệu:** ${dossier.positioning.toneOfVoice}`,
+      `- **Điểm thuyết phục cần nêu trong video:** ${(dossier.positioning.rtbs || []).join(' | ')}`,
+      `- **Từ cấm dùng trên TikTok Shop / Shopee:** ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).map(p => `\`${p}\``).join(', ')}`,
+      `- **Cách nói thay thế:** ${dossier.swotAndCompliance.platformComplianceRules.map(r => r.safeAlternativePhrasing).join(' | ')}`,
       '',
-      '## II. Ma Trận 5 Góc Kịch Bản Video Chuyển Đổi Cao',
-      '| Mã góc | Trụ cột nội dung | Tệp KOC phù hợp | Câu mở đầu 3 giây đầu (Hook) | Cảnh quay bắt buộc (Visual Proof) | Lời kêu gọi mua hàng (CTA) |',
+      '## II. Bảng kịch bản mẫu',
+      '| STT | Chủ đề | Nhóm KOC | Câu mở đầu | Cảnh quay | Câu điều hướng mua |',
       '| :--- | :--- | :--- | :--- | :--- | :--- |',
       ...dossier.contentAngleBlueprints.map(
         (angle, idx) =>
-          `| **Góc #${idx + 1}** | **${angle.pillarName}** | ${angle.bestKocTier} | "${angle.hook3s}" | ${angle.visualProof} | "${angle.recommendedCta}" |`
+          `| **#${idx + 1}** | **${angle.pillarName}** | ${angle.bestKocTier} | "${angle.hook3s}" | ${angle.visualProof} | "${angle.recommendedCta}" |`
       ),
       ...dossier.reviewClusters.slice(0, 2).map(
         (cluster, idx) =>
-          `| **Góc #${dossier.contentAngleBlueprints.length + idx + 1}** | **Trả lời bình luận (${cluster.sharePct}% lượt hỏi): ${cluster.topicTitle}** | KL1–KL2 & Kênh Brand | "${cluster.recommendedScriptHook}" | Quay cận cảnh sản phẩm + ghim bình luận thật của khách trên màn hình | "Bấm giỏ hàng góc trái nhận ưu đãi chính hãng ngay hôm nay!" |`
+          `| **#${dossier.contentAngleBlueprints.length + idx + 1}** | **Trả lời bình luận (${cluster.sharePct}%): ${cluster.topicTitle}** | KL1–KL2 & Kênh Brand | "${cluster.recommendedScriptHook}" | Quay sản phẩm + gắn bình luận của khách lên màn hình | "Bấm giỏ hàng góc trái để xem giá ưu đãi." |`
       ),
       '',
-      '## III. Chi Tiết Triển Khai Từng Góc Kịch Bản',
+      '## III. Chi tiết từng kịch bản',
       ...dossier.contentAngleBlueprints.flatMap((angle, idx) => [
-        `### Góc #${idx + 1}: ${angle.pillarName} *(Dành cho: ${angle.bestKocTier})*`,
-        `- **Hook 3 giây đầu:** "${angle.hook3s}"`,
-        `- **Cảnh quay chứng minh (Visual Proof):** ${angle.visualProof}`,
-        `- **Thông điệp & RTB trọng tâm:** ${angle.keyMessageRtb}`,
-        `- **Điều hướng chốt đơn (CTA):** "${angle.recommendedCta}"`,
+        `### Kịch bản #${idx + 1}: ${angle.pillarName} *(Nhóm KOC: ${angle.bestKocTier})*`,
+        `- **Mở đầu:** "${angle.hook3s}"`,
+        `- **Cảnh quay:** ${angle.visualProof}`,
+        `- **Nội dung chính:** ${angle.keyMessageRtb}`,
+        `- **Điều hướng mua:** "${angle.recommendedCta}"`,
         '',
       ]),
     ].join('\n');
@@ -950,95 +950,94 @@ function buildBrandMarketResearchInternalReport(
   if (researchMode === 'KOC_BUDGET_ALLOCATION') {
     const budget = 60_000_000;
     return [
-      `# Kế Hoạch Phân Bổ KOC & Ngân Sách Chiến Dịch — ${dossier.brandName}`,
-      `**Quy mô ngân sách tham chiếu (Net):** **${formatVnd(budget)}** · **Mục tiêu AOV:** **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}** · **Tỷ lệ mua lặp lại:** ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày)`,
-      ...(customQuestion ? [`> **Yêu cầu phân bổ cụ thể:** ${customQuestion}`] : []),
+      `# Phân bổ KOC & Ngân sách — ${dossier.brandName}`,
+      `**Ngân sách tham chiếu (Net):** **${formatVnd(budget)}** · **Giá trị đơn TB:** **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}** · **Tỷ lệ mua lại:** ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày)`,
+      ...(customQuestion ? [`> **Yêu cầu:** ${customQuestion}`] : []),
       '',
       ...webEvidenceSection,
-      '## I. Bảng Phân Bổ Ngân Sách Theo Phân Khúc KOC (KL1–KL5 & FOC)',
-      '| Phân khúc KOC | Lượng Follower | Tỷ trọng Ngân sách | Ngân sách dự kiến | Tỷ trọng Video | Đơn giá thị trường | Vai trò trong phễu | Chỉ tiêu ROAS / CTR / CVR |',
+      '## I. Phân bổ theo nhóm KOC (KL1–KL4 & FOC)',
+      '| Nhóm KOC | Follower | Tỷ trọng ngân sách | Ngân sách dự kiến | Tỷ trọng video | Khung giá thị trường | Mục đích | Chỉ tiêu tham chiếu |',
       '| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |',
       ...dossier.kocTierStrategy.map(t => {
         const tierBudget = Math.round((budget * t.budgetWeightPct) / 100);
         return `| **${t.tierCode}** | ${t.followerRange} | **${t.budgetWeightPct}%** | **${formatVnd(tierBudget)}** | ${t.videoVolumeWeightPct}% | ${t.avgBookingCostRangeVnd} | ${t.funnelRole} | ROAS **${t.targetRoas}** · CTR ${t.targetCtrPct} · CVR ${t.targetCvrPct} |`;
       }),
       '',
-      '## II. Phân Bổ Video Theo Phễu Sản Phẩm (SKU Role Matrix)',
-      '| Vai trò trong phễu | Sản phẩm mục tiêu | Giá bán Deal (Niêm yết) | Hoa hồng KOC | Tỷ trọng Video | Tỷ trọng Doanh số | Nhóm khách hàng mục tiêu |',
+      '## II. Phân bổ video theo sản phẩm',
+      '| Phân nhóm | Sản phẩm | Giá bán (Niêm yết) | Hoa hồng | Tỷ trọng video | Tỷ trọng doanh số | Nhu cầu khách hàng |',
       '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |',
       ...dossier.skuPortfolio.map(
         s =>
           `| **${s.roleLabel}** | **${s.productName}** (${s.packSize}) | **${formatVnd(s.dealPriceVnd)}** *(${formatVnd(s.listPriceVnd)})* | **${s.affiliateCommissionPct}%** | ${s.role === 'TRAFFIC_DRIVER' ? '40%' : s.role === 'HERO_CORE' ? '45%' : '15%'} | **~${s.estimatedGmvSharePct}%** | ${s.targetNeed} |`
       ),
       '',
-      '## III. Quy Tắc Giải Ngân & Kiểm Soát Hiệu Quả',
-      `- **Nhịp triển khai Listing 10–20–30:** Chia ngân sách thành 3 đợt lên sóng trong tháng; giữ lại **15%–20% ngân sách dự phòng** cho tuần W3–W4 để đẩy Spark Ads vào các video có CTR > 3.5% và ROAS tự nhiên >= 2.5x.`,
-      `- **Kết hợp Paid KOC & FOC 0đ:** Duy trì tối thiểu **35%–40% tổng số lượng video từ tệp FOC (gửi mẫu miễn phí + hoa hồng Affiliate ${dossier.fourP.affiliateCommissionRange})** ở dòng sản phẩm đầu phễu **${trafficSku?.productName || heroSku?.productName || ''}** để kéo giảm chi phí bình quân mỗi video.`,
+      '## III. Lưu ý triển khai',
+      `- **Chia 3 đợt đề xuất KOC (10–20–30):** Giữ lại **15%–20% ngân sách** cho tuần W3–W4 để chạy quảng cáo cho các video có CTR > 3.5% và ROAS >= 2.5x.`,
+      `- **Kết hợp KOC trả phí & Gửi mẫu FOC 0đ:** Duy trì **35%–40% số lượng video từ gửi mẫu miễn phí (FOC + hoa hồng ${dossier.fourP.affiliateCommissionRange})** cho sản phẩm kéo khách **${trafficSku?.productName || heroSku?.productName || ''}**.`,
     ].join('\n');
   }
 
   if (researchMode === 'CUSTOMER_PAIN_FAQ') {
     return [
-      `# Phân Tích Tiếng Nói Khách Hàng (VoC), Nỗi Đau & Bộ Q&A Chốt Đơn — ${dossier.brandName}`,
-      `**Ngành hàng:** ${dossier.category} · **Tệp khách hàng trọng tâm:** ${dossier.positioning.targetAudience}`,
-      ...(customQuestion ? [`> **Trọng tâm phân tích:** ${customQuestion}`] : []),
+      `# Bình luận khách hàng & Câu trả lời mẫu — ${dossier.brandName}`,
+      `**Ngành hàng:** ${dossier.category} · **Khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
+      ...(customQuestion ? [`> **Yêu cầu:** ${customQuestion}`] : []),
       '',
       ...webEvidenceSection,
-      '## I. Bản Đồ Tâm Lý Mua Hàng (Pain Points - Rào Cản - Bảo Chứng)',
-      '| Nhóm yếu tố tâm lý | Chi tiết ghi nhận từ thị trường & đánh giá khách hàng | Hướng xử lý trong Kịch bản Video & Livestream |',
+      '## I. Vấn đề của khách & Lý do phân vân',
+      '| Nhóm | Nội dung ghi nhận | Cách giải quyết trong video / Livestream |',
       '| :--- | :--- | :--- |',
       ...(dossier.positioning.painPoints || []).map(
         (p, idx) =>
-          `| **Nỗi đau khách hàng #${idx + 1}** | ${p} | Mở đầu video (3s đầu) bằng tình huống thực tế và cảnh quay cận cảnh vùng da/vấn đề trước khi dùng. |`
+          `| **Vấn đề #${idx + 1}** | ${p} | Nêu tình trạng thực tế ở 3 giây đầu và quay rõ vùng da/vấn đề trước khi dùng. |`
       ),
       ...(dossier.positioning.barriersToTrial || []).map(
         (b, idx) =>
-          `| **Rào cản mua hàng #${idx + 1}** | ${b} | Đưa bảo chứng **${(dossier.positioning.rtbs || [])[idx] || (dossier.positioning.rtbs || [])[0] || 'kiểm nghiệm thực tế'}** vào giây thứ 5–12 của video. |`
+          `| **Lý do phân vân #${idx + 1}** | ${b} | Đưa thông tin **${(dossier.positioning.rtbs || [])[idx] || (dossier.positioning.rtbs || [])[0] || 'kiểm nghiệm thực tế'}** vào nội dung video. |`
       ),
       '',
-      '## II. Phân Cụm Bình Luận Thực Tế & Kịch Bản Phản Hồi (VoC Clusters)',
-      '| Nhóm chủ đề | Phân loại | Tỷ trọng bình luận | Trích dẫn bình luận thực tế của khách | Hook Video trả lời bình luận | Câu trả lời chuẩn cho KOC / Host Live |',
+      '## II. Nhóm bình luận & Câu trả lời mẫu',
+      '| Chủ đề | Phân loại | Tỷ trọng | Bình luận của khách | Mở đầu video trả lời | Câu trả lời mẫu |',
       '| :--- | :--- | :--- | :--- | :--- | :--- |',
       ...dossier.reviewClusters.map(
         c =>
-          `| **${c.topicTitle}** | ${c.categoryLabel} | **${c.sharePct}%** *(${c.mentionCount} lượt)* | ${c.sampleQuotes.map(q => `*"${q}"*`).join('<br/>')} | "${c.recommendedScriptHook}" | ${c.suggestedFaqAnswer} |`
+          `| **${c.topicTitle}** | ${c.categoryLabel} | **${c.sharePct}%** *(${c.mentionCount} câu)* | ${c.sampleQuotes.map(q => `*"${q}"*`).join('<br/>')} | "${c.recommendedScriptHook}" | ${c.suggestedFaqAnswer} |`
       ),
       '',
-      '## III. Quy Chuẩn Pháp Lý & Từ Ngữ Cần Tránh Khi Tư Vấn',
+      '## III. Từ cấm khi tư vấn',
       ...dossier.swotAndCompliance.platformComplianceRules.map(
         r =>
-          `- **${r.riskCategory}:** Tránh dùng các từ ${r.forbiddenPhrases.map(p => `\`${p}\``).join(', ')}. **Cách nói chuẩn:** *${r.safeAlternativePhrasing}* (${r.platformPenaltyRisk}).`
+          `- **${r.riskCategory}:** Tránh dùng ${r.forbiddenPhrases.map(p => `\`${p}\``).join(', ')}. **Cách nói thay thế:** *${r.safeAlternativePhrasing}* (${r.platformPenaltyRisk}).`
       ),
     ].join('\n');
   }
 
   return [
-    `# Báo Cáo Nghiên Cứu Thị Trường & Đối Thủ Cạnh Tranh — ${dossier.brandName}`,
-    `**Ngành hàng:** ${dossier.category} · **Xuất xứ:** ${dossier.originCountry} · **Phân khúc giá:** ${dossier.fourP.priceRangeText} · **Vị thế ngách:** ${dossier.marketLandscape.estimatedBrandPositionText}`,
-    ...(customQuestion ? [`> **Yêu cầu phân tích trọng tâm:** ${customQuestion}`] : []),
+    `# Tổng hợp nghiên cứu: ${dossier.brandName}`,
+    `**Ngành hàng:** ${dossier.category} · **Xuất xứ:** ${dossier.originCountry} · **Khoảng giá:** ${dossier.fourP.priceRangeText}`,
+    ...(customQuestion ? [`> **Yêu cầu:** ${customQuestion}`] : []),
     '',
     ...webEvidenceSection,
-    '## II. Tổng Quan Định Vị & Dung Lượng Thị Trường',
-    `- **Tóm tắt chiến lược:** ${dossier.executiveSummary}`,
-    `- **Chân dung khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
-    `- **Giá trị cốt lõi (USP):** ${dossier.positioning.slogan} — ${dossier.positioning.story}`,
-    `- **Bảo chứng niềm tin (RTBs):** ${(dossier.positioning.rtbs || []).join(' | ')}`,
-    `- **Chỉ số thương mại ngành hàng:** Quy mô ngách **${dossier.marketLandscape.categoryMarketSizeText}** (Tăng trưởng YoY +${dossier.marketLandscape.yoyGrowthPct}%) · Giá trị đơn trung bình (AOV): **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}** · Tỷ lệ mua lặp lại: **${dossier.marketLandscape.repeatPurchaseRatePct}%** (Chu kỳ dùng hết: ${dossier.marketLandscape.replenishmentCycleDays} ngày).`,
-    `- **Cơ cấu kênh bán:** TikTok Shop **${dossier.fourP.channelMixRatio.tiktokShopPct}%** · Shopee Mall **${dossier.fourP.channelMixRatio.shopeeMallPct}%** · Đa kênh/Offline **${dossier.fourP.channelMixRatio.otherChannelsPct}%**.`,
+    '## II. Thông tin thương hiệu & Khách hàng',
+    `- **Tóm tắt:** ${dossier.executiveSummary}`,
+    `- **Khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
+    `- **Định vị:** ${dossier.positioning.slogan} — ${dossier.positioning.story}`,
+    `- **Điểm thuyết phục:** ${(dossier.positioning.rtbs || []).join(' | ')}`,
+    `- **Chỉ số ngành hàng:** Giá trị đơn TB: **${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}** · Tỷ lệ mua lại: **${dossier.marketLandscape.repeatPurchaseRatePct}%** (${dossier.marketLandscape.replenishmentCycleDays} ngày).`,
+    `- **Tỷ trọng kênh bán:** TikTok Shop **${dossier.fourP.channelMixRatio.tiktokShopPct}%** · Shopee Mall **${dossier.fourP.channelMixRatio.shopeeMallPct}%** · Kênh khác **${dossier.fourP.channelMixRatio.otherChannelsPct}%**.`,
     '',
-    '## III. Cấu Trúc Phễu Sản Phẩm & Định Giá Thực Tế (4P Product & Price)',
-    '| Vai trò trong phễu | Tên sản phẩm (SKU) | Quy cách | Giá bán Deal (Niêm yết) | Đơn giá chuẩn | Hoa hồng KOC | Tỷ trọng GMV | Điểm mạnh / Thành phần cốt lõi |',
+    '## III. Danh mục sản phẩm & Giá bán',
+    '| Phân nhóm | Sản phẩm | Quy cách | Giá bán (Niêm yết) | Đơn giá | Hoa hồng | Tỷ trọng doanh số | Thành phần / Đặc điểm |',
     '| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |',
     ...dossier.skuPortfolio.map(
       s =>
         `| **${s.roleLabel}** | **${s.productName}** | ${s.packSize} | **${formatVnd(s.dealPriceVnd)}** *(-${s.discountPct}% từ ${formatVnd(s.listPriceVnd)})* | ${s.unitEconomicsNote} | **${s.affiliateCommissionPct}%** | **~${s.estimatedGmvSharePct}%** | ${s.coreIngredientsOrSpecs} |`
     ),
     '',
-    `- **Chiến thuật Combo tăng AOV:** ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
-    `- **Cơ chế khuyến mãi chủ lực:** ${dossier.fourP.promotionStrategy}`,
+    `- **Combo bán kèm:** ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
     '',
-    '## IV. Ma Trận Đối Thủ Cạnh Tranh Trực Tiếp (Competitor Benchmark)',
-    '| Đối thủ cạnh tranh | Kênh TikTok | Sản phẩm đối đầu | Giá Deal (Niêm yết) | Hoa hồng | Tỷ trọng TikTok/Shopee | Điểm yếu khách phàn nàn (VoC) | Chiến thuật đánh chặn cho ' +
+    '## IV. Đối thủ cùng phân khúc',
+    '| Đối thủ | Kênh TikTok | Sản phẩm chính | Giá bán (Niêm yết) | Hoa hồng | Tỷ trọng kênh | Điểm khách phàn nàn | Hướng cạnh tranh cho ' +
       dossier.brandName +
       ' |',
     '| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |',
@@ -1047,21 +1046,21 @@ function buildBrandMarketResearchInternalReport(
         `| **${c.competitorName}** (${c.originCountry}) | \`${c.tiktokHandle}\` | ${c.heroSkuName} | **${formatVnd(c.dealPriceVnd)}** *(${formatVnd(c.listPriceVnd)})* | **${c.affiliateCommissionPct}%** | TikTok ${c.tiktokChannelSharePct}% · Shopee ${c.shopeeChannelSharePct}% | ${c.customerComplaints.slice(0, 2).join('; ')} | ${c.upbaseCounterPlay} |`
     ),
     '',
-    '## V. Tiếng Nói Khách Hàng (VoC) & 5 Trụ Cột Nội Dung Video KOC',
+    '## V. Kịch bản video mẫu',
     ...dossier.contentAngleBlueprints.map(
       (angle, idx) =>
-        `${idx + 1}. **${angle.pillarName}** *(Phân khúc KOC: ${angle.bestKocTier})* — **Hook 3s:** *"${angle.hook3s}"* · **Cảnh quay:** ${angle.visualProof} · **Thông điệp:** ${angle.keyMessageRtb}.`
+        `${idx + 1}. **${angle.pillarName}** *(Nhóm KOC: ${angle.bestKocTier})* — **Mở đầu:** *"${angle.hook3s}"* · **Cảnh quay:** ${angle.visualProof} · **Nội dung:** ${angle.keyMessageRtb}.`
     ),
     '',
-    '## VI. Kế Hoạch Phân Bổ KOC & Ngân Sách Khuyến Nghị',
-    '| Phân khúc KOC | Tỷ trọng Ngân sách | Tỷ trọng Video | Đơn giá thị trường | Vai trò chiến dịch | Chỉ tiêu ROAS / CTR / CVR |',
+    '## VI. Phân bổ KOC',
+    '| Nhóm KOC | Tỷ trọng ngân sách | Tỷ trọng video | Khung giá thị trường | Mục đích | Chỉ tiêu tham chiếu |',
     '| :--- | :--- | :--- | :--- | :--- | :--- |',
     ...dossier.kocTierStrategy.map(
       t =>
         `| **${t.tierCode}** (${t.followerRange}) | **${t.budgetWeightPct}%** | ${t.videoVolumeWeightPct}% | ${t.avgBookingCostRangeVnd} | ${t.funnelRole} | ROAS **${t.targetRoas}** · CTR ${t.targetCtrPct} · CVR ${t.targetCvrPct} |`
     ),
     '',
-    `- **Lưu ý kiểm duyệt từ cấm trên sàn:** Tuyệt đối tránh các cụm từ ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).slice(0, 6).map(p => `\`${p}\``).join(', ')}. Thay bằng: *${dossier.swotAndCompliance.platformComplianceRules[0]?.safeAlternativePhrasing || 'hỗ trợ cải thiện theo cơ địa'}*.`,
+    `- **Từ cấm trên sàn:** Tránh dùng ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).slice(0, 6).map(p => `\`${p}\``).join(', ')}. Thay bằng: *${dossier.swotAndCompliance.platformComplianceRules[0]?.safeAlternativePhrasing || 'hỗ trợ cải thiện theo cơ địa'}*.`,
   ].join('\n');
 }
 

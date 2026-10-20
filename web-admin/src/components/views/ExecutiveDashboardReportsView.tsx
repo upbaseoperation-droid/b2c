@@ -2857,16 +2857,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 >
                   Hiệu suất nhân sự
                 </Button>
-                {onNavigateToTab && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={ChevronRight}
-                    onClick={() => onNavigateToTab('performance-p3')}
-                  >
-                    Bảng điểm 4P
-                  </Button>
-                )}
               </div>
             }
           >

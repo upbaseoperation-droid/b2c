@@ -1068,14 +1068,14 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
         const sampleCommentsSummary =
           scrapedComments.length > 0
-            ? `Bình luận thực tế dưới video (${scrapedComments.length} bình luận): "${scrapedComments.slice(0, 6).join('"; "')}".`
+            ? `Bình luận dưới video (${scrapedComments.length} bình luận): "${scrapedComments.slice(0, 6).join('"; "')}".`
             : '';
 
         const dissectQuestion = [
-          `Bóc tách kịch bản video của KOC @${item.handle} (${item.channelProfile.nickname}, ${formatFollowers(item.channelProfile.followers)} flw, ER ${item.engagementMetrics.engagementRate}%, ${formatNumber(item.competitorCollaboration.latestCollabViews)} lượt xem) đang quảng bá sản phẩm "${productPromoted}" cho đối thủ ${compName}.`,
+          `Xem kịch bản video của KOC @${item.handle} (${item.channelProfile.nickname}, ${formatFollowers(item.channelProfile.followers)} flw, ER ${item.engagementMetrics.engagementRate}%, ${formatNumber(item.competitorCollaboration.latestCollabViews)} lượt xem) giới thiệu sản phẩm "${productPromoted}" của ${compName}.`,
           sampleCommentsSummary,
-          extraSnippetsText ? `Thông tin thị trường của sản phẩm đối thủ: ${extraSnippetsText}.` : '',
-          `Yêu cầu: (1) Mổ xẻ cấu trúc câu mở đầu 3s, cảnh quay chứng minh và luận điểm bán hàng của video đối thủ; (2) Chỉ ra điểm yếu/câu hỏi khách đang phàn nàn dưới bình luận; (3) Viết kịch bản phản công 1-1 cho ${dossier.brandName} để đội Content B2C giao cho KOC cùng phân khúc (${item.affiliateMetrics.suggestedClassification.tierLabel}).`,
+          extraSnippetsText ? `Thông tin sản phẩm đối thủ: ${extraSnippetsText}.` : '',
+          `Yêu cầu: (1) Nêu câu mở đầu, cảnh quay và nội dung chính của video đối thủ; (2) Tóm tắt điểm khách hỏi hoặc phàn nàn dưới bình luận; (3) Viết kịch bản tương ứng cho ${dossier.brandName} dành cho nhóm KOC ${item.affiliateMetrics.suggestedClassification.tierLabel}.`,
         ]
           .filter(Boolean)
           .join(' ');
@@ -1091,12 +1091,12 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         });
 
         onNotify?.(
-          `Đã bóc tách kịch bản video của KOC @${item.handle} (${compName})`,
+          `Đã phân tích video của KOC @${item.handle} (${compName})`,
           'success'
         );
       } catch (err: unknown) {
         const msg =
-          err instanceof Error ? err.message : 'Không thể bóc tách kịch bản video.';
+          err instanceof Error ? err.message : 'Không thể phân tích video.';
         onNotify?.(msg, 'error');
       } finally {
         setDissectingKocHandle(null);
@@ -1105,11 +1105,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     [dossier, handleRunModelResearch, onNotify, scannedCompProfile?.brandName]
   );
 
-  // Chạy Đào bình luận khách hàng & tự động tổng hợp Q&A + Hook kịch bản
+  // Lọc bình luận khách hàng & tự động tổng hợp câu trả lời mẫu
   const handleRunReviewMining = async () => {
     if (!reviewVideoUrl.trim() && !rawReviewText.trim()) {
       onNotify?.(
-        'Vui lòng nhập link video TikTok hoặc dán danh sách bình luận khách hàng để bóc tách.',
+        'Vui lòng nhập link video TikTok hoặc dán danh sách bình luận khách hàng.',
         'warning'
       );
       return;
@@ -1128,7 +1128,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.message || 'Không phân tích được dữ liệu bình luận.');
+        throw new Error(json.message || 'Không lọc được dữ liệu bình luận.');
       }
       const nextClusters: ReviewMiningCluster[] = Array.isArray(json.clusters)
         ? json.clusters
@@ -1146,19 +1146,18 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       setDossier(updatedDossier);
 
       onNotify?.(
-        `Đã phân nhóm ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận từ TikTok) và cập nhật kịch bản xử lý từ chối`,
+        `Đã lọc ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận từ TikTok)`,
         'success'
       );
 
-      // Tự động chạy tổng hợp Q&A & Hook 3s theo đúng bộ bình luận vừa lọc
       void handleRunModelResearch({
         targetDossier: updatedDossier,
         playbook: 'CUSTOMER_PAIN_FAQ',
-        questionOverride: `Từ ${json.totalAnalyzedLines || 0} bình luận thực tế của khách hàng vừa lọc cho ${dossier.brandName}, hãy tổng hợp bộ câu trả lời Q&A chuẩn cho Livestream/KOC và 5 câu mở đầu video (Hook 3s) giải quyết trực diện các rào cản mua hàng lớn nhất.`,
+        questionOverride: `Từ ${json.totalAnalyzedLines || 0} bình luận của khách hàng vừa lọc cho ${dossier.brandName}, hãy tổng hợp câu trả lời mẫu cho Livestream/KOC và 5 câu mở đầu video trả lời các câu hỏi phổ biến nhất.`,
         skipPreSearch: true,
       });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Lỗi khi phân tích bình luận.';
+      const msg = err instanceof Error ? err.message : 'Lỗi khi lọc bình luận.';
       onNotify?.(msg, 'error');
     } finally {
       setMiningReviews(false);
@@ -1187,7 +1186,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         throw new Error(json.message || 'Không quét được trang đích.');
       }
       setWebInspection(json.inspection);
-      onNotify?.(`Đã bóc tách dữ liệu trang đích ${json.inspection.domain}`, 'success');
+      onNotify?.(`Đã lấy thông tin trang ${json.inspection.domain}`, 'success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi khi quét trang đích.';
       onNotify?.(msg, 'error');
@@ -1202,16 +1201,16 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ma-tran-doi-thu-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `doi-thu-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    onNotify?.('Đã xuất file CSV ma trận đối thủ cạnh tranh', 'success');
+    onNotify?.('Đã xuất file CSV danh sách đối thủ', 'success');
   };
 
   const handleDownloadMarkdownDossier = () => {
     const baseMd = buildBrandResearchMarkdownReport(dossier);
     const fullMd = modelResearchResult?.outputText
-      ? `${baseMd}\n\n---\n\n## BÁO CÁO PHÂN TÍCH CHUYÊN SÂU (${modelResearchResult.providerUsedLabel} · ${modelResearchResult.modelUsed})\n\n${modelResearchResult.outputText}`
+      ? `${baseMd}\n\n---\n\n## TỔNG HỢP NGHIÊN CỨU (${modelResearchResult.providerUsedLabel} · ${modelResearchResult.modelUsed})\n\n${modelResearchResult.outputText}`
       : baseMd;
     const blob = new Blob([fullMd], { type: 'text/markdown;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1867,7 +1866,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 icon={FileText}
                 onClick={() => void handleDissectCompetitorKocVideo(item)}
               >
-                {isDissecting ? 'Đang bóc tách...' : 'Bóc tách kịch bản'}
+                {isDissecting ? 'Đang xem...' : 'Xem kịch bản'}
               </Button>
               <Button
                 size="sm"
@@ -3164,7 +3163,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     {webInspection.extractedUsps.length > 0 && (
                       <div className="pt-2 border-t border-line">
                         <div className="text-2xs font-semibold text-ink-3 mb-1.5">
-                          Tuyên bố giá trị & USP trích xuất từ trang
+                          Điểm nổi bật trên trang
                         </div>
                         <ul className="space-y-1 text-xs text-ink-2">
                           {webInspection.extractedUsps.slice(0, 4).map((u, i) => (

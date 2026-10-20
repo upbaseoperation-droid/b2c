@@ -1031,8 +1031,8 @@ export const MARKETING_KNOWLEDGE_ARTICLES: KnowledgeArticle[] = [
     updatedAt: '14/10/2026',
     applicableRoles: ['Trưởng phòng B2C', 'Trưởng nhóm B2C', 'Chuyên viên Booking', 'Chuyên viên Content', 'Chuyên viên Brand'],
     tags: ['cơ cấu tổ chức', 'nhân sự', 'đỗ văn giang', 'đặng thị yến nhi', 'nguyễn thị ngọc tâm', 'trần thị hảo', 'leader', '4p', 'p3', 'hệ số độ khó'],
-    relatedTab: 'performance-p3',
-    relatedTabLabel: 'Mở Đánh giá 4P',
+    relatedTab: 'manager',
+    relatedTabLabel: 'Mở Điều phối nhân sự',
     keyFacts: [
       { label: 'Tổng Giám Đốc (CEO)', value: 'Đỗ Văn Giang' },
       { label: 'Trưởng phòng B2C', value: 'Đặng Thị Yến Nhi (69 gian hàng)' },

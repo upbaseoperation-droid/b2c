@@ -3826,13 +3826,13 @@ export function generateBrandMarketResearchDossier(params: {
                   : `Khách hàng đòi hỏi bằng chứng kiểm nghiệm thực tế và so sánh độ thẩm thấu / hiệu quả dài hạn với "${heroSkuName}"`,
               ],
       kocStrategySummary: sig
-        ? `Đang triển khai ${sig.detectedKocCount} KOC được phát hiện trên TikTok với ER trung bình ${sig.avgEngagementRatePct}%.`
-        : `Sử dụng nút "Quét KOC" để trích xuất danh sách KOC thực tế đang gắn thẻ ${handle}.`,
-      dominantContentAngles: ['Review trải nghiệm thực tế', 'So sánh hiệu quả & giá'],
+        ? `Đang có ${sig.detectedKocCount} KOC đăng bài trên TikTok, tương tác trung bình ${sig.avgEngagementRatePct}%.`
+        : `Bấm "Quét KOC" để xem danh sách KOC đang đăng bài cho ${handle}.`,
+      dominantContentAngles: ['Đánh giá thực tế', 'So sánh giá & chất lượng'],
       upbaseCounterPlay:
         resolvedDealPrice > dealPrice
-          ? `Lên video đặt bàn cân chi phí: "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) tiết kiệm ${(resolvedDealPrice - dealPrice).toLocaleString('vi-VN')}đ/sản phẩm so với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}, đồng thời tăng hoa hồng KOC thêm +2% để thu hút tệp KOC của đối thủ.`
-          : `Đánh vào chất lượng thành phần, chứng nhận an toàn và combo quà tặng của "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) để thuyết phục tệp khách đang phân vân với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}.`,
+          ? `So sánh giá bán: "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) rẻ hơn ${(resolvedDealPrice - dealPrice).toLocaleString('vi-VN')}đ so với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}, kết hợp tăng hoa hồng KOC thêm +2%.`
+          : `Nhấn mạnh thành phần, kiểm nghiệm an toàn và quà tặng kèm của "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) khi khách so sánh với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}.`,
       evidenceIds: [cEvId],
     };
   });
@@ -3895,50 +3895,50 @@ export function generateBrandMarketResearchDossier(params: {
           {
             id: `voc-${cleanKey}-pain`,
             category: 'PAIN_POINT',
-            categoryLabel: 'Nỗi đau Khách hàng Mục tiêu',
-            topicTitle: painPointsList[0] || `Nhu cầu xử lý vấn đề thực tế ngành ${category}`,
+            categoryLabel: 'Vấn đề của khách',
+            topicTitle: painPointsList[0] || `Nhu cầu sử dụng sản phẩm ngành ${category}`,
             mentionCount: painPointsList.length,
             sharePct: 40,
             sampleQuotes: painPointsList,
-            recommendedScriptHook: `Ai đang gặp tình trạng "${(painPointsList[0] || '').slice(0, 65)}" thì xem ngay giải pháp thực tế từ ${brandName}!`,
+            recommendedScriptHook: `Cách dùng ${brandName} khi gặp tình trạng "${(painPointsList[0] || '').slice(0, 65)}"`,
             suggestedFaqQuestion:
               existingFaqs[0]?.question ||
-              `Sử dụng ${heroSkuName} bao lâu thì cảm nhận được sự cải thiện thực tế?`,
+              `Dùng ${heroSkuName} bao lâu thì thấy hiệu quả?`,
             suggestedFaqAnswer:
               existingFaqs[0]?.answer ||
-              `Tùy theo tình trạng thực tế, khách hàng thường cảm nhận hiệu quả bước đầu sau 3–7 ngày sử dụng đều đặn đúng hướng dẫn của nhãn hàng ${brandName}.`,
+              `Tùy tình trạng da, khách thường thấy dịu hơn sau 3–7 ngày dùng đều đặn theo hướng dẫn của ${brandName}.`,
             evidenceIds: [distEvId, ...(file35EvIds[0] ? [file35EvIds[0]] : [])],
           },
           {
             id: `voc-${cleanKey}-barrier`,
             category: 'BARRIER_TO_TRIAL',
-            categoryLabel: 'Rào cản Trước Khi Xuống Tiền',
-            topicTitle: barriersList[0] || 'Lo ngại về độ an toàn, nguồn gốc chính hãng và mức giá',
+            categoryLabel: 'Lý do phân vân',
+            topicTitle: barriersList[0] || 'Băn khoăn về độ an toàn, hàng chính hãng và mức giá',
             mentionCount: barriersList.length,
             sharePct: 35,
             sampleQuotes: barriersList,
-            recommendedScriptHook: `Giải đáp thắc mắc lớn nhất trước khi mua ${brandName}: Cách kiểm tra hàng chính hãng và bảng thành phần an toàn!`,
+            recommendedScriptHook: `Cách kiểm tra hàng chính hãng và bảng thành phần của ${brandName}`,
             suggestedFaqQuestion:
               existingFaqs[1]?.question ||
-              `Sản phẩm ${brandName} trong giỏ hàng KOC có đảm bảo chính hãng 100% không?`,
+              `Sản phẩm ${brandName} trong giỏ hàng có phải hàng chính hãng không?`,
             suggestedFaqAnswer:
               existingFaqs[1]?.answer ||
-              `Sản phẩm được gắn trực tiếp từ gian hàng chính hãng của ${brandName} do UpBase B2C vận hành, có đầy đủ tem nhãn, hóa đơn và chính sách đổi trả trên sàn.`,
+              `Sản phẩm được gắn từ gian hàng chính hãng của ${brandName}, có đầy đủ tem nhãn, hóa đơn và đổi trả theo quy định sàn.`,
             evidenceIds: [distEvId, ...(internalPlanEvIds[0] ? [internalPlanEvIds[0]] : [])],
           },
           {
             id: `voc-${cleanKey}-buying`,
             category: 'BUYING_QUESTION',
-            categoryLabel: 'Câu hỏi Chọn Phân loại & Ưu đãi',
-            topicTitle: `Tư vấn chọn đúng dòng sản phẩm trong ${skuPortfolio.length} SKU của ${brandName}`,
+            categoryLabel: 'Giá bán & Phân loại',
+            topicTitle: `Chọn phân loại trong ${skuPortfolio.length} sản phẩm của ${brandName}`,
             mentionCount: skuPortfolio.length,
             sharePct: 25,
             sampleQuotes: skuPortfolio.slice(0, 3).map(
               (s) => `${s.productName} (${s.dealPriceVnd.toLocaleString('vi-VN')}đ — ${s.monthlySalesEstimate})`
             ),
-            recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} phù hợp nhu cầu và săn trọn bộ quà tặng trong phiên hôm nay!`,
-            suggestedFaqQuestion: `Nên chọn phân loại nào của ${brandName} để tiết kiệm chi phí nhất?`,
-            suggestedFaqAnswer: `Khách hàng mới có thể bắt đầu với "${heroSkuName}" (giá ưu đãi ${dealPrice.toLocaleString('vi-VN')}đ) hoặc chọn Combo trên gian hàng để nhận thêm quà tặng kèm và mã miễn phí vận chuyển.`,
+            recommendedScriptHook: `Cách chọn đúng phân loại ${brandName} theo nhu cầu và nhận quà tặng kèm`,
+            suggestedFaqQuestion: `Nên chọn phân loại nào của ${brandName} để tiết kiệm hơn?`,
+            suggestedFaqAnswer: `Khách mới có thể chọn "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) hoặc chọn Combo trên gian hàng để có giá tốt hơn kèm quà tặng.`,
             evidenceIds: [
               ...(bookingLedgerEvIds[0] ? [bookingLedgerEvIds[0]] : []),
               distEvId,
@@ -4234,57 +4234,57 @@ export function generateBrandMarketResearchDossier(params: {
   const contentAngleBlueprints: WinningContentAngleBlueprint[] = [
     {
       id: `angle-${cleanKey}-01`,
-      pillarName: subSpec.contentPillars[0] || `Xử lý vấn đề khách hàng gặp phải`,
+      pillarName: subSpec.contentPillars[0] || `Xử lý vấn đề của khách`,
       targetPersona: subSpec.targetAudience,
-      hook3s: `Cách dùng ${heroSkuName} xử lý tình trạng "${(painPointsList[0] || '').slice(0, 55)}"`,
-      visualProof: `Quay cận cảnh chất sản phẩm "${heroSkuName}" trên nền da thật dưới camera thường và thao tác dùng thực tế.`,
+      hook3s: `Cách dùng ${heroSkuName} cho tình trạng "${(painPointsList[0] || '').slice(0, 55)}"`,
+      visualProof: `Quay chất sản phẩm "${heroSkuName}" trên da thật bằng camera thường và cách thoa thực tế.`,
       keyMessageRtb: mergedUsps[0] || subSpec.rtbs[0],
-      recommendedCta: `Chọn tại giỏ hàng gian hàng chính hãng ${brandName} (giá ưu đãi ${dealPrice.toLocaleString('vi-VN')}đ).`,
+      recommendedCta: `Chọn trong giỏ hàng gian hàng chính hãng ${brandName} (${dealPrice.toLocaleString('vi-VN')}đ).`,
       bestKocTier: 'KL1 & KL2',
       evidenceIds: [distEvId],
     },
     {
       id: `angle-${cleanKey}-02`,
-      pillarName: subSpec.contentPillars[1] || `Mổ xẻ thành phần & Kiểm chứng độ an toàn`,
+      pillarName: subSpec.contentPillars[1] || `Thành phần & Độ an toàn`,
       targetPersona: `Khách phân vân: "${barriersList[0]}"`,
-      hook3s: `Kiểm tra bảng thành phần và độ thấm thực tế của ${heroSkuName} sau 15 giây`,
-      visualProof: `Quay rõ bao bì, tem phụ chính hãng, bảng hoạt chất và thử độ thấm không bết dính trên da.`,
+      hook3s: `Xem bảng thành phần và độ thấm của ${heroSkuName} sau 15 giây`,
+      visualProof: `Quay rõ bao bì, tem phụ, bảng thành phần và thử độ thấm trên da.`,
       keyMessageRtb: mergedUsps[1] || subSpec.rtbs[1] || subSpec.rtbs[0],
-      recommendedCta: `Đặt tại gian hàng chính hãng ${brandName} kèm quà tặng trong giỏ hàng góc trái.`,
-      bestKocTier: 'KL2 & KL3 (Chuyên gia / Dược sĩ)',
+      recommendedCta: `Đặt tại gian hàng chính hãng ${brandName} kèm quà tặng trong giỏ hàng.`,
+      bestKocTier: 'KL2 & KL3',
       evidenceIds: [distEvId],
     },
     {
       id: `angle-${cleanKey}-03`,
-      pillarName: `Bài toán kinh tế & Đối sánh cùng phân khúc`,
-      targetPersona: `Khách hàng đang cân nhắc giữa ${brandName} và ${primaryComp?.competitorName || 'các dòng cùng phân khúc'}`,
-      hook3s: `Với ${dealPrice.toLocaleString('vi-VN')}đ cho ${heroSkuName}, tính ra mỗi ngày chỉ tốn vài nghìn đồng mà giải quyết gọn điểm yếu "${(primaryComp?.customerComplaints?.[0] || barriersList[0]).slice(0, 50)}"`,
-      visualProof: `Đặt sản phẩm lên bàn cân dung tích / số ngày sử dụng và test trực tiếp kết cấu của "${heroSkuName}".`,
+      pillarName: `So sánh giá & Dung tích`,
+      targetPersona: `Khách đang so sánh ${brandName} và ${primaryComp?.competitorName || 'sản phẩm cùng phân khúc'}`,
+      hook3s: `${heroSkuName} giá ${dealPrice.toLocaleString('vi-VN')}đ: tính chi phí mỗi ngày và khắc phục việc "${(primaryComp?.customerComplaints?.[0] || barriersList[0]).slice(0, 50)}"`,
+      visualProof: `So sánh dung tích, số ngày dùng được và thử trực tiếp chất sản phẩm "${heroSkuName}".`,
       keyMessageRtb: primaryComp?.upbaseCounterPlay || mergedUsps[0] || subSpec.rtbs[0],
-      recommendedCta: `Bấm giỏ hàng săn ngay mức giá ${dealPrice.toLocaleString('vi-VN')}đ trước khi hết khung giờ Flash Sale.`,
-      bestKocTier: 'KL2 & KL3 (Review chi tiết)',
+      recommendedCta: `Bấm giỏ hàng để mua mức giá ${dealPrice.toLocaleString('vi-VN')}đ.`,
+      bestKocTier: 'KL2 & KL3',
       evidenceIds: [distEvId],
     },
     {
       id: `angle-${cleanKey}-04`,
-      pillarName: `Trả lời bình luận hoài nghi (Reply to Comment)`,
-      targetPersona: `Khách để lại câu hỏi dưới video KOC về độ hợp cơ địa & hàng chính hãng`,
-      hook3s: `Trả lời câu hỏi nhiều bạn thắc mắc nhất về ${heroSkuName}: "${(reviewClustersWithEv[0]?.suggestedFaqQuestion || `Dùng ${brandName} bao lâu thì thấy hiệu quả?`).slice(0, 65)}"`,
-      visualProof: `Ghim bình luận thật của khách lên đầu màn hình 3 giây đầu, vừa thoa sản phẩm vừa giải đáp trực diện.`,
+      pillarName: `Trả lời câu hỏi dưới bình luận`,
+      targetPersona: `Khách hỏi về độ hợp da và hàng chính hãng`,
+      hook3s: `Trả lời câu hỏi về ${heroSkuName}: "${(reviewClustersWithEv[0]?.suggestedFaqQuestion || `Dùng ${brandName} bao lâu thì thấy hiệu quả?`).slice(0, 65)}"`,
+      visualProof: `Gắn bình luận của khách lên đầu video 3 giây đầu, vừa thử sản phẩm vừa trả lời.`,
       keyMessageRtb: reviewClustersWithEv[0]?.suggestedFaqAnswer || subSpec.rtbs[0],
-      recommendedCta: `Xem kỹ phân loại trong giỏ hàng góc trái để chọn đúng dòng phù hợp nhất.`,
-      bestKocTier: 'KL1, KL2 & Kênh Tự Vận Hành (Self-channel)',
+      recommendedCta: `Xem các phân loại trong giỏ hàng góc trái để chọn đúng sản phẩm.`,
+      bestKocTier: 'KL1, KL2 & Kênh Brand',
       evidenceIds: [distEvId],
     },
     {
       id: `angle-${cleanKey}-05`,
-      pillarName: `Kết hợp chu trình (Routine) & Săn Combo Ngày Đôi`,
-      targetPersona: `Khách hàng mua lặp lại hoặc muốn kết hợp trọn bộ ${brandName}`,
-      hook3s: `Chu trình kết hợp ${heroSkuName} và ${secondarySkuName} giúp nhân đôi hiệu quả mà tiết kiệm ngay ${discountPct}%`,
-      visualProof: `Quay trọn bộ sản phẩm + quà tặng kèm khi mở hộp (Unboxing), hướng dẫn thứ tự dùng sáng – tối.`,
-      keyMessageRtb: fourP.winningBundleMechanics[0] || `Combo tiết kiệm chính hãng ${brandName} (${secondaryDealPrice.toLocaleString('vi-VN')}đ – ${dealPrice.toLocaleString('vi-VN')}đ)`,
-      recommendedCta: `Chọn phân loại Combo trong giỏ hàng để áp chồng mã giảm giá sàn + miễn phí vận chuyển.`,
-      bestKocTier: 'KL2, KL3 & Host Livestream',
+      pillarName: `Cách dùng kết hợp & Combo`,
+      targetPersona: `Khách mua lại hoặc muốn dùng cả bộ ${brandName}`,
+      hook3s: `Cách dùng kết hợp ${heroSkuName} và ${secondarySkuName} (tiết kiệm ${discountPct}% khi mua theo bộ)`,
+      visualProof: `Quay bộ sản phẩm + quà tặng kèm khi mở hộp, hướng dẫn thứ tự dùng sáng – tối.`,
+      keyMessageRtb: fourP.winningBundleMechanics[0] || `Combo chính hãng ${brandName} (${secondaryDealPrice.toLocaleString('vi-VN')}đ – ${dealPrice.toLocaleString('vi-VN')}đ)`,
+      recommendedCta: `Chọn phân loại Combo trong giỏ hàng để áp mã giảm giá và miễn phí vận chuyển.`,
+      bestKocTier: 'KL2, KL3 & Livestream',
       evidenceIds: [distEvId],
     },
   ];
@@ -4653,14 +4653,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-pain-points',
       category: 'PAIN_POINT',
-      categoryLabel: 'Nỗi đau khách hàng',
-      topicTitle: `Tình trạng thực tế khách gặp phải ("${sample}${painPointQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Vấn đề của khách',
+      topicTitle: `Tình trạng khách gặp phải ("${sample}${painPointQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: painPointQuotes.length,
       sharePct: Math.round((painPointQuotes.length / total) * 100),
       sampleQuotes: painPointQuotes.slice(0, 4),
-      recommendedScriptHook: `Ai đang gặp đúng tình trạng "${painPointQuotes[0].slice(0, 55)}" thì xem ngay cách xử lý thực tế với ${brandName} nhé!`,
-      suggestedFaqQuestion: `Đang gặp tình trạng "${painPointQuotes[0].slice(0, 45)}" thì dùng ${brandName} bao lâu thấy cải thiện?`,
-      suggestedFaqAnswer: `Tùy theo cơ địa và mức độ thực tế, khách hàng thường cảm nhận sự làm dịu bước đầu sau 3–7 ngày và cải thiện rõ rệt sau 2–4 tuần sử dụng đều đặn đúng hướng dẫn của ${brandName}.`,
+      recommendedScriptHook: `Cách xử lý tình trạng "${painPointQuotes[0].slice(0, 55)}" với ${brandName}`,
+      suggestedFaqQuestion: `Gặp tình trạng "${painPointQuotes[0].slice(0, 45)}" thì dùng ${brandName} bao lâu thấy cải thiện?`,
+      suggestedFaqAnswer: `Tùy tình trạng da, khách thường thấy dịu hơn sau 3–7 ngày và cải thiện sau 2–4 tuần dùng đều đặn theo hướng dẫn của ${brandName}.`,
     });
   }
 
@@ -4669,14 +4669,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-barriers',
       category: 'BARRIER_TO_TRIAL',
-      categoryLabel: 'Rào cản ngần ngại mua',
-      topicTitle: `Lo ngại về độ an toàn, kích ứng & chính hãng ("${sample}${barrierQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Lý do phân vân',
+      topicTitle: `Băn khoăn về độ an toàn, kích ứng & hàng chính hãng ("${sample}${barrierQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: barrierQuotes.length,
       sharePct: Math.round((barrierQuotes.length / total) * 100),
       sampleQuotes: barrierQuotes.slice(0, 4),
-      recommendedScriptHook: `Giải đáp thắc mắc nhiều bạn hỏi nhất: "${barrierQuotes[0].slice(0, 58)}" — Kiểm chứng trực tiếp trên ${brandName}!`,
-      suggestedFaqQuestion: `Cơ địa nhạy cảm dùng ${brandName} có lo kích ứng không và làm sao kiểm tra hàng chính hãng?`,
-      suggestedFaqAnswer: `Sản phẩm ${brandName} phân phối trên gian hàng chính hãng có đầy đủ tem phụ, mã QR và bảng thành phần đã qua kiểm định an toàn. Với nền da cực kỳ nhạy cảm, nên test thử ở vùng da nhỏ trước khi thoa toàn mặt.`,
+      recommendedScriptHook: `Trả lời câu hỏi: "${barrierQuotes[0].slice(0, 58)}" trên ${brandName}`,
+      suggestedFaqQuestion: `Da nhạy cảm dùng ${brandName} có kích ứng không và kiểm tra hàng chính hãng thế nào?`,
+      suggestedFaqAnswer: `Sản phẩm ${brandName} trên gian hàng chính hãng có tem phụ, mã QR và bảng thành phần đã kiểm định. Với da nhạy cảm, nên thử ở vùng da nhỏ trước khi dùng toàn mặt.`,
     });
   }
 
@@ -4685,14 +4685,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-complaints',
       category: 'COMPETITOR_COMPLAINT',
-      categoryLabel: 'Trải nghiệm kết cấu / So sánh đối thủ',
-      topicTitle: `Băn khoăn về kết cấu, mùi hương hoặc so sánh sản phẩm ("${sample}${complaintQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Kết cấu & So sánh',
+      topicTitle: `Nhận xét về chất sản phẩm, mùi hương hoặc so sánh ("${sample}${complaintQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: complaintQuotes.length,
       sharePct: Math.round((complaintQuotes.length / total) * 100),
       sampleQuotes: complaintQuotes.slice(0, 4),
-      recommendedScriptHook: `Test trực tiếp dưới camera thường để giải đáp bình luận: "${complaintQuotes[0].slice(0, 55)}"!`,
-      suggestedFaqQuestion: `Kết cấu thực tế của ${brandName} khi thoa lên da có bị bết dính, vón cục hay mùi nồng không?`,
-      suggestedFaqAnswer: `Kết cấu của ${brandName} được tinh chỉnh mỏng nhẹ, thẩm thấu nhanh sau 15–30 giây khi vỗ đều trên nền da ẩm nhẹ, không gây nhờn rít hay vón cục.`,
+      recommendedScriptHook: `Thử trực tiếp chất sản phẩm để trả lời bình luận: "${complaintQuotes[0].slice(0, 55)}"`,
+      suggestedFaqQuestion: `Chất sản phẩm của ${brandName} khi thoa có bết dính hay mùi nồng không?`,
+      suggestedFaqAnswer: `Chất sản phẩm của ${brandName} thấm sau khoảng 15–30 giây khi thoa lượng vừa đủ, không gây nhờn rít.`,
     });
   }
 
@@ -4701,14 +4701,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-routine',
       category: 'BUYING_QUESTION',
-      categoryLabel: 'Hướng dẫn sử dụng & Kết hợp Routine',
-      topicTitle: `Thắc mắc cách dùng, liều lượng & kết hợp hoạt chất ("${sample}${routineQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Cách dùng & Kết hợp',
+      topicTitle: `Câu hỏi về cách dùng, liều lượng & kết hợp sản phẩm ("${sample}${routineQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: routineQuotes.length,
       sharePct: Math.round((routineQuotes.length / total) * 100),
       sampleQuotes: routineQuotes.slice(0, 4),
-      recommendedScriptHook: `Trả lời bình luận "${routineQuotes[0].slice(0, 55)}": Hướng dẫn đúng thứ tự và liều lượng chuẩn để đạt hiệu quả tối đa!`,
-      suggestedFaqQuestion: `Sử dụng ${brandName} vào bước nào trong chu trình và kết hợp với các sản phẩm khác thế nào?`,
-      suggestedFaqAnswer: `Sử dụng đều đặn 1–2 lần/ngày sau bước làm sạch. Khi kết hợp nhiều sản phẩm, ưu tiên nguyên tắc lỏng trước – đặc sau và đợi khoảng 1–2 phút giữa các lớp để sản phẩm thẩm thấu hoàn toàn.`,
+      recommendedScriptHook: `Trả lời bình luận "${routineQuotes[0].slice(0, 55)}": Thứ tự và liều lượng dùng đúng`,
+      suggestedFaqQuestion: `Dùng ${brandName} ở bước nào và kết hợp với sản phẩm khác ra sao?`,
+      suggestedFaqAnswer: `Dùng 1–2 lần/ngày sau bước làm sạch. Khi dùng nhiều sản phẩm, thoa loại lỏng trước – đặc sau và cách nhau 1–2 phút.`,
     });
   }
 
@@ -4717,14 +4717,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-buying',
       category: 'BUYING_QUESTION',
-      categoryLabel: 'Câu hỏi chốt đơn & Chọn phân loại',
-      topicTitle: `Tư vấn chọn phân loại, dung tích & ưu đãi quà tặng ("${sample}${buyingQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Giá bán & Phân loại',
+      topicTitle: `Hỏi về phân loại, dung tích & quà tặng ("${sample}${buyingQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: buyingQuotes.length,
       sharePct: Math.round((buyingQuotes.length / total) * 100),
       sampleQuotes: buyingQuotes.slice(0, 4),
-      recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} trong 15 giây để nhận trọn bộ quà tặng và voucher trong giỏ hàng!`,
-      suggestedFaqQuestion: `Nên chọn phân loại dung tích nào tiết kiệm nhất và đặt hôm nay có quà tặng kèm không?`,
-      suggestedFaqAnswer: `Khách hàng dùng thử có thể chọn size tiêu chuẩn, hoặc chọn phân loại Combo trong giỏ hàng để tiết kiệm 15%–25% kèm quà tặng chính hãng tự động hiển thị ở bước thanh toán.`,
+      recommendedScriptHook: `Cách chọn phân loại ${brandName} và nhận quà tặng trong giỏ hàng`,
+      suggestedFaqQuestion: `Chọn dung tích nào tiết kiệm hơn và mua hôm nay có quà tặng kèm không?`,
+      suggestedFaqAnswer: `Khách dùng thử có thể chọn bản tiêu chuẩn, hoặc chọn Combo trong giỏ hàng để giảm 15%–25% kèm quà tặng hiển thị ở bước thanh toán.`,
     });
   }
 
@@ -4733,14 +4733,14 @@ export function analyzeRawCustomerCommentsToClusters(
     clusters.push({
       id: 'mined-positive',
       category: 'POSITIVE_RTB',
-      categoryLabel: 'Bằng chứng khen ngợi (RTB)',
-      topicTitle: `Phản hồi tích cực & xác nhận hiệu quả thực tế ("${sample}${positiveQuotes[0].length > 60 ? '...' : ''}")`,
+      categoryLabel: 'Phản hồi tốt',
+      topicTitle: `Đánh giá tích cực sau khi dùng ("${sample}${positiveQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: positiveQuotes.length,
       sharePct: Math.round((positiveQuotes.length / total) * 100),
       sampleQuotes: positiveQuotes.slice(0, 4),
-      recommendedScriptHook: `Tổng hợp phản hồi thật của khách hàng sau khi dùng ${brandName}: "${positiveQuotes[0].slice(0, 55)}"!`,
-      suggestedFaqQuestion: `Có thể sử dụng sản phẩm ${brandName} duy trì lâu dài hàng ngày không?`,
-      suggestedFaqAnswer: `Sản phẩm hoàn toàn phù hợp để sử dụng duy trì lâu dài mỗi ngày nhằm bảo vệ và nuôi dưỡng hiệu quả bền vững.`,
+      recommendedScriptHook: `Đánh giá của khách hàng sau khi dùng ${brandName}: "${positiveQuotes[0].slice(0, 55)}"`,
+      suggestedFaqQuestion: `Có dùng ${brandName} hàng ngày lâu dài được không?`,
+      suggestedFaqAnswer: `Sản phẩm phù hợp để dùng duy trì hàng ngày.`,
     });
   }
 
@@ -4760,26 +4760,26 @@ export function buildCompetitorMatrixCsv(dossier: BrandMarketResearchDossier): s
   };
 
   const headers = [
-    'Thương hiệu nghiên cứu',
-    'Đối thủ cạnh tranh',
+    'Thương hiệu',
+    'Đối thủ',
     'Kênh TikTok',
     'Xuất xứ',
     'Phân khúc giá',
-    'Sản phẩm chủ lực (Hero SKU)',
-    'Quy cách đóng gói',
+    'Sản phẩm chính',
+    'Quy cách',
     'Giá niêm yết (VND)',
-    'Giá Deal/Live (VND)',
-    'Đối chiếu trực tiếp',
-    'Hoa hồng Affiliate (%)',
-    'Số KOC phát hiện (TikTok)',
-    'Trạng thái dữ liệu',
+    'Giá bán (VND)',
+    'So sánh giá',
+    'Hoa hồng (%)',
+    'Số KOC (TikTok)',
+    'Ghi chú',
     'Tỷ trọng TikTok (%)',
     'Tỷ trọng Shopee (%)',
-    'Điểm mạnh / USP Đối thủ',
-    'Điểm yếu / Khách hàng phàn nàn',
-    'Chiến lược KOC của Đối thủ',
-    'Đòn phản công đề xuất cho UpBase',
-    'Mã dẫn chứng',
+    'Điểm mạnh của đối thủ',
+    'Điểm khách phàn nàn',
+    'Tình hình KOC của đối thủ',
+    'Hướng cạnh tranh',
+    'Mã nguồn',
   ];
 
   const rows = dossier.competitors.map((c) => [
@@ -4818,26 +4818,26 @@ export function buildCompetitorMatrixCsv(dossier: BrandMarketResearchDossier): s
  */
 export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDossier): string {
   const lines: string[] = [
-    `# BÁO CÁO NGHIÊN CỨU THƯƠNG HIỆU, THỊ TRƯỜNG & ĐỐI THỦ: ${dossier.brandName.toUpperCase()}`,
+    `# BÁO CÁO NGHIÊN CỨU THƯƠNG HIỆU & ĐỐI THỦ: ${dossier.brandName.toUpperCase()}`,
     `- **Ngành hàng:** ${dossier.category}`,
     `- **Xuất xứ:** ${dossier.originCountry}`,
-    `- **Khoảng giá thị trường:** ${dossier.fourP.priceRangeText}`,
-    `- **Thời điểm lập báo cáo:** ${new Date(dossier.analyzedAt).toLocaleString('vi-VN')}`,
+    `- **Khoảng giá:** ${dossier.fourP.priceRangeText}`,
+    `- **Ngày cập nhật:** ${new Date(dossier.analyzedAt).toLocaleString('vi-VN')}`,
     '',
-    '## 1. TÓM TẮT ĐIỀU HÀNH (EXECUTIVE SUMMARY)',
+    '## 1. TÓM TẮT',
     dossier.executiveSummary,
     '',
-    '## 2. ĐỊNH VỊ THƯƠNG HIỆU & BÓC TÁCH CHIẾN LƯỢC 4P',
-    `- **Thông điệp chủ đạo (Slogan):** ${dossier.positioning.slogan}`,
-    `- **Câu chuyện thương hiệu:** ${dossier.positioning.story}`,
-    `- **Chân dung khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
-    `- **Sản phẩm chủ lực (Product):** ${dossier.fourP.productStrategy}`,
-    `- **Chiến lược Giá & Hoa hồng (Price):** ${dossier.fourP.priceStrategy} (${dossier.fourP.affiliateCommissionRange})`,
-    `- **Chiến lược Kênh phân phối (Place):** ${dossier.fourP.placeStrategy}`,
-    `- **Cơ chế Khuyến mãi & Bundle (Promotion):** ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
+    '## 2. ĐỊNH VỊ, SẢN PHẨM, GIÁ & KÊNH BÁN',
+    `- **Thông điệp:** ${dossier.positioning.slogan}`,
+    `- **Giới thiệu:** ${dossier.positioning.story}`,
+    `- **Khách hàng mục tiêu:** ${dossier.positioning.targetAudience}`,
+    `- **Sản phẩm:** ${dossier.fourP.productStrategy}`,
+    `- **Giá & Hoa hồng:** ${dossier.fourP.priceStrategy} (${dossier.fourP.affiliateCommissionRange})`,
+    `- **Kênh bán:** ${dossier.fourP.placeStrategy}`,
+    `- **Combo & Quà tặng:** ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
     '',
-    '## 3. MA TRẬN DANH MỤC SẢN PHẨM (SKU PORTFOLIO)',
-    '| Mã SKU | Vai trò Phễu | Tên sản phẩm | Quy cách | Giá Niêm yết | Giá Bán/Deal | HH KOC | Ghi chú |',
+    '## 3. DANH MỤC SẢN PHẨM',
+    '| Mã | Phân nhóm | Tên sản phẩm | Quy cách | Giá niêm yết | Giá bán | Hoa hồng | Ghi chú |',
     '|---|---|---|---|---|---|---|---|',
     ...dossier.skuPortfolio.map(
       (s) =>
@@ -4852,7 +4852,7 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
       ? [`- **Shopee Mall:** ${dossier.liveAutoWebIntel.shopeeUrl}`]
       : []),
     ...(dossier.liveAutoWebIntel?.priceRangeVnd
-      ? [`- **Khoảng giá cào thực tế:** ${dossier.liveAutoWebIntel.priceRangeVnd.formattedRange}`]
+      ? [`- **Khoảng giá trên web/sàn:** ${dossier.liveAutoWebIntel.priceRangeVnd.formattedRange}`]
       : []),
     ...(dossier.liveAutoWebIntel?.searchSnippets?.length
       ? [
@@ -4865,25 +4865,25 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
         ]
       : []),
     '',
-    '## 5. MA TRẬN ĐỐI ĐẦU ĐỐI THỦ TRỰC TIẾP',
-    '| Đối thủ | Kênh TikTok | Xuất xứ | Sản phẩm đối đầu | Giá Bán | HH KOC | Điểm mạnh USP | Điểm yếu khách phàn nàn | Chiến lược phản công |',
+    '## 5. SO SÁNH ĐỐI THỦ',
+    '| Đối thủ | Kênh TikTok | Xuất xứ | Sản phẩm chính | Giá bán | Hoa hồng | Điểm mạnh | Điểm khách phàn nàn | Hướng cạnh tranh |',
     '|---|---|---|---|---|---|---|---|---|',
     ...dossier.competitors.map(
       (c) =>
         `| ${c.competitorName} | ${c.tiktokHandle} | ${c.originCountry} | ${c.heroSkuName} | ${c.dealPriceVnd.toLocaleString('vi-VN')}đ | ${c.affiliateCommissionPct}% | ${c.keyUsps[0] || ''} | ${c.customerComplaints[0] || ''} | ${c.upbaseCounterPlay} |`
     ),
     '',
-    '## 6. PHÂN TÍCH TIẾNG NÓI KHÁCH HÀNG (VOC) & RÀO CẢN MUA HÀNG',
-    `- **Nỗi đau khách hàng gặp phải:** ${(dossier.positioning.painPoints || []).join(' | ')}`,
-    `- **Rào cản trước khi xuống tiền:** ${(dossier.positioning.barriersToTrial || []).join(' | ')}`,
-    `- **Bằng chứng thuyết phục (RTB):** ${(dossier.positioning.rtbs || []).join(' | ')}`,
+    '## 6. BÌNH LUẬN KHÁCH HÀNG & CÂU HỎI THƯỜNG GẶP',
+    `- **Vấn đề của khách:** ${(dossier.positioning.painPoints || []).join(' | ')}`,
+    `- **Lý do phân vân:** ${(dossier.positioning.barriersToTrial || []).join(' | ')}`,
+    `- **Điểm thuyết phục:** ${(dossier.positioning.rtbs || []).join(' | ')}`,
     ...dossier.reviewClusters.map(
       (cl) =>
-        `- **[${cl.categoryLabel} — ${cl.sharePct}%] ${cl.topicTitle}**\n  - Bình luận tiêu biểu: ${cl.sampleQuotes.slice(0, 2).map((q) => `"${q}"`).join(' ; ')}\n  - Mở đầu video gợi ý: "${cl.recommendedScriptHook}"\n  - Câu trả lời chuẩn: "${cl.suggestedFaqAnswer}"`
+        `- **[${cl.categoryLabel} — ${cl.sharePct}%] ${cl.topicTitle}**\n  - Bình luận: ${cl.sampleQuotes.slice(0, 2).map((q) => `"${q}"`).join(' ; ')}\n  - Mở đầu video: "${cl.recommendedScriptHook}"\n  - Câu trả lời mẫu: "${cl.suggestedFaqAnswer}"`
     ),
     '',
-    '## 7. CHIẾN LƯỢC PHÂN TẦNG KOC & KỊCH BẢN CHUYỂN ĐỔI',
-    '| Tầng KOC | Quy mô Follower | Vai trò Phễu | Tỷ trọng Ngân sách | Tỷ trọng Video | Đơn giá tham chiếu | Chỉ tiêu ROAS |',
+    '## 7. PHÂN BỔ KOC & KỊCH BẢN MẪU',
+    '| Nhóm KOC | Follower | Mục đích | Tỷ trọng ngân sách | Tỷ trọng video | Khung giá thị trường | Chỉ tiêu ROAS |',
     '|---|---|---|---|---|---|---|',
     ...dossier.kocTierStrategy.map(
       (t) =>
@@ -4892,13 +4892,13 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
     '',
     ...dossier.contentAngleBlueprints.map(
       (a, idx) =>
-        `### Kịch bản #${idx + 1}: ${a.pillarName} (${a.bestKocTier})\n- **Chân dung khách hàng:** ${a.targetPersona}\n- **Câu mở đầu 3s (Hook):** "${a.hook3s}"\n- **Cảnh quay chứng minh (Visual Proof):** ${a.visualProof}\n- **Thông điệp cốt lõi (RTB):** ${a.keyMessageRtb}\n- **Điều hướng mua hàng (CTA):** "${a.recommendedCta}"`
+        `### Kịch bản #${idx + 1}: ${a.pillarName} (${a.bestKocTier})\n- **Khách hàng:** ${a.targetPersona}\n- **Mở đầu:** "${a.hook3s}"\n- **Cảnh quay:** ${a.visualProof}\n- **Nội dung chính:** ${a.keyMessageRtb}\n- **Điều hướng mua:** "${a.recommendedCta}"`
     ),
     '',
-    '## 8. SỔ DẪN CHỨNG & NGUỒN XÁC THỰC DỮ LIỆU',
+    '## 8. NGUỒN DỮ LIỆU',
     ...dossier.evidenceLedger.map(
       (ev) =>
-        `- **[${ev.id}] [${ev.reliabilityTag}] ${ev.categoryLabel}** — *${ev.claimSupported}*\n  - Nguồn gốc: ${ev.sourceDocument}${ev.sourceUrl ? ` (${ev.sourceUrl})` : ''}\n  - Số liệu / Trích dẫn: ${ev.exactQuoteOrMetric}`
+        `- **[${ev.id}] ${ev.categoryLabel}** — *${ev.claimSupported}*\n  - Nguồn: ${ev.sourceDocument}${ev.sourceUrl ? ` (${ev.sourceUrl})` : ''}\n  - Chi tiết: ${ev.exactQuoteOrMetric}`
     ),
   ];
 

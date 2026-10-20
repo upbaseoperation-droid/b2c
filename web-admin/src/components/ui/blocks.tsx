@@ -7,7 +7,7 @@
 
 import React, { useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
 import { SkeletonRows, SlidingIndicator, useActiveBox, useFlipList, usePresence } from './motion';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
@@ -303,7 +303,7 @@ export function Modal({
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('[data-select-portal="true"]') && onClose();
     document.addEventListener('keydown', onKey);
     const timer = setTimeout(() => {
       const first = panelRef.current?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([data-close]):not([disabled])');
@@ -314,7 +314,8 @@ export function Modal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, onClose]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   if (!mounted || typeof document === 'undefined') return null;
   return createPortal(
     <div className={cx('fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4', closing && 'pointer-events-none')} role="presentation">
@@ -335,8 +336,8 @@ export function Modal({
           </button>
         </header>
         {view.children && (
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-5 py-3.5 sm:py-4">
-            <div className="grid gap-4">{view.children}</div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-4 sm:px-5 py-3.5 sm:py-4">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-w-0">{view.children}</div>
           </div>
         )}
         {view.footer && <footer className="shrink-0 flex flex-wrap items-center justify-end gap-2 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
@@ -434,7 +435,7 @@ export function ConfirmDialog({
 /** Nhãn ở trên, luôn hiện. Lỗi nói rõ sai gì và sửa thế nào. */
 export function Field({ label, error, htmlFor, children, className }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={cx('grid gap-1.5 min-w-0', className)}>
+    <div className={cx('grid grid-cols-[minmax(0,1fr)] gap-1.5 min-w-0 [&>select]:w-full [&>[data-select-root]]:w-full', className)}>
       <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink">{label}</label>
       {children}
       {error ? <p className="text-2xs text-critical">{error}</p> : null}
@@ -448,9 +449,278 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   return <input ref={ref} className={cx(CONTROL, "h-9 px-3 w-full", className)} {...rest} />;
 });
 
-export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
+interface ParsedSelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+  group?: string;
+}
+
+function extractSelectNodeText(node: React.ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractSelectNodeText).join('');
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return extractSelectNodeText(node.props.children);
+  }
+  return '';
+}
+
+function parseSelectChildren(children: React.ReactNode, groupLabel?: string): ParsedSelectOption[] {
+  const out: ParsedSelectOption[] = [];
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement<Record<string, unknown>>(child)) return;
+    if (child.type === React.Fragment) {
+      out.push(...parseSelectChildren(child.props.children as React.ReactNode, groupLabel));
+      return;
+    }
+    if (child.type === 'optgroup') {
+      const grp = typeof child.props.label === 'string' ? child.props.label : undefined;
+      out.push(...parseSelectChildren(child.props.children as React.ReactNode, grp));
+      return;
+    }
+    if (child.type === 'option') {
+      const label = extractSelectNodeText(child.props.children as React.ReactNode).trim();
+      const val = child.props.value !== undefined ? String(child.props.value) : label;
+      out.push({
+        value: val,
+        label: label || val,
+        disabled: Boolean(child.props.disabled),
+        group: groupLabel,
+      });
+    }
+  });
+  return out;
+}
+
+export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select(
+  { className, children, value, defaultValue, onChange, disabled, id, name, title, 'aria-label': ariaLabel, ...rest },
+  ref,
+) {
+  const options = React.useMemo(() => parseSelectChildren(children), [children]);
+  const [internalVal, setInternalVal] = useState<string>(() => {
+    if (value !== undefined) return String(value);
+    if (defaultValue !== undefined) return String(defaultValue);
+    return options[0]?.value ?? '';
+  });
+  const currentValue = value !== undefined ? String(value) : internalVal;
+  const selectedOpt = options.find((o) => o.value === currentValue) || options[0];
+
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 200,
+  });
+
+  const updatePos = React.useCallback(() => {
+    const el = triggerRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const rect = el.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < 240 && rect.top > spaceBelow;
+    const menuWidth = Math.max(rect.width, 210);
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 8);
+    setPos({
+      left: Math.min(Math.max(8, rect.left), maxLeft),
+      width: menuWidth,
+      top: openUpward ? undefined : rect.bottom + 4,
+      bottom: openUpward ? window.innerHeight - rect.top + 4 : undefined,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePos();
+    if (options.length > 8) {
+      setTimeout(() => searchInputRef.current?.focus({ preventScroll: true }), 20);
+    }
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setOpen(false);
+        triggerRef.current?.focus({ preventScroll: true });
+      }
+    };
+    const onScrollOrResize = (e: Event) => {
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      updatePos();
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey, true);
+    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('resize', onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+    };
+  }, [open, options.length, updatePos]);
+
+  const filteredOptions = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter(
+      (o) =>
+        o.label.toLowerCase().includes(q) ||
+        o.value.toLowerCase().includes(q) ||
+        (o.group && o.group.toLowerCase().includes(q)),
+    );
+  }, [options, search]);
+
+  const handlePick = (opt: ParsedSelectOption) => {
+    if (opt.disabled) return;
+    if (value === undefined) setInternalVal(opt.value);
+    if (onChange) {
+      const syntheticEvent = {
+        target: { value: opt.value, name: name || '', id: id || '' },
+        currentTarget: { value: opt.value, name: name || '', id: id || '' },
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      } as unknown as React.ChangeEvent<HTMLSelectElement>;
+      onChange(syntheticEvent);
+    }
+    setOpen(false);
+    setSearch('');
+  };
+
+  /*
   return (
-    <select ref={ref} className={cx(CONTROL, 'h-9 pl-3 pr-8 max-w-full', className)} {...rest}>
+  */
+  return (
+    <>
+      <select
+        ref={ref}
+        id={id}
+        name={name}
+        value={currentValue}
+        onChange={onChange}
+        disabled={disabled}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="sr-only pointer-events-none"
+        {...rest}
+      >
+        {children}
+      </select>
+      <button
+        ref={triggerRef}
+        type="button"
+        data-select-root="true"
+        disabled={disabled}
+        title={title || selectedOpt?.label}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          if (disabled) return;
+          if (!open) {
+            setSearch('');
+            updatePos();
+          }
+          setOpen((v) => !v);
+        }}
+        className={cx(
+          CONTROL,
+          'h-9 px-3 inline-flex items-center justify-between gap-2 min-w-0 max-w-full text-left',
+          open && 'border-focus ring-2 ring-focus/15',
+          className,
+        )}
+      >
+        <span className="truncate flex-1 min-w-0">{selectedOpt?.label ?? ''}</span>
+        <ChevronDown
+          className={cx(
+            'w-3.5 h-3.5 text-ink-3 shrink-0 transition-transform duration-150',
+            open && 'rotate-180 text-ink',
+          )}
+        />
+      </button>
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={menuRef}
+            data-select-portal="true"
+            role="listbox"
+            style={{
+              position: 'fixed',
+              left: pos.left,
+              width: pos.width,
+              top: pos.top,
+              bottom: pos.bottom,
+              zIndex: 220,
+            }}
+            className="bg-surface border border-line-strong rounded-lg shadow-xl overflow-hidden flex flex-col max-h-72 animate-in fade-in zoom-in-95 duration-100"
+          >
+            {options.length > 8 && (
+              <div className="p-1.5 border-b border-line bg-sunken/50 shrink-0">
+                <div className="relative flex items-center">
+                  <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Tìm nhanh..."
+                    className="w-full h-7 pl-7 pr-2 text-xs rounded border border-line bg-surface text-ink focus:outline-none focus:border-focus"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="overflow-y-auto py-1 divide-y divide-line/40">
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-2.5 text-xs text-ink-3 text-center">Không có mục phù hợp</div>
+              ) : (
+                filteredOptions.map((opt, idx) => {
+                  const active = opt.value === currentValue;
+                  const prevGroup = idx > 0 ? filteredOptions[idx - 1]?.group : undefined;
+                  const showGroupHeader = Boolean(opt.group && opt.group !== prevGroup);
+                  return (
+                    <React.Fragment key={`${opt.value}-${idx}`}>
+                      {showGroupHeader && (
+                        <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3 bg-sunken/60">
+                          {opt.group}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        disabled={opt.disabled}
+                        onClick={() => handlePick(opt)}
+                        className={cx(
+                          'w-full px-3 py-2 text-left text-xs flex items-center justify-between gap-2 transition-colors',
+                          active
+                            ? 'bg-accent-soft text-accent font-semibold'
+                            : 'text-ink hover:bg-sunken',
+                          opt.disabled && 'opacity-45 pointer-events-none',
+                        )}
+                      >
+                        <span className="truncate">{opt.label}</span>
+                        {active && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                      </button>
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+  if (false) return (
+    <select>
       {children}
     </select>
   );

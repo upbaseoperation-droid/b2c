@@ -22,6 +22,7 @@ export interface KocSocialLlmConfig {
   model?: string;
   apiKey?: string;
   baseUrl?: string;
+  systemInstruction?: string;
 }
 
 export interface KocSocialLlmAnalysisSummary {
@@ -435,7 +436,7 @@ function extractSocialLinksFromText(
   return candidates;
 }
 
-async function fetchUrlTextSafe(url: string, timeoutMs = 4500, userAgent = DEFAULT_BROWSER_UA): Promise<string> {
+async function fetchUrlTextSafe(url: string, timeoutMs = 2800, userAgent = DEFAULT_BROWSER_UA): Promise<string> {
   const store = getSharedCrawlerStore();
   return store.searchLimiter.run(async () => {
     try {
@@ -466,8 +467,8 @@ async function unrollShopeeShortlinks(text: string, sourceLabel: string): Promis
 
   const results: SocialChannelCandidate[] = [];
   await Promise.all(
-    [...shortlinks].slice(0, 4).map(async (shortUrl) => {
-      const html = await fetchUrlTextSafe(shortUrl, 4000, MOBILE_SAFARI_UA);
+    [...shortlinks].slice(0, 3).map(async (shortUrl) => {
+      const html = await fetchUrlTextSafe(shortUrl, 2500, MOBILE_SAFARI_UA);
       if (!html) return;
       const httpUrlMatch = html.match(/httpUrl\s*:\s*"([^"]+)"/i);
       if (httpUrlMatch?.[1]) {
@@ -636,7 +637,7 @@ async function verifyLiveSocialCandidate(
               'User-Agent': MOBILE_SAFARI_UA,
               Accept: 'application/json',
             },
-            signal: AbortSignal.timeout(4000),
+            signal: AbortSignal.timeout(2000),
             cache: 'no-store',
           }
         );
@@ -689,7 +690,7 @@ async function verifyLiveSocialCandidate(
           'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
         },
         redirect: 'follow',
-        signal: AbortSignal.timeout(4200),
+        signal: AbortSignal.timeout(2200),
         cache: 'no-store',
       });
 
@@ -880,8 +881,8 @@ async function discoverFromWebSearchEngines(
   const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(dorkQuery)}&count=15`;
 
   const [ddgHtml, bingHtml] = await Promise.all([
-    fetchUrlTextSafe(ddgUrl, 4200),
-    fetchUrlTextSafe(bingUrl, 4200),
+    fetchUrlTextSafe(ddgUrl, 2500),
+    fetchUrlTextSafe(bingUrl, 2500),
   ]);
 
   const combinedHtml = [ddgHtml, bingHtml].filter(Boolean).join('\n');
@@ -1051,7 +1052,7 @@ async function discoverSocialChannelsViaLlm(params: {
     .filter(Boolean)
     .join('\n');
 
-  const systemInstruction = `Bạn là chuyên gia dữ liệu KOC/KOL tại Việt Nam. Nhiệm vụ của bạn là tìm chính xác tài khoản Shopee, Facebook, Instagram và Threads chính thức của KOC dựa trên thông tin định danh, tiểu sử TikTok (bao gồm cả các từ viết lách như "phở bò" = Facebook, "ig/ins" = Instagram, "sóp pi" = Shopee, "thờ rét" = Threads) và kết quả tìm kiếm.
+  const defaultInstruction = `Bạn là chuyên gia dữ liệu KOC/KOL tại Việt Nam. Nhiệm vụ của bạn là tìm chính xác tài khoản Shopee, Facebook, Instagram và Threads chính thức của KOC dựa trên thông tin định danh, tiểu sử TikTok (bao gồm cả các từ viết lách như "phở bò" = Facebook, "ig/ins" = Instagram, "sóp pi" = Shopee, "thờ rét" = Threads) và kết quả tìm kiếm.
 Chỉ trả về duy nhất 1 khối JSON hợp lệ theo cấu trúc:
 {
   "summary": "Tóm tắt ngắn gọn 1-2 câu về các dấu hiệu nhận diện kênh tìm được",
@@ -1061,6 +1062,8 @@ Chỉ trả về duy nhất 1 khối JSON hợp lệ theo cấu trúc:
   "THREADS": [{ "handle": "@username_threads", "url": "https://www.threads.net/@...", "displayName": "Tên Threads", "confidence": "CAO", "reason": "Lý do khớp" }]
 }
 Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng rỗng []. Không tự bịa đặt tài khoản.`;
+
+  const systemInstruction = cfg?.systemInstruction?.trim() || defaultInstruction;
 
   if (activeProvider === 'GOOGLE' && googleKey) {
     const cleanBase = (cfg?.baseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
@@ -1562,7 +1565,7 @@ export async function discoverKocSocialChannels(params: {
 
   // 6. XÁC THỰC TỒN TẠI TRỰC TIẾP (LIVE PROFILE VERIFICATION) & SẮP XẾP ƯU TIÊN TÀI KHOẢN CHÍNH THỨC
   const verifyPlatformList = async (platform: SocialPlatformKey): Promise<SocialChannelCandidate[]> => {
-    const rawList = [...bucket[platform].values()].slice(0, 6);
+    const rawList = [...bucket[platform].values()].slice(0, 2);
     const verifiedResults = await Promise.all(
       rawList.map((cand) => verifyLiveSocialCandidate(cand, cleanHandle, stageName, realName))
     );

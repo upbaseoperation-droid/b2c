@@ -53,7 +53,7 @@ import {
   makeSheetKey,
   normalizeTikTokId,
 } from '../../lib/staffBrandListingSheet';
-import { Button, Field, Input, Modal, Panel, Select, Stat, StatRow, Status } from '../ui';
+import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select, Status } from '../ui';
 
 export interface ApprovedBookingListViewProps {
   kocs: KocItem[];
@@ -706,7 +706,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     );
   };
 
-  const handleCopyTsv = async () => {
+  const handleCopyTsv = async (includeHeaders = true) => {
     const target =
       selectedIds.length > 0
         ? filteredItems.filter((i) => selectedIds.includes(i.id))
@@ -716,10 +716,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       return;
     }
     try {
-      const tsv = formatApprovedBookingListToTsv(target, true);
+      const tsv = formatApprovedBookingListToTsv(target, includeHeaders);
       await navigator.clipboard.writeText(tsv);
       onNotify?.(
-        `Đã copy ${target.length} dòng chuẩn File 3.2 List duyệt book vào Clipboard (Ctrl+V vào Google Sheet / Excel).`,
+        `Đã copy ${target.length} dòng chuẩn File 3.2 List duyệt book (${
+          includeHeaders ? 'kèm tiêu đề cột' : 'chỉ dữ liệu'
+        }) — bấm Ctrl+V vào Google Sheet / Excel.`,
         'success'
       );
     } catch {
@@ -742,61 +744,201 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   };
 
   return (
-    <div className="space-y-4">
-      {/* 1. Thanh thống kê tổng quan List Duyệt Book & Nghiệm thu (File 3.2) */}
-      <StatRow>
-        <Stat
-          label="Tổng KOC Brand đã duyệt"
-          value={`${stats.total} KOC`}
-          note={`${stats.boCreatedCount} đã tạo BO · ${stats.pendingBoCount} chờ tạo BO`}
-        />
-        <Stat
-          label="Chi phí chốt cuối (Net / Gross)"
-          value={formatVndShort(stats.totalFinalNet)}
-          note={`Gross kèm thuế: ${formatVndShort(stats.totalGross)}`}
-        />
-        <Stat
-          label="Tiến độ Nghiệm thu Video"
-          value={`${stats.acceptedCount}/${stats.total}`}
-          note={`Tỷ lệ lên sóng: ${
-            stats.total > 0 ? Math.round((stats.acceptedCount / stats.total) * 100) : 0
-          }%`}
-        />
-        <Stat
-          label="GMV 30 ngày & ROI thực tế"
-          value={formatVndShort(stats.totalGmv30d)}
-          note={`ROI trung bình: ${stats.avgRoi}x`}
-        />
-      </StatRow>
+    <div className="space-y-3">
+      <PageActions>
+        {onNavigateTab && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={ArrowLeft}
+            onClick={() =>
+              onNavigateTab('koc-listing', {
+                storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
+                monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
+              })
+            }
+          >
+            Về Sheet Listing
+          </Button>
+        )}
+        {onNavigateTab && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={ExternalLink}
+            onClick={() => onNavigateTab('booking')}
+          >
+            Mở Quản lý Booking
+          </Button>
+        )}
+      </PageActions>
 
-      {/* 2. Khung điều khiển luồng: Sheet Listing Brand -> List Duyệt Book (Điền ngày air, giá cuối & Tạo BO) -> Nghiệm thu tự động mapping KOC */}
-      <Panel
-        title="Bảng List Duyệt Book & Tạo Booking Order (Chuẩn File 3.2)"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {onNavigateTab && (
+      {/* Khung làm việc tích hợp: Ngữ cảnh + Chỉ số + Bộ lọc + Bảng List Duyệt Book */}
+      <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
+        {/* Tầng 1: Chọn Tháng / Gian hàng + Chế độ xem cột + Chỉ số tóm tắt */}
+        <div className="px-3 py-2 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              aria-label="Chọn tháng"
+              className="h-7 px-2 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink shrink-0 focus:outline-none focus:border-ink"
+            >
+              {MONTH_OPTIONS.map((m) => (
+                <option key={m} value={m}>
+                  {m === 'ALL' ? 'Tất cả tháng' : `Tháng ${m}`}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+              aria-label="Chọn Gian hàng / Brand"
+              className="h-7 px-2.5 text-xs font-semibold rounded-md border border-line-strong bg-surface text-ink max-w-[240px] truncate shrink-0 focus:outline-none focus:border-ink"
+            >
+              <option value="ALL">Tất cả Brand / Gian hàng ({items.length})</option>
+              {b2cStores.map((st) => {
+                const count = items.filter(
+                  (i) =>
+                    i.storeName === st.storeName &&
+                    (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
+                ).length;
+                return (
+                  <option key={st.id} value={st.storeName}>
+                    {st.brandName} — {st.storeName} ({count})
+                  </option>
+                );
+              })}
+            </select>
+
+            <span className="hidden sm:inline-block h-4 w-px bg-line mx-0.5 shrink-0" />
+
+            <Segmented
+              value={viewColumnMode}
+              onChange={setViewColumnMode}
+              items={[
+                { key: 'ALL_32', label: 'Đầy đủ cột' },
+                { key: 'BOOKING_FOCUS', label: 'Chốt Book & Tạo BO' },
+                { key: 'ACCEPTANCE_FOCUS', label: 'Nghiệm thu & Thanh toán' },
+              ]}
+            />
+          </div>
+
+          {/* Cụm chỉ số tóm tắt gọn trên 1 dòng */}
+          <div className="flex flex-wrap items-center gap-3 px-2.5 py-1 rounded-md bg-surface border border-line text-xs shrink-0">
+            <div className="flex items-center gap-1" title={`${stats.boCreatedCount} đã tạo BO · ${stats.pendingBoCount} chờ tạo BO`}>
+              <span className="text-ink-3">Duyệt:</span>
+              <strong className="text-ink tabular-nums">{stats.total} KOC</strong>
+              <span className="text-[11px] text-ink-3 tabular-nums">
+                ({stats.boCreatedCount} BO)
+              </span>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1" title={`Gross kèm thuế: ${formatVnd(stats.totalGross)}`}>
+              <span className="text-ink-3">Net chốt:</span>
+              <strong className="text-ink tabular-nums">
+                {formatVndShort(stats.totalFinalNet)}
+              </strong>
+              <span className="text-[11px] text-ink-3 tabular-nums">
+                (Gross {formatVndShort(stats.totalGross)})
+              </span>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">Nghiệm thu:</span>
+              <strong className="text-positive tabular-nums">
+                {stats.acceptedCount}/{stats.total}
+              </strong>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-1">
+              <span className="text-ink-3">GMV 30d:</span>
+              <strong className="text-ink tabular-nums">
+                {formatVndShort(stats.totalGmv30d)}
+              </strong>
+              <span className="text-[11px] font-semibold text-emerald-700 tabular-nums">
+                · ROI {stats.avgRoi}x
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tầng 2: Thanh công cụ Tìm kiếm + Lọc trạng thái + Thao tác nghiệp vụ (Gói gọn 1 hàng) */}
+        <div className="px-3 py-2 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="relative w-48 sm:w-56">
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm mã BO, @id_kênh, SP..."
+                className="w-full h-7 pl-7 pr-2 text-xs rounded-md border border-line-strong bg-surface text-ink focus:outline-none focus:border-ink"
+              />
+            </div>
+
+            <select
+              value={filterPipeline}
+              onChange={(e) => setFilterPipeline(e.target.value)}
+              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+            >
+              <option value="ALL">Trạng thái BO: Tất cả</option>
+              <option value="Chờ chốt giá & ngày air">Chờ chốt giá &amp; ngày air</option>
+              <option value="Sẵn sàng tạo BO">Sẵn sàng tạo BO</option>
+              <option value="Đang thực thi (Đã tạo BO)">Đang thực thi (Đã tạo BO)</option>
+              <option value="Đã nghiệm thu video">Đã nghiệm thu video</option>
+              <option value="Đã quyết toán">Đã quyết toán</option>
+            </select>
+
+            <select
+              value={filterAcceptance}
+              onChange={(e) => setFilterAcceptance(e.target.value)}
+              className="h-7 px-2 text-xs rounded-md border border-line-strong bg-surface text-ink"
+            >
+              <option value="ALL">Nghiệm thu: Tất cả</option>
+              <option value="CHUA_NGHIEM_THU">Chưa nghiệm thu</option>
+              <option value="DA_NGHIEM_THU">Đã nghiệm thu</option>
+            </select>
+
+            {selectedIds.length > 0 && (
               <Button
-                variant="secondary"
+                variant="danger"
                 size="sm"
-                icon={ArrowLeft}
-                onClick={() =>
-                  onNavigateTab('koc-listing', {
-                    storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
-                    monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
-                  })
-                }
+                icon={Trash2}
+                onClick={handleDeleteSelected}
               >
-                Về Sheet Listing Brand
+                Xóa ({selectedIds.length})
               </Button>
             )}
+          </div>
 
+          <div className="flex flex-wrap items-center gap-1.5">
             <Button
               variant="secondary"
               size="sm"
               icon={RefreshCw}
               onClick={handlePullBrandApprovedFromSheets}
             >
-              Đồng bộ dòng Brand duyệt (Yes) từ Sheet
+              Đồng bộ từ Sheet
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Plus}
+              onClick={handleAddDirectApprovedRow}
+            >
+              Thêm dòng
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Copy}
+              onClick={() => void handleCopyTsv(true)}
+            >
+              Copy Google Sheet
             </Button>
 
             <Button
@@ -805,7 +947,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               icon={Video}
               onClick={() => openAcceptanceModalForRow()}
             >
-              Nghiệm thu Video (Tự tìm kênh KOC)
+              Nghiệm thu Video
             </Button>
 
             <Button
@@ -818,196 +960,58 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               {selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
             </Button>
 
-            {onNavigateTab && (
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={ExternalLink}
-                onClick={() => onNavigateTab('booking')}
-              >
-                Mở Quản lý Booking
-              </Button>
-            )}
-          </div>
-        }
-      >
-        {/* Bộ lọc Tháng, Gian hàng/Brand, Trạng thái BO, Trạng thái Nghiệm thu */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-            <div className="md:col-span-2">
-              <Field label="Tháng Plan">
-                <Select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                >
-                  {MONTH_OPTIONS.map((m) => (
-                    <option key={m} value={m}>
-                      {m === 'ALL' ? 'Tất cả các tháng' : `Tháng ${m}`}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-4">
-              <Field label="Gian hàng / Brand">
-                <Select
-                  value={selectedStore}
-                  onChange={(e) => setSelectedStore(e.target.value)}
-                >
-                  <option value="ALL">Tất cả Brand / Gian hàng ({items.length} dòng)</option>
-                  {b2cStores.map((st) => {
-                    const count = items.filter(
-                      (i) =>
-                        i.storeName === st.storeName &&
-                        (selectedMonth === 'ALL' || i.thangPlan === selectedMonth)
-                    ).length;
-                    return (
-                      <option key={st.id} value={st.storeName}>
-                        {st.brandName} — {st.storeName} ({count})
-                      </option>
-                    );
-                  })}
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-2">
-              <Field label="Trạng thái Booking Order">
-                <Select
-                  value={filterPipeline}
-                  onChange={(e) => setFilterPipeline(e.target.value)}
-                >
-                  <option value="ALL">Tất cả trạng thái BO</option>
-                  <option value="Chờ chốt giá & ngày air">Chờ chốt giá & ngày air</option>
-                  <option value="Sẵn sàng tạo BO">Sẵn sàng tạo BO</option>
-                  <option value="Đang thực thi (Đã tạo BO)">Đang thực thi (Đã tạo BO)</option>
-                  <option value="Đã nghiệm thu video">Đã nghiệm thu video</option>
-                  <option value="Đã quyết toán">Đã quyết toán</option>
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-2">
-              <Field label="Trạng thái Nghiệm thu">
-                <Select
-                  value={filterAcceptance}
-                  onChange={(e) => setFilterAcceptance(e.target.value)}
-                >
-                  <option value="ALL">Tất cả nghiệm thu</option>
-                  <option value="CHUA_NGHIEM_THU">Chưa nghiệm thu video</option>
-                  <option value="DA_NGHIEM_THU">Đã nghiệm thu video</option>
-                </Select>
-              </Field>
-            </div>
-
-            <div className="md:col-span-2">
-              <Field label="Tìm kiếm nhanh">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Mã BO, @id_kênh, SP..."
-                    className="w-full h-9 pl-8 pr-2.5 text-xs rounded-md border border-line bg-surface text-ink focus:outline-none focus:border-ink"
-                  />
-                </div>
-              </Field>
-            </div>
-          </div>
-
-          {/* Thanh chế độ xem cột & nút thao tác bảng */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setViewColumnMode('ALL_32')}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                  viewColumnMode === 'ALL_32'
-                    ? 'bg-ink text-white border-ink'
-                    : 'bg-surface text-ink-2 border-line hover:bg-sunken'
-                }`}
-              >
-                Đầy đủ cột Chốt Book + Nghiệm thu File 3.2
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewColumnMode('BOOKING_FOCUS')}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                  viewColumnMode === 'BOOKING_FOCUS'
-                    ? 'bg-ink text-white border-ink'
-                    : 'bg-surface text-ink-2 border-line hover:bg-sunken'
-                }`}
-              >
-                Tập trung Điền Ngày Air, Giá Cuối & Tạo BO
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewColumnMode('ACCEPTANCE_FOCUS')}
-                className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
-                  viewColumnMode === 'ACCEPTANCE_FOCUS'
-                    ? 'bg-ink text-white border-ink'
-                    : 'bg-surface text-ink-2 border-line hover:bg-sunken'
-                }`}
-              >
-                Tập trung Nghiệm Thu Video, Views/GMV/ROI & Thanh Toán
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Plus}
-                onClick={handleAddDirectApprovedRow}
-              >
-                Thêm dòng trực tiếp
-              </Button>
-              {selectedIds.length > 0 && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  icon={Trash2}
-                  onClick={handleDeleteSelected}
-                >
-                  Xóa ({selectedIds.length})
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Copy}
-                onClick={() => void handleCopyTsv()}
-              >
-                Copy TSV (Google Sheet)
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Download}
-                onClick={() =>
-                  downloadApprovedBookingListCsv(
-                    filteredItems,
-                    selectedMonth,
-                    selectedStore
-                  )
-                }
-              >
-                Xuất CSV File 3.2
-              </Button>
-            </div>
+            <ActionMenu
+              label="Xuất dữ liệu & Tiện ích"
+              items={[
+                {
+                  label: 'Copy Google Sheet (Kèm tiêu đề cột)',
+                  icon: Copy,
+                  onSelect: () => void handleCopyTsv(true),
+                },
+                {
+                  label: 'Copy Google Sheet (Chỉ dòng dữ liệu)',
+                  icon: Copy,
+                  onSelect: () => void handleCopyTsv(false),
+                },
+                {
+                  label: 'Xuất file CSV (Chuẩn File 3.2)',
+                  icon: Download,
+                  onSelect: () =>
+                    downloadApprovedBookingListCsv(
+                      filteredItems,
+                      selectedMonth,
+                      selectedStore
+                    ),
+                },
+                ...(onNavigateTab
+                  ? [
+                      {
+                        label: 'Mở Quản lý Booking',
+                        icon: ExternalLink,
+                        onSelect: () => onNavigateTab('booking'),
+                      },
+                      {
+                        label: 'Về Sheet Listing Brand',
+                        icon: ArrowLeft,
+                        onSelect: () =>
+                          onNavigateTab('koc-listing', {
+                            storeName: selectedStore !== 'ALL' ? selectedStore : undefined,
+                            monthKey: selectedMonth !== 'ALL' ? selectedMonth : undefined,
+                          }),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </div>
         </div>
-      </Panel>
 
-      {/* 3. Bảng dữ liệu List Duyệt Book (Điền ngày air, giá cuối -> Tạo Booking Order -> Tự động điền trường nghiệm thu) */}
-      <div className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="overflow-x-auto max-h-[70vh]">
+        {/* Tầng 3: Bảng dữ liệu List Duyệt Book (Cố định chuẩn 3 cột đầu, không hở khe khi cuộn ngang) */}
+        <div className="overflow-x-auto max-h-[75vh]">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20 bg-sunken border-b border-line">
               <tr>
-                <th className="sticky left-0 z-30 bg-sunken px-2.5 py-2 border-r border-line w-10 text-center">
+                <th className="sticky left-0 z-30 bg-sunken px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
                   <input
                     type="checkbox"
                     checked={
@@ -1018,109 +1022,109 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                     className="rounded border-line"
                   />
                 </th>
-                <th className="sticky left-10 z-30 bg-sunken px-2.5 py-2 border-r border-line min-w-[140px] text-left">
+                <th className="sticky left-[38px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[142px] min-w-[142px] max-w-[142px] text-left">
                   <div className="text-[10px] font-mono text-ink-3">Cột 1 · File 3.2</div>
-                  <div className="font-semibold text-ink">Mã Booking (BO)</div>
+                  <div className="font-semibold text-ink truncate">Mã Booking (BO)</div>
                 </th>
-                <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-2 border-r border-line min-w-[165px] text-left shadow-[1px_0_0_0_var(--line)]">
+                <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[168px] min-w-[168px] max-w-[168px] text-left shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
                   <div className="text-[10px] font-mono text-ink-3">Cột 2 · KOC</div>
-                  <div className="font-semibold text-ink">🎃 id kênh & Link</div>
+                  <div className="font-semibold text-ink truncate">ID kênh &amp; Link</div>
                 </th>
-                <th className="px-2.5 py-2 border-r border-line min-w-[180px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 3 & 4 · Gian hàng</div>
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
+                  <div className="text-[10px] font-mono text-ink-3">Cột 3 &amp; 4 · Gian hàng</div>
                   <div className="font-semibold text-ink">Store / Brand · Đợt</div>
                 </th>
-                <th className="px-2.5 py-2 border-r border-line min-w-[175px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 31 & 89 · Nội dung</div>
-                  <div className="font-semibold text-ink">🎃 Sản phẩm & Pillar</div>
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[170px] text-left">
+                  <div className="text-[10px] font-mono text-ink-3">Cột 31 &amp; 89 · Nội dung</div>
+                  <div className="font-semibold text-ink">Sản phẩm &amp; Pillar</div>
                 </th>
 
                 {/* Nhóm cột nhân viên điền: Ngày air chốt, Giá cuối cùng, Tạm ứng, Tạo BO */}
-                <th className="px-2.5 py-2 border-r border-line min-w-[145px] text-left bg-amber-50/60">
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-amber-50">
                   <div className="text-[10px] font-mono text-amber-800 font-semibold">
                     NV ĐIỀN · Cột 61
                   </div>
-                  <div className="font-semibold text-ink">P.Ngày air (Ngày chốt)</div>
+                  <div className="font-semibold text-ink">Ngày air chốt</div>
                 </th>
-                <th className="px-2.5 py-2 border-r border-line min-w-[115px] text-right">
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[115px] text-right">
                   <div className="text-[10px] font-mono text-ink-3">Sheet Listing</div>
                   <div className="font-semibold text-ink">Giá đề xuất Net</div>
                 </th>
-                <th className="px-2.5 py-2 border-r border-line min-w-[150px] text-right bg-amber-50/60">
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right bg-amber-50">
                   <div className="text-[10px] font-mono text-amber-800 font-semibold">
                     NV ĐIỀN · Cột 18
                   </div>
-                  <div className="font-semibold text-ink">🎃 Giá cuối cùng (Net)</div>
+                  <div className="font-semibold text-ink">Giá chốt cuối (Net)</div>
                 </th>
-                <th className="px-2.5 py-2 border-r border-line min-w-[135px] text-right">
+                <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
                   <div className="text-[10px] font-mono text-sky-700">Công thức / 0.9</div>
-                  <div className="font-semibold text-ink">Gross kèm thuế & KL</div>
+                  <div className="font-semibold text-ink">Gross &amp; Bậc KL</div>
                 </th>
 
                 {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
                   <>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[130px] text-right">
-                      <div className="text-[10px] font-mono text-ink-3">Cột 40 & 42</div>
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
+                      <div className="text-[10px] font-mono text-ink-3">Cột 40 &amp; 42</div>
                       <div className="font-semibold text-ink">Tạm ứng / Còn trả</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[185px] text-left">
-                      <div className="text-[10px] font-mono text-ink-3">Cột 17 & 20</div>
-                      <div className="font-semibold text-ink">Loại TK thuế & Hợp tác</div>
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[180px] text-left">
+                      <div className="text-[10px] font-mono text-ink-3">Cột 17 &amp; 20</div>
+                      <div className="font-semibold text-ink">Loại TK thuế &amp; Hợp tác</div>
                     </th>
                   </>
                 )}
 
-                {/* Nhóm cột Nghiệm thu Video (Hệ thống tự tìm kênh KOC để mapping & điền) */}
+                {/* Nhóm cột Nghiệm thu Video */}
                 {viewColumnMode !== 'BOOKING_FOCUS' && (
                   <>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[230px] text-left bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[215px] text-left bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
                         NGHIỆM THU · Cột 9
                       </div>
-                      <div className="font-semibold text-ink">🎃 Link air/Link nghiệm thu</div>
+                      <div className="font-semibold text-ink">Link video nghiệm thu</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[140px] text-left bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
-                        NGHIỆM THU · Cột 6 & 7
+                        NGHIỆM THU · Cột 6 &amp; 7
                       </div>
-                      <div className="font-semibold text-ink">🎃 Ngày air real & Tuần</div>
+                      <div className="font-semibold text-ink">Ngày air thực tế</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[130px] text-left bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
                         SLA · Cột 39
                       </div>
-                      <div className="font-semibold text-ink">Đúng / Trễ hạn Air</div>
+                      <div className="font-semibold text-ink">Đúng / Trễ hạn</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[160px] text-left bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
                         ADS · Cột 45
                       </div>
-                      <div className="font-semibold text-ink">Mã ủy quyền Spark Ads</div>
+                      <div className="font-semibold text-ink">Mã Spark Ads</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[155px] text-right bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-right bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
                         HIỆU QUẢ · Cột 68–70
                       </div>
-                      <div className="font-semibold text-ink">🌸 Views · Đơn · GMV 30d</div>
+                      <div className="font-semibold text-ink">Views · Đơn · GMV 30d</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[145px] text-right bg-emerald-50/50">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-right bg-emerald-50">
                       <div className="text-[10px] font-mono text-emerald-800 font-semibold">
                         ROI · Cột 71–76
                       </div>
-                      <div className="font-semibold text-ink">🌸 GPM · ROI · Đánh giá</div>
+                      <div className="font-semibold text-ink">GPM · ROI · Đánh giá</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[170px] text-left">
-                      <div className="text-[10px] font-mono text-ink-3">Cột 22 & 30</div>
-                      <div className="font-semibold text-ink">Thanh toán & Nội dung CK</div>
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[165px] text-left">
+                      <div className="text-[10px] font-mono text-ink-3">Cột 22 &amp; 30</div>
+                      <div className="font-semibold text-ink">Thanh toán &amp; ND CK</div>
                     </th>
-                    <th className="px-2.5 py-2 border-r border-line min-w-[180px] text-left">
+                    <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
                       <div className="text-[10px] font-mono text-ink-3">Cột 23–26</div>
-                      <div className="font-semibold text-ink">Ngân hàng & CCCD</div>
+                      <div className="font-semibold text-ink">Ngân hàng &amp; CCCD</div>
                     </th>
                   </>
                 )}
 
-                <th className="px-2.5 py-2 text-center min-w-[145px]">
+                <th className="px-2.5 py-1.5 text-center min-w-[140px]">
                   <div className="text-[10px] font-mono text-ink-3">Thao tác</div>
                   <div className="font-semibold text-ink">Tạo BO / Nghiệm thu</div>
                 </th>
@@ -1143,7 +1147,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           icon={RefreshCw}
                           onClick={handlePullBrandApprovedFromSheets}
                         >
-                          Kéo các dòng Brand duyệt (Yes) từ Sheet Listing
+                          Đồng bộ dòng Brand duyệt từ Sheet
                         </Button>
                         <Button
                           variant="secondary"
@@ -1151,7 +1155,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           icon={Plus}
                           onClick={handleAddDirectApprovedRow}
                         >
-                          Thêm dòng trực tiếp
+                          Thêm dòng
                         </Button>
                       </div>
                     </div>
@@ -1168,7 +1172,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         isSelected ? 'bg-accent-soft/30' : 'hover:bg-sunken/40'
                       } transition-colors`}
                     >
-                      <td className="sticky left-0 z-10 bg-surface px-2.5 py-2 border-r border-line text-center">
+                      <td className="sticky left-0 z-10 bg-surface px-2 py-2 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1178,14 +1182,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       </td>
 
                       {/* Cột 1: Mã Booking (BO...) */}
-                      <td className="sticky left-10 z-10 bg-surface px-2.5 py-2 border-r border-line align-middle">
+                      <td className="sticky left-[38px] z-10 bg-surface px-2.5 py-2 border-r border-line w-[142px] min-w-[142px] max-w-[142px] align-middle">
                         {item.bookingOrderCreated && item.maBooking ? (
                           <div className="space-y-0.5">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-bold text-emerald-800">
-                              <CheckCircle2 className="w-3 h-3" />
-                              {item.maBooking}
+                              <CheckCircle2 className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{item.maBooking}</span>
                             </span>
-                            <div className="text-[10px] text-ink-3">
+                            <div className="text-[10px] text-ink-3 truncate" title={item.pipelineStatus}>
                               {item.pipelineStatus}
                             </div>
                           </div>
@@ -1208,7 +1212,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       </td>
 
                       {/* Cột 2: ID kênh & Link kênh */}
-                      <td className="sticky left-[180px] z-10 bg-surface px-2.5 py-2 border-r border-line align-middle shadow-[1px_0_0_0_var(--line)]">
+                      <td className="sticky left-[180px] z-10 bg-surface px-2.5 py-2 border-r border-line w-[168px] min-w-[168px] max-w-[168px] align-middle shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
                         <div className="space-y-1">
                           <input
                             type="text"

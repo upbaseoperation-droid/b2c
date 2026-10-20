@@ -654,6 +654,117 @@ export function appendKocsToStaffBrandSheet(params: {
   return { addedCount, skippedDuplicateCount, sheetKey };
 }
 
+/**
+ * Đồng bộ ngược thông tin liên hệ (Email, Zalo, SĐT, Địa chỉ nhận mẫu) từ Danh bạ KOC sang các dòng tương ứng trên toàn bộ Sheet Listing
+ */
+export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as StaffBrandSheetCollection;
+    if (!parsed || typeof parsed.sheets !== 'object') return;
+
+    const cleanHandle = normalizeTikTokId(updatedKoc.channelId || updatedKoc.tiktokChannel || '').toLowerCase();
+    let changed = false;
+
+    for (const sheetKey of Object.keys(parsed.sheets)) {
+      const rows = parsed.sheets[sheetKey];
+      if (!Array.isArray(rows)) continue;
+      parsed.sheets[sheetKey] = rows.map((r) => {
+        const rowHandle = normalizeTikTokId(r.idKenh || '').toLowerCase();
+        const isMatch =
+          (updatedKoc.id && r.kocId === updatedKoc.id) ||
+          (cleanHandle && rowHandle === cleanHandle);
+        if (!isMatch) return r;
+        changed = true;
+        return {
+          ...r,
+          email: updatedKoc.email !== undefined ? updatedKoc.email : r.email,
+          zalo: updatedKoc.zalo || updatedKoc.phone || r.zalo,
+          nguoiNhanHang:
+            updatedKoc.shippingRecipientName ||
+            updatedKoc.realName ||
+            updatedKoc.stageName ||
+            r.nguoiNhanHang,
+          sdtNhanHang: updatedKoc.shippingPhone || updatedKoc.phone || r.sdtNhanHang,
+          diaChiNhanHang:
+            updatedKoc.shippingAddress || updatedKoc.permanentAddress || r.diaChiNhanHang,
+        };
+      });
+    }
+
+    if (changed) {
+      saveStaffSheetCollection(parsed, true);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export const KOC_MASTER_CONTACT_SYNCED_EVENT = 'upbase:koc-master-contact-synced';
+
+/**
+ * Đồng bộ Email / Zalo từ dòng Sheet Listing ngược về Danh bạ KOC (`upbase_saved_kocs_v1` & `/api/kocs`)
+ */
+export function syncSheetRowContactToKocMaster(params: {
+  kocId?: string;
+  idKenh?: string;
+  email?: string;
+  zalo?: string;
+  allKocs?: KocItem[];
+}): void {
+  if (typeof window === 'undefined') return;
+  const cleanHandle = normalizeTikTokId(params.idKenh || '').toLowerCase();
+  if (!params.kocId && !cleanHandle) return;
+
+  try {
+    const raw = window.localStorage.getItem('upbase_saved_kocs_v1');
+    const savedMap: Record<string, KocItem> = raw ? JSON.parse(raw) : {};
+
+    const matchedFromList = (params.allKocs || []).find((k) => {
+      const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
+      return (params.kocId && k.id === params.kocId) || (cleanHandle && h === cleanHandle);
+    });
+
+    const mapKey = cleanHandle || params.kocId || '';
+    const existingSaved =
+      (mapKey && savedMap[mapKey]) ||
+      Object.values(savedMap).find((k) => {
+        const h = normalizeTikTokId(k.channelId || k.tiktokChannel || '').toLowerCase();
+        return (params.kocId && k.id === params.kocId) || (cleanHandle && h === cleanHandle);
+      });
+
+    const baseKoc = existingSaved || matchedFromList;
+    if (!baseKoc) return;
+
+    const updatedKoc: KocItem = {
+      ...baseKoc,
+      ...(params.email !== undefined ? { email: params.email.trim() } : {}),
+      ...(params.zalo !== undefined ? { zalo: params.zalo.trim() } : {}),
+    };
+
+    const targetKey =
+      normalizeTikTokId(updatedKoc.channelId || '').toLowerCase() || updatedKoc.id;
+    if (targetKey) {
+      savedMap[targetKey] = updatedKoc;
+      window.localStorage.setItem('upbase_saved_kocs_v1', JSON.stringify(savedMap));
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(KOC_MASTER_CONTACT_SYNCED_EVENT, { detail: updatedKoc })
+    );
+
+    void fetch('/api/kocs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ created: [], updated: [updatedKoc] }),
+    }).catch(() => undefined);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 function cleanTsvCell(val: unknown): string {
   if (val === null || val === undefined) return '';
   return String(val).replace(/[\t\r\n]+/g, ' ').trim();

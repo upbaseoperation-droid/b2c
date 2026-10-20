@@ -67,7 +67,6 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
     'tiktok-crawler',
     'market-research',
     'task-delegation',
-    'workload-3d',
     'contracts',
     'cloudflare-admin',
   ];

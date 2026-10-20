@@ -33,13 +33,14 @@ export async function POST(req: NextRequest) {
     const niche = body.niche ? String(body.niche).trim() : undefined;
     const bio = body.bio ? String(body.bio).trim() : undefined;
     const kocId = body.kocId ? String(body.kocId).trim() : undefined;
+    const customUrl = body.customUrl ? String(body.customUrl).trim() : undefined;
     const llmConfig = body.llmConfig && typeof body.llmConfig === 'object' ? body.llmConfig : undefined;
 
-    if (!tiktokHandle && !stageName) {
+    if (!tiktokHandle && !stageName && !customUrl) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Cần cung cấp tên KOC hoặc @handle TikTok để tìm kiếm kênh mạng xã hội.',
+          message: 'Cần cung cấp tên KOC, @handle TikTok hoặc link cần phân tích.',
         },
         { status: 400 }
       );
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       phone,
       niche,
       bio,
+      customUrl,
       llmConfig,
       existingChannels: body.existingChannels,
     });
