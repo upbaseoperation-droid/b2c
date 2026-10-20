@@ -23,7 +23,13 @@ import {
   Video,
   X,
 } from 'lucide-react';
-import type { KocItem, UserProfile } from '../../lib/types';
+import {
+  getSegmentFromSalaryGrade,
+  type KocItem,
+  type KocTier,
+  type SalaryGrade,
+  type UserProfile,
+} from '../../lib/types';
 import type {
   CrawlerHistoryTabKey,
   TikTokCrawlerDailyHistoryItem,
@@ -60,6 +66,7 @@ import {
   CompetitorVideoScriptModal,
   type ScriptExtractFallbackContext,
 } from '../crawler/CompetitorVideoScriptModal';
+import { TikTokCrawlCreativeLoader } from '../crawler/TikTokCrawlCreativeLoader';
 import {
   ActionMenu,
   Avatar,
@@ -1440,6 +1447,143 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     onSaveScrapedKocs({ created, updated });
   };
 
+  const mapTrendingItemToKoc = (
+    c: TikTokTrendingCreatorItem,
+    existing?: KocItem
+  ): KocItem => {
+    const nowStr = new Date().toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const flw = c.followers || 0;
+    const tier: KocTier =
+      flw >= 500_000
+        ? 'TIER_1_CELEB'
+        : flw >= 150_000
+          ? 'TIER_2_MACRO'
+          : flw >= 30_000
+            ? 'TIER_3_MICRO'
+            : 'TIER_4_AFFILIATE';
+    const tierLabel =
+      tier === 'TIER_1_CELEB'
+        ? 'Tầng 1: Celeb / Mega'
+        : tier === 'TIER_2_MACRO'
+          ? 'Tầng 2: Macro'
+          : tier === 'TIER_3_MICRO'
+            ? 'Tầng 3: Micro'
+            : 'Tầng 4: Affiliate';
+    const salaryGrade: SalaryGrade =
+      flw >= 500_000
+        ? 'KL6'
+        : flw >= 200_000
+          ? 'KL5'
+          : flw >= 100_000
+            ? 'KL4'
+            : flw >= 30_000
+              ? 'KL3'
+              : 'KL2';
+    const rateCardVideo =
+      flw >= 500_000
+        ? 15_000_000
+        : flw >= 200_000
+          ? 8_000_000
+          : flw >= 100_000
+            ? 4_500_000
+            : flw >= 30_000
+              ? 2_000_000
+              : 1_000_000;
+
+    if (existing) {
+      return {
+        ...existing,
+        channelId: c.handle,
+        channelLink: c.channelUrl,
+        stageName: existing.stageName || c.nickname,
+        avatarUrl: c.avatarUrl || existing.avatarUrl,
+        bio: c.bio || existing.bio,
+        phone: existing.phone || c.extractedPhone || '',
+        email: existing.email || c.extractedEmail,
+        followers: c.followers || existing.followers,
+        totalLikes: c.totalLikes || existing.totalLikes,
+        videoCount: c.videoCount || existing.videoCount,
+        engagementRate: c.engagementRate ?? existing.engagementRate,
+        tiktokSellerSyncedAt: nowStr,
+        metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+      };
+    }
+
+    return {
+      id: `koc-tt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      channelId: c.handle,
+      channelLink: c.channelUrl,
+      stageName: c.nickname || c.handle,
+      realName: c.nickname || c.handle,
+      avatarUrl: c.avatarUrl,
+      tier,
+      tierLabel,
+      salaryGrade,
+      segment: getSegmentFromSalaryGrade(salaryGrade),
+      tepKenh: 'Beauty',
+      creatorCategory: 'Beauty',
+      kocCategory: 'Personal care',
+      niche: c.categoryLabel || 'KOC Xu hướng',
+      followers: c.followers,
+      avgViews: c.latestVideoViews || Math.round(c.followers * 0.25),
+      rateCardVideo,
+      bookingFormat: 'Booking Video KOC',
+      platforms: ['TIKTOK'],
+      tiktokChannel: c.channelUrl,
+      phone: c.extractedPhone || '',
+      zalo: c.extractedPhone || '',
+      email: c.extractedEmail,
+      location: '',
+      cccd: '',
+      bankName: '',
+      bankAccount: '',
+      bio: c.bio,
+      totalLikes: c.totalLikes,
+      videoCount: c.videoCount,
+      avgLikes: c.latestVideoLikes || 0,
+      engagementRate: c.engagementRate || 0,
+      metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+      tiktokSellerSyncedAt: nowStr,
+      tiktokAccountHealth: 'TỐT',
+      statusKoc: 'SẴN_SÀNG',
+      reliabilityScore: 9.0,
+    };
+  };
+
+  const handleSaveSingleTrendingKoc = (item: TikTokTrendingCreatorItem) => {
+    const clean = item.handle.toLowerCase().replace(/^@+/, '');
+    const matched = existingByHandle.get(clean);
+    const mapped = mapTrendingItemToKoc(item, matched);
+    if (matched) {
+      onSaveScrapedKocs({ created: [], updated: [mapped] });
+    } else {
+      onSaveScrapedKocs({ created: [mapped], updated: [] });
+    }
+  };
+
+  const handleSaveBulkTrendingKocs = (items: TikTokTrendingCreatorItem[]) => {
+    if (items.length === 0) return;
+    const created: KocItem[] = [];
+    const updated: KocItem[] = [];
+    for (const item of items) {
+      const clean = item.handle.toLowerCase().replace(/^@+/, '');
+      const matched = existingByHandle.get(clean);
+      const mapped = mapTrendingItemToKoc(item, matched);
+      if (matched) {
+        updated.push(mapped);
+      } else {
+        created.push(mapped);
+      }
+    }
+    onSaveScrapedKocs({ created, updated });
+  };
+
   const handleExportCompetitorCsv = () => {
     if (filteredCompResults.length === 0) return;
     const csv = buildCompetitorKocsCsv(filteredCompResults);
@@ -1535,6 +1679,205 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     );
   };
 
+  // --- BỘ RENDER 5 CỘT ĐỒNG NHẤT CHO TOÀN BỘ DANH SÁCH KOC CÀO RA ---
+  const getFollowerTierShortLabel = (followers: number) => {
+    if (followers >= 500_000) return 'Mega';
+    if (followers >= 200_000) return 'Macro';
+    if (followers >= 50_000) return 'Micro';
+    return 'Nano';
+  };
+
+  const renderUnifiedKocIdentityCell = (params: {
+    handle: string;
+    nickname: string;
+    avatarUrl?: string;
+    channelUrl: string;
+    verified?: boolean;
+    phone?: string;
+    email?: string;
+    matchedKoc?: KocItem;
+    isExisting: boolean;
+  }) => (
+    <div className="flex items-center gap-2.5 min-w-0 max-w-[265px]">
+      <Avatar name={params.nickname || params.handle} src={params.avatarUrl} size={36} />
+      <div className="grid gap-0.5 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <a
+            href={params.channelUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
+          >
+            <span className="truncate">@{params.handle.replace(/^@+/, '')}</span>
+            <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
+          </a>
+          {params.verified && (
+            <span
+              title="Kênh có tích xanh TikTok"
+              className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-positive text-white text-[9px] font-bold shrink-0"
+            >
+              ✓
+            </span>
+          )}
+          {renderKocStatusBadge(params.matchedKoc, params.isExisting)}
+        </div>
+        <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
+          <span className="truncate">{params.nickname || params.handle}</span>
+          {params.phone ? (
+            <>
+              <span className="text-ink-3 shrink-0">·</span>
+              <span className="text-ink font-code inline-flex items-center gap-0.5 tabular-nums shrink-0">
+                <Phone className="w-2.5 h-2.5 text-accent shrink-0" />
+                <span>{params.phone}</span>
+              </span>
+            </>
+          ) : params.email ? (
+            <>
+              <span className="text-ink-3 shrink-0">·</span>
+              <span className="text-ink-3 font-code truncate max-w-[120px]">{params.email}</span>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderUnifiedKocScaleCell = (params: {
+    followers: number;
+    videoCount: number;
+    engagementRate?: number;
+    totalLikes?: number;
+  }) => {
+    const tierBadge = getFollowerTierShortLabel(params.followers);
+    return (
+      <div className="grid gap-0.5 justify-items-end tabular-nums">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-ink">
+            {formatFollowers(params.followers)} flw
+          </span>
+          <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-[10px] font-medium text-ink-2">
+            {tierBadge}
+          </span>
+        </div>
+        <div className="text-2xs text-ink-3">
+          {params.engagementRate ? (
+            <span className="text-positive font-semibold">ER {params.engagementRate}%</span>
+          ) : params.totalLikes ? (
+            <span>{formatFollowers(params.totalLikes)} tim</span>
+          ) : null}
+          {(params.engagementRate || params.totalLikes) && params.videoCount > 0 ? ' · ' : ''}
+          {params.videoCount > 0 ? <span>{formatNumber(params.videoCount)} video</span> : null}
+        </div>
+      </div>
+    );
+  };
+
+  const renderUnifiedVideoCell = (params: {
+    videoUrl?: string;
+    caption?: string;
+    views?: number;
+    likes?: number;
+    publishedAt?: string;
+  }) => {
+    if (!params.videoUrl) {
+      return <span className="text-2xs text-ink-3">—</span>;
+    }
+    return (
+      <div className="grid gap-0.5 min-w-0 max-w-[290px]">
+        <a
+          href={params.videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          title={params.caption}
+          className="text-xs text-ink hover:text-accent truncate inline-flex items-center gap-1.5 font-medium"
+        >
+          <Video className="w-3.5 h-3.5 text-accent shrink-0" />
+          <span className="truncate">{params.caption || 'Xem video TikTok'}</span>
+        </a>
+        <div className="flex items-center gap-1.5 text-2xs text-ink-3 tabular-nums pl-5">
+          <span className="font-semibold text-ink">
+            {params.views ? `${formatNumber(params.views)} view` : 'Video mới'}
+          </span>
+          {params.likes ? (
+            <>
+              <span>·</span>
+              <span>{formatNumber(params.likes)} tim</span>
+            </>
+          ) : null}
+          {params.publishedAt ? (
+            <>
+              <span>·</span>
+              <span>{formatDate(params.publishedAt)}</span>
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const renderUnifiedKocActionsCell = (params: {
+    handle: string;
+    channelUrl: string;
+    isExisting: boolean;
+    onSave: () => void;
+    videoUrl?: string;
+    scriptContext?: ScriptExtractFallbackContext;
+  }) => (
+    <div className="flex items-center justify-end gap-1.5">
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={(e) => {
+          e.stopPropagation();
+          setScraperInitialHandle(`@${params.handle.replace(/^@+/, '')}`);
+          setScraperModalOpen(true);
+        }}
+      >
+        Chi tiết
+      </Button>
+      <Button
+        size="sm"
+        variant={params.isExisting ? 'secondary' : 'primary'}
+        icon={params.isExisting ? Check : UserPlus}
+        onClick={(e) => {
+          e.stopPropagation();
+          params.onSave();
+        }}
+      >
+        {params.isExisting ? 'Cập nhật' : 'Lưu KOC'}
+      </Button>
+      <ActionMenu
+        items={[
+          ...(params.videoUrl
+            ? [
+                {
+                  label: 'Tách lời thoại & Hook video',
+                  icon: FileText,
+                  onSelect: () => openScriptExtractorModal(params.videoUrl!, params.scriptContext),
+                },
+                {
+                  label: 'Cào bình luận video này',
+                  icon: MessageSquare,
+                  onSelect: () => {
+                    setVideoCommentUrl(params.videoUrl!);
+                    setActiveTab('COMMENTS_AND_TRENDING');
+                    void runVideoCommentsCrawl(params.videoUrl!);
+                  },
+                },
+              ]
+            : []),
+          {
+            label: 'Mở kênh trên TikTok',
+            icon: ExternalLink,
+            onSelect: () => window.open(params.channelUrl, '_blank', 'noopener,noreferrer'),
+          },
+        ]}
+      />
+    </div>
+  );
+
   const competitorColumns: Column<TikTokCompetitorKocResult>[] = [
     {
       key: 'koc',
@@ -1545,49 +1888,41 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
         const isExisting =
           Boolean(matchedKoc) || r.competitorCollaboration.isAlreadyInUpbase;
-        return (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <a
-                  href={p.channelUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
-                >
-                  <span className="truncate">@{p.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
-                </a>
-                {renderKocStatusBadge(matchedKoc, isExisting)}
-              </div>
-              <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
-                <span className="truncate">{p.nickname}</span>
-                {p.extractedPhone && (
-                  <>
-                    <span className="text-ink-3 shrink-0">·</span>
-                    <span className="text-ink font-code inline-flex items-center gap-0.5 tabular-nums shrink-0">
-                      <Phone className="w-2.5 h-2.5 text-ink-3 shrink-0" />
-                      <span>{p.extractedPhone}</span>
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+        return renderUnifiedKocIdentityCell({
+          handle: p.handle,
+          nickname: p.nickname,
+          avatarUrl: p.avatarUrl,
+          channelUrl: p.channelUrl,
+          verified: p.isVerified,
+          phone: p.extractedPhone,
+          email: p.extractedEmail,
+          matchedKoc,
+          isExisting,
+        });
       },
     },
     {
-      key: 'collab',
-      header: 'Hình thức & Sản phẩm',
-      width: 220,
+      key: 'scale',
+      header: 'Quy mô kênh',
+      align: 'right',
+      width: 150,
+      render: (r) =>
+        renderUnifiedKocScaleCell({
+          followers: r.channelProfile.followers,
+          videoCount: r.channelProfile.videoCount,
+          engagementRate: r.engagementMetrics.engagementRate,
+          totalLikes: r.channelProfile.totalLikes,
+        }),
+    },
+    {
+      key: 'context',
+      header: 'Phân loại & Ngữ cảnh',
+      width: 210,
       render: (r) => {
         const c = r.competitorCollaboration;
         return (
-          <div className="grid gap-1 min-w-0 max-w-[250px]">
-            <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="grid gap-0.5 min-w-0 max-w-[220px]">
+            <div className="flex items-center gap-1.5">
               <Status
                 tone={
                   c.collaborationType === 'PAID_BOOKING'
@@ -1604,10 +1939,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </span>
             </div>
             <span
-              className="text-xs text-ink-2 truncate"
+              className="text-2xs text-ink-2 truncate"
               title={c.competitorProductPromoted}
             >
-              {c.competitorProductPromoted}
+              {c.competitorProductPromoted || r.channelProfile.bio || '—'}
             </span>
           </div>
         );
@@ -1615,121 +1950,42 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
     {
       key: 'video',
-      header: 'Video hợp tác gần nhất',
+      header: 'Video tiêu biểu',
       width: 280,
       render: (r) => {
         const c = r.competitorCollaboration;
-        return (
-          <div className="grid gap-1 min-w-0 max-w-[300px]">
-            <a
-              href={c.latestCollabVideoUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-xs text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
-            >
-              <span>{c.latestCollabCaption}</span>
-              <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
-            </a>
-            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
-              <span>{formatDate(c.latestCollabPublishedAt)}</span>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openScriptExtractorModal(c.latestCollabVideoUrl, {
-                    handle: r.handle,
-                    nickname: r.channelProfile.nickname,
-                    caption: c.latestCollabCaption,
-                    productPromoted: c.competitorProductPromoted,
-                    views: c.latestCollabViews,
-                    likes: r.engagementMetrics.avgLikes,
-                  });
-                }}
-                className="text-accent hover:underline font-semibold"
-              >
-                Tách lời thoại &amp; Hook
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVideoCommentUrl(c.latestCollabVideoUrl);
-                  setActiveTab('COMMENTS_AND_TRENDING');
-                  void runVideoCommentsCrawl(c.latestCollabVideoUrl);
-                }}
-                className="text-accent hover:underline font-medium"
-              >
-                Xem bình luận
-              </button>
-            </div>
-          </div>
-        );
+        return renderUnifiedVideoCell({
+          videoUrl: c.latestCollabVideoUrl,
+          caption: c.latestCollabCaption,
+          views: c.latestCollabViews,
+          likes: r.engagementMetrics.avgLikes,
+          publishedAt: c.latestCollabPublishedAt,
+        });
       },
     },
     {
-      key: 'compPerf',
-      header: 'Hiệu quả video',
+      key: 'action',
+      header: 'Thao tác',
       align: 'right',
-      width: 155,
+      width: 195,
       render: (r) => {
         const c = r.competitorCollaboration;
-        const e = r.engagementMetrics;
-        return (
-          <div className="grid gap-0.5">
-            <span className="text-xs font-semibold text-ink tabular-nums">
-              {formatNumber(c.latestCollabViews)} view
-            </span>
-            <span className="text-2xs text-positive font-semibold tabular-nums">
-              ER {e.engagementRate}% · {formatNumber(e.avgLikes)} tim
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'channelAction',
-      header: 'Quy mô kênh & Thao tác',
-      align: 'right',
-      width: 200,
-      render: (r) => {
-        const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
-        const isExisting = Boolean(matchedKoc);
-        return (
-          <div className="grid gap-1 justify-items-end">
-            <div className="text-xs text-ink tabular-nums">
-              <span className="font-semibold">{formatFollowers(p.followers)}</span> flw ·{' '}
-              <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setScraperInitialHandle(`@${r.handle}`);
-                  setScraperModalOpen(true);
-                }}
-              >
-                Chi tiết
-              </Button>
-              <Button
-                size="sm"
-                variant={isExisting ? 'secondary' : 'primary'}
-                icon={isExisting ? Check : UserPlus}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSaveSingleKoc(r);
-                }}
-              >
-                {isExisting ? 'Cập nhật' : 'Lưu KOC'}
-              </Button>
-            </div>
-          </div>
-        );
+        return renderUnifiedKocActionsCell({
+          handle: r.handle,
+          channelUrl: r.channelProfile.channelUrl,
+          isExisting: Boolean(matchedKoc),
+          onSave: () => handleSaveSingleKoc(r),
+          videoUrl: c.latestCollabVideoUrl,
+          scriptContext: {
+            handle: r.handle,
+            nickname: r.channelProfile.nickname,
+            caption: c.latestCollabCaption,
+            productPromoted: c.competitorProductPromoted,
+            views: c.latestCollabViews,
+            likes: r.engagementMetrics.avgLikes,
+          },
+        });
       },
     },
   ];
@@ -1742,150 +1998,92 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
-        const isExisting = Boolean(matchedKoc);
+        return renderUnifiedKocIdentityCell({
+          handle: p.handle,
+          nickname: p.nickname,
+          avatarUrl: p.avatarUrl,
+          channelUrl: p.channelUrl,
+          verified: p.isVerified,
+          phone: p.extractedPhone,
+          email: p.extractedEmail,
+          matchedKoc,
+          isExisting: Boolean(matchedKoc),
+        });
+      },
+    },
+    {
+      key: 'scale',
+      header: 'Quy mô kênh',
+      align: 'right',
+      width: 150,
+      render: (r) =>
+        renderUnifiedKocScaleCell({
+          followers: r.channelProfile.followers,
+          videoCount: r.channelProfile.videoCount,
+          engagementRate: r.engagementMetrics.engagementRate,
+          totalLikes: r.channelProfile.totalLikes,
+        }),
+    },
+    {
+      key: 'context',
+      header: 'Phân loại & Ngữ cảnh',
+      width: 210,
+      render: (r) => {
+        const v = r.matchedHashtagVideo;
         return (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <a
-                  href={p.channelUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
-                >
-                  <span className="truncate">@{p.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
-                </a>
-                {renderKocStatusBadge(matchedKoc, isExisting)}
-              </div>
-              <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
-                <span className="truncate">{p.nickname}</span>
-                {p.extractedPhone && (
-                  <>
-                    <span className="text-ink-3 shrink-0">·</span>
-                    <span className="text-ink font-code inline-flex items-center gap-0.5 tabular-nums shrink-0">
-                      <Phone className="w-2.5 h-2.5 text-ink-3 shrink-0" />
-                      <span>{p.extractedPhone}</span>
-                    </span>
-                  </>
-                )}
-              </div>
+          <div className="grid gap-0.5 min-w-0 max-w-[220px]">
+            <div className="flex items-center gap-1.5">
+              <Status tone={v.breakoutRatio >= 1 ? 'positive' : 'neutral'}>
+                View/Flw {v.breakoutRatio}x
+              </Status>
+              <span className="text-2xs font-code text-accent truncate">
+                #{v.hashtag.replace(/^#+/, '')}
+              </span>
             </div>
+            <span className="text-2xs text-ink-2 truncate" title={r.channelProfile.bio}>
+              {r.channelProfile.bio || 'Kênh sáng tạo nội dung theo hashtag'}
+            </span>
           </div>
         );
       },
     },
     {
       key: 'video',
-      header: 'Video gắn Hashtag',
-      width: 310,
+      header: 'Video tiêu biểu',
+      width: 280,
       render: (r) => {
         const v = r.matchedHashtagVideo;
-        return (
-          <div className="grid gap-1 min-w-0 max-w-[330px]">
-            <a
-              href={v.videoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-ink hover:text-accent line-clamp-2 leading-snug inline-flex items-start gap-1"
-            >
-              <span>{v.captionSnippet}</span>
-              <ExternalLink className="w-3 h-3 shrink-0 mt-0.5 text-ink-3" />
-            </a>
-            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
-              <span>{formatDate(v.publishedAt)}</span>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openScriptExtractorModal(v.videoUrl, {
-                    handle: r.handle,
-                    nickname: r.channelProfile.nickname,
-                    caption: v.captionSnippet,
-                    views: v.views,
-                    likes: v.likes,
-                  });
-                }}
-                className="text-accent hover:underline font-semibold"
-              >
-                Tách lời thoại &amp; Hook
-              </button>
-              <span>·</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVideoCommentUrl(v.videoUrl);
-                  setActiveTab('COMMENTS_AND_TRENDING');
-                  void runVideoCommentsCrawl(v.videoUrl);
-                }}
-                className="text-accent hover:underline font-medium"
-              >
-                Xem bình luận
-              </button>
-            </div>
-          </div>
-        );
+        return renderUnifiedVideoCell({
+          videoUrl: v.videoUrl,
+          caption: v.captionSnippet,
+          views: v.views,
+          likes: v.likes,
+          publishedAt: v.publishedAt,
+        });
       },
     },
     {
-      key: 'breakout',
-      header: 'Hiệu quả video',
+      key: 'action',
+      header: 'Thao tác',
       align: 'right',
-      width: 175,
+      width: 195,
       render: (r) => {
         const v = r.matchedHashtagVideo;
-        return (
-          <div className="grid gap-0.5">
-            <span className="text-xs font-semibold text-ink tabular-nums">
-              {formatNumber(v.views)} view · {formatNumber(v.likes)} tim
-            </span>
-            <span className="text-2xs text-positive font-semibold tabular-nums">
-              View/Flw {v.breakoutRatio}x · ER {r.engagementMetrics.engagementRate}%
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'channelStats',
-      header: 'Quy mô kênh & Thao tác',
-      align: 'right',
-      width: 205,
-      render: (r) => {
-        const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
-        const isExisting = Boolean(matchedKoc);
-        return (
-          <div className="grid gap-1 justify-items-end">
-            <span className="text-xs text-ink tabular-nums">
-              <span className="font-semibold">{formatFollowers(p.followers)}</span> flw ·{' '}
-              <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setScraperInitialHandle(`@${r.handle}`);
-                  setScraperModalOpen(true);
-                }}
-              >
-                Chi tiết
-              </Button>
-              <Button
-                size="sm"
-                variant={isExisting ? 'secondary' : 'primary'}
-                icon={isExisting ? Check : UserPlus}
-                onClick={() => handleSaveSingleKoc(r)}
-              >
-                {isExisting ? 'Cập nhật' : 'Lưu KOC'}
-              </Button>
-            </div>
-          </div>
-        );
+        return renderUnifiedKocActionsCell({
+          handle: r.handle,
+          channelUrl: r.channelProfile.channelUrl,
+          isExisting: Boolean(matchedKoc),
+          onSave: () => handleSaveSingleKoc(r),
+          videoUrl: v.videoUrl,
+          scriptContext: {
+            handle: r.handle,
+            nickname: r.channelProfile.nickname,
+            caption: v.captionSnippet,
+            views: v.views,
+            likes: v.likes,
+          },
+        });
       },
     },
   ];
@@ -1964,139 +2162,86 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
   const trendingColumns: Column<TikTokTrendingCreatorItem>[] = [
     {
-      key: 'creator',
-      header: 'Kênh KOC & Ngành hàng',
+      key: 'koc',
+      header: 'Kênh KOC & Liên hệ',
       width: 265,
       render: (c) => {
         const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
-        return (
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar name={c.nickname} src={c.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <a
-                  href={c.channelUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
-                >
-                  <span className="truncate">@{c.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
-                </a>
-                {renderKocStatusBadge(matchedKoc, Boolean(matchedKoc))}
-                {c.verified && <Status tone="positive">Tick xanh</Status>}
-              </div>
-              <div className="flex items-center gap-1.5 min-w-0 text-2xs">
-                <span className="text-ink-2 truncate">{c.nickname}</span>
-                {c.categoryLabel && (
-                  <>
-                    <span className="text-ink-3 shrink-0">·</span>
-                    <span className="font-medium text-accent truncate">{c.categoryLabel}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        );
+        return renderUnifiedKocIdentityCell({
+          handle: c.handle,
+          nickname: c.nickname,
+          avatarUrl: c.avatarUrl,
+          channelUrl: c.channelUrl,
+          verified: c.verified,
+          phone: c.extractedPhone,
+          email: c.extractedEmail,
+          matchedKoc,
+          isExisting: Boolean(matchedKoc),
+        });
       },
-    },
-    {
-      key: 'bio',
-      header: 'Tiểu sử & Liên hệ',
-      width: 250,
-      render: (c) => (
-        <div className="grid gap-0.5 min-w-0 max-w-[260px]">
-          <span className="text-xs text-ink line-clamp-2">{c.bio || '—'}</span>
-          {(c.extractedPhone || c.extractedEmail) && (
-            <span className="text-2xs text-ink-3 font-code">
-              {c.extractedPhone ? `SĐT: ${c.extractedPhone}` : ''}{' '}
-              {c.extractedEmail ? `· ${c.extractedEmail}` : ''}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'latestVideo',
-      header: 'Video xu hướng trong ngành',
-      width: 290,
-      render: (c) =>
-        c.latestVideoUrl ? (
-          <div className="grid gap-1 min-w-0 max-w-[300px]">
-            <a
-              href={c.latestVideoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-ink hover:text-accent line-clamp-2 inline-flex items-start gap-1"
-            >
-              <Video className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
-              <span>{c.latestVideoCaption || 'Xem video TikTok xu hướng'}</span>
-            </a>
-            <div className="flex items-center justify-between gap-2 text-2xs text-ink-3 tabular-nums">
-              <span>
-                {c.latestVideoViews ? `${formatFollowers(c.latestVideoViews)} view` : 'Video mới'}
-                {c.latestVideoPublishedAt ? ` · ${formatDate(c.latestVideoPublishedAt)}` : ''}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  openScriptExtractorModal(c.latestVideoUrl!, {
-                    handle: c.handle,
-                    nickname: c.nickname,
-                    caption: c.latestVideoCaption || c.bio,
-                    views: c.latestVideoViews || 0,
-                    likes: c.latestVideoLikes || 0,
-                  })
-                }
-                className="text-2xs font-medium text-accent hover:underline inline-flex items-center gap-1"
-              >
-                <FileText className="w-3 h-3" />
-                <span>Tách kịch bản</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <span className="text-2xs text-ink-3">—</span>
-        ),
     },
     {
       key: 'scale',
       header: 'Quy mô kênh',
       align: 'right',
-      width: 175,
+      width: 150,
+      render: (c) =>
+        renderUnifiedKocScaleCell({
+          followers: c.followers,
+          videoCount: c.videoCount,
+          engagementRate: c.engagementRate,
+          totalLikes: c.totalLikes,
+        }),
+    },
+    {
+      key: 'context',
+      header: 'Phân loại & Ngữ cảnh',
+      width: 210,
       render: (c) => (
-        <div className="grid gap-0.5 tabular-nums">
-          <span className="text-xs font-semibold text-ink">
-            {formatFollowers(c.followers)} flw · {formatFollowers(c.totalLikes)} tim
-          </span>
-          <span className="text-2xs text-ink-3">
-            {formatNumber(c.videoCount)} video
-            {c.engagementRate ? ` · ER ${c.engagementRate}%` : ''}
+        <div className="grid gap-0.5 min-w-0 max-w-[220px]">
+          <div className="flex items-center gap-1.5">
+            <Status tone="info">{c.categoryLabel || 'KOC Xu hướng'}</Status>
+          </div>
+          <span className="text-2xs text-ink-2 truncate" title={c.bio}>
+            {c.bio || 'Kênh sáng tạo nội dung xu hướng ngành hàng'}
           </span>
         </div>
       ),
     },
     {
+      key: 'video',
+      header: 'Video tiêu biểu',
+      width: 280,
+      render: (c) =>
+        renderUnifiedVideoCell({
+          videoUrl: c.latestVideoUrl,
+          caption: c.latestVideoCaption,
+          views: c.latestVideoViews,
+          likes: c.latestVideoLikes,
+          publishedAt: c.latestVideoPublishedAt,
+        }),
+    },
+    {
       key: 'action',
       header: 'Thao tác',
       align: 'right',
-      width: 185,
+      width: 195,
       render: (c) => {
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Search}
-              onClick={() => {
-                setScraperInitialHandle(`@${c.handle}`);
-                setScraperModalOpen(true);
-              }}
-            >
-              Cào chi tiết kênh
-            </Button>
-          </div>
-        );
+        const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
+        return renderUnifiedKocActionsCell({
+          handle: c.handle,
+          channelUrl: c.channelUrl,
+          isExisting: Boolean(matchedKoc),
+          onSave: () => handleSaveSingleTrendingKoc(c),
+          videoUrl: c.latestVideoUrl,
+          scriptContext: {
+            handle: c.handle,
+            nickname: c.nickname,
+            caption: c.latestVideoCaption || c.bio,
+            views: c.latestVideoViews || 0,
+            likes: c.latestVideoLikes || 0,
+          },
+        });
       },
     },
   ];
@@ -3073,13 +3218,41 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              <DataTable
-                rows={filteredCompResults}
-                columns={competitorColumns}
-                rowKey={(r) => r.handle}
-                fitContainer
-                empty={compLoading ? 'Đang quét danh sách KOC hợp tác...' : 'Không có KOC nào khớp bộ lọc.'}
-              />
+              {compLoading && compResults.length === 0 ? (
+                <TikTokCrawlCreativeLoader
+                  mode="COMPETITOR"
+                  queryLabel={competitorInput.trim() || 'Kênh đối thủ'}
+                  targetCount={compRequestedCount ?? compTargetCount}
+                  batchProgress={compBatchProgress}
+                  collectedSoFar={compResults.length}
+                  onStop={() => {
+                    compAbortRef.current = true;
+                  }}
+                />
+              ) : (
+                <>
+                  {compLoading && compResults.length > 0 && (
+                    <TikTokCrawlCreativeLoader
+                      compact
+                      mode="COMPETITOR"
+                      queryLabel={competitorInput.trim() || 'Kênh đối thủ'}
+                      targetCount={compRequestedCount ?? compTargetCount}
+                      batchProgress={compBatchProgress}
+                      collectedSoFar={compResults.length}
+                      onStop={() => {
+                        compAbortRef.current = true;
+                      }}
+                    />
+                  )}
+                  <DataTable
+                    rows={filteredCompResults}
+                    columns={competitorColumns}
+                    rowKey={(r) => r.handle}
+                    fitContainer
+                    empty="Không có KOC nào khớp bộ lọc."
+                  />
+                </>
+              )}
             </>
           )}
         </Panel>
@@ -3397,13 +3570,41 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              <DataTable
-                rows={filteredTagResults}
-                columns={hashtagColumns}
-                rowKey={(r) => r.handle}
-                fitContainer
-                empty={tagLoading ? 'Đang quét danh sách KOC theo hashtag...' : 'Không có KOC nào khớp bộ lọc.'}
-              />
+              {tagLoading && tagResults.length === 0 ? (
+                <TikTokCrawlCreativeLoader
+                  mode="HASHTAG"
+                  queryLabel={hashtagInput.trim() || '#Hashtag'}
+                  targetCount={tagRequestedCount ?? tagTargetCount}
+                  batchProgress={tagBatchProgress}
+                  collectedSoFar={tagResults.length}
+                  onStop={() => {
+                    tagAbortRef.current = true;
+                  }}
+                />
+              ) : (
+                <>
+                  {tagLoading && tagResults.length > 0 && (
+                    <TikTokCrawlCreativeLoader
+                      compact
+                      mode="HASHTAG"
+                      queryLabel={hashtagInput.trim() || '#Hashtag'}
+                      targetCount={tagRequestedCount ?? tagTargetCount}
+                      batchProgress={tagBatchProgress}
+                      collectedSoFar={tagResults.length}
+                      onStop={() => {
+                        tagAbortRef.current = true;
+                      }}
+                    />
+                  )}
+                  <DataTable
+                    rows={filteredTagResults}
+                    columns={hashtagColumns}
+                    rowKey={(r) => r.handle}
+                    fitContainer
+                    empty="Không có KOC nào khớp bộ lọc."
+                  />
+                </>
+              )}
             </>
           )}
         </Panel>
@@ -3575,8 +3776,34 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           )}
 
+          {commentLoading && !commentData && (
+            <TikTokCrawlCreativeLoader
+              mode="COMMENTS"
+              queryLabel={videoCommentUrl.trim() || 'Video TikTok'}
+              targetCount={commentRequestedCount ?? commentTargetCount}
+              batchProgress={commentBatchProgress}
+              collectedSoFar={0}
+              onStop={() => {
+                commentAbortRef.current = true;
+              }}
+            />
+          )}
+
           {commentData && (
             <>
+              {commentLoading && (
+                <TikTokCrawlCreativeLoader
+                  compact
+                  mode="COMMENTS"
+                  queryLabel={videoCommentUrl.trim() || 'Video TikTok'}
+                  targetCount={commentRequestedCount ?? commentTargetCount}
+                  batchProgress={commentBatchProgress}
+                  collectedSoFar={commentData.comments.length}
+                  onStop={() => {
+                    commentAbortRef.current = true;
+                  }}
+                />
+              )}
               <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <Chips<CommentFilterKey>
@@ -3823,7 +4050,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   onClick={handleExportTrendingCsv}
                   disabled={filteredTrendingCreators.length === 0}
                 >
-                  Xuất CSV ({filteredTrendingCreators.length})
+                  Xuất CSV
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Check}
+                  disabled={filteredTrendingCreators.length === 0}
+                  onClick={() => handleSaveBulkTrendingKocs(filteredTrendingCreators)}
+                >
+                  Lưu tất cả ({filteredTrendingCreators.length})
                 </Button>
               </div>
             )}
@@ -3920,22 +4156,51 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 </div>
               </div>
 
-              <DataTable
-                rows={filteredTrendingCreators}
-                columns={trendingColumns}
-                rowKey={(c) => c.handle}
-                fitContainer
-                empty={
-                  trendingLoading || trendingHandleSearching
-                    ? `Đang quét KOC xu hướng ngành "${
+              {(trendingLoading || trendingHandleSearching) && trendingCreators.length === 0 ? (
+                <TikTokCrawlCreativeLoader
+                  mode="TRENDING"
+                  queryLabel={
+                    TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
+                    'Tất cả ngành hàng B2C'
+                  }
+                  targetCount={trendingRequestedCount ?? trendingTargetCount}
+                  batchProgress={trendingBatchProgress}
+                  collectedSoFar={trendingCreators.length}
+                  onStop={() => {
+                    trendingAbortRef.current = true;
+                  }}
+                />
+              ) : (
+                <>
+                  {(trendingLoading || trendingHandleSearching) && trendingCreators.length > 0 && (
+                    <TikTokCrawlCreativeLoader
+                      compact
+                      mode="TRENDING"
+                      queryLabel={
                         TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
-                        'Tất cả ngành hàng'
-                      }" trên TikTok...`
-                    : trendingCreators.length > 0
-                      ? `Không tìm thấy kênh khớp "${trendingSearch.trim()}". Bấm nút "Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}" ở góc phải để quét trực tiếp từ TikTok.`
-                      : 'Chọn ngành hàng và nhấn nút Quét KOC xu hướng để tải các kênh đang thịnh hành trên TikTok.'
-                }
-              />
+                        'Tất cả ngành hàng B2C'
+                      }
+                      targetCount={trendingRequestedCount ?? trendingTargetCount}
+                      batchProgress={trendingBatchProgress}
+                      collectedSoFar={trendingCreators.length}
+                      onStop={() => {
+                        trendingAbortRef.current = true;
+                      }}
+                    />
+                  )}
+                  <DataTable
+                    rows={filteredTrendingCreators}
+                    columns={trendingColumns}
+                    rowKey={(c) => c.handle}
+                    fitContainer
+                    empty={
+                      trendingCreators.length > 0
+                        ? `Không tìm thấy kênh khớp "${trendingSearch.trim()}". Bấm nút "Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}" ở góc phải để quét trực tiếp từ TikTok.`
+                        : 'Chọn ngành hàng và nhấn nút Quét KOC xu hướng để tải các kênh đang thịnh hành trên TikTok.'
+                    }
+                  />
+                </>
+              )}
             </>
           )}
         </Panel>

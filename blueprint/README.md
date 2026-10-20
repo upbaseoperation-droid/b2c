@@ -56,7 +56,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-2.2 | User stories + tiêu chí nghiệm thu | Đang hoàn thiện | Các kịch bản nghiệp vụ theo 8 nhóm quyền |
 | HUB-2.3 | Kiến trúc tổng thể | Đang hoàn thiện | Next.js App Router, Micro-services API, State Sync |
 | HUB-2.4 | Mô hình dữ liệu | Đang hoàn thiện | Cấu trúc dữ liệu Brand, Store, Monthly Plan, KOC Master (4.820 KOC chuẩn hóa 100% danh bạ) & Booking Deal (16.024 video/deal lịch sử hợp tác) |
-| **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, TikTok Seller, Kalodata, Nghiên cứu Brand & Đối thủ, Crawler KOC & Đối thủ (TikTok Open-Source Engines), LLM Gateway & Prompt Setup 8 phân hệ, WeSign, OCR |
+| **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, Luồng đẩy Phiếu ĐNTT / Tạm ứng Bảng 3.2 sang Lark Approval & Larkbase, TikTok Seller, Kalodata, Nghiên cứu Brand & Đối thủ, Crawler KOC & Đối thủ (TikTok Open-Source Engines), LLM Gateway & Prompt Setup 8 phân hệ, WeSign, OCR |
 | **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Đã hoàn thành** | Phân quyền 8 vai trò (CEO, Giám Đốc MKT, Growth/Media Head, Leader, Specialist, Legal, Finance, Brand) & Động cơ phân quyền phạm vi (Data Scoping Engine) |
 | HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, `NAV_GROUPS` & `TAB_LABELS`, nguyên tắc Single Source of Truth, Mobile Responsive (`360px–1023px`) và component UI |
 
