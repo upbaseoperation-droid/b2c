@@ -552,6 +552,56 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     });
   }, [tasks, brands, storePortfolios, managerExceptions]);
 
+  const staffWorkloadByName = useMemo(() => {
+    const map = new Map<string, UnifiedStaffWorkloadRow>();
+    computedStaffWorkloads.forEach(w => map.set(w.name, w));
+    return map;
+  }, [computedStaffWorkloads]);
+
+  const managerRadarStats = useMemo(() => {
+    const hardRatioShortageStaff = computedStaffWorkloads.filter(
+      r => !r.meetsHardRatio && !r.hasException
+    );
+    const overloadedStaff = computedStaffWorkloads
+      .filter(r => r.loadStatus === 'OVERLOAD')
+      .sort((a, b) => b.loadPct - a.loadPct);
+    const underloadedStaff = computedStaffWorkloads
+      .filter(r => r.loadStatus === 'UNDERLOAD')
+      .sort((a, b) => a.loadPct - b.loadPct);
+    return {
+      hardRatioShortageStaff,
+      overloadedStaff,
+      underloadedStaff,
+    };
+  }, [computedStaffWorkloads]);
+
+  const openQuickAssignForStaff = (targetStaffName: string, forceHard = false) => {
+    const staffRow = staffWorkloadByName.get(targetStaffName);
+    const firstOwnedStore = staffRow?.assignedStores[0];
+    if (firstOwnedStore) {
+      setFormBrand(firstOwnedStore.brandName);
+      setFormStore(firstOwnedStore.storeName);
+      setFormStoreScopeCoef(firstOwnedStore.coef as 0.8 | 1.0 | 1.25 | 1.5);
+    }
+    setFormTaskSource('DIRECTOR_ASSIGNED');
+    if (forceHard) {
+      const hardSow =
+        sowPolicies.find(s => s.defaultDifficultyTier === 'HARD') || sowPolicies[0];
+      if (hardSow) {
+        handleSelectSowPolicy(hardSow);
+      }
+      setFormTaskDiffTier('HARD');
+    }
+    setAssignees([
+      {
+        staffName: targetStaffName,
+        role: 'PIC_OWNER',
+        weightPct: 100,
+      },
+    ]);
+    setIsAssignModalOpen(true);
+  };
+
   const filteredStaffWorkloads = useMemo(() => {
     const q = workloadSearch.trim().toLowerCase();
     return computedStaffWorkloads.filter(row => {
@@ -944,6 +994,133 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           icon={BarChart3}
         />
       </StatRow>
+
+      {/* 1B. MANAGER QUICK BALANCING & EXCEPTION RADAR */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Card 1: Nhân sự thiếu tỷ lệ Việc khó Bảng 4 */}
+        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-ink">
+              Chưa đạt tỷ lệ Việc khó Bảng 4 (×0,70)
+            </span>
+            <Status
+              tone={
+                managerRadarStats.hardRatioShortageStaff.length > 0 ? 'warning' : 'positive'
+              }
+            >
+              {managerRadarStats.hardRatioShortageStaff.length} nhân sự
+            </Status>
+          </div>
+          {managerRadarStats.hardRatioShortageStaff.length === 0 ? (
+            <div className="text-xs text-positive font-medium py-1">
+              100% nhân sự đã đạt chuẩn cơ cấu hoặc được duyệt ngoại lệ ×1,00.
+            </div>
+          ) : (
+            <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+              {managerRadarStats.hardRatioShortageStaff.map(row => (
+                <div
+                  key={row.staffCode}
+                  className="flex items-center justify-between gap-2 p-1.5 rounded bg-warning-soft/50 border border-warning/25 text-xs"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setInspectingStaffMember(row.name)}
+                    className="text-left min-w-0 hover:underline cursor-pointer"
+                  >
+                    <span className="font-semibold text-ink">{row.name}</span>{' '}
+                    <span className="text-2xs font-mono text-warning">
+                      ({row.level}: {row.hardRatioPct}%/{row.minHardRatioReqPct}%)
+                    </span>
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => openQuickAssignForStaff(row.name, true)}
+                      className="px-2 py-0.5 rounded bg-surface border border-line hover:border-accent text-2xs font-semibold text-accent cursor-pointer"
+                    >
+                      + Việc Khó
+                    </button>
+                    {canManageSetup && (
+                      <button
+                        type="button"
+                        onClick={() => toggleManagerException(row.staffCode, row.name)}
+                        className="px-2 py-0.5 rounded bg-surface border border-line hover:border-positive text-2xs font-semibold text-positive cursor-pointer"
+                      >
+                        Duyệt ×1,00
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Card 2: Nhân sự quá tải cần san sẻ */}
+        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-ink">
+              Quá tải định mức (≥115%) cần san việc
+            </span>
+            <Status
+              tone={managerRadarStats.overloadedStaff.length > 0 ? 'critical' : 'positive'}
+            >
+              {managerRadarStats.overloadedStaff.length} nhân sự
+            </Status>
+          </div>
+          {managerRadarStats.overloadedStaff.length === 0 ? (
+            <div className="text-xs text-positive font-medium py-1">
+              Không có nhân sự nào vượt ngưỡng quá tải 115%.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+              {managerRadarStats.overloadedStaff.map(row => (
+                <button
+                  key={row.staffCode}
+                  type="button"
+                  onClick={() => {
+                    setActiveSubTab('ASSIGNMENTS');
+                    setStaffFilter(row.name);
+                  }}
+                  className="px-2 py-1 rounded bg-critical-soft/60 border border-critical/30 hover:border-critical text-2xs font-medium text-ink inline-flex items-center gap-1.5 cursor-pointer"
+                  title="Bấm để lọc danh sách việc của nhân sự này và chuyển giao bớt"
+                >
+                  <span className="font-semibold">{row.name}</span>
+                  <span className="font-mono font-semibold text-critical">
+                    {row.loadPct}% ({row.liveAssignedStoresCount} gian)
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Card 3: Nhân sự dư công suất sẵn sàng nhận việc */}
+        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-ink">
+              Dư công suất (&lt;96%) ưu tiên nhận việc
+            </span>
+            <Status tone="info">{managerRadarStats.underloadedStaff.length} nhân sự</Status>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+            {managerRadarStats.underloadedStaff.slice(0, 8).map(row => (
+              <button
+                key={row.staffCode}
+                type="button"
+                onClick={() => openQuickAssignForStaff(row.name, false)}
+                className="px-2 py-1 rounded bg-accent-soft/50 border border-accent/30 hover:border-accent text-2xs font-medium text-ink inline-flex items-center gap-1 cursor-pointer"
+                title="Bấm để giao việc mới cho nhân sự này"
+              >
+                <span>+ {row.name}</span>
+                <span className="font-mono font-semibold text-accent">
+                  ({row.loadPct}%)
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* 2. TOP NAVIGATION & ACTION BAR */}
       <div className="bg-surface border border-line rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
@@ -1412,14 +1589,52 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
+                  <div className="text-xs text-ink-3">Người phụ trách (PIC)</div>
+                  <div className="mt-0.5">
+                    {canManageSetup && onUpdateTask ? (
+                      <select
+                        value={selectedTaskDetail.pic}
+                        onChange={e => {
+                          const nextPic = e.target.value;
+                          const updatedTask: SlaTask = {
+                            ...selectedTaskDetail,
+                            pic: nextPic,
+                          };
+                          setSelectedTaskDetail(updatedTask);
+                          onUpdateTask(updatedTask);
+                          onNotify?.(
+                            `Đã điều phối công việc "${selectedTaskDetail.title}" sang cho ${nextPic}`,
+                            'success'
+                          );
+                        }}
+                        className="w-full text-xs font-semibold text-ink bg-sunken border border-line rounded px-1.5 py-1 focus:outline-none focus:border-accent"
+                      >
+                        {allAssignableStaff.map(s => {
+                          const w = staffWorkloadByName.get(s.name);
+                          return (
+                            <option key={s.name} value={s.name}>
+                              {s.name}
+                              {w ? ` (${w.level} · Tải ${w.loadPct}% · ${w.liveAssignedStoresCount} gian)` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    ) : (
+                      <div className="text-sm font-semibold text-ink truncate">
+                        {selectedTaskDetail.pic}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Vai trò & Tỷ trọng</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     {ROLE_LABEL_MAP[selectedTaskDetail.assignmentRole || 'PIC_OWNER']} ({selectedTaskDetail.contributionWeightPct ?? 100}%)
                   </div>
                 </div>
-                <div className="p-2.5 rounded-lg border border-accent/30 bg-accent-soft">
+                <div className="p-2.5 rounded-lg border border-accent/30 bg-accent-soft sm:col-span-3 flex items-center justify-between">
                   <div className="text-xs text-accent font-medium">Điểm cá nhân ghi nhận</div>
-                  <div className="text-base font-mono tabular-nums font-semibold text-accent mt-0.5">
+                  <div className="text-base font-mono tabular-nums font-semibold text-accent">
                     {(selectedTaskDetail.calculatedWorkloadPoints ?? 2.0).toFixed(2).replace('.', ',')} điểm
                   </div>
                 </div>
@@ -1732,8 +1947,26 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <Select
                 value={formBrand}
                 onChange={e => {
-                  setFormBrand(e.target.value);
+                  const nextBrandName = e.target.value;
+                  setFormBrand(nextBrandName);
                   setFormStore('');
+                  const matchedBrand = brands.find(
+                    b => b.name.toLowerCase() === nextBrandName.toLowerCase()
+                  );
+                  const primaryBrandPic =
+                    matchedBrand?.planStrategyPic ||
+                    matchedBrand?.brandPicName ||
+                    matchedBrand?.contentBrandMainPic;
+                  if (primaryBrandPic) {
+                    setAssignees(prev =>
+                      prev.length === 1
+                        ? [{ ...prev[0], staffName: primaryBrandPic }]
+                        : [
+                            { ...prev[0], staffName: primaryBrandPic },
+                            ...prev.slice(1),
+                          ]
+                    );
+                  }
                 }}
               >
                 {brands.map(b => (
@@ -1759,6 +1992,16 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           matched.difficultyMultiplier
                         ).multiplier as 0.8 | 1.0 | 1.25 | 1.5
                       );
+                      const storeOwner =
+                        matched.b2cOwners?.[0] ||
+                        matched.b2cOwnerName?.split(',')[0]?.trim();
+                      if (storeOwner) {
+                        setAssignees(prev =>
+                          prev.length > 0
+                            ? [{ ...prev[0], staffName: storeOwner }, ...prev.slice(1)]
+                            : [{ staffName: storeOwner, role: 'PIC_OWNER', weightPct: 100 }]
+                        );
+                      }
                     }
                   } else {
                     setFormStoreScopeCoef(1.0);
@@ -1768,7 +2011,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <option value="">Toàn bộ Brand / Đa sàn</option>
                 {brandStores.map(s => (
                   <option key={s.id} value={s.storeName}>
-                    {s.storeName} ({s.platform} · ×{normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier.toFixed(2).replace('.', ',')})
+                    {s.storeName} ({s.platform} · ×{normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier.toFixed(2).replace('.', ',')}
+                    {s.b2cOwnerName ? ` · PIC: ${s.b2cOwnerName}` : ''})
                   </option>
                 ))}
               </Select>
@@ -2000,7 +2244,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     setAssignees([
                       ...assignees,
                       {
-                        staffName: allAssignableStaff[assignees.length]?.name || 'Lê Phương Thảo',
+                        staffName:
+                          managerRadarStats.underloadedStaff[0]?.name ||
+                          allAssignableStaff[assignees.length]?.name ||
+                          'Lê Phương Thảo',
                         role: 'SUPPORT',
                         weightPct: 0,
                       },
@@ -2011,6 +2258,80 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </Button>
               </div>
             </div>
+
+            {/* Quick-fill PICs of current Brand / Store */}
+            {(() => {
+              const matchedBrand = brands.find(
+                b => b.name.toLowerCase() === formBrand.toLowerCase()
+              );
+              const matchedStore = formStore
+                ? brandStores.find(s => s.storeName === formStore)
+                : brandStores[0];
+              const storeOwner =
+                matchedStore?.b2cOwners?.[0] ||
+                matchedStore?.b2cOwnerName?.split(',')[0]?.trim();
+              const planPic =
+                matchedBrand?.planStrategyPic || matchedBrand?.brandPicName;
+              const contentPic =
+                matchedBrand?.contentBrandMainPic || matchedBrand?.contentPic;
+              const kvPic = matchedBrand?.keyVisualSisPic;
+              const spareStaff = managerRadarStats.underloadedStaff[0];
+
+              const quickCandidates = [
+                storeOwner ? { label: 'PIC Gian hàng', name: storeOwner } : null,
+                planPic ? { label: 'Plan/Strategy', name: planPic } : null,
+                contentPic ? { label: 'Content Main', name: contentPic } : null,
+                kvPic ? { label: 'KV/SIS', name: kvPic } : null,
+                spareStaff ? { label: 'Dư công suất nhất', name: spareStaff.name } : null,
+              ].filter((x): x is { label: string; name: string } => Boolean(x));
+
+              if (quickCandidates.length === 0) return null;
+
+              return (
+                <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-line/60 text-2xs">
+                  <span className="text-ink-3 font-medium">Gán nhanh PIC thực tế:</span>
+                  {quickCandidates.map((cand, i) => {
+                    const w = staffWorkloadByName.get(cand.name);
+                    return (
+                      <button
+                        key={`${cand.label}-${cand.name}-${i}`}
+                        type="button"
+                        onClick={() =>
+                          setAssignees([
+                            {
+                              staffName: cand.name,
+                              role: 'PIC_OWNER',
+                              weightPct: 100,
+                            },
+                          ])
+                        }
+                        className="px-2 py-0.5 rounded bg-surface border border-line hover:border-accent text-ink inline-flex items-center gap-1 cursor-pointer transition"
+                      >
+                        <span className="text-ink-3">{cand.label}:</span>
+                        <span className="font-semibold text-ink">{cand.name}</span>
+                        {w && (
+                          <span className="font-mono text-accent">({w.loadPct}%)</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                  {planPic && storeOwner && planPic !== storeOwner && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAssignees([
+                          { staffName: planPic, role: 'PIC_OWNER', weightPct: 70 },
+                          { staffName: storeOwner, role: 'EXECUTION', weightPct: 30 },
+                        ])
+                      }
+                      className="px-2 py-0.5 rounded bg-accent-soft/60 border border-accent/30 hover:border-accent text-accent font-semibold cursor-pointer transition"
+                    >
+                      Cặp Plan + Gian hàng (70/30)
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="space-y-2">
               {assignees.map((slot, idx) => {
@@ -2031,11 +2352,23 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           setAssignees(next);
                         }}
                       >
-                        {allAssignableStaff.map(s => (
-                          <option key={s.name} value={s.name}>
-                            {s.name} {s.level ? `(${s.level})` : ''}
-                          </option>
-                        ))}
+                        {allAssignableStaff.map(s => {
+                          const w = staffWorkloadByName.get(s.name);
+                          return (
+                            <option key={s.name} value={s.name}>
+                              {s.name}
+                              {w
+                                ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · Tải ${w.loadPct}%${
+                                    !w.meetsHardRatio && !w.hasException
+                                      ? ' · Thiếu việc khó'
+                                      : ''
+                                  })`
+                                : s.level
+                                ? ` (${s.level})`
+                                : ''}
+                            </option>
+                          );
+                        })}
                       </Select>
                     </div>
 

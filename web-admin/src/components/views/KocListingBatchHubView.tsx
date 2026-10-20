@@ -16,7 +16,7 @@ import {
   KocItem,
   BookingDealItem
 } from '@/lib/types';
-import { ActionMenu, ConfirmDialog, PageActions, Button, Presence, Stat, StatRow, Tabs } from '../ui';
+import { ActionMenu, ConfirmDialog, FilterBar, PageActions, Button, Presence, Select, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
@@ -1136,155 +1136,117 @@ export function KocListingBatchHubView({
         )}
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Month selector */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Tháng kế hoạch</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="2026/10">Tháng 10/2026</option>
-              <option value="2026/09">Tháng 09/2026</option>
-              <option value="2026/11">Tháng 11/2026</option>
-              <option value="ALL">Tất cả các tháng</option>
-            </select>
-          </div>
-
-          {/* Store selector */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Gian hàng (Plan Final)</label>
-            <select
-              value={selectedStore}
-              onChange={(e) => setSelectedStore(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả gian hàng</option>
-              {storeOptions.map((st) => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Salary Grade (KL) selector */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Khung lương (KL)</label>
-            <select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value as SalaryGrade | 'ALL')}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả khung lương (KL1–KL7)</option>
-              {KL_GRADE_ORDER.map((kl) => (
-                <option key={kl.code} value={kl.code}>
-                  {kl.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Cycle selector */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Đợt đề xuất</label>
-            <select
-              value={selectedCycle}
-              onChange={(e) => setSelectedCycle(e.target.value as ListingBatchCycle | 'ALL')}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả các đợt (10-20-30)</option>
-              <option value="BATCH_10">Đợt ngày 10</option>
-              <option value="BATCH_20">Đợt ngày 20</option>
-              <option value="BATCH_30">Đợt ngày 30</option>
-            </select>
-          </div>
-
-          {/* Overall Status Filter */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Trạng thái Listing</label>
-            <select
-              value={selectedOverallStatus}
-              onChange={(e) => setSelectedOverallStatus(e.target.value as ListingItemStatus | 'ALL')}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="DRAFT">1. Bản nháp (Draft)</option>
-              <option value="SUBMITTED">2. Đã Submit Brand (Đang duyệt)</option>
-              <option value="FINAL_APPROVED">3. Đã chốt duyệt (Final)</option>
-              <option value="DROPPED">Không đạt (Dropped)</option>
-            </select>
-          </div>
-
-          {/* Brand / KOC Status Filter */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Thẩm định &amp; Đàm phán</label>
-            <select
-              value={selectedBrandStatus}
-              onChange={(e) => setSelectedBrandStatus(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả thẩm định Brand</option>
-              <option value="BRAND_PENDING">Chờ nhãn hàng duyệt</option>
-              <option value="BRAND_APPROVED">Nhãn hàng đã duyệt</option>
-              <option value="BRAND_REJECTED">Nhãn hàng từ chối</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Search bar and bulk actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
-          <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-lg">
-            <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm KOC, kênh, gian hàng..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-            </div>
-
-            <button
-              onClick={() => setFilterOnlyDuplicates((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors whitespace-nowrap border shrink-0 ${
-                filterOnlyDuplicates
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                  : totalDuplicateListingsCount > 0
-                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Trùng KOC: {totalDuplicateListingsCount}</span>
-            </button>
-          </div>
-
-          {activeSubTab === 'LISTING_APPROVAL' && (
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-              <span className="text-2xs text-slate-500">
-                Đã chọn: <strong className="text-slate-800">{selectedIds.length}</strong>
-              </span>
-
-              <button
-                disabled={selectedIds.length === 0}
-                onClick={() => handleSubmitToBrand()}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                  selectedIds.length > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm cursor-pointer'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                }`}
+      {/* Filter Toolbar gọn 1 hàng theo chuẩn FilterBar */}
+      <div className="bg-surface border border-line rounded-lg p-3">
+        <FilterBar
+          search={{
+            value: searchQuery,
+            onChange: setSearchQuery,
+            placeholder: 'Tìm KOC, kênh, gian hàng...',
+          }}
+          filters={
+            <>
+              <Select
+                aria-label="Tháng kế hoạch"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-auto"
               >
-                <Send className="w-3 h-3" />
-                Submit Brand các KOC nháp đã chọn
-              </button>
-            </div>
-          )}
-        </div>
+                <option value="2026/10">Tháng 10/2026</option>
+                <option value="2026/09">Tháng 09/2026</option>
+                <option value="2026/11">Tháng 11/2026</option>
+                <option value="ALL">Mọi tháng</option>
+              </Select>
+
+              <Select
+                aria-label="Gian hàng"
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                className="w-auto max-w-[200px]"
+              >
+                <option value="ALL">Mọi gian hàng</option>
+                {storeOptions.map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                aria-label="Khung lương"
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value as SalaryGrade | 'ALL')}
+                className="w-auto"
+              >
+                <option value="ALL">Mọi khung lương</option>
+                {KL_GRADE_ORDER.map((kl) => (
+                  <option key={kl.code} value={kl.code}>
+                    {kl.label}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                aria-label="Đợt đề xuất"
+                value={selectedCycle}
+                onChange={(e) => setSelectedCycle(e.target.value as ListingBatchCycle | 'ALL')}
+                className="w-auto"
+              >
+                <option value="ALL">Mọi đợt (10-20-30)</option>
+                <option value="BATCH_10">Đợt ngày 10</option>
+                <option value="BATCH_20">Đợt ngày 20</option>
+                <option value="BATCH_30">Đợt ngày 30</option>
+              </Select>
+
+              <Select
+                aria-label="Trạng thái"
+                value={selectedOverallStatus}
+                onChange={(e) => setSelectedOverallStatus(e.target.value as ListingItemStatus | 'ALL')}
+                className="w-auto"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="DRAFT">1. Bản nháp</option>
+                <option value="SUBMITTED">2. Đã gửi Brand</option>
+                <option value="FINAL_APPROVED">3. Đã chốt duyệt</option>
+                <option value="DROPPED">Không đạt</option>
+              </Select>
+
+              <Select
+                aria-label="Thẩm định Brand"
+                value={selectedBrandStatus}
+                onChange={(e) => setSelectedBrandStatus(e.target.value)}
+                className="w-auto"
+              >
+                <option value="ALL">Mọi thẩm định</option>
+                <option value="BRAND_PENDING">Chờ Brand duyệt</option>
+                <option value="BRAND_APPROVED">Brand đã duyệt</option>
+                <option value="BRAND_REJECTED">Brand từ chối</option>
+              </Select>
+
+              {totalDuplicateListingsCount > 0 && (
+                <Button
+                  size="sm"
+                  variant={filterOnlyDuplicates ? 'primary' : 'secondary'}
+                  icon={AlertTriangle}
+                  onClick={() => setFilterOnlyDuplicates((prev) => !prev)}
+                >
+                  Trùng: {totalDuplicateListingsCount}
+                </Button>
+              )}
+
+              {activeSubTab === 'LISTING_APPROVAL' && selectedIds.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Send}
+                  onClick={() => handleSubmitToBrand()}
+                >
+                  Submit Brand ({selectedIds.length})
+                </Button>
+              )}
+            </>
+          }
+        />
       </div>
 
       {/* Main Content Area */}

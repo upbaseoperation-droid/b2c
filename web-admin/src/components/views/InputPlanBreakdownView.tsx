@@ -74,9 +74,11 @@ import { usePlanChat } from '../../lib/usePlanChat';
 import { PlanSyncBadge } from './PlanSyncBadge';
 import {
   ConfirmDialog,
+  Modal,
   Presence,
   Status,
   PageHeaderNav,
+  PageActions,
 } from '../ui';
 import { StorePlanMindmap } from './StorePlanMindmap';
 
@@ -508,38 +510,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     enabled: isChatOpen
   });
 
-  // State Leader Sơ Duyệt Nội Bộ
-  const [isLeaderApprovalModalOpen, setIsLeaderApprovalModalOpen] = useState(false);
-  const [leaderApprovalDecision, setLeaderApprovalDecision] = useState<'APPROVE' | 'REJECT'>('APPROVE');
-  const [leaderReviewNote, setLeaderReviewNote] = useState('');
-
-  const handleLeaderApprovalAction = () => {
-    const actor = currentUser?.name || planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : 'Đặng Thị Yến Nhi');
-    const now = new Date().toISOString();
-    if (leaderApprovalDecision === 'APPROVE') {
-      const note = leaderReviewNote.trim() || 'Đã kiểm tra cơ cấu định mức thù lao KL1-KL7, tỷ trọng kênh và tính khả thi. Đồng ý sơ duyệt nội bộ để chuyển sang Growth thẩm định.';
-      setPlanState(prev => ({
-        ...prev,
-        leaderApprovalStatus: 'ĐÃ_SƠ_DUYỆT',
-        leaderApprovedBy: actor,
-        leaderApprovedAt: now,
-        leaderNotes: note
-      }));
-      notify(`Trưởng nhóm (${actor}) đã SƠ DUYỆT NỘI BỘ kế hoạch "${planState.title}" thành công!`);
-    } else {
-      const note = leaderReviewNote.trim() || 'Cơ cấu chi phí và tỷ trọng video chưa tối ưu. Yêu cầu chuyên viên điều chỉnh lại trước khi trình duyệt.';
-      setPlanState(prev => ({
-        ...prev,
-        leaderApprovalStatus: 'YÊU_CẦU_SỬA',
-        leaderApprovedBy: actor,
-        leaderApprovedAt: now,
-        leaderNotes: note
-      }));
-      notify(`Trưởng nhóm (${actor}) đã yêu cầu chuyên viên ${planState.pic} hiệu chỉnh lại kế hoạch!`);
-    }
-    setIsLeaderApprovalModalOpen(false);
-    setLeaderReviewNote('');
-  };
+  // State thu gọn / mở rộng chi tiết Campaign & Key Visual ở Tab 1
+  const [isCampaignDetailExpanded, setIsCampaignDetailExpanded] = useState(false);
 
   // State Modal Phân Bổ Kế Hoạch Cho Team của bạn PIC
   const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
@@ -1346,8 +1318,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       authorName = (currentUser?.role === 'MEDIA_MEMBER' ? currentUser.name : null) || targetPlan.mediaPic || 'Phan Thành Đạt';
       authorTitle = 'Media PIC / Quảng cáo & Ads';
     } else if (currentRole === 'LEAD') {
-      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Vân Ngọc';
-      authorTitle = 'Trưởng Phòng B2C';
+      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Đặng Thị Yến Nhi';
+      authorTitle = 'Giám đốc Marketing B2C';
     } else if (currentRole === 'BOOKING') {
       authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Khánh Vy';
       authorTitle = 'Booking Specialist PIC';
@@ -1575,10 +1547,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     setGrowthAlignedConfirm(true);
     setIsSubmitToManagerModalOpen(true);
   };
-  const leaderStatus = planState.leaderApprovalStatus;
   const planStatus = planState.status || 'DRAFT';
   const userRole = currentUser?.role || '';
-  const canLeaderReview = ['ADMIN', 'MANAGER', 'LEADER'].includes(userRole);
   const isLeadUser = ['ADMIN', 'MANAGER'].includes(userRole) || currentRole === 'LEAD';
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
   const hasLeader = Boolean(planState.hasBookingLeader !== undefined ? planState.hasBookingLeader : planState.bookingLeader);
@@ -1596,9 +1566,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   return (
     <div className="space-y-4 animate-in fade-in duration-200 pb-12">
-      {/* ========================================================================= */}
-      {/* THANH ĐIỀU HƯỚNG DUY NHẤT CỦA PLAN: TÁCH RỜI TỔNG QUAN & CHI TIẾT          */}
-      {/* ========================================================================= */}
       {/* ========================================================================= */}
       {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG & PHIÊN BẢN LÊN TOPHEADER CẠNH TIÊU ĐỀ        */}
       {/* ========================================================================= */}
@@ -1670,16 +1637,166 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       </PageHeaderNav>
 
+      {/* 1B. ĐẨY CÁC THAO TÁC TOÀN CỤC LÊN TOPHEADER (PAGE ACTIONS) */}
+      <PageActions>
+        <PlanSyncBadge
+          status={planSync.status}
+          lastSavedAt={planSync.lastSavedAt}
+          errorMessage={planSync.errorMessage}
+          onRetry={() => void planSync.saveNow()}
+        />
+
+        <button
+          type="button"
+          onClick={() => setIsPlanReportOpen(true)}
+          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition cursor-pointer"
+          title="Báo cáo thẩm định kế hoạch"
+        >
+          <FileText className="w-3.5 h-3.5 text-ink-3" />
+          <span className="hidden sm:inline">Báo cáo thẩm định</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+            if (!planSync.isPersistent) {
+              notify('Chưa kết nối database, kế hoạch đã lưu tạm trên phiên làm việc.');
+              return;
+            }
+            const ok = await planSync.saveNow();
+            notify(ok ? `Đã lưu kế hoạch "${planState.title}".` : 'Lưu kế hoạch không thành công, vui lòng thử lại.');
+          }}
+          disabled={planSync.status === 'saving'}
+          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
+        >
+          <Save className="w-3.5 h-3.5 text-ink-3" />
+          <span>Lưu</span>
+        </button>
+
+        <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsActionMenuOpen(prev => !prev)}
+            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition cursor-pointer"
+            aria-haspopup="menu"
+            aria-expanded={isActionMenuOpen}
+          >
+            <span>Thao tác</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {isActionMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
+              <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-surface border border-line rounded-xl shadow-lg py-1 text-xs">
+                {[
+                  ...(onOpenListingForPlan ? [{
+                    label: 'Triển khai Listing KOC (KL)',
+                    icon: <UserCheck className="w-3.5 h-3.5" />,
+                    onClick: () => onOpenListingForPlan(planState),
+                    disabled: false,
+                    hint: undefined as string | undefined
+                  }] : []),
+                  {
+                    label: 'Xuất Excel 1-Sheet Trình Brand',
+                    icon: <Download className="w-3.5 h-3.5" />,
+                    onClick: () => {
+                      const oneSheet = buildBrandOneSheetPlanData({
+                        brandName: (planState.parentBrand || planState.brandName).split('_')[0].trim(),
+                        month: planState.month,
+                        storePlans: monthlyPlans.map(p => (p.id === planState.id ? planState : p)),
+                        storePortfolios,
+                        campaigns: effectiveCampaigns,
+                      });
+                      void exportBrandMonthlyOneSheetToExcel(oneSheet);
+                      notify(`Đã xuất file Excel 1-Sheet Trình Brand cho ${(planState.parentBrand || planState.brandName).split('_')[0].trim()}!`);
+                    },
+                  },
+                  {
+                    label: 'Quản lý phiên bản tháng',
+                    icon: <Layers className="w-3.5 h-3.5" />,
+                    onClick: () => setIsVersionHistoryModalOpen(true),
+                  },
+                  {
+                    label: 'Phân bổ cho team',
+                    icon: <Users className="w-3.5 h-3.5" />,
+                    onClick: () => setIsAllocationModalOpen(true),
+                    disabled: isPlanLocked,
+                    hint: isPlanLocked ? 'Đã chốt' : undefined
+                  },
+                  {
+                    label: 'Xuất file Excel 4.1.1',
+                    icon: <Download className="w-3.5 h-3.5" />,
+                    onClick: () => void handleExportExcel()
+                  },
+                  {
+                    label: 'Tạo slot booking',
+                    icon: <Send className="w-3.5 h-3.5" />,
+                    onClick: handleGenerateBookingSlots,
+                    disabled: !isPlanLocked,
+                    hint: !isPlanLocked ? 'Chờ chốt' : undefined
+                  }
+                ].map(item => (
+                  <button
+                    key={item.label}
+                    role="menuitem"
+                    disabled={item.disabled}
+                    onClick={() => {
+                      setIsActionMenuOpen(false);
+                      item.onClick();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-ink hover:bg-sunken disabled:text-ink-3 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                  >
+                    <span className="text-ink-3">{item.icon}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {item.hint && <span className="text-2xs text-ink-3">{item.hint}</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {isPlanLocked ? (
+          <Status tone="positive">{`Đã chốt ${activeVersionCode}`}</Status>
+        ) : planStatus === 'PENDING_APPROVAL' ? (
+          isLeadUser ? (
+            <button
+              type="button"
+              onClick={() => setActiveTab('OVERVIEW')}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Xem &amp; duyệt</span>
+            </button>
+          ) : (
+            <Status tone="warning">Chờ duyệt</Status>
+          )
+        ) : isApprovedStatus ? (
+          <Status tone="positive">Đã duyệt</Status>
+        ) : (
+          <button
+            type="button"
+            onClick={openSubmitToManager}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+          >
+            <SendHorizonal className="w-3.5 h-3.5" />
+            <span>Gửi duyệt</span>
+          </button>
+        )}
+      </PageActions>
+
       {/* ========================================================================= */}
-      {/* THANH ĐIỀU HƯỚNG QUY TRÌNH 5 BƯỚC & THAO TÁC GỌN 1 HÀNG                  */}
+      {/* 2. THANH QUY TRÌNH 5 BƯỚC GỌN 1 DÒNG                                      */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2 shadow-2xs flex items-center justify-between gap-3 flex-wrap xl:flex-nowrap">
-        {/* Bên trái: 5 Bước quy trình Kế hoạch */}
-        <div className="inline-flex max-w-full items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200/90 px-3 py-1.5 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
+        <div className="inline-flex max-w-full items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'OVERVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1695,7 +1812,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             onClick={() => {
               if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
             }}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               isDetailBreakdownTab
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1706,7 +1823,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('WEEKLY_MATRIX')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'WEEKLY_MATRIX'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1717,7 +1834,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('EXCEL_PREVIEW')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'EXCEL_PREVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -1728,7 +1845,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('BRAND_ONE_SHEET')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
               activeTab === 'BRAND_ONE_SHEET'
                 ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'text-emerald-800 hover:bg-emerald-50'
@@ -1739,160 +1856,27 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
 
-        {/* Bên phải: Lưu + Trao đổi + Báo cáo + Thao tác + Nút trạng thái/gửi duyệt */}
-        <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap">
+        {/* Bên phải thanh bước: Đầu mối phụ trách & lối tắt Listing KOC */}
+        <div className="flex items-center gap-2 text-2xs text-slate-600 ml-auto shrink-0">
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
+            <span>PIC: <strong className="text-slate-900">{planState.primaryPic || planState.pic}</strong></span>
+            <span className="text-slate-300">·</span>
+            <span>
+              Leader:{' '}
+              <strong className="text-slate-900">
+                {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
+              </strong>
+            </span>
+          </span>
           {onOpenListingForPlan && (
             <button
               type="button"
               onClick={() => onOpenListingForPlan(planState)}
-              className="hidden 2xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer"
               title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
             >
-              <UserCheck className="w-3.5 h-3.5" />
+              <UserCheck className="w-3 h-3" />
               <span>Listing KOC</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => setIsPlanReportOpen(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
-            title="Báo cáo thẩm định kế hoạch"
-          >
-            <FileText className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden sm:inline">Báo cáo thẩm định</span>
-            <span className="sm:hidden">Báo cáo</span>
-          </button>
-
-          <button
-            onClick={async () => {
-              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
-              if (!planSync.isPersistent) {
-                notify('Chưa kết nối database, kế hoạch đã lưu tạm trên phiên làm việc.');
-                return;
-              }
-              const ok = await planSync.saveNow();
-              notify(ok ? `Đã lưu kế hoạch "${planState.title}".` : 'Lưu kế hoạch không thành công, vui lòng thử lại.');
-            }}
-            disabled={planSync.status === 'saving'}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>Lưu</span>
-          </button>
-
-          <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
-
-          <div className="relative">
-            <button
-              onClick={() => setIsActionMenuOpen(prev => !prev)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition cursor-pointer"
-              aria-haspopup="menu"
-              aria-expanded={isActionMenuOpen}
-            >
-              <span>Thao tác</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isActionMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
-                <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
-                  {[
-                    ...(onOpenListingForPlan ? [{
-                      label: 'Triển khai Listing KOC (KL)',
-                      icon: <UserCheck className="w-3.5 h-3.5" />,
-                      onClick: () => onOpenListingForPlan(planState),
-                      disabled: false,
-                      hint: undefined as string | undefined
-                    }] : []),
-                    {
-                      label: 'Mở Biểu mẫu 1-Sheet Trình Brand',
-                      icon: <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />,
-                      onClick: () => setActiveTab('BRAND_ONE_SHEET'),
-                    },
-                    {
-                      label: 'Xuất Excel 1-Sheet Trình Brand',
-                      icon: <Download className="w-3.5 h-3.5 text-emerald-600" />,
-                      onClick: () => {
-                        const oneSheet = buildBrandOneSheetPlanData({
-                          brandName: (planState.parentBrand || planState.brandName).split('_')[0].trim(),
-                          month: planState.month,
-                          storePlans: monthlyPlans.map(p => (p.id === planState.id ? planState : p)),
-                          storePortfolios,
-                          campaigns: effectiveCampaigns,
-                        });
-                        void exportBrandMonthlyOneSheetToExcel(oneSheet);
-                        notify(`Đã xuất file Excel 1-Sheet Trình Brand cho ${(planState.parentBrand || planState.brandName).split('_')[0].trim()}!`);
-                      },
-                    },
-                    {
-                      label: 'Quản lý phiên bản tháng',
-                      icon: <Layers className="w-3.5 h-3.5" />,
-                      onClick: () => setIsVersionHistoryModalOpen(true),
-                    },
-                    {
-                      label: 'Phân bổ cho team',
-                      icon: <Users className="w-3.5 h-3.5" />,
-                      onClick: () => setIsAllocationModalOpen(true),
-                      disabled: isPlanLocked,
-                      hint: isPlanLocked ? 'Đã chốt' : undefined
-                    },
-                    {
-                      label: 'Xuất file Excel 4.1.1',
-                      icon: <Download className="w-3.5 h-3.5" />,
-                      onClick: () => void handleExportExcel()
-                    },
-                    {
-                      label: 'Tạo slot booking',
-                      icon: <Send className="w-3.5 h-3.5" />,
-                      onClick: handleGenerateBookingSlots,
-                      disabled: !isPlanLocked,
-                      hint: !isPlanLocked ? 'Chờ chốt' : undefined
-                    }
-                  ].map(item => (
-                    <button
-                      key={item.label}
-                      role="menuitem"
-                      disabled={item.disabled}
-                      onClick={() => {
-                        setIsActionMenuOpen(false);
-                        item.onClick();
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                    >
-                      <span className="text-slate-500">{item.icon}</span>
-                      <span className="flex-1">{item.label}</span>
-                      {item.hint && <span className="text-2xs text-slate-400">{item.hint}</span>}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {isPlanLocked ? (
-            <Status tone="positive">{`Đã chốt ${activeVersionCode}`}</Status>
-          ) : planStatus === 'PENDING_APPROVAL' ? (
-            isLeadUser ? (
-              <button
-                onClick={() => setActiveTab('OVERVIEW')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Xem &amp; duyệt</span>
-              </button>
-            ) : (
-              <Status tone="warning">Chờ duyệt</Status>
-            )
-          ) : isApprovedStatus ? (
-            <Status tone="positive">Đã duyệt</Status>
-          ) : (
-            <button
-              onClick={openSubmitToManager}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
-            >
-              <SendHorizonal className="w-3.5 h-3.5" />
-              <span>Gửi duyệt</span>
             </button>
           )}
         </div>
@@ -1902,9 +1886,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* MÀN 1 (LAYER 1): ĐIỀN & THỐNG NHẤT CHỈ SỐ CỐT LÕI (TRƯỚC KHI PHÂN RÃ)     */}
       {/* ========================================================================= */}
       {activeTab === 'OVERVIEW' && (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
 
-          {/* 1.0 KHUNG LIÊN KẾT THỰC THỂ CHIẾN DỊCH (CAMPAIGN 1–3 THÁNG) & LỊCH TREO KEY VISUAL */}
+          {/* 1.0 THANH CHIẾN DỊCH (CAMPAIGN) & KEY VISUAL GỌN 1 DÒNG (BẤM ĐỂ MỞ CHI TIẾT) */}
           {(() => {
             const brandRoot = (planState.brandName || '').split('_')[0].trim();
             const linkedCampaign =
@@ -1925,22 +1909,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             );
 
             return (
-              <div className="bg-white rounded-xl border border-line p-4 space-y-3 shadow-2xs">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                        Chiến dịch &amp; Key Visual kỳ {planState.month}
-                      </h3>
-                      <span className="text-slate-400">·</span>
-                      <span className={`text-2xs font-semibold ${hasCampaignActive ? 'text-accent' : 'text-slate-600'}`}>
-                        {hasCampaignActive ? 'Có chiến dịch' : 'Duy trì (Không campaign)'}
-                      </span>
-                    </div>
-                  </div>
+              <div className="bg-white rounded-xl border border-line px-3.5 py-2.5 shadow-2xs space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span className="text-xs font-semibold text-slate-900 shrink-0">
+                      Chiến dịch kỳ {planState.month}:
+                    </span>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => {
@@ -1962,7 +1938,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
                           notify(`Đã bật chế độ CÓ Chiến dịch (Campaign) cho kế hoạch tháng ${planState.month}`);
                         }}
-                        className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
                           hasCampaignActive ? 'bg-accent text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
@@ -1980,50 +1956,18 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           };
                           setPlanState(prev => ({ ...prev, ...updated }));
                           setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
-                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang chế độ Duy trì (Không Campaign)`);
+                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang chế độ Duy trì`);
                         }}
-                        className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
                           !hasCampaignActive ? 'bg-slate-800 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Không Campaign (Duy trì)
+                        Duy trì
                       </button>
                     </div>
 
-                    {hasCampaignActive && linkedCampaign && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingCampaignForModal(linkedCampaign);
-                          setIsCampaignModalOpen(true);
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg border border-line bg-sunken hover:bg-slate-100 text-ink font-semibold text-2xs transition cursor-pointer"
-                      >
-                        Sửa / Phân kỳ Campaign
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingCampaignForModal(null);
-                        setIsCampaignModalOpen(true);
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-2xs transition cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Tạo Campaign mới</span>
-                    </button>
-                  </div>
-                </div>
-
-                {hasCampaignActive ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="md:col-span-2">
-                        <label className="text-2xs font-semibold text-slate-600 block mb-1">
-                          Chiến dịch (Campaign) đang gắn với kế hoạch tháng {planState.month}
-                        </label>
+                    {hasCampaignActive ? (
+                      <>
                         <select
                           value={linkedCampaign?.id || ''}
                           onChange={(e) => {
@@ -2041,143 +1985,173 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
                             notify(`Đã gắn Chiến dịch [${selected.code}] ${selected.title} vào kế hoạch tháng ${planState.month}`);
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent"
+                          className="h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent max-w-[320px] truncate"
                         >
                           {brandCampaignCandidates.map(c => (
                             <option key={c.id} value={c.id}>
-                              [{c.code}] {c.brand} — {c.title} ({(c.coveredMonths || []).length || 1} tháng: {(c.coveredMonths || [planState.month]).join(' → ')})
+                              [{c.code}] {c.brand} — {c.title}
                             </option>
                           ))}
                         </select>
-                      </div>
-
-                      <div>
-                        <label className="text-2xs font-semibold text-slate-600 block mb-1">
-                          Giai đoạn (Phase) trong kỳ {planState.month}
-                        </label>
-                        <div className="px-2.5 py-1.5 rounded-lg border border-line bg-sunken text-xs font-semibold text-ink truncate">
-                          {activePhase?.phaseName || planState.campaignPhaseName || `Giai đoạn thực thi ${planState.month}`}
-                        </div>
-                      </div>
-                    </div>
-
-                    {linkedCampaign && (
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                        {/* Cột 1: Thông điệp & CTKM Section 01 */}
-                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-slate-800 uppercase">01. Định hướng &amp; CTKM</span>
-                            <span className="font-mono text-2xs text-slate-500">
-                              {(linkedCampaign.coveredMonths || []).length > 1
-                                ? `Kéo dài ${linkedCampaign.coveredMonths?.length} tháng (${linkedCampaign.coveredMonths?.join(', ')})`
-                                : `Chiến dịch 1 tháng (${linkedCampaign.coveredMonths?.[0] || planState.month})`}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500">Big Idea: </span>
-                            <strong className="text-slate-900">{linkedCampaign.bigIdea}</strong>
-                          </div>
-                          <div>
-                            <span className="text-slate-500">Key Message: </span>
-                            <span className="text-slate-800 italic">&ldquo;{linkedCampaign.keyMessage}&rdquo;</span>
-                          </div>
-                          {linkedCampaign.comboPromoOffer && (
-                            <div>
-                              <span className="text-slate-500">Combo / CTKM: </span>
-                              <span className="text-slate-800 font-medium">{linkedCampaign.comboPromoOffer}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Cột 2: Ngân sách & Mục tiêu của Phase tháng này */}
-                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-800 uppercase">02. Phân kỳ tháng {planState.month}</span>
-                            {activePhase && !isLayer1Locked && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleUpdateLayer1Metrics({
-                                    targetNmvTotal: activePhase.targetGmv || layer1Metrics.targetNmvTotal,
-                                    pnlTotalBudgetNet: activePhase.allocatedBudget || layer1Metrics.pnlTotalBudgetNet,
-                                  });
-                                  notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào bảng Chỉ tiêu!`);
-                                }}
-                                className="text-2xs font-semibold text-accent hover:underline cursor-pointer"
-                              >
-                                Áp vào Chỉ tiêu →
-                              </button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 pt-0.5">
-                            <div className="p-2 rounded bg-white border border-slate-200/80">
-                              <span className="text-slate-500 block text-2xs">Ngân sách Phase ({planState.month})</span>
-                              <strong className="font-mono text-xs text-slate-900">
-                                {formatVndShort(activePhase?.allocatedBudget || linkedCampaign.budget)}
-                              </strong>
-                              <span className="text-2xs text-slate-400 block">
-                                / Tổng {formatVndShort(linkedCampaign.budget)}
-                              </span>
-                            </div>
-                            <div className="p-2 rounded bg-white border border-slate-200/80">
-                              <span className="text-slate-500 block text-2xs">Target GMV Phase ({planState.month})</span>
-                              <strong className="font-mono text-xs text-emerald-700">
-                                {formatVndShort(activePhase?.targetGmv || linkedCampaign.targetGmv)}
-                              </strong>
-                              <span className="text-2xs text-slate-400 block">
-                                {activePhase?.targetKocCount || linkedCampaign.targetKocCount} KOCs
-                              </span>
-                            </div>
-                          </div>
-                          {(activePhase?.saleMilestones || linkedCampaign.saleMilestones) && (
-                            <div className="text-2xs text-slate-600 pt-0.5">
-                              Mốc Sale: <strong className="text-slate-800">{activePhase?.saleMilestones || linkedCampaign.saleMilestones}</strong>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Cột 3: Key Visual & Lịch treo KV Section 03 */}
-                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-800 uppercase">03. Key Visual &amp; Lịch Treo KV</span>
-                            {linkedCampaign.kvPic && (
-                              <span className="text-2xs text-slate-500">KV PIC: <strong>{linkedCampaign.kvPic}</strong></span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-slate-500">Chủ đề KV: </span>
-                            <strong className="text-slate-900">
-                              {linkedCampaign.keyVisualSpec?.theme || 'Theo Brand Guideline chung'}
-                            </strong>
-                          </div>
-                          {linkedCampaign.keyVisualSpec?.promoTextOnKv && (
-                            <div>
-                              <span className="text-slate-500">Text CTKM trên KV: </span>
-                              <span className="text-slate-800">{linkedCampaign.keyVisualSpec.promoTextOnKv}</span>
-                            </div>
-                          )}
-                          {linkedCampaign.keyVisualSpec && (
-                            <div className="flex flex-wrap items-center gap-1.5 pt-1 font-mono text-2xs text-slate-600">
-                              <span>
-                                Ref: <strong>{linkedCampaign.keyVisualSpec.refDate}</strong>
-                              </span>
-                              <span className="text-slate-300">·</span>
-                              <span>
-                                Order: <strong>{linkedCampaign.keyVisualSpec.orderDate}</strong>
-                              </span>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-emerald-700 font-semibold">
-                                Treo KV: <strong>{linkedCampaign.keyVisualSpec.hangDate}</strong>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-2xs font-semibold text-slate-700 truncate max-w-[200px]">
+                          {activePhase?.phaseName || planState.campaignPhaseName || `Giai đoạn ${planState.month}`}
+                        </span>
+                        {activePhase && !isLayer1Locked && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateLayer1Metrics({
+                                targetNmvTotal: activePhase.targetGmv || layer1Metrics.targetNmvTotal,
+                                pnlTotalBudgetNet: activePhase.allocatedBudget || layer1Metrics.pnlTotalBudgetNet,
+                              });
+                              notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào bảng Chỉ tiêu!`);
+                            }}
+                            className="text-2xs font-semibold text-accent hover:underline cursor-pointer shrink-0"
+                          >
+                            Áp hạn mức Phase →
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-slate-600">
+                        Kế hoạch định kỳ hàng tháng (không chạy chiến dịch trọng điểm)
+                      </span>
                     )}
                   </div>
-                ) : (
-                  <div className="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-2 text-xs text-slate-600">
-                    Chế độ: <strong className="text-slate-900">Duy trì thường nhật</strong> (Kế hoạch định kỳ tháng {planState.month}, không áp dụng chiến dịch trọng điểm).
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasCampaignActive && linkedCampaign && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsCampaignDetailExpanded(prev => !prev)}
+                          className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-2xs inline-flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <span>{isCampaignDetailExpanded ? 'Thu gọn KV & CTKM' : 'Chi tiết KV & CTKM'}</span>
+                          {isCampaignDetailExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCampaignForModal(linkedCampaign);
+                            setIsCampaignModalOpen(true);
+                          }}
+                          className="px-2 py-1 rounded-lg border border-line bg-sunken hover:bg-slate-100 text-ink font-semibold text-2xs transition cursor-pointer"
+                        >
+                          Sửa Campaign
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCampaignForModal(null);
+                        setIsCampaignModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-2xs transition cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Tạo Campaign</span>
+                    </button>
+                  </div>
+                </div>
+
+                {hasCampaignActive && linkedCampaign && isCampaignDetailExpanded && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
+                    {/* Cột 1: Thông điệp & CTKM Section 01 */}
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 space-y-1 text-2xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-slate-800 uppercase">01. Định hướng &amp; CTKM</span>
+                        <span className="font-mono text-2xs text-slate-500">
+                          {(linkedCampaign.coveredMonths || []).length > 1
+                            ? `${linkedCampaign.coveredMonths?.length} tháng (${linkedCampaign.coveredMonths?.join(', ')})`
+                            : `1 tháng (${linkedCampaign.coveredMonths?.[0] || planState.month})`}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Big Idea: </span>
+                        <strong className="text-slate-900">{linkedCampaign.bigIdea}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Key Message: </span>
+                        <span className="text-slate-800 italic">&ldquo;{linkedCampaign.keyMessage}&rdquo;</span>
+                      </div>
+                      {linkedCampaign.comboPromoOffer && (
+                        <div>
+                          <span className="text-slate-500">Combo / CTKM: </span>
+                          <span className="text-slate-800 font-medium">{linkedCampaign.comboPromoOffer}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cột 2: Ngân sách & Mục tiêu của Phase tháng này */}
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 space-y-1 text-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 uppercase">02. Phân kỳ tháng {planState.month}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pt-0.5">
+                        <div className="p-2 rounded bg-white border border-slate-200/80">
+                          <span className="text-slate-500 block text-2xs">Ngân sách Phase ({planState.month})</span>
+                          <strong className="font-mono text-xs text-slate-900">
+                            {formatVndShort(activePhase?.allocatedBudget || linkedCampaign.budget)}
+                          </strong>
+                          <span className="text-2xs text-slate-400 block">
+                            / Tổng {formatVndShort(linkedCampaign.budget)}
+                          </span>
+                        </div>
+                        <div className="p-2 rounded bg-white border border-slate-200/80">
+                          <span className="text-slate-500 block text-2xs">Target GMV Phase ({planState.month})</span>
+                          <strong className="font-mono text-xs text-emerald-700">
+                            {formatVndShort(activePhase?.targetGmv || linkedCampaign.targetGmv)}
+                          </strong>
+                          <span className="text-2xs text-slate-400 block">
+                            {activePhase?.targetKocCount || linkedCampaign.targetKocCount} KOCs
+                          </span>
+                        </div>
+                      </div>
+                      {(activePhase?.saleMilestones || linkedCampaign.saleMilestones) && (
+                        <div className="text-2xs text-slate-600 pt-0.5">
+                          Mốc Sale: <strong className="text-slate-800">{activePhase?.saleMilestones || linkedCampaign.saleMilestones}</strong>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cột 3: Key Visual & Lịch treo KV Section 03 */}
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 space-y-1 text-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 uppercase">03. Key Visual &amp; Lịch Treo KV</span>
+                        {linkedCampaign.kvPic && (
+                          <span className="text-2xs text-slate-500">KV PIC: <strong>{linkedCampaign.kvPic}</strong></span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Chủ đề KV: </span>
+                        <strong className="text-slate-900">
+                          {linkedCampaign.keyVisualSpec?.theme || 'Theo Brand Guideline chung'}
+                        </strong>
+                      </div>
+                      {linkedCampaign.keyVisualSpec?.promoTextOnKv && (
+                        <div>
+                          <span className="text-slate-500">Text CTKM trên KV: </span>
+                          <span className="text-slate-800">{linkedCampaign.keyVisualSpec.promoTextOnKv}</span>
+                        </div>
+                      )}
+                      {linkedCampaign.keyVisualSpec && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1 font-mono text-2xs text-slate-600">
+                          <span>
+                            Ref: <strong>{linkedCampaign.keyVisualSpec.refDate}</strong>
+                          </span>
+                          <span className="text-slate-300">·</span>
+                          <span>
+                            Order: <strong>{linkedCampaign.keyVisualSpec.orderDate}</strong>
+                          </span>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-emerald-700 font-semibold">
+                            Treo KV: <strong>{linkedCampaign.keyVisualSpec.hangDate}</strong>
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -2185,7 +2159,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           })()}
 
           {/* 1A. ĐẦU VÀO SỐ TỔNG PnL (GROWTH GIAO BAN ĐẦU) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+          <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
               <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                 Đầu vào ban đầu — Số tổng PnL do Growth giao
@@ -2282,14 +2256,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           {/* 1B. BẢNG THỐNG NHẤT CHỈ TIÊU CỐT LÕI GIỮA CÁC BÊN */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-              <div className="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Bảng thống nhất Chỉ tiêu tháng (Growth · Booking B2C · Media)
-                    </h3>
-                  </div>
-                  
+              <div className="px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                    Bảng thống nhất Chỉ tiêu tháng (Growth · Booking B2C · Media)
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                    isLayer1Locked ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {isLayer1Locked ? 'Đã chốt chỉ tiêu' : 'Đang điền'}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -2297,40 +2273,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <button
                       type="button"
                       onClick={handleSyncLayer1ToLayer2}
-                      className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
                       title="Cập nhật các dòng KL1-KL7, FOC, Kênh Brand khớp theo bảng chỉ tiêu này"
                     >
                       Đồng bộ sang Phân bổ
                     </button>
                   )}
-                  {!isPlanLocked && !isLayer1Locked && (
-                    <button
-                      type="button"
-                      onClick={() => handleLockLayer1AndProceed(true)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-2xs shadow-xs transition cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Chốt chỉ tiêu</span>
-                    </button>
-                  )}
-                  {!isPlanLocked && isLayer1Locked && (
-                    <button
-                      type="button"
-                      onClick={handleUnlockLayer1ForEdit}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
-                    >
-                      <Unlock className="w-3.5 h-3.5" />
-                      <span>Mở khóa sửa</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsChatOpen(true)}
-                    className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-2xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Trao đổi ({planState.discussions?.length || 0})</span>
-                  </button>
                 </div>
               </div>
 
@@ -2677,97 +2625,26 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               </div>
             </div>
 
-            {/* Cột phải (4/12): Nhân sự phụ trách, Tiến độ đối soát & Chỉ số tài chính */}
+            {/* Cột phải (4/12): Trạng thái duyệt các bên (Xanh = Duyệt, Đỏ = Chưa) & Tiến độ đối soát */}
             <div className="lg:col-span-4 flex flex-col gap-3.5">
-              {/* Thẻ 1: Thông tin phụ trách & Phiên bản */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <h3 className="text-xs font-semibold text-slate-900">Thông tin phụ trách &amp; Phiên bản</h3>
-                  {canLeaderReview && hasLeader && leaderStatus !== 'ĐÃ_SƠ_DUYỆT' && !isPlanLocked && (
-                    <button
-                      onClick={() => {
-                        setLeaderReviewNote(planState.leaderNotes || '');
-                        setLeaderApprovalDecision('APPROVE');
-                        setIsLeaderApprovalModalOpen(true);
-                      }}
-                      className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
-                    >
-                      Leader Sơ duyệt
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 text-xs">
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Chuyên viên B2C (PIC)</span>
-                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
-                      {planState.primaryPic || planState.pic || 'Chưa phân công'}
-                    </strong>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xs text-slate-500">Luồng duyệt B2C</span>
-                      {isLeadUser && !isPlanLocked && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextHas = !hasLeader;
-                            const defaultLeader = nextHas ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-                            setPlanState(prev => ({
-                              ...prev,
-                              hasBookingLeader: nextHas,
-                              bookingLeader: defaultLeader,
-                              leaderApprovalStatus: nextHas
-                                ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT'))
-                                : 'KHÔNG_ÁP_DỤNG'
-                            }));
-                            notify(nextHas
-                              ? `Đã bật yêu cầu Leader sơ duyệt cho gian ${planState.brandName}`
-                              : `Đã chuyển gian ${planState.brandName} sang Duyệt trực tiếp`);
-                          }}
-                          className="text-2xs text-blue-600 hover:underline font-medium cursor-pointer"
-                        >
-                          Đổi
-                        </button>
-                      )}
-                    </div>
-                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
-                      {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Trực tiếp Lead B2C'}
-                    </strong>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Phụ trách Growth</span>
-                    <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
-                      {planState.growthPic || '—'}
-                    </strong>
-                  </div>
-
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-2xs text-slate-500 block">Trạng thái Chỉ tiêu</span>
-                    <strong className={`font-semibold mt-0.5 block truncate ${isLayer1Locked ? 'text-emerald-700' : 'text-amber-700'}`}>
-                      {isLayer1Locked ? 'Đã chốt chỉ tiêu tháng' : 'Đang điền & trao đổi'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <div className="text-2xs text-slate-500">
-                    Đang mở <strong className="text-slate-800">{activeVersionCode}</strong> ({studioVersionSnapshots.length} phiên bản trong tháng {planState.month})
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsVersionHistoryModalOpen(true)}
-                    className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                  >
-                    Lịch sử &amp; So sánh bản →
-                  </button>
-                </div>
+              {/* Khung 1: Trạng thái duyệt các bên (có bao nhiêu bên thì bấy nhiêu dòng) */}
+              <div id="plan-approval-detail">
+                <PlanApprovalStepper
+                  plan={planState}
+                  currentRole={currentRole}
+                  currentUser={currentUser}
+                  onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
+                  onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
+                  onUpdatePlan={(upd) => {
+                    setPlanState(prev => ({ ...prev, ...upd }));
+                    setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...upd } : p));
+                  }}
+                  onNotify={notify}
+                />
               </div>
 
-              {/* Thẻ 2: Tiến độ đối soát Định mức (Chỉ tiêu vs Đã phân bổ) */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
+              {/* Khung 2: Tiến độ đối soát Định mức (Chỉ tiêu vs Đã phân bổ) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-semibold text-slate-900">Tiến độ phân bổ chi tiết</h3>
@@ -2779,7 +2656,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform &&
                       channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions
                         ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
+                        : 'bg-rose-100 text-rose-800'
                     }`}>
                       {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid &&
                       channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet &&
@@ -2801,177 +2678,77 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   </button>
                 </div>
 
-                <div className="space-y-2 text-2xs">
-                  {/* Paid */}
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="min-w-0 pr-2">
-                      <span className="font-semibold text-slate-800 block truncate">1. Video KOC trả phí (Paid)</span>
-                      <span className="text-slate-500 font-mono">
-                        {channelTotals.affiliatePaid.qty} / {layer1Metrics.qtyAffiliatePaid} video · {formatVndShort(channelTotals.affiliatePaid.budget)} / {formatVndShort(layer1Metrics.budgetAffiliateNet)}
-                      </span>
-                    </div>
+                <div className="space-y-1.5 text-2xs">
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="font-semibold text-slate-800 truncate">1. KOC trả phí</span>
+                    <span className="text-slate-600 font-mono">
+                      {channelTotals.affiliatePaid.qty}/{layer1Metrics.qtyAffiliatePaid} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
+                    </span>
                     <span className={`font-semibold shrink-0 ${
                       channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
                         ? 'text-emerald-700'
-                        : 'text-amber-700'
+                        : 'text-rose-600'
                     }`}>
                       {channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet ? 'Khớp' : 'Lệch'}
                     </span>
                   </div>
 
-                  {/* FOC */}
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="min-w-0 pr-2">
-                      <span className="font-semibold text-slate-800 block truncate">2. Suất gửi mẫu FOC (0đ)</span>
-                      <span className="text-slate-500 font-mono">
-                        {channelTotals.tapFreecast.qty} / {layer1Metrics.qtyFocSample} suất mẫu
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="font-semibold text-slate-800 truncate">2. Mẫu FOC (0đ)</span>
+                    <span className="text-slate-600 font-mono">
+                      {channelTotals.tapFreecast.qty}/{layer1Metrics.qtyFocSample} suất
+                    </span>
                     <span className={`font-semibold shrink-0 ${
-                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
+                      channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-rose-600'
                     }`}>
                       {channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'Khớp' : 'Lệch'}
                     </span>
                   </div>
 
-                  {/* Kênh Brand */}
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="min-w-0 pr-2">
-                      <span className="font-semibold text-slate-800 block truncate">3. Kênh Brand (Self-channel)</span>
-                      <span className="text-slate-500 font-mono">
-                        {channelTotals.selfChannel.qty} / {layer1Metrics.qtySelfChannel} video · {formatVndShort(channelTotals.selfChannel.budget)}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="font-semibold text-slate-800 truncate">3. Kênh Brand</span>
+                    <span className="text-slate-600 font-mono">
+                      {channelTotals.selfChannel.qty}/{layer1Metrics.qtySelfChannel} video · {formatVndShort(channelTotals.selfChannel.budget)}
+                    </span>
                     <span className={`font-semibold shrink-0 ${
                       channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
                         ? 'text-emerald-700'
-                        : 'text-amber-700'
+                        : 'text-rose-600'
                     }`}>
                       {channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet ? 'Khớp' : 'Lệch'}
                     </span>
                   </div>
 
-                  {/* Đa sàn */}
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="min-w-0 pr-2">
-                      <span className="font-semibold text-slate-800 block truncate">4. Đa sàn khác (Shopee/FB/IG)</span>
-                      <span className="text-slate-500 font-mono">
-                        {channelTotals.multiPlatform.qty} / {layer1Metrics.qtyMultiPlatform} video · {formatVndShort(channelTotals.multiPlatform.budget)}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="font-semibold text-slate-800 truncate">4. Đa sàn khác</span>
+                    <span className="text-slate-600 font-mono">
+                      {channelTotals.multiPlatform.qty}/{layer1Metrics.qtyMultiPlatform} video · {formatVndShort(channelTotals.multiPlatform.budget)}
+                    </span>
                     <span className={`font-semibold shrink-0 ${
                       channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
                         ? 'text-emerald-700'
-                        : 'text-amber-700'
+                        : 'text-rose-600'
                     }`}>
                       {channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet ? 'Khớp' : 'Lệch'}
                     </span>
                   </div>
 
-                  {/* Livestream */}
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="min-w-0 pr-2">
-                      <span className="font-semibold text-slate-800 block truncate">5. Phiên Livestream</span>
-                      <span className="text-slate-500 font-mono">
-                        {channelTotals.livestream.qty} / {layer1Metrics.qtyLivestreamSessions} phiên · {formatVndShort(channelTotals.livestream.budget)}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="font-semibold text-slate-800 truncate">5. Livestream</span>
+                    <span className="text-slate-600 font-mono">
+                      {channelTotals.livestream.qty}/{layer1Metrics.qtyLivestreamSessions} phiên · {formatVndShort(channelTotals.livestream.budget)}
+                    </span>
                     <span className={`font-semibold shrink-0 ${
                       channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet
                         ? 'text-emerald-700'
-                        : 'text-amber-700'
+                        : 'text-rose-600'
                     }`}>
                       {channelTotals.livestream.qty === layer1Metrics.qtyLivestreamSessions && channelTotals.livestream.budget === layer1Metrics.budgetLivestreamNet ? 'Khớp' : 'Lệch'}
                     </span>
                   </div>
                 </div>
-
-                {!isPlanLocked && (
-                  <button
-                    type="button"
-                    onClick={handleSyncLayer1ToLayer2}
-                    className="w-full py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer text-center"
-                  >
-                    Đồng bộ sang phân bổ chi tiết
-                  </button>
-                )}
-              </div>
-
-              {/* Thẻ 3: Chỉ số Tài chính & Trần PnL */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h3 className="text-xs font-semibold text-slate-900">Chỉ số Tài chính &amp; PnL</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                    layer1BudgetGapVsPnl < 0
-                      ? 'bg-rose-100 text-rose-800'
-                      : layer1BudgetGapVsPnl === 0
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {layer1BudgetGapVsPnl < 0
-                      ? `Vượt ${formatVndShort(Math.abs(layer1BudgetGapVsPnl))}`
-                      : layer1BudgetGapVsPnl === 0
-                      ? 'Khớp 100% PnL'
-                      : `Dư ${formatVndShort(layer1BudgetGapVsPnl)}`}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-2xs">
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-500 block">Trần Net PnL giao</span>
-                    <strong className="text-slate-900 font-mono font-semibold text-xs mt-0.5 block">
-                      {formatVndShort(layer1Metrics.pnlTotalBudgetNet)}
-                    </strong>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-500 block">Tổng Net chỉ tiêu</span>
-                    <strong className="text-blue-700 font-mono font-semibold text-xs mt-0.5 block">
-                      {formatVndShort(totalLayer1ChannelBudgetNet)}
-                    </strong>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-500 block">Mục tiêu NMV</span>
-                    <strong className="text-emerald-700 font-mono font-semibold text-xs mt-0.5 block">
-                      {formatVndShort(layer1Metrics.targetNmvTotal)}
-                    </strong>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <span className="text-slate-500 block">Tỷ lệ Net / NMV</span>
-                    <strong className="text-slate-900 font-mono font-semibold text-xs mt-0.5 block">
-                      {layer1Metrics.targetNmvTotal > 0
-                        ? `${((totalLayer1ChannelBudgetNet / layer1Metrics.targetNmvTotal) * 100).toFixed(1)}%`
-                        : '—'}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
-                  <span>Quy đổi Gross dự kiến:</span>
-                  <strong className="font-mono text-slate-800">
-                    {formatVndShort(Math.round(totalLayer1ChannelBudgetNet * GROSS_MULTIPLIER))}
-                  </strong>
-                </div>
               </div>
             </div>
-          </div>
-
-          {/* 1C. Quy trình Ký duyệt 4 bên (Hiển thị trực tiếp trong màn Tổng quan) */}
-          <div id="plan-approval-detail">
-            <PlanApprovalStepper
-              plan={planState}
-              currentRole={currentRole}
-              currentUser={currentUser}
-              onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
-              onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
-              onUpdatePlan={(updated) => {
-                setPlanState(prev => ({ ...prev, ...updated }));
-                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...updated } : p));
-              }}
-              onNotify={notify}
-            />
           </div>
         </div>
       )}
@@ -3775,45 +3552,49 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     </td>
                     {/* Trụ 1: Target */}
                     <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {planState.targetAffiliateContents || 85}
+                      {layer1Metrics.qtyAffiliatePaid}
                     </td>
                     <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(planState.budgetAffiliate || 150000000)}
+                      {formatVndShort(layer1Metrics.budgetAffiliateNet)}
                     </td>
                     {/* Trụ 2: Target */}
                     <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      120
+                      {layer1Metrics.qtyFocSample}
                     </td>
                     {/* Trụ 3: Target */}
                     <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {planState.targetSelfChannelContents || 40}
+                      {layer1Metrics.qtySelfChannel}
                     </td>
                     <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(planState.budgetSelfChannel || 50000000)}
+                      {formatVndShort(layer1Metrics.budgetSelfChannelNet)}
                     </td>
                     {/* Trụ 4: Target */}
                     <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      15
+                      {layer1Metrics.qtyMultiPlatform}
                     </td>
                     <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(10000000)}
+                      {formatVndShort(layer1Metrics.budgetMultiPlatformNet)}
                     </td>
                     {/* Tổng Target */}
                     <td className="py-2 px-1.5 text-center font-mono font-semibold text-slate-800 border-r border-slate-200 bg-slate-200/50">
-                      {planState.totalTargetContents}
+                      {totalLayer1Videos}
                     </td>
                     <td className="py-2 px-1.5 text-right font-mono font-semibold text-slate-800 border-r border-slate-200 bg-slate-200/50">
-                      {formatVndShort(planState.totalTargetBudget)}
+                      {formatVndShort(totalLayer1ChannelBudgetNet - layer1Metrics.budgetAdsNet - layer1Metrics.budgetLivestreamNet)}
                     </td>
                     <td colSpan={3} className="py-2 px-2 text-center text-2xs text-slate-500">
-                      Đề bài Growth giao
+                      Đề bài Chỉ tiêu tháng
                     </td>
                   </tr>
 
                   {/* HÀNG 3: ĐỐI SOÁT CHÊNH LỆCH (VARIANCE GAP) */}
                   {(() => {
-                    const videoDelta = weeklyMatrixTotals.totalQty - planState.totalTargetContents;
-                    const budgetDelta = weeklyMatrixTotals.totalBudget - (planState.totalTargetBudget - (planState.budgetAdsTotal || 0));
+                    const targetNonLiveBudget =
+                      layer1Metrics.budgetAffiliateNet +
+                      layer1Metrics.budgetSelfChannelNet +
+                      layer1Metrics.budgetMultiPlatformNet;
+                    const videoDelta = weeklyMatrixTotals.totalQty - totalLayer1Videos;
+                    const budgetDelta = weeklyMatrixTotals.totalBudget - targetNonLiveBudget;
                     const isBudgetSafe = budgetDelta <= 0;
 
                     return (
@@ -3823,30 +3604,32 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </td>
                         {/* Trụ 1: Gap */}
                         <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.affQty - (planState.targetAffiliateContents || 85) >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.affQty - (planState.targetAffiliateContents || 85)}
+                          {weeklyMatrixTotals.affQty - layer1Metrics.qtyAffiliatePaid >= 0 ? '+' : ''}
+                          {weeklyMatrixTotals.affQty - layer1Metrics.qtyAffiliatePaid}
                         </td>
                         <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.affBudget - (planState.budgetAffiliate || 150000000))}
+                          {formatVndShort(weeklyMatrixTotals.affBudget - layer1Metrics.budgetAffiliateNet)}
                         </td>
                         {/* Trụ 2: Gap */}
                         <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.tapQty - 120 >= 0 ? '+' : ''}{weeklyMatrixTotals.tapQty - 120}
+                          {weeklyMatrixTotals.tapQty - layer1Metrics.qtyFocSample >= 0 ? '+' : ''}
+                          {weeklyMatrixTotals.tapQty - layer1Metrics.qtyFocSample}
                         </td>
                         {/* Trụ 3: Gap */}
                         <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.selfQty - (planState.targetSelfChannelContents || 40) >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.selfQty - (planState.targetSelfChannelContents || 40)}
+                          {weeklyMatrixTotals.selfQty - layer1Metrics.qtySelfChannel >= 0 ? '+' : ''}
+                          {weeklyMatrixTotals.selfQty - layer1Metrics.qtySelfChannel}
                         </td>
                         <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.selfBudget - (planState.budgetSelfChannel || 50000000))}
+                          {formatVndShort(weeklyMatrixTotals.selfBudget - layer1Metrics.budgetSelfChannelNet)}
                         </td>
                         {/* Trụ 4: Gap */}
                         <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.multiQty - 15 >= 0 ? '+' : ''}{weeklyMatrixTotals.multiQty - 15}
+                          {weeklyMatrixTotals.multiQty - layer1Metrics.qtyMultiPlatform >= 0 ? '+' : ''}
+                          {weeklyMatrixTotals.multiQty - layer1Metrics.qtyMultiPlatform}
                         </td>
                         <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.multiBudget - 10000000)}
+                          {formatVndShort(weeklyMatrixTotals.multiBudget - layer1Metrics.budgetMultiPlatformNet)}
                         </td>
                         {/* Tổng Gap */}
                         <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-xs font-semibold text-blue-900 bg-slate-100">
@@ -3984,523 +3767,375 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 6. MODAL PHÂN BỔ KẾ HOẠCH CHO TEAM BOOKING (PIC COORDINATION STUDIO)     */}
       {/* ========================================================================= */}
-      <Presence show={!!isAllocationModalOpen}>
-      {isAllocationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white w-full max-w-5xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface text-ink">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold">Phân bổ kế hoạch cho Team booking</h3>
-                </div>
-              </div>
+      <Modal
+        open={isAllocationModalOpen}
+        onClose={() => setIsAllocationModalOpen(false)}
+        title="Phân bổ kế hoạch cho Team booking"
+        size="2xl"
+        footer={
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-3 text-xs font-mono text-slate-600">
+              <span>Phân bổ: <strong className="text-blue-700 font-semibold">{staffAllocationSummary.filter(s => s.videoCount > 0).length}</strong> nhân sự</span>
+              <span>•</span>
+              <span>Tổng clip: <strong className="text-slate-900 font-semibold">{totalAllocatedContents}</strong></span>
+              <span>•</span>
+              <span>Ngân sách: <strong className="text-slate-900 font-semibold">{formatVndShort(totalAllocatedBudget)}</strong></span>
+            </div>
+
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setIsAllocationModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
-                title="Đóng cửa sổ"
+                className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs transition"
               >
-                <X className="w-4 h-4" />
+                Đóng &amp; lưu nháp
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerateBookingSlots}
+                className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Xác nhận &amp; giao việc cho Team</span>
               </button>
             </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Workload Summary across Team */}
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Workload Summary across Team */}
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                      <UserCheck className="w-4 h-4 text-blue-600" />
-                      Cân bằng tải khối lượng công việc Team ({staffAllocationSummary.filter(s => s.videoCount > 0).length} nhân sự tham gia)
-                    </h4>
-                    
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleAutoAssignByExpertise}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1.5 transition shadow-2xs"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Gán tự động theo chuyên môn</span>
-                    </button>
-                    <button
-                      onClick={handleAssignAllToPic}
-                      className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 transition"
-                    >
-                      <RotateCcw className="w-3 h-3 text-slate-500" />
-                      <span>Gán toàn bộ cho PIC</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {PIC_OPTIONS.map((staffName) => {
-                    const info = TEAM_MEMBERS_INFO[staffName] || { role: 'Booking Specialist', avatar: 'ST', expertise: 'KOC' };
-                    const summary = staffAllocationSummary.find(s => s.staffName === staffName) || {
-                      staffName,
-                      videoCount: 0,
-                      totalBudget: 0,
-                      targetGmv: 0,
-                      channels: new Set<string>()
-                    };
-                    const isPic = staffName === planState.pic;
-                    const pctOfTotal = totalAllocatedContents > 0 ? (summary.videoCount / totalAllocatedContents) * 100 : 0;
-
-                    return (
-                      <div
-                        key={staffName}
-                        className={`p-3.5 rounded-xl border transition ${
-                          summary.videoCount > 0
-                            ? isPic 
-                              ? 'bg-blue-50/60 border-blue-200 shadow-2xs'
-                              : 'bg-white border-slate-200 shadow-2xs'
-                            : 'bg-slate-50/60 border-slate-200/60 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center ${
-                              isPic ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
-                            }`}>
-                              {info.avatar}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1">
-                                <span className="font-semibold text-xs text-slate-900 leading-tight">{staffName}</span>
-                                {isPic && (
-                                  <span className="text-2xs font-mono text-blue-700">
-                                    · PIC
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-2xs text-slate-500 block leading-tight">{info.role}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                          <span className="text-xs text-slate-600">Được giao:</span>
-                          <span className="font-semibold font-mono text-sm text-blue-700">
-                            {summary.videoCount} <span className="text-2xs font-normal text-slate-500">video ({pctOfTotal.toFixed(0)}%)</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-2xs font-mono text-slate-500 mt-1">
-                          <span>Ngân sách:</span>
-                          <span className="font-semibold text-slate-800">{formatVndShort(summary.totalBudget)}</span>
-                        </div>
-
-                        {/* Progress Bar of workload */}
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
-                          <div
-                            className={`data-bar h-full rounded-full ${
-                              pctOfTotal > 40 ? 'bg-amber-500' : 'bg-blue-600'
-                            }`}
-                            style={{ width: `${Math.min(100, pctOfTotal)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <h4 className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-blue-600" />
+                  Cân bằng tải khối lượng công việc Team ({staffAllocationSummary.filter(s => s.videoCount > 0).length} nhân sự tham gia)
+                </h4>
               </div>
-
-              {/* Items Allocation Table */}
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                      <Sliders className="w-4 h-4 text-slate-600" />
-                      Chi tiết phân bổ từng phân bậc KOC & kênh
-                    </h4>
-                    
-                  </div>
-                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                    <button
-                      onClick={() => setAllocationFilterChannel('ALL')}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
-                        allocationFilterChannel === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Tất cả ({planState.items.length})
-                    </button>
-                    <button
-                      onClick={() => setAllocationFilterChannel('TIKTOK')}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
-                        allocationFilterChannel === 'TIKTOK' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      TikTok
-                    </button>
-                    <button
-                      onClick={() => setAllocationFilterChannel('SHOPEE')}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
-                        allocationFilterChannel === 'SHOPEE' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Đa sàn
-                    </button>
-                    <button
-                      onClick={() => setAllocationFilterChannel('SELF_CHANNEL')}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
-                        allocationFilterChannel === 'SELF_CHANNEL' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Kênh tự xây
-                    </button>
-                    <button
-                      onClick={() => setAllocationFilterChannel('LIVESTREAM')}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
-                        allocationFilterChannel === 'LIVESTREAM' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      Livestream
-                    </button>
-                  </div>
-                </div>
-
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-                  <div className="overflow-x-auto max-h-[380px]">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead className="sticky top-0 bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
-                        <tr>
-                          <th className="py-2.5 px-3 w-40">Phân bậc KOC</th>
-                          <th className="py-2.5 px-3 w-44">Định dạng video</th>
-                          <th className="py-2.5 px-3 w-28 text-center">Số lượng clip</th>
-                          <th className="py-2.5 px-3 w-28 text-right">Ngân sách</th>
-                          <th className="py-2.5 px-3 w-52">Nhân sự phụ trách</th>
-                          <th className="py-2.5 px-3 min-w-[200px]">Chỉ đạo / lưu ý của PIC</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {planState.items
-                          .filter(item => {
-                            if (allocationFilterChannel === 'ALL') return true;
-                            if (allocationFilterChannel === 'TIKTOK') return item.channel === 'TIKTOK';
-                            if (allocationFilterChannel === 'SHOPEE') return ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(item.channel);
-                            if (allocationFilterChannel === 'SELF_CHANNEL') return item.channel === 'SELF_CHANNEL';
-                            if (allocationFilterChannel === 'LIVESTREAM') return item.channel === 'LIVESTREAM';
-                            return true;
-                          })
-                          .map(item => {
-                            const isPicAssigned = !item.assignedStaff || item.assignedStaff === planState.pic;
-
-                            return (
-                              <tr key={item.id} className="hover:bg-slate-50 transition">
-                                <td className="py-2.5 px-3">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-2xs font-code text-ink-3 shrink-0">
-                                      {item.tierCode}
-                                    </span>
-                                    <span className="font-semibold text-slate-900 truncate max-w-[110px]">
-                                      {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
-                                    </span>
-                                  </div>
-                                </td>
-
-                                <td className="py-2.5 px-3">
-                                  <span className="text-slate-700 font-medium truncate block max-w-[170px]">
-                                    {item.contentFormat}
-                                  </span>
-                                </td>
-
-                                <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-900">
-                                  {item.qty} clip
-                                </td>
-
-                                <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
-                                  {formatVndShort(item.totalBudget)}
-                                </td>
-
-                                <td className="py-2.5 px-3">
-                                  <select
-                                    value={item.assignedStaff || planState.pic}
-                                    onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
-                                    className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
-                                      !isPicAssigned
-                                        ? 'bg-blue-50/70 border-blue-300 text-blue-900'
-                                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
-                                    }`}
-                                  >
-                                    {PIC_OPTIONS.map(staff => (
-                                      <option key={staff} value={staff}>
-                                        {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-
-                                <td className="py-2.5 px-3">
-                                  <input
-                                    type="text"
-                                    placeholder="Ghi chú tác nghiệp (VD: KOC lên link bio, reup Shopee...)"
-                                    value={item.staffNotes || ''}
-                                    onChange={(e) => handleUpdateItemStaffNotes(item.id, e.target.value)}
-                                    className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"
-                                  />
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3 text-xs font-mono text-slate-600">
-                <span>Phân bổ: <strong className="text-blue-700 font-semibold">{staffAllocationSummary.filter(s => s.videoCount > 0).length}</strong> nhân sự</span>
-                <span>•</span>
-                <span>Tổng clip: <strong className="text-slate-900 font-semibold">{totalAllocatedContents}</strong></span>
-                <span>•</span>
-                <span>Ngân sách: <strong className="text-slate-900 font-semibold">{formatVndShort(totalAllocatedBudget)}</strong></span>
-              </div>
-
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsAllocationModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs transition"
+                  type="button"
+                  onClick={handleAutoAssignByExpertise}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1.5 transition shadow-2xs"
                 >
-                  Đóng & lưu nháp
+                  <Zap className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Gán tự động theo chuyên môn</span>
                 </button>
-
                 <button
-                  onClick={handleGenerateBookingSlots}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95"
+                  type="button"
+                  onClick={handleAssignAllToPic}
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 transition"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Xác nhận & giao việc cho Team</span>
+                  <RotateCcw className="w-3 h-3 text-slate-500" />
+                  <span>Gán toàn bộ cho PIC</span>
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      </Presence>
 
-      {/* ========================================================================= */}
-      {/* MODAL LEADER SƠ DUYỆT NỘI BỘ (INTERNAL LEADER APPROVAL GATE)              */}
-      {/* ========================================================================= */}
-      <Presence show={!!isLeaderApprovalModalOpen}>
-      {isLeaderApprovalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-5 h-5 text-amber-600" />
-                <div>
-                  <h3 className="text-sm font-semibold">Trưởng nhóm sơ duyệt kế hoạch nội bộ</h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsLeaderApprovalModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {PIC_OPTIONS.map((staffName) => {
+                const info = TEAM_MEMBERS_INFO[staffName] || { role: 'Booking Specialist', avatar: 'ST', expertise: 'KOC' };
+                const summary = staffAllocationSummary.find(s => s.staffName === staffName) || {
+                  staffName,
+                  videoCount: 0,
+                  totalBudget: 0,
+                  targetGmv: 0,
+                  channels: new Set<string>()
+                };
+                const isPic = staffName === planState.pic;
+                const pctOfTotal = totalAllocatedContents > 0 ? (summary.videoCount / totalAllocatedContents) * 100 : 0;
 
-            <div className="p-6 space-y-4">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Gian hàng:</span>
-                  <strong className="text-slate-900">{planState.brandName}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Trưởng nhóm:</span>
-                  <strong className="text-amber-700">{planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : 'Không có leader')}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Chuyên viên lập plan:</span>
-                  <strong className="text-blue-700">{planState.primaryPic || planState.pic}</strong>
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-200">
-                  <span className="text-slate-500">Tổng quy mô:</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    {totalAllocatedContents} video • {formatVndShort(totalAllocatedBudget)}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">Quyết định sơ duyệt của Leader</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLeaderApprovalDecision('APPROVE')}
-                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-                      leaderApprovalDecision === 'APPROVE'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-2 ring-emerald-500/20'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                return (
+                  <div
+                    key={staffName}
+                    className={`p-3.5 rounded-xl border transition ${
+                      summary.videoCount > 0
+                        ? isPic
+                          ? 'bg-blue-50/60 border-blue-200 shadow-2xs'
+                          : 'bg-white border-slate-200 shadow-2xs'
+                        : 'bg-slate-50/60 border-slate-200/60 opacity-60'
                     }`}
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Thông qua nội bộ</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLeaderApprovalDecision('REJECT')}
-                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
-                      leaderApprovalDecision === 'REJECT'
-                        ? 'bg-rose-50 text-rose-800 border-rose-300 ring-2 ring-rose-500/20'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <RotateCcw className="w-4 h-4 text-rose-600" />
-                    <span>Yêu cầu sửa đổi</span>
-                  </button>
-                </div>
-              </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg font-semibold text-xs flex items-center justify-center ${
+                          isPic ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+                        }`}>
+                          {info.avatar}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="font-semibold text-xs text-slate-900 leading-tight">{staffName}</span>
+                            {isPic && (
+                              <span className="text-2xs font-mono text-blue-700">
+                                · PIC
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-2xs text-slate-500 block leading-tight">{info.role}</span>
+                        </div>
+                      </div>
+                    </div>
 
+                    <div className="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                      <span className="text-xs text-slate-600">Được giao:</span>
+                      <span className="font-semibold font-mono text-sm text-blue-700">
+                        {summary.videoCount} <span className="text-2xs font-normal text-slate-500">video ({pctOfTotal.toFixed(0)}%)</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-2xs font-mono text-slate-500 mt-1">
+                      <span>Ngân sách:</span>
+                      <span className="font-semibold text-slate-800">{formatVndShort(summary.totalBudget)}</span>
+                    </div>
+
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+                      <div
+                        className={`data-bar h-full rounded-full ${
+                          pctOfTotal > 40 ? 'bg-amber-500' : 'bg-blue-600'
+                        }`}
+                        style={{ width: `${Math.min(100, pctOfTotal)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Items Allocation Table */}
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Ý kiến chỉ đạo nghiệp vụ của Trưởng nhóm
-                </label>
-                <textarea
-                  rows={3}
-                  value={leaderReviewNote}
-                  onChange={(e) => setLeaderReviewNote(e.target.value)}
-                  placeholder={
-                    leaderApprovalDecision === 'APPROVE'
-                      ? 'Ví dụ: Đã kiểm tra cơ cấu định mức thù lao KL1-KL7, tỷ trọng kênh và tính khả thi. Đồng ý chuyển Growth thẩm định.'
-                      : 'Ví dụ: Cần giảm bớt 2 video KL5 để tăng số lượng Micro KOC KL2-KL3 nhằm đảm bảo phủ rộng dịp Mega sale.'
-                  }
-                  className="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-blue-500 transition"
-                />
+                <h4 className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                  <Sliders className="w-4 h-4 text-slate-600" />
+                  Chi tiết phân bổ từng phân bậc KOC &amp; kênh
+                </h4>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setAllocationFilterChannel('ALL')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                    allocationFilterChannel === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả ({planState.items.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocationFilterChannel('TIKTOK')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                    allocationFilterChannel === 'TIKTOK' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  TikTok
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocationFilterChannel('SHOPEE')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                    allocationFilterChannel === 'SHOPEE' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Đa sàn
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocationFilterChannel('SELF_CHANNEL')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                    allocationFilterChannel === 'SELF_CHANNEL' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Kênh tự xây
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllocationFilterChannel('LIVESTREAM')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                    allocationFilterChannel === 'LIVESTREAM' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Livestream
+                </button>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
-              <button
-                onClick={() => setIsLeaderApprovalModalOpen(false)}
-                className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleLeaderApprovalAction}
-                className={`px-4 py-1.5 rounded-lg font-semibold text-xs text-white shadow-xs transition ${
-                  leaderApprovalDecision === 'APPROVE'
-                    ? 'bg-emerald-600 hover:bg-emerald-700'
-                    : 'bg-rose-600 hover:bg-rose-700'
-                }`}
-              >
-                {leaderApprovalDecision === 'APPROVE' ? 'Xác Nhận Sơ Duyệt' : 'Gửi Yêu Cầu Sửa'}
-              </button>
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+              <div className="overflow-x-auto max-h-[380px]">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="sticky top-0 bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
+                    <tr>
+                      <th className="py-2.5 px-3 w-40">Phân bậc KOC</th>
+                      <th className="py-2.5 px-3 w-44">Định dạng video</th>
+                      <th className="py-2.5 px-3 w-28 text-center">Số lượng clip</th>
+                      <th className="py-2.5 px-3 w-28 text-right">Ngân sách</th>
+                      <th className="py-2.5 px-3 w-52">Nhân sự phụ trách</th>
+                      <th className="py-2.5 px-3 min-w-[200px]">Chỉ đạo / lưu ý của PIC</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {planState.items
+                      .filter(item => {
+                        if (allocationFilterChannel === 'ALL') return true;
+                        if (allocationFilterChannel === 'TIKTOK') return item.channel === 'TIKTOK';
+                        if (allocationFilterChannel === 'SHOPEE') return ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(item.channel);
+                        if (allocationFilterChannel === 'SELF_CHANNEL') return item.channel === 'SELF_CHANNEL';
+                        if (allocationFilterChannel === 'LIVESTREAM') return item.channel === 'LIVESTREAM';
+                        return true;
+                      })
+                      .map(item => {
+                        const isPicAssigned = !item.assignedStaff || item.assignedStaff === planState.pic;
+
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-50 transition">
+                            <td className="py-2.5 px-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-2xs font-code text-ink-3 shrink-0">
+                                  {item.tierCode}
+                                </span>
+                                <span className="font-semibold text-slate-900 truncate max-w-[110px]">
+                                  {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="py-2.5 px-3">
+                              <span className="text-slate-700 font-medium truncate block max-w-[170px]">
+                                {item.contentFormat}
+                              </span>
+                            </td>
+
+                            <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-900">
+                              {item.qty} clip
+                            </td>
+
+                            <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                              {formatVndShort(item.totalBudget)}
+                            </td>
+
+                            <td className="py-2.5 px-3">
+                              <select
+                                value={item.assignedStaff || planState.pic}
+                                onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                                className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
+                                  !isPicAssigned
+                                    ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                                }`}
+                              >
+                                {PIC_OPTIONS.map(staff => (
+                                  <option key={staff} value={staff}>
+                                    {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
+                            <td className="py-2.5 px-3">
+                              <input
+                                type="text"
+                                placeholder="Ghi chú tác nghiệp (VD: KOC lên link bio, reup Shopee...)"
+                                value={item.staffNotes || ''}
+                                onChange={(e) => handleUpdateItemStaffNotes(item.id, e.target.value)}
+                                className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-      )}
-      </Presence>
+      </Modal>
 
       {/* MODAL: XÁC NHẬN GỬI DUYỆT QUẢN LÝ */}
-      <Presence show={!!isSubmitToManagerModalOpen}>
-      {isSubmitToManagerModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
-                  <SendHorizonal className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-base text-slate-900">Gửi Kế Hoạch Lên Quản Lý Duyệt</h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsSubmitToManagerModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      <Modal
+        open={isSubmitToManagerModalOpen}
+        onClose={() => setIsSubmitToManagerModalOpen(false)}
+        title="Gửi kế hoạch lên Quản lý duyệt"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSubmitToManagerModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="button"
+              disabled={!growthAlignedConfirm}
+              onClick={handleSubmitPlanToManager}
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-xl font-semibold text-xs text-white shadow-xs transition-all ${
+                growthAlignedConfirm
+                  ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                  : 'bg-slate-300 cursor-not-allowed'
+              }`}
+            >
+              <SendHorizonal className="w-4 h-4" />
+              <span>Xác nhận &amp; Gửi duyệt</span>
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-1.5 text-xs">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Gian hàng / Brand:</span>
+              <strong className="text-slate-900 font-semibold">{planState.brandName}</strong>
             </div>
-
-            {/* Tóm tắt chỉ số kế hoạch */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Gian hàng / Brand:</span>
-                <strong className="text-slate-900 font-semibold">{planState.brandName}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Chu kỳ áp dụng:</span>
-                <span className="font-semibold text-slate-800">{planState.month} ({planState.week})</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Ngân sách trần phân rã:</span>
-                <strong className="text-blue-600 font-semibold">{formatVndShort(planState.totalTargetBudget)}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Số lượng nội dung / KOC:</span>
-                <span className="font-semibold text-slate-800">{planState.totalTargetContents} nội dung</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Doanh thu GMV mục tiêu:</span>
-                <strong className="text-emerald-600 font-semibold">{formatVndShort(planState.targetGmv)}</strong>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Chu kỳ áp dụng:</span>
+              <span className="font-semibold text-slate-800">{planState.month} ({planState.week})</span>
             </div>
-
-            {/* Xác nhận trao đổi với Growth */}
-            <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200 space-y-2">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={growthAlignedConfirm}
-                  onChange={(e) => setGrowthAlignedConfirm(e.target.checked)}
-                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                />
-                <span className="text-xs text-blue-950 font-medium leading-relaxed">
-                  Tôi xác nhận <strong>ĐÃ TRAO ĐỔI VÀ THỐNG NHẤT</strong> các chỉ số mục tiêu (ngân sách, GMV, số lượng KOC) với Growth Lead <strong>({planState.growthPic || 'Growth Team'})</strong>.
-                </span>
-              </label>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Ngân sách trần phân rã:</span>
+              <strong className="text-blue-600 font-semibold">{formatVndShort(planState.totalTargetBudget)}</strong>
             </div>
-
-            {/* Ghi chú trình duyệt */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Ghi chú trình Quản lý phê duyệt:
-              </label>
-              <textarea
-                rows={3}
-                value={submissionNote}
-                onChange={(e) => setSubmissionNote(e.target.value)}
-                placeholder="Nhập ghi chú hoặc căn cứ chốt số với Growth..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="flex justify-between">
+              <span className="text-slate-500">Số lượng nội dung / KOC:</span>
+              <span className="font-semibold text-slate-800">{planState.totalTargetContents} nội dung</span>
             </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setIsSubmitToManagerModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                disabled={!growthAlignedConfirm}
-                onClick={handleSubmitPlanToManager}
-                className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-xs text-white shadow-md transition-all ${
-                  growthAlignedConfirm
-                    ? 'bg-blue-600 hover:bg-blue-700 active:scale-95 cursor-pointer'
-                    : 'bg-slate-300 cursor-not-allowed'
-                }`}
-              >
-                <SendHorizonal className="w-4 h-4" />
-                <span>Xác Nhận & Gửi Duyệt Quản Lý</span>
-              </button>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doanh thu GMV mục tiêu:</span>
+              <strong className="text-emerald-600 font-semibold">{formatVndShort(planState.targetGmv)}</strong>
             </div>
           </div>
+
+          <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={growthAlignedConfirm}
+                onChange={(e) => setGrowthAlignedConfirm(e.target.checked)}
+                className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+              />
+              <span className="text-xs text-blue-950 font-medium leading-relaxed">
+                Tôi xác nhận <strong>ĐÃ TRAO ĐỔI VÀ THỐNG NHẤT</strong> các chỉ số mục tiêu (ngân sách, GMV, số lượng KOC) với Growth Lead <strong>({planState.growthPic || 'Growth Team'})</strong>.
+              </span>
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Ghi chú trình Quản lý phê duyệt:
+            </label>
+            <textarea
+              rows={3}
+              value={submissionNote}
+              onChange={(e) => setSubmissionNote(e.target.value)}
+              placeholder="Nhập ghi chú hoặc căn cứ chốt số với Growth..."
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
+            />
+          </div>
         </div>
-      )}
-      </Presence>
+      </Modal>
 
       {/* Dialog xác nhận duyệt kế hoạch */}
       <ConfirmDialog

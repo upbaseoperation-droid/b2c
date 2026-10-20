@@ -9,13 +9,17 @@ import {
   ExternalLink,
   FileCheck,
   FileSpreadsheet,
+  FileText,
   Globe,
   MessageSquare,
   Search,
   ShieldAlert,
+  Sliders,
   UserPlus,
   Users,
 } from 'lucide-react';
+import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import type { BrandDetail, KocItem } from '../../lib/types';
 import {
   PRICE_SEGMENT_LABEL,
@@ -171,6 +175,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [dealSearchQuery, setDealSearchQuery] = useState<string>('');
   const [analyzingDossier, setAnalyzingDossier] = useState<boolean>(false);
   const [savingToProfile, setSavingToProfile] = useState<boolean>(false);
+  const [showApiSetupPanel, setShowApiSetupPanel] = useState<boolean>(false);
+  const [isReportDrawerOpen, setIsReportDrawerOpen] = useState<boolean>(false);
 
   const { profiles: savedBrandProfiles } = useBrandProfiles();
 
@@ -636,22 +642,19 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Vai trò phễu',
         width: 155,
         render: (row) => (
-          <div>
-            <Status
-              tone={
-                row.role === 'HERO_CORE'
-                  ? 'info'
-                  : row.role === 'TRAFFIC_DRIVER'
-                    ? 'positive'
-                    : row.role === 'VIP_BUNDLE'
-                      ? 'warning'
-                      : 'neutral'
-              }
-            >
-              {row.roleLabel}
-            </Status>
-            <div className="mt-1">{renderEvidenceBadges(row.evidenceIds)}</div>
-          </div>
+          <Status
+            tone={
+              row.role === 'HERO_CORE'
+                ? 'info'
+                : row.role === 'TRAFFIC_DRIVER'
+                  ? 'positive'
+                  : row.role === 'VIP_BUNDLE'
+                    ? 'warning'
+                    : 'neutral'
+            }
+          >
+            {row.roleLabel}
+          </Status>
         ),
       },
       {
@@ -697,7 +700,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         ),
       },
     ],
-    [renderEvidenceBadges]
+    []
   );
 
   // --- Cột bảng Phân bổ KOC theo Phân tầng KL1 - KL4 ---
@@ -749,10 +752,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Đơn giá tham chiếu (File 3.2)',
         width: 210,
         render: (row) => (
-          <div>
-            <div className="text-xs font-medium text-ink">{row.avgBookingCostRangeVnd}</div>
-            <div className="mt-0.5">{renderEvidenceBadges(row.evidenceIds)}</div>
-          </div>
+          <div className="text-xs font-medium text-ink">{row.avgBookingCostRangeVnd}</div>
         ),
       },
       {
@@ -770,7 +770,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         ),
       },
     ],
-    [renderEvidenceBadges]
+    []
   );
 
   // --- Cột bảng Khung Góc Kịch bản KOC ---
@@ -815,14 +815,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         header: 'Kêu gọi hành động (CTA)',
         width: 200,
         render: (row) => (
-          <div>
-            <div className="text-xs font-medium text-positive">{row.recommendedCta}</div>
-            <div className="mt-0.5">{renderEvidenceBadges(row.evidenceIds)}</div>
-          </div>
+          <div className="text-xs font-medium text-positive">{row.recommendedCta}</div>
         ),
       },
     ],
-    [renderEvidenceBadges]
+    []
   );
 
   // --- Cột bảng Lịch Mùa vụ 4 Quý ---
@@ -1675,6 +1672,22 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   return (
     <div className="space-y-5">
       <PageActions>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={Sliders}
+          onClick={() => setShowApiSetupPanel((v) => !v)}
+        >
+          {showApiSetupPanel ? 'Ẩn cấu hình API' : 'Cấu hình API'}
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={FileText}
+          onClick={() => setIsReportDrawerOpen(true)}
+        >
+          Báo cáo phân tích
+        </Button>
         <ActionMenu
           items={[
             ...(onNavigateToBrandProfile
@@ -1693,6 +1706,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           Lưu định vị vào hồ sơ
         </Button>
       </PageActions>
+
+      {showApiSetupPanel && (
+        <InlinePurposeApiSetup purposeId="BRAND_MARKET_RESEARCH" />
+      )}
 
       {/* 1. ĐẦU HỒ SƠ (một hàng) + Ô NGHIÊN CỨU THƯƠNG HIỆU KHÁC */}
       <div className="space-y-3">
@@ -2768,6 +2785,22 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           </Panel>
         </div>
       )}
+
+      <OperationalReportDrawer
+        isOpen={isReportDrawerOpen}
+        onClose={() => setIsReportDrawerOpen(false)}
+        purposeId="BRAND_MARKET_RESEARCH"
+        moduleTitle={`Báo cáo Nghiên cứu Thị trường & 4P — ${dossier.brandName}`}
+        contextDataText={[
+          `[DỮ LIỆU PHÂN HỆ: Nghiên cứu Thị trường, Phân tích 4P & Đào bình luận — ${dossier.brandName}]`,
+          `- Thương hiệu: ${dossier.brandName} (${dossier.category}) · Xuất xứ: ${dossier.originCountry}`,
+          `- Khoảng giá 4P: ${dossier.fourP.priceRangeText} · AOV: ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)} · Mua lặp lại: ${dossier.marketLandscape.repeatPurchaseRatePct}%`,
+          `- Sản phẩm chủ lực (Hero SKU): ${dossier.skuPortfolio.slice(0, 3).map((s) => `${s.productName} (${formatVnd(s.dealPriceVnd)})`).join(', ')}`,
+          `- Đối thủ cạnh tranh trực diện (${dossier.competitors.length}): ${dossier.competitors.map((c) => `${c.competitorName} (${formatVnd(c.dealPriceVnd)})`).join(', ')}`,
+          `- Cụm vấn đề & bình luận khách hàng (${minedClusters.length} cụm): ${minedClusters.slice(0, 4).map((c) => `${c.topicTitle} (${c.sharePct}%)`).join(' | ')}`,
+        ].join('\n')}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

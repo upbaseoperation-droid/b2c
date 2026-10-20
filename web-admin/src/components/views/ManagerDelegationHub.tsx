@@ -54,10 +54,18 @@ import {
   INITIAL_DEPARTMENT_ACCESS_RULES,
   ROLE_DISPLAY_NAME
 } from '../../lib/rbacData';
-import { ActionMenu, Avatar, Button, PageActions, Presence, Segmented, Status, ChannelTag } from '../ui';
+import { ActionMenu, Avatar, Button, Modal, PageActions, Presence, Segmented, Status, ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
-import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
+import { B2C_28_STAFF_WORKLOAD_ROSTER } from './TaskDelegationView';
+import {
+  computeUnifiedB2cStaffWorkloads,
+  loadSavedManagerExceptions,
+  persistManagerExceptions,
+  loadSavedSowPolicies,
+  DIFFICULTY_TIER_BADGE,
+  UnifiedStaffWorkloadRow,
+} from '../../lib/taskDelegationData';
 import {
   INITIAL_STORE_ASSIGNMENT_HISTORY,
   INITIAL_BACKUP_ASSIGNMENTS
@@ -105,7 +113,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     isGrowthManager || isMediaManager ? 'DIRECTORY' : 'WORKLOAD'
   );
 
-  // Bộ lọc Lịch sử PIC & Bàn giao
+  // Bộ lọc Lịch sử PIC & Bàn giao (stateful để ghi nhận trực tiếp mọi thao tác đổi PIC)
+  const [assignmentHistory, setAssignmentHistory] = useState(() => INITIAL_STORE_ASSIGNMENT_HISTORY);
   const [historySearch, setHistorySearch] = useState('');
   const [historyActionFilter, setHistoryActionFilter] = useState<'ALL' | 'ASSIGNED' | 'REASSIGNED' | 'BACKUP_ACTIVATED'>('ALL');
 
@@ -184,26 +193,90 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('ALL');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState('ALL');
   const [selectedBrandPosRole, setSelectedBrandPosRole] = useState<'ALL' | 'CONTENT_BRAND_MAIN' | 'PLAN_STRATEGY' | 'KEY_VISUAL_SIS'>('ALL');
+  const [workloadFilterStatus, setWorkloadFilterStatus] = useState<'ALL' | 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD' | 'FAIL_07'>('ALL');
+  const [workloadSearch, setWorkloadSearch] = useState('');
+
+  // Đồng bộ ngoại lệ Bảng 4 và cấu hình SOW Bảng 1
+  const [managerExceptions, setManagerExceptions] = useState<Record<string, boolean>>(() =>
+    loadSavedManagerExceptions()
+  );
+  const sowPolicies = useMemo(() => loadSavedSowPolicies(), []);
+
+  React.useEffect(() => {
+    const syncExceptions = () => setManagerExceptions(loadSavedManagerExceptions());
+    window.addEventListener('upbase-workload-exceptions-updated', syncExceptions);
+    return () => window.removeEventListener('upbase-workload-exceptions-updated', syncExceptions);
+  }, []);
+
+  const toggleManagerException = (staffCode: string, staffName: string) => {
+    const next = { ...managerExceptions, [staffCode]: !managerExceptions[staffCode] };
+    setManagerExceptions(next);
+    persistManagerExceptions(next);
+    notify(
+      next[staffCode]
+        ? `Đã xác nhận ngoại lệ Bảng 4 cho ${staffName}: Giữ nguyên hệ số cơ cấu ×1,00`
+        : `Đã gỡ ngoại lệ Bảng 4 của ${staffName}: Áp dụng hệ số cơ cấu theo tỷ lệ thực tế`
+    );
+  };
+
+  // Tính toán tải công việc hợp nhất của 28 nhân sự B2C
+  const unifiedStaffWorkloads = useMemo(() => {
+    return computeUnifiedB2cStaffWorkloads({
+      tasks,
+      brands,
+      storePortfolios,
+      managerExceptions,
+    });
+  }, [tasks, brands, storePortfolios, managerExceptions]);
+
+  const staffWorkloadMap = useMemo(() => {
+    const map = new Map<string, UnifiedStaffWorkloadRow>();
+    unifiedStaffWorkloads.forEach(w => map.set(w.name, w));
+    return map;
+  }, [unifiedStaffWorkloads]);
+
+  const filteredUnifiedWorkloads = useMemo(() => {
+    const q = workloadSearch.trim().toLowerCase();
+    return unifiedStaffWorkloads.filter(w => {
+      if (workloadFilterStatus === 'OVERLOAD' && w.loadStatus !== 'OVERLOAD') return false;
+      if (workloadFilterStatus === 'OPTIMAL' && w.loadStatus !== 'OPTIMAL') return false;
+      if (workloadFilterStatus === 'UNDERLOAD' && w.loadStatus !== 'UNDERLOAD') return false;
+      if (workloadFilterStatus === 'FAIL_07' && (w.meetsHardRatio || w.hasException)) return false;
+      if (q) {
+        const matchName = w.name.toLowerCase().includes(q);
+        const matchCode = w.staffCode.toLowerCase().includes(q);
+        const matchRole = w.roleGroup.toLowerCase().includes(q);
+        const matchStore = w.liveStoresSummaryText.toLowerCase().includes(q);
+        if (!matchName && !matchCode && !matchRole && !matchStore) return false;
+      }
+      return true;
+    });
+  }, [unifiedStaffWorkloads, workloadFilterStatus, workloadSearch]);
+
+  // Danh sách nhân sự B2C chuẩn (ưu tiên 28 nhân sự thực tế từ B2C_28_STAFF_WORKLOAD_ROSTER)
+  const b2cStorePicOptions = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; roleTitle: string }>();
+    B2C_28_STAFF_WORKLOAD_ROSTER.forEach(r => {
+      map.set(r.name, {
+        id: r.staffCode,
+        name: r.name,
+        roleTitle: `${r.roleGroup} (${r.level})`,
+      });
+    });
+    staffList
+      .filter(s => s.role === 'BOOKING' || s.role === 'CONTENT')
+      .forEach(s => {
+        if (!map.has(s.name)) {
+          map.set(s.name, { id: s.id, name: s.name, roleTitle: s.roleTitle });
+        }
+      });
+    return Array.from(map.values());
+  }, [staffList]);
 
   // Danh sách ứng viên B2C cho 3 vị trí gắn theo Brand [theo brand]
   const brandPositionCandidateNames = useMemo(() => {
-    const base = [
-      'Quỳnh Như',
-      'Nguyễn Thị Mai Anh',
-      'Vũ Hoài Lâm',
-      'Phan Diệu Ánh',
-      'Nguyễn Thị Ngọc Tâm',
-      'Lê Phương Thảo',
-      'Lương Thị Như Quỳnh',
-      'Lê Thanh Hải',
-      'Hoàng Hải Long',
-      'Trần Hải Phượng',
-      'Phạm Thị Thu Hằng',
-      'Khánh Vy',
-      'Nguyễn Thu Trang',
-      'Lê Hoàng Yến',
-      'Đặng Thị Yến Nhi',
-    ];
+    const base = B2C_28_STAFF_WORKLOAD_ROSTER.map(r => r.name);
+    if (!base.includes('Đặng Thị Yến Nhi')) base.unshift('Đặng Thị Yến Nhi');
     staffList.forEach(s => {
       if (s.name && !base.includes(s.name)) base.push(s.name);
     });
@@ -321,14 +394,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     deadlineHours: number;
     urgency: 'critical' | 'warning' | 'normal';
     type: 'GENERAL_TASK' | 'CAMPAIGN_BRIEF' | 'SCRIPT_REVIEW' | 'CONTRACT_APPROVAL' | 'SAMPLE_DELIVERY' | 'ADS_CODE_RETRIEVAL';
+    sowStt: number;
+    difficultyTier: 'EASY' | 'STANDARD' | 'HARD';
+    quantity: number;
   }>({
-    targetStaff: 'Khánh Vy',
-    brand: 'Fresh',
+    targetStaff: 'Nguyễn Thị Ngọc Tâm',
+    brand: 'ClubClio',
     title: '',
     description: '',
     deadlineHours: 24,
     urgency: 'warning',
-    type: 'GENERAL_TASK'
+    type: 'GENERAL_TASK',
+    sowStt: 1,
+    difficultyTier: 'STANDARD',
+    quantity: 1,
   });
 
   // New/Edit Brand Form State
@@ -434,7 +513,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   // Handle direct task creation
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskState.title.trim()) {
+    const selectedSow = sowPolicies.find(s => s.stt === newTaskState.sowStt) || sowPolicies[0];
+    const cleanTitle =
+      newTaskState.title.trim() ||
+      (selectedSow ? `${selectedSow.name} — ${newTaskState.brand}` : '');
+    if (!cleanTitle) {
       notify('Vui lòng nhập tiêu đề nhiệm vụ!');
       return;
     }
@@ -446,39 +529,66 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       ? 'CONTENT_MEMBER' 
       : 'BRAND_MEMBER';
 
+    const stdPt = selectedSow?.basePoint || 3.0;
+    const diffCoef = DIFFICULTY_TIER_BADGE[newTaskState.difficultyTier].coef;
+    const qty = Math.max(1, newTaskState.quantity || 1);
+    const calcPts = Number((qty * stdPt * diffCoef).toFixed(2));
+
     const createdTask: SlaTask = {
       id: `task-lead-${Date.now()}`,
-      title: newTaskState.title,
+      title: cleanTitle,
       description: newTaskState.description || `Chỉ đạo trực tiếp từ Trưởng phòng ${currentUser.name}`,
       brand: newTaskState.brand,
-      team: assignedMember?.team || 'Vận Hành B2C',
+      team: assignedMember?.team || 'Marketing B2C',
       deadline: `Trong vòng ${newTaskState.deadlineHours}h`,
       remainingText: `Còn ${newTaskState.deadlineHours} giờ`,
       deadlineHours: newTaskState.deadlineHours,
       urgency: newTaskState.urgency,
       pic: newTaskState.targetStaff,
       targetRole: targetRole,
-      type: newTaskState.type,
+      type: selectedSow?.categoryKey === 'RESEARCH' ? 'RESEARCH_TASK' : newTaskState.type,
+      taskCategory: selectedSow?.categoryKey || 'BOOKING',
+      taskSource: 'DIRECTOR_ASSIGNED',
+      sowStt: selectedSow?.stt,
+      sowGroup: selectedSow?.group,
+      sowName: selectedSow?.name,
+      acceptedQuantity: qty,
+      standardPoint: stdPt,
+      scopeCoef: 1.0,
+      taskDifficultyTier: newTaskState.difficultyTier,
+      taskDifficultyCoef: diffCoef,
+      timelineStatus: 'ON_TIME',
+      timelineCoef: 1.0,
+      multiPlatformCoef: 1.0,
+      assignmentRole: 'PIC_OWNER',
+      contributionWeightPct: 100,
+      baseWorkloadPoints: Number((qty * stdPt).toFixed(2)),
+      calculatedWorkloadPoints: calcPts,
       actionLabel: 'Xử lý ngay',
       createdAt: new Date().toISOString()
     };
 
     onAddTask(createdTask);
-    notify(`Trưởng phòng đã giao nhiệm vụ "${newTaskState.title}" cho chuyên viên ${newTaskState.targetStaff}!`);
+    notify(
+      `Đã giao nhiệm vụ "${createdTask.title}" (+${calcPts.toFixed(2).replace('.', ',')} điểm) cho ${newTaskState.targetStaff}!`
+    );
     
     if (onPingStaff) {
-      onPingStaff(newTaskState.targetStaff, `Nhiệm vụ mới từ Trưởng phòng: ${newTaskState.title}`);
+      onPingStaff(newTaskState.targetStaff, `Nhiệm vụ mới từ Trưởng phòng: ${createdTask.title}`);
     }
 
     setIsTaskModalOpen(false);
     setNewTaskState({
-      targetStaff: 'Khánh Vy',
-      brand: 'Fresh',
+      targetStaff: 'Nguyễn Thị Ngọc Tâm',
+      brand: 'ClubClio',
       title: '',
       description: '',
       deadlineHours: 24,
       urgency: 'warning',
-      type: 'GENERAL_TASK'
+      type: 'GENERAL_TASK',
+      sowStt: 1,
+      difficultyTier: 'STANDARD',
+      quantity: 1,
     });
   };
 
@@ -599,6 +709,29 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     };
 
     onUpdateStore(updated);
+
+    if (isPicChanged) {
+      const matchedRoster = B2C_28_STAFF_WORKLOAD_ROSTER.find(r => r.name === nextOwner);
+      setAssignmentHistory(prev => [
+        {
+          id: `hist-${Date.now()}`,
+          storeId: updated.storeOperationId || updated.id,
+          storeName: updated.storeName,
+          brandName: updated.brandName,
+          staffId: matchedRoster?.staffCode || `NV-${Date.now()}`,
+          staffName: nextOwner,
+          roleType: 'PRIMARY_B2C',
+          action: 'REASSIGNED',
+          effectiveDate: today,
+          assignedBy: currentUser.id,
+          assignedByName: currentUser.name,
+          reason: notes || `Điều chuyển gian hàng từ ${prevOwner} sang ${nextOwner}`,
+          handoverNotes: `Bàn giao trực tiếp từ ${prevOwner} sang ${nextOwner}`,
+        },
+        ...prev,
+      ]);
+    }
+
     notify(
       isPicChanged
         ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${b2cOwners.join(' & ')} (hiệu lực ${today})`
@@ -686,8 +819,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 : `Phân công Gian hàng · ${storePortfolios.length}` 
             },
             { key: 'BRANDS', label: `Phân bổ Nhân sự theo Brand · ${brands.length}` },
-            { key: 'COEFFICIENTS', label: `Hệ số Gian hàng (Bảng 2) · ${b2cPlanStores.length}` },
-            { key: 'ASSIGNMENT_HISTORY', label: `Lịch sử PIC & Bàn giao · ${INITIAL_STORE_ASSIGNMENT_HISTORY.length}` },
+            { key: 'COEFFICIENTS', label: `Hệ số Gian hàng · ${b2cPlanStores.length}` },
+            { key: 'STAFF', label: `Cân bằng tải & Danh bạ · ${B2C_28_STAFF_WORKLOAD_ROSTER.length}` },
+            { key: 'ASSIGNMENT_HISTORY', label: `Lịch sử PIC & Bàn giao · ${assignmentHistory.length}` },
           ]}
         />
         <PageActions>
@@ -915,11 +1049,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 }}
                                 className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
-                                {brandPositionCandidateNames.map(name => (
-                                  <option key={name} value={name}>
-                                    {name}
-                                  </option>
-                                ))}
+                                {brandPositionCandidateNames.map(name => {
+                                  const w = staffWorkloadMap.get(name);
+                                  return (
+                                    <option key={name} value={name}>
+                                      {name}
+                                      {w ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · ${w.loadPct}%)` : ''}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
                           </td>
@@ -941,11 +1079,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 }}
                                 className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
-                                {brandPositionCandidateNames.map(name => (
-                                  <option key={name} value={name}>
-                                    {name}
-                                  </option>
-                                ))}
+                                {brandPositionCandidateNames.map(name => {
+                                  const w = staffWorkloadMap.get(name);
+                                  return (
+                                    <option key={name} value={name}>
+                                      {name}
+                                      {w ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · ${w.loadPct}%)` : ''}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
                           </td>
@@ -966,11 +1108,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 }}
                                 className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
-                                {brandPositionCandidateNames.map(name => (
-                                  <option key={name} value={name}>
-                                    {name}
-                                  </option>
-                                ))}
+                                {brandPositionCandidateNames.map(name => {
+                                  const w = staffWorkloadMap.get(name);
+                                  return (
+                                    <option key={name} value={name}>
+                                      {name}
+                                      {w ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · ${w.loadPct}%)` : ''}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
                           </td>
@@ -1038,7 +1184,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     <Avatar name={team.leaderName} size={38} />
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-2xs font-mono font-semibold .5 bg-brand-soft text-brand -brand-line">
+                        <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-brand-soft text-brand border border-brand-line">
                           {isLeaderGroup ? 'Nhóm có Trưởng nhóm' : 'Báo cáo trực tiếp Trưởng phòng'}
                         </span>
                         <span className="text-xs font-semibold text-ink truncate">{team.leaderName}</span>
@@ -1109,7 +1255,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
                 >
                   <option value="ALL">Tất cả chuyên viên</option>
-                  {staffList.filter(s => s.role === 'BOOKING').map(s => (
+                  {b2cStorePicOptions.map(s => (
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
@@ -1143,7 +1289,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     </tr>
                   ) : (
                     displayedStores.map((store) => {
-                      const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Khánh Vy']);
+                      const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Nguyễn Thị Ngọc Tâm']);
                       const hasLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
                       const currentLeaderVal = hasLeader ? (store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'NONE';
                       const coef = normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier);
@@ -1172,24 +1318,16 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             {store.brandName}
                           </td>
 
-                          {/* Hệ số gian hàng (Bảng 2) */}
+                          {/* Hệ số gian hàng */}
                           <td className="py-3 px-3 text-center">
                             <button
                               type="button"
                               onClick={() => setActiveSection('COEFFICIENTS')}
                               className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold transition cursor-pointer hover:opacity-85 ${coefBadgeClass}`}
-                              title={`Bảng 2. Hệ số gian hàng: ${coef.tier} (${coef.label}) — ${coef.rule.definition}. Bấm để mở cấu hình & duyệt hệ số đầu tháng.`}
                             >
                               <span>{coef.tier}</span>
                               <span className="font-mono font-semibold">· {coef.label}</span>
                             </button>
-                            <div className="text-2xs text-ink-3 mt-0.5">
-                              {store.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
-                                ? 'Chờ duyệt đầu kỳ'
-                                : store.coefficientApprovalStatus === 'ADJUSTED_BY_APPROVED_PLAN'
-                                  ? 'Theo Plan điều chỉnh'
-                                  : 'Đã duyệt đầu kỳ'}
-                            </div>
                           </td>
 
                           {/* Inline Leader Selector */}
@@ -1220,20 +1358,24 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {/* Assignee Selector */}
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2">
-                              <Avatar name={owners[0] || 'Khánh Vy'} size={22} />
+                              <Avatar name={owners[0] || 'Nguyễn Thị Ngọc Tâm'} size={22} />
                               <select
-                                value={owners[0] || 'Khánh Vy'}
+                                value={owners[0] || 'Nguyễn Thị Ngọc Tâm'}
                                 onChange={(e) => {
                                   const newOwners = [e.target.value];
                                   handleSaveStoreAssignment(store.id, newOwners, store.assignmentNotes || '');
                                 }}
                                 className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                               >
-                                {staffList.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map(s => (
-                                  <option key={s.id} value={s.name}>
-                                    {s.name}
-                                  </option>
-                                ))}
+                                {b2cStorePicOptions.map(s => {
+                                  const w = staffWorkloadMap.get(s.name);
+                                  return (
+                                    <option key={s.id} value={s.name}>
+                                      {s.name}
+                                      {w ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · ${w.loadPct}%)` : ''}
+                                    </option>
+                                  );
+                                })}
                               </select>
                             </div>
                             {store.previousPic && (
@@ -1302,10 +1444,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <div>
               <h3 className="text-sm font-semibold text-ink">
                 {staffSubView === 'WORKLOAD'
-                  ? `Cân bằng định mức tải gian hàng B2C (${staffList.length} nhân sự)`
+                  ? `Cân bằng định mức tải khối B2C (${filteredUnifiedWorkloads.length}/${unifiedStaffWorkloads.length} nhân sự)`
                   : `Danh bạ nhân sự theo khối (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên)`}
               </h3>
-              
             </div>
             <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg border border-line shrink-0 max-w-full overflow-x-auto">
               <button
@@ -1317,7 +1458,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                Định mức tải gian hàng ({staffList.length})
+                Cân bằng tải B2C ({unifiedStaffWorkloads.length})
               </button>
               <button
                 type="button"
@@ -1335,55 +1476,66 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
           {staffSubView === 'WORKLOAD' && (
             <>
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs text-ink-2">
-                  Đang tính tải trên: <strong className="text-ink font-semibold">{storeFilterMode === 'B2C_ONLY' ? `${b2cPlanStores.length} gian B2C làm plan` : `${storePortfolios.length} gian toàn hệ thống`}</strong>
-                </span>
-                <div className="inline-flex p-0.5 bg-sunken rounded-lg border border-line text-xs font-medium">
-                  <button
-                    type="button"
-                    onClick={() => setStoreFilterMode('B2C_ONLY')}
-                    className={`px-2.5 py-1 rounded-md text-xs transition ${
-                      storeFilterMode === 'B2C_ONLY'
-                        ? 'bg-surface text-ink font-semibold shadow-2xs'
-                        : 'text-ink-2 hover:text-ink'
-                    }`}
-                  >
-                    Gian B2C làm plan ({b2cPlanStores.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStoreFilterMode('ALL')}
-                    className={`px-2.5 py-1 rounded-md text-xs transition ${
-                      storeFilterMode === 'ALL'
-                        ? 'bg-surface text-ink font-semibold shadow-2xs'
-                        : 'text-ink-2 hover:text-ink'
-                    }`}
-                  >
-                    Tất cả gian ({storePortfolios.length})
-                  </button>
+              <div className="bg-surface border border-line rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { key: 'ALL' as const, label: `Tất cả (${unifiedStaffWorkloads.length})` },
+                    {
+                      key: 'OVERLOAD' as const,
+                      label: `Quá tải ≥115% (${unifiedStaffWorkloads.filter(w => w.loadStatus === 'OVERLOAD').length})`,
+                    },
+                    {
+                      key: 'OPTIMAL' as const,
+                      label: `Đủ tải 96–114% (${unifiedStaffWorkloads.filter(w => w.loadStatus === 'OPTIMAL').length})`,
+                    },
+                    {
+                      key: 'UNDERLOAD' as const,
+                      label: `Dư công suất <96% (${unifiedStaffWorkloads.filter(w => w.loadStatus === 'UNDERLOAD').length})`,
+                    },
+                    {
+                      key: 'FAIL_07' as const,
+                      label: `Thiếu việc khó ×0,70 (${unifiedStaffWorkloads.filter(w => !w.meetsHardRatio && !w.hasException).length})`,
+                    },
+                  ].map(chip => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => setWorkloadFilterStatus(chip.key)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition cursor-pointer ${
+                        workloadFilterStatus === chip.key
+                          ? 'bg-accent text-white border-accent font-semibold'
+                          : 'bg-canvas text-ink-2 border-line hover:text-ink'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative min-w-[220px]">
+                  <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={workloadSearch}
+                    onChange={e => setWorkloadSearch(e.target.value)}
+                    placeholder="Tìm tên NV, mã NV, gian hàng..."
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-accent"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-                {staffList.map((staff) => {
-                  const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
-                  const assignedStores = targetPool.filter(st => 
-                    (st.b2cOwners && st.b2cOwners.includes(staff.name)) || st.b2cOwnerName.includes(staff.name)
-                  );
-                  const maxCap = staff.maxStoresCapacity || 3;
-                  const loadPct = Math.round((assignedStores.length / maxCap) * 100);
-                  const isOverloaded = assignedStores.length > maxCap;
-                  const isOptimal = assignedStores.length === maxCap;
-
-                  const contentMainBrands = brands.filter(b => (b.contentBrandMainPic || b.contentPic) === staff.name);
-                  const planStrategyBrands = brands.filter(b => (b.planStrategyPic || b.brandPicName) === staff.name);
-                  const kvSisBrands = brands.filter(b => b.keyVisualSisPic === staff.name);
+                {filteredUnifiedWorkloads.map((w) => {
+                  const isOverloaded = w.loadStatus === 'OVERLOAD';
+                  const isOptimal = w.loadStatus === 'OPTIMAL';
+                  const contentMainBrands = brands.filter(b => (b.contentBrandMainPic || b.contentPic) === w.name);
+                  const planStrategyBrands = brands.filter(b => (b.planStrategyPic || b.brandPicName) === w.name);
+                  const kvSisBrands = brands.filter(b => b.keyVisualSisPic === w.name);
                   const totalBrandPositions = contentMainBrands.length + planStrategyBrands.length + kvSisBrands.length;
 
                   return (
                     <div
-                      key={staff.id}
+                      key={w.staffCode}
                       className={`bg-surface rounded-xl border p-4 flex flex-col justify-between transition ${
                         isOverloaded ? 'border-critical-line' : 'border-line hover:border-line-strong'
                       }`}
@@ -1391,22 +1543,44 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       <div>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar name={staff.name} size={36} />
+                            <Avatar name={w.name} size={36} />
                             <div className="min-w-0">
-                              <span className="font-semibold text-ink text-xs block truncate">{staff.name}</span>
-                              <span className="text-2xs text-ink-3 block leading-tight truncate">{staff.roleTitle}</span>
+                              <span className="font-semibold text-ink text-xs block truncate">{w.name}</span>
+                              <span className="text-2xs text-ink-3 block leading-tight truncate">
+                                {w.staffCode} · {w.roleGroup}
+                              </span>
                             </div>
                           </div>
-                          <span className="text-2xs font-medium text-ink-2 -line shrink-0">
-                            {staff.role}
+                          <span className="text-2xs font-semibold text-accent px-1.5 py-0.5 rounded bg-accent-soft border border-accent/20 shrink-0">
+                            {w.level}
                           </span>
                         </div>
 
-                        <div className="mt-3 pt-2.5 border-t border-line flex items-baseline justify-between text-xs">
-                          <span className="text-ink-3">Gian phụ trách:</span>
-                          <span className={`font-mono font-semibold ${isOverloaded ? 'text-critical' : 'text-ink'}`}>
-                            {assignedStores.length} / {maxCap} gian ({loadPct}%)
-                          </span>
+                        <div className="mt-2.5 pt-2.5 border-t border-line space-y-1 text-xs">
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-ink-3">Quỹ điểm tháng:</span>
+                            <span className={`font-mono font-semibold ${isOverloaded ? 'text-critical' : isOptimal ? 'text-positive' : 'text-accent'}`}>
+                              {w.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} / {w.targetCapacityPts} đ ({w.loadPct}%)
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-2xs">
+                            <span className="text-ink-3">
+                              Gian hàng: <strong className="text-ink">{w.liveAssignedStoresCount} gian</strong>
+                            </span>
+                            {w.meetsHardRatio ? (
+                              <span className="text-positive font-semibold">
+                                Đạt việc khó ({w.hardRatioPct}% · ×1,00)
+                              </span>
+                            ) : w.hasException ? (
+                              <span className="text-accent font-semibold">
+                                Ngoại lệ ×1,00 ({w.hardRatioPct}%)
+                              </span>
+                            ) : (
+                              <span className="text-warning font-semibold">
+                                Hệ số ×0,70 ({w.hardRatioPct}%/{w.minHardRatioReqPct}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Progress Bar of Capacity */}
@@ -1415,12 +1589,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             className={`data-bar h-full rounded-full ${
                               isOverloaded ? 'bg-critical' : isOptimal ? 'bg-positive' : 'bg-brand'
                             }`}
-                            style={{ width: `${Math.min(100, loadPct)}%` }}
+                            style={{ width: `${Math.min(100, w.loadPct)}%` }}
                           />
                         </div>
 
                         {/* Vị trí gắn theo Brand [theo brand] */}
-                        <div className="mt-2.5 p-2 rounded-lg bg-warning-soft border border-warning/20/70">
+                        <div className="mt-2.5 p-2 rounded-lg bg-warning-soft border border-warning/20">
                           <div className="flex items-center justify-between text-2xs mb-1">
                             <span className="font-semibold text-warning">Vị trí gắn theo Brand:</span>
                             <span className="font-mono font-semibold text-warning">{totalBrandPositions} vị trí</span>
@@ -1428,18 +1602,18 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {totalBrandPositions > 0 ? (
                             <div className="flex flex-wrap gap-1 text-2xs">
                               {contentMainBrands.length > 0 && (
-                                <span className=".5 bg-white -warning/20 text-warning font-medium">
-                                  Content/Brand main: {contentMainBrands.length}
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-warning/20 text-warning font-medium">
+                                  Content: {contentMainBrands.length}
                                 </span>
                               )}
                               {planStrategyBrands.length > 0 && (
-                                <span className=".5 bg-white -accent/20 text-accent font-medium">
-                                  Plan/Strategy: {planStrategyBrands.length}
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-accent/20 text-accent font-medium">
+                                  Plan: {planStrategyBrands.length}
                                 </span>
                               )}
                               {kvSisBrands.length > 0 && (
-                                <span className=".5 bg-white -accent/20 text-accent font-medium">
-                                  Key Visual/SIS: {kvSisBrands.length}
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-accent/20 text-accent font-medium">
+                                  KV/SIS: {kvSisBrands.length}
                                 </span>
                               )}
                             </div>
@@ -1451,12 +1625,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         {/* Assigned Stores List tags */}
                         <div className="mt-2.5">
                           <span className="text-2xs font-medium text-ink-3 block mb-1">
-                            Danh sách gian hàng:
+                            Danh sách gian hàng ({w.liveAssignedStoresCount}):
                           </span>
                           <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                            {assignedStores.length > 0 ? (
-                              assignedStores.map(st => (
-                                <span key={st.id} className="text-2xs .5 -line text-ink-2 font-medium truncate max-w-[140px]" title={st.storeName}>
+                            {w.assignedStores.length > 0 ? (
+                              w.assignedStores.map(st => (
+                                <span key={st.storeId} className="text-2xs px-1.5 py-0.5 rounded border border-line text-ink-2 font-medium truncate max-w-[140px]" title={st.storeName}>
                                   {st.storeName.split('_')[0]}
                                 </span>
                               ))
@@ -1467,16 +1641,42 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </div>
                       </div>
 
-                      <div className="mt-3.5 pt-2.5 border-t border-line flex items-center justify-between">
+                      <div className="mt-3.5 pt-2.5 border-t border-line flex items-center gap-1.5">
+                        {w.liveAssignedStoresCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedStaffFilter(w.name);
+                              setActiveSection('STORES');
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-surface hover:bg-sunken text-ink-2 hover:text-ink text-2xs font-medium border border-line transition cursor-pointer shrink-0"
+                            title="Mở danh sách gian hàng của nhân sự này để bàn giao / cân bằng tải"
+                          >
+                            Gian hàng ({w.liveAssignedStoresCount})
+                          </button>
+                        )}
+                        {!w.meetsHardRatio && (
+                          <button
+                            type="button"
+                            onClick={() => toggleManagerException(w.staffCode, w.name)}
+                            className="px-2 py-1.5 rounded-lg bg-surface hover:bg-sunken text-positive text-2xs font-semibold border border-line transition cursor-pointer shrink-0"
+                          >
+                            {w.hasException ? 'Gỡ ×1,00' : 'Duyệt ×1,00'}
+                          </button>
+                        )}
                         <button
+                          type="button"
                           onClick={() => {
+                            const firstStore = w.assignedStores[0];
                             setNewTaskState(prev => ({
                               ...prev,
-                              targetStaff: staff.name
+                              targetStaff: w.name,
+                              brand: firstStore?.brandName || prev.brand,
+                              difficultyTier: !w.meetsHardRatio ? 'HARD' : 'STANDARD',
                             }));
                             setIsTaskModalOpen(true);
                           }}
-                          className="w-full py-1.5 rounded-lg bg-canvas hover:bg-sunken text-ink-2 hover:text-ink text-xs font-medium border border-line flex items-center justify-center gap-1.5 transition"
+                          className="flex-1 py-1.5 rounded-lg bg-canvas hover:bg-sunken text-ink hover:text-accent text-xs font-semibold border border-line flex items-center justify-center gap-1 transition cursor-pointer"
                         >
                           <Send className="w-3 h-3 text-brand" />
                           <span>Giao việc</span>
@@ -1595,7 +1795,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     {filteredDepartmentStaff.slice(0, 60).map(emp => (
                       <tr key={emp.id} className="hover:bg-surface-hover transition">
                         <td className="py-2 px-3 font-mono font-medium text-ink-2">
-                          <span className=".5 -line text-2xs">
+                          <span className="px-1.5 py-0.5 rounded border border-line text-2xs">
                             {emp.staffCode || emp.id}
                           </span>
                         </td>
@@ -1610,7 +1810,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {emp.position || emp.roleTitle}
                         </td>
                         <td className="py-2 px-3">
-                          <span className="text-2xs font-medium bg-brand-soft text-brand -brand-line">
+                          <span className="text-2xs font-medium px-1.5 py-0.5 rounded bg-brand-soft text-brand border border-brand-line">
                             {ROLE_DISPLAY_NAME[emp.mappedRole] || emp.mappedRole}
                           </span>
                         </td>
@@ -1737,11 +1937,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <h3 className="font-semibold text-xs text-ink flex items-center gap-2">
                   <History className="w-3.5 h-3.5 text-brand" />
                   <span>Lịch sử điều chuyển & phân công gian hàng</span>
-                  <span className="text-2xs font-mono font-medium text-ink-2 -line">
-                    {INITIAL_STORE_ASSIGNMENT_HISTORY.length} bản ghi
+                  <span className="text-2xs font-mono font-medium text-ink-2 px-1.5 py-0.5 rounded border border-line">
+                    {assignmentHistory.length} bản ghi
                   </span>
                 </h3>
-                
               </div>
 
               {/* Filters */}
@@ -1783,7 +1982,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {INITIAL_STORE_ASSIGNMENT_HISTORY.filter(h => {
+                  {assignmentHistory.filter(h => {
                     if (historyActionFilter !== 'ALL' && h.action !== historyActionFilter) return false;
                     if (historySearch.trim()) {
                       const q = historySearch.toLowerCase();
@@ -1846,11 +2045,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <h3 className="font-semibold text-xs text-ink flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-warning" />
                   <span>Nhân sự dự phòng được ủy quyền (Backup PIC)</span>
-                  <span className="text-2xs font-mono font-medium text-ink-2 -line">
+                  <span className="text-2xs font-mono font-medium text-ink-2 px-1.5 py-0.5 rounded border border-line">
                     {INITIAL_BACKUP_ASSIGNMENTS.length} cặp ủy quyền
                   </span>
                 </h3>
-                
               </div>
             </div>
 
@@ -1908,661 +2106,530 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {/* ========================================================================= */}
       {/* MODAL 1: GIAO VIỆC TRỰC TIẾP CHO NHÂN SỰ                                   */}
       {/* ========================================================================= */}
-      <Presence show={!!isTaskModalOpen}>
-      {isTaskModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-line overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Send className="w-5 h-5 text-accent" />
-                <div>
-                  <h3 className="text-sm font-semibold">Giao việc trực tiếp cho nhân sự</h3>
-                  
-                </div>
-              </div>
-              <button
-                onClick={() => setIsTaskModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-sunken hover:bg-sunken text-ink-2 hover:text-ink flex items-center justify-center transition"
+      <Modal
+        open={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        title="Giao việc trực tiếp cho nhân sự"
+        size="md"
+      >
+        <form onSubmit={handleCreateTask} className="space-y-4 text-xs">
+          <div>
+            <label className="font-semibold text-ink-2 block mb-1">
+              1. Chuyên viên nhận việc
+            </label>
+            <select
+              value={newTaskState.targetStaff}
+              onChange={(e) => setNewTaskState(prev => ({ ...prev, targetStaff: e.target.value }))}
+              className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
+            >
+              <optgroup label="28 Nhân sự nòng cốt B2C">
+                {b2cStorePicOptions.map(s => {
+                  const w = staffWorkloadMap.get(s.name);
+                  return (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                      {w
+                        ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · Tải ${w.loadPct}%${
+                            !w.meetsHardRatio && !w.hasException ? ' · Thiếu việc khó' : ''
+                          })`
+                        : ` (${s.roleTitle})`}
+                    </option>
+                  );
+                })}
+              </optgroup>
+              <optgroup label={`Nhân sự thuộc ${deptStaffScope === 'GROWTH' ? 'Khối Growth' : deptStaffScope === 'MEDIA' ? 'Khối Media' : 'Khối Marketing B2C'}`}>
+                {scopedDepartmentStaff.slice(0, 60).map(s => (
+                  <option key={`dept-${s.id}`} value={s.name}>
+                    {s.staffCode} - {s.name} ({s.department || s.team})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                2. Hạng mục công việc SOW (Bảng 1)
+              </label>
+              <select
+                value={newTaskState.sowStt}
+                onChange={(e) => {
+                  const nextStt = Number(e.target.value);
+                  const found = sowPolicies.find(sp => sp.stt === nextStt);
+                  setNewTaskState(prev => ({
+                    ...prev,
+                    sowStt: nextStt,
+                    difficultyTier: found?.defaultDifficultyTier || prev.difficultyTier,
+                  }));
+                }}
+                className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
               >
-                <X className="w-4 h-4" />
-              </button>
+                {sowPolicies.map(sp => (
+                  <option key={sp.stt} value={sp.stt}>
+                    #{sp.stt} [{sp.group}] {sp.name} ({sp.basePoint}đ)
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <form onSubmit={handleCreateTask} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  1. Chuyên viên nhận việc
-                </label>
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                3. Độ khó (Bảng 3) & Số lượng
+              </label>
+              <div className="flex items-center gap-2">
                 <select
-                  value={newTaskState.targetStaff}
-                  onChange={(e) => setNewTaskState(prev => ({ ...prev, targetStaff: e.target.value }))}
-                  className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
+                  value={newTaskState.difficultyTier}
+                  onChange={(e) =>
+                    setNewTaskState(prev => ({
+                      ...prev,
+                      difficultyTier: e.target.value as 'EASY' | 'STANDARD' | 'HARD',
+                    }))
+                  }
+                  className="flex-1 text-xs font-medium px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
-                  <optgroup label="Nhân sự nòng cốt B2C">
-                    {staffList.map(s => (
-                      <option key={s.id} value={s.name}>
-                        {s.name} ({s.roleTitle} - {s.team})
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label={`Nhân sự thuộc ${deptStaffScope === 'GROWTH' ? 'Khối Growth' : deptStaffScope === 'MEDIA' ? 'Khối Media' : 'Khối Marketing B2C'}`}>
-                    {scopedDepartmentStaff.slice(0, 60).map(s => (
-                      <option key={`dept-${s.id}`} value={s.name}>
-                        {s.staffCode} - {s.name} ({s.department || s.team})
-                      </option>
-                    ))}
-                  </optgroup>
+                  <option value="HARD">Khó (×1,20)</option>
+                  <option value="STANDARD">Tiêu chuẩn (×1,00)</option>
+                  <option value="EASY">Dễ (×0,80)</option>
                 </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold text-ink-2 block mb-1">
-                    2. Nhãn hàng liên quan
-                  </label>
-                  <select
-                    value={newTaskState.brand}
-                    onChange={(e) => setNewTaskState(prev => ({ ...prev, brand: e.target.value }))}
-                    className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
-                  >
-                    {brands.map(b => (
-                      <option key={b.id} value={b.name}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-ink-2 block mb-1">
-                    3. Mức độ ưu tiên
-                  </label>
-                  <select
-                    value={newTaskState.urgency}
-                    onChange={(e) => setNewTaskState(prev => ({ ...prev, urgency: e.target.value as typeof prev.urgency }))}
-                    className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
-                  >
-                    <option value="critical">Khẩn cấp (SLA gấp)</option>
-                    <option value="warning">Cảnh báo (cần chú ý)</option>
-                    <option value="normal">Bình Thường</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  4. Tiêu đề công việc / nhiệm vụ
-                </label>
                 <input
-                  type="text"
-                  required
-                  placeholder="VD: Rà soát lại danh sách KOC Micro tuần W42..."
-                  value={newTaskState.title}
-                  onChange={(e) => setNewTaskState(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={newTaskState.quantity}
+                  onChange={(e) =>
+                    setNewTaskState(prev => ({
+                      ...prev,
+                      quantity: Math.max(1, Number(e.target.value) || 1),
+                    }))
+                  }
+                  className="w-16 text-xs font-mono px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink text-right"
+                  title="Số lượng đầu việc"
                 />
               </div>
-
-              <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  5. Chỉ đạo chi tiết của trưởng phòng
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Yêu cầu cụ thể: Ưu tiên chọn các KOC đã từng có video viral..."
-                  value={newTaskState.description}
-                  onChange={(e) => setNewTaskState(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  6. Hạn định SLA xử lý (giờ)
-                </label>
-                <div className="flex items-center gap-2">
-                  {[12, 24, 48, 72].map(hrs => (
-                    <button
-                      key={hrs}
-                      type="button"
-                      onClick={() => setNewTaskState(prev => ({ ...prev, deadlineHours: hrs }))}
-                      className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition ${
-                        newTaskState.deadlineHours === hrs
-                          ? 'bg-accent text-white border-accent/20'
-                          : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
-                      }`}
-                    >
-                      {hrs}h
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsTaskModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
-                >
-                  Huỷ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-white font-semibold transition shadow-xs flex items-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Giao Việc Ngay</span>
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                4. Nhãn hàng liên quan
+              </label>
+              <select
+                value={newTaskState.brand}
+                onChange={(e) => setNewTaskState(prev => ({ ...prev, brand: e.target.value }))}
+                className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
+              >
+                {brands.map(b => (
+                  <option key={b.id} value={b.name}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                5. Mức độ ưu tiên
+              </label>
+              <select
+                value={newTaskState.urgency}
+                onChange={(e) => setNewTaskState(prev => ({ ...prev, urgency: e.target.value as typeof prev.urgency }))}
+                className="w-full text-xs font-medium px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
+              >
+                <option value="critical">Khẩn cấp (SLA gấp)</option>
+                <option value="warning">Cảnh báo (cần chú ý)</option>
+                <option value="normal">Bình thường</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="font-semibold text-ink-2 block mb-1">
+              6. Tiêu đề công việc / nhiệm vụ (để trống sẽ tự lấy theo Bảng 1)
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Rà soát lại danh sách KOC Micro tuần W42..."
+              value={newTaskState.title}
+              onChange={(e) => setNewTaskState(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-semibold text-ink-2 block mb-1">
+              5. Chỉ đạo chi tiết của trưởng phòng
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Yêu cầu cụ thể: Ưu tiên chọn các KOC đã từng có video viral..."
+              value={newTaskState.description}
+              onChange={(e) => setNewTaskState(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
+            />
+          </div>
+
+          <div>
+            <label className="font-semibold text-ink-2 block mb-1">
+              6. Hạn định SLA xử lý (giờ)
+            </label>
+            <div className="flex items-center gap-2">
+              {[12, 24, 48, 72].map(hrs => (
+                <button
+                  key={hrs}
+                  type="button"
+                  onClick={() => setNewTaskState(prev => ({ ...prev, deadlineHours: hrs }))}
+                  className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition ${
+                    newTaskState.deadlineHours === hrs
+                      ? 'bg-accent text-white border-accent/20'
+                      : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
+                  }`}
+                >
+                  {hrs}h
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsTaskModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
+            >
+              Huỷ
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-white font-semibold transition shadow-xs flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Giao Việc Ngay</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL 2: THÊM / CHỈNH SỬA PHÂN BỔ NHÃN HÀNG (MASTER DATA INTEGRATED)       */}
       {/* ========================================================================= */}
-      <Presence show={!!isBrandModalOpen}>
-      {isBrandModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center">
-                  <Database className="w-4 h-4 text-accent" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold">
-                    {editingBrand ? `Chỉnh sửa phân bổ nhãn hàng: ${editingBrand.name}` : 'Thêm nhãn hàng vào phân bổ & điều phối PIC'}
-                  </h3>
-                  
-                </div>
-              </div>
-              <button
-                onClick={() => setIsBrandModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-sunken hover:bg-sunken text-ink-2 hover:text-ink flex items-center justify-center transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveBrand} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1 min-h-0">
-                {/* If adding new brand: Master Data Selection Mode Switcher */}
-                {!editingBrand && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 p-1 bg-sunken rounded-xl">
-                      <button
-                        type="button"
-                        onClick={() => setBrandAddMode('FROM_MASTER')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition ${
-                          brandAddMode === 'FROM_MASTER'
-                            ? 'bg-white text-accent shadow-xs'
-                            : 'text-ink-2 hover:text-ink'
-                        }`}
-                      >
-                        <Database className="w-3.5 h-3.5" />
-                        <span>Chọn từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)</span>
-                        <span className="ml-1 .5 py-0.2 text-accent text-2xs">Chuẩn hóa</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBrandAddMode('CUSTOM')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition ${
-                          brandAddMode === 'CUSTOM'
-                            ? 'bg-white text-ink shadow-xs'
-                            : 'text-ink-2 hover:text-ink'
-                        }`}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Tạo mới ngoài danh mục</span>
-                      </button>
-                    </div>
-
-                    {brandAddMode === 'FROM_MASTER' && (
-                      <div className="space-y-2.5 bg-canvas p-3.5 rounded-xl border border-line">
-                        {/* Search & Category Filter toolbar */}
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                          <div className="sm:col-span-7 relative">
-                            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              placeholder="Tìm theo tên nhãn hàng, mã brand, công ty..."
-                              value={masterBrandSearch}
-                              onChange={(e) => setMasterBrandSearch(e.target.value)}
-                              className="w-full pl-8 pr-3 py-1.5 bg-white border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20 shadow-2xs"
-                            />
-                          </div>
-
-                          <div className="sm:col-span-5">
-                            <select
-                              value={masterBrandCategoryFilter}
-                              onChange={(e) => setMasterBrandCategoryFilter(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs text-ink-2 focus:outline-none focus:border-accent/20 shadow-2xs"
-                            >
-                              <option value="ALL">Tất cả ngành hàng ({masterCategories.length})</option>
-                              {masterCategories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-2xs text-ink-3 px-0.5">
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={hideAllocatedMasterBrands}
-                              onChange={(e) => setHideAllocatedMasterBrands(e.target.checked)}
-                              className="rounded border-line-strong text-accent focus:ring-0"
-                            />
-                            <span>Ẩn nhãn hàng đã phân bổ ({brands.length} đã có)</span>
-                          </label>
-                          <span>Tìm thấy {filteredMasterBrands.length} thương hiệu Master Data</span>
-                        </div>
-
-                        {/* Selected Brand Banner or Brand Picker List */}
-                        {selectedMasterBrand ? (
-                          <div className="p-3 bg-canvas   border border-accent/20 rounded-xl flex items-start justify-between gap-3 shadow-2xs animate-in fade-in duration-150">
-                            <div className="flex items-start gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-accent text-white font-semibold flex items-center justify-center shrink-0 text-xs shadow-xs">
-                                {selectedMasterBrand.name.substring(0, 2).toUpperCase()}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-semibold text-ink text-xs">{selectedMasterBrand.name}</span>
-                                  <span className=".5 py-0.2 font-mono text-2xs font-semibold text-accent">
-                                    {selectedMasterBrand.code}
-                                  </span>
-                                  <span className=".5 py-0.2 text-2xs font-medium text-ink-2">
-                                    {selectedMasterBrand.category}
-                                  </span>
-                                </div>
-                                <p className="text-ink-2 text-2xs mt-0.5">
-                                  Pháp nhân: <strong className="text-ink">{selectedMasterBrand.companyName}</strong> • {selectedMasterBrand.stores?.length || 0} gian hàng liên kết
-                                </p>
-                                {selectedMasterBrand.brandGuideline && (
-                                  <p className="text-ink-3 text-2xs italic line-clamp-1 mt-0.5">
-                                    Guidelines: {selectedMasterBrand.brandGuideline}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedMasterBrandId('');
-                                setBrandFormState(prev => ({
-                                  ...prev,
-                                  name: '',
-                                  companyName: '',
-                                  brandGuideline: ''
-                                }));
-                              }}
-                              className="text-2xs font-semibold text-accent hover:text-accent px-2 py-1 rounded bg-white border border-accent/20 hover:bg-accent-soft transition shrink-0"
-                            >
-                              Đổi nhãn hàng khác
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="max-h-52 overflow-y-auto divide-y divide-line border border-line rounded-xl bg-white shadow-2xs flex flex-col">
-                            {filteredMasterBrands.length === 0 ? (
-                              <div className="p-4 text-center text-ink-3 text-2xs">
-                                Không tìm thấy nhãn hàng nào phù hợp với bộ lọc trong Master Data
-                              </div>
-                            ) : (
-                              filteredMasterBrands.slice(0, 50).map(master => {
-                                const isAllocated = brands.some(ab => 
-                                  ab.id === master.id || ab.name.trim().toLowerCase() === master.name.trim().toLowerCase()
-                                );
-
-                                return (
-                                  <button
-                                    key={master.id}
-                                    type="button"
-                                    onClick={() => handleSelectMasterBrand(master)}
-                                    className={`w-full p-2.5 text-left flex items-center justify-between gap-3 hover:bg-accent-soft transition group shrink-0 ${
-                                      isAllocated ? 'opacity-60 bg-canvas' : ''
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                      <div className="w-7 h-7 rounded-lg bg-sunken text-ink-2 font-semibold flex items-center justify-center shrink-0 text-2xs group-hover:bg-accent group-hover:text-white transition">
-                                        {master.name.substring(0, 2).toUpperCase()}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-semibold text-ink group-hover:text-accent truncate">
-                                            {master.name}
-                                          </span>
-                                          <span className="text-2xs font-mono text-ink-3 py-0.2">
-                                            {master.code}
-                                          </span>
-                                        </div>
-                                        <div className="text-ink-3 text-2xs truncate">
-                                          {master.companyName} • {master.category}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-1.5 shrink-0">
-                                      {isAllocated ? (
-                                        <span className="text-2xs font-semibold text-ink-2">
-                                          Đã phân bổ
-                                        </span>
-                                      ) : (
-                                        <span className="text-2xs font-semibold text-accent group-hover:bg-accent group-hover:text-white transition flex items-center gap-1">
-                                          <span>Chọn</span>
-                                          <ArrowRight className="w-2.5 h-2.5" />
-                                        </span>
-                                      )}
-                                    </div>
-                                  </button>
-                                );
-                              })
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {brandAddMode === 'CUSTOM' && (
-                      <div className="p-3 bg-warning-soft border border-warning/20 rounded-xl space-y-2">
-                        <div className="flex items-center gap-1.5 text-warning font-semibold text-2xs">
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                          <span>Chỉ nhập tay khi nhãn hàng đối tác mới ký chưa kịp đồng bộ vào Master Data</span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="font-semibold text-ink-2 block mb-1">Tên thương hiệu *</label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="VD: Clio Cosmetics..."
-                              value={brandFormState.name}
-                              onChange={(e) => setBrandFormState(prev => ({ ...prev, name: e.target.value }))}
-                              className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
-                            />
-                          </div>
-                          <div>
-                            <label className="font-semibold text-ink-2 block mb-1">Công ty chủ quản</label>
-                            <input
-                              type="text"
-                              placeholder="VD: Công ty TNHH Mỹ phẩm Clio VN..."
-                              value={brandFormState.companyName}
-                              onChange={(e) => setBrandFormState(prev => ({ ...prev, companyName: e.target.value }))}
-                              className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Editing Brand Summary */}
-                {editingBrand && (
-                  <div className="p-3.5 bg-canvas border border-line rounded-xl flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-ink text-sm">{editingBrand.name}</span>
-                        <span className=".5 py-0.2 font-mono text-2xs font-semibold text-accent">
-                          {editingBrand.code}
-                        </span>
-                        <span className=".5 py-0.2 text-2xs font-medium text-ink-2">
-                          {editingBrand.category}
-                        </span>
-                      </div>
-                      <p className="text-ink-3 text-2xs mt-0.5">
-                        Pháp nhân: {editingBrand.companyName} • {editingBrand.stores?.length || 0} gian hàng liên kết
-                      </p>
-                    </div>
-                    <span className="text-2xs font-semibold text-positive -positive/20">
-                      Đang vận hành
-                    </span>
-                  </div>
-                )}
-
-                {/* Category selector (if custom or editing) */}
-                {(editingBrand || brandAddMode === 'CUSTOM') && (
-                  <div>
-                    <label className="font-semibold text-ink-2 block mb-1">Ngành hàng</label>
-                    <select
-                      value={brandFormState.category}
-                      onChange={(e) => setBrandFormState(prev => ({ ...prev, category: e.target.value }))}
-                      className="w-full text-xs px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
-                    >
-                      {masterCategories.length > 0 ? (
-                        masterCategories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Mỹ phẩm & Chăm sóc da">Mỹ phẩm & Chăm sóc da</option>
-                          <option value="Dược mỹ phẩm">Dược mỹ phẩm</option>
-                          <option value="Mẹ & Bé / Sữa">Mẹ & Bé / Sữa</option>
-                          <option value="Gia dụng & Tiêu dùng">Gia dụng & Tiêu dùng</option>
-                          <option value="F&B / Đồ uống">F&B / Đồ uống</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                )}
-
-                {/* SECTION: PHÂN CÔNG NHÂN SỰ & HẠN MỨC (DELEGATION SETTINGS) */}
-                <div className="pt-2 border-t border-line space-y-3">
-                  <div className="flex items-center justify-between gap-1.5 text-xs font-semibold text-ink">
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-accent" />
-                      <span>Phân bổ 3 vị trí gắn theo Brand & đầu mối phối hợp</span>
-                    </div>
-                    <span className="text-2xs font-semibold text-warning -warning/20">
-                      theo brand
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-warning-soft border border-warning/20/80">
-                    <div>
-                      <label className="font-semibold text-ink block mb-1 text-2xs">
-                        Content / Brand main <span className="text-warning">[theo brand]</span>
-                      </label>
-                      <select
-                        value={brandFormState.contentBrandMainPic}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, contentBrandMainPic: e.target.value }))}
-                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-warning/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
-                      >
-                        {brandPositionCandidateNames.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-ink block mb-1 text-2xs">
-                        Plan / Strategy <span className="text-warning">[theo brand]</span>
-                      </label>
-                      <select
-                        value={brandFormState.planStrategyPic}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, planStrategyPic: e.target.value }))}
-                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-accent/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
-                      >
-                        {brandPositionCandidateNames.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-ink block mb-1 text-2xs">
-                        Key Visual / SIS <span className="text-warning">[theo brand]</span>
-                      </label>
-                      <select
-                        value={brandFormState.keyVisualSisPic}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, keyVisualSisPic: e.target.value }))}
-                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-accent/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
-                      >
-                        {brandPositionCandidateNames.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div>
-                      <label className="font-semibold text-ink-2 block mb-1">Brand Lead / Duyệt B2C</label>
-                      <select
-                        value={brandFormState.bookingPicLead}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, bookingPicLead: e.target.value }))}
-                        className="w-full text-xs font-semibold px-2.5 py-2 bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-none focus:border-accent/20 shadow-2xs"
-                      >
-                        {staffList.map(s => (
-                          <option key={s.id} value={s.name}>
-                            {s.name} ({s.roleTitle})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-ink-2 block mb-1">Account PIC (Đầu mối Brand)</label>
-                      <select
-                        value={brandFormState.accountPic}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, accountPic: e.target.value }))}
-                        className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
-                      >
-                        {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                          <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-ink-2 block mb-1">Growth PIC (Tối ưu GMV/Ads)</label>
-                      <select
-                        value={brandFormState.growthPic}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, growthPic: e.target.value }))}
-                        className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
-                      >
-                        {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                          <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="font-semibold text-ink-2">Ngân sách tháng (VNĐ)</label>
-                        <span className="text-2xs font-semibold text-accent font-mono">
-                          {formatVndShort(brandFormState.planBudget || 0)}
-                        </span>
-                      </div>
-                      <input
-                        type="number"
-                        step="5000000"
-                        value={brandFormState.planBudget}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, planBudget: Number(e.target.value) || 0 }))}
-                        className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink font-mono font-semibold focus:outline-none focus:border-accent/20 shadow-2xs"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="font-semibold text-ink-2">Target GMV (VNĐ)</label>
-                        <span className="text-2xs font-semibold text-positive font-mono">
-                          {formatVndShort(brandFormState.targetGmv || 0)}
-                        </span>
-                      </div>
-                      <input
-                        type="number"
-                        step="10000000"
-                        value={brandFormState.targetGmv}
-                        onChange={(e) => setBrandFormState(prev => ({ ...prev, targetGmv: Number(e.target.value) || 0 }))}
-                        className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink font-mono font-semibold focus:outline-none focus:border-accent/20 shadow-2xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-ink-2 block mb-1">
-                      Hướng dẫn & Guidelines nội dung riêng cho KOC
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={brandFormState.brandGuideline}
-                      onChange={(e) => setBrandFormState(prev => ({ ...prev, brandGuideline: e.target.value }))}
-                      placeholder="Quy định sản phẩm mẫu, điều khoản cấm kỵ, từ khóa bắt buộc khi KOC lên video..."
-                      className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20 shadow-2xs resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons - Fixed Footer */}
-              <div className="px-6 py-3.5 border-t border-line bg-canvas flex items-center justify-end gap-2 shrink-0">
+      <Modal
+        open={isBrandModalOpen}
+        onClose={() => setIsBrandModalOpen(false)}
+        title={editingBrand ? `Chỉnh sửa phân bổ nhãn hàng: ${editingBrand.name}` : 'Thêm nhãn hàng vào phân bổ & điều phối PIC'}
+        size="lg"
+      >
+        <form onSubmit={handleSaveBrand} className="space-y-4 text-xs">
+          {!editingBrand && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-1 bg-sunken rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setIsBrandModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
-                >
-                  Huỷ
-                </button>
-                <button
-                  type="submit"
-                  disabled={!brandFormState.name.trim()}
-                  className={`px-5 py-2 rounded-lg text-white font-semibold transition shadow-xs flex items-center gap-1.5 ${
-                    brandFormState.name.trim()
-                      ? 'bg-accent hover:bg-accent cursor-pointer'
-                      : 'bg-sunken cursor-not-allowed'
+                  onClick={() => setBrandAddMode('FROM_MASTER')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition ${
+                    brandAddMode === 'FROM_MASTER'
+                      ? 'bg-white text-accent shadow-xs'
+                      : 'text-ink-2 hover:text-ink'
                   }`}
                 >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{editingBrand ? 'Lưu cập nhật phân công' : 'Xác nhận phân bổ nhãn hàng'}</span>
+                  <Database className="w-3.5 h-3.5" />
+                  <span>Chọn từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBrandAddMode('CUSTOM')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition ${
+                    brandAddMode === 'CUSTOM'
+                      ? 'bg-white text-ink shadow-xs'
+                      : 'text-ink-2 hover:text-ink'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tạo mới ngoài danh mục</span>
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-      </Presence>
 
-      {/* ========================================================================= */}
-      {/* MODAL 3: CHỈNH SỬA PHÂN CÔNG GIAN HÀNG                                   */}
-      {/* ========================================================================= */}
-      <Presence show={!!editingStore}>
-      {editingStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-line overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Store className="w-5 h-5 text-accent" />
-                <div>
-                  <h3 className="text-sm font-semibold">Phân công gian hàng</h3>
-                  <p className="text-2xs text-ink-2">{editingStore.storeName}</p>
+              {brandAddMode === 'FROM_MASTER' && (
+                <div className="space-y-2.5 bg-canvas p-3.5 rounded-xl border border-line">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <div className="sm:col-span-7 relative">
+                      <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên nhãn hàng, mã brand, công ty..."
+                        value={masterBrandSearch}
+                        onChange={(e) => setMasterBrandSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-white border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20 shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-5">
+                      <select
+                        value={masterBrandCategoryFilter}
+                        onChange={(e) => setMasterBrandCategoryFilter(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-line rounded-lg text-xs text-ink-2 focus:outline-none focus:border-accent/20 shadow-2xs"
+                      >
+                        <option value="ALL">Tất cả ngành hàng ({masterCategories.length})</option>
+                        {masterCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-2xs text-ink-3 px-0.5">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hideAllocatedMasterBrands}
+                        onChange={(e) => setHideAllocatedMasterBrands(e.target.checked)}
+                        className="rounded border-line-strong text-accent focus:ring-0"
+                      />
+                      <span>Ẩn nhãn hàng đã phân bổ ({brands.length} đã có)</span>
+                    </label>
+                    <span>Tìm thấy {filteredMasterBrands.length} thương hiệu Master Data</span>
+                  </div>
+
+                  {selectedMasterBrand ? (
+                    <div className="p-3 bg-canvas border border-accent/20 rounded-xl flex items-start justify-between gap-3 shadow-2xs">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-accent text-white font-semibold flex items-center justify-center shrink-0 text-xs shadow-xs">
+                          {selectedMasterBrand.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-ink text-xs">{selectedMasterBrand.name}</span>
+                            <span className="px-1.5 py-0.5 rounded font-mono text-2xs font-semibold text-accent bg-accent-soft">
+                              {selectedMasterBrand.code}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded text-2xs font-medium text-ink-2 bg-sunken">
+                              {selectedMasterBrand.category}
+                            </span>
+                          </div>
+                          <p className="text-ink-2 text-2xs mt-0.5">
+                            Pháp nhân: <strong className="text-ink">{selectedMasterBrand.companyName}</strong> • {selectedMasterBrand.stores?.length || 0} gian hàng liên kết
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMasterBrandId('');
+                          setBrandFormState(prev => ({
+                            ...prev,
+                            name: '',
+                            companyName: '',
+                            brandGuideline: ''
+                          }));
+                        }}
+                        className="text-2xs font-semibold text-accent px-2 py-1 rounded bg-white border border-accent/20 hover:bg-accent-soft transition shrink-0"
+                      >
+                        Đổi nhãn hàng khác
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="max-h-52 overflow-y-auto divide-y divide-line border border-line rounded-xl bg-white shadow-2xs flex flex-col">
+                      {filteredMasterBrands.length === 0 ? (
+                        <div className="p-4 text-center text-ink-3 text-2xs">
+                          Không tìm thấy nhãn hàng nào phù hợp với bộ lọc trong Master Data
+                        </div>
+                      ) : (
+                        filteredMasterBrands.slice(0, 50).map(master => {
+                          const isAllocated = brands.some(ab => 
+                            ab.id === master.id || ab.name.trim().toLowerCase() === master.name.trim().toLowerCase()
+                          );
+
+                          return (
+                            <button
+                              key={master.id}
+                              type="button"
+                              onClick={() => handleSelectMasterBrand(master)}
+                              className={`w-full p-2.5 text-left flex items-center justify-between gap-3 hover:bg-accent-soft transition group shrink-0 ${
+                                isAllocated ? 'opacity-60 bg-canvas' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div className="w-7 h-7 rounded-lg bg-sunken text-ink-2 font-semibold flex items-center justify-center shrink-0 text-2xs group-hover:bg-accent group-hover:text-white transition">
+                                  {master.name.substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-ink group-hover:text-accent truncate">
+                                      {master.name}
+                                    </span>
+                                    <span className="text-2xs font-mono text-ink-3">
+                                      {master.code}
+                                    </span>
+                                  </div>
+                                  <div className="text-ink-3 text-2xs truncate">
+                                    {master.companyName} • {master.category}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {isAllocated ? (
+                                  <span className="text-2xs font-semibold text-ink-2">
+                                    Đã phân bổ
+                                  </span>
+                                ) : (
+                                  <span className="text-2xs font-semibold text-accent flex items-center gap-1">
+                                    <span>Chọn</span>
+                                    <ArrowRight className="w-2.5 h-2.5" />
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {brandAddMode === 'CUSTOM' && (
+                <div className="p-3 bg-warning-soft border border-warning/20 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1.5 text-warning font-semibold text-2xs">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Chỉ nhập tay khi nhãn hàng đối tác mới ký chưa kịp đồng bộ vào Master Data</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-semibold text-ink-2 block mb-1">Tên thương hiệu *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="VD: Clio Cosmetics..."
+                        value={brandFormState.name}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-ink-2 block mb-1">Công ty chủ quản</label>
+                      <input
+                        type="text"
+                        placeholder="VD: Công ty TNHH Mỹ phẩm Clio VN..."
+                        value={brandFormState.companyName}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, companyName: e.target.value }))}
+                        className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {editingBrand && (
+            <div className="p-3.5 bg-canvas border border-line rounded-xl flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-ink text-sm">{editingBrand.name}</span>
+                  <span className="px-1.5 py-0.5 rounded font-mono text-2xs font-semibold text-accent bg-accent-soft">
+                    {editingBrand.code}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-2xs font-medium text-ink-2 bg-sunken">
+                    {editingBrand.category}
+                  </span>
                 </div>
               </div>
-              <button
-                onClick={() => setEditingStore(null)}
-                className="w-7 h-7 rounded-lg bg-sunken hover:bg-sunken text-ink-2 hover:text-ink flex items-center justify-center transition"
+              <span className="text-2xs font-semibold text-positive px-2 py-0.5 rounded border border-positive/20 bg-positive-soft">
+                Đang vận hành
+              </span>
+            </div>
+          )}
+
+          {(editingBrand || brandAddMode === 'CUSTOM') && (
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">Ngành hàng</label>
+              <select
+                value={brandFormState.category}
+                onChange={(e) => setBrandFormState(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full text-xs px-3 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
               >
-                <X className="w-4 h-4" />
-              </button>
+                {masterCategories.length > 0 ? (
+                  masterCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Mỹ phẩm & Chăm sóc da">Mỹ phẩm & Chăm sóc da</option>
+                    <option value="Dược mỹ phẩm">Dược mỹ phẩm</option>
+                    <option value="Mẹ & Bé / Sữa">Mẹ & Bé / Sữa</option>
+                    <option value="Gia dụng & Tiêu dùng">Gia dụng & Tiêu dùng</option>
+                    <option value="F&B / Đồ uống">F&B / Đồ uống</option>
+                  </>
+                )}
+              </select>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-line space-y-3">
+            <div className="flex items-center justify-between gap-1.5 text-xs font-semibold text-ink">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-accent" />
+                <span>Phân bổ 3 vị trí gắn theo Brand & đầu mối phối hợp</span>
+              </div>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-warning-soft border border-warning/20">
               <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  Chọn nhân sự B2C Ops phụ trách
+                <label className="font-semibold text-ink block mb-1 text-2xs">
+                  Content / Brand main
                 </label>
                 <select
-                  value={(editingStore.b2cOwners && editingStore.b2cOwners[0]) || editingStore.b2cOwnerName || 'Khánh Vy'}
-                  onChange={(e) => {
-                    handleSaveStoreAssignment(editingStore.id, [e.target.value], editingStore.assignmentNotes || '');
-                  }}
-                  className="w-full text-xs font-semibold px-3 py-2 bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-none"
+                  value={brandFormState.contentBrandMainPic}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, contentBrandMainPic: e.target.value }))}
+                  className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-warning/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
                 >
-                  {staffList.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map(s => (
+                  {brandPositionCandidateNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-ink block mb-1 text-2xs">
+                  Plan / Strategy
+                </label>
+                <select
+                  value={brandFormState.planStrategyPic}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, planStrategyPic: e.target.value }))}
+                  className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-accent/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
+                >
+                  {brandPositionCandidateNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-ink block mb-1 text-2xs">
+                  Key Visual / SIS
+                </label>
+                <select
+                  value={brandFormState.keyVisualSisPic}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, keyVisualSisPic: e.target.value }))}
+                  className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-accent/20 rounded-lg text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
+                >
+                  {brandPositionCandidateNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">Brand Lead / Duyệt B2C</label>
+                <select
+                  value={brandFormState.bookingPicLead}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, bookingPicLead: e.target.value }))}
+                  className="w-full text-xs font-semibold px-2.5 py-2 bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-none focus:border-accent/20 shadow-2xs"
+                >
+                  <option value="Đặng Thị Yến Nhi">Đặng Thị Yến Nhi (Giám đốc MKT B2C)</option>
+                  {b2cStorePicOptions.map(s => (
                     <option key={s.id} value={s.name}>
                       {s.name} ({s.roleTitle})
                     </option>
@@ -2570,69 +2637,196 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </select>
               </div>
 
-              <div className="p-3 bg-canvas border border-line rounded-lg flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-ink text-xs block">Thuộc diện B2C làm Kế hoạch tháng</span>
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">Account PIC (Đầu mối Brand)</label>
+                <select
+                  value={brandFormState.accountPic}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, accountPic: e.target.value }))}
+                  className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                >
+                  {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
+                    <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-ink-2 block mb-1">Growth PIC (Tối ưu GMV/Ads)</label>
+                <select
+                  value={brandFormState.growthPic}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, growthPic: e.target.value }))}
+                  className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
+                >
+                  {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
+                    <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-ink-2">Ngân sách tháng (VNĐ)</label>
+                  <span className="text-2xs font-semibold text-accent font-mono">
+                    {formatVndShort(brandFormState.planBudget || 0)}
+                  </span>
                 </div>
                 <input
-                  type="checkbox"
-                  checked={Boolean(editingStore.requiresB2cPlan || editingStore.isB2cManaged)}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    const updated: StorePortfolioItem = {
-                      ...editingStore,
-                      requiresB2cPlan: isChecked,
-                      isB2cManaged: isChecked
-                    };
-                    onUpdateStore(updated);
-                    setEditingStore(updated);
-                    notify(isChecked
-                      ? `Đã bật: Gian "${editingStore.storeName}" thuộc diện Marketing B2C làm plan!`
-                      : `Đã chuyển: Gian "${editingStore.storeName}" sang diện Miễn trừ plan B2C.`
-                    );
-                  }}
-                  className="w-4 h-4 rounded text-accent focus:ring-accent/20 cursor-pointer"
+                  type="number"
+                  step="5000000"
+                  value={brandFormState.planBudget}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, planBudget: Number(e.target.value) || 0 }))}
+                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink font-mono font-semibold focus:outline-none focus:border-accent/20 shadow-2xs"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-ink-2 block mb-1">
-                  Chỉ đạo & yêu cầu riêng của trưởng phòng
-                </label>
-                <textarea
-                  rows={3}
-                  defaultValue={editingStore.assignmentNotes || ''}
-                  id="store-notes-input"
-                  placeholder="Yêu cầu tập trung: Tăng cường book KOC KL3-KL5, đẩy mạnh livestream..."
-                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-ink-2">Target GMV (VNĐ)</label>
+                  <span className="text-2xs font-semibold text-positive font-mono">
+                    {formatVndShort(brandFormState.targetGmv || 0)}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  step="10000000"
+                  value={brandFormState.targetGmv}
+                  onChange={(e) => setBrandFormState(prev => ({ ...prev, targetGmv: Number(e.target.value) || 0 }))}
+                  className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink font-mono font-semibold focus:outline-none focus:border-accent/20 shadow-2xs"
                 />
               </div>
+            </div>
 
-              <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingStore(null)}
-                  className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const notes = (document.getElementById('store-notes-input') as HTMLTextAreaElement)?.value || '';
-                    const owners = editingStore.b2cOwners || [editingStore.b2cOwnerName];
-                    handleSaveStoreAssignment(editingStore.id, owners, notes);
-                  }}
-                  className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-white font-semibold transition shadow-xs"
-                >
-                  Lưu thay đổi
-                </button>
-              </div>
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                Hướng dẫn & Guidelines nội dung riêng cho KOC
+              </label>
+              <textarea
+                rows={2}
+                value={brandFormState.brandGuideline}
+                onChange={(e) => setBrandFormState(prev => ({ ...prev, brandGuideline: e.target.value }))}
+                placeholder="Quy định sản phẩm mẫu, điều khoản cấm kỵ, từ khóa bắt buộc khi KOC lên video..."
+                className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20 shadow-2xs resize-none"
+              />
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div className="pt-3.5 border-t border-line flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsBrandModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
+            >
+              Huỷ
+            </button>
+            <button
+              type="submit"
+              disabled={!brandFormState.name.trim()}
+              className={`px-5 py-2 rounded-lg text-white font-semibold transition shadow-xs flex items-center gap-1.5 ${
+                brandFormState.name.trim()
+                  ? 'bg-accent hover:bg-accent cursor-pointer'
+                  : 'bg-sunken cursor-not-allowed'
+              }`}
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>{editingBrand ? 'Lưu cập nhật phân công' : 'Xác nhận phân bổ nhãn hàng'}</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CHỈNH SỬA PHÂN CÔNG GIAN HÀNG                                   */}
+      {/* ========================================================================= */}
+      <Modal
+        open={!!editingStore}
+        onClose={() => setEditingStore(null)}
+        title={editingStore ? `Phân công gian hàng · ${editingStore.storeName}` : 'Phân công gian hàng'}
+        size="md"
+      >
+        {editingStore && (
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                Chọn nhân sự B2C phụ trách
+              </label>
+              <select
+                value={(editingStore.b2cOwners && editingStore.b2cOwners[0]) || editingStore.b2cOwnerName || 'Nguyễn Thị Ngọc Tâm'}
+                onChange={(e) => {
+                  handleSaveStoreAssignment(editingStore.id, [e.target.value], editingStore.assignmentNotes || '');
+                }}
+                className="w-full text-xs font-semibold px-3 py-2 bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-none"
+              >
+                {b2cStorePicOptions.map(s => (
+                  <option key={s.id} value={s.name}>
+                    {s.name} ({s.roleTitle})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-3 bg-canvas border border-line rounded-lg flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-ink text-xs block">Thuộc diện B2C làm Kế hoạch tháng</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={Boolean(editingStore.requiresB2cPlan || editingStore.isB2cManaged)}
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  const updated: StorePortfolioItem = {
+                    ...editingStore,
+                    requiresB2cPlan: isChecked,
+                    isB2cManaged: isChecked
+                  };
+                  onUpdateStore(updated);
+                  setEditingStore(updated);
+                  notify(isChecked
+                    ? `Đã bật: Gian "${editingStore.storeName}" thuộc diện Marketing B2C làm plan!`
+                    : `Đã chuyển: Gian "${editingStore.storeName}" sang diện Miễn trừ plan B2C.`
+                  );
+                }}
+                className="w-4 h-4 rounded text-accent focus:ring-accent/20 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="font-semibold text-ink-2 block mb-1">
+                Chỉ đạo & yêu cầu riêng của trưởng phòng
+              </label>
+              <textarea
+                rows={3}
+                defaultValue={editingStore.assignmentNotes || ''}
+                id="store-notes-input"
+                placeholder="Yêu cầu tập trung: Tăng cường book KOC KL3-KL5, đẩy mạnh livestream..."
+                className="w-full text-xs px-3 py-2 bg-white border border-line rounded-lg text-ink placeholder-slate-400 focus:outline-none focus:border-accent/20 shadow-2xs"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingStore(null)}
+                className="px-4 py-2 rounded-lg border border-line bg-white hover:bg-sunken text-ink-2 font-semibold transition"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const notes = (document.getElementById('store-notes-input') as HTMLTextAreaElement)?.value || '';
+                  const owners = editingStore.b2cOwners || [editingStore.b2cOwnerName];
+                  handleSaveStoreAssignment(editingStore.id, owners, notes);
+                }}
+                className="px-5 py-2 rounded-lg bg-accent hover:bg-accent text-white font-semibold transition shadow-xs"
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

@@ -1622,27 +1622,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 text-2xs">
-                {[
-                  { key: 'BUDGET', label: 'Xếp theo Hạn mức Net' },
-                  { key: 'SPENT_DESC', label: 'Xếp theo Thực chi cao nhất' },
-                  { key: 'SPEND_PCT_DESC', label: 'Xếp theo % Spend Net' },
-                  { key: 'AIRED_DESC', label: 'Xếp theo Số Video Air' },
-                ].map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setBrandSortMode(s.key as typeof brandSortMode)}
-                    className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
-                      brandSortMode === s.key
-                        ? 'bg-ink text-white'
-                        : 'bg-sunken text-ink-2 hover:text-ink'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <Select
+                aria-label="Sắp xếp thương hiệu"
+                value={brandSortMode}
+                onChange={(e) => setBrandSortMode(e.target.value as typeof brandSortMode)}
+                className="w-auto"
+              >
+                <option value="BUDGET">Xếp theo Hạn mức Net</option>
+                <option value="SPENT_DESC">Xếp theo Thực chi cao nhất</option>
+                <option value="SPEND_PCT_DESC">Xếp theo % Spend Net</option>
+                <option value="AIRED_DESC">Xếp theo Số Video Air</option>
+              </Select>
             </div>
 
             <div className="overflow-x-auto max-h-[600px]">
@@ -1655,7 +1645,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <th className="py-2.5 px-3 font-semibold text-right">Order Gross</th>
                     <th className="py-2.5 px-3 font-semibold text-right">Trần Order Net</th>
                     <th className="py-2.5 px-3 font-semibold text-right">Phân Bổ Net (Aff / Brand)</th>
-                    <th className="py-2.5 px-3 font-semibold text-right bg-accent-soft/50 text-accent">
+                    <th className="py-2.5 px-3 font-semibold text-right">
                       Thực Chi &amp; % Spend Net
                     </th>
                     <th className="py-2.5 px-3 font-semibold text-right">Dư Địa / Vượt Trần</th>
@@ -1720,7 +1710,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             <div className="text-ink-3">Live: {formatVndShort(b.liveBudget)}</div>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft/30">
+                        <td className="py-2.5 px-3 text-right font-mono">
                           <div className="flex items-center justify-end gap-1.5">
                             <span className={`font-semibold ${isOver ? 'text-critical' : 'text-ink'}`}>
                               {formatVndShort(b.actualSpentNet)}
@@ -1738,20 +1728,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             >
                               {burnVsNet === 999 ? '0đ KH' : `${burnVsNet}%`}
                             </span>
-                          </div>
-                          <div className="w-28 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
-                            <div
-                              className={`data-bar h-full rounded-full ${
-                                isOver ? 'bg-critical' : 'bg-accent'
-                              }`}
-                              style={{
-                                width: `${
-                                  burnVsNet === 999
-                                    ? 100
-                                    : Math.min(100, Math.max(burnVsNet, b.actualSpentNet > 0 ? 4 : 0))
-                                }%`,
-                              }}
-                            />
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
@@ -1801,9 +1777,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       {formatVndShort(kpiSummary.totalBudgetNet)}
                     </td>
                     <td className="py-2.5 px-3 text-right text-2xs text-ink-2">
-                      Aff: <strong>{formatVndShort(kpiSummary.totalAffNet)}</strong> · Brand: <strong>{formatVndShort(kpiSummary.totalSelfNet)}</strong>
+                      <strong>{formatVndShort(kpiSummary.totalAffNet)}</strong> / <strong>{formatVndShort(kpiSummary.totalSelfNet)}</strong>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-accent bg-accent-soft/40">
+                    <td className="py-2.5 px-3 text-right font-semibold text-ink">
                       {formatVndShort(kpiSummary.totalActualSpentNet)} ({kpiSummary.pacingNetPct}%)
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-positive">
@@ -2246,28 +2222,18 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   Bảng Đối Soát Toàn Bộ {filteredStores.length} / 69 Gian Hàng B2C — Trọng Tâm % Spend Chi Phí &amp; Số Lượng Video Đã Air
                 </h3>
                 </div>
-              <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                {[
-                  { key: 'AIRED_DESC', label: 'Xếp theo Nhiều Video Air nhất' },
-                  { key: 'SPEND_PCT_DESC', label: 'Xếp theo % Spend cao → thấp' },
-                  { key: 'SPEND_PCT_ASC', label: 'Xếp theo % Spend thấp → cao' },
-                  { key: 'AIRED_ASC', label: 'Xếp theo Ít Video Air nhất' },
-                  { key: 'DEFAULT', label: 'Thứ tự mặc định' }
-                ].map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setStoreSortMode(s.key as typeof storeSortMode)}
-                    className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
-                      storeSortMode === s.key
-                        ? 'bg-accent text-white'
-                        : 'bg-sunken text-ink-2 hover:bg-sunken'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <Select
+                aria-label="Sắp xếp gian hàng"
+                value={storeSortMode}
+                onChange={(e) => setStoreSortMode(e.target.value as typeof storeSortMode)}
+                className="w-auto"
+              >
+                <option value="AIRED_DESC">Xếp theo Nhiều Video Air nhất</option>
+                <option value="SPEND_PCT_DESC">Xếp theo % Spend cao → thấp</option>
+                <option value="SPEND_PCT_ASC">Xếp theo % Spend thấp → cao</option>
+                <option value="AIRED_ASC">Xếp theo Ít Video Air nhất</option>
+                <option value="DEFAULT">Thứ tự mặc định</option>
+              </Select>
             </div>
 
             <div className="overflow-x-auto max-h-[640px]">
@@ -2279,11 +2245,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <th className="py-3 px-3 font-semibold">Chuyên Viên (PIC) &amp; Cấp Duyệt</th>
                     <th className="py-3 px-3 font-semibold text-right">Order Gross</th>
                     <th className="py-3 px-3 font-semibold text-right">Hạn Mức Net</th>
-                    <th className="py-3 px-3 font-semibold text-right bg-accent-soft text-accent">
+                    <th className="py-3 px-3 font-semibold text-right">
                       Thực Chi &amp; % Spend Net
                     </th>
                     <th className="py-3 px-3 font-semibold text-center">Chỉ Tiêu Paid / FOC / Brand</th>
-                    <th className="py-3 px-3 font-semibold text-center bg-positive-soft text-positive">
+                    <th className="py-3 px-3 font-semibold text-center">
                       Số Video Đã Air (% Đạt)
                     </th>
                     <th className="py-3 px-4 font-semibold">Kiểm Soát Kế Toán</th>
@@ -2302,7 +2268,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <tr
                         key={st.id}
                         onClick={() => setInspectStore(st)}
-                        className="hover:bg-accent-soft transition cursor-pointer"
+                        className="hover:bg-canvas transition cursor-pointer"
                       >
                         <td className="py-2.5 px-4">
                           <div className="font-semibold text-ink">{st.storeName}</div>
@@ -2332,10 +2298,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <td className="py-2.5 px-3 text-right font-mono text-ink-2">
                           {formatVndShort(st.budgetGross || 0)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
                           {formatVndShort(net)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft">
+                        <td className="py-2.5 px-3 text-right font-mono">
                           <div className="flex items-center justify-end gap-1.5">
                             <span
                               className={`font-semibold ${
@@ -2358,18 +2324,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               {burnPct === 999 ? 'Ngoài KH' : `${burnPct}%`}
                             </span>
                           </div>
-                          <div className="w-28 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
-                            <div
-                              className={`data-bar h-full rounded-full ${
-                                burnPct === 999 || burnPct > 100 ? 'bg-critical' : 'bg-accent'
-                              }`}
-                              style={{
-                                width: `${
-                                  burnPct === 999 ? 100 : Math.min(100, Math.max(burnPct, spent > 0 ? 4 : 0))
-                                }%`
-                              }}
-                            />
-                          </div>
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono text-2xs">
                           <span className="text-accent font-semibold" title="Video KOC trả phí">
@@ -2384,22 +2338,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             {st.targetSelfChannelContents || 0}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-positive-soft">
+                        <td className="py-2.5 px-3 text-center font-mono">
                           <div className="flex items-center justify-center gap-1.5">
-                            <span className="text-sm font-semibold text-positive">
-                              {aired} video
+                            <span className="font-semibold text-positive">
+                              {aired}
                             </span>
                             {targetPaid > 0 && (
-                              <span className="px-1.5 py-0.5 rounded bg-surface text-2xs font-semibold text-positive border border-line">
-                                {airVsPaidPct}% Paid
+                              <span className="text-2xs text-ink-3">
+                                ({airVsPaidPct}%)
                               </span>
                             )}
-                          </div>
-                          <div className="w-24 mx-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
-                            <div
-                              className="data-bar h-full bg-positive rounded-full"
-                              style={{ width: `${Math.min(100, Math.max(airVsPaidPct, aired > 0 ? 8 : 0))}%` }}
-                            />
                           </div>
                         </td>
                         <td className="py-2.5 px-4">{renderRiskBadge(st.financialRiskStatus)}</td>

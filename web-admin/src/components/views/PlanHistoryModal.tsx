@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Presence, Status } from '../ui';
+import { Modal, Presence, Status } from '../ui';
 import {
   X,
   MessageSquare,
@@ -263,40 +263,37 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   };
 
   return (
-    <Presence show>
-    <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
-      <div data-motion-panel className="bg-slate-50 rounded-2xl max-w-5xl w-full max-h-[88dvh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-        {/* MODAL HEADER */}
-        <div className="bg-white px-4 sm:px-6 py-4 border-b border-slate-200 flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-ink-3">
-              <span className="font-semibold text-ink">
-                {plan.storeName || plan.brandName}
-              </span>
-              <span>·</span>
-              <span>Kỳ tháng: <strong className="font-mono text-ink-2">{plan.month}</strong></span>
-              <span>·</span>
-              <span>Đang áp dụng: <strong className="font-mono text-positive">{currentVersionCode}</strong> ({snapshots.length} phiên bản)</span>
-              <span>·</span>
-              <span>Growth: <strong className="text-ink-2">{plan.growthPic || 'Growth Team'}</strong></span>
-              <span>·</span>
-              <span>B2C: <strong className="text-ink-2">{plan.pic}</strong></span>
-            </div>
-            <h3 className="font-semibold text-base text-slate-900 line-clamp-1">
-              {plan.title}
-            </h3>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={plan.title}
+      size="2xl"
+      footer={
+        <div className="flex items-center justify-between w-full text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap text-2xs text-ink-3">
+            <span className="font-semibold text-ink">{plan.storeName || plan.brandName}</span>
+            <span>·</span>
+            <span>Kỳ tháng: <strong className="font-mono text-ink-2">{plan.month}</strong></span>
+            <span>·</span>
+            <span>Đang áp dụng: <strong className="font-mono text-positive">{currentVersionCode}</strong> ({snapshots.length} phiên bản)</span>
+            <span>·</span>
+            <span>Growth: <strong className="text-ink-2">{plan.growthPic || 'Growth Team'}</strong></span>
+            <span>·</span>
+            <span>B2C: <strong className="text-ink-2">{plan.pic}</strong></span>
           </div>
-
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
           >
-            <X className="w-5 h-5" />
+            Đóng
           </button>
         </div>
-
+      }
+    >
+      <div className="space-y-4">
         {/* QUICK METRICS BAR */}
-        <div className="bg-white px-4 sm:px-6 py-2.5 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap text-xs">
+        <div className="bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3 flex-wrap text-xs">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5 text-slate-600">
               <DollarSign className="w-3.5 h-3.5 text-blue-600" />
@@ -355,7 +352,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         </div>
 
         {/* MODAL BODY */}
-        <div className="px-4 sm:px-6 py-4 overflow-y-auto flex-1 space-y-4">
+        <div className="space-y-4">
           {activeTab === 'APPROVAL_FLOW' && (
             <PlanApprovalStepper
               plan={plan}
@@ -381,9 +378,6 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       <h4 className="font-semibold text-sm text-slate-900">
                         Các phiên bản kế hoạch trong tháng {plan.month} — {plan.storeName || plan.brandName}
                       </h4>
-                      <p className="text-2xs text-slate-500">
-                        Lưu trữ toàn bộ lịch sử từ Bản gốc đầu tháng (v1.0) đến các bản điều chỉnh giữa kỳ (v1.1, v1.2...) để đối soát P&amp;L
-                      </p>
                     </div>
                   </div>
 
@@ -769,48 +763,67 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                   </div>
                 )}
 
-                {/* BẰNG CHỨNG KÝ DUYỆT ĐIỆN TỬ */}
-                <div className="space-y-2">
-                  <div className="text-2xs font-semibold text-slate-500">
-                    Bằng chứng ký duyệt đồng thuận 4 bên tại phiên bản {activeSnapshot.versionCode}:
+                {/* TRẠNG THÁI DUYỆT CÁC BÊN (XANH = ĐÃ DUYỆT, ĐỎ = CHƯA DUYỆT) */}
+                <div className="space-y-1.5">
+                  <div className="text-2xs font-semibold text-slate-600">
+                    Trạng thái duyệt các bên tại phiên bản {activeSnapshot.versionCode}:
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Growth: {activeSnapshot.signOffRecord?.growth?.confirmedBy || 'Trần Thị Ánh'}
+                  <div className="space-y-1.5 text-xs">
+                    {[
+                      {
+                        key: 'growth',
+                        party: 'Growth',
+                        person: activeSnapshot.signOffRecord?.growth?.confirmedBy || plan.growthPic || 'Trần Thị Ánh',
+                        note: activeSnapshot.signOffRecord?.growth?.note || 'Giao trần ngân sách & gói Ads',
+                        confirmed: Boolean(activeSnapshot.signOffRecord?.growth?.confirmed ?? true),
+                      },
+                      {
+                        key: 'booking',
+                        party: 'Marketing B2C',
+                        person: activeSnapshot.signOffRecord?.booking?.confirmedBy || plan.pic,
+                        note: activeSnapshot.signOffRecord?.booking?.note || 'Phân rã chỉ tiêu KL1–KL7 & kênh',
+                        confirmed: Boolean(activeSnapshot.signOffRecord?.booking?.confirmed ?? true),
+                      },
+                      {
+                        key: 'media',
+                        party: 'Media',
+                        person: activeSnapshot.signOffRecord?.media?.confirmedBy || plan.mediaPic || 'Phan Thành Đạt',
+                        note: activeSnapshot.signOffRecord?.media?.note || 'Nhận gói Ads & cam kết ROAS',
+                        confirmed: Boolean(activeSnapshot.signOffRecord?.media?.confirmed ?? true),
+                      },
+                      {
+                        key: 'lead',
+                        party: 'Giám đốc MKT B2C',
+                        person: activeSnapshot.signOffRecord?.leadB2c?.confirmedBy || plan.approvedBy || 'Đặng Thị Yến Nhi',
+                        note: activeSnapshot.signOffRecord?.leadB2c?.note || 'Phê duyệt & khóa phiên bản',
+                        confirmed: Boolean(activeSnapshot.signOffRecord?.leadB2c?.confirmed ?? (activeSnapshot.status === 'LOCKED')),
+                      },
+                    ].map((row) => (
+                      <div
+                        key={row.key}
+                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${
+                          row.confirmed
+                            ? 'bg-emerald-50/75 border-emerald-200 text-emerald-950'
+                            : 'bg-rose-50/75 border-rose-200 text-rose-950'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CheckCircle2 className={`w-4 h-4 shrink-0 ${row.confirmed ? 'text-emerald-600' : 'text-rose-600'}`} />
+                          <span className="font-semibold">{row.party}</span>
+                          <span className="text-slate-400">·</span>
+                          <span className="font-medium">{row.person}</span>
+                          <span className="text-slate-400 hidden sm:inline">—</span>
+                          <span className="text-2xs text-slate-600 truncate hidden sm:inline">{row.note}</span>
+                        </div>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-2xs font-semibold shrink-0 ${
+                            row.confirmed ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                          }`}
+                        >
+                          {row.confirmed ? 'Đã duyệt' : 'Chưa duyệt'}
+                        </span>
                       </div>
-                      <p className="text-2xs text-slate-500">
-                        {activeSnapshot.signOffRecord?.growth?.note || 'Đã giao trần ngân sách'}
-                      </p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Marketing B2C: {activeSnapshot.signOffRecord?.booking?.confirmedBy || plan.pic}
-                      </div>
-                      <p className="text-2xs text-slate-500">
-                        {activeSnapshot.signOffRecord?.booking?.note || 'Đã hoàn tất phân rã'}
-                      </p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Media: {activeSnapshot.signOffRecord?.media?.confirmedBy || 'Phan Thành Đạt'}
-                      </div>
-                      <p className="text-2xs text-slate-500">
-                        {activeSnapshot.signOffRecord?.media?.note || 'Đã nhận gói Ads & cam kết ROAS'}
-                      </p>
-                    </div>
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-semibold text-slate-800 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Trưởng phòng: {activeSnapshot.signOffRecord?.leadB2c?.confirmedBy || 'Đặng Thị Yến Nhi'}
-                      </div>
-                      <p className="text-2xs text-slate-500">
-                        {activeSnapshot.signOffRecord?.leadB2c?.note || 'Phê duyệt & đóng băng phiên bản'}
-                      </p>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -845,22 +858,8 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
             </div>
           )}
         </div>
-
-        {/* MODAL FOOTER */}
-        <div className="p-4 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
-          <span className="text-slate-400">
-            Mỗi phiên bản kế hoạch trong tháng được lưu độc lập để đối soát chênh lệch đầu kỳ — giữa kỳ — cuối kỳ.
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
-          >
-            Đóng
-          </button>
-        </div>
       </div>
-    </div>
-    </Presence>
+    </Modal>
   );
 };
 

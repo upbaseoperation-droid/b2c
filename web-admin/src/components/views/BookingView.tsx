@@ -12,7 +12,10 @@ import {
   Plus,
   Upload,
   Video,
-  Send
+  Send,
+  ArrowRight,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -21,7 +24,8 @@ import {
   KocCandidateItem,
   StaffDetailedPlanItem,
   MonthlyStaffAllocation,
-  UserProfile
+  UserProfile,
+  StorePortfolioItem
 } from '../../lib/types';
 import { 
   INITIAL_KOCS, 
@@ -29,6 +33,7 @@ import {
   INITIAL_DETAILED_STAFF_PLANS,
   INITIAL_STAFF_ALLOCATIONS_26
 } from '../../lib/mockData';
+import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
@@ -37,6 +42,129 @@ import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
+
+type PipelineStageKey =
+  | '1_PLAN_SOURCING'
+  | '2_DEAL_CONTRACT'
+  | '3_CONTENT_SCRIPT'
+  | '4_AIR_GROWTH'
+  | '5_SETTLEMENT';
+
+const PIPELINE_STAGES: Array<{
+  key: PipelineStageKey;
+  step: number;
+  shortLabel: string;
+  label: string;
+  team: string;
+  tone: StatusTone;
+  nextStage?: PipelineStageKey;
+  nextActionLabel?: string;
+}> = [
+  {
+    key: '1_PLAN_SOURCING',
+    step: 1,
+    shortLabel: 'B1 · Đề xuất & Duyệt',
+    label: '1. Đề xuất & Chờ Brand duyệt',
+    team: 'Booking · Brand',
+    tone: 'neutral',
+    nextStage: '2_DEAL_CONTRACT',
+    nextActionLabel: 'Sang B2 (HĐ & Cọc)',
+  },
+  {
+    key: '2_DEAL_CONTRACT',
+    step: 2,
+    shortLabel: 'B2 · HĐ & Tạm ứng',
+    label: '2. Hợp đồng & Tạm ứng',
+    team: 'Booking · Kế toán',
+    tone: 'info',
+    nextStage: '3_CONTENT_SCRIPT',
+    nextActionLabel: 'Sang B3 (Gửi mẫu)',
+  },
+  {
+    key: '3_CONTENT_SCRIPT',
+    step: 3,
+    shortLabel: 'B3 · Mẫu & Kịch bản',
+    label: '3. Gửi mẫu & Kịch bản',
+    team: 'Booking · Content',
+    tone: 'info',
+    nextStage: '4_AIR_GROWTH',
+    nextActionLabel: 'Sang B4 (Lên sóng)',
+  },
+  {
+    key: '4_AIR_GROWTH',
+    step: 4,
+    shortLabel: 'B4 · Lên sóng & Ads',
+    label: '4. Lên sóng & Mã Ads',
+    team: 'Content · Growth',
+    tone: 'warning',
+    nextStage: '5_SETTLEMENT',
+    nextActionLabel: 'Sang B5 (Quyết toán)',
+  },
+  {
+    key: '5_SETTLEMENT',
+    step: 5,
+    shortLabel: 'B5 · Quyết toán & GMV',
+    label: '5. Quyết toán & Hiệu quả',
+    team: 'Kế toán · Growth',
+    tone: 'positive',
+  },
+];
+
+const PIPELINE_STAGE_MAP: Record<PipelineStageKey, (typeof PIPELINE_STAGES)[number]> = {
+  '1_PLAN_SOURCING': PIPELINE_STAGES[0],
+  '2_DEAL_CONTRACT': PIPELINE_STAGES[1],
+  '3_CONTENT_SCRIPT': PIPELINE_STAGES[2],
+  '4_AIR_GROWTH': PIPELINE_STAGES[3],
+  '5_SETTLEMENT': PIPELINE_STAGES[4],
+};
+
+function resolveDealPipelineStage(deal: BookingDealItem): PipelineStageKey {
+  if (deal.currentStage && PIPELINE_STAGE_MAP[deal.currentStage]) {
+    return deal.currentStage;
+  }
+  if (
+    deal.brandApprovalStatus === 'CHỜ_DUYỆT' ||
+    deal.brandApprovalStatus === 'TỪ_CHỐI' ||
+    deal.status === 'DRAFT' ||
+    deal.status === 'CANCELLED'
+  ) {
+    return '1_PLAN_SOURCING';
+  }
+  if (
+    deal.status === 'FINAL_PAID' ||
+    deal.status === 'COMPLETED' ||
+    deal.pipelineText === 'Done' ||
+    (deal.gmv30 || 0) > 0
+  ) {
+    return '5_SETTLEMENT';
+  }
+  if (
+    deal.status === 'VIDEO_SUBMITTED' ||
+    deal.status === 'VIDEO_VERIFIED' ||
+    deal.pipelineText === 'On Air' ||
+    deal.pipelineText === 'Làm ĐNTT' ||
+    deal.pipelineText === 'Bàn giao Growth Ads'
+  ) {
+    return '4_AIR_GROWTH';
+  }
+  if (
+    deal.status === 'SAMPLE_SHIPPED' ||
+    deal.pipelineText === 'Gửi hàng' ||
+    deal.pipelineText === 'Demo' ||
+    deal.pipelineText === 'Kịch bản'
+  ) {
+    return '3_CONTENT_SCRIPT';
+  }
+  if (
+    deal.status === 'CONTRACT_GENERATED' ||
+    deal.status === 'ADVANCE_PAID' ||
+    deal.pipelineText === 'Tạm ứng' ||
+    deal.pipelineText === 'Đã tạo BO'
+  ) {
+    return '2_DEAL_CONTRACT';
+  }
+  return '1_PLAN_SOURCING';
+}
 
 interface BookingViewProps {
   deals: BookingDealItem[];
@@ -89,9 +217,71 @@ export const BookingView: React.FC<BookingViewProps> = ({
   selectedBrand = 'ALL',
   bookingDrilldownIntent,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('MY_PLAN');
+  const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('BOOKING_DEALS');
+  const [visitedSubTabs, setVisitedSubTabs] = useState<Record<string, boolean>>({ BOOKING_DEALS: true });
+  if (!visitedSubTabs[activeSubTab]) {
+    setVisitedSubTabs(prev => ({ ...prev, [activeSubTab]: true }));
+  }
   const [candidates, setCandidates] = useState<KocCandidateItem[]>(INITIAL_KOC_CANDIDATES);
   const [candidateFilter, setCandidateFilter] = useState<string>('ALL');
+  const [localDealOverrides, setLocalDealOverrides] = useState<Record<string, BookingDealItem>>({});
+  const [pipelineViewMode, setPipelineViewMode] = useState<'BY_STORE' | 'KANBAN' | 'TABLE'>('BY_STORE');
+  const [selectedPipelineStage, setSelectedPipelineStage] = useState<'ALL' | PipelineStageKey>('ALL');
+  const [collapsedStores, setCollapsedStores] = useState<Record<string, boolean>>({});
+  const [storeGroupPage, setStoreGroupPage] = useState<number>(1);
+  const [storeGroupPageSize, setStoreGroupPageSize] = useState<number>(8);
+  const [kanbanCardLimit, setKanbanCardLimit] = useState<number>(12);
+
+  const applyDealUpdate = (updatedDeal: BookingDealItem) => {
+    setLocalDealOverrides(prev => ({ ...prev, [updatedDeal.id]: updatedDeal }));
+    if (onUpdateDeal) {
+      onUpdateDeal(updatedDeal);
+    }
+  };
+
+  const handleAdvanceDealStage = (deal: BookingDealItem, targetStage: PipelineStageKey) => {
+    let status = deal.status;
+    let statusLabel = deal.statusLabel;
+    let pipelineText = deal.pipelineText;
+    let brandApprovalStatus = deal.brandApprovalStatus;
+    let holdingTeam: BookingDealItem['holdingTeam'] = deal.holdingTeam || 'BOOKING';
+
+    if (targetStage === '2_DEAL_CONTRACT') {
+      brandApprovalStatus = 'ĐÃ_DUYỆT';
+      status = 'CONTRACT_GENERATED';
+      statusLabel = 'Brand Đã Duyệt (Tạo HĐ & Cọc)';
+      pipelineText = 'Đã tạo BO';
+      holdingTeam = 'BOOKING';
+    } else if (targetStage === '3_CONTENT_SCRIPT') {
+      brandApprovalStatus = 'ĐÃ_DUYỆT';
+      status = 'SAMPLE_SHIPPED';
+      statusLabel = 'Đang Gửi Mẫu & Duyệt Kịch Bản';
+      pipelineText = 'Gửi hàng';
+      holdingTeam = 'CONTENT';
+    } else if (targetStage === '4_AIR_GROWTH') {
+      brandApprovalStatus = 'ĐÃ_DUYỆT';
+      status = 'VIDEO_VERIFIED';
+      statusLabel = 'Đã Lên Sóng (Chờ Mã Ads / ĐNTT)';
+      pipelineText = 'Làm ĐNTT';
+      holdingTeam = 'GROWTH';
+    } else if (targetStage === '5_SETTLEMENT') {
+      brandApprovalStatus = 'ĐÃ_DUYỆT';
+      status = 'FINAL_PAID';
+      statusLabel = 'Đã Tất Toán (Hoàn Tất HĐ)';
+      pipelineText = 'Done';
+      holdingTeam = 'FINANCE';
+    }
+
+    applyDealUpdate({
+      ...deal,
+      currentStage: targetStage,
+      brandApprovalStatus,
+      status,
+      statusLabel,
+      pipelineText,
+      holdingTeam,
+    });
+  };
 
   // Plan Items State
   const [localPlanItems, setLocalPlanItems] = useState<StaffDetailedPlanItem[]>(externalPlanItems || INITIAL_DETAILED_STAFF_PLANS);
@@ -150,7 +340,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [selectedTepKenh, setSelectedTepKenh] = useState<string>('ALL'); // 4. Tệp kênh
   const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
   const [kocsPage, setKocsPage] = useState(1);
-  const [kocsPageSize, setKocsPageSize] = useState(50);
+  const [kocsPageSize, setKocsPageSize] = useState(20);
 
   // Filters for Booking Deals
   const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
@@ -159,7 +349,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [dealsSearch, setDealsSearch] = useState('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>(selectedBrand || 'ALL');
   const [dealsPage, setDealsPage] = useState(1);
-  const [dealsPageSize, setDealsPageSize] = useState(50);
+  const [dealsPageSize, setDealsPageSize] = useState(20);
   const [prevSelectedBrand, setPrevSelectedBrand] = useState(selectedBrand);
   if (selectedBrand !== prevSelectedBrand) {
     setPrevSelectedBrand(selectedBrand);
@@ -259,9 +449,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       pipelineText: 'Bàn giao Growth Ads'
     };
 
-    if (onUpdateDeal) {
-      onUpdateDeal(updated);
-    }
+    applyDealUpdate(updated);
     setHandoffDeal(null);
   };
 
@@ -402,36 +590,51 @@ export const BookingView: React.FC<BookingViewProps> = ({
     });
   }, [localKocs, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, searchTerm]);
 
-  const baseScopedDeals = useMemo(() => {
-    const shortSelectedStaff = selectedStaffName.split(' ').slice(-2).join(' ').toLowerCase();
-    return deals.filter((deal) => {
-      // 1. Lọc theo kỳ & loại deal (Tách bạch Deal đang chạy có phí vs Lịch sử & FOC 0đ)
-      const isOperationalCurrent = !deal.id.startsWith('deal-real-') && !deal.id.startsWith('deal-hist-');
-      const isCurrentMonthBatch = deal.bookingBatch === '2026/10';
+  const dealsByPeriodBucket = useMemo(() => {
+    const currentPaid: BookingDealItem[] = [];
+    const allPaid: BookingDealItem[] = [];
+    const focOnly: BookingDealItem[] = [];
+    const allMerged: BookingDealItem[] = [];
+    for (const rawDeal of deals) {
+      const deal = localDealOverrides[rawDeal.id] || rawDeal;
+      allMerged.push(deal);
       const isPaid = (deal.totalValue || 0) > 0;
-
-      if (dealPeriodScope === 'CURRENT_PAID') {
-        if (!isPaid || (!isOperationalCurrent && !isCurrentMonthBatch)) return false;
-      } else if (dealPeriodScope === 'ALL_PAID') {
-        if (!isPaid) return false;
-      } else if (dealPeriodScope === 'FOC_ONLY') {
-        if (isPaid) return false;
+      if (isPaid) {
+        allPaid.push(deal);
+        const isOperationalCurrent = !deal.id.startsWith('deal-real-') && !deal.id.startsWith('deal-hist-');
+        if (isOperationalCurrent || deal.bookingBatch === '2026/10') {
+          currentPaid.push(deal);
+        }
+      } else {
+        focOnly.push(deal);
       }
+    }
+    return {
+      CURRENT_PAID: currentPaid,
+      ALL_PAID: allPaid,
+      FOC_ONLY: focOnly,
+      ALL_ARCHIVE: allMerged,
+    };
+  }, [deals, localDealOverrides]);
 
-      // 2. Lọc theo Gian hàng / Thương hiệu
+  const baseScopedDeals = useMemo(() => {
+    const sourceList = dealsByPeriodBucket[dealPeriodScope] || dealsByPeriodBucket.CURRENT_PAID;
+    if (selectedBrandFilter === 'ALL' && selectedDealPicFilter === 'ALL') {
+      return sourceList;
+    }
+    const shortSelectedStaff = selectedStaffName.split(' ').slice(-2).join(' ').toLowerCase();
+    const lowerStaff = selectedStaffName.toLowerCase();
+    return sourceList.filter((deal) => {
       if (selectedBrandFilter !== 'ALL' && deal.brandName !== selectedBrandFilter) return false;
-
-      // 3. Lọc theo Chuyên viên PIC
       if (selectedDealPicFilter === 'SELECTED_STAFF') {
         const pic = (deal.bookingPic || deal.assignedStaff || '').toLowerCase();
-        if (!pic.includes(selectedStaffName.toLowerCase()) && !pic.includes(shortSelectedStaff)) {
+        if (!pic.includes(lowerStaff) && !pic.includes(shortSelectedStaff)) {
           return false;
         }
       }
-
       return true;
     });
-  }, [deals, dealPeriodScope, selectedBrandFilter, selectedDealPicFilter, selectedStaffName]);
+  }, [dealsByPeriodBucket, dealPeriodScope, selectedBrandFilter, selectedDealPicFilter, selectedStaffName]);
 
   const dealFilterCounts = useMemo(() => {
     let brandPending = 0;
@@ -445,6 +648,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
     let totalCost = 0;
     let totalGmv = 0;
     let top20Gmv = 0;
+    const byStage: Record<PipelineStageKey, { count: number; cost: number; gmv: number; alertCount: number }> = {
+      '1_PLAN_SOURCING': { count: 0, cost: 0, gmv: 0, alertCount: 0 },
+      '2_DEAL_CONTRACT': { count: 0, cost: 0, gmv: 0, alertCount: 0 },
+      '3_CONTENT_SCRIPT': { count: 0, cost: 0, gmv: 0, alertCount: 0 },
+      '4_AIR_GROWTH': { count: 0, cost: 0, gmv: 0, alertCount: 0 },
+      '5_SETTLEMENT': { count: 0, cost: 0, gmv: 0, alertCount: 0 },
+    };
 
     for (const d of baseScopedDeals) {
       if (d.brandApprovalStatus === 'CHỜ_DUYỆT') brandPending++;
@@ -460,6 +670,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if ((d.totalValue || 0) > 0) paidCount++;
       totalCost += d.totalValue || 0;
       totalGmv += d.gmv30 || 0;
+
+      const stageKey = resolveDealPipelineStage(d);
+      byStage[stageKey].count++;
+      byStage[stageKey].cost += d.totalValue || 0;
+      byStage[stageKey].gmv += d.gmv30 || 0;
+      if (
+        (stageKey === '1_PLAN_SOURCING' && d.brandApprovalStatus === 'CHỜ_DUYỆT') ||
+        (stageKey === '2_DEAL_CONTRACT' && !d.larkAdvanceApprovalCode && (d.advanceAmount || 0) > 0) ||
+        (stageKey === '3_CONTENT_SCRIPT' && d.sampleStatus !== 'ĐÃ_NHẬN') ||
+        (stageKey === '4_AIR_GROWTH' && d.adsCodeStatus === 'CHƯA_CẤP') ||
+        (stageKey === '5_SETTLEMENT' && (d.roi || 0) >= 1)
+      ) {
+        byStage[stageKey].alertCount++;
+      }
     }
     return {
       all: baseScopedDeals.length,
@@ -474,12 +698,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
       adsCodePending,
       hasGmv,
       breakEven,
+      byStage,
     };
   }, [baseScopedDeals]);
 
   const filteredDeals = useMemo(() => {
     const q = dealsSearch.trim().toLowerCase();
     return baseScopedDeals.filter((deal) => {
+      if (selectedPipelineStage !== 'ALL' && resolveDealPipelineStage(deal) !== selectedPipelineStage) return false;
       if (dealsFilter === 'BRAND_PENDING' && deal.brandApprovalStatus !== 'CHỜ_DUYỆT') return false;
       if (dealsFilter === 'BRAND_APPROVED' && deal.brandApprovalStatus !== 'ĐÃ_DUYỆT') return false;
       if (dealsFilter === 'BRAND_REJECTED' && deal.brandApprovalStatus !== 'TỪ_CHỐI') return false;
@@ -493,16 +719,197 @@ export const BookingView: React.FC<BookingViewProps> = ({
         deal.dealCode.toLowerCase().includes(q) ||
         deal.kocStageName.toLowerCase().includes(q) ||
         deal.campaignTitle.toLowerCase().includes(q) ||
+        (deal.storeName ? deal.storeName.toLowerCase().includes(q) : false) ||
         (deal.productName ? deal.productName.toLowerCase().includes(q) : false) ||
         (deal.brandName ? deal.brandName.toLowerCase().includes(q) : false)
       );
     });
-  }, [baseScopedDeals, dealsSearch, dealsFilter]);
+  }, [baseScopedDeals, dealsSearch, dealsFilter, selectedPipelineStage]);
 
   const safeDealsPage = Math.min(dealsPage, Math.max(1, Math.ceil(filteredDeals.length / dealsPageSize)));
   const pagedDeals = useMemo(
     () => filteredDeals.slice((safeDealsPage - 1) * dealsPageSize, safeDealsPage * dealsPageSize),
     [filteredDeals, safeDealsPage, dealsPageSize]
+  );
+
+  // Lookup map cho 69 Gian hàng B2C (theo storeName và brandName)
+  const storeCatalogLookup = useMemo(() => {
+    const byStoreName = new Map<string, StorePortfolioItem>();
+    const byBrandName = new Map<string, StorePortfolioItem[]>();
+    for (const st of REAL_B2C_69_STORES) {
+      byStoreName.set(st.storeName.trim().toLowerCase(), st);
+      const bKey = st.brandName.trim().toLowerCase();
+      const existing = byBrandName.get(bKey) || [];
+      existing.push(st);
+      byBrandName.set(bKey, existing);
+    }
+    return { byStoreName, byBrandName };
+  }, []);
+
+  // Đối soát Kế hoạch Gian hàng tổng thể theo bộ lọc đang chọn
+  const storePlanOverview = useMemo(() => {
+    const shortStaff = selectedStaffName.split(' ').slice(-2).join(' ').toLowerCase();
+    const lowerStaff = selectedStaffName.toLowerCase();
+
+    const matchedStores = REAL_B2C_69_STORES.filter(st => {
+      if (selectedBrandFilter !== 'ALL' && st.brandName.toLowerCase() !== selectedBrandFilter.toLowerCase()) {
+        return false;
+      }
+      if (selectedDealPicFilter === 'SELECTED_STAFF') {
+        const picMatch = (st.primaryPic || st.assignedStaff || '').toLowerCase();
+        const memberMatch = (st.assignedMembers || []).some(m => m.toLowerCase().includes(lowerStaff) || m.toLowerCase().includes(shortStaff));
+        if (!picMatch.includes(lowerStaff) && !picMatch.includes(shortStaff) && !memberMatch) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    let planPaidVideos = 0;
+    let planFocVideos = 0;
+    let planBudgetNet = 0;
+    let planBudgetGross = 0;
+    for (const st of matchedStores) {
+      planPaidVideos += st.targetPaidVideos || st.targetAffiliateContents || 0;
+      planFocVideos += st.targetFocVideos || 0;
+      planBudgetNet += st.budgetAffiliateNet || st.budgetNet || 0;
+      planBudgetGross += st.budgetAffiliateGross || st.budgetGross || 0;
+    }
+
+    const airedCount =
+      dealFilterCounts.byStage['4_AIR_GROWTH'].count +
+      dealFilterCounts.byStage['5_SETTLEMENT'].count;
+
+    const actualCost = dealFilterCounts.totalCost;
+    const budgetDiff = planBudgetNet - actualCost;
+    const isOverbudget = planBudgetNet > 0 && actualCost > planBudgetNet;
+    const isUnbudgetedSpend = planBudgetNet === 0 && actualCost > 0;
+
+    return {
+      storeCount: matchedStores.length,
+      planPaidVideos,
+      planFocVideos,
+      planBudgetNet,
+      planBudgetGross,
+      airedCount,
+      actualCost,
+      budgetDiff,
+      isOverbudget,
+      isUnbudgetedSpend,
+    };
+  }, [selectedBrandFilter, selectedDealPicFilter, selectedStaffName, dealFilterCounts]);
+
+  // Gom nhóm Deal theo từng Gian hàng kèm đối soát Hạn mức Net & Tiến độ 5 bước
+  const storePipelineGroups = useMemo(() => {
+    const groupsMap = new Map<
+      string,
+      {
+        storeKey: string;
+        storeName: string;
+        brandName: string;
+        platform: string;
+        primaryPic: string;
+        bookingLeader?: string;
+        hasBookingLeader: boolean;
+        planPaidVideos: number;
+        planFocVideos: number;
+        planBudgetNet: number;
+        planBudgetGross: number;
+        deals: BookingDealItem[];
+        paidDealsCount: number;
+        focDealsCount: number;
+        airedDealsCount: number;
+        totalCost: number;
+        totalGmv: number;
+        breakEvenCount: number;
+        stageCounts: Record<PipelineStageKey, number>;
+      }
+    >();
+
+    for (const deal of filteredDeals) {
+      const rawStore = (deal.storeName || '').trim();
+      const rawBrand = (deal.brandName || 'Upbase').trim();
+      let matchedStore = rawStore
+        ? storeCatalogLookup.byStoreName.get(rawStore.toLowerCase())
+        : undefined;
+      if (!matchedStore && rawBrand) {
+        const candidatesForBrand = storeCatalogLookup.byBrandName.get(rawBrand.toLowerCase());
+        if (candidatesForBrand && candidatesForBrand.length > 0) {
+          matchedStore =
+            candidatesForBrand.find(c => c.platform === 'TikTok Shop') || candidatesForBrand[0];
+        }
+      }
+
+      const groupKey = matchedStore
+        ? matchedStore.storeName
+        : rawStore || `${rawBrand}_TikTok`;
+
+      let group = groupsMap.get(groupKey);
+      if (!group) {
+        group = {
+          storeKey: groupKey,
+          storeName: matchedStore ? matchedStore.storeName : groupKey,
+          brandName: matchedStore ? matchedStore.brandName : rawBrand,
+          platform: matchedStore ? matchedStore.platform : (groupKey.toLowerCase().includes('shopee') ? 'Shopee Mall' : 'TikTok Shop'),
+          primaryPic: matchedStore && matchedStore.primaryPic && matchedStore.primaryPic !== 'Chưa phân công'
+            ? matchedStore.primaryPic
+            : (deal.bookingPic || deal.assignedStaff || 'Chưa phân công'),
+          bookingLeader: matchedStore?.hasBookingLeader ? matchedStore.bookingLeader : undefined,
+          hasBookingLeader: Boolean(matchedStore?.hasBookingLeader && matchedStore?.bookingLeader),
+          planPaidVideos: matchedStore ? (matchedStore.targetPaidVideos || matchedStore.targetAffiliateContents || 0) : 0,
+          planFocVideos: matchedStore ? (matchedStore.targetFocVideos || 0) : 0,
+          planBudgetNet: matchedStore ? (matchedStore.budgetAffiliateNet || matchedStore.budgetNet || 0) : 0,
+          planBudgetGross: matchedStore ? (matchedStore.budgetAffiliateGross || matchedStore.budgetGross || 0) : 0,
+          deals: [],
+          paidDealsCount: 0,
+          focDealsCount: 0,
+          airedDealsCount: 0,
+          totalCost: 0,
+          totalGmv: 0,
+          breakEvenCount: 0,
+          stageCounts: {
+            '1_PLAN_SOURCING': 0,
+            '2_DEAL_CONTRACT': 0,
+            '3_CONTENT_SCRIPT': 0,
+            '4_AIR_GROWTH': 0,
+            '5_SETTLEMENT': 0,
+          },
+        };
+        groupsMap.set(groupKey, group);
+      }
+
+      group.deals.push(deal);
+      const isPaid = (deal.totalValue || 0) > 0;
+      if (isPaid) group.paidDealsCount++;
+      else group.focDealsCount++;
+      group.totalCost += deal.totalValue || 0;
+      group.totalGmv += deal.gmv30 || 0;
+      if ((deal.roi || 0) >= 1) group.breakEvenCount++;
+
+      const stKey = resolveDealPipelineStage(deal);
+      group.stageCounts[stKey]++;
+      if (stKey === '4_AIR_GROWTH' || stKey === '5_SETTLEMENT') {
+        group.airedDealsCount++;
+      }
+    }
+
+    return Array.from(groupsMap.values()).sort((a, b) => {
+      if (b.totalCost !== a.totalCost) return b.totalCost - a.totalCost;
+      return b.deals.length - a.deals.length;
+    });
+  }, [filteredDeals, storeCatalogLookup]);
+
+  const safeStoreGroupPage = Math.min(
+    storeGroupPage,
+    Math.max(1, Math.ceil(storePipelineGroups.length / storeGroupPageSize))
+  );
+  const pagedStoreGroups = useMemo(
+    () =>
+      storePipelineGroups.slice(
+        (safeStoreGroupPage - 1) * storeGroupPageSize,
+        safeStoreGroupPage * storeGroupPageSize
+      ),
+    [storePipelineGroups, safeStoreGroupPage, storeGroupPageSize]
   );
 
   const safeKocsPage = Math.min(kocsPage, Math.max(1, Math.ceil(filteredKocs.length / kocsPageSize)));
@@ -536,6 +943,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
     const updatedDeal: BookingDealItem = {
       ...deal,
+      currentStage: status === 'ĐÃ_DUYỆT' ? '2_DEAL_CONTRACT' : '1_PLAN_SOURCING',
       brandApprovalStatus: status,
       brandApprovalDate: new Date().toISOString().replace('T', ' ').substring(0, 16),
       brandRejectReason: status === 'TỪ_CHỐI' ? rejectReason : undefined,
@@ -544,9 +952,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       statusLabel: status === 'ĐÃ_DUYỆT' ? 'Brand Đã Duyệt (Tạo HĐ & Cọc)' : `Brand Từ Chối (${rejectReason})`
     };
 
-    if (onUpdateDeal) {
-      onUpdateDeal(updatedDeal);
-    }
+    applyDealUpdate(updatedDeal);
   };
 
   const handleOpenEditModal = (deal: BookingDealItem) => {
@@ -612,11 +1018,925 @@ export const BookingView: React.FC<BookingViewProps> = ({
       finalAmount: Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - droppedCost),
     };
 
-    if (onUpdateDeal) {
-      onUpdateDeal(updatedDeal);
-    }
+    applyDealUpdate(updatedDeal);
     setEditingDeal(null);
   };
+
+  const bookingDealsSubTabNode = useMemo(() => {
+    const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
+    const totalDealsInScope = dealFilterCounts.all;
+    const top20SharePct = dealFilterCounts.totalGmv > 0
+      ? ((dealFilterCounts.top20Gmv / dealFilterCounts.totalGmv) * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
+      : '0';
+
+    const dealColumns = [
+      {
+        key: 'koc', header: 'KOC & Khung lương', width: 190, render: (d: BookingDealItem) => (
+          <div className="leading-tight min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-medium text-ink">{d.kocStageName}</span>
+              <span className="text-2xs font-semibold text-accent">({d.salaryGrade})</span>
+              {d.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Top 20</span>}
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5 truncate">
+              @{String(d.kocChannelId || '').replace(/^@/, '')}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'campaign', header: 'Gian hàng & Sản phẩm', width: 225, render: (d: BookingDealItem) => (
+          <div className="leading-tight min-w-0">
+            <div className="text-xs font-medium text-ink truncate max-w-[215px]">
+              {d.storeName || d.brandName || 'Upbase'} · <span className="font-normal text-ink-2">{d.productName || 'Sản phẩm'}</span>
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span className="font-code">{d.dealCode}</span>
+              {d.bookingBatch && <span>· {d.bookingBatch}</span>}
+              {d.dealType === 'SERVICE_ONLY' && (
+                <span className="text-warning font-medium">· Mua thêm DV</span>
+              )}
+              {d.dealType === 'MULTI_PLATFORM_CONTENT' && (
+                <span className="text-accent font-medium">· Đa kênh ({d.deliverables?.length || 1})</span>
+              )}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'lifecycle', header: 'Bước Pipeline & Phụ trách', width: 240, render: (d: BookingDealItem) => {
+          const stKey = resolveDealPipelineStage(d);
+          const st = PIPELINE_STAGE_MAP[stKey];
+          return (
+            <div className="grid gap-0.5 justify-items-start leading-tight">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Status tone={st.tone}>{st.shortLabel}</Status>
+                {d.brandApprovalStatus === 'CHỜ_DUYỆT' && (
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Hủy</Button>
+                  </div>
+                )}
+                {d.brandApprovalStatus === 'TỪ_CHỐI' && (
+                  <Status tone="critical">Brand từ chối</Status>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-2xs text-ink-3 flex-wrap">
+                <span className="font-medium text-ink-2">{d.bookingPic || d.assignedStaff}</span>
+                <span>·</span>
+                <span className={d.isSlaWarning || d.isLocked7WorkingDays || d.isDnttOverdue10Am ? 'text-critical font-medium' : 'text-ink-3'}>
+                  {d.isDnttOverdue10Am
+                    ? 'Trễ ĐNTT'
+                    : d.isLocked7WorkingDays
+                    ? 'Quá 7 ngày'
+                    : d.slaRemainingText || d.pipelineText || TEAM[d.holdingTeam || 'BOOKING']}
+                </span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'delivery', header: 'Mẫu · Video · Mã Ads', width: 150, render: (d: BookingDealItem) => (
+          <div className="grid gap-0.5 text-2xs leading-tight">
+            <div className="flex items-center gap-1.5">
+              {d.tiktokVideoUrl || d.videoUrl ? (
+                <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:underline font-medium">
+                  Xem video<ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              ) : (
+                <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive font-medium' : 'text-ink-3'}>
+                  {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
+                </span>
+              )}
+            </div>
+            <div className="text-ink-2 truncate max-w-[140px]">
+              {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3">Chưa mã Ads</span>}
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'cost', header: 'Cát-xê & ĐNTT', align: 'right' as const, width: 120, render: (d: BookingDealItem) => (
+          <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+            <span className="text-ink font-semibold font-mono">{formatVndShort(d.totalValue)}</span>
+            <span className="text-2xs text-ink-3 font-code">
+              {d.larkFinalApprovalCode || d.larkAdvanceApprovalCode || ((d.totalValue || 0) === 0 ? 'Đơn FOC (0đ)' : 'Chưa ĐNTT')}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'gmv_roi', header: 'GMV & ROI', align: 'right' as const, width: 110, render: (d: BookingDealItem) => (
+          <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+            <span className="text-ink font-medium font-mono">{formatVndShort(d.gmv30)}</span>
+            <span className={(d.roi || 0) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-ink-3'}>
+              ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right' as const, width: 195, render: (d: BookingDealItem) => {
+          const stKey = resolveDealPipelineStage(d);
+          const nextStage = PIPELINE_STAGE_MAP[stKey].nextStage;
+          return (
+            <div className="flex items-center justify-end gap-1">
+              {nextStage && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={ArrowRight}
+                  onClick={() => handleAdvanceDealStage(d, nextStage)}
+                  title={PIPELINE_STAGE_MAP[stKey].nextActionLabel}
+                >
+                  B{PIPELINE_STAGE_MAP[nextStage].step}
+                </Button>
+              )}
+              {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
+                <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Air</Button>
+              ) : null}
+              <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth" />
+              <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
+              <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
+              {(d.totalValue || 0) > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setPaymentRequestDeal(d);
+                    setIsPaymentRequestOpen(true);
+                  }}
+                  title="Tạo phiếu đề nghị thanh toán / tạm ứng trên Lark"
+                >
+                  ĐNTT
+                </Button>
+              )}
+            </div>
+          );
+        },
+      },
+    ];
+
+    return (
+      <div className="space-y-4">
+        {/* 1. KHUNG ĐỐI SOÁT HẠN MỨC KẾ HOẠCH GIAN HÀNG (STORE PLAN CONTEXT BAR) */}
+        <StatRow>
+          <Stat
+            label={`Kế hoạch Gian hàng (${storePlanOverview.storeCount} gian)`}
+            value={
+              dealPeriodScope === 'FOC_ONLY'
+                ? `${formatNumber(totalDealsInScope)} / ${formatNumber(Math.max(1, storePlanOverview.planFocVideos))} đơn FOC`
+                : `${formatNumber(dealFilterCounts.paidCount)} / ${formatNumber(Math.max(1, storePlanOverview.planPaidVideos))} video có phí`
+            }
+            progress={{
+              value: dealPeriodScope === 'FOC_ONLY' ? totalDealsInScope : dealFilterCounts.paidCount,
+              max: Math.max(
+                1,
+                dealPeriodScope === 'FOC_ONLY'
+                  ? storePlanOverview.planFocVideos
+                  : storePlanOverview.planPaidVideos
+              ),
+              target: 0.8,
+            }}
+          />
+          <Stat
+            label={`Chi phí Deal / Hạn mức Order Net (${formatVndShort(storePlanOverview.planBudgetNet)})`}
+            value={formatVndShort(dealFilterCounts.totalCost)}
+            tone={
+              storePlanOverview.isOverbudget || storePlanOverview.isUnbudgetedSpend
+                ? 'critical'
+                : undefined
+            }
+            progress={
+              storePlanOverview.planBudgetNet > 0
+                ? {
+                    value: dealFilterCounts.totalCost,
+                    max: storePlanOverview.planBudgetNet,
+                    target: 1.0,
+                  }
+                : undefined
+            }
+          />
+          <Stat
+            label="Đã lên sóng (B4 + B5) & Có doanh thu"
+            value={`${formatNumber(storePlanOverview.airedCount)} air · ${formatNumber(dealFilterCounts.hasGmv)} có GMV`}
+            progress={{ value: dealFilterCounts.hasGmv, max: Math.max(1, totalDealsInScope), target: 0.5 }}
+          />
+          <Stat
+            label="Tổng GMV 30d & Video hoàn vốn"
+            value={`${formatVndShort(dealFilterCounts.totalGmv)} (${formatNumber(dealFilterCounts.breakEven)} hoàn vốn)`}
+            progress={{ value: dealFilterCounts.breakEven, max: Math.max(1, totalDealsInScope), target: 0.3 }}
+            tone="positive"
+          />
+        </StatRow>
+
+        {/* Cảnh báo tài chính Kế hoạch Gian hàng & Nhóm Top 20% GMV */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-line bg-surface">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
+            {storePlanOverview.isUnbudgetedSpend ? (
+              <Status tone="critical">
+                Phát sinh chi {formatVndShort(storePlanOverview.actualCost)} khi Hạn mức Order Net = 0đ (Cần bổ sung phê duyệt)
+              </Status>
+            ) : storePlanOverview.isOverbudget ? (
+              <Status tone="critical">
+                Vượt hạn mức Order Net +{formatVndShort(Math.abs(storePlanOverview.budgetDiff))} (Trần Net: {formatVndShort(storePlanOverview.planBudgetNet)})
+              </Status>
+            ) : (
+              <Status tone="positive">
+                Trong hạn mức Order Net · Còn dư {formatVndShort(Math.max(0, storePlanOverview.budgetDiff))} (Gross Plan: {formatVndShort(storePlanOverview.planBudgetGross)})
+              </Status>
+            )}
+            <span className="text-ink-3">·</span>
+            <span>
+              Top 20% video đóng góp <strong className="font-semibold text-ink">{top20SharePct}% GMV</strong> ({formatVndShort(dealFilterCounts.top20Gmv)} / {formatVndShort(dealFilterCounts.totalGmv)})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setActiveSubTab('CANDIDATES')}
+            >
+              Sàng lọc ứng viên ({candidates.length})
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setDealsFilter(dealsFilter === 'WINNER_TOP20' ? 'ALL' : 'WINNER_TOP20');
+                setDealsPage(1);
+                setStoreGroupPage(1);
+              }}
+            >
+              {dealsFilter === 'WINNER_TOP20' ? 'Bỏ lọc Top GMV' : `Nhóm Top GMV (${dealFilterCounts.winnerTop20})`}
+            </Button>
+          </div>
+        </div>
+
+        {/* 2. THANH PHỄU PIPELINE 5 BƯỚC (INTERACTIVE 5-STAGE FUNNEL BAR) */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {PIPELINE_STAGES.map((st) => {
+            const stat = dealFilterCounts.byStage[st.key];
+            const isSelected = selectedPipelineStage === st.key;
+            const sharePct = totalDealsInScope > 0 ? Math.round((stat.count / totalDealsInScope) * 100) : 0;
+            return (
+              <button
+                key={st.key}
+                type="button"
+                onClick={() => {
+                  setSelectedPipelineStage(prev => (prev === st.key ? 'ALL' : st.key));
+                  setDealsPage(1);
+                  setStoreGroupPage(1);
+                }}
+                className={`text-left rounded-xl border p-3 transition-colors ${
+                  isSelected
+                    ? 'border-accent bg-accent-soft/60 ring-1 ring-accent'
+                    : 'border-line bg-surface hover:border-line-strong'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
+                    Bước {st.step} · {st.team}
+                  </span>
+                  <span className="text-2xs font-mono text-ink-3">{sharePct}%</span>
+                </div>
+                <div className="text-xs font-semibold text-ink mt-1 truncate">
+                  {st.label}
+                </div>
+                <div className="mt-2 flex items-baseline justify-between gap-2">
+                  <span className="text-lg font-bold text-ink tabular-nums">
+                    {formatNumber(stat.count)} <span className="text-2xs font-normal text-ink-3">job</span>
+                  </span>
+                  <span className="text-xs font-semibold font-mono text-ink-2 tabular-nums">
+                    {st.key === '5_SETTLEMENT' && stat.gmv > 0
+                      ? `GMV ${formatVndShort(stat.gmv)}`
+                      : formatVndShort(stat.cost)}
+                  </span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-2xs">
+                  {st.key === '1_PLAN_SOURCING' ? (
+                    <span className={stat.alertCount > 0 ? 'text-warning font-medium' : 'text-ink-3'}>
+                      {stat.alertCount > 0 ? `${stat.alertCount} chờ Brand duyệt` : `${candidates.length} ứng viên sàng lọc`}
+                    </span>
+                  ) : st.key === '2_DEAL_CONTRACT' ? (
+                    <span className="text-ink-3">Soạn HĐ & Tạm ứng Lark</span>
+                  ) : st.key === '3_CONTENT_SCRIPT' ? (
+                    <span className={stat.alertCount > 0 ? 'text-warning font-medium' : 'text-ink-3'}>
+                      {stat.alertCount > 0 ? `${stat.alertCount} chưa nhận mẫu` : 'Đã giao mẫu & duyệt kịch bản'}
+                    </span>
+                  ) : st.key === '4_AIR_GROWTH' ? (
+                    <span className={stat.alertCount > 0 ? 'text-warning font-medium' : 'text-ink-3'}>
+                      {stat.alertCount > 0 ? `${stat.alertCount} chờ cấp mã Ads` : 'Đã bàn giao mã Ads'}
+                    </span>
+                  ) : (
+                    <span className="text-positive font-medium">
+                      {stat.alertCount} video đạt hoàn vốn
+                    </span>
+                  )}
+                  {isSelected && <span className="text-accent font-semibold">Đang lọc</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 3. KHUNG ĐIỀU KHIỂN PIPELINE & 3 CHẾ ĐỘ XEM (THEO GIAN HÀNG / KANBAN 5 CỘT / BẢNG CHI TIẾT) */}
+        <Panel
+          flush
+          title={
+            selectedPipelineStage === 'ALL'
+              ? 'Pipeline Booking theo Kế hoạch Gian hàng'
+              : `Pipeline Booking · ${PIPELINE_STAGE_MAP[selectedPipelineStage].label}`
+          }
+          actions={
+            <div className="flex items-center gap-2">
+              {selectedPipelineStage !== 'ALL' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSelectedPipelineStage('ALL');
+                    setDealsPage(1);
+                    setStoreGroupPage(1);
+                  }}
+                >
+                  Xem cả 5 bước
+                </Button>
+              )}
+              <Segmented
+                value={pipelineViewMode}
+                onChange={(v) => setPipelineViewMode(v as 'BY_STORE' | 'KANBAN' | 'TABLE')}
+                items={[
+                  { key: 'BY_STORE', label: `Theo Gian hàng (${storePipelineGroups.length})` },
+                  { key: 'KANBAN', label: 'Bảng cột 5 bước' },
+                  { key: 'TABLE', label: `Bảng chi tiết (${filteredDeals.length})` },
+                ]}
+              />
+            </div>
+          }
+        >
+          <div className="px-4 py-3 border-b border-line">
+            <FilterBar
+              search={{
+                value: dealsSearch,
+                onChange: (v) => {
+                  setDealsSearch(v);
+                  setDealsPage(1);
+                  setStoreGroupPage(1);
+                },
+                placeholder: 'Tìm tên gian hàng, mã deal, KOC, sản phẩm, chiến dịch',
+              }}
+              filters={
+                <>
+                  <Select
+                    value={dealPeriodScope}
+                    onChange={e => {
+                      setDealPeriodScope(e.target.value as 'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE');
+                      setDealsPage(1);
+                      setStoreGroupPage(1);
+                    }}
+                    className="w-auto min-w-[210px]"
+                    aria-label="Phạm vi kỳ & loại deal"
+                  >
+                    <option value="CURRENT_PAID">Kỳ hiện tại · Có phí (2026/10)</option>
+                    <option value="ALL_PAID">Lịch sử HĐ có phí (Tất cả kỳ)</option>
+                    <option value="FOC_ONLY">Đơn gửi mẫu FOC (0đ)</option>
+                    <option value="ALL_ARCHIVE">Toàn bộ lịch sử ({formatNumber(deals.length)} deal)</option>
+                  </Select>
+                  <Select
+                    value={selectedDealPicFilter}
+                    onChange={e => {
+                      setSelectedDealPicFilter(e.target.value);
+                      setDealsPage(1);
+                      setStoreGroupPage(1);
+                    }}
+                    className="w-auto min-w-[170px]"
+                    aria-label="Lọc theo PIC phụ trách"
+                  >
+                    <option value="ALL">Mọi chuyên viên PIC</option>
+                    <option value="SELECTED_STAFF">Của {selectedStaffName}</option>
+                  </Select>
+                  <Select
+                    value={selectedBrandFilter}
+                    onChange={e => {
+                      setSelectedBrandFilter(e.target.value);
+                      setDealsPage(1);
+                      setStoreGroupPage(1);
+                    }}
+                    className="w-auto min-w-[180px]"
+                    aria-label="Lọc theo gian hàng"
+                  >
+                    {brandsList.map(b => (
+                      <option key={b.key} value={b.key}>
+                        {b.key === 'ALL' ? 'Mọi gian hàng' : b.label}
+                      </option>
+                    ))}
+                  </Select>
+                </>
+              }
+              resultCount={filteredDeals.length}
+              chips={
+                <Chips
+                  value={dealsFilter}
+                  onChange={(v) => {
+                    setDealsFilter(v);
+                    setDealsPage(1);
+                    setStoreGroupPage(1);
+                  }}
+                  items={[
+                    { key: 'ALL', label: 'Tất cả', count: dealFilterCounts.all },
+                    { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: dealFilterCounts.brandPending },
+                    { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: dealFilterCounts.brandApproved },
+                    { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
+                    { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
+                    { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
+                    { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
+                    { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
+                  ]}
+                />
+              }
+            />
+          </div>
+
+          {/* CHẾ ĐỘ 1: HIỂN THỊ PIPELINE GOM THEO KẾ HOẠCH TỪNG GIAN HÀNG */}
+          {pipelineViewMode === 'BY_STORE' && (
+            <div className="divide-y divide-line">
+              {pagedStoreGroups.length === 0 ? (
+                <div className="p-8">
+                  <EmptyState title="Không có gian hàng hoặc booking phù hợp bộ lọc" />
+                </div>
+              ) : (
+                pagedStoreGroups.map((group) => {
+                  const isCollapsed = Boolean(collapsedStores[group.storeKey]);
+                  const isOverbudget = group.planBudgetNet > 0 && group.totalCost > group.planBudgetNet;
+                  const isUnbudgeted = group.planBudgetNet === 0 && group.totalCost > 0;
+                  const targetVideos = dealPeriodScope === 'FOC_ONLY' ? group.planFocVideos : group.planPaidVideos;
+                  const actualVideos = dealPeriodScope === 'FOC_ONLY' ? group.focDealsCount : group.paidDealsCount;
+                  const previewDeals = group.deals.slice(0, 8);
+
+                  return (
+                    <div key={group.storeKey} className="bg-surface">
+                      {/* Thanh tiêu đề Kế hoạch Gian hàng & Tiến độ 5 bước */}
+                      <div className="px-4 py-3 bg-sunken/40 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCollapsedStores(prev => ({
+                                ...prev,
+                                [group.storeKey]: !prev[group.storeKey],
+                              }))
+                            }
+                            className="p-1 rounded hover:bg-line text-ink-2"
+                            aria-label="Thu gọn hoặc mở rộng gian hàng"
+                          >
+                            {isCollapsed ? (
+                              <ChevronRight className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm text-ink">
+                                {group.storeName}
+                              </span>
+                              <Status tone={group.platform.includes('TikTok') ? 'info' : 'neutral'}>
+                                {group.platform}
+                              </Status>
+                              {isUnbudgeted ? (
+                                <Status tone="critical">Phát sinh chi chưa có hạn mức Net (0đ)</Status>
+                              ) : isOverbudget ? (
+                                <Status tone="critical">
+                                  Vượt trần Net +{formatVndShort(group.totalCost - group.planBudgetNet)}
+                                </Status>
+                              ) : group.planBudgetNet > 0 ? (
+                                <Status tone="positive">
+                                  Trong hạn mức Net (Còn {formatVndShort(Math.max(0, group.planBudgetNet - group.totalCost))})
+                                </Status>
+                              ) : (
+                                <Status tone="neutral">Đơn FOC / 0đ</Status>
+                              )}
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-2 flex-wrap">
+                              <span>
+                                Nhãn hàng: <strong className="text-ink-2">{group.brandName}</strong>
+                              </span>
+                              <span>·</span>
+                              <span>
+                                PIC: <strong className="text-ink-2">{group.primaryPic}</strong>
+                              </span>
+                              <span>·</span>
+                              <span>
+                                {group.hasBookingLeader && group.bookingLeader
+                                  ? `Leader: ${group.bookingLeader}`
+                                  : 'Không có leader (Trình trực tiếp GĐ Marketing)'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Chỉ số Lấp đầy Kế hoạch Gian hàng & Phễu 5 bước của riêng Gian hàng */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            {PIPELINE_STAGES.map(st => {
+                              const c = group.stageCounts[st.key];
+                              return (
+                                <button
+                                  key={st.key}
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedPipelineStage(prev => (prev === st.key ? 'ALL' : st.key))
+                                  }
+                                  className={`px-2 py-1 rounded text-2xs font-medium border transition-colors ${
+                                    c > 0
+                                      ? 'border-line-strong bg-surface text-ink hover:border-accent'
+                                      : 'border-line bg-sunken/40 text-ink-3'
+                                  }`}
+                                  title={`${st.label}: ${c} job`}
+                                >
+                                  B{st.step}: <strong className="tabular-nums">{c}</strong>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="text-right text-xs leading-tight tabular-nums border-l border-line pl-3">
+                            <div>
+                              <span className="text-ink-3">Video: </span>
+                              <strong className="text-ink">
+                                {formatNumber(actualVideos)}
+                                {targetVideos > 0 ? `/${formatNumber(targetVideos)}` : ''}
+                              </strong>
+                              <span className="text-ink-3"> ({group.airedDealsCount} đã air)</span>
+                            </div>
+                            <div className="mt-0.5">
+                              <span className="text-ink-3">Chi Net: </span>
+                              <strong className={isOverbudget || isUnbudgeted ? 'text-critical font-mono' : 'text-ink font-mono'}>
+                                {formatVndShort(group.totalCost)}
+                              </strong>
+                              {group.planBudgetNet > 0 && (
+                                <span className="text-ink-3 font-mono"> / {formatVndShort(group.planBudgetNet)}</span>
+                              )}
+                              {group.totalGmv > 0 && (
+                                <span className="text-positive font-mono ml-2">
+                                  · GMV {formatVndShort(group.totalGmv)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Danh sách Deal thuộc Gian hàng */}
+                      {!isCollapsed && (
+                        <div>
+                          <DataTable
+                            rows={previewDeals}
+                            rowKey={d => d.id}
+                            stickyLast
+                            columns={dealColumns}
+                          />
+                          {group.deals.length > previewDeals.length && (
+                            <div className="px-4 py-2 bg-sunken/20 border-t border-line flex items-center justify-between text-xs text-ink-2">
+                              <span>
+                                Đang hiển thị {previewDeals.length} / {formatNumber(group.deals.length)} booking của gian hàng <strong>{group.storeName}</strong>
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedBrandFilter(group.brandName);
+                                  setPipelineViewMode('TABLE');
+                                  setDealsPage(1);
+                                }}
+                              >
+                                Xem toàn bộ {formatNumber(group.deals.length)} booking của {group.brandName}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+              {storePipelineGroups.length > storeGroupPageSize && (
+                <Pagination
+                  page={safeStoreGroupPage}
+                  pageSize={storeGroupPageSize}
+                  total={storePipelineGroups.length}
+                  onPageChange={setStoreGroupPage}
+                  onPageSizeChange={(n) => {
+                    setStoreGroupPageSize(n);
+                    setStoreGroupPage(1);
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {/* CHẾ ĐỘ 2: BẢNG CỘT KANBAN 5 BƯỚC PIPELINE */}
+          {pipelineViewMode === 'KANBAN' && (
+            <div className="p-4 overflow-x-auto">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1050px]">
+                {PIPELINE_STAGES.map((st) => {
+                  const stageDeals = filteredDeals.filter(d => resolveDealPipelineStage(d) === st.key);
+                  const visibleCards = stageDeals.slice(0, kanbanCardLimit);
+                  const stageTotalCost = stageDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
+
+                  return (
+                    <div
+                      key={st.key}
+                      className="rounded-xl border border-line bg-sunken/30 flex flex-col max-h-[680px]"
+                    >
+                      <div className="p-3 border-b border-line bg-surface rounded-t-xl flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-ink truncate">
+                            {st.shortLabel}
+                          </div>
+                          <div className="text-2xs text-ink-3">
+                            {st.team} · <span className="font-mono">{formatVndShort(stageTotalCost)}</span>
+                          </div>
+                        </div>
+                        <Status tone={st.tone}>{stageDeals.length}</Status>
+                      </div>
+
+                      <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1">
+                        {visibleCards.length === 0 ? (
+                          <div className="py-8 text-center text-xs text-ink-3">
+                            Không có job ở bước này
+                          </div>
+                        ) : (
+                          visibleCards.map((d) => (
+                            <div
+                              key={d.id}
+                              className="rounded-lg border border-line bg-surface p-2.5 space-y-2 shadow-2xs hover:border-line-strong transition-colors"
+                            >
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold text-ink truncate">
+                                    {d.kocStageName} <span className="text-2xs text-accent">({d.salaryGrade})</span>
+                                  </div>
+                                  <div className="text-2xs text-ink-3 truncate">
+                                    {d.storeName || d.brandName} · <span className="font-code">{d.dealCode}</span>
+                                  </div>
+                                </div>
+                                {d.isWinnerTop20 && (
+                                  <Status tone="warning">Top 20</Status>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between text-2xs text-ink-2 tabular-nums">
+                                <span>PIC: <strong>{d.bookingPic || d.assignedStaff}</strong></span>
+                                <span className="font-semibold font-mono text-ink">{formatVndShort(d.totalValue)}</span>
+                              </div>
+
+                              {(d.gmv30 || 0) > 0 && (
+                                <div className="flex items-center justify-between text-2xs px-2 py-1 rounded bg-sunken">
+                                  <span className="text-ink-2 font-mono">GMV: {formatVndShort(d.gmv30)}</span>
+                                  <span className={(d.roi || 0) >= 1 ? 'text-positive font-semibold' : 'text-ink-3'}>
+                                    ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}x
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="pt-1 border-t border-line flex items-center justify-between gap-1 flex-wrap">
+                                {st.key === '1_PLAN_SOURCING' && d.brandApprovalStatus === 'CHỜ_DUYỆT' ? (
+                                  <div className="flex items-center gap-1">
+                                    <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Hủy</Button>
+                                  </div>
+                                ) : st.nextStage ? (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={ArrowRight}
+                                    onClick={() => handleAdvanceDealStage(d, st.nextStage!)}
+                                  >
+                                    {st.nextActionLabel}
+                                  </Button>
+                                ) : (
+                                  <span className="text-2xs text-positive font-medium">Hoàn tất</span>
+                                )}
+
+                                <div className="flex items-center gap-1">
+                                  {st.key === '4_AIR_GROWTH' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      icon={Share2}
+                                      onClick={() => handleOpenGrowthHandoff(d)}
+                                      title="Bàn giao mã Ads"
+                                    />
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={Edit3}
+                                    onClick={() => handleOpenEditModal(d)}
+                                    title="Chỉnh sửa"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => onSelectDealForContract?.(d)}
+                                  >
+                                    HĐ
+                                  </Button>
+                                  {(d.totalValue || 0) > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => {
+                                        setPaymentRequestDeal(d);
+                                        setIsPaymentRequestOpen(true);
+                                      }}
+                                    >
+                                      ĐNTT
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+
+                        {stageDeals.length > visibleCards.length && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="w-full justify-center"
+                            onClick={() => setKanbanCardLimit(prev => prev + 15)}
+                          >
+                            Xem thêm ({stageDeals.length - visibleCards.length} job)
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CHẾ ĐỘ 3: BẢNG DỮ LIỆU CHI TIẾT */}
+          {pipelineViewMode === 'TABLE' && (
+            <>
+              <DataTable
+                rows={pagedDeals}
+                rowKey={d => d.id}
+                stickyLast
+                empty={<EmptyState title="Không có job phù hợp" />}
+                columns={dealColumns}
+              />
+              <Pagination
+                page={safeDealsPage}
+                pageSize={dealsPageSize}
+                total={filteredDeals.length}
+                onPageChange={setDealsPage}
+                onPageSizeChange={(n) => {
+                  setDealsPageSize(n);
+                  setDealsPage(1);
+                }}
+              />
+            </>
+          )}
+        </Panel>
+      </div>
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dealFilterCounts,
+    storePlanOverview,
+    dealPeriodScope,
+    dealsSearch,
+    deals.length,
+    selectedDealPicFilter,
+    selectedStaffName,
+    selectedBrandFilter,
+    brandsList,
+    filteredDeals,
+    dealsFilter,
+    pagedDeals,
+    safeDealsPage,
+    dealsPageSize,
+    pipelineViewMode,
+    selectedPipelineStage,
+    storePipelineGroups.length,
+    pagedStoreGroups,
+    safeStoreGroupPage,
+    storeGroupPageSize,
+    collapsedStores,
+    kanbanCardLimit,
+    candidates.length,
+    onSelectDealForContract,
+  ]);
+
+  const kocDirectorySubTabNode = useMemo(() => (
+    <Panel flush title="Danh bạ KOC">
+      <div className="px-4 py-3 border-b border-line">
+        <FilterBar
+          search={{ value: searchTerm, onChange: (v) => { setSearchTerm(v); setKocsPage(1); }, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}
+          resultCount={filteredKocs.length}
+          filters={
+            <>
+              <Select value={selectedKL} onChange={e => { setSelectedKL(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Khung lương">
+                {salaryGrades.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi khung lương' : o.label}</option>)}
+              </Select>
+              <Select value={selectedSegment} onChange={e => { setSelectedSegment(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Phân nhóm creator">
+                {creatorSegments.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi phân nhóm' : o.label}</option>)}
+              </Select>
+              <Select value={selectedKocCategory} onChange={e => { setSelectedKocCategory(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Ngành hàng">
+                {kocCategories.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi ngành hàng' : o.label}</option>)}
+              </Select>
+              <Select value={selectedTepKenh} onChange={e => { setSelectedTepKenh(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Tệp kênh">
+                {tepKenhList.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi tệp kênh' : o.label}</option>)}
+              </Select>
+            </>
+          }
+        />
+      </div>
+      <DataTable
+        rows={pagedKocs}
+        rowKey={k => k.id}
+        stickyLast
+        onRowClick={k => setInspectedKoc(k)}
+        empty={<EmptyState title="Không tìm thấy KOC" action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
+        columns={[
+          {
+            key: 'koc_grade', header: 'KOC & Khung lương', width: 250, render: k => (
+              <div className="flex items-start gap-2.5">
+                <Avatar name={k.stageName} size={28} />
+                <div className="leading-tight min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-medium text-ink">{k.stageName}</span>
+                    {k.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Winner</span>}
+                    <span className="text-2xs font-semibold text-accent">({k.salaryGrade})</span>
+                  </div>
+                  <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
+                  <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'} · {k.location || 'Hà Nội'}</div>
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: 'audience', header: 'Tệp kênh & Khán giả', width: 200, render: k => (
+              <div className="leading-tight">
+                <div className="font-medium text-ink">{k.tepKenh || k.creatorCategory || 'Review Nữ'}</div>
+                <div className="text-2xs text-ink-3 mt-0.5">{k.kocCategory || 'Personal care'} · nữ {k.femaleRatio ?? 85}%</div>
+                <div className="text-2xs text-ink-2 mt-0.5 tabular-nums font-medium">{formatNumber(k.followers)} follower</div>
+              </div>
+            ),
+          },
+          {
+            key: 'rate_history', header: 'Báo giá & Lịch sử hiệu quả', align: 'right', width: 170, render: k => (
+              <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+                <span className="font-semibold text-ink">{formatVnd(k.rateCardVideo)}</span>
+                <span className="text-2xs text-ink-3">GMV: {formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
+                <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
+              </div>
+            ),
+          },
+          {
+            key: 'pic', header: 'Phụ trách', width: 130, render: k => (
+              <div className="leading-tight">
+                <Person name={k.bookingPic || 'Khánh Vy'} size={20} />
+                <div className="text-2xs text-ink-3 mt-0.5">{k.statusKoc || 'Sẵn sàng'}</div>
+              </div>
+            ),
+          },
+          {
+            key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: k => (
+              <div onClick={e => e.stopPropagation()}>
+                <Button size="sm" onClick={() => onOpenQuickBookWithKoc(k)}>Tạo booking</Button>
+              </div>
+            ),
+          },
+        ]}
+      />
+      <Pagination
+        page={safeKocsPage}
+        pageSize={kocsPageSize}
+        total={filteredKocs.length}
+        onPageChange={setKocsPage}
+        onPageSizeChange={(n) => { setKocsPageSize(n); setKocsPage(1); }}
+      />
+    </Panel>
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [
+    searchTerm,
+    filteredKocs.length,
+    selectedKL,
+    selectedSegment,
+    selectedKocCategory,
+    selectedTepKenh,
+    pagedKocs,
+    safeKocsPage,
+    kocsPageSize,
+    onOpenQuickBookWithKoc,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -668,9 +1988,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
-          { key: 'MY_PLAN', label: 'Kế hoạch của tôi' },
+          { key: 'BOOKING_DEALS', label: 'Pipeline Booking', count: dealFilterCounts.all },
+          { key: 'MY_PLAN', label: 'Kế hoạch cá nhân' },
           { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
-          { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: dealFilterCounts.all },
           { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
         ]}
         actions={
@@ -710,528 +2030,170 @@ export const BookingView: React.FC<BookingViewProps> = ({
       {/* ========================================================================= */}
       {/* SUB-TAB 0: MY DETAILED PLAN WORKSPACE (NHÂN VIÊN LẬP VÀ TRIỂN KHAI PLAN) */}
       {/* ========================================================================= */}
-      {activeSubTab === 'MY_PLAN' && (
-        <MyPlanWorkspace
-          currentStaffName={selectedStaffName}
-          allocation={(externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).find(a => a.staffName.includes(selectedStaffName)) || (externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26)[0]}
-          planItems={localPlanItems}
-          kocs={localKocs}
-          onAddPlanItem={(newItem) => {
-            const created = {
-              ...newItem,
-              id: `plan-item-${Date.now()}`,
-              updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-            };
-            setLocalPlanItems(prev => [created, ...prev]);
-            if (externalOnAddPlanItem) externalOnAddPlanItem(created);
-          }}
-          onUpdatePlanItem={(updated) => {
-            setLocalPlanItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-            if (externalOnUpdatePlanItem) externalOnUpdatePlanItem(updated);
-          }}
-          onDeletePlanItem={(itemId) => {
-            setLocalPlanItems(prev => prev.filter(i => i.id !== itemId));
-            if (externalOnDeletePlanItem) externalOnDeletePlanItem(itemId);
-          }}
-          onSubmitPlanToLead={(sName) => {
-            setLocalPlanItems(prev => prev.map(i => i.staffName === sName && i.status === 'DRAFT' ? {
-              ...i,
-              status: 'SUBMITTED',
-              leadNotes: 'Đã gửi trình duyệt lên Trưởng phòng'
-            } : i));
-            if (externalOnSubmitPlanToLead) externalOnSubmitPlanToLead(sName);
-          }}
-          onConvertItemToDeal={(item) => {
-            const newCode = `BO26_${Date.now().toString().slice(-6)}`;
-            const updated = { ...item, status: 'CONVERTED' as const, dealCode: newCode };
-            setLocalPlanItems(prev => prev.map(i => i.id === item.id ? updated : i));
-            if (onConvertPlanItemToDeal) onConvertPlanItemToDeal(updated);
-          }}
-        />
+      {visitedSubTabs.MY_PLAN && (
+        <div className={activeSubTab === 'MY_PLAN' ? 'block' : 'hidden'}>
+          <MyPlanWorkspace
+            currentStaffName={selectedStaffName}
+            allocation={(externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).find(a => a.staffName.includes(selectedStaffName)) || (externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26)[0]}
+            planItems={localPlanItems}
+            kocs={localKocs}
+            onAddPlanItem={(newItem) => {
+              const created = {
+                ...newItem,
+                id: `plan-item-${Date.now()}`,
+                updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+              };
+              setLocalPlanItems(prev => [created, ...prev]);
+              if (externalOnAddPlanItem) externalOnAddPlanItem(created);
+            }}
+            onUpdatePlanItem={(updated) => {
+              setLocalPlanItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+              if (externalOnUpdatePlanItem) externalOnUpdatePlanItem(updated);
+            }}
+            onDeletePlanItem={(itemId) => {
+              setLocalPlanItems(prev => prev.filter(i => i.id !== itemId));
+              if (externalOnDeletePlanItem) externalOnDeletePlanItem(itemId);
+            }}
+            onSubmitPlanToLead={(sName) => {
+              setLocalPlanItems(prev => prev.map(i => i.staffName === sName && i.status === 'DRAFT' ? {
+                ...i,
+                status: 'SUBMITTED',
+                leadNotes: 'Đã gửi trình duyệt lên Trưởng phòng'
+              } : i));
+              if (externalOnSubmitPlanToLead) externalOnSubmitPlanToLead(sName);
+            }}
+            onConvertItemToDeal={(item) => {
+              const newCode = `BO26_${Date.now().toString().slice(-6)}`;
+              const updated = { ...item, status: 'CONVERTED' as const, dealCode: newCode };
+              setLocalPlanItems(prev => prev.map(i => i.id === item.id ? updated : i));
+              if (onConvertPlanItemToDeal) onConvertPlanItemToDeal(updated);
+            }}
+          />
+        </div>
       )}
 
       {/* ========================================================================= */}
       {/* TAB: SÀNG LỌC KOC                                                          */}
       {/* ========================================================================= */}
-      {activeSubTab === 'CANDIDATES' && (() => {
-        const converted = candidates.filter(c => c.outreachStatus === 'CONVERTED_TO_BOOKING').length;
-        const inProgress = candidates.filter(c => c.outreachStatus === 'PITCHED' || c.outreachStatus === 'CONTACTED').length;
-        const rejected = candidates.filter(c => c.outreachStatus === 'REJECTED').length;
-        const rows = candidates.filter(c => candidateFilter === 'ALL' || c.outreachStatus === candidateFilter);
-        const OUTREACH: Record<string, { label: string; tone: StatusTone }> = {
-          CONTACTED: { label: 'Đã nhắn', tone: 'neutral' },
-          PITCHED: { label: 'Đang chào giá', tone: 'warning' },
-          CONVERTED_TO_BOOKING: { label: 'Đã ký booking', tone: 'positive' },
-          REJECTED: { label: 'Từ chối', tone: 'critical' },
-        };
-        return (
-          <div className="space-y-4">
-            <StatRow>
-              <Stat label="Ứng viên" value={candidates.length} />
-              <Stat label="Đã ký booking" value={`${converted}/${candidates.length}`} progress={{ value: converted, max: candidates.length || 1, target: 0.3 }} note={`Tỷ lệ chốt ${formatPercent(converted / (candidates.length || 1), 0)}`} />
-              <Stat label="Đang trao đổi" value={inProgress} />
-              <Stat label="Từ chối" value={rejected} tone={rejected > 0 ? 'warning' : undefined} />
-            </StatRow>
+      {visitedSubTabs.CANDIDATES && (
+        <div className={activeSubTab === 'CANDIDATES' ? 'block' : 'hidden'}>
+          {(() => {
+            const converted = candidates.filter(c => c.outreachStatus === 'CONVERTED_TO_BOOKING').length;
+            const inProgress = candidates.filter(c => c.outreachStatus === 'PITCHED' || c.outreachStatus === 'CONTACTED').length;
+            const rejected = candidates.filter(c => c.outreachStatus === 'REJECTED').length;
+            const rows = candidates.filter(c => candidateFilter === 'ALL' || c.outreachStatus === candidateFilter);
+            const OUTREACH: Record<string, { label: string; tone: StatusTone }> = {
+              CONTACTED: { label: 'Đã nhắn', tone: 'neutral' },
+              PITCHED: { label: 'Đang chào giá', tone: 'warning' },
+              CONVERTED_TO_BOOKING: { label: 'Đã ký booking', tone: 'positive' },
+              REJECTED: { label: 'Từ chối', tone: 'critical' },
+            };
+            return (
+              <div className="space-y-4">
+                <StatRow>
+                  <Stat label="Ứng viên" value={candidates.length} />
+                  <Stat label="Đã ký booking" value={`${converted}/${candidates.length}`} progress={{ value: converted, max: candidates.length || 1, target: 0.3 }} note={`Tỷ lệ chốt ${formatPercent(converted / (candidates.length || 1), 0)}`} />
+                  <Stat label="Đang trao đổi" value={inProgress} />
+                  <Stat label="Từ chối" value={rejected} tone={rejected > 0 ? 'warning' : undefined} />
+                </StatRow>
 
-            <Panel flush title="Ứng viên KOC">
-              <div className="px-4 py-3 border-b border-line">
-                <Chips
-                  value={candidateFilter}
-                  onChange={setCandidateFilter}
-                  items={[
-                    { key: 'ALL', label: 'Tất cả', count: candidates.length },
-                    { key: 'CONTACTED', label: 'Đã nhắn', count: candidates.filter(c => c.outreachStatus === 'CONTACTED').length },
-                    { key: 'PITCHED', label: 'Đang chào giá', count: candidates.filter(c => c.outreachStatus === 'PITCHED').length },
-                    { key: 'CONVERTED_TO_BOOKING', label: 'Đã ký', count: converted },
-                    { key: 'REJECTED', label: 'Từ chối', count: rejected },
-                  ]}
-                />
-              </div>
-              <DataTable
-                rows={rows}
-                rowKey={c => c.id}
-                stickyLast
-                empty={<EmptyState title="Không có ứng viên ở trạng thái này" />}
-                columns={[
-                  {
-                    key: 'koc', header: 'KOC & Kênh', width: 240, render: c => (
-                      <div className="leading-tight">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-medium text-ink">{c.stageName}</span>
-                          <span className="text-2xs font-semibold text-accent">· {c.tierLabel}</span>
-                          <span className="text-2xs text-ink-3 font-code">({c.candidateCode})</span>
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                          <a href={c.channelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 hover:text-accent">
-                            {c.channelId}<ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                          <span>•</span>
-                          <span className="tabular-nums">{formatNumber(c.followers)} flw · {formatNumber(c.avgViews)} view</span>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'brand', header: 'Nhãn hàng & Đợt', width: 180, render: c => (
-                      <div className="leading-tight">
-                        <div className="font-medium text-ink">{c.brandName}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5">
-                          {c.storeName || 'Mọi gian hàng'} · <span className="font-medium text-ink-2">{c.pitchBatch || 'Đợt 1'}</span>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  { key: 'price', header: 'Giá đề xuất', align: 'right', width: 110, render: c => <span className="tabular-nums font-semibold text-ink">{formatVndShort(c.rateCardExpected)}</span> },
-                  {
-                    key: 'pic_status', header: 'Phụ trách & Trạng thái', width: 190, render: c => {
-                      const st = OUTREACH[c.outreachStatus] || { label: c.outreachStatus, tone: 'neutral' as StatusTone };
-                      return (
-                        <div className="grid gap-1 justify-items-start leading-tight">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Status tone={st.tone}>{st.label}</Status>
-                            <span className="text-2xs text-ink-2 font-medium">· {c.assignedPic}</span>
+                <Panel flush title="Ứng viên KOC">
+                  <div className="px-4 py-3 border-b border-line">
+                    <Chips
+                      value={candidateFilter}
+                      onChange={setCandidateFilter}
+                      items={[
+                        { key: 'ALL', label: 'Tất cả', count: candidates.length },
+                        { key: 'CONTACTED', label: 'Đã nhắn', count: candidates.filter(c => c.outreachStatus === 'CONTACTED').length },
+                        { key: 'PITCHED', label: 'Đang chào giá', count: candidates.filter(c => c.outreachStatus === 'PITCHED').length },
+                        { key: 'CONVERTED_TO_BOOKING', label: 'Đã ký', count: converted },
+                        { key: 'REJECTED', label: 'Từ chối', count: rejected },
+                      ]}
+                    />
+                  </div>
+                  <DataTable
+                    rows={rows}
+                    rowKey={c => c.id}
+                    stickyLast
+                    empty={<EmptyState title="Không có ứng viên ở trạng thái này" />}
+                    columns={[
+                      {
+                        key: 'koc', header: 'KOC & Kênh', width: 240, render: c => (
+                          <div className="leading-tight">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-medium text-ink">{c.stageName}</span>
+                              <span className="text-2xs font-semibold text-accent">· {c.tierLabel}</span>
+                              <span className="text-2xs text-ink-3 font-code">({c.candidateCode})</span>
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              <a href={c.channelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 hover:text-accent">
+                                {c.channelId}<ExternalLink className="w-2.5 h-2.5" />
+                              </a>
+                              <span>•</span>
+                              <span className="tabular-nums">{formatNumber(c.followers)} flw · {formatNumber(c.avgViews)} view</span>
+                            </div>
                           </div>
-                          {c.outreachStatus === 'CONVERTED_TO_BOOKING' && c.convertedBookingId && <span className="text-2xs text-ink-3 font-code">{c.convertedBookingId}</span>}
-                          {c.outreachStatus === 'REJECTED' && c.rejectionReason && <span className="text-2xs text-ink-3 max-w-[180px] whitespace-normal">{c.rejectionReason}</span>}
-                        </div>
-                      );
-                    },
-                  },
-                  {
-                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: c =>
-                      c.outreachStatus !== 'CONVERTED_TO_BOOKING' && c.outreachStatus !== 'REJECTED' ? (
-                        <Button size="sm" onClick={() => setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: `BO26_${Date.now().toString().slice(-6)}` } : x))}>
-                          Chốt booking
-                        </Button>
-                      ) : null,
-                  },
-                ]}
-              />
-            </Panel>
-          </div>
-        );
-      })()}
+                        ),
+                      },
+                      {
+                        key: 'brand', header: 'Nhãn hàng & Đợt', width: 180, render: c => (
+                          <div className="leading-tight">
+                            <div className="font-medium text-ink">{c.brandName}</div>
+                            <div className="text-2xs text-ink-3 mt-0.5">
+                              {c.storeName || 'Mọi gian hàng'} · <span className="font-medium text-ink-2">{c.pitchBatch || 'Đợt 1'}</span>
+                            </div>
+                          </div>
+                        ),
+                      },
+                      { key: 'price', header: 'Giá đề xuất', align: 'right', width: 110, render: c => <span className="tabular-nums font-semibold text-ink">{formatVndShort(c.rateCardExpected)}</span> },
+                      {
+                        key: 'pic_status', header: 'Phụ trách & Trạng thái', width: 190, render: c => {
+                          const st = OUTREACH[c.outreachStatus] || { label: c.outreachStatus, tone: 'neutral' as StatusTone };
+                          return (
+                            <div className="grid gap-1 justify-items-start leading-tight">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Status tone={st.tone}>{st.label}</Status>
+                                <span className="text-2xs text-ink-2 font-medium">· {c.assignedPic}</span>
+                              </div>
+                              {c.outreachStatus === 'CONVERTED_TO_BOOKING' && c.convertedBookingId && <span className="text-2xs text-ink-3 font-code">{c.convertedBookingId}</span>}
+                              {c.outreachStatus === 'REJECTED' && c.rejectionReason && <span className="text-2xs text-ink-3 max-w-[180px] whitespace-normal">{c.rejectionReason}</span>}
+                            </div>
+                          );
+                        },
+                      },
+                      {
+                        key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: c =>
+                          c.outreachStatus !== 'CONVERTED_TO_BOOKING' && c.outreachStatus !== 'REJECTED' ? (
+                            <Button size="sm" onClick={() => setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: `BO26_${Date.now().toString().slice(-6)}` } : x))}>
+                              Chốt booking
+                            </Button>
+                          ) : null,
+                      },
+                    ]}
+                  />
+                </Panel>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB: HỢP ĐỒNG & TẠM ỨNG (TỪNG JOB BOOKING)                                 */}
       {/* ========================================================================= */}
-      {activeSubTab === 'BOOKING_DEALS' && (() => {
-        const STAGE: Record<string, { label: string; tone: StatusTone }> = {
-          '1_PLAN_SOURCING': { label: '1. Kế hoạch & tìm KOC', tone: 'neutral' },
-          '2_DEAL_CONTRACT': { label: '2. Hợp đồng & cọc', tone: 'info' },
-          '3_CONTENT_SCRIPT': { label: '3. Kịch bản & mẫu', tone: 'info' },
-          '4_AIR_GROWTH': { label: '4. Lên sóng & bàn giao', tone: 'warning' },
-          '5_SETTLEMENT': { label: '5. Quyết toán', tone: 'positive' },
-        };
-        const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
-        const totalDealsInScope = dealFilterCounts.all;
-        const top20SharePct = dealFilterCounts.totalGmv > 0
-          ? ((dealFilterCounts.top20Gmv / dealFilterCounts.totalGmv) * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
-          : '0';
-        return (
-          <div className="space-y-4">
-            <StatRow>
-              <Stat
-                label={dealPeriodScope === 'FOC_ONLY' ? 'Đơn gửi mẫu FOC (0đ)' : 'Video booking có phí'}
-                value={formatNumber(dealPeriodScope === 'FOC_ONLY' ? totalDealsInScope : dealFilterCounts.paidCount)}
-              />
-              <Stat
-                label="Ngân sách đã giải ngân"
-                value={formatVndShort(dealFilterCounts.totalCost)}
-              />
-              <Stat
-                label="Video có doanh thu"
-                value={`${formatNumber(dealFilterCounts.hasGmv)}/${formatNumber(totalDealsInScope)}`}
-                progress={{ value: dealFilterCounts.hasGmv, max: Math.max(1, totalDealsInScope), target: 0.5 }}
-              />
-              <Stat
-                label="Video hoàn vốn"
-                value={`${formatNumber(dealFilterCounts.breakEven)}/${formatNumber(totalDealsInScope)}`}
-                progress={{ value: dealFilterCounts.breakEven, max: Math.max(1, totalDealsInScope), target: 0.3 }}
-                tone="warning"
-              />
-            </StatRow>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-accent-soft">
-              <p className="text-[13px] text-ink-2 min-w-0">
-                <strong className="font-semibold text-ink">
-                  Nhóm Top video đóng góp {top20SharePct}% GMV ({formatVndShort(dealFilterCounts.top20Gmv)} / {formatVndShort(dealFilterCounts.totalGmv)}).
-                </strong>{' '}
-                Ưu tiên tái ký các deal có ROI từ 1 trở lên.
-              </p>
-              <Button size="sm" onClick={() => { setDealsFilter('WINNER_TOP20'); setDealsPage(1); }}>Xem nhóm Top ({dealFilterCounts.winnerTop20})</Button>
-            </div>
-
-            <Panel flush title="Job booking">
-              <div className="px-4 py-3 border-b border-line">
-                <FilterBar
-                  search={{ value: dealsSearch, onChange: (v) => { setDealsSearch(v); setDealsPage(1); }, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
-                  filters={
-                    <>
-                      <Select
-                        value={dealPeriodScope}
-                        onChange={e => { setDealPeriodScope(e.target.value as 'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE'); setDealsPage(1); }}
-                        className="w-auto min-w-[210px]"
-                        aria-label="Phạm vi kỳ & loại deal"
-                      >
-                        <option value="CURRENT_PAID">Kỳ hiện tại · Có phí (2026/10)</option>
-                        <option value="ALL_PAID">Lịch sử HĐ có phí (Tất cả kỳ)</option>
-                        <option value="FOC_ONLY">Đơn gửi mẫu FOC (0đ)</option>
-                        <option value="ALL_ARCHIVE">Toàn bộ lịch sử ({formatNumber(deals.length)} deal)</option>
-                      </Select>
-                      <Select
-                        value={selectedDealPicFilter}
-                        onChange={e => { setSelectedDealPicFilter(e.target.value); setDealsPage(1); }}
-                        className="w-auto min-w-[170px]"
-                        aria-label="Lọc theo PIC phụ trách"
-                      >
-                        <option value="ALL">Mọi chuyên viên PIC</option>
-                        <option value="SELECTED_STAFF">Của {selectedStaffName}</option>
-                      </Select>
-                      <Select value={selectedBrandFilter} onChange={e => { setSelectedBrandFilter(e.target.value); setDealsPage(1); }} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
-                        {brandsList.map(b => <option key={b.key} value={b.key}>{b.key === 'ALL' ? 'Mọi gian hàng' : b.label}</option>)}
-                      </Select>
-                    </>
-                  }
-                  resultCount={filteredDeals.length}
-                  chips={
-                    <Chips
-                      value={dealsFilter}
-                      onChange={(v) => { setDealsFilter(v); setDealsPage(1); }}
-                      items={[
-                        { key: 'ALL', label: 'Tất cả', count: dealFilterCounts.all },
-                        { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: dealFilterCounts.brandPending },
-                        { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: dealFilterCounts.brandApproved },
-                        { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
-                        { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
-                        { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
-                        { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
-                        { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
-                      ]}
-                    />
-                  }
-                />
-              </div>
-              <DataTable
-                rows={pagedDeals}
-                rowKey={d => d.id}
-                stickyLast
-                empty={<EmptyState title="Không có job phù hợp" />}
-                columns={[
-                  {
-                    key: 'job_koc', header: 'Job & KOC', width: 280, render: d => (
-                      <div className="leading-tight">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-code text-2xs text-ink-3 font-semibold">{d.dealCode}</span>
-                          {d.dealType === 'SERVICE_ONLY' && (
-                            <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning text-2xs font-semibold">
-                              Mua thêm dịch vụ{d.sourceDealCode ? ` ← ${d.sourceDealCode}` : ''}
-                            </span>
-                          )}
-                          {d.dealType === 'MULTI_PLATFORM_CONTENT' && (
-                            <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold">
-                              Đa kênh ({d.deliverables?.length || 1} hạng mục)
-                            </span>
-                          )}
-                          {d.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Top 20</span>}
-                          <span className="font-medium text-ink">· {d.kocStageName}</span>
-                          <span className="text-2xs font-semibold text-accent">({d.salaryGrade})</span>
-                        </div>
-                        <div className="text-2xs text-ink-2 mt-0.5 flex items-center gap-1 flex-wrap">
-                          <span className="font-medium text-ink">{d.brandName || 'Upbase'}</span>
-                          <span>·</span>
-                          <span className="truncate max-w-[160px]">{d.productName || 'Sản phẩm booking'}</span>
-                          {d.bookingBatch && <span>({d.bookingBatch})</span>}
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-2 flex-wrap">
-                          <span>Kênh: {d.kocChannelId}</span>
-                          <span>•</span>
-                          <span>PIC: {d.bookingPic || d.assignedStaff}</span>
-                          {d.contractAppendixCode && (
-                            <>
-                              <span>•</span>
-                              <span className="font-code text-ink-2">{d.contractAppendixCode}</span>
-                            </>
-                          )}
-                        </div>
-                        {d.deliverables && d.deliverables.length > 0 && (
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {d.deliverables.map(item => (
-                              <span
-                                key={item.id}
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-medium border ${
-                                  item.lockStatus === 'VERIFIED'
-                                    ? 'bg-positive-soft border-positive/30 text-positive'
-                                    : item.lockStatus === 'LOCKED_BY_WAVE_0'
-                                    ? 'bg-sunken border-line text-ink-3'
-                                    : item.lockStatus === 'DROPPED'
-                                    ? 'bg-critical-soft border-critical/30 text-critical line-through'
-                                    : 'bg-surface border-line-strong text-ink-2'
-                                }`}
-                                title={`Wave ${item.wave}: ${item.title} · Kênh đăng ${item.mediaChannel} → Giỏ ${item.affiliateChannel} · PIC: ${item.assignedChannelPic}`}
-                              >
-                                <span className="font-code font-semibold">W{item.wave}</span>
-                                <span>{item.mediaChannel}</span>
-                                {item.affiliateChannel !== 'Không gắn giỏ' && (
-                                  <span className="text-ink-3">→{item.affiliateChannel}</span>
-                                )}
-                                <span className="text-2xs opacity-80">({item.assignedChannelPic.split(' ').slice(-2).join(' ')})</span>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'lifecycle', header: 'Tiến trình & Trách nhiệm', width: 230, render: d => {
-                      const st = STAGE[d.currentStage || '1_PLAN_SOURCING'];
-                      return (
-                        <div className="grid gap-1 justify-items-start leading-tight">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {d.brandApprovalStatus === 'ĐÃ_DUYỆT' ? (
-                              <Status tone="positive">Brand duyệt</Status>
-                            ) : d.brandApprovalStatus === 'TỪ_CHỐI' ? (
-                              <Status tone="critical">Brand từ chối</Status>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <Status tone="warning">Chờ duyệt</Status>
-                                <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
-                                <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Hủy</Button>
-                              </div>
-                            )}
-                            <span className="text-2xs text-ink-3 font-medium">· {st.label}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-2xs flex-wrap">
-                            <span className="font-medium text-ink">Đang ở: {TEAM[d.holdingTeam || 'BOOKING']}</span>
-                            <span className={d.isSlaWarning ? 'text-warning font-medium' : 'text-ink-3'}>({d.slaRemainingText || 'Trong hạn'})</span>
-                          </div>
-                          {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <span className="text-2xs text-warning font-medium">Brand quá {d.brandOrientationPendingDays} ngày</span> : null}
-                          {d.isLocked7WorkingDays && <span className="text-2xs text-critical font-medium">Quá 7 ngày</span>}
-                          {d.isDnttOverdue10Am && <span className="text-2xs text-critical font-medium">Trễ ĐNTT</span>}
-                        </div>
-                      );
-                    },
-                  },
-                  {
-                    key: 'delivery', header: 'Nghiệm thu kỹ thuật', width: 150, render: d => (
-                      <div className="grid gap-0.5 text-2xs leading-tight">
-                        <div className="flex items-center gap-1">
-                          <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive font-medium' : 'text-ink-2'}>
-                            {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {d.tiktokVideoUrl || d.videoUrl ? (
-                            <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:underline font-medium">
-                              Xem video<ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          ) : (
-                            <span className="text-ink-3 italic">Chưa có video</span>
-                          )}
-                        </div>
-                        <div className="text-ink-2 truncate max-w-[140px]">
-                          {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3 italic">Chưa mã Ads</span>}
-                        </div>
-                        {d.rightsTerms && d.rightsTerms.length > 0 && (
-                          <div className="text-2xs text-ink-3 truncate max-w-[140px]">
-                            Bản quyền: {d.rightsTerms.length} quyền ({d.rightsTerms[0].scopeType})
-                          </div>
-                        )}
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 135, render: d => (
-                      <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-                        <span className="text-ink font-semibold">{formatVndShort(d.totalValue)}</span>
-                        {d.pricingDisplayMode && (
-                          <span className="text-2xs text-ink-3">
-                            {d.pricingDisplayMode === 'PACKAGE_TOTAL' ? 'Gói trọn cục' : 'Tách lẻ SOW'}
-                          </span>
-                        )}
-                        {(d.larkFinalApprovalCode || d.larkAdvanceApprovalCode) && (
-                          <span className="text-2xs font-code text-positive font-semibold">
-                            {d.larkFinalApprovalCode || d.larkAdvanceApprovalCode}
-                          </span>
-                        )}
-                        <span className="text-2xs text-ink-3">GMV {formatVndShort(d.gmv30)}</span>
-                        <span className={(d.roi || 0) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-ink-3'}>ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 150, render: d => (
-                      <div className="flex items-center justify-end gap-1">
-                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
-                          <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Air</Button>
-                        ) : null}
-                        <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth" />
-                        <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
-                        <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
-                        {(d.totalValue || 0) > 0 && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              setPaymentRequestDeal(d);
-                              setIsPaymentRequestOpen(true);
-                            }}
-                            title="Tạo phiếu đề nghị thanh toán / tạm ứng trên Lark"
-                          >
-                            ĐNTT
-                          </Button>
-                        )}
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-              <Pagination
-                page={safeDealsPage}
-                pageSize={dealsPageSize}
-                total={filteredDeals.length}
-                onPageChange={setDealsPage}
-                onPageSizeChange={(n) => { setDealsPageSize(n); setDealsPage(1); }}
-              />
-            </Panel>
-          </div>
-        );
-      })()}
+      {visitedSubTabs.BOOKING_DEALS && (
+        <div className={activeSubTab === 'BOOKING_DEALS' ? 'block' : 'hidden'}>
+          {bookingDealsSubTabNode}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB: DANH BẠ KOC                                                           */}
       {/* ========================================================================= */}
-      {activeSubTab === 'KOC_DIRECTORY' && (
-        <Panel flush title="Danh bạ KOC">
-          <div className="px-4 py-3 border-b border-line">
-            <FilterBar
-              search={{ value: searchTerm, onChange: (v) => { setSearchTerm(v); setKocsPage(1); }, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}
-              resultCount={filteredKocs.length}
-              filters={
-                <>
-                  <Select value={selectedKL} onChange={e => { setSelectedKL(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Khung lương">
-                    {salaryGrades.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi khung lương' : o.label}</option>)}
-                  </Select>
-                  <Select value={selectedSegment} onChange={e => { setSelectedSegment(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Phân nhóm creator">
-                    {creatorSegments.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi phân nhóm' : o.label}</option>)}
-                  </Select>
-                  <Select value={selectedKocCategory} onChange={e => { setSelectedKocCategory(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Ngành hàng">
-                    {kocCategories.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi ngành hàng' : o.label}</option>)}
-                  </Select>
-                  <Select value={selectedTepKenh} onChange={e => { setSelectedTepKenh(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Tệp kênh">
-                    {tepKenhList.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi tệp kênh' : o.label}</option>)}
-                  </Select>
-                </>
-              }
-            />
-          </div>
-          <DataTable
-            rows={pagedKocs}
-            rowKey={k => k.id}
-            stickyLast
-            onRowClick={k => setInspectedKoc(k)}
-            empty={<EmptyState title="Không tìm thấy KOC" action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
-            columns={[
-              {
-                key: 'koc_grade', header: 'KOC & Khung lương', width: 250, render: k => (
-                  <div className="flex items-start gap-2.5">
-                    <Avatar name={k.stageName} size={28} />
-                    <div className="leading-tight min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-medium text-ink">{k.stageName}</span>
-                        {k.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Winner</span>}
-                        <span className="text-2xs font-semibold text-accent">({k.salaryGrade})</span>
-                      </div>
-                      <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
-                      <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'} · {k.location || 'Hà Nội'}</div>
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                key: 'audience', header: 'Tệp kênh & Khán giả', width: 200, render: k => (
-                  <div className="leading-tight">
-                    <div className="font-medium text-ink">{k.tepKenh || k.creatorCategory || 'Review Nữ'}</div>
-                    <div className="text-2xs text-ink-3 mt-0.5">{k.kocCategory || 'Personal care'} · nữ {k.femaleRatio ?? 85}%</div>
-                    <div className="text-2xs text-ink-2 mt-0.5 tabular-nums font-medium">{formatNumber(k.followers)} follower</div>
-                  </div>
-                ),
-              },
-              {
-                key: 'rate_history', header: 'Báo giá & Lịch sử hiệu quả', align: 'right', width: 170, render: k => (
-                  <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-                    <span className="font-semibold text-ink">{formatVnd(k.rateCardVideo)}</span>
-                    <span className="text-2xs text-ink-3">GMV: {formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
-                    <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
-                  </div>
-                ),
-              },
-              {
-                key: 'pic', header: 'Phụ trách', width: 130, render: k => (
-                  <div className="leading-tight">
-                    <Person name={k.bookingPic || 'Khánh Vy'} size={20} />
-                    <div className="text-2xs text-ink-3 mt-0.5">{k.statusKoc || 'Sẵn sàng'}</div>
-                  </div>
-                ),
-              },
-              {
-                key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: k => (
-                  <div onClick={e => e.stopPropagation()}>
-                    <Button size="sm" onClick={() => onOpenQuickBookWithKoc(k)}>Tạo booking</Button>
-                  </div>
-                ),
-              },
-            ]}
-          />
-          <Pagination
-            page={safeKocsPage}
-            pageSize={kocsPageSize}
-            total={filteredKocs.length}
-            onPageChange={setKocsPage}
-            onPageSizeChange={(n) => { setKocsPageSize(n); setKocsPage(1); }}
-          />
-        </Panel>
+      {visitedSubTabs.KOC_DIRECTORY && (
+        <div className={activeSubTab === 'KOC_DIRECTORY' ? 'block' : 'hidden'}>
+          {kocDirectorySubTabNode}
+        </div>
       )}
 
       {/* ========================================================================= */}
@@ -1562,7 +2524,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
         confirmLabel="Cho phép tự air"
         onCancel={() => setAutoAirDeal(null)}
         onConfirm={() => {
-          if (autoAirDeal && onUpdateDeal) onUpdateDeal({ ...autoAirDeal, pipelineText: 'Tự air (Brand quá hạn)', holdingReason: 'Tự air theo SLA do Brand quá hạn duyệt' });
+          if (autoAirDeal) {
+            applyDealUpdate({
+              ...autoAirDeal,
+              currentStage: '4_AIR_GROWTH',
+              pipelineText: 'Tự air (Brand quá hạn)',
+              holdingReason: 'Tự air theo SLA do Brand quá hạn duyệt',
+            });
+          }
           setAutoAirDeal(null);
         }}
       />
@@ -1594,9 +2563,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
         initialUrl={inspectorInitialUrl}
         onAcceptVideoForDeal={(dealCode, inspection) => {
           const targetDeal = deals.find(d => d.dealCode === dealCode) || inspectorDeal;
-          if (targetDeal && onUpdateDeal) {
-            onUpdateDeal({
+          if (targetDeal) {
+            applyDealUpdate({
               ...targetDeal,
+              currentStage: '4_AIR_GROWTH',
               tiktokVideoUrl: inspection.resolvedUrl,
               videoUrl: inspection.resolvedUrl,
               postedDate: inspection.publishedDate,
@@ -1632,9 +2602,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         kocs={localKocs}
         currentUserName={currentUser?.name || selectedStaffName}
         onSuccessUpdateDeals={(updatedList) => {
-          if (onUpdateDeal) {
-            updatedList.forEach(d => onUpdateDeal(d));
-          }
+          updatedList.forEach(d => applyDealUpdate(d));
         }}
       />
     </div>
