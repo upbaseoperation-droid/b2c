@@ -56,6 +56,7 @@ import {
 } from '../ui';
 import {
   SowPointPolicyItem,
+  STORE_SCOPE_TABLE_2,
   STAFF_LEVEL_TABLE_4,
   TIMELINE_TABLE_5,
   MULTI_PLATFORM_TABLE_6,
@@ -63,11 +64,16 @@ import {
   ROLE_SPLIT_PRESETS,
   ROLE_LABEL_MAP,
   DIFFICULTY_TIER_BADGE,
-  STAFF_WORKLOAD_EXCEPTIONS_KEY,
+  UnifiedStaffWorkloadRow,
   loadSavedDifficultyConfigs,
   persistDifficultyConfigs,
   loadSavedSowPolicies,
   persistSowPolicies,
+  loadSavedManagerExceptions,
+  persistManagerExceptions,
+  resolveTaskSource,
+  computeUnifiedB2cStaffWorkloads,
+  normalizeStoreCoefficient,
 } from '../../lib/taskDelegationData';
 import TaskPolicySetupView from './TaskPolicySetupView';
 
@@ -143,27 +149,20 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   };
 
   // Load & persist Bảng 4 Manager Exceptions
-  const [managerExceptions, setManagerExceptions] = useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') return { HN880: true };
-    try {
-      const saved = localStorage.getItem(STAFF_WORKLOAD_EXCEPTIONS_KEY);
-      if (!saved) return { HN880: true };
-      return JSON.parse(saved);
-    } catch {
-      return { HN880: true };
-    }
-  });
+  const [managerExceptions, setManagerExceptions] = useState<Record<string, boolean>>(() =>
+    loadSavedManagerExceptions()
+  );
+
+  useEffect(() => {
+    const syncExceptions = () => setManagerExceptions(loadSavedManagerExceptions());
+    window.addEventListener('upbase-workload-exceptions-updated', syncExceptions);
+    return () => window.removeEventListener('upbase-workload-exceptions-updated', syncExceptions);
+  }, []);
 
   const toggleManagerException = (staffCode: string, staffName: string) => {
     const next = { ...managerExceptions, [staffCode]: !managerExceptions[staffCode] };
     setManagerExceptions(next);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(STAFF_WORKLOAD_EXCEPTIONS_KEY, JSON.stringify(next));
-      } catch (e) {
-        console.warn(e);
-      }
-    }
+    persistManagerExceptions(next);
     onNotify?.(
       next[staffCode]
         ? `Đã xác nhận ngoại lệ Bảng 4 cho ${staffName}: Giữ nguyên hệ số cơ cấu ×1,00`
@@ -250,6 +249,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const [formSowStt, setFormSowStt] = useState<number>(26);
   const [formCategory, setFormCategory] = useState<TaskDifficultyCategoryKey>('RESEARCH');
   const [formLevelId, setFormLevelId] = useState<string>('RES-L3');
+  const [formStoreScopeCoef, setFormStoreScopeCoef] = useState<0.8 | 1.0 | 1.25 | 1.5>(1.0);
   const [formAcceptedQty, setFormAcceptedQty] = useState<number>(1);
   const [formTaskDiffTier, setFormTaskDiffTier] = useState<'EASY' | 'STANDARD' | 'HARD'>('HARD');
   const formTimelineStatus = 'ON_TIME' as const;
@@ -337,7 +337,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const modalFormulaPreview = useMemo(() => {
     const qty = Math.max(1, Number(formAcceptedQty) || 1);
     const stdPoint = selectedSowPolicy?.basePoint || 1.0;
-    const scopeCoef = activeLevelConfig?.multiplier || 1.0;
+    const usesResearch2b = Boolean(selectedSowPolicy?.usesResearchTable2b);
+    const scopeCoef = usesResearch2b
+      ? activeLevelConfig?.multiplier || 1.0
+      : formStoreScopeCoef || 1.0;
     const taskDiffCoef = DIFFICULTY_TIER_BADGE[formTaskDiffTier].coef;
     const timelineCoef = TIMELINE_TABLE_5.find(t => t.status === formTimelineStatus)?.coef ?? 1.0;
     const multiPlatformCoef = selectedSowPolicy?.supportsMultiPlatform
@@ -349,6 +352,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     return {
       qty,
       stdPoint,
+      usesResearch2b,
       scopeCoef,
       taskDiffCoef,
       timelineCoef,
@@ -359,6 +363,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     formAcceptedQty,
     selectedSowPolicy,
     activeLevelConfig,
+    formStoreScopeCoef,
     formTaskDiffTier,
     formTimelineStatus,
     formMultiStoreCount,
@@ -496,13 +501,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     setIsAssignModalOpen(false);
   };
 
-  const getTaskSource = (t: SlaTask): 'WORKFLOW_SYSTEM' | 'DIRECTOR_ASSIGNED' => {
-    if (t.taskSource) return t.taskSource;
-    if (t.type === 'RESEARCH_TASK' || t.taskCategory === 'RESEARCH' || t.assignedBy === 'Đặng Thị Yến Nhi') {
-      return 'DIRECTOR_ASSIGNED';
-    }
-    return 'WORKFLOW_SYSTEM';
-  };
+  const getTaskSource = resolveTaskSource;
 
   const inferCategory = (t: SlaTask): TaskDifficultyCategoryKey => {
     return (
@@ -541,67 +540,17 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       }
       return true;
     });
-  }, [tasks, sourceFilter, categoryFilter, staffFilter, urgencyFilter, searchQuery]);
+  }, [tasks, sourceFilter, categoryFilter, staffFilter, urgencyFilter, searchQuery, getTaskSource]);
 
-  // Staff workload calculation (28 members)
+  // Unified Staff workload calculation (28 members) synchronized with Workload3dMapView
   const computedStaffWorkloads = useMemo(() => {
-    return B2C_28_STAFF_WORKLOAD_ROSTER.map(member => {
-      const staffTasks = tasks.filter(
-        t => t.pic.toLowerCase() === member.name.toLowerCase()
-      );
-
-      let liveWorkflowPts = 0;
-      let liveWorkflowHardPts = 0;
-      let liveDirectorPts = 0;
-      let liveDirectorHardPts = 0;
-
-      staffTasks.forEach(t => {
-        const pts = t.calculatedWorkloadPoints ?? 2.0;
-        const isHard =
-          t.taskDifficultyTier === 'HARD' ||
-          (t.difficultyMultiplier && t.difficultyMultiplier >= 1.2) ||
-          t.urgency === 'critical';
-        const src = getTaskSource(t);
-        if (src === 'DIRECTOR_ASSIGNED') {
-          liveDirectorPts += pts;
-          if (isHard) liveDirectorHardPts += pts;
-        } else {
-          liveWorkflowPts += pts;
-          if (isHard) liveWorkflowHardPts += pts;
-        }
-      });
-
-      const workflowPts = Number((member.baselineWorkflowTotalPts + liveWorkflowPts).toFixed(2));
-      const directorPts = Number((member.baselineDirectorTotalPts + liveDirectorPts).toFixed(2));
-      const rawTotalPts = Number((workflowPts + directorPts).toFixed(2));
-      const hardPts = Number(
-        (member.baselineWorkflowHardPts + member.baselineDirectorHardPts + liveWorkflowHardPts + liveDirectorHardPts).toFixed(2)
-      );
-
-      const levelRule =
-        STAFF_LEVEL_TABLE_4.find(l => l.level === member.level) || STAFF_LEVEL_TABLE_4[3];
-      const actualHardRatioPct = rawTotalPts > 0 ? Number(((hardPts / rawTotalPts) * 100).toFixed(1)) : 0;
-      const meetsHardRatio = actualHardRatioPct >= levelRule.minHardRatioPct;
-      const hasException = !!managerExceptions[member.staffCode];
-      const structureCoef = meetsHardRatio || hasException ? 1.0 : 0.7;
-      const finalMonthlyWorkloadPts = Number((rawTotalPts * structureCoef).toFixed(2));
-
-      return {
-        ...member,
-        staffTasks,
-        workflowPts,
-        directorPts,
-        rawTotalPts,
-        hardPts,
-        requiredHardRatioPct: levelRule.minHardRatioPct,
-        actualHardRatioPct,
-        meetsHardRatio,
-        hasException,
-        structureCoef,
-        finalMonthlyWorkloadPts,
-      };
+    return computeUnifiedB2cStaffWorkloads({
+      tasks,
+      brands,
+      storePortfolios,
+      managerExceptions,
     });
-  }, [tasks, managerExceptions]);
+  }, [tasks, brands, storePortfolios, managerExceptions]);
 
   const filteredStaffWorkloads = useMemo(() => {
     const q = workloadSearch.trim().toLowerCase();
@@ -614,7 +563,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         const matchName = row.name.toLowerCase().includes(q);
         const matchCode = row.staffCode.toLowerCase().includes(q);
         const matchRole = row.roleGroup.toLowerCase().includes(q);
-        const matchStores = row.keyStoresSample.toLowerCase().includes(q);
+        const matchStores = row.liveStoresSummaryText.toLowerCase().includes(q);
         if (!matchName && !matchCode && !matchRole && !matchStores) return false;
       }
       return true;
@@ -717,17 +666,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <span className="truncate max-w-[150px]">· {t.storeName}</span>
               )}
               <span>· {sowLabel}</span>
-              {t.deliverableUrl && (
-                <a
-                  href={t.deliverableUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 font-medium text-positive hover:underline"
-                >
-                  · <ExternalLink className="w-3 h-3" /> Link nghiệm thu
-                </a>
-              )}
             </div>
           </div>
         );
@@ -851,9 +789,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   // ==========================================================================
   // COLUMNS FOR STAFF WORKLOAD TABLE (28 MEMBERS)
   // ==========================================================================
-  type ComputedStaffRow = (typeof computedStaffWorkloads)[number];
-
-  const workloadColumns: Column<ComputedStaffRow>[] = [
+  const workloadColumns: Column<UnifiedStaffWorkloadRow>[] = [
     {
       key: 'staff',
       header: 'Nhân sự',
@@ -875,10 +811,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       render: row => (
         <div className="max-w-[220px]">
           <div className="text-xs font-medium text-ink">
-            {row.assignedStoresCount} gian hàng
+            {row.liveAssignedStoresCount} gian hàng
           </div>
-          <div className="text-xs text-ink-3 truncate mt-0.5" title={row.keyStoresSample}>
-            {row.keyStoresSample}
+          <div className="text-xs text-ink-3 truncate mt-0.5" title={row.liveStoresSummaryText}>
+            {row.liveStoresSummaryText}
           </div>
         </div>
       ),
@@ -887,7 +823,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'workflowPts',
       header: 'Điểm Quy trình',
       align: 'right',
-      width: 125,
+      width: 120,
       render: row => (
         <div className="font-mono tabular-nums text-sm text-ink">
           {row.workflowPts.toFixed(1).replace('.', ',')}
@@ -898,7 +834,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       key: 'directorPts',
       header: 'Điểm Quản lý giao',
       align: 'right',
-      width: 135,
+      width: 130,
       render: row => (
         <div className="font-mono tabular-nums text-sm font-medium text-ink">
           {row.directorPts.toFixed(1).replace('.', ',')}
@@ -908,7 +844,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     {
       key: 'hardRatio',
       header: 'Tỷ lệ việc khó (Bảng 4)',
-      width: 200,
+      width: 195,
       render: row => (
         <div>
           <div className="flex items-center justify-between text-xs mb-1 font-mono tabular-nums">
@@ -929,15 +865,16 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     },
     {
       key: 'finalPts',
-      header: 'Tổng điểm tháng',
+      header: 'Tổng điểm & Hiệu suất tải',
       align: 'right',
-      width: 165,
+      width: 185,
       render: row => (
         <div className="text-right">
           <div className="text-sm font-semibold font-mono tabular-nums text-ink">
             {row.finalMonthlyWorkloadPts.toFixed(1).replace('.', ',')} <span className="text-xs font-normal text-ink-3">đ</span>
+            <span className="text-xs font-mono text-ink-3 ml-1.5">({row.loadPct}%)</span>
           </div>
-          <div className="mt-0.5">
+          <div className="mt-0.5 flex items-center justify-end gap-1">
             {row.meetsHardRatio ? (
               <Status tone="positive">Đạt ×1,00</Status>
             ) : row.hasException ? (
@@ -1261,10 +1198,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   onChange={setWorkloadLevelFilter}
                   items={[
                     { key: 'ALL', label: 'Tất cả cấp bậc', count: computedStaffWorkloads.length },
-                    { key: 'L3', label: 'L3 (≥50%)' },
-                    { key: 'L2', label: 'L2 (≥30%)' },
-                    { key: 'L1', label: 'L1 (≥15%)' },
-                    { key: 'L0.5', label: 'L0.5 (0%)' },
+                    ...STAFF_LEVEL_TABLE_4.map(lvl => ({
+                      key: lvl.level,
+                      label: `${lvl.level} (≥${String(lvl.minHardRatioPct).replace('.', ',')}%)`,
+                      count: computedStaffWorkloads.filter(r => r.level === lvl.level).length,
+                    })),
                   ]}
                 />
               }
@@ -1429,8 +1367,48 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
                   <div className="text-xs text-ink-3">Hệ số SLA (Bảng 5)</div>
-                  <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
-                    ×{(selectedTaskDetail.timelineCoef ?? 1.0).toFixed(2).replace('.', ',')}
+                  <div className="mt-0.5">
+                    {canManageSetup && onUpdateTask ? (
+                      <select
+                        value={selectedTaskDetail.timelineStatus || 'ON_TIME'}
+                        onChange={e => {
+                          const nextStatus = e.target.value as 'ON_TIME' | 'LATE_1' | 'LATE_2' | 'FAILED';
+                          const nextCoef = TIMELINE_TABLE_5.find(t => t.status === nextStatus)?.coef ?? 1.0;
+                          const qty = selectedTaskDetail.acceptedQuantity ?? 1;
+                          const stdPt = selectedTaskDetail.standardPoint ?? 2.0;
+                          const scopeC = selectedTaskDetail.scopeCoef ?? selectedTaskDetail.difficultyMultiplier ?? 1.0;
+                          const diffC = selectedTaskDetail.taskDifficultyCoef ?? 1.0;
+                          const multiC = selectedTaskDetail.multiPlatformCoef ?? 1.0;
+                          const weightR = (selectedTaskDetail.contributionWeightPct ?? 100) / 100;
+                          const updatedPts = Number(
+                            (qty * stdPt * scopeC * diffC * nextCoef * multiC * weightR).toFixed(2)
+                          );
+                          const updatedTask: SlaTask = {
+                            ...selectedTaskDetail,
+                            timelineStatus: nextStatus,
+                            timelineCoef: nextCoef,
+                            calculatedWorkloadPoints: updatedPts,
+                          };
+                          setSelectedTaskDetail(updatedTask);
+                          onUpdateTask(updatedTask);
+                          onNotify?.(
+                            `Đã cập nhật hệ số SLA (Bảng 5) ×${nextCoef.toFixed(2).replace('.', ',')} → ${updatedPts.toFixed(2).replace('.', ',')} điểm`,
+                            'info'
+                          );
+                        }}
+                        className="w-full text-xs font-mono font-semibold text-ink bg-sunken border border-line rounded px-1.5 py-1 focus:outline-none focus:border-accent"
+                      >
+                        {TIMELINE_TABLE_5.map(item => (
+                          <option key={item.status} value={item.status}>
+                            ×{item.coef.toFixed(2).replace('.', ',')} — {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-sm font-mono tabular-nums font-semibold text-ink">
+                        ×{(selectedTaskDetail.timelineCoef ?? 1.0).toFixed(2).replace('.', ',')}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
@@ -1543,8 +1521,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
         }
         size="lg"
         footer={
-          <div className="flex items-center justify-between w-full">
-            <div>
+          <div className="flex items-center justify-between w-full gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               {canManageSetup && inspectedStaffRow && !inspectedStaffRow.meetsHardRatio && (
                 <Button
                   variant="secondary"
@@ -1558,14 +1536,54 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'Xác nhận ngoại lệ Bảng 4 (Giữ hệ số ×1,00)'}
                 </Button>
               )}
+              {inspectedStaffRow && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const staffCode = inspectedStaffRow.staffCode;
+                    setInspectingStaffMember(null);
+                    window.dispatchEvent(
+                      new CustomEvent('upbase-navigate-tab', { detail: 'workload-3d' })
+                    );
+                    setTimeout(() => {
+                      window.dispatchEvent(
+                        new CustomEvent('upbase-focus-3d-node', {
+                          detail: `staff-${staffCode}`,
+                        })
+                      );
+                    }, 120);
+                  }}
+                >
+                  Xem trên Bản đồ 3D
+                </Button>
+              )}
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setInspectingStaffMember(null)}
-            >
-              Đóng
-            </Button>
+            <div className="flex items-center gap-2">
+              {inspectedStaffRow && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => {
+                    const targetName = inspectedStaffRow.name;
+                    setInspectingStaffMember(null);
+                    setAssignees([{ staffName: targetName, role: 'PIC_OWNER', weightPct: 100 }]);
+                    setFormTaskSource('DIRECTOR_ASSIGNED');
+                    setIsAssignModalOpen(true);
+                  }}
+                >
+                  Giao việc cho {inspectedStaffRow.shortName}
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setInspectingStaffMember(null)}
+              >
+                Đóng
+              </Button>
+            </div>
           </div>
         }
       >
@@ -1729,12 +1747,28 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <Field label="Gian hàng (Store)">
               <Select
                 value={formStore}
-                onChange={e => setFormStore(e.target.value)}
+                onChange={e => {
+                  const nextStore = e.target.value;
+                  setFormStore(nextStore);
+                  if (nextStore) {
+                    const matched = brandStores.find(s => s.storeName === nextStore);
+                    if (matched) {
+                      setFormStoreScopeCoef(
+                        normalizeStoreCoefficient(
+                          matched.difficultyTier,
+                          matched.difficultyMultiplier
+                        ).multiplier as 0.8 | 1.0 | 1.25 | 1.5
+                      );
+                    }
+                  } else {
+                    setFormStoreScopeCoef(1.0);
+                  }
+                }}
               >
                 <option value="">Toàn bộ Brand / Đa sàn</option>
                 {brandStores.map(s => (
                   <option key={s.id} value={s.storeName}>
-                    {s.storeName} ({s.platform})
+                    {s.storeName} ({s.platform} · ×{normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier.toFixed(2).replace('.', ',')})
                   </option>
                 ))}
               </Select>
@@ -1786,23 +1820,42 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             </div>
 
             <div className="md:col-span-4">
-              <Field label="Cấp độ phạm vi (Bảng 2b)">
-                <Select
-                  value={activeLevelConfig?.id || ''}
-                  onChange={e => {
-                    const found = activeCategoryConfig.levels.find(
-                      l => l.id === e.target.value
-                    );
-                    if (found) handleSelectFormLevel(found);
-                  }}
-                >
-                  {activeCategoryConfig.levels.map(lvl => (
-                    <option key={lvl.id} value={lvl.id}>
-                      {lvl.levelCode} (×{lvl.multiplier.toFixed(2).replace('.', ',')})
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+              {selectedSowPolicy.usesResearchTable2b ? (
+                <Field label="Cấp độ phạm vi (Bảng 2b)">
+                  <Select
+                    value={activeLevelConfig?.id || ''}
+                    onChange={e => {
+                      const found = activeCategoryConfig.levels.find(
+                        l => l.id === e.target.value
+                      );
+                      if (found) handleSelectFormLevel(found);
+                    }}
+                  >
+                    {activeCategoryConfig.levels.map(lvl => (
+                      <option key={lvl.id} value={lvl.id}>
+                        {lvl.levelCode} (×{lvl.multiplier.toFixed(2).replace('.', ',')})
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              ) : (
+                <Field label="Hệ số gian hàng (Bảng 2)">
+                  <Select
+                    value={formStoreScopeCoef}
+                    onChange={e =>
+                      setFormStoreScopeCoef(
+                        Number(e.target.value) as 0.8 | 1.0 | 1.25 | 1.5
+                      )
+                    }
+                  >
+                    {STORE_SCOPE_TABLE_2.map(item => (
+                      <option key={item.code} value={item.coef}>
+                        {item.label} (×{item.coef.toFixed(2).replace('.', ',')})
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
             </div>
 
             <div className="md:col-span-2">

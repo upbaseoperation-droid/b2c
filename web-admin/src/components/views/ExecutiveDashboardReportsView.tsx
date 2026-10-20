@@ -2306,10 +2306,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       >
                         <td className="py-2.5 px-4">
                           <div className="font-semibold text-ink">{st.storeName}</div>
-                          <div className="text-2xs text-ink-3">
-                            <strong className="text-ink-2">{st.brandName}</strong> ·{' '}
-                            <span className="font-mono">{formatVndShort(st.monthlyTargetGmv || 0)}</span>
-                          </div>
+                          <div className="text-2xs text-ink-3">{st.brandName}</div>
                         </td>
                         <td className="py-2.5 px-3">
                           <span
@@ -2782,7 +2779,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <th className="py-2.5 px-4 font-semibold">Mã Book &amp; Ngày Air</th>
                     <th className="py-2.5 px-3 font-semibold">Kênh KOC &amp; Bậc KL</th>
                     <th className="py-2.5 px-3 font-semibold">Gian Hàng &amp; PIC</th>
-                    <th className="py-2.5 px-3 font-semibold">Loại Hình &amp; Định Dạng</th>
+                    <th className="py-2.5 px-3 font-semibold">Sản Phẩm &amp; Định Dạng</th>
                     <th className="py-2.5 px-3 font-semibold text-right">Cát-xê</th>
                     <th className="py-2.5 px-3 font-semibold text-right">GMV Seller &amp; ROAS</th>
                     <th className="py-2.5 px-3 font-semibold">Trạng Thái ĐNTT</th>
@@ -2807,17 +2804,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             {v.kl}
                           </span>
                         </div>
-                        <div className="text-2xs text-ink-3 truncate max-w-[160px]">
-                          {v.productName}
-                        </div>
+                        <div className="text-2xs text-ink-3">{v.videoType}</div>
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="font-semibold text-ink">{v.storeName}</div>
-                        <div className="text-2xs text-ink-3">{v.brandName} · {v.pic}</div>
+                        <div className="text-2xs text-ink-3">{v.pic}</div>
                       </td>
                       <td className="py-2.5 px-3">
-                        <span className="font-medium text-ink block">{v.format}</span>
-                        <span className="text-2xs text-ink-3">{v.videoType}</span>
+                        <span className="font-medium text-ink block truncate max-w-[160px]">{v.productName}</span>
+                        <span className="text-2xs text-ink-3">{v.format}</span>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
                         {formatVndShort(v.cost)}
@@ -3250,13 +3245,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   header: 'Thực chi / Trần Net',
                   align: 'right',
                   render: (st) => (
-                    <div>
+                    <div className="font-mono">
                       <div className="font-medium text-ink">
                         {formatVndShort(st.actualSpentNet)} / {formatVndShort(st.orderBudgetNet)}
                       </div>
-                      <div className="text-xs text-ink-3">
+                      <div className="text-xs text-ink-3 font-sans">
                         {st.orderBudgetNet > 0
-                          ? `Giải ngân ${st.burnNetPct}% · Gross ${formatVndShort(st.orderBudgetGross)}`
+                          ? `Giải ngân ${st.burnNetPct}%`
                           : 'Ngân sách 0đ (FOC)'}
                       </div>
                     </div>
@@ -3267,14 +3262,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   header: 'Video đăng / book',
                   align: 'right',
                   render: (st) => (
-                    <div>
+                    <div className="font-mono">
                       <div className="font-medium text-ink">
-                        {st.actualAiredVideos} / {st.actualBookedVideos} đơn ({st.airVsBookPct}%)
+                        {st.actualAiredVideos} / {st.actualBookedVideos} ({st.airVsBookPct}%)
                       </div>
-                      <div className="text-xs text-ink-3">
-                        {`KH Paid ${st.targetPaidVideos} · FOC ${st.targetFocVideos}${
-                          st.pendingAirVideos > 0 ? ` · Chờ ${st.pendingAirVideos}` : ''
-                        }`}
+                      <div className="text-xs text-ink-3 font-sans">
+                        {`KH Paid ${st.targetPaidVideos} · FOC ${st.targetFocVideos}`}
                       </div>
                     </div>
                   ),
@@ -3284,16 +3277,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   header: 'Chi phí / video',
                   align: 'right',
                   render: (st) => (
-                    <div>
+                    <div className="font-mono">
                       <div className="font-medium text-ink">
                         {st.avgCostPerAiredVideo > 0
-                          ? `${formatVndShort(st.avgCostPerAiredVideo)} / air`
+                          ? formatVndShort(st.avgCostPerAiredVideo)
                           : '0đ (FOC)'}
                       </div>
-                      <div className="text-xs text-ink-3">
+                      <div className="text-xs text-ink-3 font-sans">
                         {st.avgCostPerBookedVideo > 0
                           ? `Đơn book ${formatVndShort(st.avgCostPerBookedVideo)}`
-                          : `CPA ${formatVndShort(st.cpaPerOrder)}`}
+                          : 'Mẫu 0đ'}
                       </div>
                     </div>
                   ),

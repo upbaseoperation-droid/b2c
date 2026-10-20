@@ -1303,17 +1303,18 @@ export function KocListingBatchHubView({
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                     />
                   </th>
-                  <th className="py-2.5 px-3 w-[24%]">KOC &amp; Khung lương</th>
-                  <th className="py-2.5 px-3 w-[16%]">Đợt / Gian hàng</th>
-                  <th className="py-2.5 px-3 text-right w-[16%]">Thù lao &amp; Chuẩn KL</th>
-                  <th className="py-2.5 px-3 w-[26%]">Thẩm định Brand &amp; Đàm phán KOC</th>
-                  <th className="py-2.5 px-3 text-right w-[18%]">Trạng thái &amp; Thao tác</th>
+                  <th className="py-2.5 px-3 w-[22%]">KOC &amp; Khung lương</th>
+                  <th className="py-2.5 px-3 w-[18%]">Gian hàng &amp; Tuyến bài</th>
+                  <th className="py-2.5 px-3 text-right w-[14%]">Thù lao &amp; Chuẩn KL</th>
+                  <th className="py-2.5 px-3 w-[15%]">Thẩm định Brand</th>
+                  <th className="py-2.5 px-3 w-[15%]">Đàm phán KOC</th>
+                  <th className="py-2.5 px-3 text-right w-[16%]">Trạng thái &amp; Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredListings.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
                       Không tìm thấy bản ghi đề xuất nào phù hợp với bộ lọc hiện tại.
                     </td>
                   </tr>
@@ -1355,11 +1356,6 @@ export function KocListingBatchHubView({
                             <span className="font-code text-2xs font-semibold text-blue-700">
                               · {resolvedGrade}
                             </span>
-                            {item.sourcePlanVersion && (
-                              <span className="text-2xs font-medium text-slate-500">
-                                · Plan {item.sourcePlanVersion}
-                              </span>
-                            )}
                           </div>
                           <div className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
                             <span>{item.kocHandle}</span>
@@ -1376,7 +1372,7 @@ export function KocListingBatchHubView({
                               .map((l) => l.assignedStaffName || 'Nhân sự khác');
                             if (otherStaffs.length > 0) {
                               return (
-                                <div className="mt-1">
+                                <div className="mt-0.5">
                                   <span
                                     className="inline-flex items-center gap-1 text-2xs font-semibold text-amber-700"
                                     title={`Trùng KOC trong cùng nhãn với: ${otherStaffs.join(', ')}`}
@@ -1389,136 +1385,102 @@ export function KocListingBatchHubView({
                             }
                             return null;
                           })()}
-                          <div className="text-2xs text-slate-500 mt-1">
-                            <span className="font-semibold text-slate-700">
-                              {item.tier}
-                            </span>
-                            <span className="ml-1.5 text-slate-600 truncate max-w-[180px] inline-block align-bottom">
-                              · {item.pillarName}
-                            </span>
-                          </div>
                         </td>
 
-                        {/* Batch & Store */}
+                        {/* Batch, Store & Pillar */}
                         <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`text-2xs font-semibold ${
-                                item.batchCycle === 'BATCH_10'
-                                  ? 'text-blue-700'
-                                  : item.batchCycle === 'BATCH_20'
-                                  ? 'text-accent'
-                                  : 'text-amber-700'
-                              }`}
-                            >
+                          <div className="text-xs text-slate-800 font-medium truncate max-w-[190px]" title={item.storeName}>
+                            {item.storeName}
+                          </div>
+                          <div className="text-2xs text-slate-500 mt-0.5 truncate max-w-[190px]">
+                            <span className="font-semibold text-slate-600">
                               {item.batchCycle === 'BATCH_10'
                                 ? 'Đợt 10'
                                 : item.batchCycle === 'BATCH_20'
                                 ? 'Đợt 20'
                                 : 'Đợt 30'}
                             </span>
-                          </div>
-                          <div className="text-2xs text-slate-700 font-medium mt-1 truncate max-w-[170px]" title={item.storeName}>
-                            {item.storeName}
-                          </div>
-                          <div className="text-2xs text-slate-500 mt-0.5 flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-slate-400" />
-                            <span>Lên sóng: {item.expectedAirDate || 'Chưa đặt'}</span>
+                            {item.pillarName ? ` · ${item.pillarName}` : ''}
+                            {item.assignedStaffName ? ` · ${item.assignedStaffName}` : ''}
                           </div>
                         </td>
 
                         {/* Fee vs Plan Benchmark */}
                         <td className="py-2.5 px-3 text-right tabular-nums">
                           <div className="font-semibold text-slate-900">
-                            {formatVnd(item.proposedFee)}
+                            {formatVnd(item.finalFee || item.proposedFee)}
                           </div>
-                          {item.finalFee && item.finalFee !== item.proposedFee && (
-                            <div className="text-2xs text-emerald-600 font-semibold">
-                              Chốt: {formatVnd(item.finalFee)}
-                            </div>
-                          )}
                           {benchmarkCost > 0 && (
                             <div className={`text-2xs mt-0.5 ${isOverKlBenchmark ? 'text-amber-700 font-medium' : 'text-slate-400'}`}>
-                              Chuẩn {resolvedGrade}: {formatVndShort(benchmarkCost)}
+                              Chuẩn: {formatVndShort(benchmarkCost)}
                             </div>
                           )}
-                          <div className="text-2xs text-slate-400 mt-0.5">
-                            PIC: {item.assignedStaffName}
-                          </div>
                         </td>
 
-                        {/* Gộp: Thẩm định Brand & Đàm phán KOC */}
+                        {/* Cột 1: Thẩm định Brand */}
                         <td className="py-2.5 px-3">
-                          <div className="space-y-1.5">
-                            {/* Brand Review */}
-                            <div className="flex items-center justify-between gap-1 flex-wrap">
-                              <div className="flex items-center gap-1.5">
-                                {item.brandApprovalStatus === 'BRAND_APPROVED' && (
-                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                    Brand đã duyệt
-                                  </span>
-                                )}
-                                {item.brandApprovalStatus === 'BRAND_PENDING' && (
-                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-amber-700">
-                                    <Clock className="w-3 h-3 text-amber-600" />
-                                    {item.overallStatus === 'DRAFT' ? 'Chưa gửi Brand' : 'Chờ Brand duyệt'}
-                                  </span>
-                                )}
-                                {item.brandApprovalStatus === 'BRAND_REJECTED' && (
-                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-700">
-                                    <XCircle className="w-3 h-3 text-rose-600" />
-                                    Brand từ chối
-                                  </span>
-                                )}
-                              </div>
-
-                              {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => setApprovingItem(item)}
-                                    className="px-1.5 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
-                                  >
-                                    Duyệt
-                                  </button>
-                                  <button
-                                    onClick={() => setRejectingItem(item)}
-                                    className="px-1.5 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                                  >
-                                    Từ chối
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            {item.brandFeedbackNote && (
-                              <div className="text-2xs text-slate-500 italic max-w-[200px] truncate" title={item.brandFeedbackNote}>
-                                {item.brandFeedbackNote}
-                              </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {item.brandApprovalStatus === 'BRAND_APPROVED' && (
+                              <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                Đã duyệt
+                              </span>
                             )}
-
-                            {/* KOC Negotiation */}
-                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                              <span className="text-2xs text-slate-500 shrink-0">KOC:</span>
-                              <select
-                                value={item.kocNegotiationStatus}
-                                onChange={(e) =>
-                                  handleKocNegotiationChange(item.id, e.target.value as KocNegotiationStatus)
-                                }
-                                className="text-2xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 flex-1 max-w-[170px]"
-                              >
-                                <option value="NOT_CONTACTED">Chưa liên hệ</option>
-                                <option value="CONTACTING">Đang trao đổi</option>
-                                <option value="TERMS_AGREED">Đã chốt điều khoản</option>
-                                <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
-                              </select>
-                            </div>
-                            {item.negotiationNote && (
-                              <div className="text-2xs text-slate-500 truncate max-w-[200px]" title={item.negotiationNote}>
-                                {item.negotiationNote}
+                            {item.brandApprovalStatus === 'BRAND_PENDING' && (
+                              <span className="inline-flex items-center gap-1 text-2xs font-medium text-amber-700">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                {item.overallStatus === 'DRAFT' ? 'Chưa gửi' : 'Chờ duyệt'}
+                              </span>
+                            )}
+                            {item.brandApprovalStatus === 'BRAND_REJECTED' && (
+                              <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-700">
+                                <XCircle className="w-3 h-3 text-rose-600" />
+                                Từ chối
+                              </span>
+                            )}
+                            {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setApprovingItem(item)}
+                                  className="px-1.5 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
+                                >
+                                  Duyệt
+                                </button>
+                                <button
+                                  onClick={() => setRejectingItem(item)}
+                                  className="px-1.5 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                >
+                                  Hủy
+                                </button>
                               </div>
                             )}
                           </div>
+                          {item.brandFeedbackNote && (
+                            <div className="text-2xs text-slate-500 italic max-w-[160px] truncate mt-0.5" title={item.brandFeedbackNote}>
+                              {item.brandFeedbackNote}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Cột 2: Đàm phán KOC */}
+                        <td className="py-2.5 px-3">
+                          <select
+                            value={item.kocNegotiationStatus}
+                            onChange={(e) =>
+                              handleKocNegotiationChange(item.id, e.target.value as KocNegotiationStatus)
+                            }
+                            className="text-2xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 w-full max-w-[150px]"
+                          >
+                            <option value="NOT_CONTACTED">Chưa liên hệ</option>
+                            <option value="CONTACTING">Đang trao đổi</option>
+                            <option value="TERMS_AGREED">Đã chốt điều khoản</option>
+                            <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
+                          </select>
+                          {item.negotiationNote && (
+                            <div className="text-2xs text-slate-500 truncate max-w-[150px] mt-0.5" title={item.negotiationNote}>
+                              {item.negotiationNote}
+                            </div>
+                          )}
                         </td>
 
                         {/* Gộp: Trạng thái & Thao tác luồng duyệt */}
