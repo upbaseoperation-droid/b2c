@@ -2288,6 +2288,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const applyHistoryEntry = useCallback(
     (item: TikTokCrawlerDailyHistoryItem) => {
       setActiveHistoryId(item.id);
+      setExpandedWeeklyTableByTab({});
       if (item.tab === 'HANDLE_SCRAPE') {
         setScraperInitialHandle(item.rawInput);
         setScraperModalOpen(true);
@@ -2343,6 +2344,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
   const rerunHistoryEntry = useCallback(
     (item: TikTokCrawlerDailyHistoryItem) => {
+      setExpandedWeeklyTableByTab({});
       if (item.tab === 'HANDLE_SCRAPE') {
         setScraperInitialHandle(item.rawInput);
         setScraperModalOpen(true);
@@ -2390,170 +2392,45 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     HANDLE_SCRAPE: 'KOC',
   };
 
-  const renderDailyHistoryBar = (currentTab: CrawlerHistoryTabKey, hasContentBelow: boolean) => {
+  const renderHistoryButton = (currentTab: CrawlerHistoryTabKey) => {
     const tabItems = dailyHistory.filter(
       (it) =>
         it.tab === currentTab ||
         (currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
     );
-    const itemsToShow = showAllTabsInBar
-      ? [
-          ...tabItems,
-          ...dailyHistory.filter(
-            (it) =>
-              it.tab !== currentTab &&
-              !(currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
-          ),
-        ]
-      : tabItems;
     const isTableExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
 
     return (
-      <div
-        className={`px-3.5 py-2 bg-surface-2/60 flex flex-wrap items-center justify-between gap-2 ${
-          hasContentBelow || isTableExpanded || tabItems.length > 0 ? 'border-b border-line' : ''
-        }`}
+      <Button
+        size="sm"
+        variant={isTableExpanded ? 'primary' : 'secondary'}
+        icon={Clock}
+        onClick={() =>
+          setExpandedWeeklyTableByTab((prev) => ({
+            ...prev,
+            [currentTab]: !prev[currentTab],
+          }))
+        }
+        title="Mở bảng lịch sử quét trong 7 ngày gần nhất"
       >
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
-          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-ink-2 whitespace-nowrap mr-0.5">
-            <Clock className="w-3 h-3 text-accent shrink-0" />
-            <span>
-              Lịch sử crawl trong tuần · {tabShortLabel[currentTab]} ({tabItems.length}):
-            </span>
-          </span>
-
-          {itemsToShow.length === 0 ? (
-            <span className="text-2xs text-ink-3">
-              Chưa có phiên quét nào trong 7 ngày qua ở tab này.
-            </span>
-          ) : (
-            itemsToShow.slice(0, 8).map((item) => {
-              const isSelected = activeHistoryId === item.id;
-              const isOtherTab =
-                item.tab !== currentTab &&
-                !(currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && item.tab === 'HANDLE_SCRAPE');
-              const shortStaff = (item.staffName || 'Nhân sự')
-                .trim()
-                .split(/\s+/)
-                .slice(-2)
-                .join(' ');
-              const dayBadge = formatHistoryDayBadge(item.dateKey);
-
-              return (
-                <div
-                  key={item.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => applyHistoryEntry(item)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      applyHistoryEntry(item);
-                    }
-                  }}
-                  title={`${tabShortLabel[item.tab]}: ${item.queryLabel} (${item.resultCount} kết quả)${item.summaryNote ? ` · ${item.summaryNote}` : ''} · Quét bởi ${item.staffName} (${dayBadge} ${item.timeLabel}) · Bấm để xem ngay`}
-                  className={`group inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-full border text-2xs transition cursor-pointer select-none ${
-                    isSelected
-                      ? 'border-accent bg-accent-soft/60 text-accent font-semibold'
-                      : 'border-line bg-surface hover:border-accent/50 text-ink'
-                  }`}
-                >
-                  {isOtherTab && (
-                    <span className="text-ink-3 font-normal">{tabShortLabel[item.tab]}:</span>
-                  )}
-                  <span className="font-code font-semibold truncate max-w-[160px]">
-                    {item.queryLabel}
-                  </span>
-                  <span className="px-1 py-0.2 rounded-full bg-surface-2 text-ink-2 font-code tabular-nums">
-                    {item.resultCount} {unitLabel[item.tab]}
-                  </span>
-                  <span className="text-ink-3 whitespace-nowrap">
-                    · {dayBadge} {item.timeLabel} · {shortStaff}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => void deleteHistoryEntry(item.id, e)}
-                    title="Xóa khỏi lịch sử tuần"
-                    className="w-4 h-4 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-critical hover:bg-critical-soft/60 transition"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-          {dailyHistory.length > tabItems.length && (
-            <button
-              type="button"
-              onClick={() => setShowAllTabsInBar((prev) => !prev)}
-              className={`inline-flex items-center gap-1 h-6 px-2 rounded-md border text-2xs transition cursor-pointer ${
-                showAllTabsInBar
-                  ? 'border-accent bg-accent-soft/50 text-accent font-semibold'
-                  : 'border-line bg-surface hover:bg-surface-2 text-ink-2'
-              }`}
-            >
-              <span>
-                {showAllTabsInBar
-                  ? `Chỉ tab này (${tabItems.length})`
-                  : `Tất cả tab (${dailyHistory.length})`}
-              </span>
-            </button>
-          )}
-
-          {hasContentBelow && (
-            <button
-              type="button"
-              onClick={() =>
-                setExpandedWeeklyTableByTab((prev) => ({
-                  ...prev,
-                  [currentTab]: !prev[currentTab],
-                }))
-              }
-              className={`inline-flex items-center gap-1 h-6 px-2 rounded-md border text-2xs transition cursor-pointer ${
-                isTableExpanded
-                  ? 'border-accent bg-accent text-white font-semibold'
-                  : 'border-line bg-surface hover:bg-surface-2 text-ink-2 hover:text-ink'
-              }`}
-            >
-              <Clock className="w-3 h-3" />
-              <span>
-                {isTableExpanded
-                  ? 'Ẩn bảng lịch sử tuần'
-                  : `Bảng lịch sử tuần (${tabItems.length})`}
-              </span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => void fetchDailyHistory()}
-            disabled={historyLoading}
-            title="Đồng bộ lịch sử quét trong tuần (7 ngày gần nhất)"
-            className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-surface hover:bg-surface-2 text-2xs text-ink-2 hover:text-ink transition shrink-0 cursor-pointer"
-          >
-            <RefreshCw className={`w-3 h-3 ${historyLoading ? 'animate-spin text-accent' : ''}`} />
-            <span>Làm mới</span>
-          </button>
-        </div>
-      </div>
+        <span>Lịch sử{tabItems.length > 0 ? ` (${tabItems.length})` : ''}</span>
+      </Button>
     );
   };
 
-  const renderTabWeeklyHistorySection = (
-    currentTab: CrawlerHistoryTabKey,
-    hasActiveResults: boolean
-  ) => {
-    const isExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
-    if (hasActiveResults && !isExpanded) return null;
+  const renderDailyHistoryBar = (currentTab: CrawlerHistoryTabKey, _compact?: boolean) =>
+    renderHistoryButton(currentTab);
 
-    const allTabItems = dailyHistory.filter(
+  const renderTabWeeklyHistorySection = (currentTab: CrawlerHistoryTabKey, _inline?: boolean) => {
+    const isExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
+    if (!isExpanded) return null;
+
+    const tabOnlyItems = dailyHistory.filter(
       (it) =>
         it.tab === currentTab ||
         (currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
     );
+    const allTabItems = showAllTabsInBar ? dailyHistory : tabOnlyItems;
 
     const todayCount = allTabItems.filter((it) => it.dateKey === todayVnDateKey).length;
     const yesterdayCount = allTabItems.filter((it) => it.dateKey === yesterdayVnDateKey).length;
@@ -2695,13 +2572,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     ];
 
     return (
-      <div className={hasActiveResults ? 'border-b border-line bg-surface' : 'bg-surface'}>
+      <div className="bg-surface">
         <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-accent" />
               <span>
-                Lịch sử crawl trong tuần (7 ngày gần nhất) — {tabShortLabel[currentTab]}
+                Lịch sử crawl (7 ngày gần nhất) —{' '}
+                {showAllTabsInBar ? 'Tất cả tab' : tabShortLabel[currentTab]}
               </span>
             </span>
             <Chips<'ALL_WEEK' | 'TODAY' | 'YESTERDAY' | 'EARLIER'>
@@ -2721,9 +2599,29 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               value={historySearchQuery}
               onChange={setHistorySearchQuery}
               placeholder="Tìm từ khóa, @handle, nhân sự quét..."
-              className="w-56 [&_input]:h-7 [&_input]:text-xs"
+              className="w-52 [&_input]:h-7 [&_input]:text-xs"
             />
-            {allTabItems.length > 0 && (
+            {dailyHistory.length > tabOnlyItems.length && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setShowAllTabsInBar((prev) => !prev)}
+              >
+                {showAllTabsInBar
+                  ? `Chỉ tab này (${tabOnlyItems.length})`
+                  : `Tất cả tab (${dailyHistory.length})`}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={RefreshCw}
+              disabled={historyLoading}
+              onClick={() => void fetchDailyHistory()}
+            >
+              Làm mới
+            </Button>
+            {tabOnlyItems.length > 0 && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -2733,6 +2631,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 Xóa lịch sử tab
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={X}
+              onClick={() =>
+                setExpandedWeeklyTableByTab((prev) => ({
+                  ...prev,
+                  [currentTab]: false,
+                }))
+              }
+            >
+              Đóng
+            </Button>
           </div>
         </div>
 
@@ -2742,7 +2653,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           rowKey={(it) => it.id}
           onRowClick={(it) => applyHistoryEntry(it)}
           fitContainer
-          empty="Chưa có phiên crawl nào được lưu trong 7 ngày qua ở tab này. Nhập thông tin bên trên và bấm Quét để lưu tự động vào lịch sử tuần."
+          empty="Chưa có phiên crawl nào được lưu trong 7 ngày qua ở tab này."
         />
       </div>
     );
@@ -2878,10 +2789,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {/* TAB 1: QUÉT KOC LÀM VIỆC CHO ĐỐI THỦ — Gộp chung 1 khung điều khiển & bảng */}
       {activeTab === 'COMPETITOR_KOCS' && (
         <Panel flush>
-          {/* Dòng 1: Thanh nhập đối thủ + chọn số lượng + nút quét (bên trái) & Thao tác kết quả (bên phải) */}
+          {/* Dòng 1: Thanh nhập đối thủ + chọn số lượng + nút quét (bên trái) & Thao tác kết quả + Lịch sử (bên phải) */}
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              compError || compLoading || compResults.length > 0 || compProfile || dailyHistory.length > 0
+              compError ||
+              compLoading ||
+              compResults.length > 0 ||
+              compProfile ||
+              expandedWeeklyTableByTab.COMPETITOR_KOCS
                 ? 'border-b border-line'
                 : ''
             }`}
@@ -2905,6 +2820,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !compLoading) {
                     e.preventDefault();
+                    setExpandedWeeklyTableByTab((prev) => ({ ...prev, COMPETITOR_KOCS: false }));
                     void runCompetitorCrawl(competitorInput, period, {
                       targetCount: compTargetCount,
                     });
@@ -2962,11 +2878,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 variant="primary"
                 icon={compLoading ? RefreshCw : Search}
                 disabled={compLoading}
-                onClick={() =>
-                  runCompetitorCrawl(competitorInput, period, {
+                onClick={() => {
+                  setExpandedWeeklyTableByTab((prev) => ({ ...prev, COMPETITOR_KOCS: false }));
+                  void runCompetitorCrawl(competitorInput, period, {
                     targetCount: compTargetCount,
-                  })
-                }
+                  });
+                }}
               >
                 {compLoading
                   ? compBatchProgress
@@ -3004,53 +2921,48 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            {(compLoading || compResults.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Plus}
-                  disabled={compLoading || compResults.length === 0}
-                  onClick={() =>
-                    runCompetitorCrawl(competitorInput, period, {
-                      targetCount: KOC_BATCH_SIZE,
-                      appendMode: true,
-                    })
-                  }
-                >
-                  +{KOC_BATCH_SIZE} KOC
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  disabled={filteredCompResults.length === 0}
-                  onClick={handleExportCompetitorCsv}
-                >
-                  Xuất CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Check}
-                  disabled={filteredCompResults.length === 0}
-                  onClick={() => handleSaveBulkKocs(filteredCompResults)}
-                >
-                  Lưu tất cả ({filteredCompResults.length})
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+              {(compLoading || compResults.length > 0) && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Plus}
+                    disabled={compLoading || compResults.length === 0}
+                    onClick={() =>
+                      runCompetitorCrawl(competitorInput, period, {
+                        targetCount: KOC_BATCH_SIZE,
+                        appendMode: true,
+                      })
+                    }
+                  >
+                    +{KOC_BATCH_SIZE} KOC
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    disabled={filteredCompResults.length === 0}
+                    onClick={handleExportCompetitorCsv}
+                  >
+                    Xuất CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Check}
+                    disabled={filteredCompResults.length === 0}
+                    onClick={() => handleSaveBulkKocs(filteredCompResults)}
+                  >
+                    Lưu tất cả ({filteredCompResults.length})
+                  </Button>
+                </>
+              )}
+              {renderHistoryButton('COMPETITOR_KOCS')}
+            </div>
           </div>
 
-          {renderDailyHistoryBar(
-            'COMPETITOR_KOCS',
-            Boolean(compError || compLoading || compResults.length > 0)
-          )}
-
-          {renderTabWeeklyHistorySection(
-            'COMPETITOR_KOCS',
-            Boolean(compLoading || compResults.length > 0)
-          )}
+          {renderTabWeeklyHistorySection('COMPETITOR_KOCS')}
 
           {compError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
@@ -3060,7 +2972,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           )}
 
           {/* Dòng 2: Gộp Tóm tắt đối thủ + Chips lọc nhanh + Bộ lọc chi tiết */}
-          {(compLoading || compResults.length > 0) && (
+          {!expandedWeeklyTableByTab.COMPETITOR_KOCS && (compLoading || compResults.length > 0) && (
             <>
               <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3263,7 +3175,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              tagError || tagLoading || tagResults.length > 0 || dailyHistory.length > 0
+              tagError ||
+              tagLoading ||
+              tagResults.length > 0 ||
+              expandedWeeklyTableByTab.HASHTAG_DISCOVERY
                 ? 'border-b border-line'
                 : ''
             }`}
@@ -3286,6 +3201,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !tagLoading) {
                     e.preventDefault();
+                    setExpandedWeeklyTableByTab({});
                     void runHashtagCrawl(hashtagInput, period, {
                       targetCount: tagTargetCount,
                     });
@@ -3343,11 +3259,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 variant="primary"
                 icon={tagLoading ? RefreshCw : Hash}
                 disabled={tagLoading}
-                onClick={() =>
-                  runHashtagCrawl(hashtagInput, period, {
+                onClick={() => {
+                  setExpandedWeeklyTableByTab({});
+                  void runHashtagCrawl(hashtagInput, period, {
                     targetCount: tagTargetCount,
-                  })
-                }
+                  });
+                }}
               >
                 {tagLoading
                   ? tagBatchProgress
@@ -3385,53 +3302,48 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            {(tagLoading || tagResults.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Plus}
-                  disabled={tagLoading || tagResults.length === 0}
-                  onClick={() =>
-                    runHashtagCrawl(hashtagInput, period, {
-                      targetCount: KOC_BATCH_SIZE,
-                      appendMode: true,
-                    })
-                  }
-                >
-                  +{KOC_BATCH_SIZE} KOC
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  disabled={filteredTagResults.length === 0}
-                  onClick={handleExportHashtagCsv}
-                >
-                  Xuất CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Check}
-                  disabled={filteredTagResults.length === 0}
-                  onClick={() => handleSaveBulkKocs(filteredTagResults)}
-                >
-                  Lưu tất cả ({filteredTagResults.length})
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+              {(tagLoading || tagResults.length > 0) && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Plus}
+                    disabled={tagLoading || tagResults.length === 0}
+                    onClick={() =>
+                      runHashtagCrawl(hashtagInput, period, {
+                        targetCount: KOC_BATCH_SIZE,
+                        appendMode: true,
+                      })
+                    }
+                  >
+                    +{KOC_BATCH_SIZE} KOC
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    disabled={filteredTagResults.length === 0}
+                    onClick={handleExportHashtagCsv}
+                  >
+                    Xuất CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={Check}
+                    disabled={filteredTagResults.length === 0}
+                    onClick={() => handleSaveBulkKocs(filteredTagResults)}
+                  >
+                    Lưu tất cả ({filteredTagResults.length})
+                  </Button>
+                </>
+              )}
+              {renderHistoryButton('HASHTAG_DISCOVERY')}
+            </div>
           </div>
 
-          {renderDailyHistoryBar(
-            'HASHTAG_DISCOVERY',
-            Boolean(tagError || tagLoading || tagResults.length > 0)
-          )}
-
-          {renderTabWeeklyHistorySection(
-            'HASHTAG_DISCOVERY',
-            Boolean(tagLoading || tagResults.length > 0)
-          )}
+          {renderTabWeeklyHistorySection('HASHTAG_DISCOVERY')}
 
           {tagError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
@@ -3440,7 +3352,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           )}
 
-          {(tagLoading || tagResults.length > 0) && (
+          {!expandedWeeklyTableByTab.HASHTAG_DISCOVERY &&
+            (tagLoading || tagResults.length > 0) && (
             <>
               <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -3615,7 +3528,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              commentError || commentLoading || commentData || dailyHistory.length > 0
+              commentError ||
+              commentLoading ||
+              commentData ||
+              expandedWeeklyTableByTab.COMMENTS_AND_TRENDING
                 ? 'border-b border-line'
                 : ''
             }`}
@@ -3638,6 +3554,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !commentLoading) {
                     e.preventDefault();
+                    setExpandedWeeklyTableByTab({});
                     void runVideoCommentsCrawl(videoCommentUrl, {
                       targetCount: commentTargetCount,
                     });
@@ -3695,11 +3612,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 variant="primary"
                 icon={commentLoading ? RefreshCw : MessageSquare}
                 disabled={commentLoading}
-                onClick={() =>
-                  runVideoCommentsCrawl(videoCommentUrl, {
+                onClick={() => {
+                  setExpandedWeeklyTableByTab({});
+                  void runVideoCommentsCrawl(videoCommentUrl, {
                     targetCount: commentTargetCount,
-                  })
-                }
+                  });
+                }}
               >
                 {commentLoading
                   ? commentBatchProgress
@@ -3730,44 +3648,39 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            {commentData && (
-              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Plus}
-                  disabled={commentLoading || commentData.hasMore === false}
-                  onClick={() =>
-                    runVideoCommentsCrawl(videoCommentUrl, {
-                      targetCount: COMMENT_BATCH_SIZE,
-                      appendMode: true,
-                    })
-                  }
-                >
-                  +{COMMENT_BATCH_SIZE} bình luận
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  disabled={filteredComments.length === 0}
-                  onClick={handleExportCommentsCsv}
-                >
-                  Xuất CSV
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+              {commentData && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Plus}
+                    disabled={commentLoading || commentData.hasMore === false}
+                    onClick={() =>
+                      runVideoCommentsCrawl(videoCommentUrl, {
+                        targetCount: COMMENT_BATCH_SIZE,
+                        appendMode: true,
+                      })
+                    }
+                  >
+                    +{COMMENT_BATCH_SIZE} bình luận
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Download}
+                    disabled={filteredComments.length === 0}
+                    onClick={handleExportCommentsCsv}
+                  >
+                    Xuất CSV
+                  </Button>
+                </>
+              )}
+              {renderHistoryButton('COMMENTS_AND_TRENDING')}
+            </div>
           </div>
 
-          {renderDailyHistoryBar(
-            'COMMENTS_AND_TRENDING',
-            Boolean(commentError || commentLoading || commentData)
-          )}
-
-          {renderTabWeeklyHistorySection(
-            'COMMENTS_AND_TRENDING',
-            Boolean(commentLoading || commentData)
-          )}
+          {renderTabWeeklyHistorySection('COMMENTS_AND_TRENDING')}
 
           {commentError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
@@ -3776,7 +3689,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             </div>
           )}
 
-          {commentLoading && !commentData && (
+          {!expandedWeeklyTableByTab.COMMENTS_AND_TRENDING && commentLoading && !commentData && (
             <TikTokCrawlCreativeLoader
               mode="COMMENTS"
               queryLabel={videoCommentUrl.trim() || 'Video TikTok'}
@@ -3789,7 +3702,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             />
           )}
 
-          {commentData && (
+          {!expandedWeeklyTableByTab.COMMENTS_AND_TRENDING && commentData && (
             <>
               {commentLoading && (
                 <TikTokCrawlCreativeLoader
@@ -3909,7 +3822,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              trendingLoading || trendingHandleSearching || trendingCreators.length > 0 || dailyHistory.length > 0
+              trendingLoading ||
+              trendingHandleSearching ||
+              trendingCreators.length > 0 ||
+              expandedWeeklyTableByTab.CHANNEL_AND_VIDEO_TOOLS
                 ? 'border-b border-line'
                 : ''
             }`}
@@ -3973,7 +3889,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 variant="primary"
                 icon={trendingLoading ? RefreshCw : Flame}
                 disabled={trendingLoading}
-                onClick={() => void runTrendingCreatorsCrawl()}
+                onClick={() => {
+                  setExpandedWeeklyTableByTab({});
+                  void runTrendingCreatorsCrawl();
+                }}
               >
                 {trendingLoading && trendingBatchProgress
                   ? `Đang cào (${trendingBatchProgress.collectedCount}/${trendingBatchProgress.targetCount} KOC - Đợt ${trendingBatchProgress.currentBatch})`
@@ -4012,70 +3931,66 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 )}
             </div>
 
-            {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
-              <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                {trendingSearch.trim().length >= 2 && (
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+              {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
+                <>
+                  {trendingSearch.trim().length >= 2 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={trendingHandleSearching ? RefreshCw : Search}
+                      disabled={trendingHandleSearching}
+                      onClick={() => void runQuickTrendingHandleLookup(trendingSearch)}
+                    >
+                      {trendingHandleSearching
+                        ? 'Đang cào kênh...'
+                        : `Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}`}
+                    </Button>
+                  )}
+                  {trendingCreators.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={trendingLoading ? RefreshCw : UserPlus}
+                      disabled={trendingLoading}
+                      onClick={() =>
+                        void runTrendingCreatorsCrawl(trendingCategory, {
+                          targetCount: KOC_BATCH_SIZE,
+                          appendMode: true,
+                        })
+                      }
+                    >
+                      {trendingLoading ? 'Đang quét...' : `+${KOC_BATCH_SIZE} KOC`}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="secondary"
-                    icon={trendingHandleSearching ? RefreshCw : Search}
-                    disabled={trendingHandleSearching}
-                    onClick={() => void runQuickTrendingHandleLookup(trendingSearch)}
+                    icon={Download}
+                    onClick={handleExportTrendingCsv}
+                    disabled={filteredTrendingCreators.length === 0}
                   >
-                    {trendingHandleSearching
-                      ? 'Đang cào kênh...'
-                      : `Cào kênh @${trendingSearch.trim().replace(/^@+/, '')}`}
+                    Xuất CSV
                   </Button>
-                )}
-                {trendingCreators.length > 0 && (
                   <Button
                     size="sm"
-                    variant="secondary"
-                    icon={trendingLoading ? RefreshCw : UserPlus}
-                    disabled={trendingLoading}
-                    onClick={() =>
-                      void runTrendingCreatorsCrawl(trendingCategory, {
-                        targetCount: KOC_BATCH_SIZE,
-                        appendMode: true,
-                      })
-                    }
+                    variant="primary"
+                    icon={Check}
+                    disabled={filteredTrendingCreators.length === 0}
+                    onClick={() => handleSaveBulkTrendingKocs(filteredTrendingCreators)}
                   >
-                    {trendingLoading ? 'Đang quét...' : `+${KOC_BATCH_SIZE} KOC`}
+                    Lưu tất cả ({filteredTrendingCreators.length})
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={Download}
-                  onClick={handleExportTrendingCsv}
-                  disabled={filteredTrendingCreators.length === 0}
-                >
-                  Xuất CSV
-                </Button>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  icon={Check}
-                  disabled={filteredTrendingCreators.length === 0}
-                  onClick={() => handleSaveBulkTrendingKocs(filteredTrendingCreators)}
-                >
-                  Lưu tất cả ({filteredTrendingCreators.length})
-                </Button>
-              </div>
-            )}
+                </>
+              )}
+              {renderHistoryButton('CHANNEL_AND_VIDEO_TOOLS')}
+            </div>
           </div>
 
-          {renderDailyHistoryBar(
-            'CHANNEL_AND_VIDEO_TOOLS',
-            Boolean(trendingLoading || trendingHandleSearching || trendingCreators.length > 0)
-          )}
+          {renderTabWeeklyHistorySection('CHANNEL_AND_VIDEO_TOOLS')}
 
-          {renderTabWeeklyHistorySection(
-            'CHANNEL_AND_VIDEO_TOOLS',
-            Boolean(trendingLoading || trendingHandleSearching || trendingCreators.length > 0)
-          )}
-
-          {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
+          {!expandedWeeklyTableByTab.CHANNEL_AND_VIDEO_TOOLS &&
+            (trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
             <>
               <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -4211,8 +4126,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <LinkAirCheckerPanel
           onNotify={onNotify}
           restorePayload={linkAirRestorePayload}
-          historyBar={renderDailyHistoryBar('LINK_AIR_CHECK', true)}
-          historyTable={renderTabWeeklyHistorySection('LINK_AIR_CHECK', false)}
+          historyButton={renderHistoryButton('LINK_AIR_CHECK')}
+          historyTable={renderTabWeeklyHistorySection('LINK_AIR_CHECK')}
+          onStartCheck={() => setExpandedWeeklyTableByTab({})}
           onSaveHistory={(payload) => {
             void saveDailyHistorySession({
               tab: 'LINK_AIR_CHECK',

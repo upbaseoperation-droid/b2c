@@ -78,15 +78,17 @@ export interface LinkAirRestorePayload {
 
 export function LinkAirCheckerPanel({
   onNotify,
-  historyBar,
+  historyButton,
   historyTable,
   restorePayload,
+  onStartCheck,
   onSaveHistory,
 }: {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  historyBar?: React.ReactNode;
+  historyButton?: React.ReactNode;
   historyTable?: React.ReactNode;
   restorePayload?: LinkAirRestorePayload | null;
+  onStartCheck?: () => void;
   onSaveHistory?: (payload: {
     rawInput: string;
     queryKey: string;
@@ -153,6 +155,7 @@ export function LinkAirCheckerPanel({
       requireProductLink,
       minViews: Number(minViews) > 0 ? Number(minViews) : undefined,
     };
+    onStartCheck?.();
     setLoading(true);
     setError('');
     try {
@@ -248,7 +251,11 @@ export function LinkAirCheckerPanel({
   return (
     <div className="space-y-3">
       <Panel flush>
-        <div className="px-3.5 py-2.5 bg-surface space-y-2.5 border-b border-line">
+        <div
+          className={`px-3.5 py-2.5 bg-surface space-y-2.5 ${
+            Boolean(historyTable) || results.length > 0 || loading ? 'border-b border-line' : ''
+          }`}
+        >
           <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
             <div>
               <Textarea
@@ -349,13 +356,14 @@ export function LinkAirCheckerPanel({
               >
                 {loading ? `Đang kiểm tra ${links.length} link…` : `Kiểm tra link (${links.length})`}
               </Button>
+              {historyButton}
             </div>
           </div>
         </div>
 
-        {historyBar}
-
-        {(results.length > 0 || loading) ? (
+        {historyTable ? (
+          historyTable
+        ) : (results.length > 0 || loading) ? (
           <div>
             <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
               <FilterBar
@@ -386,9 +394,7 @@ export function LinkAirCheckerPanel({
               empty={<EmptyState title="Không có link nào ở nhóm này." />}
             />
           </div>
-        ) : (
-          historyTable
-        )}
+        ) : null}
       </Panel>
 
       <LinkAirDetailModal result={opened} onClose={() => setOpenKey(null)} />
