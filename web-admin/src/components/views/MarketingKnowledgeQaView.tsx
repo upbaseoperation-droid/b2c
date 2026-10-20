@@ -49,6 +49,8 @@ import {
 import {
   loadApiWorkspaceConfig,
   getEffectiveConfigForPurpose,
+  updatePurposeSystemInstruction,
+  resetPurposeSystemInstruction,
   API_CONFIG_UPDATED_EVENT,
 } from '../../lib/apiKeyConfig';
 import { BrandDetail, KocItem, StorePortfolioItem, TabKey, UserProfile } from '../../lib/types';
@@ -267,6 +269,13 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
     return getEffectiveConfigForPurpose('KNOWLEDGE_QA', cfg);
   }, [apiConfigVersion]);
 
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [customQaPrompt, setCustomQaPrompt] = useState<string>(() => {
+    const cfg = loadApiWorkspaceConfig();
+    return getEffectiveConfigForPurpose('KNOWLEDGE_QA', cfg).purpose.systemInstruction;
+  });
+  const [promptSavedMsg, setPromptSavedMsg] = useState<string | null>(null);
+
   // Lịch sử hội thoại hỏi đáp
   const [questionInput, setQuestionInput] = useState('');
   const [isAsking, setIsAsking] = useState(false);
@@ -398,11 +407,14 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
     if (!customQuestion) setQuestionInput('');
     setIsAsking(true);
 
-    const { systemInstruction, contextPrompt, localFallback } = buildRagPromptForMarketingQa({
+    const { systemInstruction: defaultRagInstruction, contextPrompt, localFallback } = buildRagPromptForMarketingQa({
       question: q,
       brands,
       stores,
     });
+    const systemInstruction = customQaPrompt.trim()
+      ? `${customQaPrompt.trim()}\n\n${defaultRagInstruction}`
+      : defaultRagInstruction;
 
     try {
       // Nếu đã thiết lập khóa API ngoài (Google / OpenAI / Claude), gọi qua route /api/integrations/llm kèm ngữ cảnh RAG
@@ -647,11 +659,18 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                       ? `Kết nối ${effectiveQaRoute.primaryModel}`
                       : 'Sổ tay chuẩn nội bộ'}
                   </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Sliders}
+                    onClick={() => setShowPromptEditor(v => !v)}
+                  >
+                    {showPromptEditor ? 'Ẩn câu lệnh (Prompt)' : 'Thiết lập câu lệnh (Prompt)'}
+                  </Button>
                   {onNavigateToTab && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      icon={Sliders}
                       onClick={() => onNavigateToTab('api-settings')}
                     >
                       Cấu hình API
@@ -697,6 +716,55 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               }
             >
               <div className="space-y-4">
+                {showPromptEditor && (
+                  <div className="p-3.5 rounded-xl bg-sunken border border-line space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-ink">
+                        Câu lệnh chỉ dẫn (System Prompt) cho Hỏi đáp nghiệp vụ B2C:
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {promptSavedMsg && (
+                          <span className="text-2xs font-semibold text-success mr-1">
+                            {promptSavedMsg}
+                          </span>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={RotateCcw}
+                          onClick={() => {
+                            const reset = resetPurposeSystemInstruction('KNOWLEDGE_QA');
+                            setCustomQaPrompt(reset.systemInstruction);
+                            setPromptSavedMsg('Đã khôi phục câu lệnh gốc');
+                            setTimeout(() => setPromptSavedMsg(null), 2200);
+                          }}
+                        >
+                          Khôi phục gốc
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={Check}
+                          onClick={() => {
+                            const saved = updatePurposeSystemInstruction('KNOWLEDGE_QA', customQaPrompt);
+                            setCustomQaPrompt(saved.systemInstruction);
+                            setPromptSavedMsg('Đã lưu câu lệnh mặc định');
+                            setTimeout(() => setPromptSavedMsg(null), 2200);
+                          }}
+                        >
+                          Lưu làm mặc định
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      rows={3}
+                      value={customQaPrompt}
+                      onChange={e => setCustomQaPrompt(e.target.value)}
+                      placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho Cố vấn Hỏi đáp quy trình B2C..."
+                    />
+                  </div>
+                )}
+
                 {/* Gợi ý câu hỏi nhanh theo chủ đề */}
                 <div className="pb-3 border-b border-line">
                   <div className="flex flex-wrap gap-1.5">
@@ -1207,7 +1275,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                           )}
                           {sec.table && (
                             <div className="overflow-x-auto border border-line rounded-xl">
-                              <table className="w-full text-left border-collapse">
+                              <table className="w-full min-w-[600px] text-left border-collapse">
                                 <thead>
                                   <tr className="bg-canvas border-b border-line">
                                     {sec.table.headers.map((h, hIdx) => (
@@ -1440,7 +1508,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               flush
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
                     <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-3">
                       <th className="px-4 py-3">Mã SLA</th>
@@ -1478,7 +1546,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               flush
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
                     <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-3">
                       <th className="px-4 py-3">Mã</th>
@@ -1523,7 +1591,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               flush
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[600px] text-left border-collapse">
                   <thead>
                     <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-3">
                       <th className="px-4 py-3">Số hiệu</th>

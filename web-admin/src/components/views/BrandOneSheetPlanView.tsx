@@ -480,7 +480,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
+            <table className="w-full min-w-[680px] text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 font-semibold">
                   <th className="py-2.5 px-4 text-left border-r border-slate-200 w-48">Nhóm chỉ số</th>
@@ -887,7 +887,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               4.2 Phân bổ Số lượng &amp; Ngân sách KOC/KOL theo Tuần (W1–W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-xs border-collapse font-mono">
+              <table className="w-full min-w-[680px] text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs">
                     <th className="py-2 px-3 text-left border-r border-slate-200">Tuần</th>
@@ -1006,7 +1006,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full min-w-[680px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-28">Tuần / Ngày air</th>
@@ -1143,7 +1143,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full min-w-[680px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-20">Pillar ID</th>
@@ -1211,7 +1211,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               5.2 Bảng Target Tuần Content Shopee (W1 → W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-xs border-collapse font-mono">
+              <table className="w-full min-w-[680px] text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2 px-3 text-left border-r border-slate-200">Tuần</th>
@@ -1274,7 +1274,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full min-w-[680px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2 text-center border-r border-slate-200 w-14">Tuần</th>

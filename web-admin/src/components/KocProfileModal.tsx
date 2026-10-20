@@ -3,7 +3,7 @@
 import React from 'react';
 import type { BookingDealItem, KocItem, UserProfile } from '../lib/types';
 import { Modal } from './ui';
-import { KocProfile, classificationOf } from './koc/KocProfile';
+import { KocProfile } from './koc/KocProfile';
 import type { DuplicateMatch } from './koc/kocUtils';
 
 interface KocProfileModalProps {
@@ -20,7 +20,7 @@ interface KocProfileModalProps {
 export const KocProfileModal: React.FC<KocProfileModalProps> = ({ isOpen, onClose, koc, onOpenQuickBook, deals, currentUser, duplicates }) => {
   if (!koc) return null;
   return (
-    <Modal open={isOpen} onClose={onClose} title={koc.stageName} description={classificationOf(koc)} size="xl">
+    <Modal open={isOpen} onClose={onClose} title={koc.stageName} size="xl">
       <KocProfile
         koc={koc}
         layout="modal"

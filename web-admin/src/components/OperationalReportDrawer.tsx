@@ -1,36 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText,
-  Play,
+  X,
   RefreshCw,
   Copy,
   Check,
-  Download,
-  X,
-  Coins,
-  Clock,
   Sliders,
-  CheckCircle2,
-  AlertTriangle,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
+  Clock,
+  RotateCcw,
+  Save,
 } from 'lucide-react';
 import {
-  ApiProviderId,
   OperationalApiPurposeId,
-  PROVIDER_META,
+  ApiProviderId,
   PROVIDER_MODELS_CATALOG,
-  getEffectiveConfigForPurpose,
-  getModelOption,
   loadApiWorkspaceConfig,
+  getEffectiveConfigForPurpose,
+  getDefaultPurposeRoute,
+  updatePurposeSystemInstruction,
+  resetPurposeSystemInstruction,
   API_CONFIG_UPDATED_EVENT,
 } from '../lib/apiKeyConfig';
-import {
-  executeOperationalReport,
-  OperationalReportResult,
-} from '../lib/operationalReportService';
+import { executeOperationalReport, OperationalReportResult } from '../lib/operationalReportService';
 
 export interface OperationalReportDrawerProps {
   isOpen: boolean;
@@ -40,7 +36,6 @@ export interface OperationalReportDrawerProps {
   moduleSubtitle?: string;
   contextDataText: string;
   customSystemPrompt?: string;
-  autoRunOnOpen?: boolean;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -49,347 +44,339 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
   onClose,
   purposeId,
   moduleTitle,
-  moduleSubtitle,
   contextDataText,
   customSystemPrompt,
-  autoRunOnOpen = true,
-  onNotify,
 }) => {
-  const [workspaceConfig, setWorkspaceConfig] = useState(() => loadApiWorkspaceConfig());
-  const [selectedProvider, setSelectedProvider] = useState<'ROUTE_DEFAULT' | ApiProviderId>('ROUTE_DEFAULT');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [configVersion, setConfigVersion] = useState(0);
+  const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>('GOOGLE');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
+  const [editablePrompt, setEditablePrompt] = useState<string>('');
   const [editableContext, setEditableContext] = useState<string>(contextDataText);
+  const [showPromptEditor, setShowPromptEditor] = useState<boolean>(true);
   const [showContextEditor, setShowContextEditor] = useState<boolean>(false);
+  const [promptSavedToast, setPromptSavedToast] = useState<string | null>(null);
+
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [reportResult, setReportResult] = useState<OperationalReportResult | null>(null);
+  const [result, setResult] = useState<OperationalReportResult | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    setEditableContext(contextDataText);
-  }, [contextDataText]);
-
-  useEffect(() => {
-    const handleCfgUpdate = () => setWorkspaceConfig(loadApiWorkspaceConfig());
-    window.addEventListener(API_CONFIG_UPDATED_EVENT, handleCfgUpdate);
-    return () => window.removeEventListener(API_CONFIG_UPDATED_EVENT, handleCfgUpdate);
+    const handleConfigChange = () => setConfigVersion(v => v + 1);
+    window.addEventListener(API_CONFIG_UPDATED_EVENT, handleConfigChange);
+    return () => window.removeEventListener(API_CONFIG_UPDATED_EVENT, handleConfigChange);
   }, []);
 
-  const effective = getEffectiveConfigForPurpose(purposeId, workspaceConfig);
-  const activeProvider: ApiProviderId =
-    selectedProvider === 'ROUTE_DEFAULT' ? effective.primaryProvider : selectedProvider;
-  const availableModels = PROVIDER_MODELS_CATALOG[activeProvider] || PROVIDER_MODELS_CATALOG.GOOGLE;
-  const activeModelId =
-    selectedModel && availableModels.some(m => m.id === selectedModel)
-      ? selectedModel
-      : selectedProvider === 'ROUTE_DEFAULT'
-      ? effective.primaryModel
-      : workspaceConfig.providers[activeProvider as Exclude<ApiProviderId, 'INTERNAL'>]?.defaultModel ||
-        availableModels[0]?.id ||
-        'gemini-3.8-flash';
+  const effectiveRoute = useMemo(() => {
+    void configVersion;
+    const cfg = loadApiWorkspaceConfig();
+    return getEffectiveConfigForPurpose(purposeId, cfg);
+  }, [purposeId, configVersion]);
 
-  const activeModelMeta = getModelOption(activeModelId);
-  const activeProviderMeta = PROVIDER_META[activeProvider];
+  const defaultRoute = useMemo(() => getDefaultPurposeRoute(purposeId), [purposeId]);
 
-  const handleRunReport = async () => {
+  // Đồng bộ dữ liệu khi mở khung hoặc đổi phân hệ
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedProvider(effectiveRoute.primaryProvider);
+      setSelectedModel(effectiveRoute.primaryModel);
+      setEditableContext(contextDataText);
+      const activePrompt = effectiveRoute.purpose.systemInstruction || customSystemPrompt || defaultRoute.systemInstruction;
+      setEditablePrompt(activePrompt);
+    }
+  }, [
+    isOpen,
+    contextDataText,
+    customSystemPrompt,
+    effectiveRoute.primaryProvider,
+    effectiveRoute.primaryModel,
+    effectiveRoute.purpose.systemInstruction,
+    defaultRoute.systemInstruction,
+  ]);
+
+  const availableModels = useMemo(() => {
+    return PROVIDER_MODELS_CATALOG[selectedProvider] || [];
+  }, [selectedProvider]);
+
+  const handleProviderChange = (prov: ApiProviderId) => {
+    setSelectedProvider(prov);
+    const models = PROVIDER_MODELS_CATALOG[prov] || [];
+    if (models.length > 0) {
+      setSelectedModel(models[0].id);
+    }
+  };
+
+  const handleSavePromptDefault = () => {
+    const updated = updatePurposeSystemInstruction(purposeId, editablePrompt);
+    setEditablePrompt(updated.systemInstruction);
+    setPromptSavedToast('Đã lưu câu lệnh (Prompt) làm mặc định cho phân hệ này');
+    setTimeout(() => setPromptSavedToast(null), 2500);
+  };
+
+  const handleResetPromptDefault = () => {
+    const resetRule = resetPurposeSystemInstruction(purposeId);
+    setEditablePrompt(resetRule.systemInstruction);
+    setPromptSavedToast('Đã khôi phục câu lệnh (Prompt) gốc của phân hệ');
+    setTimeout(() => setPromptSavedToast(null), 2500);
+  };
+
+  const handleGenerateReport = async (promptOverride?: string) => {
     setIsRunning(true);
     try {
+      const promptToUse = (promptOverride ?? editablePrompt).trim() || effectiveRoute.purpose.systemInstruction;
       const res = await executeOperationalReport({
         purposeId,
         moduleTitle,
         inputContextText: editableContext,
+        customSystemInstruction: promptToUse,
         overrideProvider: selectedProvider,
-        overrideModel: activeModelId,
-        customSystemInstruction: customSystemPrompt,
+        overrideModel: selectedModel,
       });
-      setReportResult(res);
-      if (res.ok) {
-        onNotify?.(
-          `Đã lập báo cáo "${moduleTitle}" (${res.usage?.totalTokens.toLocaleString('vi-VN') || 0} tokens · ${res.usage?.costVnd.toLocaleString('vi-VN') || 0}đ)`,
-          'success'
-        );
-      }
-    } catch (err) {
-      console.error('Lỗi lập báo cáo phân hệ:', err);
-      onNotify?.('Không thể lập báo cáo. Vui lòng thử lại.', 'error');
+      setResult(res);
     } finally {
       setIsRunning(false);
     }
   };
 
+  // Tự động tổng hợp báo cáo ngay khi mở nếu chưa có kết quả
   useEffect(() => {
-    if (isOpen && autoRunOnOpen && !reportResult && !isRunning) {
-      handleRunReport();
+    if (isOpen && !result && !isRunning) {
+      const initialPrompt = effectiveRoute.purpose.systemInstruction || customSystemPrompt || defaultRoute.systemInstruction;
+      void handleGenerateReport(initialPrompt);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  const handleCopy = () => {
+    if (!result?.outputText) return;
+    navigator.clipboard.writeText(result.outputText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
 
   if (!isOpen) return null;
 
-  const handleCopyReport = () => {
-    if (!reportResult?.outputText) return;
-    navigator.clipboard.writeText(reportResult.outputText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    onNotify?.('Đã sao chép nội dung báo cáo để gửi Lark.', 'info');
-  };
-
-  const handleDownloadTxt = () => {
-    if (!reportResult?.outputText) return;
-    const blob = new Blob([reportResult.outputText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Bao-cao-${purposeId}-${new Date().toISOString().slice(0, 10)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[1px] animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-2xl bg-white h-dvh shadow-2xl border-l border-slate-200 flex flex-col justify-between overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-line bg-canvas flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
-              <FileText className="w-3.5 h-3.5 text-accent" />
-              <span className="font-medium text-ink-2">Lập báo cáo &amp; nhận xét nghiệp vụ</span>
-              <span>·</span>
-              <span className="font-mono">{activeProviderMeta.shortName} · {activeModelId}</span>
+    <div className="fixed inset-0 z-50 flex justify-end bg-ink/50 animate-fade-in">
+      <div className="bg-surface w-full max-w-2xl h-full shadow-2xl border-l border-line flex flex-col overflow-hidden">
+        {/* Header — Tuân thủ GEMINI.md: Không có dòng phụ đề xám dưới tiêu đề */}
+        <div className="px-5 py-4 bg-ink text-surface flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-accent-soft border border-accent-line flex items-center justify-center text-accent shrink-0">
+              <FileText className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-semibold text-ink">{moduleTitle}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-bold text-surface">{moduleTitle}</h3>
+              <span className="px-2 py-0.5 rounded text-2xs font-bold bg-accent/20 text-accent-fg border border-accent/30">
+                {effectiveRoute.purpose.departmentTag}
+              </span>
+            </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
-            title="Đóng khung báo cáo (Esc)"
+            className="p-1.5 rounded-lg text-muted hover:text-surface hover:bg-surface/10 transition cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Khung chọn Nhà cung cấp & Model xử lý */}
-          <div className="p-3.5 rounded-xl bg-canvas border border-line space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
-                <Sliders className="w-3.5 h-3.5 text-accent" />
-                <span>Cấu hình công cụ &amp; mô hình xử lý báo cáo</span>
-              </div>
-              <span className="text-2xs text-ink-3 font-mono">
-                Nguồn khóa: {effective.keySourceLabel}
-              </span>
+        {/* Thanh chọn Nhà cung cấp & Mô hình */}
+        <div className="px-5 py-3 bg-sunken border-b border-line space-y-2.5 shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-ink">
+              <Sliders className="w-3.5 h-3.5 text-accent" />
+              <span>Cấu hình công cụ xử lý & Câu lệnh (Prompt):</span>
             </div>
+            <span
+              className={`px-2 py-0.5 rounded-full text-2xs font-bold border ${
+                effectiveRoute.hasActiveExternalKey
+                  ? 'bg-success-soft text-success border-success-line'
+                  : 'bg-surface text-ink-2 border-line'
+              }`}
+            >
+              {effectiveRoute.keySourceLabel}
+            </span>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="text-2xs font-medium text-ink-2 block mb-1">
-                  Nhà cung cấp API:
-                </label>
-                <select
-                  value={selectedProvider}
-                  onChange={e => {
-                    const val = e.target.value as 'ROUTE_DEFAULT' | ApiProviderId;
-                    setSelectedProvider(val);
-                    setSelectedModel('');
-                  }}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-line-strong bg-surface text-xs font-medium text-ink"
-                >
-                  <option value="ROUTE_DEFAULT">
-                    Theo cấu hình mục đích ({PROVIDER_META[effective.primaryProvider].shortName})
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+            <div className="sm:col-span-4">
+              <select
+                value={selectedProvider}
+                onChange={e => handleProviderChange(e.target.value as ApiProviderId)}
+                className="w-full px-2.5 py-1.5 bg-surface border border-line rounded-lg text-xs font-bold text-ink outline-none focus:ring-2 focus:ring-accent"
+              >
+                <option value="GOOGLE">Google (Gemini API)</option>
+                <option value="OPENAI">OpenAI (ChatGPT API)</option>
+                <option value="CLAUDE">Anthropic (Claude API)</option>
+                <option value="INTERNAL">Bộ xử lý nội bộ Upbase</option>
+              </select>
+            </div>
+            <div className="sm:col-span-5">
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-surface border border-line rounded-lg text-xs font-semibold text-ink font-mono outline-none focus:ring-2 focus:ring-accent"
+              >
+                {availableModels.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.label} ({m.badge})
                   </option>
-                  <option value="GOOGLE">Google (Gemini API)</option>
-                  <option value="OPENAI">OpenAI (ChatGPT API)</option>
-                  <option value="CLAUDE">Anthropic (Claude API)</option>
-                  <option value="INTERNAL">Bộ xử lý nội bộ (Offline 0đ)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs font-medium text-ink-2 block mb-1">
-                  Mô hình (Model 2026):
-                </label>
-                <select
-                  value={activeModelId}
-                  onChange={e => setSelectedModel(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-line-strong bg-surface text-xs font-medium text-ink"
-                >
-                  {availableModels.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.label} ({m.id}) — ${m.inputCostPerMillionUsd}/${m.outputCostPerMillionUsd}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                ))}
+              </select>
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line text-2xs text-ink-2">
-              <div className="flex items-center gap-2 font-mono">
-                <Coins className="w-3.5 h-3.5 text-warning" />
-                <span>
-                  Đơn giá: <strong>${activeModelMeta.inputCostPerMillionUsd}/1M</strong> vào ·{' '}
-                  <strong>${activeModelMeta.outputCostPerMillionUsd}/1M</strong> ra
-                </span>
-              </div>
-
+            <div className="sm:col-span-3">
               <button
                 type="button"
-                onClick={() => setShowContextEditor(!showContextEditor)}
-                className="text-accent hover:underline font-medium inline-flex items-center gap-1 cursor-pointer"
-              >
-                <span>{showContextEditor ? 'Ẩn dữ liệu đầu vào' : 'Xem / sửa dữ liệu phân hệ đưa vào'}</span>
-                {showContextEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-
-            {showContextEditor && (
-              <div className="pt-1 space-y-1.5">
-                <textarea
-                  rows={5}
-                  value={editableContext}
-                  onChange={e => setEditableContext(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-line-strong bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
-                />
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={handleRunReport}
+                onClick={() => void handleGenerateReport()}
                 disabled={isRunning}
-                className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-medium inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                className="w-full px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-fg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer"
               >
-                {isRunning ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang tổng hợp số liệu &amp; lập báo cáo...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5" />
-                    <span>{reportResult ? 'Chạy lại báo cáo' : 'Lập báo cáo ngay'}</span>
-                  </>
-                )}
+                <RefreshCw className={`w-3.5 h-3.5 ${isRunning ? 'animate-spin' : ''}`} />
+                {isRunning ? 'Đang chạy...' : 'Chạy phân tích'}
               </button>
             </div>
           </div>
 
-          {/* Thẻ đo lường Token & Chi phí thực tế của lượt chạy */}
-          {reportResult && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-2.5 rounded-lg bg-canvas border border-line">
-                  <div className="text-2xs font-medium text-ink-3">Token đầu vào</div>
-                  <div className="text-sm font-semibold font-mono text-ink mt-0.5">
-                    {(reportResult.usage?.promptTokens || 0).toLocaleString('vi-VN')}
-                  </div>
-                  <div className="text-2xs text-ink-3">
-                    ${reportResult.usage?.ratePromptPerMillionUsd || 0}/1M tokens
-                  </div>
-                </div>
+          {/* Nút bật/tắt Thiết lập câu lệnh (Prompt) và Xem dữ liệu đầu vào */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/60">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPromptEditor(v => !v)}
+                className="text-2xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                Thiết lập câu lệnh (Prompt) phân hệ
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowContextEditor(v => !v)}
+                className="text-2xs font-semibold text-ink-2 hover:text-ink flex items-center gap-1 cursor-pointer"
+              >
+                {showContextEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                Dữ liệu đầu vào ({editableContext.split('\n').length} dòng)
+              </button>
+            </div>
+            {promptSavedToast && (
+              <span className="text-2xs font-semibold text-success flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                {promptSavedToast}
+              </span>
+            )}
+          </div>
 
-                <div className="p-2.5 rounded-lg bg-canvas border border-line">
-                  <div className="text-2xs font-medium text-ink-3">Token đầu ra</div>
-                  <div className="text-sm font-semibold font-mono text-ink mt-0.5">
-                    {(reportResult.usage?.completionTokens || 0).toLocaleString('vi-VN')}
-                  </div>
-                  <div className="text-2xs text-ink-3">
-                    ${reportResult.usage?.rateCompletionPerMillionUsd || 0}/1M tokens
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-canvas border border-line">
-                  <div className="text-2xs font-medium text-ink-3">Chi phí lượt chạy</div>
-                  <div className="text-sm font-semibold font-mono text-ink mt-0.5">
-                    {(reportResult.usage?.costVnd || 0).toLocaleString('vi-VN')} đ
-                  </div>
-                  <div className="text-2xs text-ink-3 font-mono">
-                    ~ ${(reportResult.usage?.costUsd || 0).toFixed(5)} USD
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-canvas border border-line">
-                  <div className="text-2xs font-medium text-ink-3">Thời gian &amp; mô hình</div>
-                  <div className="text-sm font-semibold font-mono text-ink mt-0.5 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-ink-3" />
-                    <span>{reportResult.latencyMs} ms</span>
-                  </div>
-                  <div className="text-2xs text-ink-3 font-mono truncate">
-                    {reportResult.modelUsed}
-                  </div>
+          {/* Khung chỉnh sửa Câu lệnh (Prompt) */}
+          {showPromptEditor && (
+            <div className="pt-1.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs font-bold text-ink">
+                  Câu lệnh chỉ dẫn (System Prompt) áp dụng cho {effectiveRoute.purpose.title}:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleResetPromptDefault}
+                    className="px-2 py-1 rounded border border-line bg-surface hover:bg-hover text-2xs font-semibold text-ink-2 flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Khôi phục gốc
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSavePromptDefault}
+                    className="px-2.5 py-1 rounded bg-accent-soft hover:bg-accent/20 text-accent border border-accent-line text-2xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Save className="w-3 h-3" />
+                    Lưu làm mặc định
+                  </button>
                 </div>
               </div>
+              <textarea
+                rows={3}
+                value={editablePrompt}
+                onChange={e => setEditablePrompt(e.target.value)}
+                placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho báo cáo phân hệ này..."
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs text-ink leading-relaxed outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+          )}
 
-              {reportResult.usedFallback && reportResult.fallbackReason && (
-                <div className="px-3 py-2 rounded-lg bg-warning-soft border border-line text-xs text-ink flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-                  <span>{reportResult.fallbackReason}</span>
+          {/* Khung xem / sửa dữ liệu phân hệ đưa vào */}
+          {showContextEditor && (
+            <div className="pt-1 space-y-1.5">
+              <span className="text-2xs font-bold text-ink block">
+                Dữ liệu ngữ cảnh của phân hệ gửi vào báo cáo:
+              </span>
+              <textarea
+                rows={5}
+                value={editableContext}
+                onChange={e => setEditableContext(e.target.value)}
+                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs font-mono text-ink leading-relaxed outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Nội dung báo cáo kết quả */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-surface">
+          {isRunning ? (
+            <div className="py-16 text-center space-y-3">
+              <RefreshCw className="w-8 h-8 text-accent animate-spin mx-auto" />
+              <p className="text-sm font-bold text-ink">Đang tổng hợp số liệu và lập báo cáo nhận xét...</p>
+            </div>
+          ) : result ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-sunken border border-line rounded-xl px-3.5 py-2.5">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-bold text-ink">Nguồn xử lý:</span>
+                  <span className="px-2 py-0.5 rounded bg-accent-soft text-accent font-bold border border-accent-line">
+                    {result.providerUsedLabel}
+                  </span>
+                  <span className="font-mono text-2xs text-ink-2 bg-surface px-2 py-0.5 rounded border border-line">
+                    {result.modelUsed}
+                  </span>
+                  <span className="text-2xs text-muted flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {result.latencyMs} ms
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="px-2.5 py-1 rounded-lg bg-surface hover:bg-hover border border-line text-ink text-2xs font-bold flex items-center gap-1 transition cursor-pointer"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'Đã sao chép' : 'Sao chép báo cáo'}
+                </button>
+              </div>
+
+              {result.fallbackReason && (
+                <div className="px-3.5 py-2 rounded-lg bg-warning-soft border border-warning-line text-warning text-2xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-warning shrink-0" />
+                  <span>{result.fallbackReason}</span>
                 </div>
               )}
 
-              {/* Nội dung báo cáo */}
-              <div className="rounded-xl border border-line bg-surface overflow-hidden shadow-xs">
-                <div className="px-4 py-2.5 bg-ink text-white flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-positive" />
-                    <span>BÁO CÁO PHÂN TÍCH & ĐỀ XUẤT HÀNH ĐỘNG</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handleCopyReport}
-                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-2xs font-semibold inline-flex items-center gap-1 transition cursor-pointer"
-                    >
-                      {copied ? <Check className="w-3 h-3 text-positive" /> : <Copy className="w-3 h-3" />}
-                      <span>{copied ? 'Đã chép' : 'Sao chép gửi Lark'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadTxt}
-                      className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-2xs font-semibold inline-flex items-center gap-1 transition cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>Tải .txt</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-surface">
-                  <pre className="whitespace-pre-wrap font-sans text-xs text-ink leading-relaxed">
-                    {reportResult.outputText}
-                  </pre>
-                </div>
+              <div className="p-4 rounded-xl bg-ink text-surface font-mono text-xs leading-relaxed whitespace-pre-wrap border border-ink-2 shadow-inner">
+                {result.outputText}
               </div>
+            </div>
+          ) : (
+            <div className="py-12 text-center text-xs text-muted">
+              Bấm &quot;Chạy phân tích&quot; để tạo báo cáo đánh giá cho phân hệ này.
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-          <span>
-            Mọi lượt chạy đều tự động cộng dồn Token & Chi phí vào mục <strong>Cấu hình API & Công cụ</strong>.
-          </span>
+        <div className="px-5 py-3 bg-sunken border-t border-line flex items-center justify-between shrink-0">
+          <p className="text-2xs text-muted">
+            Bạn có thể tùy chỉnh câu lệnh (Prompt) ngay phía trên hoặc quản lý tập trung tại mục <strong>Cấu hình API</strong>.
+          </p>
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold cursor-pointer"
+            className="px-4 py-1.5 rounded-lg bg-ink hover:bg-ink-2 text-surface text-xs font-bold transition cursor-pointer"
           >
             Đóng
           </button>

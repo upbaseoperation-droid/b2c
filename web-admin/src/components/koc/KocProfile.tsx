@@ -78,6 +78,7 @@ import {
   type DuplicateMatch,
   type KocPerformanceSummary,
 } from './kocUtils';
+import { KocHistoryEvaluationModal } from './KocHistoryEvaluationModal';
 
 const cx = (...p: Array<string | false | null | undefined>) => p.filter(Boolean).join(' ');
 
@@ -144,6 +145,7 @@ export function KocProfile({
   const [selectedCollabDetail, setSelectedCollabDetail] = useState<BookingDealItem | null>(null);
   const [vietQrDeal, setVietQrDeal] = useState<KocItem | null>(null);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [historyEvalModalOpen, setHistoryEvalModalOpen] = useState(false);
 
   const missingDocs = !hasLegalId(koc);
   const handle = koc.channelId.replace(/^@/, '');
@@ -229,6 +231,9 @@ export function KocProfile({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" icon={FileText} onClick={() => setHistoryEvalModalOpen(true)}>
+            Đánh giá lịch sử & rủi ro
+          </Button>
           {onSearchSocialChannels && (
             <Button variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
               Tìm kênh MXH
@@ -288,6 +293,7 @@ export function KocProfile({
                   currentUser={currentUser}
                   onViewDetail={setSelectedCollabDetail}
                   onSelectDealForContract={onSelectDealForContract}
+                  onOpenHistoryEvaluation={() => setHistoryEvalModalOpen(true)}
                 />
               )}
 
@@ -331,6 +337,16 @@ export function KocProfile({
 
       {/* Modal đồng bộ chỉ số TikTok Seller */}
       {syncModalOpen && <TikTokSellerSyncModal koc={koc} onClose={() => setSyncModalOpen(false)} />}
+
+      {/* Modal báo cáo đánh giá lịch sử hợp tác, mức độ phù hợp & rủi ro KOC */}
+      <KocHistoryEvaluationModal
+        open={historyEvalModalOpen}
+        onClose={() => setHistoryEvalModalOpen(false)}
+        koc={koc}
+        deals={deals}
+        duplicates={duplicates}
+        onCreateBooking={onCreateBooking}
+      />
     </div>
   );
 }
@@ -774,6 +790,7 @@ function CollaborationHistorySection({
   currentUser,
   onViewDetail,
   onSelectDealForContract,
+  onOpenHistoryEvaluation,
 }: {
   koc: KocItem;
   deals: BookingDealItem[];
@@ -781,6 +798,7 @@ function CollaborationHistorySection({
   currentUser?: UserProfile;
   onViewDetail: (d: BookingDealItem) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  onOpenHistoryEvaluation?: () => void;
 }) {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
   const [selectedFormatFilter, setSelectedFormatFilter] = useState<string>('ALL');
@@ -994,11 +1012,18 @@ function CollaborationHistorySection({
           <SectionHeader
             title="Tổng hợp hiệu quả hợp tác tích lũy"
           />
-          {stats.overallRoi >= 3 && (
-            <span className="text-xs font-medium text-positive flex items-center gap-1">
-              <Award className="w-3.5 h-3.5" /> Hiệu suất sinh lời cao ({stats.overallRoi.toFixed(1)}x)
-            </span>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {stats.overallRoi >= 3 && (
+              <span className="text-xs font-medium text-positive flex items-center gap-1">
+                <Award className="w-3.5 h-3.5" /> Hiệu suất sinh lời cao ({stats.overallRoi.toFixed(1)}x)
+              </span>
+            )}
+            {onOpenHistoryEvaluation && (
+              <Button size="sm" variant="secondary" icon={FileText} onClick={onOpenHistoryEvaluation}>
+                Báo cáo đánh giá lịch sử & rủi ro
+              </Button>
+            )}
+          </div>
         </div>
 
         <StatRow>

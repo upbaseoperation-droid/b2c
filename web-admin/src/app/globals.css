@@ -319,6 +319,7 @@ select {
   background-color: var(--color-surface);
   color: var(--color-ink);
   border-color: var(--color-line-strong);
+  max-width: 100%;
 }
 input::placeholder, textarea::placeholder {
   color: var(--color-ink-3);
@@ -451,7 +452,8 @@ span[class*="px-"][class*="rounded"]:not([class*="block"]) {
   .workspace-panel > header { padding: 16px 20px; }
 }
 .app-header { box-shadow: 0 1px 8px rgb(22 23 26 / 0.025); }
-.workspace-view { contain: layout style; }
+.workspace-view { contain: layout style; min-width: 0; max-width: 100%; }
+.workspace-view > *, .workspace-panel, .card-enterprise { min-width: 0; max-width: 100%; }
 button { -webkit-tap-highlight-color: transparent; }
 button:not(:disabled), summary { cursor: pointer; }
 button:disabled { cursor: not-allowed; }

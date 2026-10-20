@@ -1724,7 +1724,7 @@ export function CtvProfileDetail({
                   />
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-line bg-sunken/60 text-ink-3 font-semibold text-2xs">
                         <th className="py-2.5 px-4">MÃ PHIẾU DNTT</th>
@@ -1881,7 +1881,7 @@ export function CtvProfileDetail({
                   />
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-line bg-sunken/60 text-ink-3 font-semibold text-2xs">
                         <th className="py-2.5 px-4">MÃ VẬN ĐƠN</th>

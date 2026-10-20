@@ -1212,8 +1212,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </div>
 
           {/* Date range picker filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
-            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200 max-w-full">
+            <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
             <span className="text-slate-500 font-medium">Lọc ngày:</span>
             <input
               type="date"
@@ -1275,19 +1275,19 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             brandStoreHierarchy.map(bGroup => (
               <div key={bGroup.brandId} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Brand Header Banner */}
-                <div className="bg-slate-50 p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-primary text-white font-semibold flex items-center justify-center text-lg shadow-sm">
+                <div className="bg-slate-50 p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <div className="w-11 h-11 rounded-xl bg-primary text-white font-semibold flex items-center justify-center text-lg shadow-sm shrink-0">
                       {bGroup.brandName.slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <h2 className="text-lg font-semibold text-slate-900">{bGroup.brandName}</h2>
                         <span className="text-xs font-medium text-slate-500">
                           · {bGroup.storeGroups.length} gian hàng · {bGroup.totalProductsCount} sản phẩm
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
+                      <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                         <span>Ngành hàng: <strong>{bGroup.brandCategory}</strong></span>
                         <span>•</span>
                         <span>Đã chốt: <strong className="text-slate-800">{bGroup.lockedCount}/{bGroup.totalProductsCount} SKU</strong></span>
@@ -1299,7 +1299,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleOpenCreateForStore(bGroup.brandId, bGroup.storeGroups[0]?.storeId || '')}
@@ -1311,12 +1311,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </div>
 
                 {/* Stores & Their Focus Products */}
-                <div className="p-6 space-y-8 bg-slate-50/50">
+                <div className="p-3.5 sm:p-6 space-y-6 sm:space-y-8 bg-slate-50/50">
                   {bGroup.storeGroups.map(sGroup => (
                     <div key={sGroup.storeId} className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
                       {/* Store Sub-Header */}
-                      <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5">
+                      <div className="px-4 sm:px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                           <ChannelTag channel={sGroup.platform} />
                           <span className="font-semibold text-slate-800 text-sm">
                             {sGroup.storeName}
@@ -1327,21 +1327,21 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               href={sGroup.storeUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-accent hover:underline text-xs flex items-center gap-1 font-medium ml-1"
+                              className="text-accent hover:underline text-xs flex items-center gap-1 font-medium"
                             >
                               <ExternalLink className="w-3 h-3" /> Ghé gian hàng
                             </a>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
                           <span>Tồn kho gian hàng: <strong className="text-slate-800">{sGroup.totalStock.toLocaleString()}</strong></span>
                           <span>•</span>
                           <span>Hạn mức mẫu: <strong className="text-amber-700">{sGroup.totalSampleQuota}</strong></span>
                           <button
                             type="button"
                             onClick={() => handleOpenCreateForStore(bGroup.brandId, sGroup.storeId)}
-                            className="text-accent hover:underline font-semibold text-xs flex items-center gap-1 ml-2"
+                            className="text-accent hover:underline font-semibold text-xs flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3" /> Thêm SKU
                           </button>
@@ -1349,7 +1349,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                       </div>
 
                       {/* Product Cards Grid inside this Store */}
-                      <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="p-3.5 sm:p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {sGroup.items.map(prod => (
                           <div
                             key={prod.id}
@@ -1357,7 +1357,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               setSelectedProduct(prod);
                               setActiveDrawerTab('SPECS');
                             }}
-                            className="bg-white rounded-xl border border-slate-200 hover:border-line-strong hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
+                            className="bg-white rounded-xl border border-slate-200 hover:border-line-strong hover:shadow-md transition-colors cursor-pointer flex flex-col justify-between overflow-hidden group"
                           >
                             {/* Card Top: Badges & Cycle */}
                             <div className="p-4 space-y-3">
@@ -1379,9 +1379,9 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
                               {/* Commercial Conditions Strip */}
                               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1.5 text-xs">
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center justify-between gap-1">
                                   <span className="text-slate-500">Giá deal chiến dịch:</span>
-                                  <div className="flex items-center gap-1.5">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="line-through text-slate-400 text-2xs font-code">
                                       {formatVnd(prod.originalPrice)}
                                     </span>

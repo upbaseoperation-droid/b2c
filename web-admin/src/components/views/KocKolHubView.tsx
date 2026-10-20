@@ -2125,8 +2125,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     </button>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
-                    <table className="w-full text-left text-xs">
+                  <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-x-auto">
+                    <table className="w-full min-w-[640px] text-left text-xs">
                       <thead className="bg-slate-50/50 text-slate-500 border-b border-slate-100 font-medium text-2xs">
                         <tr>
                           <th className="py-2.5 px-4">Chiến dịch &amp; Sản phẩm</th>

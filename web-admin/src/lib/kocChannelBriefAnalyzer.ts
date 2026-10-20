@@ -26,6 +26,7 @@ export interface BrandBriefCriteriaInput {
     provider?: 'GEMINI' | 'OPENAI';
     apiKey?: string;
     model?: string;
+    systemInstruction?: string;
   };
 }
 
@@ -421,7 +422,12 @@ async function tryEnhanceWithLlmIfConfigured(
     .map((c) => `- @${c.username}: "${c.text}"`)
     .join('\n');
 
+  const customInstructionLine = criteria.llmConfig?.systemInstruction?.trim()
+    ? `Chỉ dẫn nghiệp vụ (Prompt) tùy chỉnh: ${criteria.llmConfig.systemInstruction.trim()}`
+    : '';
+
   const prompt = [
+    ...(customInstructionLine ? [customInstructionLine] : []),
     `Phân tích kênh TikTok @${report.handle} (${report.nickname}, ${report.followers.toLocaleString('vi-VN')} followers, View trung vị ${report.videoSampleStats.medianViews.toLocaleString('vi-VN')}, ER ${report.videoSampleStats.avgEngagementRatePct}%) để ghép với Brief của thương hiệu "${criteria.brandName}" (${criteria.productName || 'Sản phẩm chủ lực'}).`,
     `USP bắt buộc của sản phẩm: ${(criteria.requiredUspKeywords || []).join(', ') || 'Chính hãng, hiệu quả thực tế'}.`,
     `Đối tượng mục tiêu: ${criteria.targetAudience || 'Khách hàng mục tiêu của nhãn hàng'}.`,

@@ -12,6 +12,7 @@ export type OperationalApiPurposeId =
   | 'STAFF_REVIEW'
   | 'PLAN_ADS_ANALYSIS'
   | 'KOC_MATCHING'
+  | 'KOC_HISTORY_EVALUATION'
   | 'KNOWLEDGE_QA';
 
 export interface ApiModelOption {
@@ -637,9 +638,27 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       sampleInputText:
         'Nhãn hàng: La Roche-Posay Vietnam Official (Ngành Dược mỹ phẩm - Tone Bác sĩ / Chuyên gia da liễu)\nSản phẩm đẩy: Kem dưỡng phục hồi Cicaplast Baume B5+\nNgân sách Order Net giao tháng 10: 45.000.000 VNĐ\nMục tiêu cam kết: Tối thiểu 25 video lên sóng (bao gồm cả Paid KOC và FOC), tỷ lệ chi phí CIR mục tiêu <= 18%.',
     },
+    KOC_HISTORY_EVALUATION: {
+      purposeId: 'KOC_HISTORY_EVALUATION',
+      title: '7. Đánh giá lịch sử hợp tác, mức độ phù hợp & rủi ro KOC',
+      departmentTag: 'Danh bạ KOC & Booking',
+      usedInScreens: ['Danh bạ KOC', 'Hồ sơ KOC', 'Booking', 'Đề xuất KOC'],
+      description:
+        'Phân tích lịch sử hợp tác của KOC qua các chiến dịch (Paid/FOC, GMV, ROI, CPO), chấm điểm mức độ phù hợp tái ký, nhận diện rủi ro trễ hạn SLA, rủi ro pháp lý/đổi tài khoản nhận tiền và lịch sử bị nhãn hàng từ chối.',
+      primaryProvider: 'GOOGLE',
+      primaryModel: 'gemini-3.8-flash',
+      fallbackProvider: 'OPENAI',
+      fallbackModel: 'gpt-5-mini',
+      temperature: 0.2,
+      maxTokens: 2200,
+      systemInstruction:
+        'Bạn là Chuyên gia Thẩm định Hồ sơ & Rủi ro KOC tại Phòng Marketing B2C Upbase. Dựa trên lịch sử hợp tác (tổng số deal Paid/FOC, GMV, ROI, CPO, tỷ lệ video hoàn vốn), kỷ luật tiến độ SLA (tỷ lệ nộp kịch bản/video đúng hạn, bàn giao mã Spark Ads), tình trạng pháp lý/thanh toán (CCCD/MST, dùng chung MCN, đổi nhiều tài khoản nhận tiền) và phản hồi từ Nhãn hàng/PIC, hãy lập Báo cáo Đánh giá KOC gồm 4 phần: (1) Kết luận mức độ phù hợp (Phù hợp tái ký / Cân nhắc có điều kiện / Rủi ro cao hạn chế book), (2) Phân tích hiệu quả thương mại lịch sử, (3) Nhận diện chi tiết các rủi ro (Tiến độ SLA, Pháp lý & Thuế, Đơn giá, Nội dung/Thương hiệu), (4) Khuyến nghị đàm phán đơn giá và điều khoản ràng buộc khi book.',
+      sampleInputText:
+        'Hồ sơ KOC: Hà Linh Official (@halinhofficial) — Ngành Làm đẹp & Chăm sóc cá nhân | Khung lương KL6 (15M - 25M)\nLịch sử hợp tác: 6 chiến dịch (5 Paid, 1 FOC) | Tổng chi phí Net: 85.000.000đ | Tổng GMV: 310.000.000đ | ROI trung bình: 3.65x | CPO: 42.000đ.\nTiến độ SLA: Nộp kịch bản đúng hạn 83%, lên bài đúng hạn 67% (2 chiến dịch nộp video trễ 2 ngày).\nPháp lý & Thanh toán: Đã xác minh CCCD (Cá nhân khấu trừ 10% TNCN), ghi nhận 2 lần đổi người thụ hưởng nhận tiền hộ.\nPhản hồi lịch sử: Chuyển đổi tốt nhóm kem chống nắng nhưng từng bị 1 nhãn hàng nhắc nhở vì gắn giỏ hàng muộn 4 tiếng.',
+    },
     KNOWLEDGE_QA: {
       purposeId: 'KNOWLEDGE_QA',
-      title: '7. Hỏi đáp quy trình & Tra cứu sổ tay Marketing B2C',
+      title: '8. Hỏi đáp quy trình & Tra cứu sổ tay Marketing B2C',
       departmentTag: 'Toàn phòng B2C',
       usedInScreens: ['Sổ tay & Hỏi đáp'],
       description:
@@ -755,6 +774,7 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
         STAFF_REVIEW: mergeRoute('STAFF_REVIEW'),
         PLAN_ADS_ANALYSIS: mergeRoute('PLAN_ADS_ANALYSIS'),
         KOC_MATCHING: mergeRoute('KOC_MATCHING'),
+        KOC_HISTORY_EVALUATION: mergeRoute('KOC_HISTORY_EVALUATION'),
         KNOWLEDGE_QA: mergeRoute('KNOWLEDGE_QA'),
       },
       updatedAt: parsed.updatedAt || INITIAL_API_WORKSPACE_CONFIG.updatedAt,
@@ -790,6 +810,39 @@ export function maskApiKey(key?: string): string {
   const clean = key.trim();
   if (clean.length <= 10) return '••••••••';
   return `${clean.slice(0, 7)}••••••••••••${clean.slice(-4)}`;
+}
+
+/**
+ * Lấy cấu hình mặc định ban đầu của một nghiệp vụ (dùng để đối chiếu hoặc khôi phục câu lệnh gốc)
+ */
+export function getDefaultPurposeRoute(purposeId: OperationalApiPurposeId): PurposeRoutingRule {
+  return INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId];
+}
+
+/**
+ * Cập nhật và lưu câu lệnh chỉ dẫn (System Prompt) cho một phân hệ nghiệp vụ bất kỳ
+ */
+export function updatePurposeSystemInstruction(
+  purposeId: OperationalApiPurposeId,
+  systemInstruction: string
+): PurposeRoutingRule {
+  const cfg = loadApiWorkspaceConfig();
+  const base = cfg.purposeRoutes[purposeId] || INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId];
+  const updatedRule: PurposeRoutingRule = {
+    ...base,
+    systemInstruction: systemInstruction.trim() || INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId].systemInstruction,
+  };
+  cfg.purposeRoutes[purposeId] = updatedRule;
+  saveApiWorkspaceConfig(cfg);
+  return updatedRule;
+}
+
+/**
+ * Khôi phục câu lệnh chỉ dẫn (System Prompt) của phân hệ về mặc định gốc của hệ thống
+ */
+export function resetPurposeSystemInstruction(purposeId: OperationalApiPurposeId): PurposeRoutingRule {
+  const defaultRule = INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId];
+  return updatePurposeSystemInstruction(purposeId, defaultRule.systemInstruction);
 }
 
 /**
@@ -1135,6 +1188,7 @@ export function getAggregatedUsageMetrics(logs: ApiUsageLogItem[]) {
     STAFF_REVIEW: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     PLAN_ADS_ANALYSIS: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     KOC_MATCHING: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    KOC_HISTORY_EVALUATION: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     KNOWLEDGE_QA: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
   };
 

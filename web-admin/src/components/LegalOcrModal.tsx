@@ -18,9 +18,18 @@ import {
   ChevronUp,
   Eye,
   Info,
+  Sliders,
+  RotateCcw,
+  Save,
 } from 'lucide-react';
 import { OcrLegalExtractionResult, OcrExtractedFields } from '../lib/types';
 import { SAMPLE_OCR_PRESETS } from '../lib/ocrPresets';
+import {
+  loadApiWorkspaceConfig,
+  getEffectiveConfigForPurpose,
+  updatePurposeSystemInstruction,
+  resetPurposeSystemInstruction,
+} from '../lib/apiKeyConfig';
 
 interface LegalOcrModalProps {
   isOpen: boolean;
@@ -44,6 +53,12 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   const [showRawText, setShowRawText] = useState<boolean>(false);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const [showOcrPromptEditor, setShowOcrPromptEditor] = useState<boolean>(false);
+  const [ocrPrompt, setOcrPrompt] = useState<string>(() => {
+    const cfg = loadApiWorkspaceConfig();
+    return getEffectiveConfigForPurpose('LEGAL_OCR', cfg).purpose.systemInstruction;
+  });
+  const [promptSavedMsg, setPromptSavedMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard accessibility: ESC to close
@@ -248,11 +263,68 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             </div>
           </div>
 
-          <div className="text-2xs text-muted flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-success" />
-            Bảo mật thông tin nhân thân theo luật an ninh mạng Việt Nam
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowOcrPromptEditor(v => !v)}
+              className="px-2.5 py-1 rounded-md border border-line bg-surface hover:bg-hover text-2xs font-semibold text-ink flex items-center gap-1 cursor-pointer"
+            >
+              <Sliders className="w-3.5 h-3.5 text-primary" />
+              {showOcrPromptEditor ? 'Ẩn câu lệnh (Prompt)' : 'Thiết lập câu lệnh (Prompt)'}
+            </button>
+            <div className="text-2xs text-muted flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-success" />
+              Bảo mật thông tin nhân thân theo luật an ninh mạng Việt Nam
+            </div>
           </div>
         </div>
+
+        {showOcrPromptEditor && (
+          <div className="px-4 sm:px-6 py-3 bg-surface border-b border-line space-y-2 shrink-0">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-ink">
+                Câu lệnh chỉ dẫn (System Prompt) bóc tách giấy tờ pháp lý (LEGAL_OCR):
+              </span>
+              <div className="flex items-center gap-1.5">
+                {promptSavedMsg && (
+                  <span className="text-2xs font-semibold text-success mr-1">{promptSavedMsg}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const reset = resetPurposeSystemInstruction('LEGAL_OCR');
+                    setOcrPrompt(reset.systemInstruction);
+                    setPromptSavedMsg('Đã khôi phục câu lệnh gốc');
+                    setTimeout(() => setPromptSavedMsg(null), 2200);
+                  }}
+                  className="px-2 py-1 rounded border border-line bg-sunken hover:bg-hover text-2xs font-semibold text-ink-2 flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Khôi phục gốc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const saved = updatePurposeSystemInstruction('LEGAL_OCR', ocrPrompt);
+                    setOcrPrompt(saved.systemInstruction);
+                    setPromptSavedMsg('Đã lưu câu lệnh mặc định');
+                    setTimeout(() => setPromptSavedMsg(null), 2200);
+                  }}
+                  className="px-2.5 py-1 rounded bg-primary hover:bg-primary-hover text-primary-fg text-2xs font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <Save className="w-3 h-3" />
+                  Lưu làm mặc định
+                </button>
+              </div>
+            </div>
+            <textarea
+              rows={2}
+              value={ocrPrompt}
+              onChange={e => setOcrPrompt(e.target.value)}
+              className="w-full px-3 py-2 bg-sunken border border-line rounded-lg text-xs text-ink outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        )}
 
         {ocrError && (
           <div className="mx-4 sm:mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
@@ -272,9 +344,6 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <label className="text-xs font-semibold text-ink block">
                 Tải lên bản chụp CCCD hoặc giấy phép ĐKKD thực tế
               </label>
-              <p className="text-2xs text-muted">
-                Chụp ảnh rõ nét, vuông góc, không bị lóa hoặc che góc giấy tờ
-              </p>
             </div>
 
             {/* Target Hint Filter Tabs */}
@@ -546,7 +615,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <label className="text-2xs font-semibold text-ink-2 block mb-1">Ngày sinh:</label>
                           <input

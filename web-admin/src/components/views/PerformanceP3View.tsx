@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { ChannelTag, Avatar, ConfirmDialog, Tabs, Status, useFlipList } from '../ui';
-import { 
-  Coins, 
-  TrendingUp, 
-  CheckCircle2, 
-  AlertCircle, 
-  HelpCircle,
-  Sparkles
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import {
+  Button,
+  ChannelTag,
+  Chips,
+  ConfirmDialog,
+  DataTable,
+  FilterBar,
+  Panel,
+  Person,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  Tabs,
+} from '../ui';
 import {
   StaffP3Record,
   StoreDifficultyConfig,
@@ -17,7 +23,6 @@ import {
   StorePortfolioItem,
   BookingDealItem,
   UserProfile,
-  STORE_COEFFICIENT_TABLE_2,
   normalizeStoreCoefficient,
   formatStoreCoefficient,
   getStoreTierByCoefficient,
@@ -37,14 +42,16 @@ export interface PerformanceP3ViewProps {
 export default function PerformanceP3View({
   storePortfolios = [],
   onNotify,
-  onUpdateStoreDifficulty
+  onUpdateStoreDifficulty,
 }: PerformanceP3ViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
   const [staffRecords, setStaffRecords] = useState<StaffP3Record[]>(MOCK_P3_STAFF_RECORDS);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
 
-  const initialMergedStores = React.useMemo<StoreDifficultyConfig[]>(() => {
+  const initialMergedStores = useMemo<StoreDifficultyConfig[]>(() => {
     if (storePortfolios.length === 0) return MOCK_STORE_DIFFICULTIES;
-    return storePortfolios.map(st => {
+    return storePortfolios.map((st) => {
       const normalized = normalizeStoreCoefficient(st.difficultyTier, st.difficultyMultiplier);
       return {
         id: st.id,
@@ -78,40 +85,62 @@ export default function PerformanceP3View({
       setStoreConfigs(initialMergedStores);
     }
   }
-  const [selectedRole, setSelectedRole] = useState<string>('ALL');
+  const [selectedRole, setSelectedRole] = useState<'ALL' | 'Booking' | 'Content' | 'Brand'>('ALL');
   const [aiReviewStaff, setAiReviewStaff] = useState<string | null>(null);
   const [approvingRecord, setApprovingRecord] = useState<StaffP3Record | null>(null);
 
   // KPI summaries
   const totalBonusFund = staffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
   const totalWorkloadPoints = staffRecords.reduce((sum, r) => sum + r.calculatedWorkloadPoints, 0);
-  const approvedCount = staffRecords.filter(r => r.approvalStatus === 'ĐÃ_DUYỆT').length;
-  const pendingCount = staffRecords.filter(r => r.approvalStatus === 'CHỜ_DUYỆT').length;
+  const approvedCount = staffRecords.filter((r) => r.approvalStatus === 'ĐÃ_DUYỆT').length;
+  const pendingCount = staffRecords.filter((r) => r.approvalStatus === 'CHỜ_DUYỆT').length;
 
-  const filteredStaff = staffRecords.filter(r => {
-    return selectedRole === 'ALL' || r.role === selectedRole;
-  });
-  const staffBodyRef = useRef<HTMLTableSectionElement>(null);
-  useFlipList(staffBodyRef, filteredStaff.map(r => r.id).join('|'));
+  const filteredStaff = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return staffRecords.filter((r) => {
+      if (selectedRole !== 'ALL' && r.role !== selectedRole) return false;
+      if (q) {
+        const matchName = r.staffName.toLowerCase().includes(q);
+        const matchStore = r.assignedStore.toLowerCase().includes(q);
+        if (!matchName && !matchStore) return false;
+      }
+      return true;
+    });
+  }, [staffRecords, selectedRole, searchQuery]);
+
+  const filteredStores = useMemo(() => {
+    const q = storeSearchQuery.trim().toLowerCase();
+    if (!q) return storeConfigs;
+    return storeConfigs.filter(
+      (s) =>
+        s.storeName.toLowerCase().includes(q) ||
+        (s.brandName || "").toLowerCase().includes(q) ||
+        s.assignedPic.toLowerCase().includes(q)
+    );
+  }, [storeConfigs, storeSearchQuery]);
 
   const handleApprove = (id: string) => {
-    setStaffRecords(prev => prev.map(r => {
-      if (r.id === id) {
-        return { ...r, approvalStatus: 'ĐÃ_DUYỆT' };
-      }
-      return r;
-    }));
+    setStaffRecords((prev) =>
+      prev.map((r) => {
+        if (r.id === id) {
+          return { ...r, approvalStatus: 'ĐÃ_DUYỆT' };
+        }
+        return r;
+      })
+    );
   };
 
   const handleUpdateStoreMultiplier = (storeId: string, newMultiplier: number) => {
     const tier: StoreDifficultyTier = getStoreTierByCoefficient(newMultiplier);
 
-    setStoreConfigs(prev => prev.map(s => {
-      if (s.id === storeId) {
-        return { ...s, multiplier: newMultiplier, difficultyTier: tier };
-      }
-      return s;
-    }));
+    setStoreConfigs((prev) =>
+      prev.map((s) => {
+        if (s.id === storeId) {
+          return { ...s, multiplier: newMultiplier, difficultyTier: tier };
+        }
+        return s;
+      })
+    );
 
     if (onUpdateStoreDifficulty) {
       onUpdateStoreDifficulty(storeId, newMultiplier, tier);
@@ -122,258 +151,268 @@ export default function PerformanceP3View({
   };
 
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-surface border border-line rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-ink-3 mb-1">
-            <span className="text-xs font-medium">Tổng quỹ thưởng P3</span>
-            <Coins className="w-4 h-4 text-warning" />
-          </div>
-          <div className="text-xl font-semibold text-ink font-mono whitespace-nowrap">{formatVnd(totalBonusFund)}</div>
-          <div className="text-2xs text-positive font-medium mt-0.5">Dự toán ngân sách tháng</div>
-        </div>
+    <div className="space-y-4">
+      <StatRow size="sm">
+        <Stat
+          label="Tổng quỹ thưởng P3"
+          value={formatVnd(totalBonusFund)}
+          note="Dự toán ngân sách tháng"
+        />
+        <Stat
+          label="Tổng điểm khối lượng"
+          value={`${totalWorkloadPoints.toFixed(1)} điểm`}
+          note="Đã quy đổi theo hệ số gian hàng"
+        />
+        <Stat
+          label="Hồ sơ đã duyệt"
+          value={`${approvedCount} / ${staffRecords.length}`}
+          note="Trưởng phòng đã xác nhận"
+        />
+        <Stat
+          label="Chờ duyệt thưởng"
+          value={`${pendingCount} hồ sơ`}
+          note="Cần Trưởng phòng xác nhận"
+        />
+      </StatRow>
 
-        <div className="bg-surface border border-line rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-ink-3 mb-1">
-            <span className="text-xs font-medium">Tổng điểm khối lượng việc</span>
-            <TrendingUp className="w-4 h-4 text-accent" />
-          </div>
-          <div className="text-xl font-semibold text-ink">{totalWorkloadPoints.toFixed(1)} điểm</div>
-          <div className="text-2xs text-ink-3 mt-0.5">Đã quy đổi theo độ khó gian hàng</div>
-        </div>
-
-        <div className="bg-surface border border-line rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-ink-3 mb-1">
-            <span className="text-xs font-medium">Hồ sơ đã duyệt</span>
-            <CheckCircle2 className="w-4 h-4 text-positive" />
-          </div>
-          <div className="text-xl font-semibold text-positive">{approvedCount} / {staffRecords.length}</div>
-          <div className="text-2xs text-ink-3 mt-0.5">Trưởng phòng đã thẩm định</div>
-        </div>
-
-        <div className="bg-surface border border-line rounded-xl p-3.5">
-          <div className="flex items-center justify-between text-ink-3 mb-1">
-            <span className="text-xs font-medium">Chờ duyệt thưởng</span>
-            <AlertCircle className="w-4 h-4 text-warning" />
-          </div>
-          <div className="text-xl font-semibold text-warning">{pendingCount} hồ sơ</div>
-          <div className="text-2xs text-ink-3 mt-0.5">Cần Trưởng phòng xác nhận</div>
-        </div>
-      </div>
-
-      {/* Subtabs */}
       <Tabs
         items={[
           { key: 'CALC', label: 'Bảng tính thưởng P3', count: staffRecords.length },
-          { key: 'STORE_MATRIX', label: 'Bảng 2. Hệ số gian hàng (Cấp Sàn & Brand)', count: storeConfigs.length },
+          { key: 'STORE_MATRIX', label: 'Bảng 2. Hệ số gian hàng', count: storeConfigs.length },
         ]}
         value={activeTab}
         onChange={setActiveTab}
       />
 
       {activeTab === 'CALC' ? (
-        <div className="space-y-4">
-          {/* Role Filter */}
-          <div className="flex items-center justify-between gap-3 bg-surface p-3 border border-line rounded-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-ink-3">Lọc theo bộ phận:</span>
-              {(['ALL', 'Booking', 'Content', 'Brand'] as const).map(role => (
-                <button
-                  key={role}
-                  onClick={() => setSelectedRole(role)}
-                  className={`px-2.5 py-1 text-xs rounded-md transition ${
-                    selectedRole === role ? 'bg-primary text-white font-semibold' : 'bg-sunken text-ink-2 hover:text-ink'
-                  }`}
-                >
-                  {role === 'ALL' ? 'Tất cả' : role}
-                </button>
-              ))}
-            </div>
+        <Panel flush>
+          <FilterBar
+            search={{ value: searchQuery, onChange: setSearchQuery, placeholder: "Tìm nhân sự, gian hàng phụ trách..." }}
+            filters={
+              <span className="text-xs text-ink-3 tabular-nums">
+                {filteredStaff.length} nhân sự
+              </span>
+            }
+            chips={<Chips
+              value={selectedRole}
+              onChange={setSelectedRole}
+              items={[
+                { key: 'ALL', label: 'Tất cả', count: staffRecords.length },
+                {
+                  key: 'Booking',
+                  label: 'Booking',
+                  count: staffRecords.filter((r) => r.role === 'Booking').length,
+                },
+                {
+                  key: 'Content',
+                  label: 'Content',
+                  count: staffRecords.filter((r) => r.role === 'Content').length,
+                },
+                {
+                  key: 'Brand',
+                  label: 'Brand',
+                  count: staffRecords.filter((r) => r.role === 'Brand').length,
+                },
+              ]}
+            />}
+          />
 
-            <div className="text-xs text-ink-3">
-              Hiển thị <strong>{filteredStaff.length}</strong> nhân sự
-            </div>
-          </div>
-
-          {/* Staff P3 Table */}
-          <div className="bg-surface border border-line rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-canvas border-b border-line text-ink-3 font-medium">
-                  <tr>
-                    <th className="py-3 px-3">Nhân sự & cấp bậc</th>
-                    <th className="py-3 px-3">Gian hàng phụ trách & hệ số (Bảng 2)</th>
-                    <th className="py-3 px-3 text-center">Số ca đã làm</th>
-                    <th className="py-3 px-3 text-center">Chất lượng & SLA</th>
-                    <th className="py-3 px-3 text-right">Điểm khối lượng</th>
-                    <th className="py-3 px-3 text-right">Thưởng P3</th>
-                    <th className="py-3 px-3 text-center">Trạng thái</th>
-                    <th className="py-3 px-3 text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody ref={staffBodyRef} className="divide-y divide-line">
-                  {filteredStaff.map(item => (
-                    <tr key={item.id} data-flip={item.id} className="hover:bg-canvas transition">
-                      {/* Name & Role */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2 font-medium text-ink"><Avatar name={item.staffName} size={22} />{item.staffName}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5">
-                          <span className="text-ink-2 font-medium">{item.role}</span>
-                          <span>· {item.level}</span>
-                        </div>
-                      </td>
-
-                      {/* Store & Multiplier */}
-                      <td className="py-3 px-3">
-                        <div className="font-medium text-ink line-clamp-1 max-w-[220px]" title={item.assignedStore}>
-                          {item.assignedStore}
-                        </div>
-                        <div className="text-2xs mt-0.5">
-                          <span className={`font-semibold font-mono tabular-nums ${
-                            item.storeMultiplier >= 1.5 ? 'text-critical' :
-                            item.storeMultiplier >= 1.25 ? 'text-warning' :
-                            item.storeMultiplier >= 1.0 ? 'text-accent' :
-                            'text-ink-2'
-                          }`}>
-                            HS gian hàng: {formatStoreCoefficient(item.storeMultiplier)} ({getStoreTierByCoefficient(item.storeMultiplier)})
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Completed Cases */}
-                      <td className="py-3 px-3 text-center">
-                        <span className="font-semibold text-ink">{item.completedCases}</span>
-                        <div className="text-2xs text-ink-3">ca</div>
-                      </td>
-
-                      {/* Quality & SLA Multipliers */}
-                      <td className="py-3 px-3 text-center">
-                        <div className="font-mono text-2xs text-ink-2">
-                          CL: <span className="font-semibold text-positive">{item.qualityMultiplier}</span> | SLA: <span className="font-semibold text-accent">{item.slaMultiplier}</span>
-                        </div>
-                        <div className="text-2xs text-ink-3 mt-0.5">
-                          {item.slaMultiplier >= 1.05 ? 'Vượt SLA' : item.slaMultiplier < 1.0 ? 'Có lỗi SLA' : 'Đạt chuẩn'}
-                        </div>
-                      </td>
-
-                      {/* Workload Points */}
-                      <td className="py-3 px-3 text-right">
-                        <div className="font-semibold text-ink text-sm">{item.calculatedWorkloadPoints.toFixed(1)}</div>
-                        <div className="text-2xs text-ink-3 font-mono">điểm</div>
-                      </td>
-
-                      {/* Bonus VND */}
-                      <td className="py-3 px-3 text-right">
-                        <div className="font-semibold text-positive text-sm font-mono whitespace-nowrap">
-                          {formatVnd(item.estimatedBonusVnd)}
-                        </div>
-                        <div className="text-2xs text-ink-3 font-mono">
-                          {formatVnd(item.baseP3UnitRate)}/điểm
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-3 text-center">
-                        {item.approvalStatus === 'ĐÃ_DUYỆT' ? (
-                          <Status tone="positive">Đã duyệt</Status>
-                        ) : (
-                          <Status tone="warning">Chờ duyệt</Status>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setAiReviewStaff(item.staffName)}
-                            className="btn-sm bg-surface hover:bg-sunken text-ink border border-line-strong rounded-md transition flex items-center gap-1 font-medium"
-                            title="Nhận xét hiệu suất và đề xuất thưởng P3"
-                          >
-                            <Sparkles className="w-3 h-3 text-ink-3" />
-                            <span>Gợi ý nhận xét</span>
-                          </button>
-                          {item.approvalStatus === 'CHỜ_DUYỆT' ? (
-                            <button
-                              onClick={() => setApprovingRecord(item)}
-                              className="btn-sm bg-primary hover:bg-primary-hover text-white font-medium rounded-md transition"
-                            >
-                              Duyệt thưởng
-                            </button>
-                          ) : (
-                            <span className="text-2xs text-ink-3">Đã chốt</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Store Matrix Tab */
-        <div className="space-y-4">
-          {/* Store Table */}
-          <div className="bg-surface border border-line rounded-xl overflow-hidden overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-xs">
-              <thead className="bg-canvas border-b border-line text-ink-3 font-medium">
-                <tr>
-                  <th className="py-3 px-3">Tên gian hàng & kênh</th>
-                  <th className="py-3 px-3">Thương hiệu & Ngành hàng</th>
-                  <th className="py-3 px-3">PIC phụ trách (Sàn / Brand)</th>
-                  <th className="py-3 px-3 text-right">Chỉ tiêu GMV tháng</th>
-                  <th className="py-3 px-3 text-center">Mức độ (Bảng 2)</th>
-                  <th className="py-3 px-3 text-center">Hệ số gian hàng</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {storeConfigs.map(store => (
-                  <tr key={store.id} className="hover:bg-canvas transition">
-                    <td className="py-3 px-3">
-                      <div className="font-semibold text-ink">{store.storeName}</div>
-                      <ChannelTag channel={store.platform} className="mt-0.5" />
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="font-medium text-ink">{store.brandName}</div>
-                      <div className="text-2xs text-ink-3">{store.category}</div>
-                    </td>
-                    <td className="py-3 px-3 font-medium text-ink">{store.assignedPic}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-ink font-mono whitespace-nowrap">
-                      {formatVnd(store.monthlyTargetGmv)}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`text-xs font-medium ${
-                        store.difficultyTier === 'Khó' ? 'text-critical' :
-                        store.difficultyTier === 'Vừa' ? 'text-warning' :
-                        store.difficultyTier === 'Tiêu chuẩn' ? 'text-accent' :
-                        'text-ink-2'
-                      }`}>
-                        {store.difficultyTier}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <select
-                        value={store.multiplier}
-                        onChange={(e) => handleUpdateStoreMultiplier(store.id, parseFloat(e.target.value))}
-                        className="text-xs font-semibold font-mono bg-surface border border-line-strong rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-focus"
+          <DataTable
+            rows={filteredStaff}
+            rowKey={(item) => item.id}
+            columns={[
+              {
+                key: 'staff',
+                header: 'Nhân sự',
+                width: 210,
+                render: (item) => (
+                  <Person name={item.staffName} sub={`${item.role} · ${item.level}`} />
+                ),
+              },
+              {
+                key: 'store',
+                header: 'Gian hàng & hệ số',
+                width: 240,
+                render: (item) => (
+                  <div className="min-w-0">
+                    <div className="font-medium text-ink truncate max-w-[230px]" title={item.assignedStore}>
+                      {item.assignedStore}
+                    </div>
+                    <div className="text-xs text-ink-3 font-mono">
+                      Hệ số {formatStoreCoefficient(item.storeMultiplier)} · {getStoreTierByCoefficient(item.storeMultiplier)}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'cases',
+                header: 'Số ca hoàn thành',
+                align: 'right',
+                render: (item) => <span className="text-ink">{item.completedCases} ca</span>,
+              },
+              {
+                key: 'multipliers',
+                header: 'Chất lượng & SLA',
+                align: 'right',
+                render: (item) => (
+                  <div>
+                    <div className="text-ink">
+                      CL {item.qualityMultiplier} · SLA {item.slaMultiplier}
+                    </div>
+                    <div className="text-xs text-ink-3 font-sans">
+                      {item.slaMultiplier >= 1.05
+                        ? 'Vượt SLA'
+                        : item.slaMultiplier < 1.0
+                        ? 'Có lỗi SLA'
+                        : 'Đạt chuẩn'}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'workload',
+                header: 'Điểm khối lượng',
+                align: 'right',
+                render: (item) => (
+                  <span className="font-medium text-ink">
+                    {item.calculatedWorkloadPoints.toFixed(1)} điểm
+                  </span>
+                ),
+              },
+              {
+                key: 'bonus',
+                header: 'Thưởng P3',
+                align: 'right',
+                render: (item) => (
+                  <div>
+                    <div className="font-semibold text-ink">
+                      {formatVnd(item.estimatedBonusVnd)}
+                    </div>
+                    <div className="text-xs text-ink-3">
+                      {formatVnd(item.baseP3UnitRate)}/điểm
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: 'status',
+                header: 'Trạng thái',
+                width: 130,
+                render: (item) =>
+                  item.approvalStatus === 'ĐÃ_DUYỆT' ? (
+                    <Status tone="positive">Đã duyệt</Status>
+                  ) : (
+                    <Status tone="warning">Chờ duyệt</Status>
+                  ),
+              },
+              {
+                key: 'actions',
+                header: '',
+                align: 'right',
+                width: 210,
+                render: (item) => (
+                  <div className="flex items-center justify-end gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setAiReviewStaff(item.staffName)}
+                    >
+                      Nhận xét
+                    </Button>
+                    {item.approvalStatus === 'CHỜ_DUYỆT' && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => setApprovingRecord(item)}
                       >
-                        <option value="0.8">0,80 (Cơ bản)</option>
-                        <option value="1">1,00 (Tiêu chuẩn)</option>
-                        <option value="1.25">1,25 (Vừa)</option>
-                        <option value="1.5">1,50 (Khó)</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        Duyệt thưởng
+                      </Button>
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </Panel>
+      ) : (
+        <Panel flush>
+          <FilterBar
+            search={{ value: storeSearchQuery, onChange: setStoreSearchQuery, placeholder: "Tìm gian hàng, thương hiệu, PIC..." }}
+            filters={
+              <span className="text-xs text-ink-3 tabular-nums">
+                {filteredStores.length} gian hàng
+              </span>
+            }
+          />
+
+          <DataTable
+            rows={filteredStores}
+            rowKey={(store) => store.id}
+            columns={[
+              {
+                key: 'storeName',
+                header: 'Gian hàng & sàn',
+                render: (store) => (
+                  <div>
+                    <div className="font-medium text-ink">{store.storeName}</div>
+                    <ChannelTag channel={store.platform} className="mt-0.5" />
+                  </div>
+                ),
+              },
+              {
+                key: 'brandName',
+                header: 'Thương hiệu & ngành hàng',
+                render: (store) => (
+                  <div>
+                    <div className="font-medium text-ink">{store.brandName}</div>
+                    <div className="text-xs text-ink-3">{store.category}</div>
+                  </div>
+                ),
+              },
+              {
+                key: 'assignedPic',
+                header: 'Chuyên viên phụ trách',
+                render: (store) => <span className="text-ink">{store.assignedPic}</span>,
+              },
+              {
+                key: 'monthlyTargetGmv',
+                header: 'Chỉ tiêu GMV tháng',
+                align: 'right',
+                render: (store) => (
+                  <span className="font-medium text-ink">{formatVnd(store.monthlyTargetGmv)}</span>
+                ),
+              },
+              {
+                key: 'difficultyTier',
+                header: 'Mức độ',
+                render: (store) => <span className="text-ink-2">{store.difficultyTier}</span>,
+              },
+              {
+                key: 'multiplier',
+                header: 'Hệ số gian hàng',
+                align: 'right',
+                width: 180,
+                render: (store) => (
+                  <Select
+                    aria-label={`Hệ số ${store.storeName}`}
+                    value={String(store.multiplier)}
+                    onChange={(e) =>
+                      handleUpdateStoreMultiplier(store.id, parseFloat(e.target.value))
+                    }
+                    className="w-auto font-mono"
+                  >
+                    <option value="0.8">0,80 (Cơ bản)</option>
+                    <option value="1">1,00 (Tiêu chuẩn)</option>
+                    <option value="1.25">1,25 (Vừa)</option>
+                    <option value="1.5">1,50 (Khó)</option>
+                  </Select>
+                ),
+              },
+            ]}
+          />
+        </Panel>
       )}
 
-      {/* Staff Performance Review Modal */}
       {aiReviewStaff && (
         <AiStaffReviewModal
           isOpen={Boolean(aiReviewStaff)}
@@ -382,12 +421,15 @@ export default function PerformanceP3View({
         />
       )}
 
-      {/* Confirm Approve P3 Bonus Dialog */}
       <ConfirmDialog
         open={Boolean(approvingRecord)}
         onOpenChange={(open) => !open && setApprovingRecord(null)}
         title="Xác nhận phê duyệt thưởng hiệu suất P3"
-        description={`Bạn có chắc chắn muốn phê duyệt khoản tiền thưởng P3 trị giá ${approvingRecord ? formatVnd(approvingRecord.estimatedBonusVnd) : ''} (${approvingRecord?.calculatedWorkloadPoints} điểm) cho nhân sự ${approvingRecord?.staffName} (${approvingRecord?.role} - ${approvingRecord?.level})?`}
+        description={`Bạn có chắc chắn muốn phê duyệt khoản tiền thưởng P3 trị giá ${
+          approvingRecord ? formatVnd(approvingRecord.estimatedBonusVnd) : ''
+        } (${approvingRecord?.calculatedWorkloadPoints} điểm) cho nhân sự ${
+          approvingRecord?.staffName
+        } (${approvingRecord?.role} - ${approvingRecord?.level})?`}
         confirmLabel="Duyệt chi thưởng"
         cancelLabel="Hủy"
         variant="primary"
@@ -395,7 +437,12 @@ export default function PerformanceP3View({
           if (approvingRecord) {
             handleApprove(approvingRecord.id);
             if (onNotify) {
-              onNotify(`Đã phê duyệt thưởng P3 (${formatVnd(approvingRecord.estimatedBonusVnd)}) cho ${approvingRecord.staffName}`, 'success');
+              onNotify(
+                `Đã phê duyệt thưởng P3 (${formatVnd(approvingRecord.estimatedBonusVnd)}) cho ${
+                  approvingRecord.staffName
+                }`,
+                'success'
+              );
             }
             setApprovingRecord(null);
           }

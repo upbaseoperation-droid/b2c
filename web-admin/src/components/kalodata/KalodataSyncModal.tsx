@@ -201,11 +201,11 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
   return (
     <Presence show>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-      <div data-motion-panel className="relative w-full max-w-4xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+      <div data-motion-panel className="relative w-full max-w-4xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92dvh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-sunken">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-line flex items-center justify-between bg-sunken">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-fg flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-fg flex items-center justify-center shrink-0">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
@@ -217,14 +217,14 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-muted hover:text-ink rounded-lg hover:bg-hover transition"
+            className="p-1.5 text-muted hover:text-ink rounded-lg hover:bg-hover transition shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Thanh tìm kiếm & bộ lọc chu kỳ */}
-        <div className="p-6 border-b border-line bg-surface space-y-3">
+        <div className="p-4 sm:p-6 border-b border-line bg-surface space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted font-semibold text-xs">
@@ -615,14 +615,14 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-3.5 border-t border-line bg-surface flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 border-t border-line bg-surface flex flex-wrap items-center justify-between gap-2.5">
           <div className="text-2xs text-muted">
             {result?.syncedAt
               ? `Cập nhật lúc: ${new Date(result.syncedAt).toLocaleTimeString('vi-VN')} - ${new Date(result.syncedAt).toLocaleDateString('vi-VN')}`
               : 'Nguồn dữ liệu: Kalodata E-commerce Analytics'}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={onClose}

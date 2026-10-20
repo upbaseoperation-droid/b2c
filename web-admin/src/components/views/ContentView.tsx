@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ActionMenu, Button, ConfirmDialog, Tabs } from '../ui';
+import { Button, ConfirmDialog, Field, Input, Modal, Select, Tabs, Textarea } from '../ui';
 import { 
   CheckCircle, 
   RotateCcw, 
@@ -12,10 +12,18 @@ import {
   Layers, 
   Share2,
   ExternalLink,
-  FileText
+  FileText,
+  Plus,
+  Lightbulb,
+  ShieldAlert,
+  RefreshCw
 } from 'lucide-react';
 import { ScriptReviewItem, ContentItemModel, PublicationItemModel } from '../../lib/types';
 import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS, INITIAL_DEALS } from '../../lib/mockData';
+import { generateAiAngleSuggestions } from '../../lib/contentAngleData';
+import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
+import { executeOperationalReport } from '../../lib/operationalReportService';
+import { brandProfileToKnowledgeBase, findBrandProfile, useBrandProfiles } from '../../lib/brands/useBrandProfiles';
 import { ScriptReviewModal } from '../ScriptReviewModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
@@ -27,9 +35,25 @@ interface ContentViewProps {
 
 type ContentSubTab = 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS' | 'PILLARS';
 
+const PILLAR_OPTIONS = [
+  'Nỗi đau - Giải pháp',
+  'Review trực tiếp',
+  'Mở hộp & trải nghiệm',
+  'So sánh trước / sau',
+  'Chia sẻ kinh nghiệm đời sống',
+];
+
+const FORMAT_OPTIONS = [
+  'Talking Head + B-roll',
+  'Voiceover B-roll',
+  'POV Tình huống trước/sau',
+  'Mở hộp âm thanh thực',
+];
+
 export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles }) => {
+  const { profiles } = useBrandProfiles();
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
-  const [contentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
+  const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_ITEMS');
@@ -38,6 +62,175 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
   const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
   const [inspectInitialUrl, setInspectInitialUrl] = useState<string>('');
+
+  // State tạo kịch bản / brief mới
+  const [isCreateScriptOpen, setIsCreateScriptOpen] = useState(false);
+  const [newBrandName, setNewBrandName] = useState<string>('Kutieskin');
+  const [newProductName, setNewProductName] = useState<string>('Kem bôi dịu da Kutieskin');
+  const [newDealCode, setNewDealCode] = useState<string>(INITIAL_DEALS[0]?.dealCode || 'BO26_NEW_01');
+  const [newCreatorName, setNewCreatorName] = useState<string>(INITIAL_SCRIPTS[0]?.kocName || 'Chanh Beauty');
+  const [newPillar, setNewPillar] = useState<string>(PILLAR_OPTIONS[0]);
+  const [newFormat, setNewFormat] = useState<string>(FORMAT_OPTIONS[0]);
+  const [newAngleName, setNewAngleName] = useState<string>('');
+  const [newHook, setNewHook] = useState<string>('');
+  const [newPainPoint, setNewPainPoint] = useState<string>('');
+  const [newUsp, setNewUsp] = useState<string>('');
+  const [newCta, setNewCta] = useState<string>('Bấm vào giỏ hàng góc trái màn hình để nhận ưu đãi chính hãng.');
+  const [suggestionIdx, setSuggestionIdx] = useState<number>(0);
+  const [isGeneratingBrief, setIsGeneratingBrief] = useState<boolean>(false);
+
+  const selectedBrandProfile = useMemo(
+    () => findBrandProfile(profiles, newBrandName) || profiles[0],
+    [profiles, newBrandName],
+  );
+
+  const brandProductOptions = useMemo(() => {
+    if (selectedBrandProfile?.products?.length) {
+      return selectedBrandProfile.products.map(p => p.name);
+    }
+    return ['Kem bôi dịu da Kutieskin', 'Sữa rửa mặt dịu nhẹ', 'Kem chống nắng phổ rộng'];
+  }, [selectedBrandProfile]);
+
+  const draftCompliance = useMemo(() => {
+    if (!selectedBrandProfile || (!newHook.trim() && !newUsp.trim())) return null;
+    const kb = brandProfileToKnowledgeBase(selectedBrandProfile);
+    const fullText = `${newHook}\n${newPainPoint}\n${newUsp}\n${newCta}`;
+    return analyzeScriptWithAi(fullText, kb);
+  }, [selectedBrandProfile, newHook, newPainPoint, newUsp, newCta]);
+
+  const handleOpenCreateScript = () => {
+    const defaultBrand = profiles[0]?.brandName || 'Kutieskin';
+    const defaultProd = profiles[0]?.products?.[0]?.name || 'Kem bôi dịu da Kutieskin';
+    setNewBrandName(defaultBrand);
+    setNewProductName(defaultProd);
+    const suggs = generateAiAngleSuggestions(defaultProd, PILLAR_OPTIONS[0], defaultBrand);
+    const first = suggs[0];
+    if (first) {
+      setNewAngleName(first.name);
+      setNewHook(first.hookIdea);
+      setNewPainPoint(first.painPoint);
+      setNewUsp(first.solutionApproach);
+      setNewCta(first.callToAction);
+    }
+    setSuggestionIdx(0);
+    setIsCreateScriptOpen(true);
+  };
+
+  const handleAutoSuggestBrief = async () => {
+    const suggs = generateAiAngleSuggestions(newProductName, newPillar, newBrandName);
+    const nextIdx = (suggestionIdx + 1) % Math.max(1, suggs.length);
+    setSuggestionIdx(nextIdx);
+    const chosen = suggs[nextIdx] || suggs[0];
+
+    const prodObj = selectedBrandProfile?.products?.find(p => p.name === newProductName);
+    const bannedWords = (selectedBrandProfile?.contentRules?.banned || []).map(b => b.phrase).join(', ');
+    const usps = (prodObj?.usps || []).join('; ');
+    const disclaimer = selectedBrandProfile?.legal?.find(l => l.disclaimer)?.disclaimer || '';
+
+    setIsGeneratingBrief(true);
+    try {
+      const res = await executeOperationalReport({
+        purposeId: 'SCRIPT_REVIEW',
+        moduleTitle: `Soạn kịch bản (${newBrandName} - ${newProductName})`,
+        sourceTag: 'SCRIPT_REVIEW',
+        customSystemInstruction:
+          'Bạn là nhân sự Content B2C. Viết kịch bản TikTok 4 phần ngắn gọn, thực tế, đi thẳng vào công dụng và cách dùng sản phẩm. Cấm dùng từ sáo rỗng quảng cáo ("đột phá", "siêu phẩm", "cứu tinh", "thần thánh", "chuẩn khoa học", "chuyển hóa rõ rệt", "sai lầm nghiêm trọng"). Tránh toàn bộ từ cấm của nhãn hàng. Trả về đúng JSON 5 trường: {"angle": "Tên góc tiếp cận", "hook": "Câu mở đầu 3s", "painPoint": "Tình huống thực tế của khách", "usp": "Cách dùng và điểm chính của sản phẩm", "cta": "Hướng dẫn bấm giỏ hàng kèm khuyến cáo pháp lý nếu có"}.',
+        inputContextText: [
+          `Thương hiệu: ${newBrandName}`,
+          `Sản phẩm: ${newProductName}`,
+          `Trụ cột nội dung: ${newPillar} | Định dạng: ${newFormat}`,
+          `KOC thực hiện: ${newCreatorName}`,
+          `Điểm chính của sản phẩm: ${usps || 'Hàng chính hãng, thông tin thành phần rõ ràng'}`,
+          `Từ cấm không được dùng: ${bannedWords || 'Cam kết 100%, trị dứt điểm, thuốc đặc trị'}`,
+          disclaimer ? `Câu khuyến cáo pháp lý bắt buộc: ${disclaimer}` : '',
+        ].filter(Boolean).join('\n'),
+      });
+
+      const jsonMatch = res.outputText?.match(/\{[\s\S]*\}/);
+      if (res.ok && jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]) as Record<string, string>;
+        if (parsed.hook && parsed.usp) {
+          setNewAngleName(parsed.angle || chosen?.name || `${newPillar} - ${newProductName}`);
+          setNewHook(parsed.hook);
+          setNewPainPoint(parsed.painPoint || chosen?.painPoint || '');
+          setNewUsp(parsed.usp);
+          setNewCta(parsed.cta || (disclaimer ? `${chosen?.callToAction || ''} (${disclaimer})` : chosen?.callToAction || ''));
+          setIsGeneratingBrief(false);
+          return;
+        }
+      }
+    } catch {
+      // Dùng mẫu nội bộ bên dưới nếu chưa cấu hình khóa kết nối
+    } finally {
+      setIsGeneratingBrief(false);
+    }
+
+    if (!chosen) return;
+    const uspLine = prodObj?.usps?.length
+      ? `${chosen.solutionApproach} (${prodObj.usps.slice(0, 2).join('; ')})`
+      : chosen.solutionApproach;
+
+    setNewAngleName(chosen.name);
+    setNewHook(chosen.hookIdea);
+    setNewPainPoint(chosen.painPoint);
+    setNewUsp(uspLine);
+    setNewCta(disclaimer ? `${chosen.callToAction} (${disclaimer})` : chosen.callToAction);
+  };
+
+  const handleSaveNewScript = (targetQueue: 'BOTH' | 'CONTENT_ONLY') => {
+    if (!newHook.trim() || !newUsp.trim()) return;
+    const nowTag = Date.now().toString().slice(-3);
+    const newItem: ContentItemModel = {
+      id: `cnt-${Date.now()}`,
+      contentCode: `CNT-26-${nowTag}`,
+      bookingDealId: `deal-${nowTag}`,
+      dealCode: newDealCode.trim() || `BO26_${nowTag}`,
+      campaignTitle: `${newBrandName} - ${newProductName}`,
+      creatorName: newCreatorName.trim() || 'KOC UpBase',
+      pillar: newPillar,
+      angle: newAngleName.trim() || `${newPillar} - ${newProductName}`,
+      format: 'VIDEO_SHORT_60S',
+      channel: 'TIKTOK',
+      scriptHook: newHook.trim(),
+      scriptPainPoint: newPainPoint.trim(),
+      scriptUsp: newUsp.trim(),
+      scriptCta: newCta.trim(),
+      scriptStatus: targetQueue === 'BOTH' ? 'PENDING' : 'APPROVED',
+      revisionCount: 0,
+      demoStatus: 'NOT_SUBMITTED',
+      qcStatus: draftCompliance && draftCompliance.overallScore >= 80 ? 'PASS' : 'PENDING',
+      qcChecklistNotes: draftCompliance ? draftCompliance.summaryVerdict : undefined,
+    };
+
+    setContentItems(prev => [newItem, ...prev]);
+
+    if (targetQueue === 'BOTH') {
+      const reviewItem: ScriptReviewItem = {
+        id: `scr-${Date.now()}`,
+        dealCode: newItem.dealCode,
+        kocId: `koc-${nowTag}`,
+        kocName: newItem.creatorName,
+        kocTier: 'TIER_3_MICRO',
+        campaignTitle: newItem.campaignTitle,
+        pillar: newPillar,
+        videoDuration: '45s - 60s',
+        hook: newHook.trim(),
+        painPoint: newPainPoint.trim(),
+        solutionAndUsp: newUsp.trim(),
+        callToAction: newCta.trim(),
+        status: 'PENDING',
+        remainingHours: 24,
+        submittedBy: newItem.creatorName,
+        submittedAt: 'Vừa tạo',
+      };
+      setScripts(prev => [reviewItem, ...prev]);
+      setActiveSubTab('SCRIPTS');
+    } else {
+      setActiveSubTab('CONTENT_ITEMS');
+    }
+
+    setIsCreateScriptOpen(false);
+  };
 
   const handleApprove = (scriptId: string) => {
     setScripts(prev => prev.map(item => item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item));
@@ -57,7 +250,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
   return (
     <div className="space-y-4">
-      {/* Tab và thao tác: một nút chính, thao tác phụ vào menu */}
+      {/* Thanh tab và các nút thao tác trực tiếp, không giấu vào menu 3 chấm */}
       <Tabs<ContentSubTab>
         value={activeSubTab}
         onChange={setActiveSubTab}
@@ -66,11 +259,28 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
           { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
           { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
+          { key: 'PILLARS', label: 'Trụ cột & Góc SP' },
         ]}
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
+            {onNavigateToAngles && (
+              <Button
+                variant="secondary"
+                icon={Layers}
+                onClick={onNavigateToAngles}
+              >
+                Góc tiếp cận SP
+              </Button>
+            )}
             <Button
-              variant="primary"
+              variant="secondary"
+              icon={FileText}
+              onClick={() => setIsScriptReportOpen(true)}
+            >
+              Rà soát kịch bản & từ cấm
+            </Button>
+            <Button
+              variant="secondary"
               icon={Video}
               onClick={() => {
                 setInspectInitialUrl('');
@@ -79,13 +289,14 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             >
               Nghiệm thu video
             </Button>
-            <ActionMenu
-              items={[
-                { label: 'Báo cáo rà soát kịch bản & từ cấm', icon: FileText, onSelect: () => setIsScriptReportOpen(true) },
-                ...(onNavigateToAngles ? [{ label: 'Thiết lập góc tiếp cận SP', icon: Layers, onSelect: onNavigateToAngles }] : []),
-              ]}
-            />
-          </>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={handleOpenCreateScript}
+            >
+              Tạo kịch bản / Brief
+            </Button>
+          </div>
         }
       />
 
@@ -93,12 +304,20 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       {activeSubTab === 'CONTENT_ITEMS' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-accent" />
-                  <span>Kho sản phẩm nội dung — Quản trị tách biệt với booking</span>
-                </h3>
+            <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" />
+                <span>Kho sản phẩm nội dung — Quản trị tách biệt với booking</span>
+              </h3>
+              <div className="flex items-center gap-2">
+                {onNavigateToAngles && (
+                  <Button size="sm" variant="secondary" icon={Lightbulb} onClick={onNavigateToAngles}>
+                    Thẻ Brief & Góc SP
+                  </Button>
+                )}
+                <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateScript}>
+                  Soạn kịch bản mới
+                </Button>
               </div>
             </div>
 
@@ -106,14 +325,14 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
               {contentItems.map((item) => (
                 <div key={item.id} className="p-5 hover:bg-slate-50/60 transition space-y-3">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                       <span className="font-code text-accent font-semibold text-xs">{item.contentCode}</span>
                       <span className="text-ink-3 text-xs">· BO: <strong className="text-ink font-code">{item.dealCode}</strong></span>
                       <span className="text-ink font-semibold text-sm">{item.creatorName}</span>
                       <span className="text-2xs text-ink-3">· {item.pillar} · {item.format}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className={`px-2.5 py-0.5 rounded-full text-2xs font-semibold ${
                         item.qcStatus === 'PASS' 
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
@@ -149,9 +368,15 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       {/* View 1: Scripts Review Queue */}
       {activeSubTab === 'SCRIPTS' && (
         <div className="card-enterprise overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Hàng chờ thẩm định kịch bản KOC</h3>
+          <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+            <h3 className="text-sm font-semibold text-slate-900">Hàng chờ thẩm định kịch bản KOC</h3>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsScriptReportOpen(true)}>
+                Rà soát từ cấm hàng loạt
+              </Button>
+              <Button size="sm" variant="primary" icon={Plus} onClick={handleOpenCreateScript}>
+                Thêm kịch bản chờ duyệt
+              </Button>
             </div>
           </div>
 
@@ -301,7 +526,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                     <th className="p-3.5 w-[140px] min-w-[140px] font-mono">Lượt xem / Thích</th>
                     <th className="p-3.5 w-[160px] min-w-[160px] font-mono">GMV thực nhận</th>
                     <th className="p-3.5 w-[140px] min-w-[140px]">Hiệu quả</th>
-                    <th className="p-3.5 pr-6 text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Đối soát</th>
+                    <th className="p-3.5 pr-6 text-right w-[160px] min-w-[160px] sm:sticky sm:right-0 bg-slate-50 border-l border-slate-200">Đối soát</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -354,7 +579,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                           CP: {formatVndShort(pub.costAttributed)}
                         </div>
                       </td>
-                      <td className="p-3.5 pr-6 text-right sticky right-0 bg-white/95 border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
+                      <td className="p-3.5 pr-6 text-right sm:sticky sm:right-0 bg-white/95 border-l border-slate-200 sm:shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
                         <div className="flex flex-col items-end gap-1">
                           <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Đã đối soát
@@ -539,6 +764,199 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           setPublications((prev) => [newPub, ...prev]);
         }}
       />
+
+      {/* Hộp thoại Tạo kịch bản / Brief nội dung mới */}
+      <Modal
+        open={isCreateScriptOpen}
+        onClose={() => setIsCreateScriptOpen(false)}
+        title="Tạo kịch bản & Brief nội dung mới"
+        size="xl"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setIsCreateScriptOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              variant="secondary"
+              icon={isGeneratingBrief ? RefreshCw : Lightbulb}
+              disabled={isGeneratingBrief}
+              onClick={() => void handleAutoSuggestBrief()}
+            >
+              {isGeneratingBrief ? 'Đang điền mẫu...' : `Điền mẫu kịch bản (${suggestionIdx + 1}/3)`}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => handleSaveNewScript('CONTENT_ONLY')}
+            >
+              Lưu vào Kho nội dung
+            </Button>
+            <Button
+              variant="primary"
+              icon={CheckCircle}
+              onClick={() => handleSaveNewScript('BOTH')}
+            >
+              Tạo & đưa vào Hàng chờ duyệt
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Thương hiệu">
+              <Select
+                value={newBrandName}
+                onChange={(e) => {
+                  const nextBrand = e.target.value;
+                  setNewBrandName(nextBrand);
+                  const prof = findBrandProfile(profiles, nextBrand);
+                  const firstProd = prof?.products?.[0]?.name || `${nextBrand} - Sản phẩm trọng tâm`;
+                  setNewProductName(firstProd);
+                }}
+              >
+                {profiles.map((p) => (
+                  <option key={p.key} value={p.brandName}>
+                    {p.brandName} ({p.contentRules?.banned?.length || 0} từ cấm)
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Sản phẩm (SKU)">
+              <Select
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+              >
+                {brandProductOptions.map((prodName) => (
+                  <option key={prodName} value={prodName}>
+                    {prodName}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Trụ cột nội dung">
+              <Select
+                value={newPillar}
+                onChange={(e) => setNewPillar(e.target.value)}
+              >
+                {PILLAR_OPTIONS.map((pil) => (
+                  <option key={pil} value={pil}>
+                    {pil}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="KOC / Creator thực hiện">
+              <Input
+                value={newCreatorName}
+                onChange={(e) => setNewCreatorName(e.target.value)}
+                placeholder="VD: Chanh Beauty, Minh Đan..."
+              />
+            </Field>
+
+            <Field label="Mã Deal Booking (BO)">
+              <Input
+                value={newDealCode}
+                onChange={(e) => setNewDealCode(e.target.value)}
+                placeholder="VD: BO26_CHANH_102"
+                className="font-code"
+              />
+            </Field>
+
+            <Field label="Định dạng quay">
+              <Select
+                value={newFormat}
+                onChange={(e) => setNewFormat(e.target.value)}
+              >
+                {FORMAT_OPTIONS.map((fmt) => (
+                  <option key={fmt} value={fmt}>
+                    {fmt}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Tên góc tiếp cận (Angle)">
+            <Input
+              value={newAngleName}
+              onChange={(e) => setNewAngleName(e.target.value)}
+              placeholder="VD: Góc xử lý mẩn ngứa rôm sảy cho bé sau 3 ngày..."
+            />
+          </Field>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="1. Mở đầu 3 giây (Hook)">
+              <Textarea
+                rows={3}
+                value={newHook}
+                onChange={(e) => setNewHook(e.target.value)}
+                placeholder="Câu mở đầu giữ chân người xem trong 3 giây đầu..."
+              />
+            </Field>
+
+            <Field label="2. Nỗi đau / Tình huống khách hàng">
+              <Textarea
+                rows={3}
+                value={newPainPoint}
+                onChange={(e) => setNewPainPoint(e.target.value)}
+                placeholder="Vấn đề thực tế khách hàng đang gặp phải..."
+              />
+            </Field>
+
+            <Field label="3. Giải pháp & Điểm nổi bật (USP)">
+              <Textarea
+                rows={3}
+                value={newUsp}
+                onChange={(e) => setNewUsp(e.target.value)}
+                placeholder="Thành phần, công dụng chính theo hồ sơ thương hiệu..."
+              />
+            </Field>
+
+            <Field label="4. Điều hướng giỏ hàng & Khuyến cáo (CTA)">
+              <Textarea
+                rows={3}
+                value={newCta}
+                onChange={(e) => setNewCta(e.target.value)}
+                placeholder="Kêu gọi bấm giỏ hàng kèm câu khuyến cáo pháp lý (nếu có)..."
+              />
+            </Field>
+          </div>
+
+          {draftCompliance && (
+            <div
+              className={`p-3 rounded-lg border text-xs space-y-1.5 ${
+                draftCompliance.complianceStatus === 'FAIL'
+                  ? 'bg-rose-50/80 border-rose-200 text-rose-800'
+                  : draftCompliance.complianceStatus === 'WARNING'
+                    ? 'bg-amber-50/80 border-amber-200 text-amber-800'
+                    : 'bg-emerald-50/80 border-emerald-200 text-emerald-800'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>Đối chiếu quy chuẩn {newBrandName}: {draftCompliance.overallScore}/100 điểm</span>
+                </span>
+                <span>{draftCompliance.complianceStatus === 'PASS' ? 'Đạt chuẩn' : 'Cần sửa'}</span>
+              </div>
+              <div>{draftCompliance.summaryVerdict}</div>
+              {draftCompliance.issues.length > 0 && (
+                <ul className="list-disc pl-4 space-y-0.5 text-2xs">
+                  {draftCompliance.issues.slice(0, 3).map((iss) => (
+                    <li key={iss.id}>
+                      <strong>{iss.title}:</strong> {iss.rationale}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

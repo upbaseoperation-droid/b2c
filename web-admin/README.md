@@ -65,11 +65,12 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 ## 3. Cổng tích hợp API
 
 - **Lark Suite & Larkbase:** Xác thực SSO và đồng bộ kế hoạch tháng từ File 4.1 Plan order tổng (`/api/integrations/larkbase/booking-plans`).
-- **TikTok Shop Open API, Thu thập dữ liệu KOC, Nghiệm thu Video & Phân tích sâu Kênh KOC khớp Brief chạy ngầm:** Đồng bộ doanh thu, GMV và đơn hàng từ Seller Center (`/api/tiktok-seller/sync`), thu thập thông tin kênh, video và chỉ số bán hàng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), kiểm tra và nghiệm thu link video KOC gửi kèm kịch bản (`/api/integrations/tiktok-koc/inspect-video`), hàng đợi chạy ngầm quét sâu 25–80 video/kênh KOC & chấm điểm khớp Brief Brand (`/api/integrations/tiktok-koc/channel-brief-analysis`).
+- **TikTok Shop Open API, Thu th?p d? li?u KOC & Nghi?m thu Video:** ??ng b? doanh thu, GMV v? ??n h?ng t? Seller Center (`/api/tiktok-seller/sync`), thu th?p th?ng tin k?nh, video v? ch? s? b?n h?ng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), ki?m tra v? nghi?m thu link video KOC g?i k?m k?ch b?n (`/api/integrations/tiktok-koc/inspect-video`).
 - **Nghiên cứu Thị trường, Thương hiệu & Đối thủ:** Bóc tách hồ sơ 4P, lập ma trận đối thủ, đào bình luận khách hàng và quét trực tiếp trang đích (`/api/integrations/market-research/analyze`).
 - **Kalodata:** Tra cứu creator và khám phá thị trường (`/api/integrations/kalodata/*`).
 - **WeSign:** Đồng bộ trạng thái hợp đồng ký điện tử (`/api/contracts/integrations/wesign/*`).
 - **OCR:** Đọc và trích xuất dữ liệu ảnh thẻ CCCD tiếng Việt (`/api/ocr/extract-legal-doc`).
+- **Cổng Kết nối Mô hình Ngôn ngữ (`/api/integrations/llm`), Báo cáo Thẩm định Lịch sử & Rủi ro KOC (`KocHistoryEvaluationModal`) & Thiết lập Câu lệnh (Prompt) Đa Phân hệ:** Hỗ trợ cấu hình khóa API và tùy chỉnh/lưu câu lệnh chỉ dẫn (`systemInstruction`) trực tiếp tại từng phân hệ cho 8 mục đích nghiệp vụ (`LEGAL_OCR`, `SCRIPT_REVIEW`, `CONTRACT_DRAFTING`, `STAFF_REVIEW`, `PLAN_ADS_ANALYSIS`, `KOC_MATCHING`, `KOC_HISTORY_EVALUATION`, `KNOWLEDGE_QA`).
 
 ---
 

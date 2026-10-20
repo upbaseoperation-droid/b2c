@@ -141,7 +141,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
         <div className="p-3.5 border-b border-line bg-canvas flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5 flex-1">
             {/* Search */}
-            <div className="relative min-w-[220px] max-w-sm flex-1">
+            <div className="relative min-w-0 w-full sm:w-auto sm:min-w-[220px] sm:max-w-sm flex-1">
               <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -224,7 +224,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[820px] text-left text-xs">
               <thead className="bg-canvas text-ink-3 border-b border-line font-semibold text-2xs">
                 <tr>
                   <th className="py-2.5 px-4 w-[110px]">Mã Audit</th>

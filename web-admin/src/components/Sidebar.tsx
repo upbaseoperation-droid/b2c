@@ -123,6 +123,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung', icon: Layers },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
           ],
@@ -280,6 +281,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung', icon: Layers },
           ],
         },
         {

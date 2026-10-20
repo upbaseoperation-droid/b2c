@@ -1074,11 +1074,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 </h4>
 
                 {/* Gán nhanh nhân sự vào Role đang chọn */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto max-w-full">
                   <select
                     value={assignStaffToRoleId}
                     onChange={(e) => setAssignStaffToRoleId(e.target.value)}
-                    className="h-8 px-2.5 rounded-lg border border-line bg-canvas text-xs text-ink focus:outline-none focus:border-accent/20"
+                    className="h-8 px-2.5 flex-1 sm:flex-initial min-w-0 max-w-full truncate rounded-lg border border-line bg-canvas text-xs text-ink focus:outline-none focus:border-accent/20"
                   >
                     <option value="">+ Gán thêm nhân sự vào Role này...</option>
                     {internalStaff

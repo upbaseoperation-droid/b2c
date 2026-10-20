@@ -1,39 +1,38 @@
 'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { ActionMenu, Avatar, Button, Input, Modal, PageActions, Segmented, Select, Stat, StatRow, Status } from '../ui';
+import {
+  ActionMenu,
+  Button,
+  Chips,
+  DataTable,
+  FilterBar,
+  Input,
+  Modal,
+  PageActions,
+  Pagination,
+  Panel,
+  Person,
+  Segmented,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+} from '../ui';
 import {
   TrendingUp,
-  Award,
-  Calendar,
-  FileSpreadsheet,
   Download,
-  Building,
-  PieChart,
   Search,
   ExternalLink,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Activity,
   PlaySquare,
-  AlertCircle,
   Film,
-  Flame,
-  Users,
   Store,
-  BarChart3,
   AlertTriangle,
-  CheckCircle2,
   Filter,
   RefreshCw,
   DollarSign,
   Layers,
-  Eye,
-  ShoppingBag,
-  UserCheck,
-  ArrowUpRight,
-  ArrowDownRight,
   FileText
 } from 'lucide-react';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
@@ -44,7 +43,7 @@ import {
   StorePortfolioItem,
   KocItem
 } from '../../lib/types';
-import { formatVndShort } from '../../lib/format';
+import { formatNumber, formatVndShort } from '../../lib/format';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import {
   TIKTOK_SELLER_ADS_SUMMARY,
@@ -58,7 +57,6 @@ import {
   B2C_STAFF_ANALYTICS_LIST,
   B2cBookedVideoRecord,
   B2cStaffAnalyticsRecord,
-  B2cAdsCreativeMetric
 } from '../../lib/b2cAnalyticsDataset';
 import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDataset';
 import { WeeklyAirSyncDashboardSection } from './WeeklyAirSyncDashboardSection';
@@ -161,24 +159,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
   const deferredStaffSearch = useDeferredValue(staffSearchQuery);
-  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Phân trang hiển thị bảng để chống quá tải DOM
   const [brandVisibleLimit, setBrandVisibleLimit] = useState<number>(16);
   const [storeVisibleLimit, setStoreVisibleLimit] = useState<number>(15);
-  const [staffVisibleLimit, setStaffVisibleLimit] = useState<number>(12);
+  const [staffPage, setStaffPage] = useState<number>(1);
+  const [staffPageSize, setStaffPageSize] = useState<number>(15);
   const [bookedVideosVisibleLimit, setBookedVideosVisibleLimit] = useState<number>(30);
-  const [sellerCreativesVisibleLimit, setSellerCreativesVisibleLimit] = useState<number>(30);
-  const [isStaff360Open, setIsStaff360Open] = useState<boolean>(false);
 
   // State bộ lọc tab Video
   const [videoFormatFilter, setVideoFormatFilter] = useState<string>('ALL');
   const [videoKlFilter, setVideoKlFilter] = useState<string>('ALL');
-  const [videoSubView, setVideoSubView] = useState<'BOOKED_32' | 'SELLER_CREATIVES'>('BOOKED_32');
 
   // State bộ lọc & sắp xếp tab Hiệu suất & Hiệu quả Nhân sự
   const [staffRoleFilter, setStaffRoleFilter] = useState<'ALL' | 'MANAGEMENT' | 'SPECIALIST' | 'WITH_STORES'>('ALL');
-  const [staffMetricMode, setStaffMetricMode] = useState<'BOTH' | 'GMV_ROAS' | 'UNIT_COST' | 'KPI_SCORE'>('BOTH');
   const [staffSortMode, setStaffSortMode] = useState<'KPI_DESC' | 'AIRED_DESC' | 'SPEND_PCT_DESC' | 'GMV_DESC' | 'ROAS_DESC' | 'COST_PER_AIR_ASC' | 'SLA_DESC'>('KPI_DESC');
   const [staffQuadrantFilter, setStaffQuadrantFilter] = useState<'ALL' | 'STAR' | 'HIGH_VOL_OPT_COST' | 'HIGH_EFF_NEED_VOL' | 'NEED_COACHING'>('ALL');
   const [selectedFocusStaffName, setSelectedFocusStaffName] = useState<string>('Lương Thị Như Quỳnh');
@@ -525,22 +519,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     });
   }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, deferredVideoSearch]);
 
-  // Lọc danh sách Creative TikTok Seller
-  const filteredSellerCreatives = useMemo(() => {
-    return TIKTOK_SELLER_TOP_CREATIVES.filter((c) => {
-      if (selectedBrand !== 'ALL' && c.brandName !== selectedBrand) return false;
-      if (deferredVideoSearch.trim()) {
-        const q = deferredVideoSearch.toLowerCase();
-        const matchId = c.videoId.toLowerCase().includes(q);
-        const matchAcc = c.tiktokAccount.toLowerCase().includes(q);
-        const matchCamp = c.campaignName.toLowerCase().includes(q);
-        const matchTitle = c.videoTitle.toLowerCase().includes(q);
-        if (!matchId && !matchAcc && !matchCamp && !matchTitle) return false;
-      }
-      return true;
-    });
-  }, [selectedBrand, deferredVideoSearch]);
-
   // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7
   const sortedKlBreakdown = useMemo(() => {
     return [...B2C_VIDEO_KL_BREAKDOWN].sort((a, b) => {
@@ -754,23 +732,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     };
   }, [enrichedStaffList]);
 
-  // Top 4 Quán quân Chuyên viên thực thi theo 4 trụ cột
-  const staffChampions = useMemo(() => {
-    const specialists = enrichedStaffList.filter((s) => s.roleLevel === 'SPECIALIST');
-    const topAir = [...specialists].sort((a, b) => b.actualAiredVideos - a.actualAiredVideos)[0] || specialists[0];
-    const topSpendDiscipline =
-      [...specialists]
-        .filter((s) => s.orderBudgetNet > 0 && s.unbudgetedStoresCount === 0)
-        .sort((a, b) => Math.abs(75 - a.burnNetPct) - Math.abs(75 - b.burnNetPct))[0] || specialists[0];
-    const topRoasGmv =
-      [...specialists]
-        .filter((s) => s.actualSpentNet >= 20000000)
-        .sort((a, b) => b.effectiveRoas - a.effectiveRoas || b.attributedGmv - a.attributedGmv)[0] || specialists[0];
-    const topKpi = [...specialists].sort((a, b) => b.kpiScore - a.kpiScore || b.actualAiredVideos - a.actualAiredVideos)[0] || specialists[0];
-
-    return { topAir, topSpendDiscipline, topRoasGmv, topKpi };
-  }, [enrichedStaffList]);
-
   // Lọc & sắp xếp danh sách Nhân sự B2C
   const filteredStaffList = useMemo(() => {
     const list = enrichedStaffList.filter((st) => {
@@ -810,21 +771,54 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     });
   }, [enrichedStaffList, staffRoleFilter, staffQuadrantFilter, selectedGovernance, deferredStaffSearch, staffSortMode]);
 
-  // Nhân viên đang được chọn để xem Hồ sơ 360° trực tiếp trên trang
-  const focusedStaffProfile = useMemo(() => {
-    return (
-      enrichedStaffList.find((s) => s.name === selectedFocusStaffName) ||
-      filteredStaffList[0] ||
-      enrichedStaffList[0]
-    );
-  }, [enrichedStaffList, filteredStaffList, selectedFocusStaffName]);
+  // Tổng hợp KPI cho thanh chỉ số nhân sự (tính trên tập chuyên viên để không cộng trùng rollup cấp quản lý)
+  const staffSummary = useMemo(() => {
+    const specialists = filteredStaffList.filter((s) => s.roleLevel === 'SPECIALIST');
+    const baseList = specialists.length > 0 ? specialists : filteredStaffList;
+    const totalBudgetNet = baseList.reduce((sum, s) => sum + s.orderBudgetNet, 0);
+    const totalSpentNet = baseList.reduce((sum, s) => sum + s.actualSpentNet, 0);
+    const burnNetPct = totalBudgetNet > 0 ? Math.round((totalSpentNet / totalBudgetNet) * 1000) / 10 : 0;
+    const totalBooked = baseList.reduce((sum, s) => sum + s.actualBookedVideos, 0);
+    const totalAired = baseList.reduce((sum, s) => sum + s.actualAiredVideos, 0);
+    const totalPending = Math.max(0, totalBooked - totalAired);
+    const airRatePct = totalBooked > 0 ? Math.round((totalAired / totalBooked) * 1000) / 10 : 0;
+    const totalGmv = baseList.reduce((sum, s) => sum + s.attributedGmv, 0);
+    const effectiveRoas = totalSpentNet > 0 ? Number((totalGmv / totalSpentNet).toFixed(2)) : 0;
+    const avgSla =
+      filteredStaffList.length > 0
+        ? Math.round((filteredStaffList.reduce((sum, s) => sum + s.slaRate, 0) / filteredStaffList.length) * 10) / 10
+        : 0;
+    const starCount = filteredStaffList.filter((s) => s.staffQuadrant === 'STAR').length;
+    const warningCount = filteredStaffList.filter(
+      (s) => s.unbudgetedStoresCount > 0 || s.overbudgetStoresCount > 0
+    ).length;
 
-  // Chuyên viên có gán gian hàng trong File 4.1 / 4.1.1 hoặc có sản lượng video cao để vẽ biểu đồ so sánh
-  const specialistChartList = useMemo(() => {
-    return filteredStaffList
-      .filter((st) => st.roleLevel === 'SPECIALIST' && (st.storesCount > 0 || st.actualBookedVideos >= 10))
-      .slice(0, 16);
+    return {
+      totalCount: filteredStaffList.length,
+      starCount,
+      warningCount,
+      totalBudgetNet,
+      totalSpentNet,
+      burnNetPct,
+      totalBooked,
+      totalAired,
+      totalPending,
+      airRatePct,
+      totalGmv,
+      effectiveRoas,
+      avgSla,
+    };
   }, [filteredStaffList]);
+
+  const paginatedStaffList = useMemo(() => {
+    const start = (staffPage - 1) * staffPageSize;
+    return filteredStaffList.slice(start, start + staffPageSize);
+  }, [filteredStaffList, staffPage, staffPageSize]);
+
+  const inspectedStaffProfile = useMemo(() => {
+    if (!inspectStaff) return null;
+    return enrichedStaffList.find((s) => s.name === inspectStaff.name) ?? null;
+  }, [inspectStaff, enrichedStaffList]);
 
   // Đồng bộ dữ liệu xuống các bảng DB TikTok Seller (StorePortfolio, TikTokShopConnection, TikTokAdsCampaignReport, TikTokVideoPerformanceSnapshot)
   const handleSyncTikTokSeller = async () => {
@@ -1349,7 +1343,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </span>
                 </div>
 
-                <table className="w-full text-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[340px] text-xs">
                   <thead>
                     <tr className="text-2xs text-ink-3 border-b border-line">
                       <th className="pb-1.5 text-left font-medium">Hạng mục ngân sách</th>
@@ -1420,7 +1415,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <td className="pt-2 text-right font-semibold text-ink">100%</td>
                     </tr>
                   </tfoot>
-                </table>
+                  </table>
+                </div>
               </div>
 
               <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs text-ink-3">
@@ -2579,7 +2575,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className="px-1.5 py-0.5 rounded font-mono font-semibold bg-ink text-white text-2xs">
                             {item.kl}
                           </span>
@@ -2592,7 +2588,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 font-mono text-2xs">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 font-mono text-2xs">
                           <span className="text-ink-3">
                             Đơn giá TB: <strong>{formatVndShort(avgCost)}/video</strong>
                           </span>
@@ -2889,1176 +2885,476 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           />
 
           {/* TRỌNG TÂM 2: ĐỐI SÁNH SLA GIỮA 2 LUỒNG QUẢN TRỊ B2C */}
-          <div className="bg-surface rounded-xl border border-line p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-              <h3 className="text-sm font-semibold text-ink">
-                Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
+          <Panel
+            title="Kiểm soát SLA theo 2 luồng phê duyệt B2C"
+            actions={
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon={ChevronRight}
                   onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-positive hover:text-positive cursor-pointer"
                 >
-                  Mở Dashboard Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                  Hiệu suất nhân sự
+                </Button>
                 {onNavigateToTab && (
-                  <button
-                    type="button"
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={ChevronRight}
                     onClick={() => onNavigateToTab('performance-p3')}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent cursor-pointer"
                   >
-                    Mở bảng điểm 4P
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                    Bảng điểm 4P
+                  </Button>
                 )}
               </div>
-            </div>
+            }
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Luồng 1: 8 gian hàng có Leader Nguyễn Thị Ngọc Tâm */}
-                  <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-accent">
-                        Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-2xs font-mono font-semibold bg-accent text-white">
-                        8 Gian hàng
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20 text-center font-mono">
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
-                        <strong className="text-xs text-positive">91,4%</strong>
-                      </div>
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
-                        <strong className="text-xs text-accent">51,2%</strong>
-                      </div>
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Sơ duyệt KB</span>
-                        <strong className="text-xs text-ink">&lt; 16 giờ</strong>
-                      </div>
-                    </div>
+              <div className="p-3.5 rounded-lg bg-canvas border border-line">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-ink">
+                    Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
+                  </span>
+                  <span className="text-xs font-mono text-ink-3">8 gian hàng</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
+                    <strong className="text-xs text-ink">91,4%</strong>
                   </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
+                    <strong className="text-xs text-ink">51,2%</strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Sơ duyệt kịch bản</span>
+                    <strong className="text-xs text-ink">&lt; 16 giờ</strong>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Luồng 2: 61 gian hàng không có Leader -> Trình trực tiếp Đặng Thị Yến Nhi */}
-                  <div className="p-3.5 rounded-xl bg-positive-soft border border-positive/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-positive">
-                        Luồng 2: Trình trực tiếp TP Đặng Thị Yến Nhi
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-2xs font-mono font-semibold bg-positive text-white">
-                        61 Gian hàng
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20 text-center font-mono">
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
-                        <strong className="text-xs text-positive">86,8%</strong>
-                      </div>
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
-                        <strong className="text-xs text-accent">51,0%</strong>
-                      </div>
-                      <div>
-                        <span className="text-2xs text-ink-3 block">Duyệt thẳng TP</span>
-                        <strong className="text-xs text-ink">&lt; 24 giờ</strong>
-                      </div>
-                    </div>
+              <div className="p-3.5 rounded-lg bg-canvas border border-line">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-ink">
+                    Luồng 2: Trình trực tiếp GĐ Đặng Thị Yến Nhi
+                  </span>
+                  <span className="text-xs font-mono text-ink-3">61 gian hàng</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
+                    <strong className="text-xs text-ink">86,8%</strong>
                   </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
+                    <strong className="text-xs text-ink">51,0%</strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Duyệt trực tiếp</span>
+                    <strong className="text-xs text-ink">&lt; 24 giờ</strong>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </Panel>
 
           {/* BẢNG KIỂM SOÁT CẢNH BÁO TRỄ HẠN SLA & HỒ SƠ ĐNTT THEO CHUYÊN VIÊN */}
-          <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Theo Dõi Tỷ Lệ Đúng Hạn SLA &amp; Đơn Chờ Air / Chờ Làm ĐNTT Theo Nhân Sự
-                </h3>
-                </div>
-              <button
-                type="button"
+          <Panel
+            title="Theo dõi tỷ lệ đúng hạn SLA và đơn chờ đăng theo nhân sự"
+            flush
+            actions={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={ChevronRight}
                 onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent text-white hover:bg-accent transition cursor-pointer"
               >
-                Sang Tab 5: Xem Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên →
-              </button>
-            </div>
-            <div className="overflow-x-auto max-h-[420px]">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
-                  <tr>
-                    <th className="py-2.5 px-4 font-semibold">Chuyên Viên (PIC)</th>
-                    <th className="py-2.5 px-3 font-semibold">Luồng Báo Cáo</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Tổng Đơn Book</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Đã Air Lên Sóng</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Đơn Chờ Air</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Đơn Trễ Hạn SLA</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Tỷ Lệ Đúng Hạn SLA</th>
-                    <th className="py-2.5 px-4 font-semibold">Hành Động Điều Phối</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {enrichedStaffList
-                    .filter((s) => s.actualBookedVideos > 0)
-                    .sort((a, b) => b.lateSlaVideosCount - a.lateSlaVideosCount || b.pendingAirVideos - a.pendingAirVideos)
-                    .map((st) => (
-                      <tr
-                        key={st.name}
-                        onClick={() => {
-                          setSelectedFocusStaffName(st.name);
-                          handleSelectDashboardSection('STAFF_EFFICIENCY');
-                        }}
-                        className="hover:bg-accent-soft transition cursor-pointer"
-                      >
-                        <td className="py-2.5 px-4 font-semibold text-ink flex items-center gap-2">
-                          <Avatar name={st.name} size={26} />
-                          <span>{st.name}</span>
-                        </td>
-                        <td className="py-2.5 px-3 text-ink-2">
-                          {st.storesWithLeaderCount > 0
-                            ? `${st.storesWithLeaderCount} gian qua Leader · ${st.storesDirectCount} gian trực tiếp`
-                            : 'Báo cáo trực tiếp TP Yến Nhi'}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-semibold">{st.actualBookedVideos} đơn</td>
-                        <td className="py-2.5 px-3 text-center font-mono font-semibold text-positive">
-                          {st.actualAiredVideos} video ({st.airVsBookPct}%)
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono">
-                          {st.pendingAirVideos > 0 ? (
-                            <span className="text-warning font-semibold">
-                              {st.pendingAirVideos} đơn chờ Air
-                            </span>
-                          ) : (
-                            <span className="text-positive font-medium">Đã Air 100%</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono">
-                          {st.lateSlaVideosCount > 0 ? (
-                            <span className="text-critical font-semibold">
-                              {st.lateSlaVideosCount} đơn trễ
-                            </span>
-                          ) : (
-                            <span className="text-ink-3">0</span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono">
-                          <span
-                            className={`px-2 py-0.5 rounded font-semibold ${
-                              st.slaRate >= 85
-                                ? 'bg-positive-soft text-positive'
-                                : st.slaRate >= 65
-                                ? 'bg-warning-soft text-warning'
-                                : 'bg-critical-soft text-critical'
-                            }`}
-                          >
-                            {st.slaRate}%
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-4 text-2xs font-semibold text-accent">
-                          Xem hồ sơ hiệu suất 360° →
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                Xem hiệu suất nhân sự
+              </Button>
+            }
+          >
+            <DataTable
+              rows={enrichedStaffList
+                .filter((s) => s.actualBookedVideos > 0)
+                .sort(
+                  (a, b) =>
+                    b.lateSlaVideosCount - a.lateSlaVideosCount ||
+                    b.pendingAirVideos - a.pendingAirVideos
+                )}
+              rowKey={(st) => st.name}
+              onRowClick={(st) => {
+                setSelectedFocusStaffName(st.name);
+                setInspectStaff(st);
+              }}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Chuyên viên (PIC)',
+                  render: (st) => (
+                    <Person
+                      name={st.name}
+                      sub={
+                        st.storesWithLeaderCount > 0
+                          ? `${st.storesWithLeaderCount} gian qua Leader · ${st.storesDirectCount} gian trực tiếp`
+                          : 'Báo cáo trực tiếp GĐ Yến Nhi'
+                      }
+                    />
+                  ),
+                },
+                {
+                  key: 'booked',
+                  header: 'Tổng đơn book',
+                  align: 'right',
+                  render: (st) => `${st.actualBookedVideos} đơn`,
+                },
+                {
+                  key: 'aired',
+                  header: 'Đã đăng lên sóng',
+                  align: 'right',
+                  render: (st) => `${st.actualAiredVideos} video (${st.airVsBookPct}%)`,
+                },
+                {
+                  key: 'pending',
+                  header: 'Đơn chờ đăng',
+                  align: 'right',
+                  render: (st) =>
+                    st.pendingAirVideos > 0 ? `${st.pendingAirVideos} đơn` : '0',
+                },
+                {
+                  key: 'late',
+                  header: 'Đơn trễ SLA',
+                  align: 'right',
+                  render: (st) =>
+                    st.lateSlaVideosCount > 0 ? `${st.lateSlaVideosCount} đơn` : '0',
+                },
+                {
+                  key: 'sla',
+                  header: 'Đúng hạn SLA',
+                  align: 'right',
+                  render: (st) => `${st.slaRate}%`,
+                },
+                {
+                  key: 'status',
+                  header: 'Trạng thái',
+                  render: (st) =>
+                    st.lateSlaVideosCount > 0 ? (
+                      <Status tone="critical">{`Trễ ${st.lateSlaVideosCount} đơn`}</Status>
+                    ) : st.pendingAirVideos > 5 ? (
+                      <Status tone="warning">{`Chờ đăng ${st.pendingAirVideos} đơn`}</Status>
+                    ) : (
+                      <Status tone="positive">Đúng tiến độ</Status>
+                    ),
+                },
+              ]}
+            />
+          </Panel>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 5: DASHBOARD HIỆU SUẤT & HIỆU QUẢ TỪNG NHÂN VIÊN B2C (360° INDIVIDUAL) */}
+      {/* TAB 5: HIỆU SUẤT NHÂN SỰ B2C                                              */}
       {/* ========================================================================= */}
       {activeTab === 'STAFF_EFFICIENCY' && (
-        <div className="space-y-5">
-          {/* 1. DẢI VINH DANH 4 QUÁN QUÂN THEO 4 TRỤ CỘT HIỆU SUẤT & HIỆU QUẢ */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            {/* Quán quân 1: Sản lượng Video Air */}
-            <div
-              onClick={() => setSelectedFocusStaffName(staffChampions.topAir.name)}
-              className="bg-surface rounded-xl border border-positive/30 p-4 hover:border-positive transition cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-positive text-white">
-                  Top Dẫn Đầu Sản Lượng Video Air
-                </span>
-                <Film className="w-4 h-4 text-positive" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Avatar name={staffChampions.topAir.name} size={36} />
-                <div>
-                  <div className="text-sm font-semibold text-ink">{staffChampions.topAir.name}</div>
-                  <div className="text-2xs text-ink-3">
-                    Phụ trách {staffChampions.topAir.storesCount} gian hàng · SLA {staffChampions.topAir.slaRate}%
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
-                <span className="text-positive font-semibold text-sm">
-                  {staffChampions.topAir.actualAiredVideos} Video Air
-                </span>
-                <span className="text-ink-2">
-                  / {staffChampions.topAir.actualBookedVideos} đơn ({staffChampions.topAir.airVsBookPct}%)
-                </span>
-              </div>
-            </div>
+        <div className="space-y-4">
+          <StatRow size="sm">
+            <Stat
+              label="Nhân sự phụ trách"
+              value={`${staffSummary.totalCount} nhân sự`}
+              note={`${staffSummary.starCount} đạt chỉ tiêu · ${staffSummary.warningCount} cần lưu ý ngân sách`}
+            />
+            <Stat
+              label="Thực chi / Trần Net"
+              value={`${formatVndShort(staffSummary.totalSpentNet)} / ${formatVndShort(staffSummary.totalBudgetNet)}`}
+              note={`Giải ngân ${staffSummary.burnNetPct}% hạn mức Net`}
+            />
+            <Stat
+              label="Video đã đăng / Đơn book"
+              value={`${formatNumber(staffSummary.totalAired)} / ${formatNumber(staffSummary.totalBooked)}`}
+              note={`Tỷ lệ đăng ${staffSummary.airRatePct}% · Chờ đăng ${formatNumber(staffSummary.totalPending)} đơn`}
+            />
+            <Stat
+              label="Doanh thu GMV & SLA"
+              value={formatVndShort(staffSummary.totalGmv)}
+              note={`ROAS ${staffSummary.effectiveRoas}x · Đúng hạn SLA ${staffSummary.avgSla}%`}
+            />
+          </StatRow>
 
-            {/* Quán quân 2: Kỷ luật Giải ngân % Spend Net */}
-            <div
-              onClick={() => setSelectedFocusStaffName(staffChampions.topSpendDiscipline.name)}
-              className="bg-surface rounded-xl border border-accent/30 p-4 hover:border-accent transition cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
-                  Top Kỷ Luật % Spend Net
-                </span>
-                <DollarSign className="w-4 h-4 text-accent" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Avatar name={staffChampions.topSpendDiscipline.name} size={36} />
-                <div>
-                  <div className="text-sm font-semibold text-ink">{staffChampions.topSpendDiscipline.name}</div>
-                  <div className="text-2xs text-ink-3">
-                    {staffChampions.topSpendDiscipline.storesCount} gian hàng · 0 gian vượt trần 0đ
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
-                <span className="text-accent font-semibold text-sm">
-                  {staffChampions.topSpendDiscipline.burnNetPct}% Spend Net
-                </span>
-                <span className="text-ink-2">
-                  {formatVndShort(staffChampions.topSpendDiscipline.actualSpentNet)} / {formatVndShort(staffChampions.topSpendDiscipline.orderBudgetNet)}
-                </span>
-              </div>
-            </div>
-
-            {/* Quán quân 3: Hiệu quả ROAS & GMV trên Chi phí */}
-            <div
-              onClick={() => setSelectedFocusStaffName(staffChampions.topRoasGmv.name)}
-              className="bg-surface rounded-xl border border-warning/30 p-4 hover:border-warning transition cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-warning text-white">
-                  Top Hiệu Quả ROAS &amp; GMV
-                </span>
-                <TrendingUp className="w-4 h-4 text-warning" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Avatar name={staffChampions.topRoasGmv.name} size={36} />
-                <div>
-                  <div className="text-sm font-semibold text-ink">{staffChampions.topRoasGmv.name}</div>
-                  <div className="text-2xs text-ink-3">
-                    GMV tạo ra: <strong>{formatVndShort(staffChampions.topRoasGmv.attributedGmv)}</strong>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
-                <span className="text-warning font-semibold text-sm">
-                  ROAS {staffChampions.topRoasGmv.effectiveRoas}x
-                </span>
-                <span className="text-ink-2">
-                  CIR: {staffChampions.topRoasGmv.effectiveCirPct}% · Win: {staffChampions.topRoasGmv.winRatePct}%
-                </span>
-              </div>
-            </div>
-
-            {/* Quán quân 4: Điểm Hiệu Suất Tổng Hợp KPI Score */}
-            <div
-              onClick={() => setSelectedFocusStaffName(staffChampions.topKpi.name)}
-              className="bg-surface rounded-xl border border-accent/30 p-4 hover:border-accent transition cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-accent text-white">
-                  Top Điểm Đánh Giá Tổng Hợp
-                </span>
-                <Award className="w-4 h-4 text-accent" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Avatar name={staffChampions.topKpi.name} size={36} />
-                <div>
-                  <div className="text-sm font-semibold text-ink">{staffChampions.topKpi.name}</div>
-                  <div className="text-2xs text-ink-3">
-                    {staffChampions.topKpi.kpiGradeLabel} · SLA {staffChampions.topKpi.slaRate}%
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
-                <span className="text-accent font-semibold text-sm">
-                  {staffChampions.topKpi.kpiScore}/100 điểm
-                </span>
-                <span className="text-ink-2">
-                  {staffChampions.topKpi.actualAiredVideos} air · {staffChampions.topKpi.burnNetPct}% Spend
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. THANH LỌC MA TRẬN 4 GÓC PHẦN TƯ: HIỆU SUẤT SẢN LƯỢNG vs HIỆU QUẢ ĐẦU TƯ */}
-          <div className="bg-surface rounded-xl border border-line p-3.5 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-              <Award className="w-4 h-4 text-accent" />
-              <span>Phân nhóm nhân viên theo Ma trận Hiệu suất (Số Video Air) &amp; Hiệu quả (% Spend, ROAS, SLA):</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[
-                {
-                  key: 'ALL',
-                  label: `Tất cả nhân sự (${staffQuadrantCounts.total})`,
-                  activeClass: 'bg-ink text-white',
-                  idleClass: 'bg-sunken text-ink-2 hover:bg-sunken'
+          <Panel flush>
+            <FilterBar
+              search={{
+                value: staffSearchQuery,
+                onChange: (v: string) => {
+                  setStaffSearchQuery(v);
+                  setStaffPage(1);
                 },
-                {
-                  key: 'STAR',
-                  label: `Nhóm dẫn đầu: Air cao & ROAS tốt (${staffQuadrantCounts.star} NS)`,
-                  activeClass: 'bg-positive text-white',
-                  idleClass: 'bg-positive-soft text-positive border border-positive/20 hover:bg-positive-soft'
-                },
-                {
-                  key: 'HIGH_VOL_OPT_COST',
-                  label: `Sản lượng Air cao — Cần tối ưu Trần Net / SLA (${staffQuadrantCounts.highVolOptCost} NS)`,
-                  activeClass: 'bg-warning text-white',
-                  idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft'
-                },
-                {
-                  key: 'HIGH_EFF_NEED_VOL',
-                  label: `ROAS & SLA tốt — Cần đẩy nhanh Số Video Air (${staffQuadrantCounts.highEffNeedVol} NS)`,
-                  activeClass: 'bg-accent text-white',
-                  idleClass: 'bg-accent-soft text-accent border border-accent/20 hover:bg-accent-soft'
-                },
-                {
-                  key: 'NEED_COACHING',
-                  label: `Cần kèm cặp sát tiến độ Air & Ngân sách (${staffQuadrantCounts.needCoaching} NS)`,
-                  activeClass: 'bg-critical text-white',
-                  idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft'
-                }
-              ].map((q) => (
-                <button
-                  key={q.key}
-                  type="button"
-                  onClick={() => setStaffQuadrantFilter(q.key as typeof staffQuadrantFilter)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    staffQuadrantFilter === q.key ? q.activeClass : q.idleClass
-                  }`}
-                >
-                  {q.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 3. HỒ SƠ ĐÁNH GIÁ 360° TỪNG NHÂN VIÊN TRỰC TIẾP TRÊN TRANG (CHỌN NHÂN VIÊN BẤT KỲ) */}
-          {focusedStaffProfile && (
-            <div className="bg-surface rounded-xl border border-accent/30 p-5 space-y-4">
-              {/* Thanh chọn nhanh nhân viên để xem Hồ sơ 360° */}
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3.5 border-b border-line">
-                <div>
-                  <span className="text-2xs font-semibold uppercase tracking-wider text-accent block">
-                    Hồ Sơ Đánh Giá Hiệu Suất &amp; Hiệu Quả Cá Nhân 360° (Chọn nhân viên để soi chi tiết)
-                  </span>
-                  <h3 className="text-base font-semibold text-ink mt-0.5">
-                    Đang xem: {focusedStaffProfile.name} — {focusedStaffProfile.roleTitle}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-ink-2">Chọn nhanh nhân sự:</span>
-                  <select
-                    value={focusedStaffProfile.name}
-                    onChange={(e) => setSelectedFocusStaffName(e.target.value)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-hidden focus:border-accent/20"
-                  >
-                    {enrichedStaffList.map((s) => (
-                      <option key={s.name} value={s.name}>
-                        {s.name} ({s.storesCount} gian · {s.actualAiredVideos} video air · {s.burnNetPct}% Spend · {s.kpiScore}đ)
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setIsStaff360Open(!isStaff360Open)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-accent/20 bg-surface hover:bg-accent-soft text-accent text-xs font-semibold transition cursor-pointer"
-                  >
-                    {isStaff360Open ? (
-                      <>
-                        <ChevronUp className="w-3.5 h-3.5" />
-                        <span>Thu gọn hồ sơ</span>
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3.5 h-3.5" />
-                        <span>Mở rộng hồ sơ 360°</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {isStaff360Open && (
-                <>
-
-              {/* Dải pill chọn nhanh các chuyên viên chủ lực */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {enrichedStaffList.slice(0, 14).map((s) => {
-                  const isSelected = s.name === focusedStaffProfile.name;
-                  return (
-                    <button
-                      key={s.name}
-                      type="button"
-                      onClick={() => setSelectedFocusStaffName(s.name)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition cursor-pointer border ${
-                        isSelected
-                          ? 'bg-accent text-white border-accent/20 shadow-xs'
-                          : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
-                      }`}
-                    >
-                      <span>{s.name}</span>
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-2xs font-mono ${
-                          isSelected ? 'bg-ink text-accent' : 'bg-positive-soft text-positive'
-                        }`}
-                      >
-                        {s.actualAiredVideos} air
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Thông tin tổng quan & Điểm KPI 4 trụ cột của nhân viên đang chọn */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-                {/* Trái 4 cột: Thẻ Định Danh & Tổng Điểm KPI /100 */}
-                <div className="lg:col-span-4 p-4 rounded-xl bg-ink text-white flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={focusedStaffProfile.name} size={44} />
-                        <div>
-                          <div className="text-base font-semibold">{focusedStaffProfile.name}</div>
-                          <div className="text-xs text-ink-3">{focusedStaffProfile.roleTitle}</div>
-                          <div className="text-2xs text-accent mt-0.5">
-                            Cấp duyệt: <strong>{focusedStaffProfile.directSupervisor}</strong>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right font-mono">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                            focusedStaffProfile.kpiGrade === 'S'
-                              ? 'bg-positive text-white'
-                              : focusedStaffProfile.kpiGrade === 'A'
-                              ? 'bg-accent text-white'
-                              : focusedStaffProfile.kpiGrade === 'B'
-                              ? 'bg-warning text-ink'
-                              : 'bg-critical text-white'
-                          }`}
-                        >
-                          {focusedStaffProfile.kpiScore}/100 điểm
-                        </span>
-                        <span className="block text-2xs text-ink-3 mt-1">
-                          {focusedStaffProfile.kpiGradeLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bóc tách 4 trụ cột cấu thành điểm KPI của nhân viên */}
-                    <div className="mt-4 pt-3 border-t border-line-strong grid grid-cols-2 gap-2 text-2xs">
-                      <div className="p-2 rounded bg-ink/90">
-                        <span className="text-ink-3 block">1. Sản lượng Video Air</span>
-                        <strong className="font-mono text-positive">{focusedStaffProfile.scoreAir}/35 điểm</strong>
-                      </div>
-                      <div className="p-2 rounded bg-ink/90">
-                        <span className="text-ink-3 block">2. Kỷ luật % Spend Net</span>
-                        <strong className="font-mono text-accent">{focusedStaffProfile.scoreSpend}/25 điểm</strong>
-                      </div>
-                      <div className="p-2 rounded bg-ink/90">
-                        <span className="text-ink-3 block">3. Hiệu quả ROAS &amp; GMV</span>
-                        <strong className="font-mono text-warning">{focusedStaffProfile.scoreEfficiency}/20 điểm</strong>
-                      </div>
-                      <div className="p-2 rounded bg-ink/90">
-                        <span className="text-ink-3 block">4. Đúng hạn SLA &amp; ĐNTT</span>
-                        <strong className="font-mono text-accent">{focusedStaffProfile.scoreSla}/20 điểm</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-2.5 border-t border-line-strong flex items-center justify-between text-2xs text-ink-3">
-                    <span>
-                      Quản lý: <strong>{focusedStaffProfile.storesCount} gian hàng</strong> ({focusedStaffProfile.tiktokStoresCount} TT · {focusedStaffProfile.shopeeStoresCount} SP)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setInspectStaff(focusedStaffProfile)}
-                      className="text-accent hover:text-white font-semibold underline cursor-pointer"
-                    >
-                      Mở cửa sổ chi tiết
-                    </button>
-                  </div>
-                </div>
-
-                {/* Phải 8 cột: 6 Thẻ Chỉ Số Hiệu Suất (Output) & Hiệu Quả (ROI/Cost) Của Nhân Viên */}
-                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {/* Thẻ 1: % Spend Chi phí Net & Gross */}
-                  <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20 flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-accent uppercase block">
-                        1. % Spend Chi Phí (Net &amp; Gross)
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-semibold text-accent">
-                          {focusedStaffProfile.burnNetPct}% Net
-                        </span>
-                        <span className="text-xs font-semibold text-ink-2">
-                          ({focusedStaffProfile.burnGrossPct}% Gross)
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-accent-soft rounded-full overflow-hidden mt-2">
-                        <div
-                          className={`data-bar h-full rounded-full ${
-                            focusedStaffProfile.burnNetPct > 100 ? 'bg-critical' : 'bg-accent'
-                          }`}
-                          style={{ width: `${Math.min(100, Math.max(focusedStaffProfile.burnNetPct, 4))}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-accent/20 text-2xs font-mono flex justify-between">
-                      <span>Thực chi: <strong>{formatVndShort(focusedStaffProfile.actualSpentNet)}</strong></span>
-                      <span>Trần Net: <strong>{formatVndShort(focusedStaffProfile.orderBudgetNet)}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Thẻ 2: Số lượng Video Đã Air Lên Sóng */}
-                  <div className="p-3.5 rounded-xl bg-positive-soft border border-positive/20 flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-positive uppercase block">
-                        2. Số Lượng Video Đã Air Lên Sóng
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-semibold text-positive">
-                          {focusedStaffProfile.actualAiredVideos} video
-                        </span>
-                        <span className="text-xs font-semibold text-positive">
-                          ({focusedStaffProfile.airVsBookPct}% đơn book)
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-positive-soft rounded-full overflow-hidden mt-2">
-                        <div
-                          className="data-bar h-full bg-positive rounded-full"
-                          style={{ width: `${Math.min(100, Math.max(focusedStaffProfile.airVsBookPct, 5))}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-positive/20 text-2xs font-mono flex justify-between">
-                      <span>Đã book: <strong>{focusedStaffProfile.actualBookedVideos} đơn</strong></span>
-                      <span>Paid/FOC: <strong>{focusedStaffProfile.targetPaidVideos}/{focusedStaffProfile.targetFocVideos}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Thẻ 3: Hiệu Quả Doanh Thu GMV & Đơn Hàng */}
-                  <div className="p-3.5 rounded-xl bg-warning-soft border border-warning/20 flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-warning uppercase block">
-                        3. Doanh Thu GMV Tạo Ra (Seller)
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-semibold text-warning">
-                          {formatVndShort(focusedStaffProfile.attributedGmv)}
-                        </span>
-                        <span className="text-xs font-semibold text-ink-2">
-                          ({focusedStaffProfile.attributedOrders.toLocaleString('vi-VN')} đơn)
-                        </span>
-                      </div>
-                      <p className="text-2xs text-ink-2 mt-1">
-                        Tổng lượt xem tích lũy:{' '}
-                        <strong className="font-mono text-ink">
-                          {focusedStaffProfile.attributedViews.toLocaleString('vi-VN')} views
-                        </strong>
-                      </p>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-warning/20 text-2xs font-mono flex justify-between">
-                      <span>Target NMV: <strong>{formatVndShort(focusedStaffProfile.targetNmv)}</strong></span>
-                      <span className="text-positive font-semibold">
-                        Win: {focusedStaffProfile.winningVideosCount} video ({focusedStaffProfile.winRatePct}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Thẻ 4: Hiệu Quả Đầu Tư ROAS & CIR % */}
-                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
-                        4. Hiệu Quả Đầu Tư (ROAS &amp; CIR %)
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-xl font-semibold text-positive">
-                          ROAS {focusedStaffProfile.effectiveRoas}x
-                        </span>
-                        <span className="text-xs font-semibold text-accent">
-                          CIR: {focusedStaffProfile.effectiveCirPct}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-line text-2xs text-ink-2 flex justify-between">
-                      <span>1đ chi phí tạo ra:</span>
-                      <strong className="font-mono text-ink">{focusedStaffProfile.effectiveRoas}đ GMV</strong>
-                    </div>
-                  </div>
-
-                  {/* Thẻ 5: Đơn Giá Bình Quân / Video & CPA */}
-                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
-                        5. Chi Phí TB / 1 Video Đã Air
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-xl font-semibold text-ink">
-                          {focusedStaffProfile.avgCostPerAiredVideo > 0
-                            ? formatVndShort(focusedStaffProfile.avgCostPerAiredVideo)
-                            : '0đ (FOC)'}
-                        </span>
-                        <span className="text-2xs text-ink-3">/ video air</span>
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-line text-2xs font-mono flex justify-between">
-                      <span>TB/Đơn book: <strong>{formatVndShort(focusedStaffProfile.avgCostPerBookedVideo)}</strong></span>
-                      <span>CPA/Đơn: <strong>{formatVndShort(focusedStaffProfile.cpaPerOrder)}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Thẻ 6: Kỷ Luật SLA & Kiểm Soát Trần Net */}
-                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
-                    <div>
-                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
-                        6. Kỷ Luật Đúng Hạn SLA &amp; Trần Net
-                      </span>
-                      <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span
-                          className={`text-xl font-semibold ${
-                            focusedStaffProfile.slaRate >= 85
-                              ? 'text-positive'
-                              : focusedStaffProfile.slaRate >= 65
-                              ? 'text-warning'
-                              : 'text-critical'
-                          }`}
-                        >
-                          SLA {focusedStaffProfile.slaRate}%
-                        </span>
-                        <span className="text-xs text-ink-3">
-                          ({focusedStaffProfile.lateSlaVideosCount} đơn trễ)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-2.5 pt-2 border-t border-line text-2xs flex justify-between">
-                      <span>Kiểm soát Kế toán:</span>
-                      {focusedStaffProfile.unbudgetedStoresCount > 0 || focusedStaffProfile.overbudgetStoresCount > 0 ? (
-                        <strong className="text-critical">
-                          {focusedStaffProfile.unbudgetedStoresCount} gian 0đ · {focusedStaffProfile.overbudgetStoresCount} vượt Net
-                        </strong>
-                      ) : (
-                        <strong className="text-positive">100% đúng trần Net</strong>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* 4. BIỂU ĐỒ SO SÁNH NGANG ĐA CHIỀU GIỮA CÁC CHUYÊN VIÊN THỰC THI */}
-          <div className="bg-surface rounded-xl border border-line p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Biểu Đồ Đối Sánh Hiệu Suất &amp; Hiệu Quả Giữa Các Chuyên Viên B2C
-                </h3>
-                </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[
-                  { key: 'BOTH', label: '1. Kép: % Spend Net & Số Video Air', activeBg: 'bg-ink text-white' },
-                  { key: 'GMV_ROAS', label: '2. Hiệu Quả: GMV Tạo Ra & ROAS', activeBg: 'bg-positive text-white' },
-                  { key: 'UNIT_COST', label: '3. Tối Ưu Giá: Đơn Giá TB / Video Air', activeBg: 'bg-accent text-white' },
-                  { key: 'KPI_SCORE', label: '4. Điểm KPI Tổng Hợp (/100) & SLA', activeBg: 'bg-accent text-white' }
-                ].map((m) => (
-                  <button
-                    key={m.key}
-                    type="button"
-                    onClick={() => setStaffMetricMode(m.key as typeof staffMetricMode)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                      staffMetricMode === m.key
-                        ? m.activeBg
-                        : 'bg-sunken text-ink-2 hover:bg-sunken'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {specialistChartList.map((st) => {
-                const maxGmv = Math.max(...specialistChartList.map((x) => x.attributedGmv), 1);
-                const gmvBar = Math.round((st.attributedGmv / maxGmv) * 100);
-                const maxUnitCost = Math.max(...specialistChartList.map((x) => x.avgCostPerAiredVideo), 1);
-                const unitCostBar = Math.round((st.avgCostPerAiredVideo / maxUnitCost) * 100);
-                const isSelected = focusedStaffProfile?.name === st.name;
-
-                return (
-                  <div
-                    key={st.name}
-                    onClick={() => setSelectedFocusStaffName(st.name)}
-                    className={`p-3.5 rounded-xl border transition cursor-pointer ${
-                      isSelected
-                        ? 'border-2 border-accent/20 bg-accent-soft shadow-xs'
-                        : 'border-line hover:border-accent/20 hover:bg-canvas'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={st.name} size={32} />
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-semibold text-ink">{st.name}</span>
-                            <span
-                              className={`px-1.5 py-0.2 rounded text-2xs font-mono font-semibold ${
-                                st.kpiGrade === 'S'
-                                  ? 'bg-positive text-white'
-                                  : st.kpiGrade === 'A'
-                                  ? 'bg-accent text-white'
-                                  : st.kpiGrade === 'B'
-                                  ? 'bg-warning-soft text-warning'
-                                  : 'bg-sunken text-ink-2'
-                              }`}
-                            >
-                              {st.kpiScore}đ ({st.kpiGrade})
-                            </span>
-                          </div>
-                          <span className="text-2xs text-ink-3">
-                            {st.storesCount} gian · GMV: <strong>{formatVndShort(st.attributedGmv)}</strong> · ROAS: <strong>{st.effectiveRoas}x</strong>
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 font-mono text-2xs">
-                        <span
-                          className={`px-2 py-0.5 rounded font-semibold ${
-                            st.burnNetPct > 100
-                              ? 'bg-critical-soft text-critical'
-                              : st.burnNetPct >= 45
-                              ? 'bg-accent-soft text-accent'
-                              : 'bg-sunken text-ink-2'
-                          }`}
-                        >
-                          {st.burnNetPct}% Spend
-                        </span>
-                        <span className="font-semibold text-positive">
-                          {st.actualAiredVideos} Air
-                        </span>
-                      </div>
-                    </div>
-
-                    {staffMetricMode === 'BOTH' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="text-ink-3">1. Thực chi / Trần Order Net:</span>
-                            <span className="font-mono font-semibold text-accent">
-                              {formatVndShort(st.actualSpentNet)} / {formatVndShort(st.orderBudgetNet)} ({st.burnNetPct}%)
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className={`data-bar h-full rounded-full ${
-                                st.overbudgetStoresCount > 0 || st.unbudgetedStoresCount > 0 ? 'bg-critical' : 'bg-accent'
-                              }`}
-                              style={{ width: `${Math.min(100, Math.max(st.burnNetPct, st.actualSpentNet > 0 ? 4 : 0))}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="text-ink-3">
-                              2. Số Video Đã Air / Đơn Book (Paid: {st.targetPaidVideos} · FOC: {st.targetFocVideos}):
-                            </span>
-                            <span className="font-mono font-semibold text-positive">
-                              {st.actualAiredVideos} / {st.actualBookedVideos} đơn ({st.airVsBookPct}% Air)
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className="data-bar h-full bg-positive rounded-full"
-                              style={{ width: `${Math.min(100, Math.max(st.airVsBookPct, st.actualAiredVideos > 0 ? 5 : 0))}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {staffMetricMode === 'GMV_ROAS' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="text-ink-3">Doanh thu GMV tạo ra ({st.attributedOrders} đơn):</span>
-                            <span className="font-mono font-semibold text-positive">
-                              {formatVndShort(st.attributedGmv)} (ROAS {st.effectiveRoas}x · CIR {st.effectiveCirPct}%)
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className="data-bar h-full bg-positive rounded-full"
-                              style={{ width: `${Math.max(gmvBar, 5)}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-2xs font-mono text-ink-2">
-                          <span>Lượt xem: <strong>{st.attributedViews.toLocaleString('vi-VN')}</strong></span>
-                          <span className="text-positive font-semibold">
-                            Video thắng (ROAS ≥ 3x): {st.winningVideosCount}/{st.actualAiredVideos} ({st.winRatePct}%)
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    {staffMetricMode === 'UNIT_COST' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="text-ink-3">Chi phí bình quân / 1 Video Đã Air:</span>
-                            <span className="font-mono font-semibold text-accent">
-                              {st.avgCostPerAiredVideo > 0 ? formatVndShort(st.avgCostPerAiredVideo) : '0đ (FOC)'} / video
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className="data-bar h-full bg-accent rounded-full"
-                              style={{ width: `${Math.max(unitCostBar, st.avgCostPerAiredVideo > 0 ? 5 : 2)}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-2xs font-mono text-ink-2">
-                          <span>TB / Đơn book: <strong>{formatVndShort(st.avgCostPerBookedVideo)}</strong></span>
-                          <span>CPA / Đơn hàng: <strong>{formatVndShort(st.cpaPerOrder)}</strong></span>
-                        </div>
-                      </div>
-                    )}
-
-                    {staffMetricMode === 'KPI_SCORE' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
-                        <div>
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="text-ink-3">Điểm KPI Tổng Hợp ({st.kpiGradeLabel}):</span>
-                            <span className="font-mono font-semibold text-accent">
-                              {st.kpiScore}/100 điểm · SLA: {st.slaRate}%
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
-                            <div
-                              className="data-bar h-full bg-accent rounded-full"
-                              style={{ width: `${st.kpiScore}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-2xs font-mono text-center bg-canvas p-1 rounded">
-                          <span>Air: <strong>{st.scoreAir}/35</strong></span>
-                          <span>Spend: <strong>{st.scoreSpend}/25</strong></span>
-                          <span>ROAS: <strong>{st.scoreEfficiency}/20</strong></span>
-                          <span>SLA: <strong>{st.scoreSla}/20</strong></span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 5. BẢNG XẾP HẠNG & ĐỐI SOÁT HIỆU SUẤT + HIỆU QUẢ TOÀN BỘ 32 NHÂN SỰ B2C */}
-          <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-line flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-semibold text-ink">
-                    Bảng Xếp Hạng &amp; Đối Soát Hiệu Suất, Hiệu Quả Từng Nhân Viên B2C ({filteredStaffList.length} Nhân Sự)
-                  </h3>
-                  </div>
+                placeholder: "Tìm nhân sự, gian hàng, thương hiệu...",
+              }}
+              filters={
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={staffSearchQuery}
-                      onChange={(e) => setStaffSearchQuery(e.target.value)}
-                      placeholder="Tìm tên nhân sự, PIC..."
-                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-surface"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {[
-                      { key: 'ALL', label: 'Tất cả 32 NS' },
-                      { key: 'WITH_STORES', label: 'Chuyên viên giữ gian hàng (4.1)' },
-                      { key: 'SPECIALIST', label: 'Toàn bộ Chuyên viên' },
-                      { key: 'MANAGEMENT', label: 'Cấp Quản lý' }
-                    ].map((f) => (
-                      <button
-                        key={f.key}
-                        type="button"
-                        onClick={() => setStaffRoleFilter(f.key as typeof staffRoleFilter)}
-                        className={`px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer ${
-                          staffRoleFilter === f.key
-                            ? 'bg-ink text-white'
-                            : 'bg-sunken text-ink-2 hover:bg-sunken'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                  <Select
+                    aria-label="Vai trò"
+                    value={staffRoleFilter}
+                    onChange={(e) => {
+                      setStaffRoleFilter(e.target.value as typeof staffRoleFilter);
+                      setStaffPage(1);
+                    }}
+                    className="w-auto"
+                  >
+                    <option value="ALL">Tất cả vai trò ({enrichedStaffList.length})</option>
+                    <option value="SPECIALIST">Chuyên viên thực thi</option>
+                    <option value="WITH_STORES">Có phụ trách gian hàng</option>
+                    <option value="MANAGEMENT">Cấp quản lý</option>
+                  </Select>
 
-              {/* Thanh sắp xếp theo từng chỉ số Hiệu suất & Hiệu quả */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
-                <span className="text-2xs font-semibold text-ink-2">
-                  Sắp xếp bảng xếp hạng nhân viên theo:
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {[
-                    { key: 'KPI_DESC', label: 'Điểm KPI cao nhất' },
-                    { key: 'AIRED_DESC', label: 'Nhiều Video Air nhất' },
-                    { key: 'SPEND_PCT_DESC', label: '% Spend Net cao → thấp' },
-                    { key: 'GMV_DESC', label: 'Doanh thu GMV cao nhất' },
-                    { key: 'ROAS_DESC', label: 'Hiệu quả ROAS cao nhất' },
-                    { key: 'COST_PER_AIR_ASC', label: 'Chi phí/Video Air tối ưu nhất' },
-                    { key: 'SLA_DESC', label: 'Tỷ lệ SLA cao nhất' }
-                  ].map((srt) => (
-                    <button
-                      key={srt.key}
-                      type="button"
-                      onClick={() => setStaffSortMode(srt.key as typeof staffSortMode)}
-                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
-                        staffSortMode === srt.key
-                          ? 'bg-accent text-white'
-                          : 'bg-sunken text-ink-2 hover:bg-sunken'
-                      }`}
+                  <Select
+                    aria-label="Luồng duyệt"
+                    value={selectedGovernance}
+                    onChange={(e) => {
+                      setSelectedGovernance(e.target.value as typeof selectedGovernance);
+                      setStaffPage(1);
+                    }}
+                    className="w-auto"
+                  >
+                    <option value="ALL">Tất cả luồng duyệt</option>
+                    <option value="WITH_LEADER">Qua Trưởng nhóm Ngọc Tâm</option>
+                    <option value="DIRECT_HEAD">Trực tiếp GĐ Yến Nhi</option>
+                  </Select>
+
+                  <Select
+                    aria-label="Sắp xếp"
+                    value={staffSortMode}
+                    onChange={(e) => {
+                      setStaffSortMode(e.target.value as typeof staffSortMode);
+                      setStaffPage(1);
+                    }}
+                    className="w-auto"
+                  >
+                    <option value="KPI_DESC">Điểm hiệu suất cao → thấp</option>
+                    <option value="AIRED_DESC">Video đã đăng nhiều → ít</option>
+                    <option value="GMV_DESC">Doanh thu GMV cao → thấp</option>
+                    <option value="ROAS_DESC">ROAS cao → thấp</option>
+                    <option value="COST_PER_AIR_ASC">Chi phí / video thấp → cao</option>
+                    <option value="SPEND_PCT_DESC">Tỷ lệ giải ngân cao → thấp</option>
+                    <option value="SLA_DESC">Đúng hạn SLA cao → thấp</option>
+                  </Select>
+
+                  {(staffRoleFilter !== 'ALL' ||
+                    staffQuadrantFilter !== 'ALL' ||
+                    selectedGovernance !== 'ALL' ||
+                    staffSearchQuery.trim() !== '') && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setStaffRoleFilter('ALL');
+                        setStaffQuadrantFilter('ALL');
+                        setSelectedGovernance('ALL');
+                        setStaffSearchQuery('');
+                        setStaffPage(1);
+                      }}
                     >
-                      {srt.label}
-                    </button>
-                  ))}
+                      Đặt lại
+                    </Button>
+                  )}
                 </div>
-              </div>
-            </div>
+              }
+              chips={
+                <Chips
+                value={staffQuadrantFilter}
+                onChange={(v) => {
+                  setStaffQuadrantFilter(v);
+                  setStaffPage(1);
+                }}
+                items={[
+                  { key: 'ALL', label: 'Tất cả', count: staffQuadrantCounts.total },
+                  { key: 'STAR', label: 'Đạt chỉ tiêu', count: staffQuadrantCounts.star },
+                  {
+                    key: 'HIGH_VOL_OPT_COST',
+                    label: 'Kiểm soát chi phí',
+                    count: staffQuadrantCounts.highVolOptCost,
+                  },
+                  {
+                    key: 'HIGH_EFF_NEED_VOL',
+                    label: 'Đẩy tiến độ đăng',
+                    count: staffQuadrantCounts.highEffNeedVol,
+                  },
+                  { key: 'NEED_COACHING', label: 'Cần hỗ trợ', count: staffQuadrantCounts.needCoaching },
+                ]}
+              />
+              }
+            />
 
-            <div className="overflow-x-auto max-h-[650px]">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
-                  <tr>
-                    <th className="py-3 px-3 font-semibold text-center">#</th>
-                    <th className="py-3 px-3 font-semibold">Nhân Sự &amp; Vai Trò</th>
-                    <th className="py-3 px-2 font-semibold text-center">Số Gian</th>
-                    <th className="py-3 px-3 font-semibold text-right">Hạn Mức Net</th>
-                    <th className="py-3 px-3 font-semibold text-right bg-accent-soft text-accent">
-                      Thực Chi &amp; % Spend Net
-                    </th>
-                    <th className="py-3 px-3 font-semibold text-center bg-positive-soft text-positive">
-                      Số Video Đã Air / Đơn Book
-                    </th>
-                    <th className="py-3 px-3 font-semibold text-right">
-                      Đơn Giá TB / Video Air
-                    </th>
-                    <th className="py-3 px-3 font-semibold text-right bg-warning-soft text-warning">
-                      GMV Tạo Ra &amp; Đơn
-                    </th>
-                    <th className="py-3 px-3 font-semibold text-center bg-warning-soft text-warning">
-                      ROAS &amp; CIR %
-                    </th>
-                    <th className="py-3 px-2 font-semibold text-center">Đúng Hạn SLA</th>
-                    <th className="py-3 px-3 font-semibold text-center bg-accent-soft text-accent">
-                      Điểm KPI &amp; Hạng
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {filteredStaffList.slice(0, staffVisibleLimit).map((st, idx) => {
-                    const isFocused = focusedStaffProfile?.name === st.name;
-                    return (
-                      <tr
-                        key={st.name}
-                        onClick={() => {
-                          setSelectedFocusStaffName(st.name);
-                          setInspectStaff(st);
-                        }}
-                        className={`transition cursor-pointer ${
-                          isFocused ? 'bg-accent-soft' : 'hover:bg-accent-soft'
+            <DataTable
+              rows={paginatedStaffList}
+              rowKey={(st) => st.name}
+              onRowClick={(st) => {
+                setSelectedFocusStaffName(st.name);
+                setInspectStaff(st);
+              }}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Nhân sự',
+                  width: 220,
+                  render: (st) => {
+                    const roleText =
+                      st.roleLevel === 'HEAD'
+                        ? 'GĐ Marketing B2C'
+                        : st.roleLevel === 'LEADER'
+                        ? 'Trưởng nhóm'
+                        : 'Chuyên viên';
+                    const supervisorShort = st.directSupervisor
+                      .replace('Báo cáo trực tiếp ', '')
+                      .replace('Trưởng nhóm ', 'TN ');
+                    return <Person name={st.name} sub={`${roleText} · ${supervisorShort}`} />;
+                  },
+                },
+                {
+                  key: 'stores',
+                  header: 'Gian hàng',
+                  width: 180,
+                  render: (st) => (
+                    <div className="min-w-0">
+                      <div className="font-medium text-ink truncate">
+                        {st.storesCount > 0
+                          ? `${st.storesCount} gian (${st.tiktokStoresCount} TT · ${st.shopeeStoresCount} SP)`
+                          : 'Điều phối / FOC'}
+                      </div>
+                      <div className="text-xs text-ink-3 truncate max-w-[170px]">
+                        {st.storesList.length > 0
+                          ? `${st.storesList.slice(0, 2).join(', ')}${
+                              st.storesList.length > 2 ? ` +${st.storesList.length - 2}` : ''
+                            }`
+                          : 'Không gán gian cố định'}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'spend',
+                  header: 'Thực chi / Trần Net',
+                  align: 'right',
+                  render: (st) => (
+                    <div>
+                      <div className="font-medium text-ink">
+                        {formatVndShort(st.actualSpentNet)} / {formatVndShort(st.orderBudgetNet)}
+                      </div>
+                      <div className="text-xs text-ink-3">
+                        {st.orderBudgetNet > 0
+                          ? `Giải ngân ${st.burnNetPct}% · Gross ${formatVndShort(st.orderBudgetGross)}`
+                          : 'Ngân sách 0đ (FOC)'}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'videos',
+                  header: 'Video đăng / book',
+                  align: 'right',
+                  render: (st) => (
+                    <div>
+                      <div className="font-medium text-ink">
+                        {st.actualAiredVideos} / {st.actualBookedVideos} đơn ({st.airVsBookPct}%)
+                      </div>
+                      <div className="text-xs text-ink-3">
+                        {`KH Paid ${st.targetPaidVideos} · FOC ${st.targetFocVideos}${
+                          st.pendingAirVideos > 0 ? ` · Chờ ${st.pendingAirVideos}` : ''
                         }`}
-                      >
-                        <td className="py-2.5 px-3 text-center font-mono font-semibold text-ink-3">
-                          {idx + 1}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-2.5">
-                            <Avatar name={st.name} size={28} />
-                            <div>
-                              <div className="font-semibold text-ink flex items-center gap-1.5">
-                                {st.name}
-                                {st.roleLevel === 'HEAD' && (
-                                  <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-ink text-white">
-                                    Giám Đốc
-                                  </span>
-                                )}
-                                {st.roleLevel === 'LEADER' && (
-                                  <span className="px-1.5 py-0.5 rounded bg-accent-soft text-2xs font-semibold text-accent">
-                                    Leader (8 gian)
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-2xs text-ink-3">
-                                Duyệt: {st.directSupervisor} · Paid/FOC/Brand: {st.targetPaidVideos}/{st.targetFocVideos}/{st.targetSelfVideos}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-mono">
-                          <span className="font-semibold text-ink">{st.storesCount}</span>
-                          <span className="block text-2xs text-ink-3">
-                            {st.tiktokStoresCount}TT·{st.shopeeStoresCount}SP
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
-                          {formatVndShort(st.orderBudgetNet)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="font-semibold text-ink">
-                              {formatVndShort(st.actualSpentNet)}
-                            </span>
-                            <span
-                              className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded ${
-                                st.burnNetPct > 100
-                                  ? 'bg-critical text-white'
-                                  : st.burnNetPct >= 45
-                                  ? 'bg-accent text-white'
-                                  : 'bg-accent-soft text-accent'
-                              }`}
-                            >
-                              {st.burnNetPct}%
-                            </span>
-                          </div>
-                          <div className="w-24 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
-                            <div
-                              className={`data-bar h-full rounded-full ${
-                                st.burnNetPct > 100 ? 'bg-critical' : 'bg-accent'
-                              }`}
-                              style={{ width: `${Math.min(100, Math.max(st.burnNetPct, st.actualSpentNet > 0 ? 4 : 0))}%` }}
-                            />
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-positive-soft">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="text-sm font-semibold text-positive">
-                              {st.actualAiredVideos} air
-                            </span>
-                            <span className="text-2xs text-ink-3">
-                              / {st.actualBookedVideos} ({st.airVsBookPct}%)
-                            </span>
-                          </div>
-                          <div className="w-24 mx-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
-                            <div
-                              className="data-bar h-full bg-positive rounded-full"
-                              style={{ width: `${Math.min(100, Math.max(st.airVsBookPct, st.actualAiredVideos > 0 ? 6 : 0))}%` }}
-                            />
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono">
-                          <div className="font-semibold text-ink">
-                            {st.avgCostPerAiredVideo > 0 ? formatVndShort(st.avgCostPerAiredVideo) : '0đ (FOC)'}
-                          </div>
-                          <div className="text-2xs text-ink-3">
-                            CPA: {formatVndShort(st.cpaPerOrder)}/đơn
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-warning-soft">
-                          <div className="font-semibold text-ink">
-                            {formatVndShort(st.attributedGmv)}
-                          </div>
-                          <div className="text-2xs text-ink-3">
-                            {st.attributedOrders.toLocaleString('vi-VN')} đơn · Win {st.winRatePct}%
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-warning-soft">
-                          <span
-                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                              st.effectiveRoas >= 3.5
-                                ? 'bg-positive-soft text-positive'
-                                : st.effectiveRoas >= 2.5
-                                ? 'bg-accent-soft text-accent'
-                                : 'bg-warning-soft text-warning'
-                            }`}
-                          >
-                            {st.effectiveRoas}x
-                          </span>
-                          <span className="block text-2xs text-ink-3 mt-0.5">
-                            CIR: {st.effectiveCirPct}%
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-mono">
-                          <span
-                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                              st.slaRate >= 85
-                                ? 'bg-positive-soft text-positive'
-                                : st.slaRate >= 60
-                                ? 'bg-warning-soft text-warning'
-                                : 'bg-critical-soft text-critical'
-                            }`}
-                          >
-                            {st.slaRate}%
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-accent-soft">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                              st.kpiGrade === 'S'
-                                ? 'bg-positive text-white'
-                                : st.kpiGrade === 'A'
-                                ? 'bg-accent text-white'
-                                : st.kpiGrade === 'B'
-                                ? 'bg-warning-soft text-warning'
-                                : 'bg-critical-soft text-critical'
-                            }`}
-                          >
-                            {st.kpiScore}/100 ({st.kpiGrade})
-                          </span>
-                          {(st.unbudgetedStoresCount > 0 || st.overbudgetStoresCount > 0) && (
-                            <span className="block text-2xs text-critical font-semibold mt-0.5">
-                              {st.unbudgetedStoresCount + st.overbudgetStoresCount} gian vượt Net/0đ
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'unitCost',
+                  header: 'Chi phí / video',
+                  align: 'right',
+                  render: (st) => (
+                    <div>
+                      <div className="font-medium text-ink">
+                        {st.avgCostPerAiredVideo > 0
+                          ? `${formatVndShort(st.avgCostPerAiredVideo)} / air`
+                          : '0đ (FOC)'}
+                      </div>
+                      <div className="text-xs text-ink-3">
+                        {st.avgCostPerBookedVideo > 0
+                          ? `Đơn book ${formatVndShort(st.avgCostPerBookedVideo)}`
+                          : `CPA ${formatVndShort(st.cpaPerOrder)}`}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'gmv',
+                  header: 'Doanh thu GMV',
+                  align: 'right',
+                  render: (st) => (
+                    <div>
+                      <div className="font-medium text-ink">{formatVndShort(st.attributedGmv)}</div>
+                      <div className="text-xs text-ink-3">
+                        {`ROAS ${st.effectiveRoas}x · CIR ${st.effectiveCirPct}%`}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'score',
+                  header: 'Điểm & SLA',
+                  align: 'right',
+                  render: (st) => (
+                    <div>
+                      <div className="font-medium text-ink">
+                        {st.kpiScore}/100 · Hạng {st.kpiGrade}
+                      </div>
+                      <div className="text-xs text-ink-3">
+                        {`SLA ${st.slaRate}%${
+                          st.lateSlaVideosCount > 0 ? ` · Trễ ${st.lateSlaVideosCount} đơn` : ' · Đúng hạn'
+                        }`}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'status',
+                  header: 'Trạng thái',
+                  width: 150,
+                  render: (st) => {
+                    if (st.unbudgetedStoresCount > 0) {
+                      return (
+                        <Status tone="critical">{`${st.unbudgetedStoresCount} gian chi ngoài KH`}</Status>
+                      );
+                    }
+                    if (st.overbudgetStoresCount > 0) {
+                      return (
+                        <Status tone="warning">{`${st.overbudgetStoresCount} gian vượt Net`}</Status>
+                      );
+                    }
+                    if (st.staffQuadrant === 'STAR') {
+                      return <Status tone="positive">Đạt chỉ tiêu</Status>;
+                    }
+                    if (st.staffQuadrant === 'HIGH_VOL_OPT_COST') {
+                      return <Status tone="warning">Kiểm soát chi phí</Status>;
+                    }
+                    if (st.staffQuadrant === 'HIGH_EFF_NEED_VOL') {
+                      return <Status tone="info">Đẩy tiến độ đăng</Status>;
+                    }
+                    return <Status tone="neutral">Cần hỗ trợ</Status>;
+                  },
+                },
+              ]}
+            />
 
-            {filteredStaffList.length > 12 && (
-              <div className="px-5 py-3 border-t border-line bg-canvas flex items-center justify-between">
-                <span className="text-xs text-ink-3">
-                  Hiển thị <strong className="text-ink font-mono">{Math.min(staffVisibleLimit, filteredStaffList.length)}</strong> / <strong className="text-ink font-mono">{filteredStaffList.length}</strong> nhân sự B2C
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setStaffVisibleLimit((prev) => (prev >= filteredStaffList.length ? 12 : filteredStaffList.length))}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-surface hover:bg-sunken text-ink-2 transition cursor-pointer"
-                >
-                  {staffVisibleLimit >= filteredStaffList.length ? 'Thu gọn (12 nhân sự)' : `Xem tất cả ${filteredStaffList.length} nhân sự`}
-                </button>
-              </div>
-            )}
-          </div>
+            <Pagination
+              page={staffPage}
+              pageSize={staffPageSize}
+              total={filteredStaffList.length}
+              onPageChange={setStaffPage}
+              onPageSizeChange={(s) => {
+                setStaffPageSize(s);
+                setStaffPage(1);
+              }}
+            />
+          </Panel>
         </div>
       )}
 
@@ -4192,106 +3488,169 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {/* ========================================================================= */}
       {/* MODAL 2: CHI TIẾT NHÂN SỰ B2C (STAFF DRILL-DOWN) */}
       {/* ========================================================================= */}
-      {inspectStaff && (
+      {inspectedStaffProfile && (
         <Modal
-          open={Boolean(inspectStaff)}
+          open={Boolean(inspectedStaffProfile)}
           onClose={() => setInspectStaff(null)}
-          title={`Hồ Sơ Hiệu Suất Nhân Sự: ${inspectStaff.name} (${inspectStaff.roleTitle})`}
-          size="lg"
+          title={`Chi tiết hiệu suất: ${inspectedStaffProfile.name}`}
+          size="xl"
         >
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3 rounded-lg bg-canvas border border-line">
-                <span className="text-2xs text-ink-3 block">Số Gian Hàng Phụ Trách</span>
-                <strong className="text-sm font-mono text-ink">
-                  {inspectStaff.storesCount} gian ({inspectStaff.tiktokStoresCount} TT · {inspectStaff.shopeeStoresCount} SP)
-                </strong>
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-canvas border border-line">
+              <div>
+                <span className="text-ink-3">Vai trò:</span>{' '}
+                <strong className="text-ink">{inspectedStaffProfile.roleTitle}</strong> ·{' '}
+                <span className="text-ink-3">Cấp duyệt:</span>{' '}
+                <strong className="text-ink">{inspectedStaffProfile.directSupervisor}</strong>
               </div>
-              <div className="p-3 rounded-lg bg-accent-soft border border-accent/20">
-                <span className="text-2xs text-accent block">Hạn Mức Order Net Quản Lý</span>
-                <strong className="text-sm font-mono text-accent">
-                  {formatVndShort(inspectStaff.orderBudgetNet)}
-                </strong>
+              {inspectedStaffProfile.unbudgetedStoresCount > 0 ? (
+                <Status tone="critical">{`${inspectedStaffProfile.unbudgetedStoresCount} gian chi ngoài KH`}</Status>
+              ) : inspectedStaffProfile.overbudgetStoresCount > 0 ? (
+                <Status tone="warning">{`${inspectedStaffProfile.overbudgetStoresCount} gian vượt Net`}</Status>
+              ) : inspectedStaffProfile.staffQuadrant === 'STAR' ? (
+                <Status tone="positive">Đạt chỉ tiêu</Status>
+              ) : (
+                <Status tone="info">{inspectedStaffProfile.kpiGradeLabel}</Status>
+              )}
+            </div>
+
+            <StatRow size="sm">
+              <Stat
+                label="Gian hàng phụ trách"
+                value={`${inspectedStaffProfile.storesCount} gian`}
+                note={`TikTok ${inspectedStaffProfile.tiktokStoresCount} · Shopee ${inspectedStaffProfile.shopeeStoresCount}`}
+              />
+              <Stat
+                label="Thực chi / Trần Net"
+                value={`${formatVndShort(inspectedStaffProfile.actualSpentNet)} / ${formatVndShort(inspectedStaffProfile.orderBudgetNet)}`}
+                note={`Giải ngân ${inspectedStaffProfile.burnNetPct}% · Gross ${formatVndShort(inspectedStaffProfile.orderBudgetGross)}`}
+              />
+              <Stat
+                label="Video đã đăng / Đơn book"
+                value={`${inspectedStaffProfile.actualAiredVideos} / ${inspectedStaffProfile.actualBookedVideos}`}
+                note={`Tỷ lệ đăng ${inspectedStaffProfile.airVsBookPct}% · Chờ đăng ${inspectedStaffProfile.pendingAirVideos} đơn`}
+              />
+              <Stat
+                label="Doanh thu GMV & Điểm"
+                value={formatVndShort(inspectedStaffProfile.attributedGmv)}
+                note={`ROAS ${inspectedStaffProfile.effectiveRoas}x · Điểm ${inspectedStaffProfile.kpiScore}/100 (Hạng ${inspectedStaffProfile.kpiGrade})`}
+              />
+            </StatRow>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-lg bg-canvas border border-line font-mono">
+              <div>
+                <span className="text-2xs text-ink-3 font-sans block">Sản lượng video đăng</span>
+                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreAir}/35 điểm</strong>
               </div>
-              <div className="p-3 rounded-lg bg-positive-soft border border-positive/20">
-                <span className="text-2xs text-positive block">Thực Chi Duyệt Book (3.2)</span>
-                <strong className="text-sm font-mono text-positive">
-                  {formatVndShort(inspectStaff.actualSpentNet)} ({inspectStaff.burnNetPct}%)
-                </strong>
+              <div>
+                <span className="text-2xs text-ink-3 font-sans block">Kỷ luật ngân sách Net</span>
+                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreSpend}/25 điểm</strong>
               </div>
-              <div className="p-3 rounded-lg bg-warning-soft border border-warning/20">
-                <span className="text-2xs text-warning block">Sản Lượng Video Tháng 10</span>
-                <strong className="text-sm font-mono text-warning">
-                  {inspectStaff.actualBookedVideos} đơn book · {inspectStaff.actualAiredVideos} đã air
+              <div>
+                <span className="text-2xs text-ink-3 font-sans block">Hiệu quả chuyển đổi</span>
+                <strong className="text-xs text-ink">{inspectedStaffProfile.scoreEfficiency}/20 điểm</strong>
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 font-sans block">Đúng hạn SLA & ĐNTT</span>
+                <strong className="text-xs text-ink">
+                  {inspectedStaffProfile.scoreSla}/20 điểm ({inspectedStaffProfile.slaRate}%)
                 </strong>
               </div>
             </div>
 
-            {inspectStaff.storesList.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-ink mb-1.5">
-                  Danh Sách Gian Hàng Được Giao Phụ Trách ({inspectStaff.storesList.length} Gian Hàng):
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {inspectStaff.storesList.map((stName) => (
-                    <span
-                      key={stName}
-                      className="px-2 py-0.5 rounded bg-canvas text-ink font-semibold text-2xs border border-line"
-                    >
-                      {stName}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            {inspectedStaffProfile.staffStores.length > 0 && (
+              <Panel
+                title={`Gian hàng phụ trách (${inspectedStaffProfile.staffStores.length})`}
+                flush
+              >
+                <DataTable
+                  rows={inspectedStaffProfile.staffStores}
+                  rowKey={(s) => s.id}
+                  columns={[
+                    {
+                      key: 'storeName',
+                      header: 'Gian hàng',
+                      render: (s) => (
+                        <div>
+                          <div className="font-medium text-ink">{s.storeName}</div>
+                          <div className="text-xs text-ink-3">
+                            {s.brandName} · {s.platform}
+                          </div>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'budgetNet',
+                      header: 'Trần Net',
+                      align: 'right',
+                      render: (s) => formatVndShort(s.budgetNet || s.monthlyBudget || 0),
+                    },
+                    {
+                      key: 'spentNet',
+                      header: 'Thực chi',
+                      align: 'right',
+                      render: (s) => formatVndShort(s.actualSpentNet || 0),
+                    },
+                    {
+                      key: 'videos',
+                      header: 'Video đăng / KH Paid',
+                      align: 'right',
+                      render: (s) => `${s.actualAiredVideos || 0} / ${s.targetPaidVideos || 0}`,
+                    },
+                    {
+                      key: 'risk',
+                      header: 'Trạng thái',
+                      render: (s) => renderRiskBadge(s.financialRiskStatus),
+                    },
+                  ]}
+                />
+              </Panel>
             )}
 
-            <div>
-              <h4 className="font-semibold text-ink mb-2">
-                Danh Sách Các Video Nhân Sự Đã Trực Tiếp Book:
-              </h4>
-              {(() => {
-                const staffVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
-                  (v) => v.pic.toLowerCase() === inspectStaff.name.toLowerCase()
-                );
-                if (staffVids.length === 0) {
-                  return (
-                    <p className="text-ink-3 py-4 text-center bg-canvas rounded-lg">
-                      Nhân sự thực hiện vai trò quản lý hoặc các đơn book nằm ngoài tập mẫu 150 video hiển thị nhanh.
-                    </p>
-                  );
-                }
-                return (
-                  <div className="overflow-x-auto max-h-60 border border-line rounded-lg">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-canvas border-b border-line">
-                        <tr>
-                          <th className="py-2 px-3">Mã Book</th>
-                          <th className="py-2 px-3">Gian Hàng</th>
-                          <th className="py-2 px-3">Kênh KOC</th>
-                          <th className="py-2 px-3">Loại Hình</th>
-                          <th className="py-2 px-3">Khung Lương</th>
-                          <th className="py-2 px-3 text-right">Cát-xê</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {staffVids.map((v) => (
-                          <tr key={v.code}>
-                            <td className="py-2 px-3 font-mono font-semibold text-accent">{v.code}</td>
-                            <td className="py-2 px-3 font-semibold">{v.storeName}</td>
-                            <td className="py-2 px-3">@{v.channelId}</td>
-                            <td className="py-2 px-3">{v.format}</td>
-                            <td className="py-2 px-3 font-mono">{v.kl}</td>
-                            <td className="py-2 px-3 text-right font-mono font-semibold">
-                              {formatVndShort(v.cost)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
+            <Panel
+              title={`Đơn booking video trực tiếp (${inspectedStaffProfile.staffVideos.length})`}
+              flush
+            >
+              <DataTable
+                rows={inspectedStaffProfile.staffVideos.slice(0, 25)}
+                rowKey={(v) => v.code}
+                empty="Chưa có bản ghi đơn book mẫu"
+                columns={[
+                  {
+                    key: 'code',
+                    header: 'Mã đơn',
+                    render: (v) => v.code,
+                  },
+                  {
+                    key: 'storeName',
+                    header: 'Gian hàng',
+                    render: (v) => v.storeName,
+                  },
+                  {
+                    key: 'channelId',
+                    header: 'Kênh KOC',
+                    render: (v) => `@${v.channelId}`,
+                  },
+                  {
+                    key: 'format',
+                    header: 'Hạng mục',
+                    render: (v) => `${v.format} · ${v.kl}`,
+                  },
+                  {
+                    key: 'cost',
+                    header: 'Chi phí',
+                    align: 'right',
+                    render: (v) => formatVndShort(v.cost),
+                  },
+                  {
+                    key: 'gmv',
+                    header: 'GMV Seller',
+                    align: 'right',
+                    render: (v) => `${formatVndShort(v.sellerGmv)} (${v.roas}x)`,
+                  },
+                ]}
+              />
+            </Panel>
           </div>
         </Modal>
       )}

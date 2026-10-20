@@ -1690,15 +1690,15 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          <div className="relative flex-1 sm:flex-initial min-w-[160px]">
             <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Tìm nhân sự, Brand, gian..."
-              className="h-8 pl-8 pr-7 rounded-lg bg-sunken border border-line text-xs text-ink placeholder:text-ink-3 w-48 focus:outline-none focus:border-accent"
+              className="h-8 pl-8 pr-7 rounded-lg bg-sunken border border-line text-xs text-ink placeholder:text-ink-3 w-full sm:w-48 focus:outline-none focus:border-accent"
             />
             {searchQuery && (
               <button
@@ -2115,7 +2115,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                                 e.target.value
                               )
                             }
-                            className="h-7 px-2 rounded bg-surface border border-line text-2xs text-ink shrink-0"
+                            className="h-7 px-2 max-w-[135px] sm:max-w-[175px] truncate rounded bg-surface border border-line text-2xs text-ink shrink-0"
                             title="Điều chuyển nhanh Brand sang nhân sự khác"
                           >
                             {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
@@ -2152,14 +2152,14 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                               HS ×{as.coef.toFixed(2)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between gap-2 text-2xs text-ink-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
                             <span>
                               {as.platform} · {as.roleLabel}
                             </span>
                             <select
                               value={st.name}
                               onChange={e => handleReassignStorePic(as.storeId, e.target.value)}
-                              className="h-6 px-1.5 rounded bg-surface border border-line text-2xs text-ink"
+                              className="h-6 px-1.5 max-w-[150px] sm:max-w-[180px] truncate rounded bg-surface border border-line text-2xs text-ink"
                             >
                               {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
                                 <option key={m.staffCode} value={m.name}>
@@ -2238,7 +2238,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         <select
                           value={pos.val}
                           onChange={e => handleReassignBrandRole(b.id, pos.field, e.target.value)}
-                          className="h-7 px-2 rounded bg-surface border border-line text-2xs text-ink shrink-0"
+                          className="h-7 px-2 max-w-[140px] sm:max-w-[180px] truncate rounded bg-surface border border-line text-2xs text-ink shrink-0"
                         >
                           {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
                             <option key={m.staffCode} value={m.name}>

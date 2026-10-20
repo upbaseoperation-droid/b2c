@@ -897,7 +897,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-1.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                             <select
                               value={item.contentFormat}
                               onChange={(e) => handleUpdateSubItemField(item.id, 'contentFormat', e.target.value)}

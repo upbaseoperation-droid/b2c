@@ -1,30 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Presence } from './ui';
+import React, { useState } from 'react';
 import {
-  X,
-  Sparkles,
-  Bot,
-  User,
-  CheckCircle2,
+  Button,
+  Chips,
+  Field,
+  Input,
+  Modal,
+  Panel,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+} from './ui';
+import {
   AlertTriangle,
-  AlertOctagon,
-  Clock,
-  TrendingUp,
-  Award,
-  Send,
-  Copy,
   Check,
-  RefreshCw,
-  Key,
   ChevronDown,
   ChevronUp,
-  MessageSquare,
-  ShieldAlert,
-  Flame,
-  Zap,
-  Layers
+  Copy,
+  Key,
+  RefreshCw,
+  Send,
 } from 'lucide-react';
 import {
   AiEmployeeReviewRequest,
@@ -32,12 +29,12 @@ import {
   AiReviewType,
   MonthlyStaffAllocation,
   StaffSlaReportItem,
-  StaffP3Record
+  StaffP3Record,
 } from '../lib/types';
 import {
   INITIAL_STAFF_SLA_REPORTS,
   MOCK_P3_STAFF_RECORDS,
-  INITIAL_STAFF_ALLOCATIONS_26
+  INITIAL_STAFF_ALLOCATIONS_26,
 } from '../lib/mockData';
 import {
   getEffectiveConfigForPurpose,
@@ -58,103 +55,92 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
   onClose,
   initialStaffName,
   onApplyManagerNote,
-  onPingStaffNotification
+  onPingStaffNotification,
 }) => {
   const [selectedStaffName, setSelectedStaffName] = useState<string>(initialStaffName || 'Khánh Vy');
+  const [prevInitialStaffName, setPrevInitialStaffName] = useState<string | undefined>(initialStaffName);
+  if (initialStaffName !== prevInitialStaffName) {
+    setPrevInitialStaffName(initialStaffName);
+    if (initialStaffName) {
+      setSelectedStaffName(initialStaffName);
+    }
+  }
+
   const [reviewType, setReviewType] = useState<AiReviewType>('COMPREHENSIVE');
-  const [apiProvider, setApiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'>('AUTO');
-  const [customApiKey, setCustomApiKey] = useState<string>('');
+  const [apiProvider, setApiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'>(() => {
+    const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+    if (eff.primaryProvider === 'GOOGLE') return 'GEMINI';
+    if (eff.primaryProvider === 'OPENAI') return 'OPENAI';
+    if (eff.primaryProvider === 'CLAUDE') return 'CLAUDE';
+    return 'AUTO';
+  });
+  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+    const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+    return eff.primaryApiKey || '';
+  });
   const [showApiSettings, setShowApiSettings] = useState<boolean>(false);
-  const [customInstruction, setCustomInstruction] = useState<string>('');
+  const [customInstruction, setCustomInstruction] = useState<string>(() => {
+    const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+    return eff.purpose.systemInstruction || '';
+  });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [reviewResult, setReviewResult] = useState<AiEmployeeReviewResponse | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [pingSuccess, setPingSuccess] = useState<boolean>(false);
 
-  // Pool of all staff names from allocations & SLA reports
   const allStaffNames = Array.from(
     new Set([
       ...INITIAL_STAFF_ALLOCATIONS_26.map((a: MonthlyStaffAllocation) => a.staffName),
       ...INITIAL_STAFF_SLA_REPORTS.map((s: StaffSlaReportItem) => s.staffName),
-      ...MOCK_P3_STAFF_RECORDS.map((p: StaffP3Record) => p.staffName)
+      ...MOCK_P3_STAFF_RECORDS.map((p: StaffP3Record) => p.staffName),
     ])
   ).filter(Boolean);
 
-  useEffect(() => {
-    if (initialStaffName) {
-      setSelectedStaffName(initialStaffName);
-    }
-  }, [initialStaffName]);
-
-  // Đồng bộ cấu hình API từ Trung tâm Cấu hình API (mục đích STAFF_REVIEW)
-  useEffect(() => {
-    if (isOpen) {
-      const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
-      if (eff.primaryProvider === 'GOOGLE') setApiProvider('GEMINI');
-      else if (eff.primaryProvider === 'OPENAI') setApiProvider('OPENAI');
-      else if (eff.primaryProvider === 'CLAUDE') setApiProvider('CLAUDE');
-      else setApiProvider('AUTO');
-
-      if (eff.primaryApiKey) {
-        setCustomApiKey(eff.primaryApiKey);
-      }
-      if (eff.purpose.systemInstruction && !customInstruction) {
-        setCustomInstruction(eff.purpose.systemInstruction);
-      }
-    }
-  }, [isOpen]);
-
-  // ESC key listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Aggregate staff metrics
   const getStaffMetrics = (name: string) => {
-    const allocation = INITIAL_STAFF_ALLOCATIONS_26.find((a: MonthlyStaffAllocation) => a.staffName === name) || INITIAL_STAFF_ALLOCATIONS_26[0];
+    const allocation =
+      INITIAL_STAFF_ALLOCATIONS_26.find((a: MonthlyStaffAllocation) => a.staffName === name) ||
+      INITIAL_STAFF_ALLOCATIONS_26[0];
     const sla = INITIAL_STAFF_SLA_REPORTS.find((s: StaffSlaReportItem) => s.staffName === name);
     const p3 = MOCK_P3_STAFF_RECORDS.find((p: StaffP3Record) => p.staffName === name);
 
     return {
-      allocationData: allocation ? {
-        totalPlannedVideos: allocation.reportVideos || allocation.planVideos,
-        targetVideos: allocation.planVideos || 22,
-        totalPlannedBudget: allocation.reportBudget || allocation.planBudget,
-        targetBudget: allocation.planBudget || 50000000,
-        totalPlannedGmv: allocation.actualGmv || allocation.targetGmv,
-        targetGmv: allocation.targetGmv || 250000000,
-        fillRateVideos: allocation.airProgress || 90.9,
-        fillRateBudget: allocation.budgetProgress || 90.0,
-        assignedBrands: allocation.assignedBrands || ['Senka', 'Kutieskin']
-      } : undefined,
-      slaData: sla ? {
-        onTimeRate: sla.onTimeRate,
-        totalJobs: sla.totalJobs,
-        breachedJobs: sla.breachedJobs,
-        penaltyPoints: sla.penaltyPoints,
-        currentScore: sla.currentScore,
-        rating: sla.rating,
-        violationsCount: sla.activeViolationsCount
-      } : undefined,
-      workloadP3Data: p3 ? {
-        completedCases: p3.completedCases,
-        storeMultiplier: p3.storeMultiplier,
-        qualityMultiplier: p3.qualityMultiplier,
-        slaMultiplier: p3.slaMultiplier,
-        calculatedWorkloadPoints: p3.calculatedWorkloadPoints,
-        estimatedBonusVnd: p3.estimatedBonusVnd
-      } : undefined,
+      allocationData: allocation
+        ? {
+            totalPlannedVideos: allocation.reportVideos || allocation.planVideos,
+            targetVideos: allocation.planVideos || 22,
+            totalPlannedBudget: allocation.reportBudget || allocation.planBudget,
+            targetBudget: allocation.planBudget || 50000000,
+            totalPlannedGmv: allocation.actualGmv || allocation.targetGmv,
+            targetGmv: allocation.targetGmv || 250000000,
+            fillRateVideos: allocation.airProgress || 90.9,
+            fillRateBudget: allocation.budgetProgress || 90.0,
+            assignedBrands: allocation.assignedBrands || ['Senka', 'Kutieskin'],
+          }
+        : undefined,
+      slaData: sla
+        ? {
+            onTimeRate: sla.onTimeRate,
+            totalJobs: sla.totalJobs,
+            breachedJobs: sla.breachedJobs,
+            penaltyPoints: sla.penaltyPoints,
+            currentScore: sla.currentScore,
+            rating: sla.rating,
+            violationsCount: sla.activeViolationsCount,
+          }
+        : undefined,
+      workloadP3Data: p3
+        ? {
+            completedCases: p3.completedCases,
+            storeMultiplier: p3.storeMultiplier,
+            qualityMultiplier: p3.qualityMultiplier,
+            slaMultiplier: p3.slaMultiplier,
+            calculatedWorkloadPoints: p3.calculatedWorkloadPoints,
+            estimatedBonusVnd: p3.estimatedBonusVnd,
+          }
+        : undefined,
       role: p3?.role || sla?.role || 'Booking',
-      team: sla?.team || 'Booking Execution Team'
+      team: sla?.team || 'Booking Execution Team',
     };
   };
 
@@ -175,7 +161,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       workloadP3Data: metrics.workloadP3Data,
       apiKey: customApiKey.trim() || undefined,
       apiProvider,
-      customPrompt: customInstruction.trim() || undefined
+      customPrompt: customInstruction.trim() || undefined,
     };
 
     const startTime = Date.now();
@@ -183,7 +169,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       const res = await fetch('/api/ai/employee-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -198,24 +184,22 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       const completionChars = JSON.stringify(data).length;
       const promptTokens = Math.max(120, Math.ceil(promptChars / 3.8));
       const completionTokens = Math.max(80, Math.ceil(completionChars / 3.8));
-      const modelUsed =
-        data.providerUsed?.includes('Gemini')
-          ? 'gemini-3.8-flash'
-          : data.providerUsed?.includes('GPT')
-          ? 'gpt-5-mini'
-          : data.providerUsed?.includes('Claude')
-          ? 'claude-sonnet-5-5'
-          : eff.primaryProvider === 'INTERNAL'
-          ? 'upbase-local-engine'
-          : eff.primaryModel;
-      const providerId =
-        data.providerUsed?.includes('Gemini')
-          ? 'GOOGLE'
-          : data.providerUsed?.includes('GPT')
-          ? 'OPENAI'
-          : data.providerUsed?.includes('Claude')
-          ? 'CLAUDE'
-          : 'INTERNAL';
+      const modelUsed = data.providerUsed?.includes('Gemini')
+        ? 'gemini-3.8-flash'
+        : data.providerUsed?.includes('GPT')
+        ? 'gpt-5-mini'
+        : data.providerUsed?.includes('Claude')
+        ? 'claude-sonnet-5-5'
+        : eff.primaryProvider === 'INTERNAL'
+        ? 'upbase-local-engine'
+        : eff.primaryModel;
+      const providerId = data.providerUsed?.includes('Gemini')
+        ? 'GOOGLE'
+        : data.providerUsed?.includes('GPT')
+        ? 'OPENAI'
+        : data.providerUsed?.includes('Claude')
+        ? 'CLAUDE'
+        : 'INTERNAL';
       const costReport = calculateExecutionCost(modelUsed, {
         promptTokens,
         completionTokens,
@@ -236,31 +220,28 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
         status: providerId === 'INTERNAL' ? 'FALLBACK' : 'SUCCESS',
         source: 'STAFF_REVIEW',
       });
-    } catch (err: any) {
-      console.error('Failed to run AI review via API:', err);
-      // Fallback in case fetch fails
-      const fallbackMetrics = getStaffMetrics(selectedStaffName);
+    } catch {
       setReviewResult({
         staffName: selectedStaffName,
         overallGrade: 'Đạt chuẩn',
         performanceScore: 88,
         pacingStatus: 'ON_TRACK',
-        executiveSummary: `${selectedStaffName} hoàn thành tốt các chỉ tiêu tiến độ trong tháng 9/2026. Tỷ lệ lấp đầy slot đạt mức ổn định và tuân thủ các mốc SLA chặng booking.`,
+        executiveSummary: `${selectedStaffName} hoàn thành các chỉ tiêu tiến độ trong tháng 9/2026. Tỷ lệ lấp đầy slot đạt mức ổn định và tuân thủ các mốc SLA chặng booking.`,
         strengths: [
-          'Tốc độ chốt deal KOC tuần W1-W2 diễn ra nhịp nhàng.',
-          'Kỷ luật báo cáo và nghiệm thu công việc đúng thời hạn.'
+          'Tốc độ chốt deal KOC tuần W1–W2 diễn ra nhịp nhàng.',
+          'Kỷ luật báo cáo và nghiệm thu công việc đúng thời hạn.',
         ],
         bottlenecksAndRisks: [
-          'Cần lưu ý kiểm tra lịch lên sóng video tuần cuối tránh trùng lịch sale của sàn.'
+          'Cần lưu ý kiểm tra lịch lên sóng video tuần cuối tránh trùng lịch sale của sàn.',
         ],
         actionableCoaching: [
           'Họp 1-on-1 đầu tuần rà soát danh sách KOC có rủi ro bùng mẫu.',
-          'Đẩy mạnh booking các creator nhóm KL2-KL3 để tối ưu CIR.'
+          'Đẩy mạnh booking các creator nhóm KL2–KL3 để tối ưu CIR.',
         ],
         suggestedManagerNote: `Duyệt tiến độ của ${selectedStaffName}. Nhắc nhở nhân viên bám sát tiến độ video của các KOC trọng điểm tuần W4.`,
         suggestedLarkPingMessage: `${selectedStaffName} ơi, kế hoạch tuần của bạn đã được duyệt. Tiếp tục bám sát tiến độ nhé!`,
         evaluatedAt: new Date().toISOString(),
-        providerUsed: 'Hệ thống phân tích nội bộ'
+        providerUsed: 'Hệ thống phân tích nội bộ',
       });
     } finally {
       setIsLoading(false);
@@ -282,430 +263,282 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
     setTimeout(() => setPingSuccess(false), 3000);
   };
 
-  if (!isOpen) return <Presence show={false} />;
-
   const currentMetrics = getStaffMetrics(selectedStaffName);
 
   return (
-    <Presence show>
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div data-motion-panel
-        role="dialog"
-        aria-modal="true"
-        aria-label="Gợi ý nhận xét tiến độ và hiệu suất"
-        className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-      >
-        {/* Header Banner */}
-        <div className="px-4 sm:px-6 py-4 bg-surface text-ink border-b border-line relative shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng modal"
-            className="absolute top-4 right-4 p-1.5 text-ink-3 hover:text-ink hover:bg-sunken rounded-lg transition"
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Nhận xét tiến độ và hiệu suất nhân sự"
+      size="lg"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Đóng
+          </Button>
+          <Button
+            variant="primary"
+            icon={RefreshCw}
+            disabled={isLoading}
+            onClick={handleRunAiReview}
           >
-            <X className="w-5 h-5" />
-          </button>
-
-          <div className="max-w-2xl pr-8">
-            <h3 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-2">
-              <Bot className="w-5 h-5 text-accent shrink-0" />
-              <span>Gợi ý nhận xét tiến độ và hiệu suất</span>
-            </h3>
-          </div>
+            {isLoading ? 'Đang tổng hợp nhận xét…' : 'Tổng hợp nhận xét'}
+          </Button>
         </div>
-
-        {/* Modal Body */}
-        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1 text-xs text-slate-800">
-          {/* Controls Bar: Staff Selection & Review Type */}
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-              {/* Staff Dropdown */}
-              <div className="sm:col-span-4 space-y-1">
-                <label className="font-semibold text-slate-700 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Chọn nhân sự cần nhận xét:</span>
-                </label>
-                <select
+      }
+    >
+      <div className="space-y-4 text-xs text-ink">
+        <div className="p-3.5 bg-canvas rounded-lg border border-line space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+            <div className="sm:col-span-5">
+              <Field label="Nhân sự">
+                <Select
                   value={selectedStaffName}
                   onChange={(e) => {
                     setSelectedStaffName(e.target.value);
                     setReviewResult(null);
                   }}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 font-medium text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                 >
                   {allStaffNames.map((name) => (
                     <option key={name} value={name}>
-                      {name} ({getStaffMetrics(name).role} - {getStaffMetrics(name).team})
+                      {name} ({getStaffMetrics(name).role} · {getStaffMetrics(name).team})
                     </option>
                   ))}
-                </select>
-              </div>
-
-              {/* Review Type Pills */}
-              <div className="sm:col-span-8 space-y-1">
-                <label className="font-semibold text-slate-700">Trọng tâm nhận xét:</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { key: 'COMPREHENSIVE', label: 'Tổng quan' },
-                    { key: 'PROGRESS_PACING', label: 'Tiến độ lên sóng' },
-                    { key: 'SLA_QUALITY', label: 'Kỷ luật SLA' },
-                    { key: 'P3_WORKLOAD', label: 'Workload & P3' },
-                    { key: 'COACHING_ONE_ON_ONE', label: 'Coaching 1-on-1' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setReviewType(tab.key as AiReviewType)}
-                      className={`px-2.5 py-1.5 rounded-md font-medium text-2xs transition ${
-                        reviewType === tab.key
-                          ? 'bg-blue-600 text-white font-semibold shadow-xs'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                </Select>
+              </Field>
             </div>
 
-            {/* Quick Staff Metric Summary Strip */}
-            <div className="p-2.5 bg-white rounded border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-2xs">
-              <div>
-                <span className="text-slate-500">Kế hoạch W1-W4: </span>
-                <strong className="text-slate-900">
-                  {currentMetrics.allocationData?.totalPlannedVideos}/{currentMetrics.allocationData?.targetVideos} video ({currentMetrics.allocationData?.fillRateVideos}%)
-                </strong>
-              </div>
-              <div>
-                <span className="text-slate-500">SLA đúng hạn: </span>
-                <strong className={currentMetrics.slaData && currentMetrics.slaData.onTimeRate >= 92 ? 'text-emerald-700' : 'text-amber-700'}>
-                  {currentMetrics.slaData?.onTimeRate || 94.5}%
-                </strong>
-                <span className="text-slate-400"> (Vi phạm: {currentMetrics.slaData?.breachedJobs || 0} ca)</span>
-              </div>
-              <div>
-                <span className="text-slate-500">Workload 4P: </span>
-                <strong className="text-blue-700">
-                  {currentMetrics.workloadP3Data?.calculatedWorkloadPoints || 24} điểm (Store x{currentMetrics.workloadP3Data?.storeMultiplier || 1.2})
-                </strong>
-              </div>
-            </div>
-
-            {/* API Settings Accordion */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => setShowApiSettings(!showApiSettings)}
-                className="text-2xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1 transition"
-              >
-                <Key className="w-3 h-3" />
-                <span>Cấu hình kết nối API (Google Gemini / OpenAI ChatGPT / Anthropic Claude)</span>
-                {showApiSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-
-              {showApiSettings && (
-                <div className="mt-2.5 p-3 rounded-md bg-blue-50/50 border border-blue-200 space-y-2.5 animate-in fade-in duration-150">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-blue-900">Nhà cung cấp & Mô hình phân tích:</label>
-                      <select
-                        value={apiProvider}
-                        onChange={(e) => setApiProvider(e.target.value as 'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE')}
-                        className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-medium"
-                      >
-                        <option value="AUTO">Tự động (Mặc định)</option>
-                        <option value="GEMINI">Google Gemini 2.5 Flash (API Key)</option>
-                        <option value="OPENAI">OpenAI ChatGPT / GPT-4o-mini (API Key)</option>
-                        <option value="CLAUDE">Anthropic Claude 3.7 Sonnet (API Key)</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-blue-900">
-                        Khóa API Key (đồng bộ từ Cấu hình API hoặc nhập riêng):
-                      </label>
-                      <input
-                        type="password"
-                        placeholder="AIzaSy... / sk-... / sk-ant-..."
-                        value={customApiKey}
-                        onChange={(e) => setCustomApiKey(e.target.value)}
-                        className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-2xs font-semibold text-blue-900">
-                      Ghi chú / Yêu cầu thêm khi đánh giá:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="VD: Nhấn mạnh vào việc chuẩn bị cho chiến dịch 10.10, cảnh báo trễ hạn gửi mẫu..."
-                      value={customInstruction}
-                      onChange={(e) => setCustomInstruction(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Run Button */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={handleRunAiReview}
-                disabled={isLoading}
-                className={`w-full py-2.5 px-4 rounded-md font-semibold text-white text-xs shadow-sm flex items-center justify-center gap-2 transition ${
-                  isLoading
-                    ? 'bg-blue-300 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 active:scale-98'
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang phân tích số liệu tiến độ của {selectedStaffName}...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Tạo gợi ý nhận xét</span>
-                  </>
-                )}
-              </button>
+            <div className="sm:col-span-7 space-y-1.5">
+              <span className="text-xs font-medium text-ink-2 block">Trọng tâm nhận xét</span>
+              <Chips
+                value={reviewType}
+                onChange={setReviewType}
+                items={[
+                  { key: 'COMPREHENSIVE', label: 'Tổng quan' },
+                  { key: 'PROGRESS_PACING', label: 'Tiến độ đăng' },
+                  { key: 'SLA_QUALITY', label: 'Kỷ luật SLA' },
+                  { key: 'P3_WORKLOAD', label: 'Khối lượng & P3' },
+                  { key: 'COACHING_ONE_ON_ONE', label: 'Trao đổi 1-1' },
+                ]}
+              />
             </div>
           </div>
 
-          {/* AI Result Section */}
-          {reviewResult && (
-            <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Verdict Header Card */}
-              <div className={`p-4 rounded-lg border-l-4 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                reviewResult.overallGrade === 'Xuất sắc'
-                  ? 'border-l-emerald-500 bg-emerald-50/30 border-emerald-200'
-                  : reviewResult.overallGrade === 'Đạt chuẩn'
-                  ? 'border-l-blue-500 bg-blue-50/30 border-blue-200'
-                  : reviewResult.overallGrade === 'Cần cải thiện'
-                  ? 'border-l-amber-500 bg-amber-50/30 border-amber-200'
-                  : 'border-l-rose-500 bg-rose-50/30 border-rose-200'
-              }`}>
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center font-semibold border-4 shrink-0 ${
-                    reviewResult.overallGrade === 'Xuất sắc'
-                      ? 'border-emerald-500 text-emerald-800 bg-emerald-50'
-                      : reviewResult.overallGrade === 'Đạt chuẩn'
-                      ? 'border-blue-500 text-blue-800 bg-blue-50'
-                      : reviewResult.overallGrade === 'Cần cải thiện'
-                      ? 'border-amber-500 text-amber-800 bg-amber-50'
-                      : 'border-rose-500 text-rose-800 bg-rose-50'
-                  }`}>
-                    <span className="text-lg leading-none">{reviewResult.performanceScore}</span>
-                    <span className="text-2xs font-normal text-slate-500">/ 100đ</span>
-                  </div>
+          <StatRow size="sm">
+            <Stat
+              label="Tiến độ video W1–W4"
+              value={`${currentMetrics.allocationData?.totalPlannedVideos}/${currentMetrics.allocationData?.targetVideos} video`}
+              note={`Đạt ${currentMetrics.allocationData?.fillRateVideos}% kế hoạch`}
+            />
+            <Stat
+              label="Đúng hạn SLA"
+              value={`${currentMetrics.slaData?.onTimeRate || 94.5}%`}
+              note={`Trễ hạn ${currentMetrics.slaData?.breachedJobs || 0} ca`}
+            />
+            <Stat
+              label="Điểm khối lượng 4P"
+              value={`${currentMetrics.workloadP3Data?.calculatedWorkloadPoints || 24} điểm`}
+              note={`Hệ số gian hàng x${currentMetrics.workloadP3Data?.storeMultiplier || 1.2}`}
+            />
+          </StatRow>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-2xs font-semibold">
-                      <span className={
-                        reviewResult.overallGrade === 'Xuất sắc'
-                          ? 'text-positive'
-                          : reviewResult.overallGrade === 'Đạt chuẩn'
-                          ? 'text-accent'
-                          : reviewResult.overallGrade === 'Cần cải thiện'
-                          ? 'text-warning'
-                          : 'text-critical'
-                      }>
-                        Xếp loại: {reviewResult.overallGrade}
-                      </span>
-                      <span className="text-ink-3">·</span>
-                      <span className={
-                        reviewResult.pacingStatus === 'AHEAD'
-                          ? 'text-positive'
-                          : reviewResult.pacingStatus === 'ON_TRACK'
-                          ? 'text-accent'
-                          : reviewResult.pacingStatus === 'BEHIND'
-                          ? 'text-warning'
-                          : 'text-critical'
-                      }>
-                        {reviewResult.pacingStatus === 'AHEAD' && 'Vượt tiến độ'}
-                        {reviewResult.pacingStatus === 'ON_TRACK' && 'Đúng tiến độ'}
-                        {reviewResult.pacingStatus === 'BEHIND' && 'Chậm tiến độ'}
-                        {reviewResult.pacingStatus === 'CRITICAL_DELAY' && 'Báo động trễ hạn'}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                      {reviewResult.executiveSummary}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <span className="text-2xs text-slate-500 block font-mono">
-                    Provider: {reviewResult.providerUsed}
-                  </span>
-                </div>
-              </div>
-
-              {/* Burnout Alert (if any) */}
-              {reviewResult.burnoutOrCapacityAlert && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-md text-amber-900 text-xs flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="font-semibold">Cảnh báo quản trị tải: </strong>
-                    <span>{reviewResult.burnoutOrCapacityAlert}</span>
-                  </div>
-                </div>
+          <div className="pt-1 border-t border-line">
+            <button
+              type="button"
+              onClick={() => setShowApiSettings(!showApiSettings)}
+              className="text-xs font-medium text-ink-2 hover:text-ink flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Key className="w-3.5 h-3.5 text-ink-3" />
+              <span>Cấu hình kết nối API và yêu cầu bổ sung</span>
+              {showApiSettings ? (
+                <ChevronUp className="w-3.5 h-3.5 text-ink-3" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
               )}
+            </button>
 
-              {/* 2-Column: Strengths & Bottlenecks */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Strengths */}
-                <div className="card-enterprise p-4 border-emerald-200 bg-emerald-50/15 space-y-2">
-                  <h4 className="font-semibold text-emerald-900 flex items-center gap-1.5 text-xs">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Điểm mạnh nổi bật ({reviewResult.strengths.length})</span>
-                  </h4>
-                  <ul className="space-y-1.5 text-slate-700 text-xs">
-                    {reviewResult.strengths.map((s, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-emerald-600 font-semibold">•</span>
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Bottlenecks & Risks */}
-                <div className="card-enterprise p-4 border-amber-200 bg-amber-50/15 space-y-2">
-                  <h4 className="font-semibold text-amber-900 flex items-center gap-1.5 text-xs">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span>Nút thắt &amp; rủi ro cần khắc phục ({reviewResult.bottlenecksAndRisks.length})</span>
-                  </h4>
-                  <ul className="space-y-1.5 text-slate-700 text-xs">
-                    {reviewResult.bottlenecksAndRisks.map((b, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-amber-600 font-semibold">•</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Actionable Coaching for Manager */}
-              <div className="card-enterprise p-4 bg-blue-50/30 border-blue-200 space-y-2">
-                <h4 className="font-semibold text-blue-900 flex items-center gap-1.5 text-xs">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span>Chỉ dẫn hành động &amp; huấn luyện 1-on-1 dành cho trưởng phòng</span>
-                </h4>
-                <div className="space-y-1.5 text-slate-700 text-xs">
-                  {reviewResult.actionableCoaching.map((c, idx) => (
-                    <div key={idx} className="p-2 rounded bg-white border border-blue-100 flex items-start gap-2">
-                      <span className="text-accent font-mono font-semibold text-2xs shrink-0">
-                        0{idx + 1}.
-                      </span>
-                      <span>{c}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Suggested Manager Note (Ready to Paste) */}
-              <div className="card-enterprise p-4 bg-white space-y-2 border-slate-300">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h4 className="font-semibold text-slate-900 flex items-center gap-1.5 text-xs">
-                    <MessageSquare className="w-4 h-4 text-blue-600" />
-                    <span>Lời phê mẫu của trưởng phòng</span>
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    {onApplyManagerNote && (
-                      <button
-                        onClick={() => {
-                          onApplyManagerNote(reviewResult.suggestedManagerNote);
-                          onClose();
-                        }}
-                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-2xs transition flex items-center gap-1"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Áp dụng vào Form duyệt Plan</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleCopyText('manager-note', reviewResult.suggestedManagerNote)}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-2xs transition flex items-center gap-1"
+            {showApiSettings && (
+              <div className="mt-3 pt-3 border-t border-line space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Dịch vụ kết nối">
+                    <Select
+                      value={apiProvider}
+                      onChange={(e) =>
+                        setApiProvider(
+                          e.target.value as 'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'
+                        )
+                      }
                     >
-                      {copiedKey === 'manager-note' ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-emerald-700">Đã chép!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Sao Chép</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                      <option value="AUTO">Tự động (Mặc định)</option>
+                      <option value="GEMINI">Google Gemini</option>
+                      <option value="OPENAI">OpenAI</option>
+                      <option value="CLAUDE">Anthropic Claude</option>
+                    </Select>
+                  </Field>
+
+                  <Field label="Khóa API">
+                    <Input
+                      type="password"
+                      placeholder="Nhập khóa API riêng (nếu có)"
+                      value={customApiKey}
+                      onChange={(e) => setCustomApiKey(e.target.value)}
+                      className="font-mono"
+                    />
+                  </Field>
                 </div>
 
-                <p className="p-3 bg-slate-50 rounded border border-slate-200 text-slate-800 font-medium leading-relaxed italic">
-                  &ldquo;{reviewResult.suggestedManagerNote}&rdquo;
-                </p>
+                <Field label="Ghi chú yêu cầu thêm">
+                  <Input
+                    type="text"
+                    placeholder="VD: Rà soát chuẩn bị chiến dịch 10.10, kiểm tra trễ hạn gửi mẫu..."
+                    value={customInstruction}
+                    onChange={(e) => setCustomInstruction(e.target.value)}
+                  />
+                </Field>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Lark Bot Quick Notification Message */}
-              <div className="card-enterprise p-4 bg-blue-50/50 border-blue-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-blue-950 flex items-center gap-1.5 text-xs">
-                    <Send className="w-4 h-4 text-blue-600" />
-                    <span>Tin nhắn nhắc nhở tức thì Qua Lark Bot (kèm Emoji)</span>
-                  </h4>
-                  <button
-                    onClick={handleSendLarkPing}
-                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center gap-1 shadow-xs"
+        {reviewResult && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg bg-surface border border-line space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-base font-semibold text-ink">
+                    {reviewResult.performanceScore}/100 điểm
+                  </span>
+                  <Status
+                    tone={
+                      reviewResult.overallGrade === 'Xuất sắc'
+                        ? 'positive'
+                        : reviewResult.overallGrade === 'Đạt chuẩn'
+                        ? 'info'
+                        : reviewResult.overallGrade === 'Cần cải thiện'
+                        ? 'warning'
+                        : 'critical'
+                    }
                   >
-                    {pingSuccess ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Đã bắn tin nhắn!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Gửi Lark Bot Cho {reviewResult.staffName}</span>
-                      </>
-                    )}
-                  </button>
+                    {reviewResult.overallGrade}
+                  </Status>
                 </div>
-                <p className="text-2xs text-blue-900 bg-white p-2.5 rounded border border-blue-200 font-medium">
-                  {reviewResult.suggestedLarkPingMessage}
-                </p>
+                <span className="text-xs text-ink-3">
+                  {reviewResult.pacingStatus === 'AHEAD' && 'Vượt tiến độ'}
+                  {reviewResult.pacingStatus === 'ON_TRACK' && 'Đúng tiến độ'}
+                  {reviewResult.pacingStatus === 'BEHIND' && 'Chậm tiến độ'}
+                  {reviewResult.pacingStatus === 'CRITICAL_DELAY' && 'Trễ hạn cần xử lý'}
+                </span>
               </div>
+              <p className="text-xs text-ink-2 leading-relaxed">
+                {reviewResult.executiveSummary}
+              </p>
             </div>
-          )}
-        </div>
 
-        {/* Modal Footer */}
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-4 border-t border-slate-200 bg-slate-50 shrink-0">
-          <span className="text-2xs text-slate-500">
-            Dữ liệu đối soát tự động từ Module 2 Planning &amp; Module 5 People &amp; Capacity
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-slate-300 rounded font-semibold text-slate-700 hover:bg-slate-100 transition text-xs"
-          >
-            Đóng cửa sổ
-          </button>
-        </div>
+            {reviewResult.burnoutOrCapacityAlert && (
+              <div className="p-3 bg-warning-soft border border-warning/20 rounded-lg text-ink text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-semibold">Cảnh báo tải công việc: </strong>
+                  <span>{reviewResult.burnoutOrCapacityAlert}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Panel title={`Điểm mạnh (${reviewResult.strengths.length})`}>
+                <ul className="space-y-1.5 text-ink-2 text-xs">
+                  {reviewResult.strengths.map((s, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-ink-3">•</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+
+              <Panel title={`Điểm nghẽn cần khắc phục (${reviewResult.bottlenecksAndRisks.length})`}>
+                <ul className="space-y-1.5 text-ink-2 text-xs">
+                  {reviewResult.bottlenecksAndRisks.map((b, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-ink-3">•</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            </div>
+
+            <Panel title="Hướng dẫn trao đổi 1-1 cho quản lý">
+              <div className="space-y-1.5 text-ink-2 text-xs">
+                {reviewResult.actionableCoaching.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2.5 rounded-md bg-canvas border border-line flex items-start gap-2"
+                  >
+                    <span className="text-ink-3 font-mono font-semibold text-xs shrink-0">
+                      {idx + 1}.
+                    </span>
+                    <span>{c}</span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel
+              title="Nhận xét mẫu của quản lý"
+              actions={
+                <div className="flex items-center gap-2">
+                  {onApplyManagerNote && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Check}
+                      onClick={() => {
+                        onApplyManagerNote(reviewResult.suggestedManagerNote);
+                        onClose();
+                      }}
+                    >
+                      Áp dụng vào phiếu duyệt
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    icon={copiedKey === 'manager-note' ? Check : Copy}
+                    onClick={() =>
+                      handleCopyText('manager-note', reviewResult.suggestedManagerNote)
+                    }
+                  >
+                    {copiedKey === 'manager-note' ? 'Đã chép' : 'Sao chép'}
+                  </Button>
+                </div>
+              }
+            >
+              <p className="p-3 bg-canvas rounded-md border border-line text-ink leading-relaxed">
+                {reviewResult.suggestedManagerNote}
+              </p>
+            </Panel>
+
+            <Panel
+              title="Tin nhắn gửi qua Lark"
+              actions={
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={pingSuccess ? Check : Send}
+                  onClick={handleSendLarkPing}
+                >
+                  {pingSuccess ? 'Đã gửi tin nhắn' : `Gửi Lark cho ${reviewResult.staffName}`}
+                </Button>
+              }
+            >
+              <p className="p-3 bg-canvas rounded-md border border-line text-ink leading-relaxed">
+                {reviewResult.suggestedLarkPingMessage}
+              </p>
+            </Panel>
+          </div>
+        )}
       </div>
-    </div>
-    </Presence>
+    </Modal>
   );
 };

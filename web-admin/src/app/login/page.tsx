@@ -74,7 +74,7 @@ function GoogleMark({ className = 'w-4 h-4' }: { className?: string }) {
 
 function LoginFallback() {
   return (
-    <div className="min-h-screen bg-canvas flex items-center justify-center">
+    <div className="min-h-dvh bg-canvas flex items-center justify-center">
       <span className="text-[13px] text-ink-3">Đang tải…</span>
     </div>
   );
@@ -238,7 +238,7 @@ function LoginContent() {
       : null;
 
   return (
-    <div className="min-h-screen bg-canvas text-ink lg:grid lg:grid-cols-12">
+    <div className="min-h-dvh bg-canvas text-ink lg:grid lg:grid-cols-12">
       {/* Cột trái: Giới thiệu hệ sinh thái B2C & Thống kê vận hành */}
       <aside className="hidden lg:flex lg:col-span-5 flex-col justify-between p-10 bg-sunken/60 border-r border-line">
         <div className="space-y-8">

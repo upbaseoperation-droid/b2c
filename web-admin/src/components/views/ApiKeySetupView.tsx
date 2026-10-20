@@ -79,6 +79,7 @@ const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ class
   STAFF_REVIEW: Users,
   PLAN_ADS_ANALYSIS: BarChart3,
   KOC_MATCHING: TrendingUp,
+  KOC_HISTORY_EVALUATION: Users,
   KNOWLEDGE_QA: BookOpen,
 };
 
@@ -1524,7 +1525,58 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                       </div>
                     </div>
 
-                    {/* Thanh trạng thái khóa thực tế & Nút mở rộng Prompt / Khóa riêng */}
+                    {/* Ô cấu hình Câu lệnh (Prompt) hiển thị trực tiếp cho từng phân hệ */}
+                    <div className="pt-3 border-t border-line space-y-1.5 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="font-semibold text-ink flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-accent" />
+                          <span>Câu lệnh chỉ dẫn (System Prompt) áp dụng cho phân hệ này:</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const defaultPrompt =
+                              INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[route.purposeId].systemInstruction;
+                            updateAndPersistConfig(prev => ({
+                              ...prev,
+                              purposeRoutes: {
+                                ...prev.purposeRoutes,
+                                [route.purposeId]: {
+                                  ...prev.purposeRoutes[route.purposeId],
+                                  systemInstruction: defaultPrompt,
+                                },
+                              },
+                            }));
+                            onNotify?.(`Đã khôi phục câu lệnh (Prompt) gốc cho "${route.title}"`, 'info');
+                          }}
+                          className="px-2 py-1 rounded border border-line bg-sunken hover:bg-line text-2xs font-semibold text-ink-2 flex items-center gap-1 cursor-pointer"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Khôi phục câu lệnh gốc
+                        </button>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={route.systemInstruction}
+                        onChange={e => {
+                          const val = e.target.value;
+                          updateAndPersistConfig(prev => ({
+                            ...prev,
+                            purposeRoutes: {
+                              ...prev.purposeRoutes,
+                              [route.purposeId]: {
+                                ...prev.purposeRoutes[route.purposeId],
+                                systemInstruction: val,
+                              },
+                            },
+                          }));
+                        }}
+                        placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho phân hệ nghiệp vụ này..."
+                        className="w-full p-2.5 rounded-lg border border-line-strong bg-canvas text-ink text-xs leading-relaxed focus:outline-none focus:border-accent focus:bg-surface"
+                      />
+                    </div>
+
+                    {/* Thanh trạng thái khóa thực tế & Nút mở rộng Khóa riêng / Tham số nâng cao */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-2xs">
                       <div className="flex items-center gap-2 text-ink-3">
                         <span>Nguồn kết nối hiện tại:</span>
@@ -1542,7 +1594,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                         <span>
                           {isExpanded
                             ? 'Thu gọn cấu hình nâng cao'
-                            : 'Tùy chỉnh câu lệnh (Prompt) & khóa riêng'}
+                            : 'Cấu hình khóa riêng & tham số nâng cao'}
                         </span>
                         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
@@ -1659,30 +1711,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                             </div>
                           </div>
                         )}
-
-                        <div className="space-y-1">
-                          <label className="font-semibold text-ink block">
-                            Chỉ dẫn nghiệp vụ chuẩn (System Instruction gửi kèm khi gọi API):
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={route.systemInstruction}
-                            onChange={e => {
-                              const val = e.target.value;
-                              updateAndPersistConfig(prev => ({
-                                ...prev,
-                                purposeRoutes: {
-                                  ...prev.purposeRoutes,
-                                  [route.purposeId]: {
-                                    ...prev.purposeRoutes[route.purposeId],
-                                    systemInstruction: val,
-                                  },
-                                },
-                              }));
-                            }}
-                            className="w-full p-2.5 rounded-lg border border-line-strong bg-surface text-ink text-xs leading-relaxed focus:outline-none focus:border-accent"
-                          />
-                        </div>
                       </div>
                     )}
                   </div>

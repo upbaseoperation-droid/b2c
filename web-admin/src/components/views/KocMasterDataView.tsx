@@ -10,13 +10,14 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Check, CloudDownload, FileScan, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
+import { Check, CloudDownload, FileScan, FileText, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 import { KocProfile } from '../koc/KocProfile';
+import { KocHistoryEvaluationModal } from '../koc/KocHistoryEvaluationModal';
 import { KocSocialChannelsModal } from '../koc/KocSocialChannelsModal';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import {
@@ -147,6 +148,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [ocrTarget, setOcrTarget] = useState<KocItem | null>(null);
   const [metricsTarget, setMetricsTarget] = useState<KocItem | null>(null);
   const [socialTarget, setSocialTarget] = useState<KocItem | null>(null);
+  const [historyEvalTarget, setHistoryEvalTarget] = useState<KocItem | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [scraperOpen, setScraperOpen] = useState(false);
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
@@ -297,6 +299,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     });
 
   const rowActions = (k: KocItem) => [
+    { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalTarget(k) },
     ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
     { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
     { label: 'Tìm kênh MXH', icon: Search, onSelect: () => setSocialTarget(k) },
@@ -693,6 +696,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         onClose={() => setOcrTarget(null)}
         onApplyToContract={handleApplyOcr}
         initialPreset="CCCD_INDIVIDUAL"
+      />
+
+      <KocHistoryEvaluationModal
+        open={!!historyEvalTarget}
+        onClose={() => setHistoryEvalTarget(null)}
+        koc={historyEvalTarget}
+        deals={allDeals}
+        duplicates={historyEvalTarget ? duplicates.get(historyEvalTarget.id) : undefined}
+        onCreateBooking={onOpenQuickBookWithKoc}
       />
 
       <CreateKocModal

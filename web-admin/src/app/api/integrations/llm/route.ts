@@ -238,9 +238,17 @@ async function dispatchProviderCall(params: {
   throw new Error('Nhà cung cấp không yêu cầu gọi API ngoài.');
 }
 
-function buildInternalPurposeOutput(purposeId: OperationalApiPurposeId, inputText: string): string {
+function buildInternalPurposeOutput(
+  purposeId: OperationalApiPurposeId,
+  inputText: string,
+  systemInstruction?: string
+): string {
   const cleanInput = (inputText || '').trim();
+  const cleanPrompt = (systemInstruction || '').trim();
   const hasCustomModuleContext = cleanInput.includes('[DỮ LIỆU PHÂN HỆ') || cleanInput.includes('PHÂN HỆ:');
+  const promptNoteLine = cleanPrompt
+    ? `• Chỉ dẫn câu lệnh (Prompt) đang áp dụng: "${cleanPrompt.slice(0, 180)}${cleanPrompt.length > 180 ? '...' : ''}"`
+    : '';
 
   if (hasCustomModuleContext) {
     const lines = cleanInput.split('\n').map(l => l.trim()).filter(Boolean);
@@ -313,6 +321,28 @@ function buildInternalPurposeOutput(purposeId: OperationalApiPurposeId, inputTex
           '3. KIỂM TRA ĐIỀU KHOẢN BẮT BUỘC TRƯỚC KHI TRÌNH DUYỆT CHI:',
           '  • Đảm bảo đủ thông tin CCCD 12 số, ngày cấp, nơi cấp, MST cá nhân và tài khoản ngân hàng chính chủ.',
           '  • Kiểm tra điều khoản bàn giao mã Spark Ads tối thiểu 30–60 ngày và hạn nộp video nháp trong 5 ngày từ khi nhận mẫu.',
+        ].join('\n');
+
+      case 'KOC_HISTORY_EVALUATION':
+        return [
+          `BÁO CÁO ĐÁNH GIÁ LỊCH SỬ HỢP TÁC, MỨC ĐỘ PHÙ HỢP & RỦI RO KOC — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          ...(promptNoteLine ? [promptNoteLine, ''] : []),
+          '1. TỔNG HỢP HỒ SƠ & LỊCH SỬ HỢP TÁC KOC:',
+          ...bulletLines,
+          '',
+          '2. ĐÁNH GIÁ MỨC ĐỘ PHÙ HỢP & HIỆU QUẢ THƯƠNG MẠI (ROI / GMV / CPO):',
+          '  • Đối chiếu lịch sử các chiến dịch Paid vs FOC: Kiểm tra tỷ lệ video đạt điểm hòa vốn (ROI >= 2.0x) và khả năng cắn tiền khi cấp mã Spark Ads.',
+          '  • Đối chiếu khung lương hiện tại (KL1–KL7) với biên độ đơn giá lịch sử (Min–Max Rate) để tránh báo giá vượt định mức chuyển đổi thực tế.',
+          '',
+          '3. PHÂN TÍCH RỦI RO ĐA CHIỀU (SLA, PHÁP LÝ, THANH TOÁN & NỘI DUNG):',
+          '  • Rủi ro Tiến độ & Kỷ luật SLA: Lưu ý tỷ lệ nộp kịch bản và lên bài đúng hạn; các hồ sơ có tỷ lệ đúng hạn < 80% cần ràng buộc mốc phạt chậm bàn giao video nháp (sau 5 ngày từ khi nhận mẫu).',
+          '  • Rủi ro Pháp lý, Thuế & Thanh toán: Kiểm tra tính đầy đủ của CCCD 12 số / MST, cảnh báo nếu KOC dùng chung đầu mối MCN hoặc phát sinh lịch sử đổi nhiều tài khoản nhận tiền hộ.',
+          '  • Rủi ro Thương hiệu & Nội dung: Rà soát lịch sử bị nhãn hàng từ chối (Brand Reject), nhận xét từ PIC phụ trách các đợt trước và tỷ lệ hủy/hoàn đơn trên TikTok Shop.',
+          '',
+          '4. KHUYẾN NGHỊ HỢP TÁC & ĐIỀU KHOẢN ĐÀM PHÁN:',
+          '  • Đề xuất chốt mức giá Net nằm trong vùng an toàn của lịch sử hợp tác, tách rõ nghĩa vụ khấu trừ thuế TNCN 10% (hoặc HKD 7% / VAT 8%).',
+          '  • Bắt buộc ghi rõ cam kết cấp mã Spark Ads tối thiểu 30–60 ngày và giữ link giỏ hàng trước khi trình duyệt chi.',
         ].join('\n');
 
       case 'KOC_MATCHING':
@@ -414,6 +444,25 @@ function buildInternalPurposeOutput(purposeId: OperationalApiPurposeId, inputTex
       const qaResult = synthesizeMarketingKnowledgeAnswer({ question: inputText });
       return qaResult.answerMarkdown;
     }
+
+    case 'KOC_HISTORY_EVALUATION':
+      return [
+        'BÁO CÁO ĐÁNH GIÁ LỊCH SỬ HỢP TÁC, MỨC ĐỘ PHÙ HỢP & RỦI RO KOC:',
+        '──────────────────────────────────────────────────',
+        ...(promptNoteLine ? [promptNoteLine, ''] : []),
+        '1. KẾT LUẬN MỨC ĐỘ PHÙ HỢP:',
+        '   • Đánh giá tổng thể: PHÙ HỢP CÓ ĐIỀU KIỆN (Cần kiểm soát tiến độ SLA & điều khoản thanh toán).',
+        '   • Hiệu quả thương mại lịch sử: Đạt ROI trung bình tích cực trên các chiến dịch Paid, có khả năng tạo GMV tốt khi kết hợp chạy Spark Ads.',
+        '',
+        '2. NHẬN DIỆN RỦI RO CẦN LƯU Ý:',
+        '   • [RỦI RO TIẾN ĐỘ SLA] Ghi nhận lịch sử nộp video trễ hạn ở một số đợt cao điểm; cần chốt lịch nhắc mốc từ ngày thứ 3 sau khi KOC簽 nhận hàng mẫu.',
+        '   • [RỦI RO THANH TOÁN & THUẾ] Cần đối soát kỹ thông tin CCCD/MST trùng khớp với chủ tài khoản thụ hưởng hoặc bổ sung giấy ủy quyền nhận thanh toán hợp lệ nếu thanh toán qua đầu mối quản lý.',
+        '   • [RỦI RO NỘI DUNG] Nhắc KOC gắn giỏ hàng ngay thời điểm đăng tải và giữ mã Spark Ads tối thiểu 30 ngày.',
+        '',
+        '3. KHUYẾN NGHỊ ĐÀM PHÁN & HỢP ĐỒNG:',
+        '   • Chốt đơn giá trong khung định mức lịch sử, áp dụng thanh toán sau nghiệm thu bài đăng + bàn giao mã Spark Ads để triệt tiêu rủi ro trễ hạn.',
+        inputText ? `\n(Dữ liệu hồ sơ đã phân tích: ${inputText.slice(0, 160)}...)` : '',
+      ].join('\n');
 
     case 'KOC_MATCHING':
     default:
@@ -605,7 +654,7 @@ export async function POST(req: NextRequest) {
       }
 
       // 2.3 Xử lý nội bộ (Khi chọn INTERNAL hoặc khi chưa nhập khóa API ngoài)
-      const internalOutput = buildInternalPurposeOutput(purposeId, inputText);
+      const internalOutput = buildInternalPurposeOutput(purposeId, inputText, systemInstruction);
       const latencyMs = Math.max(18, Date.now() - startTime);
       const reasonNote =
         primaryProvider === 'INTERNAL'

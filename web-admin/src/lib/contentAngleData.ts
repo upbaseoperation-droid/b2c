@@ -390,18 +390,18 @@ export const INITIAL_CONTENT_ANGLES: ContentAngleItem[] = [
   }
 ];
 
-// Helper: Tự động gợi ý 3 Content Angle thông minh dựa trên Sản phẩm & Trụ cột nội dung
+// Helper: Gợi ý 3 góc kịch bản theo sản phẩm và trụ cột nội dung
 export function generateAiAngleSuggestions(
   productName: string,
   pillarName: string,
   brandName: string
 ): Array<Omit<ContentAngleItem, 'id' | 'code' | 'createdAt' | 'updatedAt' | 'usageCount'>> {
-  const pName = productName || 'Sản phẩm';
-  const bName = brandName || 'Thương hiệu';
+  const pName = productName || 'sản phẩm';
+  const bName = brandName || 'nhãn hàng';
 
   return [
     {
-      name: `Góc kịch bản Trọng tâm: Đánh trúng Nỗi đau cốt lõi của ${pName}`,
+      name: `Xử lý tình huống thực tế với ${pName}`,
       pillarId: 'PIL-02',
       pillarName: pillarName || 'Nỗi đau - Giải pháp',
       pillarCode: 'PROBLEM_SOLUTION',
@@ -409,21 +409,21 @@ export function generateAiAngleSuggestions(
       productName: pName,
       brandName: bName,
       storeName: `${bName} Official Store`,
-      hookIdea: `Đừng bao giờ mắc phải sai lầm này nếu bạn đang dùng ${pName} mà mãi không thấy hiệu quả!`,
-      painPoint: `Khách hàng gặp rào cản do dùng sai cách hoặc chưa tìm đúng sản phẩm chuẩn mực như ${pName}.`,
-      solutionApproach: `Hướng dẫn giải pháp chuẩn khoa học với ${pName}, nhấn mạnh kết quả chuyển hóa rõ rệt sau 3-7 ngày.`,
+      hookIdea: `Cách mình xử lý tình trạng da khó chịu chỉ sau vài ngày dùng ${pName}.`,
+      painPoint: `Người dùng chọn nhầm sản phẩm không hợp tình trạng da hoặc dùng chưa đúng liều lượng khuyến nghị.`,
+      solutionApproach: `Quay cận cảnh kết cấu ${pName}, hướng dẫn cách bôi/sử dụng đúng bước và kết quả sau 3–7 ngày.`,
       keySellingPoints: [
-        `Thành phần lành tính độc quyền của ${bName}`,
-        `Hiệu quả được kiểm chứng lâm sàng`,
-        `Giá cả hợp lý nhất phân khúc kèm ưu đãi độc quyền sàn`
+        `Bảng thành phần công bố rõ ràng từ ${bName}`,
+        `Dịu nhẹ, thấm nhanh, không nhờn rít`,
+        `Gian hàng chính hãng trên sàn`
       ],
-      targetAudience: 'Tệp khách hàng tiêu dùng thông minh, quan tâm tới sức khỏe & chăm sóc sắc đẹp',
-      callToAction: `Bấm ngay vào giỏ hàng bên dưới để nhận voucher độc quyền từ ${bName}!`,
-      suggestedFormat: 'POV Tình huống trước/sau + Thuyết minh phân tích chuyên sâu',
+      targetAudience: 'Khách hàng đang gặp vấn đề thực tế cần sản phẩm xử lý đúng nhu cầu',
+      callToAction: `Bấm vào giỏ hàng góc trái để xem giá ưu đãi hôm nay của ${bName}.`,
+      suggestedFormat: 'Quay tình huống trước/sau + Lồng tiếng hướng dẫn',
       status: 'ACTIVE'
     },
     {
-      name: `Góc Review Thực tế: Trải nghiệm 7 ngày cùng ${pName}`,
+      name: `Đánh giá thực tế chất sản phẩm ${pName} dưới camera thường`,
       pillarId: 'PIL-01',
       pillarName: 'Review trực tiếp',
       pillarCode: 'DIRECT_REVIEW',
@@ -431,39 +431,39 @@ export function generateAiAngleSuggestions(
       productName: pName,
       brandName: bName,
       storeName: `${bName} Official Store`,
-      hookIdea: `Bỏ ra một khoản tiền để mua ${pName} - Liệu có xứng đáng từng đồng hay chỉ là chiêu trò marketing?`,
-      painPoint: 'Người mua e ngại hàng giả, hàng kém chất lượng hoặc review quá đà trên mạng xã hội.',
-      solutionApproach: `Review khách quan, cận cảnh chất lượng, bao bì, tem mác và trải nghiệm sử dụng thực tế của ${pName}.`,
+      hookIdea: `Kiểm tra chất kem và độ thẩm thấu thực tế của ${pName} dưới ánh sáng thường.`,
+      painPoint: 'Khách hàng lo mua phải hàng không rõ nguồn gốc hoặc chất sản phẩm bị bết dính.',
+      solutionApproach: `Quay cận cảnh bao bì, tem phụ chính hãng, thử chất sản phẩm trực tiếp trên da và nêu cảm nhận thật.`,
       keySellingPoints: [
-        'Hàng chính hãng phân phối trực tiếp từ nhà sản xuất',
-        'Cảm nhận êm dịu, không gây kích ứng khó chịu',
-        'Chính sách đổi trả minh bạch uy tín'
+        'Hàng chính hãng có đầy đủ giấy công bố',
+        'Êm dịu trên da, mùi hương nhẹ',
+        'Có chính sách đổi trả của gian hàng Mall'
       ],
-      targetAudience: 'Người tiêu dùng kỹ tính, thích xem review chân thật trước khi ra quyết định mua',
-      callToAction: `Kiểm tra ngay giỏ hàng góc trái để xem deal hời nhất hôm nay nhé!`,
-      suggestedFormat: 'Talking Head + B-roll unbox và apply sản phẩm',
+      targetAudience: 'Người mua kỹ tính, cần xem chất sản phẩm thực tế trước khi đặt đơn',
+      callToAction: `Sản phẩm chính hãng mình gắn ở giỏ hàng góc trái màn hình.`,
+      suggestedFormat: 'Chia sẻ trực tiếp + Cảnh quay cận chất sản phẩm',
       status: 'ACTIVE'
     },
     {
-      name: `Góc Bắt Trend: Biến hóa & Đời sống hàng ngày cùng ${pName}`,
+      name: `Mở hộp đơn hàng & Lồng ghép ${pName} vào sinh hoạt hằng ngày`,
       pillarId: 'PIL-06',
-      pillarName: 'Daily Vlog – Storytelling',
+      pillarName: 'Mở hộp & trải nghiệm',
       pillarCode: 'PILLAR_6',
       productId: 'temp-prod',
       productName: pName,
       brandName: bName,
       storeName: `${bName} Official Store`,
-      hookIdea: `Một ngày bận rộn từ sáng tới tối nhưng món đồ này chưa bao giờ rời khỏi túi xách của mình!`,
-      painPoint: 'Cuộc sống bận rộn cần giải pháp tiện lợi, nhanh gọn và mang lại cảm giác thoải mái tức thì.',
-      solutionApproach: `Lồng ghép ${pName} nhẹ nhàng như một thói quen tích cực không thể thiếu trong chu trình sinh hoạt hàng ngày.`,
+      hookIdea: `Đập hộp kiện hàng vừa đặt từ gian hàng ${bName} xem đóng gói và quà tặng kèm có gì.`,
+      painPoint: 'Người mua muốn biết quy cách đóng gói thực tế, hạn sử dụng và quà tặng kèm khi đặt trên sàn.',
+      solutionApproach: `Mở kiện hàng, quay rõ hạn sử dụng trên vỏ hộp và dùng thử ${pName} trong bước chăm sóc cá nhân hằng ngày.`,
       keySellingPoints: [
-        'Nhỏ gọn, tiện lợi, dễ dàng mang đi bất cứ đâu',
-        'Tạo cảm giác tự tin và sảng khoái suốt ngày dài',
-        'Được cộng đồng mạng đánh giá 5 sao'
+        'Đóng gói chắc chắn, date mới',
+        'Dễ sử dụng hằng ngày tại nhà',
+        'Có mã giảm giá và quà tặng theo khung giờ'
       ],
-      targetAudience: 'Giới trẻ năng động, mẹ bỉm hiện đại, nhân viên văn phòng',
-      callToAction: `Mọi người nhớ bấm vào link giỏ hàng để gom voucher giảm giá nhé!`,
-      suggestedFormat: 'Vlog nhịp điệu nhanh, âm thanh trending hấp dẫn',
+      targetAudience: 'Khách mua sắm trên TikTok Shop và Shopee quan tâm ưu đãi và quà tặng',
+      callToAction: `Bấm vào giỏ hàng bên dưới để áp mã giảm giá của shop.`,
+      suggestedFormat: 'Mở hộp âm thanh thực + Cảnh sử dụng hằng ngày',
       status: 'ACTIVE'
     }
   ];

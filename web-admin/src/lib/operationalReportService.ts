@@ -12,7 +12,7 @@ import {
 
 export interface ExecuteOperationalReportParams {
   purposeId: OperationalApiPurposeId;
-  moduleTitle: string;
+  moduleTitle?: string;
   inputContextText: string;
   overrideProvider?: 'ROUTE_DEFAULT' | ApiProviderId;
   overrideModel?: string;
@@ -25,11 +25,13 @@ export interface OperationalReportResult {
   purposeId: OperationalApiPurposeId;
   provider: ApiProviderId;
   providerUsedLabel: string;
+  providerUsed: string;
   modelUsed: string;
   usedFallback: boolean;
   fallbackReason?: string;
   latencyMs: number;
   outputText: string;
+  output: string;
   usage?: ExecutionCostReport;
   generatedAt: string;
 }
@@ -73,9 +75,10 @@ export async function executeOperationalReport(
   const systemInstruction =
     params.customSystemInstruction?.trim() || effective.purpose.systemInstruction;
 
+  const resolvedTitle = params.moduleTitle || effective.purpose.title;
   const formattedInput = params.inputContextText.startsWith('[DỮ LIỆU PHÂN HỆ')
     ? params.inputContextText
-    : `[DỮ LIỆU PHÂN HỆ: ${params.moduleTitle}]\n${params.inputContextText}`;
+    : `[DỮ LIỆU PHÂN HỆ: ${resolvedTitle}]\n${params.inputContextText}`;
 
   const res = await fetch('/api/integrations/llm', {
     method: 'POST',
@@ -106,7 +109,7 @@ export async function executeOperationalReport(
   if (usageReport) {
     recordApiUsageLog({
       purposeId: params.purposeId,
-      purposeTitle: `${params.moduleTitle} (${effective.purpose.title.replace(/^\d+\.\s*/, '')})`,
+      purposeTitle: `${resolvedTitle} (${effective.purpose.title.replace(/^\d+\.\s*/, '')})`,
       provider: resolvedProvider,
       modelUsed: resolvedModel,
       promptTokens: usageReport.promptTokens,
@@ -132,16 +135,21 @@ export async function executeOperationalReport(
     });
   }
 
+  const finalOutput = data.output || data.error || 'Không nhận được nội dung báo cáo.';
+  const finalProviderLabel = data.providerUsed || chosenProvider;
+
   return {
     ok: Boolean(data.ok),
     purposeId: params.purposeId,
     provider: resolvedProvider,
-    providerUsedLabel: data.providerUsed || chosenProvider,
+    providerUsedLabel: finalProviderLabel,
+    providerUsed: finalProviderLabel,
     modelUsed: resolvedModel,
     usedFallback: Boolean(data.usedFallback),
     fallbackReason: data.fallbackReason,
     latencyMs,
-    outputText: data.output || data.error || 'Không nhận được nội dung báo cáo.',
+    outputText: finalOutput,
+    output: finalOutput,
     usage: usageReport,
     generatedAt: new Date().toISOString(),
   };

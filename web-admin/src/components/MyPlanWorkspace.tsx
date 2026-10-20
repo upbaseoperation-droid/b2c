@@ -467,7 +467,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-ink-2 font-semibold block mb-1">Tên KOC / Stage Name:</label>
               <input
@@ -491,7 +491,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-ink-2 font-semibold block mb-1">Nhãn hàng:</label>
               <select
@@ -539,7 +539,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-ink-2 font-semibold block mb-1">Góc Quay / Content Pillar:</label>
               <select
@@ -575,7 +575,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
           </div>
 
           {/* Product & Content Angle Selection */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-sunken rounded-xl border border-line">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-sunken rounded-xl border border-line">
             <div>
               <label className="text-ink font-semibold block mb-1">Sản phẩm đẩy của gian hàng:</label>
               <select
@@ -610,7 +610,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             </div>
 
             {formHook && (
-              <div className="col-span-2 pt-2 border-t border-line text-xs">
+              <div className="sm:col-span-2 pt-2 border-t border-line text-xs">
                 <div className="text-2xs font-semibold text-accent flex items-center gap-1 mb-0.5">
                   Hook 3 giây đầu gợi ý cho KOC:
                 </div>
@@ -619,7 +619,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-ink-2 font-semibold">Dự toán chi phí Cast ({formSalaryGrade}):</label>

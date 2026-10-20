@@ -10,12 +10,23 @@ import {
   Clock,
   FileText,
   AlertTriangle,
+  Sliders,
+  RotateCcw,
+  Save,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { REAL_B2C_42_BRANDS } from '../../lib/realB2cBrandsData';
 import type {
   KocBriefAnalysisBackgroundJob,
   KocChannelBriefAnalysisReport,
 } from '../../lib/kocChannelBriefAnalyzer';
+import {
+  loadApiWorkspaceConfig,
+  getEffectiveConfigForPurpose,
+  updatePurposeSystemInstruction,
+  resetPurposeSystemInstruction,
+} from '../../lib/apiKeyConfig';
 import { formatNumber, formatVndShort } from '../../lib/format';
 import { Button, Modal, Status, Textarea } from '../ui';
 
@@ -54,6 +65,13 @@ export const KocChannelBriefMatcherModal: React.FC<
   const [preferredStyle, setPreferredStyle] = useState<string>('');
   const [maxBudgetInput, setMaxBudgetInput] = useState<string>('5000000');
   const [videoScanLimit, setVideoScanLimit] = useState<number>(40);
+
+  const [showPromptEditor, setShowPromptEditor] = useState<boolean>(false);
+  const [customPrompt, setCustomPrompt] = useState<string>(() => {
+    const cfg = loadApiWorkspaceConfig();
+    return getEffectiveConfigForPurpose('KOC_MATCHING', cfg).purpose.systemInstruction;
+  });
+  const [promptToast, setPromptToast] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,6 +152,9 @@ export const KocChannelBriefMatcherModal: React.FC<
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    const cfg = loadApiWorkspaceConfig();
+    const effective = getEffectiveConfigForPurpose('KOC_MATCHING', cfg);
+
     try {
       const res = await fetch(
         '/api/integrations/tiktok-koc/channel-brief-analysis',
@@ -149,6 +170,12 @@ export const KocChannelBriefMatcherModal: React.FC<
             maxBudgetPerVideoVnd: Number(maxBudgetInput) || undefined,
             videoScanLimit,
             background: true,
+            llmConfig: {
+              provider: effective.primaryProvider === 'OPENAI' ? 'OPENAI' : 'GEMINI',
+              apiKey: effective.primaryApiKey || undefined,
+              model: effective.primaryModel || undefined,
+              systemInstruction: customPrompt.trim() || effective.purpose.systemInstruction,
+            },
           }),
         }
       );
@@ -342,6 +369,71 @@ export const KocChannelBriefMatcherModal: React.FC<
           {errorMessage && (
             <p className="text-2xs text-critical">{errorMessage}</p>
           )}
+
+          {/* Khung thiết lập Câu lệnh (Prompt) đánh giá kênh KOC */}
+          <div className="pt-2 border-t border-line space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPromptEditor(v => !v)}
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                Thiết lập câu lệnh (Prompt) đánh giá kênh & chấm điểm Brief
+              </button>
+              {promptToast && (
+                <span className="text-2xs font-semibold text-success flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  {promptToast}
+                </span>
+              )}
+            </div>
+
+            {showPromptEditor && (
+              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-2xs font-semibold text-ink">
+                    Câu lệnh chỉ dẫn (System Prompt) áp dụng cho Sàng lọc & Đề xuất KOC:
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={RotateCcw}
+                      onClick={() => {
+                        const reset = resetPurposeSystemInstruction('KOC_MATCHING');
+                        setCustomPrompt(reset.systemInstruction);
+                        setPromptToast('Đã khôi phục câu lệnh gốc');
+                        setTimeout(() => setPromptToast(null), 2200);
+                      }}
+                    >
+                      Khôi phục gốc
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Save}
+                      onClick={() => {
+                        const saved = updatePurposeSystemInstruction('KOC_MATCHING', customPrompt);
+                        setCustomPrompt(saved.systemInstruction);
+                        setPromptToast('Đã lưu câu lệnh mặc định');
+                        setTimeout(() => setPromptToast(null), 2200);
+                      }}
+                    >
+                      Lưu làm mặc định
+                    </Button>
+                  </div>
+                </div>
+                <Textarea
+                  rows={3}
+                  value={customPrompt}
+                  onChange={e => setCustomPrompt(e.target.value)}
+                  placeholder="Nhập câu lệnh chỉ dẫn (Prompt) phân tích kênh KOC và đối chiếu với Brief thương hiệu..."
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Hàng đợi các tiến trình phân tích chạy ngầm */}

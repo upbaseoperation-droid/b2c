@@ -35,8 +35,8 @@ function ViewLoading() {
         ))}
       </div>
       <div aria-hidden="true" className="bg-surface border border-line rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-line"><Skeleton className="h-8 w-72 rounded-md" /></div>
-        <table className="w-full"><tbody><SkeletonRows rows={7} columns={5} /></tbody></table>
+        <div className="px-4 py-3 border-b border-line"><Skeleton className="h-8 w-full max-w-[18rem] rounded-md" /></div>
+        <div className="overflow-x-auto"><table className="w-full"><tbody><SkeletonRows rows={7} columns={5} /></tbody></table></div>
       </div>
     </div>
   );
@@ -192,10 +192,10 @@ export default function App() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(USERS[0]);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<TabKey>(() => getDefaultLandingTabForRole(USERS[0].role));
+  const [activeTab, setActiveTab] = useState<TabKey>(() => resolveInitialTab(USERS[0]));
   const hasUserNavigatedRef = useRef<boolean>(false);
   const [crawlerResetKey, setCrawlerResetKey] = useState<number>(0);
-  const handleSelectTab = (tab: TabKey) => {
+  const handleSelectTab = useCallback((tab: TabKey) => {
     hasUserNavigatedRef.current = true;
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, tab);
@@ -204,7 +204,7 @@ export default function App() {
       setCrawlerResetKey((prev) => prev + 1);
     }
     setActiveTab(tab);
-  };
+  }, []);
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
@@ -222,9 +222,17 @@ export default function App() {
       const actor = (event as CustomEvent<UserProfile | undefined>).detail;
       if (actor) setCurrentUser(prev => prev?.id === actor.id && JSON.stringify(prev) !== JSON.stringify(actor) ? actor : prev);
     };
+    const onNavigateTab = (event: Event) => {
+      const tab = (event as CustomEvent<TabKey>).detail;
+      if (tab) handleSelectTab(tab);
+    };
     window.addEventListener('upbase-rbac-updated', onRbacUpdated);
-    return () => window.removeEventListener('upbase-rbac-updated', onRbacUpdated);
-  }, []);
+    window.addEventListener('upbase-navigate-tab', onNavigateTab);
+    return () => {
+      window.removeEventListener('upbase-rbac-updated', onRbacUpdated);
+      window.removeEventListener('upbase-navigate-tab', onNavigateTab);
+    };
+  }, [handleSelectTab]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && currentUser && !isLoadingAuth) {
