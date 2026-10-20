@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useR
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
-import { TAB_LABELS } from '../lib/navGroups';
+import { TAB_LABELS, getNavGroupForTab } from '../lib/navGroups';
 import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
@@ -42,13 +42,11 @@ function ViewLoading() {
   );
 }
 
-const OverviewView = dynamic(() => import('../components/views/OverviewView').then(m => m.OverviewView), { loading: ViewLoading });
 const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
 const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
 const ContentView = dynamic(() => import('../components/views/ContentView').then(m => m.ContentView), { loading: ViewLoading });
 const BookingView = dynamic(() => import('../components/views/BookingView').then(m => m.BookingView), { loading: ViewLoading });
 const ManagerView = dynamic(() => import('../components/views/ManagerView').then(m => m.ManagerView), { loading: ViewLoading });
-const LeaderboardView = dynamic(() => import('../components/views/LeaderboardView').then(m => m.LeaderboardView), { loading: ViewLoading });
 const BrandHubView = dynamic(() => import('../components/views/BrandHubView').then(m => m.BrandHubView), { loading: ViewLoading });
 const InputPlanBreakdownView = dynamic(() => import('../components/views/InputPlanBreakdownView').then(m => m.InputPlanBreakdownView), { loading: ViewLoading });
 const SampleTrackerView = dynamic(() => import('../components/views/SampleTrackerView'), { loading: ViewLoading });
@@ -82,7 +80,7 @@ import {
   filterScopedDeals, 
   getUserScopeSummary
 } from '../lib/rbacScope';
-import { Button, PageActiveContext, Skeleton, SkeletonRows, ToastStack, useToastQueue } from '../components/ui';
+import { Button, PageActiveContext, Skeleton, SkeletonRows, Tabs, ToastStack, useToastQueue } from '../components/ui';
 
 import { 
   USERS, 
@@ -946,6 +944,11 @@ export default function App() {
   // Tiêu đề trang: khớp 100% tên trên menu trái của vai trò đang đăng nhập (DESIGN_SYSTEM.md §7 Quy tắc 1)
   const pageTitleOf = (tab: TabKey) => (currentUser && getNavLabelForRole(currentUser.role, tab)) || TAB_LABELS[tab] || tab;
 
+  // Màn thuộc nhóm (NAV_GROUPS): menu trái giữ 1 mục, các màn con chuyển qua thanh Tabs đầu trang.
+  const activeGroupTabs = currentUser
+    ? (getNavGroupForTab(activeTab)?.tabs ?? []).filter((t) => isTabAllowedForRole(currentUser.role, t.key))
+    : [];
+
 
   if (isLoadingAuth || !currentUser) {
     return (
@@ -1063,6 +1066,10 @@ export default function App() {
             </div>
           ) : (
             <>
+          {activeGroupTabs.length > 1 && (
+            <Tabs items={activeGroupTabs} value={activeTab} onChange={handleSelectTab} />
+          )}
+
           <KeepAliveTab tabKey="cockpit" currentTab={activeTab}>
             <CockpitView
               currentUser={currentUser}
@@ -1078,17 +1085,6 @@ export default function App() {
               onNavigateToInputPlan={() => setActiveTab('input-plan')}
               onNavigateToAirSync={() => setActiveTab('dashboard-air-sync')}
               onNavigateToTaskDelegation={() => setActiveTab('task-delegation')}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="overview" currentTab={activeTab}>
-            <OverviewView
-              deals={deals}
-              onOpenQuickBook={() => {
-                setPreselectedKoc(null);
-                setIsQuickBookOpen(true);
-              }}
-              onSelectDeal={openContractForDeal}
             />
           </KeepAliveTab>
 
@@ -1497,10 +1493,6 @@ export default function App() {
                 } : s));
               }}
             />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="leaderboard" currentTab={activeTab}>
-            <LeaderboardView />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="brand-hub" currentTab={activeTab}>

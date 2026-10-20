@@ -57,7 +57,7 @@ export interface NavGroupDefinition {
 export const NAV_GROUPS: NavGroupDefinition[] = [
   {
     id: 'delegation',
-    label: 'Phân việc & điều phối',
+    label: 'Điều phối & Giao việc',
     tabs: [
       { key: 'task-delegation', label: TAB_LABELS['task-delegation'] },
       { key: 'workload-3d', label: TAB_LABELS['workload-3d'] },
@@ -66,16 +66,15 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
   },
   {
     id: 'brand',
-    label: 'Thương hiệu & chiến dịch',
+    label: 'Brand & Gian hàng',
     tabs: [
       { key: 'brand-knowledge', label: TAB_LABELS['brand-knowledge'] },
-      { key: 'campaigns', label: TAB_LABELS.campaigns },
-      { key: 'push-products', label: TAB_LABELS['push-products'] },
+      { key: 'stores', label: TAB_LABELS.stores },
     ],
   },
   {
     id: 'research',
-    label: 'Nghiên cứu đối thủ',
+    label: 'Nghiên cứu & Crawler',
     tabs: [
       { key: 'market-research', label: TAB_LABELS['market-research'] },
       { key: 'tiktok-crawler', label: TAB_LABELS['tiktok-crawler'] },
