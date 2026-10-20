@@ -267,8 +267,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('TABLE');
 
+  // Chỉ cấp Quản lý / Trưởng nhóm mới được xem Tab "Kế hoạch theo nhân sự" & "Hệ số gian hàng"
+  const canViewTeamPlansAndCoefficients = Boolean(
+    currentUser &&
+      ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(currentUser.role)
+  );
+
   // Tab chuyển góc nhìn: Ma trận gian hàng vs Kế hoạch theo Brand (3 vị trí) vs Hệ số gian hàng (Bảng 2) vs Kế hoạch theo nhân sự vs Danh mục kế hoạch
-  const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'BRAND_PLANS' | 'STORE_COEFFICIENTS' | 'PERSONAL_PLANS' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
+  const [rawActiveHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'BRAND_PLANS' | 'STORE_COEFFICIENTS' | 'PERSONAL_PLANS' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
+  const activeHubTab =
+    !canViewTeamPlansAndCoefficients && (rawActiveHubTab === 'PERSONAL_PLANS' || rawActiveHubTab === 'STORE_COEFFICIENTS')
+      ? 'STORE_GOVERNANCE'
+      : rawActiveHubTab;
 
   // State quản lý Kế hoạch tháng theo Brand (3 vị trí gắn theo Brand: Content / Brand main, Plan / Strategy, Key Visual / SIS)
   const [brandMonthlyPlans, setBrandMonthlyPlans] = useState<BrandMonthlyPlanItem[]>(INITIAL_BRAND_MONTHLY_PLANS);
@@ -406,8 +416,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   // Tổng hợp các Gói kế hoạch cá nhân (Personal Workpackages) của từng nhân sự trong tháng (gồm cả 4 đầu việc theo Gian hàng + 3 vị trí gắn theo Brand)
   const allPersonalPackages = useMemo<PersonalWorkPackageItem[]>(() => {
-    return buildPersonalWorkPackages(scopedPlans, selectedMonth, filteredBrandMonthlyPlans);
-  }, [scopedPlans, selectedMonth, filteredBrandMonthlyPlans]);
+    const rawPackages = buildPersonalWorkPackages(scopedPlans, selectedMonth, filteredBrandMonthlyPlans);
+    if (!canViewTeamPlansAndCoefficients) {
+      const myName = (currentUser?.name || '').trim().toLowerCase();
+      return rawPackages.filter(pkg => pkg.staffName.trim().toLowerCase() === myName);
+    }
+    if (currentUser?.role === 'LEADER') {
+      const leaderName = (currentUser.name || '').trim().toLowerCase();
+      return rawPackages.filter(
+        pkg =>
+          pkg.staffName.trim().toLowerCase() === leaderName ||
+          (pkg.leaderName || '').trim().toLowerCase() === leaderName
+      );
+    }
+    return rawPackages;
+  }, [scopedPlans, selectedMonth, filteredBrandMonthlyPlans, canViewTeamPlansAndCoefficients, currentUser]);
 
   const personalStaffSummaryList = useMemo(() => {
     const map = new Map<string, {
@@ -985,6 +1008,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     <div className="space-y-6">
       <PageActions>
         {syncBadge}
+        <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>Đồng bộ Larkbase</Button>
         {onOpenPlanReport && (
           <Button
             variant="secondary"
@@ -1011,7 +1035,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           items={[
             { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalActive },
             { key: 'BRAND_PLANS', label: 'Kế hoạch theo Brand', count: filteredBrandMonthlyPlans.length },
-            { key: 'PERSONAL_PLANS', label: 'Kế hoạch theo nhân sự', count: allPersonalPackages.length },
+            ...(canViewTeamPlansAndCoefficients
+              ? [
+                  { key: 'PERSONAL_PLANS' as const, label: 'Kế hoạch theo nhân sự', count: allPersonalPackages.length },
+                  { key: 'STORE_COEFFICIENTS' as const, label: 'Hệ số gian hàng', count: activeStores.length },
+                ]
+              : []),
           ]}
           value={activeHubTab}
           onChange={setActiveHubTab}
@@ -1500,9 +1529,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => onSelectPlan(plan)}
-                                      className="hidden"
+                                      className="h-6 px-2 text-2xs font-medium shrink-0"
                                     >
-                                      Mở
+                                      Phân rã
                                     </Button>
                                   )}
                                 </>
@@ -2373,7 +2402,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       })}
                                       className="h-7 px-2.5 text-2xs font-semibold"
                                     >
-                                      Mở phần việc này
+                                      Phân rã phần việc này
                                     </Button>
                                   )}
                                 </>
@@ -2872,7 +2901,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="Ngân sách (VNĐ):" hint={formatVndShort(newPlanBudget)}>
+            <Field label={`Ngân sách (${formatVndShort(newPlanBudget)}):`}>
               <Input
                 type="number"
                 step="5000000"
@@ -2881,7 +2910,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               />
             </Field>
 
-            <Field label="Số lượng video:" hint="Nội dung">
+            <Field label="Số lượng video:">
               <Input
                 type="number"
                 value={newPlanQty}
@@ -2889,7 +2918,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               />
             </Field>
 
-            <Field label="Mục tiêu GMV:" hint={`ROI: ${(newPlanGmv / (newPlanBudget || 1)).toFixed(1)}x`}>
+            <Field label={`Mục tiêu GMV (ROI ${(newPlanGmv / (newPlanBudget || 1)).toFixed(1)}x):`}>
               <Input
                 type="number"
                 step="10000000"

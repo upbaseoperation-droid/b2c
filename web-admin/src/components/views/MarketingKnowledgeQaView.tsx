@@ -1595,7 +1595,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
         open={isAddArticleModalOpen}
         onClose={() => setIsAddArticleModalOpen(false)}
         title="Thêm quy định vào Sổ tay B2C"
-        description="Tài liệu mới sẽ được lưu vào Kho tài liệu và dùng làm nguồn trả lời tự động trong mục Hỏi đáp"
         size="lg"
         footer={
           <>

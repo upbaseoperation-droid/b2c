@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, channelOf, Presence, BrandAvatar } from '../ui';
+import { ChannelTag, channelOf, Presence, BrandAvatar, Modal, Button } from '../ui';
 import {
   Building2,
   Store,
@@ -1464,148 +1464,116 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       </div>
 
       {/* MODAL: CHỈNH SỬA / ĐỔI PIC CHÍNH VÀ NHÂN SỰ CỦA GIAN HÀNG */}
-      <Presence show={!!(isEditingStorePic && editingStoreForm)}>
-      {isEditingStorePic && editingStoreForm && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
-          onClick={() => setIsEditingStorePic(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel
-            className="bg-white border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="p-4 bg-canvas border-b border-line flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-warning-soft border border-warning/20 flex items-center justify-center text-warning">
-                  <Crown className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-ink">
-                    Phân công PIC chính & đội ngũ gian hàng
-                  </h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsEditingStorePic(false)}
-                className="p-1.5 rounded-lg hover:bg-sunken text-ink-3 hover:text-ink-2 transition"
-                aria-label="Đóng"
+      <Modal
+        open={Boolean(isEditingStorePic && editingStoreForm)}
+        onClose={() => setIsEditingStorePic(false)}
+        title="Phân công PIC chính & đội ngũ gian hàng"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setIsEditingStorePic(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              icon={CheckCircle2}
+              onClick={handleSaveStoreAssignment}
+            >
+              Lưu phân công Master Data
+            </Button>
+          </div>
+        }
+      >
+        {isEditingStorePic && editingStoreForm && (
+          <div className="space-y-4 text-xs">
+            {/* 1 PIC Chính (Primary Store PIC) */}
+            <div>
+              <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
+                <Crown className="w-3.5 h-3.5 text-warning" />
+                <span>1 PIC chính phụ trách (bắt buộc chọn 1 người):</span>
+              </label>
+              <select
+                value={editingStoreForm.primaryPic}
+                onChange={e => {
+                  const newPrimary = e.target.value;
+                  setEditingStoreForm(prev => {
+                    if (!prev) return null;
+                    const updatedMembers = prev.memberPics.filter(m => m !== newPrimary);
+                    return {
+                      ...prev,
+                      primaryPic: newPrimary,
+                      memberPics: updatedMembers
+                    };
+                  });
+                }}
+                className="w-full bg-white border border-warning/20 text-warning font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-warning/20 focus:border-warning/20"
               >
-                <X className="w-4 h-4" />
-              </button>
+                {allPicOptions.map(staff => (
+                  <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
+                ))}
+              </select>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 space-y-4 text-xs">
-              {/* 1 PIC Chính (Primary Store PIC) */}
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Crown className="w-3.5 h-3.5 text-warning" />
-                  <span>1 PIC chính phụ trách (bắt buộc chọn 1 người):</span>
-                </label>
-                <select
-                  value={editingStoreForm.primaryPic}
-                  onChange={e => {
-                    const newPrimary = e.target.value;
-                    setEditingStoreForm(prev => {
-                      if (!prev) return null;
-                      // Remove from memberPics if selected as primary
-                      const updatedMembers = prev.memberPics.filter(m => m !== newPrimary);
-                      return {
-                        ...prev,
-                        primaryPic: newPrimary,
-                        memberPics: updatedMembers
-                      };
-                    });
-                  }}
-                  className="w-full bg-white border border-warning/20 text-warning font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-warning/20 focus:border-warning/20"
-                >
-                  {allPicOptions.map(staff => (
-                    <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Nhân sự phối hợp (Multi-select) */}
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-accent" />
-                  <span>Các nhân sự phối hợp / cùng làm Shop:</span>
-                </label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
-                  {allPicOptions
-                    .filter(staff => staff !== editingStoreForm.primaryPic)
-                    .map(staff => {
-                      const isSelected = editingStoreForm.memberPics.includes(staff);
-                      return (
-                        <button
-                          key={staff}
-                          type="button"
-                          onClick={() => {
-                            setEditingStoreForm(prev => {
-                              if (!prev) return null;
-                              const exists = prev.memberPics.includes(staff);
-                              return {
-                                ...prev,
-                                memberPics: exists
-                                  ? prev.memberPics.filter(m => m !== staff)
-                                  : [...prev.memberPics, staff]
-                              };
-                            });
-                          }}
-                          className={`p-2 rounded-lg text-left text-2xs font-medium border flex items-center justify-between transition ${
-                            isSelected
-                              ? 'bg-accent-soft border-accent/20 text-accent font-semibold'
-                              : 'bg-white border-line text-ink-2 hover:text-ink hover:bg-sunken'
-                          }`}
-                        >
-                          <span className="truncate">{staff}</span>
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />}
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* Ghi chú phân chia */}
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1.5">
-                  Ghi chú phân Chia trách nhiệm giữa các PICs:
-                </label>
-                <textarea
-                  rows={3}
-                  value={editingStoreForm.assignmentNotes}
-                  onChange={e => setEditingStoreForm(prev => prev ? { ...prev, assignmentNotes: e.target.value } : null)}
-                  placeholder="Ví dụ: PIC chính quản lý budget tổng và KOC Celeb; bạn B làm KOC Mass; bạn C làm Livestream..."
-                  className="w-full bg-white border border-line-strong text-ink rounded-xl p-2.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
-                />
+            {/* Nhân sự phối hợp (Multi-select) */}
+            <div>
+              <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-accent" />
+                <span>Các nhân sự phối hợp / cùng làm Shop:</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
+                {allPicOptions
+                  .filter(staff => staff !== editingStoreForm.primaryPic)
+                  .map(staff => {
+                    const isSelected = editingStoreForm.memberPics.includes(staff);
+                    return (
+                      <button
+                        key={staff}
+                        type="button"
+                        onClick={() => {
+                          setEditingStoreForm(prev => {
+                            if (!prev) return null;
+                            const exists = prev.memberPics.includes(staff);
+                            return {
+                              ...prev,
+                              memberPics: exists
+                                ? prev.memberPics.filter(m => m !== staff)
+                                : [...prev.memberPics, staff]
+                            };
+                          });
+                        }}
+                        className={`p-2 rounded-lg text-left text-2xs font-medium border flex items-center justify-between transition ${
+                          isSelected
+                            ? 'bg-accent-soft border-accent/20 text-accent font-semibold'
+                            : 'bg-white border-line text-ink-2 hover:text-ink hover:bg-sunken'
+                        }`}
+                      >
+                        <span className="truncate">{staff}</span>
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />}
+                      </button>
+                    );
+                  })}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-canvas border-t border-line flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsEditingStorePic(false)}
-                className="px-4 py-2 bg-white hover:bg-sunken text-ink-2 font-semibold rounded-xl text-xs border border-line-strong transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveStoreAssignment}
-                className="px-5 py-2 bg-accent hover:bg-accent text-white font-semibold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Lưu phân công Master Data</span>
-              </button>
+            {/* Ghi chú phân chia */}
+            <div>
+              <label className="block text-ink-2 font-semibold mb-1.5">
+                Ghi chú phân chia trách nhiệm giữa các PICs:
+              </label>
+              <textarea
+                rows={3}
+                value={editingStoreForm.assignmentNotes}
+                onChange={e => setEditingStoreForm(prev => prev ? { ...prev, assignmentNotes: e.target.value } : null)}
+                placeholder="Ví dụ: PIC chính quản lý budget tổng và KOC Celeb; bạn B làm KOC Mass; bạn C làm Livestream..."
+                className="w-full bg-white border border-line-strong text-ink rounded-xl p-2.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
+              />
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
     </div>
   );
 };

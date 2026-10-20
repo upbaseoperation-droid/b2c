@@ -2037,7 +2037,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               setDeleteConfirmText('');
             }}
             title={hasDeps ? 'Kiểm tra ràng buộc: Thương hiệu đang có liên kết' : `Xác nhận xóa thương hiệu [${deletingBrand.name}]`}
-            description={`Thương hiệu: ${deletingBrand.name} (${deletingBrand.category})`}
+            
             size="md"
             footer={
               <>
@@ -2328,7 +2328,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           open={!!deletingProduct}
           onClose={() => setDeletingProduct(null)}
           title="Xác nhận xử lý sản phẩm"
-          description={`Mã SKU: ${deletingProduct.sku}`}
+          
           size="sm"
           footer={
             <>

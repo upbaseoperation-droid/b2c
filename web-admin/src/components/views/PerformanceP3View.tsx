@@ -42,10 +42,15 @@ export interface PerformanceP3ViewProps {
 
 export default function PerformanceP3View({
   storePortfolios = [],
+  currentUser,
   onNotify,
   onUpdateStoreDifficulty,
 }: PerformanceP3ViewProps = {}) {
-  const [activeTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
+  const canViewAllStaffP3 =
+    !currentUser ||
+    ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(currentUser.role);
+  const [rawActiveTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
+  const activeTab = !canViewAllStaffP3 && rawActiveTab === 'STORE_MATRIX' ? 'CALC' : rawActiveTab;
   const [staffRecords, setStaffRecords] = useState<StaffP3Record[]>(MOCK_P3_STAFF_RECORDS);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
@@ -115,8 +120,12 @@ export default function PerformanceP3View({
         calculatedWorkloadPoints: livePoints,
         estimatedBonusVnd: liveBonus,
       };
+    }).filter((r) => {
+      if (canViewAllStaffP3) return true;
+      const myName = (currentUser?.name || '').trim().toLowerCase();
+      return r.staffName.trim().toLowerCase() === myName;
     });
-  }, [staffRecords, storeConfigs]);
+  }, [staffRecords, storeConfigs, canViewAllStaffP3, currentUser]);
 
   // KPI summaries
   const totalBonusFund = liveStaffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
@@ -203,8 +212,10 @@ export default function PerformanceP3View({
 
       <Tabs
         items={[
-          { key: 'CALC', label: 'Bảng tính thưởng P3', count: staffRecords.length },
-          { key: 'STORE_MATRIX', label: 'Hệ số gian hàng', count: storeConfigs.length },
+          { key: 'CALC', label: 'Bảng tính thưởng P3', count: liveStaffRecords.length },
+          ...(canViewAllStaffP3
+            ? [{ key: 'STORE_MATRIX' as const, label: 'Hệ số gian hàng', count: storeConfigs.length }]
+            : []),
         ]}
         value={activeTab}
         onChange={setActiveTab}

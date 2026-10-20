@@ -39,7 +39,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA, INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
-import { BrandAvatar, ChannelTag, Presence, Status } from '../ui';
+import { BrandAvatar, ChannelTag, Presence, Status, Modal, Button } from '../ui';
 import { useBrandProfiles } from '../../lib/brands/useBrandProfiles';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
 import {
@@ -2084,273 +2084,214 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* ========================================================================= */}
 
       {/* Modal 1: Plan Revision Request */}
-      <Presence show={!!isPlanRevisionModalOpen}>
-      {isPlanRevisionModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsPlanRevisionModalOpen(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel className="w-full max-w-lg p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-amber-600" />
-                Yêu cầu điều chỉnh kế hoạch ngân sách
-              </h4>
-              <button
-                type="button"
-                onClick={() => setIsPlanRevisionModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <textarea
-              rows={4}
-              value={planRevisionNotes}
-              onChange={(e) => setPlanRevisionNotes(e.target.value)}
-              placeholder="Nhập góp ý cụ thể cho Booking Team..."
-              className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none leading-relaxed"
-            />
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setIsPlanRevisionModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
-              >
-                Đóng
-              </button>
-              <button
-                type="button"
-                disabled={!planRevisionNotes.trim()}
-                onClick={handleRequestPlanRevision}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition shadow-2xs"
-              >
-                Gửi yêu cầu chỉnh sửa
-              </button>
-            </div>
+      <Modal
+        open={isPlanRevisionModalOpen}
+        onClose={() => setIsPlanRevisionModalOpen(false)}
+        title="Yêu cầu điều chỉnh kế hoạch ngân sách"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setIsPlanRevisionModalOpen(false)}
+            >
+              Đóng
+            </Button>
+            <Button
+              variant="primary"
+              disabled={!planRevisionNotes.trim()}
+              onClick={handleRequestPlanRevision}
+            >
+              Gửi yêu cầu chỉnh sửa
+            </Button>
           </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <textarea
+            rows={4}
+            value={planRevisionNotes}
+            onChange={(e) => setPlanRevisionNotes(e.target.value)}
+            placeholder="Nhập góp ý cụ thể cho Booking Team..."
+            className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none leading-relaxed"
+          />
         </div>
-      )}
-      </Presence>
+      </Modal>
 
       {/* Modal 2: KOC Reject Reason */}
-      <Presence show={!!rejectingKoc}>
-      {rejectingKoc && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setRejectingKoc(null);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel className="w-full max-w-md p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-rose-600" />
-                Đề xuất đổi KOC: {rejectingKoc.stageName}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setRejectingKoc(null)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              {[
-                'Lệch định vị thương hiệu',
-                'Từng booking đối thủ cạnh tranh',
-                'Rủi ro hình ảnh / Scandal',
-                'Chất giọng / Phong cách chưa phù hợp',
-                'Yêu cầu Creator chuyên môn cao hơn (Bác sĩ/Dược sĩ)',
-                'Lý do khác'
-              ].map(reason => (
-                <label
-                  key={reason}
-                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition text-slate-800"
-                >
-                  <input
-                    type="radio"
-                    name="rejectReason"
-                    checked={selectedRejectReason === reason}
-                    onChange={() => setSelectedRejectReason(reason as BrandRejectReasonType)}
-                    className="accent-blue-600 cursor-pointer"
-                  />
-                  <span>{reason}</span>
-                </label>
-              ))}
-
-              {selectedRejectReason === 'Lý do khác' && (
-                <input
-                  type="text"
-                  placeholder="Nhập lý do cụ thể..."
-                  value={rejectCustomNote}
-                  onChange={(e) => setRejectCustomNote(e.target.value)}
-                  className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none mt-2"
-                />
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setRejectingKoc(null)}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRejectKoc}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition"
-              >
-                Xác nhận đổi KOC
-              </button>
-            </div>
+      <Modal
+        open={Boolean(rejectingKoc)}
+        onClose={() => setRejectingKoc(null)}
+        title={rejectingKoc ? `Đề xuất đổi KOC: ${rejectingKoc.stageName}` : 'Đề xuất đổi KOC'}
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setRejectingKoc(null)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmRejectKoc}
+            >
+              Xác nhận đổi KOC
+            </Button>
           </div>
-        </div>
-      )}
-      </Presence>
+        }
+      >
+        {rejectingKoc && (
+          <div className="space-y-2 text-xs">
+            {[
+              'Lệch định vị thương hiệu',
+              'Từng booking đối thủ cạnh tranh',
+              'Rủi ro hình ảnh / Scandal',
+              'Chất giọng / Phong cách chưa phù hợp',
+              'Yêu cầu Creator chuyên môn cao hơn (Bác sĩ/Dược sĩ)',
+              'Lý do khác'
+            ].map(reason => (
+              <label
+                key={reason}
+                className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition text-slate-800"
+              >
+                <input
+                  type="radio"
+                  name="rejectReason"
+                  checked={selectedRejectReason === reason}
+                  onChange={() => setSelectedRejectReason(reason as BrandRejectReasonType)}
+                  className="accent-blue-600 cursor-pointer"
+                />
+                <span>{reason}</span>
+              </label>
+            ))}
+
+            {selectedRejectReason === 'Lý do khác' && (
+              <input
+                type="text"
+                placeholder="Nhập lý do cụ thể..."
+                value={rejectCustomNote}
+                onChange={(e) => setRejectCustomNote(e.target.value)}
+                className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none mt-2"
+              />
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Modal 3: Script Review Drawer / Modal */}
-      <Presence show={!!inspectingScript}>
-      {inspectingScript && (() => {
-        const maxRevisions = activeBrandRow?.profile.workflowRules?.maxFreeRevisions ?? 2;
-        const bannedList = (activeBrandRow?.profile.contentRules?.banned || []).map(b => b.phrase);
-        const fullScriptText = `${inspectingScript.hook} ${inspectingScript.painPoint} ${inspectingScript.solutionAndUsp} ${inspectingScript.callToAction}`.toLowerCase();
-        const violatedKeywords = bannedList.filter((kw: string) => kw.trim() && fullScriptText.includes(kw.toLowerCase()));
-        return (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setInspectingScript(null);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel className="w-full max-w-2xl p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  Kịch bản: {inspectingScript.kocStageName}
-                </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Sản phẩm: {inspectingScript.productName} ({inspectingScript.videoDuration}) • Lần sửa: {inspectingScript.revisionCount}/{maxRevisions}
-                </p>
+      <Modal
+        open={Boolean(inspectingScript)}
+        onClose={() => setInspectingScript(null)}
+        title={inspectingScript ? `Kịch bản: ${inspectingScript.kocStageName}` : 'Kịch bản'}
+        size="xl"
+      >
+        {inspectingScript && (() => {
+          const maxRevisions = activeBrandRow?.profile.workflowRules?.maxFreeRevisions ?? 2;
+          const bannedList = (activeBrandRow?.profile.contentRules?.banned || []).map(b => b.phrase);
+          const fullScriptText = `${inspectingScript.hook} ${inspectingScript.painPoint} ${inspectingScript.solutionAndUsp} ${inspectingScript.callToAction}`.toLowerCase();
+          const violatedKeywords = bannedList.filter((kw: string) => kw.trim() && fullScriptText.includes(kw.toLowerCase()));
+          return (
+            <div className="space-y-4 text-xs">
+              <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+                <span>Sản phẩm: <strong className="text-ink">{inspectingScript.productName}</strong> ({inspectingScript.videoDuration})</span>
+                <span>·</span>
+                <span>Lần sửa: <strong className="text-ink">{inspectingScript.revisionCount}/{maxRevisions}</strong></span>
               </div>
-              <button
-                type="button"
-                onClick={() => setInspectingScript(null)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
-            {violatedKeywords.length > 0 ? (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold block">Cảnh báo từ ngữ hạn chế theo Hồ sơ thương hiệu:</span>
-                  <span>Phát hiện từ khóa cần tránh: <strong>{violatedKeywords.join(', ')}</strong></span>
+              {violatedKeywords.length > 0 ? (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block">Cảnh báo từ ngữ hạn chế theo Hồ sơ thương hiệu:</span>
+                    <span>Phát hiện từ khóa cần tránh: <strong>{violatedKeywords.join(', ')}</strong></span>
+                  </div>
+                </div>
+              ) : bannedList.length > 0 ? (
+                <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-2xs text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Đã đối chiếu {bannedList.length} từ khóa hạn chế trong Hồ sơ thương hiệu: Không phát hiện vi phạm.</span>
+                </div>
+              ) : null}
+
+              {/* 4 segments in a clean 2x2 grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-200/80">
+                  <span className="font-semibold text-amber-900 block mb-1">1. Hook mở đầu (3 giây đầu):</span>
+                  <p className="text-slate-700 leading-relaxed">{inspectingScript.hook}</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-rose-50/50 border border-rose-200/80">
+                  <span className="font-semibold text-rose-900 block mb-1">2. Nỗi đau (Pain Point):</span>
+                  <p className="text-slate-700 leading-relaxed">{inspectingScript.painPoint}</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80">
+                  <span className="font-semibold text-emerald-900 block mb-1">3. Giải pháp &amp; lợi điểm sản phẩm:</span>
+                  <p className="text-slate-700 leading-relaxed">{inspectingScript.solutionAndUsp}</p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/80">
+                  <span className="font-semibold text-blue-900 block mb-1">4. Kêu gọi mua (CTA):</span>
+                  <p className="text-slate-700 leading-relaxed">{inspectingScript.callToAction}</p>
                 </div>
               </div>
-            ) : bannedList.length > 0 ? (
-              <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-2xs text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Đã đối chiếu {bannedList.length} từ khóa hạn chế trong Hồ sơ thương hiệu: Không phát hiện vi phạm.</span>
-              </div>
-            ) : null}
 
-            {/* 4 segments in a clean 2x2 grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-200/80">
-                <span className="font-semibold text-amber-900 block mb-1">1. Hook mở đầu (3 giây đầu):</span>
-                <p className="text-slate-700 leading-relaxed">{inspectingScript.hook}</p>
-              </div>
+              {/* Feedback Input */}
+              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                    Góp ý điều chỉnh cho KOC:
+                  </span>
+                  <div className="flex items-center gap-1.5 text-2xs">
+                    <span className="text-slate-500">Phần góp ý:</span>
+                    <select
+                      value={feedbackSection}
+                      onChange={(e) => setFeedbackSection(e.target.value as 'HOOK' | 'PAIN' | 'USP' | 'CTA')}
+                      className="bg-slate-50 text-slate-800 border border-slate-200 rounded-md px-2 py-0.5 text-2xs"
+                    >
+                      <option value="HOOK">1. Hook</option>
+                      <option value="PAIN">2. Pain Point</option>
+                      <option value="USP">3. Lợi điểm sản phẩm</option>
+                      <option value="CTA">4. CTA</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="p-3 rounded-xl bg-rose-50/50 border border-rose-200/80">
-                <span className="font-semibold text-rose-900 block mb-1">2. Nỗi đau (Pain Point):</span>
-                <p className="text-slate-700 leading-relaxed">{inspectingScript.painPoint}</p>
-              </div>
+                <textarea
+                  rows={2}
+                  value={scriptFeedbackText}
+                  onChange={(e) => setScriptFeedbackText(e.target.value)}
+                  placeholder="Nhập nội dung chỉnh sửa cụ thể..."
+                  className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none"
+                />
 
-              <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80">
-                <span className="font-semibold text-emerald-900 block mb-1">3. Giải pháp &amp; lợi điểm sản phẩm:</span>
-                <p className="text-slate-700 leading-relaxed">{inspectingScript.solutionAndUsp}</p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/80">
-                <span className="font-semibold text-blue-900 block mb-1">4. Kêu gọi mua (CTA):</span>
-                <p className="text-slate-700 leading-relaxed">{inspectingScript.callToAction}</p>
-              </div>
-            </div>
-
-            {/* Feedback Input */}
-            <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-900 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-                  Góp ý điều chỉnh cho KOC:
-                </span>
-                <div className="flex items-center gap-1.5 text-2xs">
-                  <span className="text-slate-500">Phần góp ý:</span>
-                  <select
-                    value={feedbackSection}
-                    onChange={(e) => setFeedbackSection(e.target.value as 'HOOK' | 'PAIN' | 'USP' | 'CTA')}
-                    className="bg-slate-50 text-slate-800 border border-slate-200 rounded-md px-2 py-0.5 text-2xs"
+                <div className="flex items-center justify-between pt-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Send}
+                    disabled={!scriptFeedbackText.trim() || inspectingScript.revisionCount >= maxRevisions}
+                    onClick={handleSubmitScriptFeedback}
                   >
-                    <option value="HOOK">1. Hook</option>
-                    <option value="PAIN">2. Pain Point</option>
-                    <option value="USP">3. Lợi điểm sản phẩm</option>
-                    <option value="CTA">4. CTA</option>
-                  </select>
+                    Gửi góp ý
+                  </Button>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={Check}
+                    onClick={() => handleApproveScript(inspectingScript.id)}
+                  >
+                    Phê duyệt kịch bản này
+                  </Button>
                 </div>
               </div>
-
-              <textarea
-                rows={2}
-                value={scriptFeedbackText}
-                onChange={(e) => setScriptFeedbackText(e.target.value)}
-                placeholder="Nhập nội dung chỉnh sửa cụ thể..."
-                className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none"
-              />
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  disabled={!scriptFeedbackText.trim() || inspectingScript.revisionCount >= maxRevisions}
-                  onClick={handleSubmitScriptFeedback}
-                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 transition"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  Gửi góp ý
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleApproveScript(inspectingScript.id)}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Phê duyệt kịch bản này
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-        );
-      })()}
-      </Presence>
+          );
+        })()}
+      </Modal>
         </div>
       )}
 

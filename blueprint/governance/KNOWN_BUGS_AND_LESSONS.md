@@ -21,6 +21,8 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 | **RULE-TS-01** | **Tuân thủ chặt chữ ký hàm & Props của Component UI (`UI_CONTRACT_MISMATCH`)** | Khi sử dụng các component trong `src/components/ui` (`Modal`, `ConfirmDialog`, `DataTable`, `FilterBar`, `Select`) hoặc các hàm chuẩn hóa trong `src/lib/types.ts` (`normalizeStoreCoefficient`...), phải đối chiếu đúng tên thuộc tính (`onCancel` vs `onClose`, kiểu trả về object vs number) và kiểm tra `npx tsc --noEmit` trước khi đóng tác vụ. |
 | **RULE-BUILD-01** | **Chống xung đột khóa `.next/lock` khi chạy Build (`CONCURRENT_NEXT_BUILD_LOCK`)** | Không chạy song song nhiều tiến trình `next build` cùng lúc trên cùng thư mục `web-admin/.next` (gây lỗi mất file tạm `.next/types/**/*.ts` `TS6053` hoặc `.next/server/chunks/*.js`). Kiểm tra kiểu dữ liệu nhanh bằng `npx next typegen && npx tsc --noEmit`, sau đó chạy tuần tự duy nhất 1 lệnh `npm run build`. |
 | **RULE-UI-01** | **Chuẩn hóa ngôn ngữ nghiệp vụ & Cấm phụ đề thừa (`UI_COPY_AND_SUBTITLE_VIOLATION`)** | Cấm dùng từ ngữ quảng cáo/buzzword ("AI", "Trí tuệ nhân tạo", "Smart", "1-chạm", "Siêu tốc") trên giao diện và cấm viết dòng chữ giải thích xám (`subtitle`, `description`) dưới tiêu đề Trang, Khung (`Panel`), Hộp thoại (`Modal`), Khối (`SectionHeader`). |
+| **RULE-AUTH-01** | **Bảo vệ toàn diện Endpoint API & Cách ly Đối tác ngoài (`API_SESSION_AND_PARTNER_ISOLATION`)** | Mọi API route nội bộ đều bắt buộc kiểm tra phiên đăng nhập (`getAuthenticatedUser` / `decodeSessionToken`) trả mã HTTP 401 khi chưa đăng nhập, và chặn đứng tài khoản đối tác ngoài (`user.partnerType` / `role.endsWith('_PARTNER')`) với mã HTTP 403 khi truy cập API nghiệp vụ nội bộ. |
+| **RULE-RBAC-01** | **Ưu tiên kích hoạt Quyền phê duyệt đặc thù cá nhân (`SPECIAL_PERMISSION_OVERRIDE_PRECEDENCE`)** | Khi người dùng được gán các cờ quyền cá nhân (`canApprovePayment`, `canApproveBudget`, `canApproveP3`, `canManageMasterData`, `canExportRawData`), hệ thống phải kiểm tra và cho phép thao tác độc lập, không được để điều kiện `level !== 'DENIED'` của vai trò gốc làm vô hiệu hóa quyền đặc thù. |
 
 ---
 
@@ -128,6 +130,77 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng kiểm thử Click-Path E2E (`tests/contract-e2e-ui-ux-flow.test.ts`) cho toàn bộ vòng đời Tạo hợp đồng → OCR → Gửi duyệt → Pháp chế/Kế toán duyệt (kèm lưu mẫu KOC) → Ký số → Lập Biên bản nghiệm thu.
 
 ---
+
+### BUG-009 — Rà soát Logic Hệ số Gian hàng, Bàn giao PIC, Gán Plan theo Sàn & Đồng bộ Điểm Tải / Thưởng P3
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/stores/StoreCoefficientHubSection.tsx`, `web-admin/src/components/stores/StoreProfile.tsx`, `web-admin/src/components/stores/StoreEditDialog.tsx`, `web-admin/src/components/stores/StoreHandoverDialog.tsx`, `web-admin/src/components/views/StoreManagementView.tsx`, `web-admin/src/components/views/PerformanceP3View.tsx`, `web-admin/src/components/views/ManagerDelegationHub.tsx`, `web-admin/src/lib/monthlyProfileMetrics.ts`, `web-admin/src/lib/taskDelegationData.ts`, `web-admin/src/lib/mockData.ts`, `web-admin/src/app/page.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Shadow State tại `StoreManagementView` và `StoreCoefficientHubSection`:** Hai màn hình giữ state cục bộ (`storeOverrides` / `localStoreOverrides`) khiến thay đổi từ màn hình khác (`PerformanceP3View`, `ManagerDelegationHub`) không phản ánh ngược lại.
+  2. **Tab Hệ số Gian hàng tại `PerformanceP3View` dùng bảng riêng và không tính lại điểm P3:** Tab 2 của `PerformanceP3View` dùng giao diện riêng thay vì `StoreCoefficientHubSection`, và `staffRecords` đọc giá trị tĩnh `INITIAL_PERFORMANCE_RECORDS` nên khi đổi hệ số gian hàng (`0,80 / 1,00 / 1,25 / 1,50`), điểm tải quy đổi và thưởng P3 ước tính không đổi theo.
+  3. **Hàm `computeUnifiedB2cStaffWorkloads` chưa nhân hệ số gian hàng (`st.coef`) và còn fallback chia lấy dư (`rosterIdx % length`):** Vi phạm `RULE-DATA-01` và làm điểm tải công việc không thay đổi khi điều chỉnh hệ số gian hàng.
+  4. **Hàm `matchStorePlan` trong `monthlyProfileMetrics.ts` gán nhầm Plan của gian TikTok sang gian Shopee/Lazada cùng Brand:** Khi một Brand chỉ có 1 dòng Plan tổng trên TikTok (`brandPlans.length === 1`), nhánh `if (brandPlans.length === 1) return brandPlans[0]` gán luôn Plan đó cho cả gian Shopee (`Plan 0đ`), làm nhân đôi chỉ tiêu Plan ở cấp Brand và làm mất cảnh báo chi vượt ngân sách (`Plan 0đ`).
+  5. **Hàm `buildStoreMonthlyPlanReport` ưu tiên `directPlan?.pic` hơn `store.b2cOwnerName` và dùng `Math.max(..., reportSpentNet * 3.8)`:** Khiến việc bàn giao PIC không cập nhật trên `StoreProfile` và sinh GMV giả khi chưa có GMV thực tế (`RULE-DATA-01`).
+  6. **Mất thay đổi Hệ số / PIC khi chuyển đổi tài khoản (`reload` `/api/master-data`) trong `page.tsx`:** Khi đổi `currentUser`, `/api/master-data` trả về danh sách gian hàng đã lọc theo quyền và ghi đè toàn bộ `storePortfolios` trong state.
+- **Cách khắc phục:**
+  1. Xóa toàn bộ state đệm cục bộ (`storeOverrides`, `localStoreOverrides`), đồng bộ 100% qua `stores` prop và lưu `upbase_store_overrides_v1` tại `page.tsx` (merge theo `id` khi tải `/api/master-data`).
+  2. Hợp nhất Tab Hệ số gian hàng tại `PerformanceP3View` dùng chung `<StoreCoefficientHubSection />` và tính động `liveStaffRecords` (hệ số gian hàng bình quân, điểm tải quy đổi và thưởng P3) theo `storePortfolios`.
+  3. Nhân hệ số độ khó trung bình của các gian hàng phụ trách vào `workflowPts` và `hardPts` trong `computeUnifiedB2cStaffWorkloads`, đồng thời xóa bỏ fallback `rosterIdx % length` và `idx % N` trong `mockData.ts`.
+  4. Kiểm tra khớp sàn (`platformMatches`) và `storeId` trong `matchStorePlan`, ưu tiên `store.b2cOwnerName` sau khi bàn giao PIC, và xóa bỏ công thức nhân `3.8` giả lập GMV trong `monthlyProfileMetrics.ts`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng kiểm tra đối xứng dữ liệu giữa `Danh mục Gian hàng` ↔ `Hồ sơ Gian hàng` ↔ `Hệ số Gian hàng` ↔ `Điểm tải B2C` ↔ `Thưởng P3`.
+
+---
+
+---
+
+### BUG-010 — Rà soát Toàn Diện Giao Diện Người Dùng & Chuẩn Hóa Responsive Desktop / Mobile, Hộp Thoại (Modal) và Tiêu Đề Nghiệp Vụ
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** Toàn bộ 40+ views, modals, drawers trong `web-admin` (Dashboard, Báo cáo, Kế hoạch & Booking, Thương hiệu & Gian hàng, Kho Nội dung, Điều phối & Phân quyền, Nghiên cứu & Đối tác, Cấu hình API & Dữ liệu gốc).
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Lạm dụng Hộp thoại tự dựng (`<Presence show={...}><div className="fixed inset-0 ...">`):** Nhiều màn hình (`KocListingBatchHubView`, `SelfChannelCtvHubView`, `PushProductsView`, `ContentAngleSetupView`, `BrandView`, `BrandHubView`, `KocKolHubView`, `MasterDataMindmapView`, `StoresMasterView`) tự viết hộp thoại thủ công thay vì dùng component chuẩn `<Modal>` từ `src/components/ui`, dẫn đến giao diện thiếu đồng nhất, nút đóng không chuẩn, và vi phạm quy chuẩn thiết kế.
+  2. **Dòng phụ đề/giải thích thừa dưới tiêu đề Hộp thoại và Trang:** Xuất hiện các thẻ `<p className="text-xs text-slate-500 mt-0.5">` hoặc thuộc tính `description="..."` trên component `<Modal>` (`BrandProfileDetail`, `ScriptReviewModal`, `EmployeePlanInspectorModal`, `BrandView`, `BrandHubView`, `KocKolHubView`, `MarketingKnowledgeQaView`, `MasterDataHubView`, `StoresMasterView`, `BrandEditors`, `KocProfile`), vi phạm quy tắc cấm phụ đề xám trong `GEMINI.md`.
+  3. **Lỗi hiển thị ký tự tiếng Việt do bảng mã (Mojibake):** File `navGroups.ts`, `TopHeader.tsx`, và `LeaderboardView.tsx` từng bị ghi đè bằng PowerShell OEM codepage gây sai font các tên tab điều hướng và tiêu đề cột.
+  4. **Kém tương thích trên màn hình di động (Mobile):** Một số thanh lọc và khối KPI bị tràn hoặc co rúm do thiếu `flex-wrap`, thiếu `overflow-x-auto` cho bảng dữ liệu, hoặc lưới `grid-cols` chưa có breakpoint `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`.
+- **Cách khắc phục:**
+  1. Chuẩn hóa 100% các hộp thoại tự dựng sang component chuẩn `<Modal open={...} onClose={...} title="..." size="..." footer={...}>`.
+  2. Xóa bỏ toàn bộ thuộc tính `description="..."` trên component `<Modal>` và xóa các thẻ phụ đề `<p>` bên dưới thẻ tiêu đề (`h1`, `h2`, `h3`, `h4`). Chuyển toàn bộ ngữ cảnh metadata (Mã deal, Thương hiệu, Sản phẩm, Lần sửa) vào dải thẻ thông tin nghiệp vụ (`metadata bar`) ở phần đầu của thân hộp thoại.
+  3. Khôi phục hoàn toàn bảng mã UTF-8 chuẩn cho các thanh điều hướng, bảng xếp hạng và các nhãn scope.
+  4. Chuẩn hóa toàn diện lưới bố cục di động với các tiền tố `flex-col sm:flex-row`, `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`, bao bọc bảng bằng `overflow-x-auto`, và kiểm soát chặt chữ ký type để `npx tsc --noEmit` luôn đạt 0 lỗi.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng công cụ quét tự động (`scratch/comprehensive_audit.js`) kiểm tra liên tục trên toàn bộ 241 file TypeScript nhằm ngăn chặn triệt để việc tái phát từ ngữ phóng đại, subtitle dưới tiêu đề hoặc modal tự dựng.
+
+---
+
+### BUG-011 — Lệch Mã Quyền Đặc Thù, Thiếu Định Nghĩa Vai Trò Backoffice Trong Ma Trận RBAC & Lỗ Hổng Endpoint Tích Hợp Chưa Xác Thực
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/rbacData.ts`, `web-admin/src/lib/server/accessPolicy.ts`, `web-admin/src/components/views/StoreManagementView.tsx`, `web-admin/src/app/api/integrations/cloudflare-r2/route.ts`, `web-admin/src/app/api/integrations/larkbase/payment-requests/route.ts`, `web-admin/src/app/api/integrations/larkbase/booking-plans/route.ts`, `web-admin/src/app/api/integrations/kalodata/*`, `web-admin/src/app/api/integrations/tiktok-koc/*`, `web-admin/src/app/api/integrations/market-research/analyze/route.ts`, `web-admin/src/app/api/integrations/llm/route.ts`, `web-admin/src/app/api/ai/employee-review/route.ts`, `web-admin/src/app/api/ads-reports/route.ts`, `web-admin/src/app/api/tiktok-seller/sync/route.ts`, `web-admin/src/app/api/ocr/extract-legal-doc/route.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Lệch chuỗi định danh tính năng trong kiểm tra quyền:** Trong `canUserPerformAction` và `actionAllowed`, kiểm tra quyền đặc thù dùng các chuỗi cũ `performance_p3_scoring` (thay vì `p3_performance_evaluation`) và `finance_payment_request` (thay vì `payment_approval_disbursement`), khiến nhân sự được cấp `canApproveP3` hoặc `canApprovePayment` bị từ chối duyệt dù đã được Admin chỉ định.
+  2. **Điều kiện `level !== 'DENIED'` chặn quyền override:** Trong `canUserPerformAction` và `actionAllowed`, khối kiểm tra `user.permissions` nằm bên trong `if (level !== 'DENIED')`. Đối với các tính năng như phê duyệt giải ngân (`payment_approval_disbursement`) vốn có vai trò `MEMBER: 'DENIED'` trong ma trận gốc, điều kiện này ngăn không cho chuyên viên có `canApprovePayment` thực thi quyền được cấp riêng.
+  3. **Thiếu định nghĩa vai trò Backoffice (`LEGAL`, `FINANCE`, `SIGN_ADMIN`):** Trong `INITIAL_PERMISSION_MATRIX`, 26 tính năng nghiệp vụ chỉ khai báo 4 vai trò quản lý và đối tác ngoài, dẫn đến các vai trò hỗ trợ văn phòng bị gán mặc định `DENIED` ở cả các màn hình nghiệp vụ cốt lõi (như quản lý hợp đồng, đối soát thanh toán).
+  4. **Các API endpoint tích hợp và AI chưa kiểm soát phiên & đối tác ngoài:** Hàng loạt endpoint nền tảng (`cloudflare-r2`, `larkbase`, `kalodata`, `tiktok-koc`, `market-research`, `llm`, `ads-reports`) không kiểm tra `getAuthenticatedUser(request)` hoặc cho phép đối tác bên ngoài (`BRAND_PARTNER`) gọi các hàm đồng bộ dữ liệu nội bộ và đọc CCCD của KOC.
+  5. **Màn hình Quản trị Gian hàng (`StoreManagementView`) thiếu kiểm soát nút Sửa / Bàn giao:** Không kiểm tra quyền quản lý Master Data, cho phép chuyên viên bình thường mở dialog sửa cấu hình gian hàng và bàn giao PIC.
+- **Cách khắc phục:**
+  1. Chuẩn hóa đồng bộ các ID tính năng trong `canUserPerformAction` và `actionAllowed` (`p3_performance_evaluation`, `payment_approval_disbursement`, `master_data_brand_stores`, `raw_data_export`).
+  2. Đưa kiểm tra quyền đặc thù cá nhân lên trước kiểm tra cấp độ vai trò gốc, đảm bảo các quyền override có hiệu lực tuyệt đối.
+  3. Bổ sung đầy đủ định nghĩa quyền cho `LEGAL`, `FINANCE`, `SIGN_ADMIN` trong `INITIAL_PERMISSION_MATRIX`.
+  4. Thêm kiểm tra phiên `getAuthenticatedUser(request)` và cô lập đối tác ngoài (`user.partnerType` / `_PARTNER`) trên 100% các API route tích hợp.
+  5. Bổ sung điều kiện `canManageStores` (`isStaffGlobalAdminOrManager` hoặc `canManageMasterData`) để bảo vệ các nút thao tác trên `StoreManagementView`.
+  6. Xây dựng bộ kiểm thử hồi quy phân quyền toàn diện (`tests/rbac-master-regression.test.ts`) kiểm tra chặt chẽ 10 kịch bản RBAC cốt lõi.
+- **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng **RULE-AUTH-01** và **RULE-RBAC-01** trên toàn bộ hệ thống; mọi tính năng hoặc API mới phát sinh đều phải qua bộ kiểm soát phân quyền 2 lớp (UI + Server).
+
+---
+
+### BUG-012 — Nhân Sự Không Xem Được Màn Hình Crawler KOC & Nghiên Cứu Thị Trường Do Bản Ghi `access-policy` Cũ Trong Database Chưa Đồng Bộ Màn Hình Mới
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/server/accessPolicy.ts`, `web-admin/src/lib/rbacData.ts`, bản ghi `AppSharedRecord` (`key = 'access-policy'`) trên PostgreSQL.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. Bản ghi `access-policy` (`revision: 3`) đã lưu trong bảng `AppSharedRecord` trên Supabase PostgreSQL từ trước khi bổ sung các màn hình `tiktok-crawler`, `market-research`, `workload-3d`, `cloudflare-admin` và chưa có trường `knownScreenKeys`.
+  2. Trong `reconcileAccessPolicy` (`web-admin/src/lib/server/accessPolicy.ts`), khi `raw.knownScreenKeys` chưa tồn tại (`undefined`), biến `previousKnownSet` lại fallback về `catalogKeySet` (chứa toàn bộ danh mục màn hình hiện tại) khiến `newlyAddedScreenKeys` luôn rỗng (`[]`), làm các màn hình mới không được tự động thêm vào `roleAllowedTabs` của các vai trò nhân sự (`BOOKING_MEMBER`, `CONTENT_MEMBER`, `BRAND_MEMBER`, `GROWTH_MEMBER`, `MEDIA_MEMBER`, `MEMBER`, `LEADER`).
+  3. Khi `tiktok-crawler` và `market-research` bị thiếu trong `roleAllowedTabs`, nhóm menu `Nghiên cứu & Crawler` của `BOOKING_MEMBER`/`MEMBER` chỉ còn đúng 1 tab `koc-master` (Danh bạ KOC) nên thanh chuyển tab đầu trang bị ẩn; còn `CONTENT_MEMBER`, `BRAND_MEMBER`, `GROWTH_MEMBER`, `MEDIA_MEMBER` bị ẩn hoàn toàn mục `Nghiên cứu & Crawler` trên Sidebar.
+- **Cách khắc phục:**
+  1. Sửa `reconcileAccessPolicy` trong `web-admin/src/lib/server/accessPolicy.ts`: khi `raw.knownScreenKeys` chưa tồn tại, xác định `previousKnownSet` từ tập màn hình thực tế có trong `raw.roleAllowedTabs`, đồng thời bổ sung danh sách `CORE_ROLE_SYNCED_SCREENS` (`tiktok-crawler`, `market-research`, `task-delegation`, `workload-3d`, `contracts`, `cloudflare-admin`) để luôn đồng bộ theo `ROLE_ALLOWED_TABS[role]`.
+  2. Khôi phục cơ chế bảo toàn `CORE_SYNCED_ROLE_TABS` trong `isTabAllowedForRole` và `getAllowedTabsForRole` tại `web-admin/src/lib/rbacData.ts`.
+  3. Cập nhật trực tiếp bản ghi `access-policy` trong `AppSharedRecord` trên Supabase PostgreSQL lên `revision: 4` với đầy đủ quyền `tiktok-crawler` và `market-research` cho toàn bộ các vai trò nội bộ.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo mọi màn hình nghiệp vụ mới thêm vào `ROLE_ALLOWED_TABS` đều tự động đồng bộ xuống cả các bản ghi `access-policy` cũ đã lưu trong cơ sở dữ liệu.
 
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 

@@ -259,9 +259,9 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
   const conn = CONNECTION_VIEW[chat.connection];
   const pics: { label: string; name?: string }[] = [
     { label: 'Growth', name: plan.growthPic },
-    { label: 'Booking', name: plan.pic },
+    { label: 'MKT B2C', name: plan.pic }, ...(plan.hasBookingLeader ? [{ label: 'Leader', name: plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm' }] : []),
     { label: 'Media', name: plan.mediaPic },
-    { label: 'Trưởng phòng', name: plan.approvedBy }
+    { label: 'Lead B2C', name: plan.approvedBy || 'Đặng Thị Yến Nhi' }
   ];
   const overLimit = draft.length > MAX_MESSAGE_LENGTH;
 
@@ -399,10 +399,10 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         <header className="shrink-0 bg-surface border-b border-line px-4 pt-3 pb-2.5">
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-ink">Trao đổi kế hoạch</h2>
-              <p className="text-2xs text-ink-2 truncate" title={plan.title}>
-                {shortTitle(plan)}
-              </p>
+              <h2 className="text-sm font-semibold text-ink truncate" title={plan.title}>Trao đổi · {shortTitle(plan)}</h2>
+              <span className="hidden">
+              {/* end */}
+              </span>
             </div>
             <span className="mt-0.5 inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2" aria-live="polite">
               <span className={`w-2 h-2 rounded-full ${conn.dot}`} aria-hidden="true" />
@@ -481,9 +481,9 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             {visible.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-6 text-ink-3">
                 <MessageSquare className="w-8 h-8 mb-2 text-ink-3" aria-hidden="true" />
-                <p className="text-xs font-semibold text-ink-2">
-                  {filter === 'ALL' ? 'Chưa có trao đổi nào' : 'Không có tin phù hợp bộ lọc'}
-                </p>
+                <span className="text-xs font-semibold text-ink-2">
+                <span className="text-xs font-semibold text-ink-2">{filter === 'ALL' ? 'Chưa có trao đổi nào' : 'Không có tin phù hợp bộ lọc'}</span>
+                </span>
                 {filter === 'ALL' && (
                   <p className="mt-1 text-2xs">Gửi tin đầu tiên để các bên Growth, Booking, Media cùng thống nhất kế hoạch.</p>
                 )}

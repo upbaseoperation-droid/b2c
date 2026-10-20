@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ConfirmDialog, PageActions, StatRow, Stat, Button, Presence } from '../ui';
+import { ConfirmDialog, PageActions, StatRow, Stat, Button, Presence, Modal } from '../ui';
 import { 
   Layers, 
   Search, 
@@ -334,8 +334,8 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   };
 
   // Handle Save Angle
-  const handleSaveAngle = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveAngle = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!formName.trim() || !formHookIdea.trim()) {
       if (onNotify) onNotify('Vui lòng nhập tên kịch bản và câu mở đầu 3 giây.', 'warning');
       return;
@@ -981,28 +981,44 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
       {/* ========================================================================= */}
       {/* 6. MODAL: CREATE / EDIT CONTENT ANGLE                                     */}
       {/* ========================================================================= */}
-      <Presence show={!!isModalOpen}>
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-              <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-accent" />
-                <h2 className="text-base font-semibold text-slate-900">
-                  {editingAngle ? 'Chỉnh sửa góc tiếp cận' : 'Thiết lập góc tiếp cận mới cho sản phẩm'}
-                </h2>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingAngle ? 'Chỉnh sửa góc tiếp cận' : 'Thiết lập góc tiếp cận mới cho sản phẩm'}
+        size="xl"
+        footer={
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-600 font-medium">Trạng thái:</label>
+              <select
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value as 'ACTIVE' | 'DRAFT' | 'ARCHIVED')}
+                className="text-xs h-8 px-2 rounded-md border border-slate-200 bg-white font-semibold"
               >
-                <X className="w-5 h-5" />
-              </button>
+                <option value="ACTIVE">Đang chạy (sẵn sàng dùng)</option>
+                <option value="DRAFT">Nháp</option>
+                <option value="ARCHIVED">Lưu trữ</option>
+              </select>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSaveAngle} className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSaveAngle}
+              >
+                {editingAngle ? 'Lưu thay đổi' : 'Tạo góc tiếp cận'}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveAngle} className="space-y-5">
               {/* Row 1: Store & Product & Pillar */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Store */}
@@ -1211,148 +1227,104 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                   </select>
                 </div>
               </div>
-
-              {/* Modal Actions */}
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-slate-600 font-medium">Trạng thái:</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as 'ACTIVE' | 'DRAFT' | 'ARCHIVED')}
-                    className="text-xs h-8 px-2 rounded-md border border-slate-200 bg-white font-semibold"
-                  >
-                    <option value="ACTIVE">Đang chạy (sẵn sàng dùng)</option>
-                    <option value="DRAFT">Nháp</option>
-                    <option value="ARCHIVED">Lưu trữ</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover shadow-xs transition"
-                  >
-                    {editingAngle ? 'Lưu thay đổi' : 'Tạo góc tiếp cận'}
-                  </button>
-                </div>
-              </div>
             </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+          </Modal>
 
       {/* ========================================================================= */}
       {/* 7. MODAL: ANGLE SUGGESTIONS                                               */}
       {/* ========================================================================= */}
-      <Presence show={!!isAiModalOpen}>
-      {isAiModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-sunken">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-amber-500" />
-                <h2 className="text-base font-semibold text-slate-900">
-                  Gợi ý góc tiếp cận theo sản phẩm
-                </h2>
-              </div>
-              <button
-                onClick={() => setIsAiModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white"
+      <Modal
+        open={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        title="Gợi ý góc tiếp cận theo sản phẩm"
+        size="lg"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button variant="ghost" onClick={() => setIsAiModalOpen(false)}>
+              Đóng
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2 border-b border-slate-100">
+            <div className="space-y-1">
+              <label className="text-2xs font-semibold text-slate-500">Chọn sản phẩm cần gợi ý:</label>
+              <select
+                value={aiProductSelect}
+                onChange={(e) => {
+                  setAiProductSelect(e.target.value);
+                  const prod = products.find(p => p.id === e.target.value);
+                  generateSuggestions(prod?.productName || '', aiPillarSelect, prod?.brandName || '');
+                }}
+                className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
               >
-                <X className="w-5 h-5" />
-              </button>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.productName} ({p.brandName})</option>
+                ))}
+              </select>
             </div>
 
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2 border-b border-slate-100">
-                <div className="space-y-1">
-                  <label className="text-2xs font-semibold text-slate-500">Chọn sản phẩm cần gợi ý:</label>
-                  <select
-                    value={aiProductSelect}
-                    onChange={(e) => {
-                      setAiProductSelect(e.target.value);
-                      const prod = products.find(p => p.id === e.target.value);
-                      generateSuggestions(prod?.productName || '', aiPillarSelect, prod?.brandName || '');
-                    }}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
-                  >
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>{p.productName} ({p.brandName})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-2xs font-semibold text-slate-500">Định hướng trụ cột:</label>
-                  <select
-                    value={aiPillarSelect}
-                    onChange={(e) => {
-                      setAiPillarSelect(e.target.value);
-                      const prod = products.find(p => p.id === aiProductSelect);
-                      generateSuggestions(prod?.productName || '', e.target.value, prod?.brandName || '');
-                    }}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
-                  >
-                    {pillars.map(p => (
-                      <option key={p.id} value={p.name}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Suggestions Cards */}
-              <div className="space-y-3">
-                <div className="text-xs font-semibold text-slate-800 flex items-center justify-between">
-                  <span>3 hướng tiếp cận đề xuất cho sản phẩm này:</span>
-                </div>
-
-                {aiSuggestions.map((sugg, sIdx) => (
-                  <div
-                    key={sIdx}
-                    className="p-4 rounded-xl border border-slate-200 hover:border-line-strong bg-slate-50/50 hover:bg-white transition space-y-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-semibold text-slate-900">{sugg.name}</h4>
-                      <span className="text-2xs font-medium text-accent">
-                        {sugg.pillarName}
-                      </span>
-                    </div>
-
-                    <div className="p-2.5 bg-accent-soft rounded-lg border border-line text-xs italic text-slate-800">
-                      <strong>Mở đầu:</strong> &ldquo;{sugg.hookIdea}&rdquo;
-                    </div>
-
-                    <p className="text-2xs text-slate-600 leading-relaxed">
-                      <strong>Giải pháp:</strong> {sugg.solutionApproach}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-2xs text-slate-400">Định dạng: {sugg.suggestedFormat}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleApplyAiSuggestion(sugg)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5"
-                      >
-                        <span>Áp dụng hướng này</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+            <div className="space-y-1">
+              <label className="text-2xs font-semibold text-slate-500">Định hướng trụ cột:</label>
+              <select
+                value={aiPillarSelect}
+                onChange={(e) => {
+                  setAiPillarSelect(e.target.value);
+                  const prod = products.find(p => p.id === aiProductSelect);
+                  generateSuggestions(prod?.productName || '', e.target.value, prod?.brandName || '');
+                }}
+                className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
+              >
+                {pillars.map(p => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
-              </div>
+              </select>
             </div>
           </div>
+
+          {/* Suggestions Cards */}
+          <div className="space-y-3">
+            <div className="text-xs font-semibold text-slate-800 flex items-center justify-between">
+              <span>3 hướng tiếp cận đề xuất cho sản phẩm này:</span>
+            </div>
+
+            {aiSuggestions.map((sugg, sIdx) => (
+              <div
+                key={sIdx}
+                className="p-4 rounded-xl border border-slate-200 hover:border-line-strong bg-slate-50/50 hover:bg-white transition space-y-2.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900">{sugg.name}</h4>
+                  <span className="text-2xs font-medium text-accent">
+                    {sugg.pillarName}
+                  </span>
+                </div>
+
+                <div className="p-2.5 bg-accent-soft rounded-lg border border-line text-xs italic text-slate-800">
+                  <strong>Mở đầu:</strong> &ldquo;{sugg.hookIdea}&rdquo;
+                </div>
+
+                <p className="text-2xs text-slate-600 leading-relaxed">
+                  <strong>Giải pháp:</strong> {sugg.solutionApproach}
+                </p>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-2xs text-slate-400">Định dạng: {sugg.suggestedFormat}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiSuggestion(sugg)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5"
+                  >
+                    <span>Áp dụng hướng này</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
-      </Presence>
+      </Modal>
       {/* Confirm Delete Angle Dialog */}
       <ConfirmDialog
         open={Boolean(deletingAngle)}

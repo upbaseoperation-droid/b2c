@@ -1425,7 +1425,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {/* ========================================================================= */}
       {activeSection === 'COEFFICIENTS' && (
         <StoreCoefficientHubSection
-          stores={storePortfolios}
+          stores={storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios}
           brands={brands}
           selectedMonth="2026/10"
           currentUser={currentUser}

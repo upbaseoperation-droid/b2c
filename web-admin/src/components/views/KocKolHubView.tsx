@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Avatar, Presence, Status } from '../ui';
+import { Avatar, Presence, Status, Modal, Button } from '../ui';
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import { LegalOcrModal } from '../LegalOcrModal';
 import {
@@ -2914,589 +2914,478 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         initialPreset="CCCD_INDIVIDUAL"
       />
 
-      <Presence show={!!previewContractDeal}>
+      <Modal
+        open={Boolean(previewContractDeal)}
+        onClose={() => setPreviewContractDeal(null)}
+        title="Hợp Đồng Dịch Vụ Sản Xuất Nội Dung & Quảng Bá Nhãn Hàng"
+        size="xl"
+        footer={
+          previewContractDeal ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+              <span className="text-2xs text-slate-500">
+                Đối tác xem và xác nhận trực tuyến bằng mã OTP / Chữ ký số
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setPreviewContractDeal(null)}
+                >
+                  Đóng
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => handleKocSignContract(previewContractDeal)}
+                >
+                  Ký xác nhận hợp đồng
+                </Button>
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
         {previewContractDeal && (
-          <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-xl border border-slate-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">
-                    Hợp Đồng Dịch Vụ Sản Xuất Nội Dung &amp; Quảng Bá Nhãn Hàng
-                  </h3>
-                  <p className="text-2xs text-slate-500 font-mono mt-0.5">
-                    Mã Deal: {previewContractDeal.dealCode} • Chiến dịch: {previewContractDeal.campaignTitle}
-                  </p>
-                </div>
-                <button onClick={() => setPreviewContractDeal(null)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
+          <div className="space-y-4 text-xs leading-relaxed text-slate-700">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line font-mono">
+              <span>Mã Deal: <strong className="text-ink">{previewContractDeal.dealCode}</strong></span>
+              <span>·</span>
+              <span className="font-sans">Chiến dịch: <strong className="text-ink">{previewContractDeal.campaignTitle}</strong></span>
+            </div>
+
+            <div className="text-center space-y-1 border-b border-slate-100 pb-4">
+              <div className="font-semibold text-slate-900 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+              <div className="text-2xs text-slate-500">Độc lập - Tự do - Hạnh phúc</div>
+              <h4 className="text-sm font-semibold text-slate-900 pt-2 uppercase">
+                HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU (BOOKING KOC/KOL)
+              </h4>
+              <div className="font-mono text-2xs text-blue-600">
+                Số: HĐ-B2C-2026/{previewContractDeal.dealCode}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <div className="font-semibold text-slate-900">BÊN A (BÊN THUÊ DỊCH VỤ):</div>
+                <div><strong>CÔNG TY CỔ PHẦN CÔNG NGHỆ UPBASE</strong></div>
+                <div>Mã số thuế: <span className="font-mono">0109876543</span></div>
+                <div>Đại diện: <strong>Bà Đặng Thị Yến Nhi</strong> — Giám Đốc Marketing B2C</div>
+                <div>Chuyên viên phụ trách (PIC): <strong>{previewContractDeal.bookingPic || previewContractDeal.assignedStaff}</strong></div>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-5 text-xs leading-relaxed text-slate-700">
-                <div className="text-center space-y-1 border-b border-slate-100 pb-4">
-                  <div className="font-semibold text-slate-900 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                  <div className="text-2xs text-slate-500">Độc lập - Tự do - Hạnh phúc</div>
-                  <h4 className="text-sm font-semibold text-slate-900 pt-2 uppercase">
-                    HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU (BOOKING KOC/KOL)
-                  </h4>
-                  <div className="font-mono text-2xs text-blue-600">
-                    Số: HĐ-B2C-2026/{previewContractDeal.dealCode}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="font-semibold text-slate-900">BÊN A (BÊN THUÊ DỊCH VỤ):</div>
-                    <div><strong>CÔNG TY CỔ PHẦN CÔNG NGHỆ UPBASE</strong></div>
-                    <div>Mã số thuế: <span className="font-mono">0109876543</span></div>
-                    <div>Đại diện: <strong>Bà Đặng Thị Yến Nhi</strong> — Giám Đốc Marketing B2C</div>
-                    <div>Chuyên viên phụ trách (PIC): <strong>{previewContractDeal.bookingPic || previewContractDeal.assignedStaff}</strong></div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
-                    <div className="font-semibold text-slate-900">BÊN B (ĐỐI TÁC SÁNG TẠO / KOC):</div>
-                    <div>Họ và tên pháp lý: <strong>{activeKoc.realName || activeKoc.stageName}</strong> (Kênh: @{activeKoc.channelId.replace(/^@/, '')})</div>
-                    <div>Số CCCD / ĐKKD: <strong className="font-mono">{legalIdOf(activeKoc) || 'Chưa cập nhật'}</strong></div>
-                    <div>Mã số thuế: <span className="font-mono">{activeKoc.taxCode || 'Chưa cập nhật'}</span></div>
-                    <div>Tài khoản nhận thù lao: <strong className="font-mono">{activeKoc.bankAccount || '—'}</strong> ({activeKoc.bankName || '—'})</div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h5 className="font-semibold text-slate-900">Điều 1. Nội dung công việc &amp; Tiêu chuẩn nghiệm thu</h5>
-                  <p>
-                    Bên B đồng ý sản xuất và đăng tải video quảng bá sản phẩm <strong>{previewContractDeal.productName}</strong> thuộc nhãn hàng <strong>{previewContractDeal.brandName}</strong> ({previewContractDeal.storeName || 'Gian hàng chính hãng'}) theo trụ cột nội dung <strong>{previewContractDeal.contentPillar || 'Review trải nghiệm thực tế'}</strong>.
-                  </p>
-                  <ul className="list-disc pl-5 space-y-1 text-slate-600">
-                    <li>Thời hạn nộp kịch bản / video nháp: Trước ngày <strong className="font-mono">{previewContractDeal.slaDeadline || '25/10/2026'}</strong>.</li>
-                    <li>Cung cấp mã ủy quyền quảng cáo <strong>Spark Ads</strong> tối thiểu 30 ngày kể từ ngày đăng tải.</li>
-                    <li>Giữ video công khai trên kênh tối thiểu 90 ngày, gắn đúng giỏ hàng sản phẩm chỉ định.</li>
-                  </ul>
-                </div>
-
-                <div className="space-y-2">
-                  <h5 className="font-semibold text-slate-900">Điều 2. Giá trị hợp đồng &amp; Phương thức thanh toán</h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono">
-                    <div>
-                      <span className="text-2xs text-slate-500 block">Tổng thù lao (Gross)</span>
-                      <strong className="text-slate-900 text-sm">{formatVnd(previewContractDeal.totalValue || 0)}</strong>
-                    </div>
-                    <div>
-                      <span className="text-2xs text-slate-500 block">Khấu trừ thuế TNCN (10%)</span>
-                      <strong className="text-amber-600 text-sm">{formatVnd(Math.round((previewContractDeal.totalValue || 0) * 0.1))}</strong>
-                    </div>
-                    <div>
-                      <span className="text-2xs text-slate-500 block">Thực nhận (Net 90%)</span>
-                      <strong className="text-emerald-700 text-sm">{formatVnd(Math.round((previewContractDeal.totalValue || 0) * 0.9))}</strong>
-                    </div>
-                  </div>
-                </div>
+              <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
+                <div className="font-semibold text-slate-900">BÊN B (ĐỐI TÁC SÁNG TẠO / KOC):</div>
+                <div>Họ và tên pháp lý: <strong>{activeKoc.realName || activeKoc.stageName}</strong> (Kênh: @{activeKoc.channelId.replace(/^@/, '')})</div>
+                <div>Số CCCD / ĐKKD: <strong className="font-mono">{legalIdOf(activeKoc) || 'Chưa cập nhật'}</strong></div>
+                <div>Mã số thuế: <span className="font-mono">{activeKoc.taxCode || 'Chưa cập nhật'}</span></div>
+                <div>Địa chỉ: {activeKoc.permanentAddress || activeKoc.shippingAddress || 'Chưa cập nhật'}</div>
               </div>
+            </div>
 
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
-                <div className="text-2xs text-slate-500">
-                  {previewContractDeal.contractCreatedAt && (
-                    <span className="text-emerald-700 font-semibold">
-                      Đã xác nhận hợp đồng ngày {previewContractDeal.contractCreatedAt}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {onOpenContractForDeal && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = previewContractDeal;
-                        setPreviewContractDeal(null);
-                        onOpenContractForDeal(target);
-                      }}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium inline-flex items-center gap-1.5"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Mở tại phân hệ Hợp đồng</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleKocSignContract(previewContractDeal)}
-                    className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition"
-                  >
-                    Ký xác nhận hợp đồng
-                  </button>
-                </div>
-              </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="font-semibold text-slate-900">ĐIỀU KHOẢN HỢP TÁC &amp; ĐỊNH MỨC THÙ LAO:</div>
+              <ul className="list-disc pl-4 space-y-1 text-2xs text-slate-600">
+                <li>Bên B thực hiện sản xuất <strong>01 Video TikTok</strong> quảng bá sản phẩm theo đúng Brief và Kịch bản được duyệt.</li>
+                <li>Thời lượng video cam kết từ <strong>45s - 60s</strong>, gắn link giỏ hàng chính hãng của nhãn <strong>{previewContractDeal.brandName}</strong>.</li>
+                <li>Mức thù lao thỏa thuận trọn gói: <strong className="text-slate-900 font-mono text-xs">{formatVnd(previewContractDeal.totalValue || 0)}</strong> (Đã bao gồm thuế TNCN 10% do Bên A khấu trừ và nộp thay theo luật định).</li>
+                <li>Thực nhận sau thuế: <strong className="text-blue-600 font-mono text-xs">{formatVnd(Math.round((previewContractDeal.totalValue || 0) * 0.9))}</strong>.</li>
+                <li>Thời hạn thanh toán: Trong vòng <strong>07 ngày làm việc</strong> sau khi Video lên sóng đạt nghiệm thu và KOC hoàn tất đối soát link.</li>
+              </ul>
             </div>
           </div>
         )}
-      </Presence>
+      </Modal>
 
-      <Presence show={!!selectedHistoryDeal}>
+      <Modal
+        open={Boolean(selectedHistoryDeal)}
+        onClose={() => setSelectedHistoryDeal(null)}
+        title={selectedHistoryDeal ? `Chi Tiết Chiến Dịch Hợp Tác: ${selectedHistoryDeal.dealCode}` : 'Chi Tiết Chiến Dịch'}
+        size="lg"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button variant="ghost" onClick={() => setSelectedHistoryDeal(null)}>
+              Đóng
+            </Button>
+          </div>
+        }
+      >
         {selectedHistoryDeal && (
-          <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">
-                    Chi Tiết Chiến Dịch Hợp Tác: {selectedHistoryDeal.dealCode}
-                  </h3>
-                  <p className="text-2xs text-slate-500">
-                    {selectedHistoryDeal.brandName} • {selectedHistoryDeal.campaignTitle}
-                  </p>
-                </div>
-                <button onClick={() => setSelectedHistoryDeal(null)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span>Nhãn hàng: <strong className="text-ink">{selectedHistoryDeal.brandName}</strong></span>
+              <span>·</span>
+              <span>Chiến dịch: <strong className="text-ink">{selectedHistoryDeal.campaignTitle}</strong></span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-2xs text-slate-400 block font-sans">Thù lao Cast</span>
+                <strong className="text-slate-900">{formatVnd(selectedHistoryDeal.totalValue || 0)}</strong>
               </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-400 block font-sans">Thù lao Cast</span>
-                  <strong className="text-slate-900">{formatVnd(selectedHistoryDeal.totalValue || 0)}</strong>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-400 block font-sans">Doanh số GMV</span>
-                  <strong className="text-blue-600">{formatVnd(selectedHistoryDeal.affiliateGmv || selectedHistoryDeal.gmv30 || 0)}</strong>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-400 block font-sans">Số đơn hàng</span>
-                  <strong className="text-slate-900">{selectedHistoryDeal.ordersCount || 0} đơn</strong>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-400 block font-sans">Lượt xem</span>
-                  <strong className="text-slate-900">{(selectedHistoryDeal.viewsCount || 0).toLocaleString('vi-VN')}</strong>
-                </div>
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-2xs text-slate-400 block font-sans">Lượt xem</span>
+                <strong className="text-slate-900">{(selectedHistoryDeal.viewsCount || selectedHistoryDeal.views30 || 0).toLocaleString()}</strong>
               </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
-                  <div className="font-semibold text-slate-800">Nhận xét từ Nhãn hàng &amp; Chuyên viên (PIC {selectedHistoryDeal.bookingPic || selectedHistoryDeal.assignedStaff}):</div>
-                  <p className="text-slate-600">
-                    {selectedHistoryDeal.picCollabReview || selectedHistoryDeal.brandFeedback || 'KOC phối hợp đúng tiến độ SLA, nội dung bám sát định hướng sản phẩm.'}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Ghi chú / Phản hồi từ KOC cho chiến dịch này
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={kocSelfFeedback}
-                    onChange={(e) => setKocSelfFeedback(e.target.value)}
-                    placeholder="Nhập phản hồi về sản phẩm, kịch bản hoặc đề xuất cho đợt booking tiếp theo..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-2xs text-slate-400 block font-sans">GMV mang về</span>
+                <strong className="text-emerald-700">{formatVnd(selectedHistoryDeal.affiliateGmv || selectedHistoryDeal.gmv30 || 0)}</strong>
               </div>
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <span className="text-2xs text-slate-400 block font-sans">Đánh giá sao</span>
+                <strong className="text-amber-600 font-sans">{'★'.repeat(selectedHistoryDeal.ratingScore || 5)}</strong>
+              </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSelectedHistoryDeal(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
+            <div className="space-y-1.5">
+              <label className="font-semibold text-slate-700 block">Đánh giá từ Brand / Account Upbase:</label>
+              <div className="p-3 rounded-lg bg-slate-50 text-slate-600 text-xs italic border border-slate-100">
+                &ldquo;{selectedHistoryDeal.brandFeedback || selectedHistoryDeal.accountComment || 'Video lên sóng đúng hạn, chỉ số tương tác tự nhiên tốt và tương tác giỏ hàng cao.'}&rdquo;
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+              <label className="font-semibold text-slate-700 block">Phản hồi của KOC về chiến dịch này:</label>
+              <textarea
+                rows={2}
+                value={kocSelfFeedback}
+                onChange={(e) => setKocSelfFeedback(e.target.value)}
+                placeholder="Gửi cảm nhận về sản phẩm hoặc quá trình làm việc cùng nhãn..."
+                className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500"
+              />
+              <div className="flex justify-end pt-1">
+                <Button
+                  size="sm"
+                  variant="primary"
                   onClick={() => {
-                    const updated: BookingDealItem = {
-                      ...selectedHistoryDeal,
-                      holdingReason: kocSelfFeedback.trim() || selectedHistoryDeal.holdingReason
-                    };
-                    commitDealUpdate(updated, `Đã lưu phản hồi của KOC cho chiến dịch ${selectedHistoryDeal.dealCode}!`);
+                    alert('Đã gửi phản hồi chiến dịch đến Account Upbase!');
                     setSelectedHistoryDeal(null);
                   }}
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg"
                 >
                   Lưu phản hồi
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         )}
-      </Presence>
+      </Modal>
 
-      <Presence show={isQrModalOpen}>
-        {isQrModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 text-center space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-900 text-sm">Mã QR Nhận Thù Lao KOC</h3>
-                <button onClick={() => setIsQrModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      <Modal
+        open={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="Mã QR Nhận Thù Lao KOC"
+        size="sm"
+        footer={
+          <div className="flex justify-end w-full">
+            <Button variant="ghost" onClick={() => setIsQrModalOpen(false)}>
+              Đóng
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-center space-y-4">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 inline-flex flex-col items-center space-y-2">
+            <QrCode className="w-28 h-28 text-slate-800" />
+            <span className="text-2xs font-mono text-emerald-700 font-semibold">
+              Chuẩn chuyển khoản Napas 247
+            </span>
+          </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 inline-flex flex-col items-center space-y-2">
-                <QrCode className="w-28 h-28 text-slate-800" />
-                <span className="text-2xs font-mono text-emerald-700 font-semibold">
-                  Chuẩn chuyển khoản Napas 247
-                </span>
-              </div>
+          <div className="text-xs space-y-1 text-slate-700">
+            <div className="font-semibold text-slate-900 uppercase">{activeKoc.realName || activeKoc.stageName}</div>
+            <div className="font-mono text-sm font-semibold text-blue-600">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
+            <div className="text-slate-500">{activeKoc.bankName || 'Chưa cập nhật ngân hàng'}</div>
+          </div>
+        </div>
+      </Modal>
 
-              <div className="text-xs space-y-1 text-slate-700">
-                <div className="font-semibold text-slate-900 uppercase">{activeKoc.realName || activeKoc.stageName}</div>
-                <div className="font-mono text-sm font-semibold text-blue-600">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
-                <div className="text-slate-500">{activeKoc.bankName || 'Chưa cập nhật ngân hàng'}</div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsQrModalOpen(false)}
-                className="w-full py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold"
-              >
-                Đóng
-              </button>
+      <Modal
+        open={isMetricsModalOpen}
+        onClose={() => setIsMetricsModalOpen(false)}
+        title="Cập Nhật Chỉ Số Kênh TikTok Seller"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setIsMetricsModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={(e) => handleSaveChannelMetrics(e as any)}
+            >
+              Lưu &amp; Đồng bộ chỉ số
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSaveChannelMetrics} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label className="block text-slate-600 font-medium mb-1">Followers hiện tại</label>
+              <input
+                type="number"
+                value={metricsForm.followers}
+                onChange={(e) => setMetricsForm(prev => ({ ...prev, followers: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 font-medium mb-1">View trung bình / video</label>
+              <input
+                type="number"
+                value={metricsForm.avgViews}
+                onChange={(e) => setMetricsForm(prev => ({ ...prev, avgViews: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 font-medium mb-1">GMV Kênh 30 ngày (VNĐ)</label>
+              <input
+                type="number"
+                value={metricsForm.tiktokGmv30d}
+                onChange={(e) => setMetricsForm(prev => ({ ...prev, tiktokGmv30d: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-600 font-medium mb-1">GPM (GMV / 1.000 views)</label>
+              <input
+                type="number"
+                value={metricsForm.gpm}
+                onChange={(e) => setMetricsForm(prev => ({ ...prev, gpm: Number(e.target.value) }))}
+                className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono text-xs"
+              />
             </div>
           </div>
-        )}
-      </Presence>
+        </form>
+      </Modal>
 
-      <Presence show={isMetricsModalOpen}>
-        {isMetricsModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 animate-in fade-in">
-            <form onSubmit={handleSaveChannelMetrics} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">Cập Nhật Chỉ Số Kênh TikTok Seller</h3>
-                  
-                </div>
-                <button type="button" onClick={() => setIsMetricsModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Followers hiện tại</label>
-                  <input
-                    type="number"
-                    value={metricsForm.followers}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, followers: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">View trung bình / video</label>
-                  <input
-                    type="number"
-                    value={metricsForm.avgViews}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, avgViews: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">GMV Kênh 30 ngày (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={metricsForm.tiktokGmv30d}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, tiktokGmv30d: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">GPM (GMV / 1.000 views)</label>
-                  <input
-                    type="number"
-                    value={metricsForm.gpm}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, gpm: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Tỷ lệ CTR (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={metricsForm.ctrPct}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, ctrPct: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-medium mb-1">Tỷ lệ chuyển đổi CVR (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={metricsForm.cvrPct}
-                    onChange={(e) => setMetricsForm(prev => ({ ...prev, cvrPct: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsMetricsModalOpen(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg"
-                >
-                  Lưu &amp; Đồng bộ chỉ số
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={Boolean(negotiatingDeal)}
+        onClose={() => setNegotiatingDeal(null)}
+        title="Đề xuất mức thù lao Cast"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setNegotiatingDeal(null)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleNegotiateDeal}
+            >
+              Gửi đề xuất
+            </Button>
           </div>
-        )}
-      </Presence>
-
-      <Presence show={!!negotiatingDeal}>
+        }
+      >
         {negotiatingDeal && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-            <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-900 text-sm">Đề xuất mức thù lao Cast</h3>
-                <button onClick={() => setNegotiatingDeal(null)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+          <div className="space-y-3 text-xs">
+            <div>
+              <span className="text-slate-500">Chiến dịch:</span> <strong className="text-slate-800">{negotiatingDeal.campaignTitle}</strong>
+            </div>
 
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-slate-500">Chiến dịch:</span> <strong className="text-slate-800">{negotiatingDeal.campaignTitle}</strong>
-                </div>
+            <div>
+              <label className="block text-slate-600 font-semibold mb-1">Mức thù lao mong muốn (VND)</label>
+              <input
+                type="number"
+                step="500000"
+                value={counterRate}
+                onChange={(e) => setCounterRate(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono font-semibold focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
 
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Mức thù lao mong muốn (VND)</label>
-                  <input
-                    type="number"
-                    step="500000"
-                    value={counterRate}
-                    onChange={(e) => setCounterRate(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono font-semibold focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Ghi chú gửi Account Upbase</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Lý do đề xuất..."
-                    value={counterNote}
-                    onChange={(e) => setCounterNote(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setNegotiatingDeal(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNegotiateDeal}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg shadow-2xs transition"
-                >
-                  Gửi đề xuất
-                </button>
-              </div>
+            <div>
+              <label className="block text-slate-600 font-semibold mb-1">Ghi chú gửi Account Upbase</label>
+              <textarea
+                rows={3}
+                placeholder="Lý do đề xuất..."
+                value={counterNote}
+                onChange={(e) => setCounterNote(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
             </div>
           </div>
         )}
-      </Presence>
+      </Modal>
 
-      <Presence show={!!rejectingDeal}>
+      <Modal
+        open={Boolean(rejectingDeal)}
+        onClose={() => setRejectingDeal(null)}
+        title="Từ chối lời mời hợp tác"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setRejectingDeal(null)}
+            >
+              Đóng
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleRejectDeal}
+            >
+              Xác nhận từ chối
+            </Button>
+          </div>
+        }
+      >
         {rejectingDeal && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-            <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-900 text-sm">Từ chối lời mời hợp tác</h3>
-                <button onClick={() => setRejectingDeal(null)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <select
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-xs focus:outline-none"
-                >
-                  <option value="Lệch định hướng kênh / không phù hợp sản phẩm">Lệch định hướng kênh / không phù hợp sản phẩm</option>
-                  <option value="Đã kẹt lịch air / không kịp timeline tháng này">Đã kẹt lịch air / không kịp timeline tháng này</option>
-                  <option value="Xung đột hợp đồng độc quyền với đối thủ nhãn hàng">Xung đột hợp đồng độc quyền với đối thủ nhãn hàng</option>
-                  <option value="Mức cast chưa phù hợp với yêu cầu sản xuất">Mức cast chưa phù hợp với yêu cầu sản xuất</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setRejectingDeal(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRejectDeal}
-                  className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition"
-                >
-                  Xác nhận từ chối
-                </button>
-              </div>
-            </div>
+          <div className="space-y-3 text-xs">
+            <select
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-xs focus:outline-none"
+            >
+              <option value="Lệch định hướng kênh / không phù hợp sản phẩm">Lệch định hướng kênh / không phù hợp sản phẩm</option>
+              <option value="Đã kẹt lịch air / không kịp timeline tháng này">Đã kẹt lịch air / không kịp timeline tháng này</option>
+              <option value="Xung đột hợp đồng độc quyền với đối thủ nhãn hàng">Xung đột hợp đồng độc quyền với đối thủ nhãn hàng</option>
+              <option value="Mức cast chưa phù hợp với yêu cầu sản xuất">Mức cast chưa phù hợp với yêu cầu sản xuất</option>
+            </select>
           </div>
         )}
-      </Presence>
+      </Modal>
 
-      <Presence show={!!submittingDeal}>
+      <Modal
+        open={Boolean(submittingDeal)}
+        onClose={() => setSubmittingDeal(null)}
+        title="Nộp Video Demo & Mã Spark Ads"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setSubmittingDeal(null)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              icon={Send}
+              onClick={(e) => handleSubmitVideoDemo(e as any)}
+            >
+              Xác nhận nộp video
+            </Button>
+          </div>
+        }
+      >
         {submittingDeal && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-            <form onSubmit={handleSubmitVideoDemo} data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">Nộp Video Demo &amp; Mã Spark Ads</h3>
-                  <p className="text-2xs text-slate-500">{submittingDeal.brandName} — {submittingDeal.productName}</p>
-                </div>
-                <button type="button" onClick={() => setSubmittingDeal(null)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Link Video Demo (Google Drive / TikTok) *</label>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://drive.google.com/... hoặc https://vt.tiktok.com/..."
-                    value={submissionForm.videoUrl}
-                    onChange={(e) => setSubmissionForm(prev => ({ ...prev, videoUrl: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Mã ủy quyền Spark Ads Code (TikTok)</label>
-                  <input
-                    type="text"
-                    placeholder="VD: 7412894723984729384..."
-                    value={submissionForm.sparkAdsCode}
-                    onChange={(e) => setSubmissionForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Ghi chú cho Brand / Content Lead</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Lưu ý về góc quay, thời điểm xuất hiện sản phẩm..."
-                    value={submissionForm.notes}
-                    onChange={(e) => setSubmissionForm(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setSubmittingDeal(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-2xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  Xác nhận nộp video
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-      </Presence>
-
-      <Presence show={!!editingAddress}>
-        {editingAddress && (
-          <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-            <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-semibold text-slate-900 text-sm">Cập nhật địa chỉ nhận hàng mẫu</h3>
-                <button onClick={() => setEditingAddress(false)} className="text-slate-400 hover:text-slate-700">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Họ tên người nhận</label>
-                  <input
-                    type="text"
-                    value={addressForm.recipient}
-                    onChange={(e) => setAddressForm(prev => ({ ...prev, recipient: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Số điện thoại</label>
-                  <input
-                    type="tel"
-                    value={addressForm.phone}
-                    onChange={(e) => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Địa chỉ chi tiết</label>
-                  <textarea
-                    rows={2}
-                    value={addressForm.address}
-                    onChange={(e) => setAddressForm(prev => ({ ...prev, address: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingAddress(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const updatedKoc: KocItem = {
-                      ...activeKoc,
-                      realName: addressForm.recipient || activeKoc.realName,
-                      phone: addressForm.phone || activeKoc.phone,
-                      shippingAddress: addressForm.address
-                    };
-                    setEditingAddress(false);
-                    commitKocUpdate(updatedKoc, 'Đã cập nhật địa chỉ giao hàng mẫu và đồng bộ sang phân hệ Hàng mẫu!');
-                  }}
-                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-2xs transition"
-                >
-                  Lưu địa chỉ
-                </button>
-              </div>
+          <form onSubmit={handleSubmitVideoDemo} className="space-y-3 text-xs">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span>Nhãn hàng: <strong className="text-ink">{submittingDeal.brandName}</strong></span>
+              <span>·</span>
+              <span>Sản phẩm: <strong className="text-ink">{submittingDeal.productName}</strong></span>
             </div>
-          </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Link Video Demo (Google Drive / TikTok) *</label>
+              <input
+                type="url"
+                required
+                placeholder="https://drive.google.com/... hoặc https://vt.tiktok.com/..."
+                value={submissionForm.videoUrl}
+                onChange={(e) => setSubmissionForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Mã ủy quyền Spark Ads Code (TikTok)</label>
+              <input
+                type="text"
+                placeholder="VD: 7412894723984729384..."
+                value={submissionForm.sparkAdsCode}
+                onChange={(e) => setSubmissionForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-semibold mb-1">Ghi chú cho Brand / Content Lead</label>
+              <textarea
+                rows={2}
+                placeholder="Lưu ý về góc quay, thời điểm xuất hiện sản phẩm..."
+                value={submissionForm.notes}
+                onChange={(e) => setSubmissionForm(prev => ({ ...prev, notes: e.target.value }))}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+          </form>
         )}
-      </Presence>
+      </Modal>
+
+      <Modal
+        open={Boolean(editingAddress)}
+        onClose={() => setEditingAddress(false)}
+        title="Cập nhật địa chỉ nhận hàng mẫu"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setEditingAddress(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const updatedKoc: KocItem = {
+                  ...activeKoc,
+                  realName: addressForm.recipient || activeKoc.realName,
+                  phone: addressForm.phone || activeKoc.phone,
+                  shippingAddress: addressForm.address
+                };
+                setEditingAddress(false);
+                commitKocUpdate(updatedKoc, 'Đã cập nhật địa chỉ giao hàng mẫu và đồng bộ sang phân hệ Hàng mẫu!');
+              }}
+            >
+              Lưu địa chỉ
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-600 font-semibold mb-1">Họ tên người nhận</label>
+            <input
+              type="text"
+              value={addressForm.recipient}
+              onChange={(e) => setAddressForm(prev => ({ ...prev, recipient: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-600 font-semibold mb-1">Số điện thoại</label>
+            <input
+              type="tel"
+              value={addressForm.phone}
+              onChange={(e) => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-600 font-semibold mb-1">Địa chỉ chi tiết</label>
+            <textarea
+              rows={2}
+              value={addressForm.address}
+              onChange={(e) => setAddressForm(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none text-xs"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
+
 
 function buildProfileForm(koc: KocItem) {
   return {

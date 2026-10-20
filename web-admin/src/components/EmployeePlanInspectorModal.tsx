@@ -180,10 +180,11 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 <span className="text-xs text-ink-2">
                   · {staffAllocation.roleTitle}
                 </span>
+                <span className="text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2">
+                  Nhãn: {staffAllocation.assignedBrands.join(", ")}
+                </span>
               </div>
-              <p className="text-xs text-ink-3 mt-0.5">
-                Nhãn hàng phụ trách: <strong className="text-ink-2">{staffAllocation.assignedBrands.join(', ')}</strong> • Đối soát giữa chỉ tiêu Ma trận và danh sách KOC thực tế nhân viên đã lên lịch
-              </p>
+              
             </div>
           </div>
 

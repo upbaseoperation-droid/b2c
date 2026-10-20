@@ -1743,7 +1743,7 @@ function CollaborationDetailModal({
       open
       onClose={onClose}
       title={`Chi tiết hợp tác: ${deal.dealCode}`}
-      description={`${deal.brandName} · ${deal.storeName || 'TikTok Shop'} · ${deal.productName || 'Sản phẩm'}`}
+      
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -1933,7 +1933,7 @@ function VietQrModal({ koc, onClose }: { koc: KocItem; onClose: () => void }) {
   const qrUrl = `https://img.vietqr.io/image/${encodeURIComponent(bank)}-${encodeURIComponent(acc)}-compact2.png?amount=0&addInfo=${encodeURIComponent(`Upbase B2C booking ${koc.stageName}`)}&accountName=${encodeURIComponent(holder)}`;
 
   return (
-    <Modal open onClose={onClose} title="Mã QR chuyển khoản VietQR" description="Quét bằng ứng dụng ngân hàng để chuyển tiền tạm ứng hoặc quyết toán" size="sm">
+    <Modal open onClose={onClose} title="Mã QR chuyển khoản VietQR"  size="sm">
       <div className="flex flex-col items-center justify-center p-4 space-y-4">
         <div className="p-3 bg-white rounded-xl border border-line shadow-xs">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1967,8 +1967,11 @@ function TikTokSellerSyncModal({ koc, onClose }: { koc: KocItem; onClose: () => 
   };
 
   return (
-    <Modal open onClose={onClose} title="Đồng bộ chỉ số TikTok Seller" description={`Kênh @${koc.channelId.replace(/^@/, '')}`} size="sm">
+    <Modal open onClose={onClose} title="Đồng bộ chỉ số TikTok Seller"  size="sm">
       <div className="space-y-4 py-2 text-xs">
+        <div className="flex items-center gap-2 text-2xs text-ink-3 pb-2 border-b border-line">
+          <span>Kênh: <strong className="font-code text-ink">@{koc.channelId.replace(/^@/, "")}</strong></span>
+        </div>
         <p className="text-ink-2 leading-relaxed">
           Hệ thống sẽ kết nối với API TikTok Shop Seller Center để tải các chỉ số bán hàng mới nhất: Doanh số GMV 30 ngày, GPM, AOV, đơn hàng, phễu nhấp giỏ hàng CTR và tỷ lệ chuyển đổi CVR.
         </p>
@@ -2022,7 +2025,7 @@ function AskColleagueModal({
       open={!!deal}
       onClose={onClose}
       title={`Hỏi ${pic} về KOC`}
-      description="Sao chép tin nhắn rồi gửi qua Lark cho đồng nghiệp."
+      
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>

@@ -7034,16 +7034,14 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
   }
 ];
 
-export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = REAL_B2C_69_STORES.map((st, idx) => {
+export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = REAL_B2C_69_STORES.map((st) => {
   const netBudget = st.budgetNet ?? st.monthlyBudget ?? 0;
-  const sLower = (st.storeName || '').toLowerCase();
   const bLower = (st.brandName || '').toLowerCase();
 
   // Phân loại Bảng 2. Hệ số gian hàng (HS phạm vi cho việc cấp Sàn và cấp Brand)
   // Cơ bản: 0,80 | Tiêu chuẩn: 1,00 | Vừa: 1,25 | Khó: 1,50
-  let tier: StorePortfolioItem['difficultyTier'] = 'Tiêu chuẩn';
-  let multiplier = 1.0;
-  let reason = 'Khối lượng và yêu cầu đúng benchmark thông thường; phối hợp cơ bản, deadline tiêu chuẩn';
+  let tier: StorePortfolioItem['difficultyTier'] = st.difficultyTier || 'Tiêu chuẩn';
+  let multiplier = st.difficultyMultiplier ?? 1.0;
 
   if (
     st.difficultyTier === 'Khó' ||
@@ -7057,57 +7055,33 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = REAL_B2C_69_STORES
   ) {
     tier = 'Khó';
     multiplier = 1.5;
-    reason = 'Talent hiếm, nhiều ràng buộc, yêu cầu đặc biệt hoặc rủi ro cao — Campaign chiến lược, độc quyền';
   } else if (
     st.difficultyTier === 'Vừa' ||
     netBudget >= 30000000 ||
     Boolean(st.hasBookingLeader && st.bookingLeader) ||
-    (st.b2cOwners && st.b2cOwners.length >= 2) ||
-    idx % 5 === 1
+    (st.b2cOwners && st.b2cOwners.length >= 2)
   ) {
     tier = 'Vừa';
     multiplier = 1.25;
-    reason = 'Nhiều bên phối hợp, nhiều vòng duyệt hoặc deadline gấp; mở rộng scope ngành hàng — Brief thay đổi, talent khó vừa';
   } else if (
     st.difficultyTier === 'Cơ bản' ||
-    (netBudget === 0 && (st.targetFocVideos || 0) <= 15) ||
-    (sLower.includes('shopee') && netBudget <= 5000000 && idx % 3 === 0)
+    (netBudget === 0 && (st.targetFocVideos || 0) <= 15)
   ) {
     tier = 'Cơ bản';
     multiplier = 0.8;
-    reason = 'Store ổn định, quy trình rõ, ít thay đổi, nguồn lực sẵn có — Chủ yếu vận hành lặp lại';
   } else {
     tier = 'Tiêu chuẩn';
     multiplier = 1.0;
-    reason = 'Khối lượng và yêu cầu đúng benchmark thông thường — Phối hợp cơ bản, deadline tiêu chuẩn';
-  }
-
-  // Trạng thái quản lý duyệt đầu tháng theo Nguyên tắc Bảng 2
-  let approvalStatus: NonNullable<StorePortfolioItem['coefficientApprovalStatus']> = 'APPROVED_START_OF_MONTH';
-  let approvedAt = '2026-10-01';
-  let adjustedPlanCode: string | undefined = undefined;
-
-  if (idx === 3 || idx === 11 || idx === 22 || idx === 34) {
-    approvalStatus = 'ADJUSTED_BY_APPROVED_PLAN';
-    approvedAt = '2026-10-09';
-    adjustedPlanCode = 'PLAN-2026-10-v2.0';
-    reason = `${reason} (Đã duyệt điều chỉnh hệ số do mở rộng scope lớn trong tháng theo Plan điều chỉnh ${adjustedPlanCode})`;
-  } else if (idx === 7 || idx === 18 || idx === 41 || idx === 55) {
-    approvalStatus = 'PENDING_MANAGER_APPROVAL';
-    approvedAt = '';
   }
 
   return {
     ...st,
     difficultyTier: tier,
     difficultyMultiplier: multiplier,
-    coefficientApprovalStatus: approvalStatus,
-    coefficientApprovedBy: approvalStatus === 'PENDING_MANAGER_APPROVAL' ? undefined : 'Đặng Thị Yến Nhi',
-    coefficientApprovedAt: approvedAt || undefined,
+    coefficientApprovalStatus: 'APPROVED_START_OF_MONTH',
+    coefficientApprovedBy: 'Đặng Thị Yến Nhi',
+    coefficientApprovedAt: '2026-10-01',
     coefficientPeriodMonth: '2026/10',
-    coefficientAdjustedPlanCode: adjustedPlanCode,
-    coefficientAdjustmentReason: reason,
-    hasCompletedPeriodResult: idx % 9 === 0, // Một số store đã chốt kết quả kỳ để minh họa khóa tự nâng hệ số
   };
 });
 

@@ -117,7 +117,7 @@ export function EntityDialog({ open, value, fallbackCompany, busy, onClose, onSa
   const [v, setV] = useState<BrandEntity>(value || { companyName: fallbackCompany, taxCode: '', contactPerson: '', originCountry: '' });
   const set = (k: keyof BrandEntity, x: string) => setV(p => ({ ...p, [k]: x }));
   return (
-    <Modal open={open} onClose={onClose} title="Sửa pháp nhân" description="Dùng khi lập hợp đồng ba bên và đối soát hóa đơn." footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(v)} />}>
+    <Modal open={open} onClose={onClose} title="Sửa pháp nhân"  footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(v)} />}>
       <Field label="Tên công ty" htmlFor="be-co"><Input id="be-co" maxLength={200} value={v.companyName} onChange={e => set('companyName', e.target.value)} /></Field>
       <Field label="Mã số thuế" htmlFor="be-tax" hint="10 chữ số, hoặc thêm “-” và 3 số chi nhánh."><Input id="be-tax" inputMode="numeric" maxLength={14} value={v.taxCode} onChange={e => set('taxCode', e.target.value)} className="font-code" /></Field>
       <Field label="Người liên hệ phía nhãn" htmlFor="be-ct"><Input id="be-ct" maxLength={200} value={v.contactPerson} onChange={e => set('contactPerson', e.target.value)} /></Field>

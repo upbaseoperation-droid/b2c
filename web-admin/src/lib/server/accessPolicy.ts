@@ -1,4 +1,4 @@
-import type { UserProfile, UserRole, TabKey, PermissionMatrixItem, InternalStaffRbacMember, DepartmentAccessRule, RbacAuditLogItem } from '../types';
+import type { UserProfile, UserRole, TabKey, PermissionMatrixItem, InternalStaffRbacMember, DepartmentAccessRule, RbacAuditLogItem, DataScope } from '../types';
 import {
   ALL_SYSTEM_SCREENS,
   INITIAL_PERMISSION_MATRIX,
@@ -6,6 +6,7 @@ import {
   INITIAL_DEPARTMENT_ACCESS_RULES,
   ROLE_ALLOWED_TABS,
   ROLE_DEFAULT_LANDING,
+  ROLE_DEFAULT_DATA_SCOPE,
   classifyMasterStaffMember,
   type StaffAccessOverrideItem,
 } from '../rbacData';
@@ -17,6 +18,7 @@ export interface AccessPolicy {
   deptRules: DepartmentAccessRule[];
   roleAllowedTabs: typeof ROLE_ALLOWED_TABS;
   roleDefaultLanding: typeof ROLE_DEFAULT_LANDING;
+  roleDataScope?: Partial<Record<UserRole, DataScope>>;
   internalStaff: InternalStaffRbacMember[];
   matrix: PermissionMatrixItem[];
   audit: RbacAuditLogItem[];
@@ -28,6 +30,7 @@ export const defaultPolicy: AccessPolicy = {
   deptRules: INITIAL_DEPARTMENT_ACCESS_RULES,
   roleAllowedTabs: ROLE_ALLOWED_TABS,
   roleDefaultLanding: ROLE_DEFAULT_LANDING,
+  roleDataScope: ROLE_DEFAULT_DATA_SCOPE,
   internalStaff: INITIAL_INTERNAL_STAFF_RBAC,
   matrix: INITIAL_PERMISSION_MATRIX,
   audit: [],
@@ -50,10 +53,24 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
   const raw = saved || {};
   const catalogKeys = ALL_SYSTEM_SCREENS.map((s) => s.key);
   const catalogKeySet = new Set<TabKey>(catalogKeys);
+  // Nếu bản ghi cũ trong DB chưa từng lưu knownScreenKeys, tập màn hình đã biết chỉ tính các màn hình
+  // thực sự xuất hiện trong raw.roleAllowedTabs để tự động bổ sung các màn mới (tiktok-crawler, market-research...)
+  const legacySavedKeys = Object.values(raw.roleAllowedTabs || {}).flat() as TabKey[];
   const previousKnownSet = raw.knownScreenKeys?.length
     ? new Set<TabKey>(raw.knownScreenKeys)
-    : catalogKeySet;
+    : new Set<TabKey>(legacySavedKeys);
   const newlyAddedScreenKeys = catalogKeys.filter((k) => !previousKnownSet.has(k));
+
+  // Các màn hình nghiệp vụ cốt lõi mới mở rộng cho nhân sự & quản lý cần luôn đồng bộ theo ROLE_ALLOWED_TABS
+  // nếu bản ghi cũ chưa cập nhật
+  const CORE_ROLE_SYNCED_SCREENS: TabKey[] = [
+    'tiktok-crawler',
+    'market-research',
+    'task-delegation',
+    'workload-3d',
+    'contracts',
+    'cloudflare-admin',
+  ];
 
   // 1. Đồng bộ danh sách màn hình theo từng vai trò (roleAllowedTabs & roleDefaultLanding)
   const reconciledTabs = { ...ROLE_ALLOWED_TABS };
@@ -70,6 +87,11 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
     for (const newKey of newlyAddedScreenKeys) {
       if (role === 'ADMIN' || ROLE_ALLOWED_TABS[role]?.includes(newKey)) {
         mergedSet.add(newKey);
+      }
+    }
+    for (const coreKey of CORE_ROLE_SYNCED_SCREENS) {
+      if (ROLE_ALLOWED_TABS[role]?.includes(coreKey)) {
+        mergedSet.add(coreKey);
       }
     }
     if (role === 'ADMIN') {
@@ -139,6 +161,7 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
     deptRules: reconciledDeptRules,
     roleAllowedTabs: reconciledTabs,
     roleDefaultLanding: reconciledLanding,
+    roleDataScope: raw.roleDataScope || ROLE_DEFAULT_DATA_SCOPE,
     internalStaff: savedStaffList,
     matrix: reconciledMatrix,
     audit: Array.isArray(raw.audit) ? raw.audit : [],

@@ -2430,7 +2430,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
 
       {/* AI Staff Review Modal (API Powered) */}
-      <Presence show={!!aiReviewTargetStaff}>
       {aiReviewTargetStaff && (
         <AiStaffReviewModal
           isOpen={Boolean(aiReviewTargetStaff)}
@@ -2439,7 +2438,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           onPingStaffNotification={handlePingStaff}
         />
       )}
-      </Presence>
 
     </div>
   );

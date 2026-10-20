@@ -1396,14 +1396,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               </div>
               <div>
                 <h3 className="font-semibold text-base text-ink">Xác nhận xử lý gian hàng</h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Mã gian hàng: <span className="font-mono font-semibold text-ink">{deletingStore.storeOperationId || deletingStore.id}</span>
-                </p>
               </div>
             </div>
 
             <div className="p-3 bg-canvas rounded-xl border border-line space-y-1.5 text-xs">
-              <div className="font-semibold text-ink">{deletingStore.storeName}</div>
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-ink">{deletingStore.storeName}</span>
+                <span className="font-mono text-2xs text-ink-3">#{deletingStore.storeOperationId || deletingStore.id}</span>
+              </div>
               <div className="text-ink-3 text-2xs flex items-center gap-2">
                 <span>{deletingStore.brandName}</span>
                 <span>•</span>

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Presence } from './ui';
-import { X, Target, Send, Calendar, Layers, Palette, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Modal } from './ui';
+import { Send, Calendar, Layers, Palette, Sparkles, CheckCircle2 } from 'lucide-react';
 import {
   CampaignItem,
   CampaignMonthlyPhase,
@@ -209,7 +209,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
     return Array.from(new Set([...baseNames, ...fromReal]));
   }, []);
 
-  if (!isOpen) return <Presence show={false} />;
+  if (!isOpen) return null;
 
   const applyDurationPreset = (preset: '1M_OCT' | '2M_SEP_OCT' | '2M_OCT_NOV' | '3M_Q4') => {
     if (preset === '1M_OCT') {
@@ -317,83 +317,80 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
   const sumPhaseGmv = monthlyPhases.reduce((s, p) => s + (p.targetGmv || 0), 0);
 
   return (
-    <Presence show>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-        onClick={e => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-      >
-        <div
-          data-motion-panel
-          role="dialog"
-          aria-modal="true"
-          aria-label={isEditMode ? 'Cập nhật chiến dịch' : 'Tạo chiến dịch & phân kỳ tháng'}
-          className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl max-h-[92dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line bg-canvas shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
-                <Target className="w-4 h-4 text-accent" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-ink">
-                  {isEditMode ? `Cập nhật Chiến dịch: ${initialCampaign?.code}` : 'Khởi tạo Chiến dịch (Campaign) & Phân kỳ Tháng'}
-                </h3>
-              </div>
-            </div>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={isEditMode ? `Cập nhật Chiến dịch: ${initialCampaign?.code}` : 'Khởi tạo Chiến dịch (Campaign) & Phân kỳ Tháng'}
+      size="xl"
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+          <div className="text-2xs text-ink-3 flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
+            <span>
+              Liên kết kế hoạch tháng Brand <strong>{brand}</strong> ({coveredMonths.join(', ')})
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              aria-label="Đóng cửa sổ"
-              className="p-1.5 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken transition"
+              className="px-4 py-2 rounded-lg border border-line text-ink-2 hover:bg-sunken font-semibold text-xs cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="campaign-create-form"
+              className="bg-accent hover:bg-accent-hover text-white font-semibold py-2 px-5 rounded-lg shadow-sm transition flex items-center gap-2 text-xs cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{isEditMode ? 'Lưu cập nhật Chiến dịch' : 'Tạo Chiến dịch & Đồng bộ Plan Tháng'}</span>
             </button>
           </div>
+        </div>
+      }
+    >
+      {/* Sub-navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-line bg-surface overflow-x-auto max-w-full mb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab('OVERVIEW_PHASES')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+            activeTab === 'OVERVIEW_PHASES'
+              ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
+              : 'border-transparent text-ink-2 hover:text-ink'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>1. Khung Chiến dịch &amp; Phân kỳ ({coveredMonths.length} tháng)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('STRATEGY_PROMO')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+            activeTab === 'STRATEGY_PROMO'
+              ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
+              : 'border-transparent text-ink-2 hover:text-ink'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>2. Định hướng Chiến lược &amp; CTKM (Section 01)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('KEY_VISUAL')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
+            activeTab === 'KEY_VISUAL'
+              ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
+              : 'border-transparent text-ink-2 hover:text-ink'
+          }`}
+        >
+          <Palette className="w-3.5 h-3.5" />
+          <span>3. Key Visual &amp; Lịch treo KV (Section 03)</span>
+        </button>
+      </div>
 
-          {/* Sub-navigation Tabs */}
-          <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 border-b border-line bg-surface overflow-x-auto max-w-full shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab('OVERVIEW_PHASES')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
-                activeTab === 'OVERVIEW_PHASES'
-                  ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
-                  : 'border-transparent text-ink-2 hover:text-ink'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>1. Khung Chiến dịch &amp; Phân kỳ ({coveredMonths.length} tháng)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('STRATEGY_PROMO')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
-                activeTab === 'STRATEGY_PROMO'
-                  ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
-                  : 'border-transparent text-ink-2 hover:text-ink'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>2. Định hướng Chiến lược &amp; CTKM (Section 01)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('KEY_VISUAL')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold border-b-2 transition cursor-pointer shrink-0 ${
-                activeTab === 'KEY_VISUAL'
-                  ? 'border-accent text-accent bg-accent-soft/50 rounded-t-lg'
-                  : 'border-transparent text-ink-2 hover:text-ink'
-              }`}
-            >
-              <Palette className="w-3.5 h-3.5" />
-              <span>3. Key Visual &amp; Lịch treo KV (Section 03)</span>
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+      <form id="campaign-create-form" onSubmit={handleSubmit} className="space-y-4 text-xs">
             {activeTab === 'OVERVIEW_PHASES' && (
               <div className="space-y-4">
                 {/* Campaign Title, Code, Status */}
@@ -726,10 +723,6 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
             {activeTab === 'STRATEGY_PROMO' && (
               <div className="space-y-3.5">
-                <div className="p-3 bg-warning-soft border border-line rounded-lg text-xs text-ink">
-                  Các trường dưới đây tương ứng trực tiếp với <strong>Section 01 — Định hướng tháng &amp; Chiến dịch</strong> trên file <em>Monthly Content &amp; Key Visual Plan — Template 1 Sheet</em> trình Brand.
-                </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
@@ -857,10 +850,6 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
             {activeTab === 'KEY_VISUAL' && (
               <div className="space-y-3.5">
-                <div className="p-3 bg-accent-soft border border-line rounded-lg text-xs text-ink">
-                  Các trường dưới đây tương ứng trực tiếp với <strong>Section 03 — Key Visual chung của tháng</strong> trên file <em>Monthly Content &amp; Key Visual Plan — Template 1 Sheet</em> (Chủ đề, Font, Moodboard, Link Proposal, CTKM, Ngày lên Ref, Ngày Order, Ngày Treo).
-                </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-ink-2 mb-1">
@@ -965,36 +954,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Footer Actions */}
-            <div className="pt-3 border-t border-line flex flex-wrap items-center justify-between gap-3">
-              <div className="text-2xs text-ink-3 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
-                <span>
-                  Chiến dịch sẽ tự động liên kết với Kế hoạch tháng của thương hiệu <strong>{brand}</strong> trong các tháng:{' '}
-                  <strong>{coveredMonths.join(', ')}</strong>
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 rounded-lg border border-line text-ink-2 hover:bg-sunken font-semibold text-xs cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="bg-accent hover:bg-accent-hover text-white font-semibold py-2 px-5 rounded-lg shadow-sm transition flex items-center gap-2 text-xs cursor-pointer"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isEditMode ? 'Lưu cập nhật Chiến dịch' : 'Tạo Chiến dịch & Đồng bộ Plan Tháng'}</span>
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </Presence>
+      </form>
+    </Modal>
   );
 };

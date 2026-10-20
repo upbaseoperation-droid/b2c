@@ -11,8 +11,9 @@ export function hydrateRbacPolicy(policy: AccessPolicy, user?: UserProfile) {
     }
   }
 }
-import { 
-  UserRole, 
+import {
+  DataScope,
+  UserRole,
   UserProfile,
   TabKey,
   SystemDepartmentScope,
@@ -604,8 +605,100 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
       KOC_PARTNER: 'DENIED',
       CTV_PARTNER: 'DENIED'
     }
-  }
+  },
+
+  // --- QUYỀN THAO TÁC TRƯỚC ĐÂY GẮN CỨNG THEO TÊN VAI TRÒ TRONG MÀN HÌNH, NAY CẤU HÌNH ĐƯỢC ---
+  {
+    id: 'plan_leader_signoff',
+    category: 'PLANNING',
+    categoryTitle: '1. Lập Kế Hoạch & Phân Bổ Tải',
+    featureName: 'Ký xác nhận bước Leader trong luồng duyệt kế hoạch',
+    description: 'Xác nhận sơ duyệt kế hoạch gian hàng có Leader trước khi trình Giám đốc Marketing.',
+    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'APPROVE', LEADER: 'APPROVE' }),
+  },
+  {
+    id: 'plan_approval_route_config',
+    category: 'PLANNING',
+    categoryTitle: '1. Lập Kế Hoạch & Phân Bổ Tải',
+    featureName: 'Bật / tắt bước Leader trong tuyến duyệt kế hoạch gian hàng',
+    description: 'Chọn gian hàng nào phải qua Leader sơ duyệt, gian hàng nào trình thẳng Giám đốc Marketing.',
+    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'ALL', GROWTH_MANAGER: 'VIEW', MEDIA_MANAGER: 'VIEW', LEADER: 'VIEW' }),
+  },
+  {
+    id: 'koc_sensitive_identity',
+    category: 'BOOKING_CONTENT',
+    categoryTitle: '2. Vận Hành Booking KOC & Kịch Bản',
+    featureName: 'Xem đầy đủ CCCD / MST / số tài khoản của KOC',
+    description: 'Toàn bộ: xem mọi KOC. Theo phạm vi: chỉ KOC do mình hoặc nhân sự trong phạm vi phụ trách. Còn lại chỉ thấy số đã che.',
+    permissions: withDeniedDefaults({
+      ADMIN: 'ALL',
+      MANAGER: 'ALL',
+      LEADER: 'SCOPED',
+      MEMBER: 'SCOPED',
+      GROWTH_MANAGER: 'SCOPED',
+      MEDIA_MANAGER: 'SCOPED',
+      LEGAL: 'ALL',
+      FINANCE: 'ALL',
+    }),
+    securityNote: 'Đối tác ngoài không bao giờ thấy giấy tờ của KOC khác.',
+  },
+  {
+    id: 'brand_profile_full_edit',
+    category: 'SYSTEM_MASTER',
+    categoryTitle: '5. Quản Trị Hệ Thống & Master Data',
+    featureName: 'Sửa toàn bộ hồ sơ thương hiệu & trần thù lao nội bộ',
+    description: 'Sửa mọi mục hồ sơ thương hiệu của mọi nhãn và xem / sửa trần thù lao nội bộ (Ratecard).',
+    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'ALL' }),
+    securityNote: 'Account PIC của nhãn và đại diện nhãn hàng vẫn sửa được các mục của chính nhãn mình.',
+  },
+  {
+    id: 'store_difficulty_coefficient',
+    category: 'SYSTEM_MASTER',
+    categoryTitle: '5. Quản Trị Hệ Thống & Master Data',
+    featureName: 'Chỉnh hệ số độ khó gian hàng',
+    description: 'Đổi nhóm độ khó và hệ số quy đổi định mức của gian hàng.',
+    permissions: withDeniedDefaults({
+      ADMIN: 'ALL',
+      MANAGER: 'ALL',
+      GROWTH_MANAGER: 'ALL',
+      MEDIA_MANAGER: 'VIEW',
+      LEADER: 'VIEW',
+      MEMBER: 'VIEW',
+    }),
+  },
+  {
+    id: 'data_sync_trigger',
+    category: 'SYSTEM_MASTER',
+    categoryTitle: '5. Quản Trị Hệ Thống & Master Data',
+    featureName: 'Kích hoạt đồng bộ dữ liệu (Lark Base kế hoạch, TikTok Seller)',
+    description: 'Chạy đồng bộ kế hoạch tháng từ Lark Base và số liệu gian hàng từ TikTok Seller vào hệ thống.',
+    permissions: withDeniedDefaults({
+      ADMIN: 'ALL',
+      MANAGER: 'ALL',
+      GROWTH_MANAGER: 'ALL',
+      MEDIA_MANAGER: 'ALL',
+      LEADER: 'SCOPED',
+    }),
+  },
+  {
+    id: 'integration_destructive_admin',
+    category: 'SYSTEM_MASTER',
+    categoryTitle: '5. Quản Trị Hệ Thống & Master Data',
+    featureName: 'Đổi cấu hình lưu trữ, xóa tệp & xóa toàn bộ lịch sử quét',
+    description: 'Lưu / xóa cấu hình Cloudflare R2, xóa tệp lưu trữ, chuyển tệp cục bộ và xóa toàn bộ lịch sử quét TikTok.',
+    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'ALL' }),
+    securityNote: 'Thao tác không hoàn tác được; chỉ cấp mức Toàn quyền cho người chịu trách nhiệm hệ thống.',
+  },
 ];
+
+/** Quyền mới khai báo đủ mọi vai trò, vai trò không nêu tên mặc định bị chặn. */
+function withDeniedDefaults(levels: Partial<Record<UserRole, PermissionAccessLevel>>): Record<string, PermissionAccessLevel> {
+  const roles: UserRole[] = [
+    'ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER', 'MEMBER',
+    'LEGAL', 'FINANCE', 'SIGN_ADMIN', 'BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER',
+  ];
+  return Object.fromEntries(roles.map((r) => [r, levels[r] ?? 'DENIED']));
+}
 
 export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_MATRIX.map(item => {
   let growthManagerPerm: PermissionAccessLevel = 'VIEW';
@@ -654,8 +747,8 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
       signAdminPerm = 'VIEW';
     }
   } else if (item.category === 'SYSTEM_MASTER') {
-    growthManagerPerm = ['master_data_brand_stores', 'staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
-    mediaManagerPerm = ['master_data_brand_stores', 'staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
+    growthManagerPerm = ['staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
+    mediaManagerPerm = ['staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
     if (item.id === 'security_audit_log_access') {
       legalPerm = 'VIEW';
       financePerm = 'VIEW';
@@ -1947,13 +2040,9 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BOOKING_MEMBER: [
     'cockpit',
     'task-delegation',
-    'workload-3d',
-    'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
     'booking',
     'koc-listing',
     'koc-master',
@@ -1972,12 +2061,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   CONTENT_MEMBER: [
     'cockpit',
     'task-delegation',
-    'workload-3d',
-    'dashboard-bi',
     'dashboard-video',
     'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
     'content',
     'content-angles',
     'self-channel-hub',
@@ -1994,8 +2079,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BRAND_MEMBER: [
     'cockpit',
     'task-delegation',
-    'workload-3d',
-    'dashboard-bi',
     'dashboard-brand',
     'dashboard-air-sync',
     'dashboard-store',
@@ -2017,13 +2100,9 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   MEMBER: [
     'cockpit',
     'task-delegation',
-    'workload-3d',
-    'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
     'booking',
     'koc-listing',
     'koc-master',
@@ -2044,15 +2123,11 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'cockpit',
     'task-delegation',
-    'workload-3d',
     'overview',
-    'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
     'stores',
     'campaigns',
     'performance-p3',
@@ -2067,15 +2142,11 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'cockpit',
     'task-delegation',
-    'workload-3d',
     'overview',
-    'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
     'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
     'campaigns',
     'performance-p3',
     'brand-knowledge',
@@ -2130,7 +2201,70 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
   CTV_PARTNER: 'self-channel-hub'
 };
 
+/**
+ * Màn hình điều hành dành cho cấp quản lý: so sánh năng suất giữa nhân sự, tải việc toàn đội, SLA team, BI toàn khối.
+ * Chuyên viên thực thi không được mở mặc định; Admin vẫn có thể bật lại cho từng vai trò tại màn Phân quyền.
+ */
+export const LEADERSHIP_ONLY_SCREENS: TabKey[] = ['workload-3d', 'dashboard-bi', 'dashboard-team-sla', 'dashboard-staff'];
+
+export const SPECIALIST_MEMBER_ROLE_IDS: UserRole[] = [
+  'BOOKING_MEMBER',
+  'CONTENT_MEMBER',
+  'BRAND_MEMBER',
+  'GROWTH_MEMBER',
+  'MEDIA_MEMBER',
+  'MEMBER',
+];
+
+/** Phạm vi dữ liệu mặc định của từng vai trò. Admin đổi được tại màn Phân quyền → Vai trò. */
+export const ROLE_DEFAULT_DATA_SCOPE: Record<UserRole, DataScope> = {
+  ADMIN: 'ALL',
+  MANAGER: 'ALL',
+  GROWTH_MANAGER: 'DEPARTMENT',
+  MEDIA_MANAGER: 'DEPARTMENT',
+  LEADER: 'TEAM',
+  BOOKING_MEMBER: 'OWN',
+  CONTENT_MEMBER: 'OWN',
+  BRAND_MEMBER: 'OWN',
+  GROWTH_MEMBER: 'OWN',
+  MEDIA_MEMBER: 'OWN',
+  MEMBER: 'OWN',
+  LEGAL: 'ALL',
+  FINANCE: 'ALL',
+  SIGN_ADMIN: 'ALL',
+  BRAND_PARTNER: 'OWN',
+  KOC_PARTNER: 'OWN',
+  CTV_PARTNER: 'OWN',
+};
+
+export const DATA_SCOPE_OPTIONS: Array<{ key: DataScope; label: string; shortLabel: string }> = [
+  { key: 'ALL', label: 'Toàn bộ dữ liệu', shortLabel: 'Toàn bộ' },
+  { key: 'DEPARTMENT', label: 'Cả khối phụ trách', shortLabel: 'Cả khối' },
+  { key: 'TEAM', label: 'Bản thân và nhân sự trực thuộc', shortLabel: 'Team' },
+  { key: 'OWN', label: 'Chỉ việc được giao', shortLabel: 'Của tôi' },
+];
+
+export const DATA_SCOPE_LABEL: Record<DataScope, string> = Object.fromEntries(
+  DATA_SCOPE_OPTIONS.map((o) => [o.key, o.shortLabel])
+) as Record<DataScope, string>;
+
+export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
+  return { ...ROLE_DEFAULT_DATA_SCOPE, ...((serverPolicy as any)?.roleDataScope || {}) };
+}
+
+const CORE_SYNCED_ROLE_TABS: TabKey[] = [
+  'tiktok-crawler',
+  'market-research',
+  'task-delegation',
+  'workload-3d',
+  'contracts',
+  'cloudflare-admin',
+];
+
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
+  if (CORE_SYNCED_ROLE_TABS.includes(tab) && ROLE_ALLOWED_TABS[role]?.includes(tab)) {
+    return true;
+  }
   const map = getSavedRoleAllowedTabs();
   const allowed = map[role] || ROLE_ALLOWED_TABS[role];
   if (!allowed) return false;
@@ -2142,6 +2276,11 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
   const base = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
+  for (const coreTab of CORE_SYNCED_ROLE_TABS) {
+    if (ROLE_ALLOWED_TABS[role]?.includes(coreTab) && !base.includes(coreTab)) {
+      base.push(coreTab);
+    }
+  }
   for (const [aliasKey, canonicalKey] of Object.entries(TAB_ALIASES) as Array<[TabKey, TabKey]>) {
     if (canonicalKey && base.includes(canonicalKey) && !base.includes(aliasKey)) {
       base.push(aliasKey);
@@ -2263,6 +2402,9 @@ export function canUserPerformAction(
   }
   if (featureId === 'plan_target_month' && perms.includes('canApproveBudget')) {
     if (action === 'read' || action === 'approve') return true;
+  }
+  if (featureId === 'data_sync_trigger' && perms.includes('canApproveBudget')) {
+    if (action === 'read' || action === 'update' || action === 'write') return true;
   }
   if (
     (featureId === 'p3_performance_evaluation' || featureId === 'performance_p3_scoring') &&

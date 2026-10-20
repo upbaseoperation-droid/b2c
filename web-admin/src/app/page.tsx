@@ -443,7 +443,17 @@ export default function App() {
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
-  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_STORE_PORTFOLIOS;
+    try {
+      const raw = localStorage.getItem('upbase_store_overrides_v1');
+      if (!raw) return INITIAL_STORE_PORTFOLIOS;
+      const overrides = JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>;
+      return INITIAL_STORE_PORTFOLIOS.map(st => overrides[st.id] ? { ...st, ...overrides[st.id] } : st);
+    } catch {
+      return INITIAL_STORE_PORTFOLIOS;
+    }
+  });
   const currentUserId = currentUser?.id;
   const currentUserRole = currentUser?.role;
   useEffect(() => {
@@ -451,8 +461,29 @@ export default function App() {
     const reload = () => fetch('/api/master-data', { cache: 'no-store' }).then(async res => {
       const body = await res.json(); if (!res.ok) throw new Error(body.error);
       if (!cancelled) {
-        setBrands(prev => (JSON.stringify(prev) === JSON.stringify(body.data.brands) ? prev : body.data.brands));
-        setStorePortfolios(prev => (JSON.stringify(prev) === JSON.stringify(body.data.stores) ? prev : body.data.stores));
+        let storeOverrides: Record<string, Partial<StorePortfolioItem>> = {};
+        try {
+          const raw = localStorage.getItem('upbase_store_overrides_v1');
+          if (raw) storeOverrides = JSON.parse(raw);
+        } catch {
+          // ignore
+        }
+        setBrands(prev => {
+          const incoming = (body.data.brands || []) as BrandDetail[];
+          if (incoming.length === 0) return prev;
+          const byId = new Map(incoming.map(b => [b.id, b]));
+          return prev.map(b => byId.get(b.id) ? { ...b, ...byId.get(b.id)! } : b);
+        });
+        setStorePortfolios(prev => {
+          const incoming = (body.data.stores || []) as StorePortfolioItem[];
+          const byId = new Map(incoming.map(s => [s.id, s]));
+          return prev.map(s => {
+            const fromApi = byId.get(s.id);
+            const merged = fromApi ? { ...s, ...fromApi } : s;
+            const localOverride = storeOverrides[s.id];
+            return localOverride ? { ...merged, ...localOverride } : merged;
+          });
+        });
       }
     }).catch(e => { if (!cancelled) showToast(e.message, 'error'); });
     if (currentUserId && !isLoadingAuth) void reload();
@@ -896,6 +927,14 @@ export default function App() {
   };
 
   const handleUpdateStore = (updatedStore: StorePortfolioItem) => {
+    try {
+      const raw = localStorage.getItem('upbase_store_overrides_v1');
+      const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
+      overrides[updatedStore.id] = updatedStore;
+      localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
+    } catch {
+      // ignore storage errors
+    }
     setStorePortfolios(prev => prev.map(s => s.id === updatedStore.id ? updatedStore : s));
   };
 
@@ -1547,11 +1586,23 @@ export default function App() {
               currentUser={currentUser}
               onNotify={showToast}
               onUpdateStoreDifficulty={(storeId, multiplier, tier) => {
-                setStorePortfolios(prev => prev.map(s => s.id === storeId ? {
-                  ...s,
-                  difficultyMultiplier: multiplier,
-                  difficultyTier: tier
-                } : s));
+                setStorePortfolios(prev => prev.map(s => {
+                  if (s.id !== storeId) return s;
+                  const nextStore: StorePortfolioItem = {
+                    ...s,
+                    difficultyMultiplier: multiplier,
+                    difficultyTier: tier
+                  };
+                  try {
+                    const raw = localStorage.getItem('upbase_store_overrides_v1');
+                    const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
+                    overrides[storeId] = nextStore;
+                    localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
+                  } catch {
+                    // ignore
+                  }
+                  return nextStore;
+                }));
               }}
             />
           </KeepAliveTab>

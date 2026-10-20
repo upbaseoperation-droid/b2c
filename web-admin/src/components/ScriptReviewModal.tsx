@@ -213,9 +213,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     {script.dealCode}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  KOC: <strong className="text-slate-900">{script.kocName}</strong> · {script.campaignTitle}
-                </p>
+                
               </div>
             </div>
             <button
@@ -232,6 +230,8 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {/* Metadata Bar + Brand Profile Selector */}
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
               <div className="flex flex-wrap items-center gap-3">
+                <span>KOC: <strong className="text-slate-900">{script.kocName}</strong> ({script.campaignTitle})</span>
+                <span>·</span>
                 <span>
                   Phân loại: <strong className="text-accent">{script.pillar}</strong>
                 </span>

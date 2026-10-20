@@ -1819,200 +1819,169 @@ export const BrandView: React.FC<BrandViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL: THÊM TỪ KHÓA BLACKLIST                                             */}
       {/* ========================================================================= */}
-      <Presence show={!!isAddKeywordModalOpen}>
-      {isAddKeywordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-rose-600" />
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Thêm từ khóa bị chặn ({selectedBrandName})
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsAddKeywordModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded transition"
+      <Modal
+        open={isAddKeywordModalOpen}
+        onClose={() => setIsAddKeywordModalOpen(false)}
+        title={`Thêm từ khóa bị chặn (${selectedBrandName})`}
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setIsAddKeywordModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              onClick={(e) => handleAddKeyword(e as any)}
+            >
+              Lưu từ khóa
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleAddKeyword} className="space-y-3.5 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Từ khóa cần chặn *
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Trị dứt điểm mụn..."
+              value={newKeywordText}
+              onChange={(e) => setNewKeywordText(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Mức độ chặn *
+              </label>
+              <select
+                value={newKeywordSeverity}
+                onChange={(e) => setNewKeywordSeverity(e.target.value as BlacklistSeverity)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
               >
-                <X className="w-4 h-4" />
-              </button>
+                <option value="CRITICAL_BANNED">Cấm tuyệt đối (vi phạm y tế/pháp lý)</option>
+                <option value="COMPETITOR_WARNING">Tránh đối thủ (cạnh tranh)</option>
+                <option value="SENSITIVE_POLICY">Nhạy cảm nền tảng</option>
+              </select>
             </div>
 
-            <form onSubmit={handleAddKeyword} className="p-5 space-y-3.5 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Từ khóa cần chặn *
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Trị dứt điểm mụn..."
-                  value={newKeywordText}
-                  onChange={(e) => setNewKeywordText(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Mức độ chặn *
-                  </label>
-                  <select
-                    value={newKeywordSeverity}
-                    onChange={(e) => setNewKeywordSeverity(e.target.value as BlacklistSeverity)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="CRITICAL_BANNED">Cấm tuyệt đối (vi phạm y tế/pháp lý)</option>
-                    <option value="COMPETITOR_WARNING">Tránh đối thủ (cạnh tranh)</option>
-                    <option value="SENSITIVE_POLICY">Nhạy cảm nền tảng</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Phân loại *
-                  </label>
-                  <select
-                    value={newKeywordCategory}
-                    onChange={(e) => setNewKeywordCategory(e.target.value as 'LEGAL_MEDICAL' | 'COMPETITOR' | 'SENSITIVE_POLICY')}
-                    className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="LEGAL_MEDICAL">Y tế &amp; luật quảng cáo</option>
-                    <option value="COMPETITOR">Tên đối thủ cạnh tranh</option>
-                    <option value="SENSITIVE_POLICY">Chính sách TikTok Shop</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Lý do cấm *
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="VD: Vi phạm quy định Bộ Y tế cấm cam kết dứt điểm trong mỹ phẩm..."
-                  value={newKeywordRationale}
-                  onChange={(e) => setNewKeywordRationale(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Gợi ý từ thay thế hợp chuẩn
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Hỗ trợ làm sạch bã nhờn, giúp ngừa mụn quay trở lại..."
-                  value={newKeywordAlt}
-                  onChange={(e) => setNewKeywordAlt(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddKeywordModalOpen(false)}
-                  className="px-3 py-2 border border-slate-200 rounded font-semibold text-slate-600 hover:bg-slate-100 transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded font-semibold transition"
-                >
-                  Lưu từ khóa
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Phân loại *
+              </label>
+              <select
+                value={newKeywordCategory}
+                onChange={(e) => setNewKeywordCategory(e.target.value as 'LEGAL_MEDICAL' | 'COMPETITOR' | 'SENSITIVE_POLICY')}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+              >
+                <option value="LEGAL_MEDICAL">Y tế &amp; luật quảng cáo</option>
+                <option value="COMPETITOR">Tên đối thủ cạnh tranh</option>
+                <option value="SENSITIVE_POLICY">Chính sách TikTok Shop</option>
+              </select>
+            </div>
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Lý do cấm *
+            </label>
+            <textarea
+              rows={2}
+              placeholder="VD: Vi phạm quy định Bộ Y tế cấm cam kết dứt điểm trong mỹ phẩm..."
+              value={newKeywordRationale}
+              onChange={(e) => setNewKeywordRationale(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Gợi ý từ thay thế hợp chuẩn
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Hỗ trợ làm sạch bã nhờn, giúp ngừa mụn quay trở lại..."
+              value={newKeywordAlt}
+              onChange={(e) => setNewKeywordAlt(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+            />
+          </div>
+        </form>
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL: TỪ CHỐI KOC HOẶC KỊCH BẢN (REJECT MODAL)                           */}
       {/* ========================================================================= */}
-      <Presence show={!!rejectModalItem}>
-      {rejectModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-rose-50/50">
-              <div className="flex items-center gap-2">
-                <X className="w-4 h-4 text-rose-600" />
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Từ chối {rejectModalItem.submissionRound === 'ROUND_1_KOC' ? 'KOC đề xuất' : 'kịch bản KOC'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setRejectModalItem(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      <Modal
+        open={Boolean(rejectModalItem)}
+        onClose={() => setRejectModalItem(null)}
+        title={rejectModalItem ? `Từ chối ${rejectModalItem.submissionRound === 'ROUND_1_KOC' ? 'KOC đề xuất' : 'kịch bản KOC'}` : 'Từ chối'}
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button
+              variant="ghost"
+              onClick={() => setRejectModalItem(null)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleConfirmReject}
+            >
+              Xác nhận từ chối
+            </Button>
+          </div>
+        }
+      >
+        {rejectModalItem && (
+          <div className="space-y-3.5 text-xs">
+            <div className="p-3 bg-slate-50 rounded border border-slate-200">
+              <p><strong>KOC:</strong> {rejectModalItem.kocName} ({rejectModalItem.kocChannel})</p>
+              <p><strong>Thương hiệu:</strong> {rejectModalItem.brandName} | <strong>Deal:</strong> {rejectModalItem.dealCode}</p>
             </div>
 
-            <div className="p-5 space-y-3.5 text-xs">
-              <div className="p-3 bg-slate-50 rounded border border-slate-200">
-                <p><strong>KOC:</strong> {rejectModalItem.kocName} ({rejectModalItem.kocChannel})</p>
-                <p><strong>Thương hiệu:</strong> {rejectModalItem.brandName} | <strong>Deal:</strong> {rejectModalItem.dealCode}</p>
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Chọn lý do chuẩn hóa *
+              </label>
+              <select
+                value={rejectReasonSelection}
+                onChange={(e) => setRejectReasonSelection(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-rose-500"
+              >
+                <option value="Lệch định vị phong cách thương hiệu">Lệch định vị phong cách thương hiệu</option>
+                <option value="Từng nhận booking từ đối thủ cạnh tranh trực tiếp">Từng nhận booking từ đối thủ cạnh tranh trực tiếp</option>
+                <option value="Kênh KOC có rủi ro scandal / tương tác ảo">Kênh KOC có rủi ro scandal / tương tác ảo</option>
+                <option value="Thiếu kiến thức chuyên môn da liễu / y tế bắt buộc">Thiếu kiến thức chuyên môn da liễu / y tế bắt buộc</option>
+                <option value="Kịch bản vi phạm từ khóa cấm hoặc cam kết sai sự thật">Kịch bản vi phạm từ khóa cấm hoặc cam kết sai sự thật</option>
+                <option value="Góc quay và chất lượng hình ảnh chưa đạt tiêu chuẩn nhãn">Góc quay và chất lượng hình ảnh chưa đạt tiêu chuẩn nhãn</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Chọn lý do chuẩn hóa *
-                </label>
-                <select
-                  value={rejectReasonSelection}
-                  onChange={(e) => setRejectReasonSelection(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-rose-500"
-                >
-                  <option value="Lệch định vị phong cách thương hiệu">Lệch định vị phong cách thương hiệu</option>
-                  <option value="Từng nhận booking từ đối thủ cạnh tranh trực tiếp">Từng nhận booking từ đối thủ cạnh tranh trực tiếp</option>
-                  <option value="Kênh KOC có rủi ro scandal / tương tác ảo">Kênh KOC có rủi ro scandal / tương tác ảo</option>
-                  <option value="Thiếu kiến thức chuyên môn da liễu / y tế bắt buộc">Thiếu kiến thức chuyên môn da liễu / y tế bắt buộc</option>
-                  <option value="Kịch bản vi phạm từ khóa cấm hoặc cam kết sai sự thật">Kịch bản vi phạm từ khóa cấm hoặc cam kết sai sự thật</option>
-                  <option value="Góc quay và chất lượng hình ảnh chưa đạt tiêu chuẩn nhãn">Góc quay và chất lượng hình ảnh chưa đạt tiêu chuẩn nhãn</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Ghi chú chi tiết cho nhóm booking / nội dung
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi rõ góp ý cụ thể để đổi KOC khác hoặc sửa lại kịch bản..."
-                  value={rejectCustomNote}
-                  onChange={(e) => setRejectCustomNote(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-rose-500 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setRejectModalItem(null)}
-                  className="px-3 py-2 border border-slate-200 rounded font-semibold text-slate-600 hover:bg-slate-100 transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmReject}
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded font-semibold transition"
-                >
-                  Xác nhận từ chối
-                </button>
-              </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Ghi chú chi tiết cho nhóm booking / nội dung
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Ghi rõ góp ý cụ thể để đổi KOC khác hoặc sửa lại kịch bản..."
+                value={rejectCustomNote}
+                onChange={(e) => setRejectCustomNote(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-rose-500 focus:bg-white"
+              />
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL: THÔNG BÁO BÀN GIAO THÀNH CÔNG                                      */}
@@ -2302,140 +2271,23 @@ export const BrandView: React.FC<BrandViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL: KIỂM TRA KỊCH BẢN                                                  */}
       {/* ========================================================================= */}
-      <Presence show={!!aiScanModalData}>
-      {aiScanModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-accent" />
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Kiểm tra kịch bản — KOC {aiScanModalData.item.kocName}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Đối soát theo quy chuẩn nhãn hàng: <strong>{aiScanModalData.item.brandName}</strong> (Mã deal: {aiScanModalData.item.dealCode})
-                  </p>
-                </div>
+      <Modal
+        open={Boolean(aiScanModalData)}
+        onClose={() => setAiScanModalData(null)}
+        title={aiScanModalData ? `Kiểm tra kịch bản — KOC ${aiScanModalData.item.kocName}` : 'Kiểm tra kịch bản'}
+        size="xl"
+        footer={
+          aiScanModalData ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+              <div className="flex items-center gap-1.5 text-2xs text-slate-500">
+                <span>Đối soát bởi quy chuẩn hệ thống</span>
               </div>
-
-              <button
-                onClick={() => setAiScanModalData(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-              {/* Verdict Strip */}
-              <div className={`p-4 rounded-lg border-l-4 flex items-center justify-between gap-4 ${
-                aiScanModalData.result.complianceStatus === 'PASS'
-                  ? 'border-l-emerald-500 bg-emerald-50/50 border border-emerald-200'
-                  : aiScanModalData.result.complianceStatus === 'WARNING'
-                  ? 'border-l-amber-500 bg-amber-50/50 border border-amber-200'
-                  : 'border-l-rose-500 bg-rose-50/50 border border-rose-200'
-              }`}>
-                <div className="space-y-1">
-                  <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                    aiScanModalData.result.complianceStatus === 'PASS'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : aiScanModalData.result.complianceStatus === 'WARNING'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-rose-100 text-rose-800'
-                  }`}>
-                    {aiScanModalData.result.complianceStatus === 'PASS' && 'Đạt chuẩn'}
-                    {aiScanModalData.result.complianceStatus === 'WARNING' && 'Cảnh báo — Cần sửa đổi'}
-                    {aiScanModalData.result.complianceStatus === 'FAIL' && 'Không đạt — Từ chối duyệt'}
-                  </span>
-                  <p className="text-slate-700 font-medium leading-relaxed">
-                    {aiScanModalData.result.summaryVerdict}
-                  </p>
-                </div>
-
-                <div className="text-center shrink-0">
-                  <span className="text-2xl font-semibold text-slate-900 block leading-none">
-                    {aiScanModalData.result.overallScore}
-                  </span>
-                  <span className="text-2xs text-slate-500 font-medium">/ 100 điểm</span>
-                </div>
-              </div>
-
-              {/* Dimensions breakdown */}
-              <div className="space-y-2">
-                <h5 className="font-semibold text-slate-900 text-2xs">
-                  Chi tiết kiểm tra theo từng mục:
-                </h5>
-                <div className="grid grid-cols-1 gap-2">
-                  {aiScanModalData.result.dimensions.map((dim, idx) => (
-                    <div key={idx} className="p-2.5 rounded bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                      <div>
-                        <span className="font-semibold text-slate-800">{dim.name}</span>
-                        <p className="text-2xs text-slate-500">{dim.feedback}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="font-mono font-semibold text-slate-900">{dim.score}/{dim.maxScore}đ</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Detected Issues */}
-              {aiScanModalData.result.issues.length > 0 && (
-                <div className="space-y-2">
-                  <h5 className="font-semibold text-rose-900 text-2xs flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Các điểm cần chỉnh sửa ({aiScanModalData.result.issues.length}):</span>
-                  </h5>
-                  <div className="space-y-2">
-                    {aiScanModalData.result.issues.map((issue) => (
-                      <div key={issue.id} className="p-3 bg-rose-50/60 rounded border border-rose-200 space-y-1">
-                        <div className="flex items-center justify-between font-semibold text-rose-900">
-                          <span>{issue.title}</span>
-                          <span className="text-2xs px-1.5 py-0.5 rounded bg-rose-200 text-rose-800">
-                            {issue.severity === 'CRITICAL' ? 'Cần sửa ngay' : issue.severity === 'WARNING' ? 'Lưu ý' : 'Gợi ý'}
-                          </span>
-                        </div>
-                        <p className="text-slate-700 text-2xs">{issue.rationale}</p>
-                        {issue.replacementSuggestion && (
-                          <p className="text-emerald-700 text-2xs font-semibold">
-                            Cách viết thay thế: &ldquo;{issue.replacementSuggestion}&rdquo;
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Suggested Rewritten Script */}
-              <div className="p-3 bg-accent-soft rounded-md border border-line space-y-1.5 font-mono text-2xs">
-                <span className="font-semibold text-ink font-sans block">
-                  Nội dung kịch bản sau khi thay từ bị hạn chế:
-                </span>
-                <p className="whitespace-pre-line text-slate-800 bg-white p-2.5 rounded border border-line">
-                  {aiScanModalData.result.rewrittenScript.fullText}
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
-              <button
-                type="button"
-                onClick={() => setAiScanModalData(null)}
-                className="px-4 py-2 border border-slate-200 rounded font-semibold text-slate-600 hover:bg-slate-100 transition"
-              >
-                Đóng
-              </button>
 
               <div className="flex items-center gap-2">
                 {aiScanModalData.result.issues.length > 0 && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => {
                       const notes = aiScanModalData.result.issues.map(i => `• ${i.title}: ${i.rationale}`).join('\n');
                       setRejectCustomNote(notes);
@@ -2443,29 +2295,145 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       setRejectModalItem(aiScanModalData.item);
                       setAiScanModalData(null);
                     }}
-                    className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
                   >
-                    <span>Chèn nhận xét vào phiếu từ chối</span>
-                  </button>
+                    Chèn nhận xét vào phiếu từ chối
+                  </Button>
                 )}
 
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={CheckCircle2}
                   onClick={() => {
                     handleApproveItem(aiScanModalData.item.id);
                     setAiScanModalData(null);
                   }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Duyệt kịch bản</span>
-                </button>
+                  Duyệt kịch bản
+                </Button>
               </div>
             </div>
+          ) : undefined
+        }
+      >
+        {aiScanModalData && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span>Đối soát theo quy chuẩn nhãn hàng: <strong className="text-ink">{aiScanModalData.item.brandName}</strong></span>
+              <span>·</span>
+              <span>Mã deal: <strong className="font-code text-ink">{aiScanModalData.item.dealCode}</strong></span>
+            </div>
+
+            {/* Verdict Strip */}
+            <div className={`p-4 rounded-lg border-l-4 flex items-center justify-between gap-4 ${
+              aiScanModalData.result.complianceStatus === 'PASS'
+                ? 'border-l-emerald-500 bg-emerald-50/50 border border-emerald-200'
+                : aiScanModalData.result.complianceStatus === 'WARNING'
+                ? 'border-l-amber-500 bg-amber-50/50 border border-amber-200'
+                : 'border-l-rose-500 bg-rose-50/50 border border-rose-200'
+            }`}>
+              <div className="space-y-1">
+                <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                  aiScanModalData.result.complianceStatus === 'PASS'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : aiScanModalData.result.complianceStatus === 'WARNING'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-rose-100 text-rose-800'
+                }`}>
+                  {aiScanModalData.result.complianceStatus === 'PASS' && 'Đạt chuẩn'}
+                  {aiScanModalData.result.complianceStatus === 'WARNING' && 'Cảnh báo — Cần sửa đổi'}
+                  {aiScanModalData.result.complianceStatus === 'FAIL' && 'Không đạt — Từ chối duyệt'}
+                </span>
+                <p className="text-slate-700 font-medium leading-relaxed">
+                  {aiScanModalData.result.summaryVerdict}
+                </p>
+              </div>
+
+              <div className="text-center shrink-0">
+                <span className="text-2xl font-semibold text-slate-900 block leading-none">
+                  {aiScanModalData.result.overallScore}
+                </span>
+                <span className="text-2xs text-slate-400 font-medium">/ 100 điểm</span>
+              </div>
+            </div>
+
+            {/* Trụ Cột Đánh Giá */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+              {aiScanModalData.result.dimensions.map((dim) => (
+                <div key={dim.name} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                  <span className="text-2xs text-slate-500 block truncate" title={dim.name}>{dim.name}</span>
+                  <span className={`text-sm font-semibold ${
+                    dim.status === 'CRITICAL'
+                      ? 'text-rose-600'
+                      : dim.status === 'WARNING'
+                        ? 'text-amber-600'
+                        : 'text-slate-900'
+                  }`}>
+                    {dim.score}/{dim.maxScore}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Danh Sách Vấn Đề (Issues) */}
+            {aiScanModalData.result.issues.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Các điểm phát hiện cần lưu ý ({aiScanModalData.result.issues.length})</span>
+                </h4>
+
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {aiScanModalData.result.issues.map((issue, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                        issue.severity === 'CRITICAL'
+                          ? 'bg-rose-50/50 border-rose-200'
+                          : issue.severity === 'WARNING'
+                          ? 'bg-amber-50/50 border-amber-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-900">{issue.title}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-3xs font-semibold ${
+                          issue.severity === 'CRITICAL' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {issue.severity === 'CRITICAL' ? 'Nghiêm trọng' : 'Khuyến nghị'}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 text-2xs leading-relaxed">
+                        {issue.rationale}
+                      </p>
+                      {issue.replacementSuggestion && (
+                        <p className="text-2xs text-accent font-medium">
+                          Gợi ý thay thế: &ldquo;{issue.replacementSuggestion}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Hook & USP Preview */}
+            {aiScanModalData.result.rewrittenScript && (
+              <div className="space-y-2 pt-2 border-t border-slate-100 text-2xs">
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span className="text-slate-400 font-medium block">Hook mở đầu 3 giây:</span>
+                  <p className="text-slate-800 italic">&ldquo;{aiScanModalData.result.rewrittenScript.hook}&rdquo;</p>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                  <span className="text-slate-400 font-medium block">Giải pháp &amp; USP trình bày:</span>
+                  <p className="text-slate-800">{aiScanModalData.result.rewrittenScript.solutionAndUsp}</p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
     </div>
   );
 };

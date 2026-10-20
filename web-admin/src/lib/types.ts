@@ -4,7 +4,13 @@ export type SystemDepartmentScope =
   | 'MEDIA'
   | 'OTHER_BLOCKED';
 
-export type UserRole = 
+/**
+ * Phạm vi dữ liệu của vai trò: trong một màn hình, người dùng thấy dữ liệu của ai.
+ * ALL: toàn bộ · DEPARTMENT: cả khối (B2C / Growth / Media) · TEAM: bản thân + nhân sự mình quản lý · OWN: chỉ việc được giao.
+ */
+export type DataScope = 'ALL' | 'DEPARTMENT' | 'TEAM' | 'OWN';
+
+export type UserRole =
   | 'ADMIN' 
   | 'MANAGER'        // Giám đốc Marketing B2C
   | 'GROWTH_MANAGER' // Trưởng phòng Growth
@@ -89,6 +95,10 @@ export interface UserProfile {
   allowedStoreNames?: string[]; // Danh sách gian hàng được xem (đối với Brand)
   assignedBrands?: string[]; // Danh sách các nhãn hàng nhân viên được phân công phụ trách (dành cho Specialist/Leader làm việc với 2-3 brand)
   permissions?: string[];
+  /** Phạm vi dữ liệu hiệu lực, máy chủ gắn theo cấu hình phân quyền đã lưu. */
+  dataScope?: DataScope;
+  /** Tên nhân sự trong phạm vi (bản thân + team / khối), máy chủ tính sẵn cho TEAM và DEPARTMENT. */
+  scopeMemberNames?: string[];
 }
 
 export interface DepartmentAccessRule {

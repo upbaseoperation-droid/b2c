@@ -257,145 +257,132 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {/* HEADER BAR: THÔNG TIN TỔNG QUAN & CÁC NÚT THAO TÁC TRÌNH BRAND        */}
       {/* ===================================================================== */}
-      <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap text-2xs text-slate-300">
-              <span className="font-semibold text-emerald-300 uppercase tracking-wider">
-                Biểu mẫu 1-Sheet Trình Brand
-              </span>
-              <span>·</span>
-              {formData.hasCampaign ? (
-                <span className="font-semibold text-blue-200">
-                  Campaign: [{formData.campaignCode || 'CMP'}] {formData.campaignTitle} (
-                  {formData.campaignPhaseName || formData.month})
-                </span>
-              ) : (
-                <span className="font-medium text-slate-300">
-                  Tháng Không Có Campaign (Vận hành Duy trì / Always-on)
-                </span>
-              )}
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight">
-              {formData.brandName.toUpperCase()} • PLAN THÁNG {formData.month} • MONTHLY CONTENT &amp; KEY VISUAL PLAN
+      <div className="bg-surface text-ink rounded-xl p-4 border border-line space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-sm font-semibold text-ink">
+              {formData.brandName.toUpperCase()} · Plan Tháng {formData.month} (1-Sheet Trình Brand)
             </h2>
-            
+            <span className="text-ink-3">·</span>
+            {formData.hasCampaign ? (
+              <span className="px-2 py-0.5 rounded bg-accent-soft text-accent border border-line text-2xs font-semibold">
+                Campaign: [{formData.campaignCode || 'CMP'}] {formData.campaignTitle}
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded bg-sunken text-ink-2 text-2xs font-medium">
+                Always-on (Duy trì)
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {onOpenCampaignModal && (
               <button
                 type="button"
                 onClick={onOpenCampaignModal}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+                className="px-2.5 py-1.5 rounded-lg bg-canvas hover:bg-sunken border border-line text-ink-2 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
               >
-                <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                <span>Thiết lập Campaign</span>
+                <Calendar className="w-3.5 h-3.5 text-accent" />
+                <span>Campaign</span>
               </button>
             )}
             <button
               type="button"
               onClick={handleResetFromSystem}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg bg-canvas hover:bg-sunken border border-line text-ink-2 text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
               title="Lấy lại dữ liệu gốc từ Campaign và Kế hoạch Gian hàng"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Đồng bộ lại từ hệ thống</span>
+              <span>Đồng bộ</span>
             </button>
             <button
               type="button"
               onClick={() => setIsEditMode((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer border ${
                 isEditMode
-                  ? 'bg-amber-500 text-slate-950 font-semibold'
-                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                  ? 'bg-warning-soft text-warning border-warning/40'
+                  : 'bg-canvas hover:bg-sunken text-ink-2 border-line'
               }`}
             >
               {isEditMode ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
-              <span>{isEditMode ? 'Chế độ Xem trình Brand' : 'Chỉnh sửa nội dung'}</span>
+              <span>{isEditMode ? 'Chế độ Xem' : 'Chỉnh sửa'}</span>
             </button>
             {isEditMode && (
               <button
                 type="button"
                 onClick={handleSave}
-                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Lưu bản trình Brand</span>
+                <span>Lưu</span>
               </button>
             )}
             <button
               type="button"
               onClick={() => void exportBrandMonthlyOneSheetToExcel(formData)}
-              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel 1-Sheet (.xlsx)</span>
+              <span>Xuất Excel (.xlsx)</span>
             </button>
           </div>
         </div>
 
-        {/* Meta Header Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-800 text-xs">
-          <div className="bg-slate-800/80 rounded-xl px-3 py-2 border border-slate-700/80">
-            <span className="text-2xs text-slate-400 block">Thương hiệu</span>
-            <strong className="text-white font-semibold">{formData.brandName}</strong>
+        {/* Meta Info & Section Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-line text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {[
+              { id: 'ALL', label: 'Tất cả (01 → 05)' },
+              { id: 'SEC_01', label: '01. Định hướng' },
+              { id: 'SEC_02', label: '02. KPI 2 Sàn' },
+              { id: 'SEC_03', label: '03. Key Visual' },
+              { id: 'SEC_04', label: '04. TikTok Shop' },
+              { id: 'SEC_05', label: '05. Shopee' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSectionFilter(tab.id as typeof sectionFilter)}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+                  sectionFilter === tab.id
+                    ? 'bg-primary text-white'
+                    : 'bg-canvas text-ink-2 hover:bg-sunken border border-line'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          <div className="bg-slate-800/80 rounded-xl px-3 py-2 border border-slate-700/80">
-            <span className="text-2xs text-slate-400 block">Tháng kế hoạch</span>
-            <strong className="text-emerald-300 font-mono">{formData.month}</strong>
-          </div>
-          <div className="bg-slate-800/80 rounded-xl px-3 py-2 border border-slate-700/80">
-            <span className="text-2xs text-slate-400 block">Người lập / duyệt</span>
-            {isEditMode ? (
-              <input
-                type="text"
-                value={formData.preparedBy}
-                onChange={(e) => setFormData((p) => ({ ...p, preparedBy: e.target.value }))}
-                className="w-full mt-0.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-600 text-white text-xs"
-              />
-            ) : (
-              <strong className="text-white font-semibold">{formData.preparedBy}</strong>
-            )}
-          </div>
-          <div className="bg-slate-800/80 rounded-xl px-3 py-2 border border-slate-700/80">
-            <span className="text-2xs text-slate-400 block">Ngày chốt / Trạng thái</span>
-            {isEditMode ? (
-              <input
-                type="text"
-                value={formData.statusAndCutoffNote}
-                onChange={(e) => setFormData((p) => ({ ...p, statusAndCutoffNote: e.target.value }))}
-                className="w-full mt-0.5 px-2 py-0.5 rounded bg-slate-900 border border-slate-600 text-white text-xs"
-              />
-            ) : (
-              <strong className="text-amber-300 font-medium">{formData.statusAndCutoffNote}</strong>
-            )}
-          </div>
-        </div>
 
-        {/* Section Filter Bar */}
-        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-          {[
-            { id: 'ALL', label: 'Toàn bộ 1-Sheet (01 → 05)' },
-            { id: 'SEC_01', label: '01. Định hướng Tháng & Campaign' },
-            { id: 'SEC_02', label: '02. Kế hoạch KPI Tháng (2 Sàn)' },
-            { id: 'SEC_03', label: '03. Key Visual Chung' },
-            { id: 'SEC_04', label: '04. TikTok • Content, KOC & Booking' },
-            { id: 'SEC_05', label: '05. Shopee • Chiến lược Pillar & Lịch Air' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSectionFilter(tab.id as typeof sectionFilter)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                sectionFilter === tab.id
-                  ? 'bg-blue-600 text-white shadow-2xs'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <div className="flex items-center gap-3 flex-wrap text-2xs text-ink-2">
+            <span className="inline-flex items-center gap-1">
+              <span className="text-ink-3">Người lập:</span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={formData.preparedBy}
+                  onChange={(e) => setFormData((p) => ({ ...p, preparedBy: e.target.value }))}
+                  className="w-32 px-2 py-0.5 rounded bg-canvas border border-line text-ink text-xs"
+                />
+              ) : (
+                <strong className="text-ink font-semibold">{formData.preparedBy}</strong>
+              )}
+            </span>
+            <span className="text-ink-3">·</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="text-ink-3">Trạng thái:</span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={formData.statusAndCutoffNote}
+                  onChange={(e) => setFormData((p) => ({ ...p, statusAndCutoffNote: e.target.value }))}
+                  className="w-40 px-2 py-0.5 rounded bg-canvas border border-line text-ink text-xs"
+                />
+              ) : (
+                <strong className="text-ink font-medium">{formData.statusAndCutoffNote}</strong>
+              )}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -404,17 +391,9 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec01 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-blue-400">
-                01.
-              </span>
-              <h3 className="text-sm font-semibold tracking-wide uppercase">ĐỊNH HƯỚNG THÁNG</h3>
-            </div>
-            <span className="text-2xs text-slate-300">
-              Nguồn dữ liệu: <strong>Plan / Strategy PIC</strong> &amp; Thực thể{' '}
-              <strong>{formData.hasCampaign ? `Campaign [${formData.campaignCode}]` : 'Duy trì Always-on'}</strong>
-            </span>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-accent">01.</span>
+            <h3 className="text-xs font-semibold text-ink uppercase">ĐỊNH HƯỚNG THÁNG</h3>
           </div>
 
           <div className="divide-y divide-slate-200 text-xs">
@@ -467,16 +446,9 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec02 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-blue-400">
-                02.
-              </span>
-              <h3 className="text-sm font-semibold tracking-wide uppercase">KẾ HOẠCH KPI THÁNG</h3>
-            </div>
-            <span className="text-2xs text-slate-300">
-              Nguồn dữ liệu: Tổng hợp từ <strong>Growth PnL</strong> &amp; <strong>Kế hoạch Gian hàng Shopee + TikTok Shop</strong>
-            </span>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-accent">02.</span>
+            <h3 className="text-xs font-semibold text-ink uppercase">KẾ HOẠCH KPI THÁNG</h3>
           </div>
 
           <div className="overflow-x-auto">
@@ -686,16 +658,9 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec03 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-blue-400">
-                03.
-              </span>
-              <h3 className="text-sm font-semibold tracking-wide uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
-            </div>
-            <span className="text-2xs text-slate-300">
-              Nguồn dữ liệu: <strong>Key Visual / SIS PIC ({formData.keyVisual.kvPic || 'Thiết kế'})</strong>
-            </span>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-accent">03.</span>
+            <h3 className="text-xs font-semibold text-ink uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
           </div>
 
           <div className="divide-y divide-slate-200 text-xs">
@@ -756,19 +721,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec04 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-blue-400">
-                04.
-              </span>
-              <h3 className="text-sm font-semibold tracking-wide uppercase">
-                TIKTOK SHOP • CONTENT, KOC &amp; BOOKING
-              </h3>
-            </div>
-            <span className="text-2xs text-slate-300">
-              Nguồn dữ liệu: <strong>Booking PIC</strong> (Ma trận KL1–KL7 + TAP 5 tuần) &amp;{' '}
-              <strong>Content TikTok</strong> (Ảnh trượt / Video self)
-            </span>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-accent">04.</span>
+            <h3 className="text-xs font-semibold text-ink uppercase">
+              TIKTOK SHOP • CONTENT, KOC &amp; BOOKING
+            </h3>
           </div>
 
           {/* 4A. Tổng quan KPI TikTok Shop */}
@@ -1111,18 +1068,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec05 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
-          <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-semibold text-blue-400">
-                05.
-              </span>
-              <h3 className="text-sm font-semibold tracking-wide uppercase">
-                SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT &amp; TARGET TUẦN
-              </h3>
-            </div>
-            <span className="text-2xs text-slate-300">
-              Nguồn dữ liệu: <strong>Content / Brand Main PIC</strong> (Ma trận 5 Pillar P01–P05 &amp; Lịch sản xuất VJ/Remix)
-            </span>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
+            <span className="font-mono text-xs font-semibold text-accent">05.</span>
+            <h3 className="text-xs font-semibold text-ink uppercase">
+              SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT &amp; TARGET TUẦN
+            </h3>
           </div>
 
           {/* 5A. Bảng Chiến lược Pillar P01 - P05 */}

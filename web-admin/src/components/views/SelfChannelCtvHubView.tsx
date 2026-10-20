@@ -2,7 +2,7 @@
 
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import React, { useState, useMemo, useRef } from 'react';
-import { ActionMenu, Avatar, Button, PageActions, Presence, Select, Status, Tabs, Toolbar } from '../ui';
+import { ActionMenu, Avatar, Button, PageActions, Presence, Select, Status, TabItem, Tabs, Toolbar } from '../ui';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -1235,7 +1235,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           <ActionMenu
             items={[
               { label: 'Nhận chỉ tiêu kế hoạch tháng', icon: Sparkles, onSelect: () => setIsSyncPlanModalOpen(true) },
-              ...(onOpenCtvProfile ? [{ label: 'Danh bạ & pháp lý CTV', icon: Users, onSelect: () => onOpenCtvProfile() }] : []),
+              { label: 'Chỉ tiêu Plan Final & phân quyền', icon: ShieldCheck, onSelect: () => setActiveTab('PLAN_FINAL_RBAC') },
+              { label: 'Danh bạ & tồn mẫu VJ', icon: Users, onSelect: () => setActiveTab('CONTRIBUTORS') },
               ...(onOpenPushProducts ? [{ label: 'Sản phẩm đẩy (SKU)', icon: Tag, onSelect: onOpenPushProducts }] : []),
             ]}
           />
@@ -1289,14 +1290,24 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       <Tabs
         value={activeTab}
         onChange={setActiveTab}
-        items={[
-          { key: 'OVERVIEW', label: 'Tổng quan & Pillar' },
-          { key: 'APPROVALS', label: 'Chờ duyệt & nghiệm thu', count: stats.pendingApprovalsCount > 0 ? stats.pendingApprovalsCount : undefined },
-          { key: 'ACTIVE_JOBS', label: 'Điều phối công việc', count: tasks.length },
-          { key: 'HISTORY', label: 'Quyết toán CTV' },
-          { key: 'CTV_PORTAL', label: 'Cổng CTV' },
-          { key: 'DISCUSSION', label: 'Trao đổi' },
-        ]}
+        items={
+          (isCtvPartner
+            ? [
+                { key: 'CTV_PORTAL', label: 'Cổng CTV' },
+                { key: 'ACTIVE_JOBS', label: 'Nhiệm vụ của tôi', count: filteredTasks.length },
+                { key: 'DISCUSSION', label: 'Trao đổi' },
+              ]
+            : [
+                { key: 'OVERVIEW', label: 'Tổng quan & Trụ cột' },
+                { key: 'PLAN_FINAL_RBAC', label: 'Chỉ tiêu Plan Final & Phân quyền', count: approvedPlanFinalsForSelfChannel.length },
+                { key: 'ACTIVE_JOBS', label: 'Điều phối công việc', count: tasks.length },
+                { key: 'APPROVALS', label: 'Chờ duyệt & nghiệm thu', count: stats.pendingApprovalsCount > 0 ? stats.pendingApprovalsCount : undefined },
+                { key: 'CONTRIBUTORS', label: 'Danh bạ & Tồn mẫu VJ', count: contributors.length },
+                { key: 'HISTORY', label: 'Quyết toán CTV' },
+                { key: 'CTV_PORTAL', label: 'Cổng CTV (Giả lập)' },
+                { key: 'DISCUSSION', label: 'Trao đổi' },
+              ]) as Array<TabItem<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>>
+        }
       />
 
       {/* ========================================================================= */}

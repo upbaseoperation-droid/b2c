@@ -126,7 +126,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   ].includes(currentUser.role);
 
   // Navigation & View Modes
-  const [activeSubTab, setActiveSubTab] = useState<'ASSIGNMENTS' | 'WORKLOAD_MEASUREMENT'>('ASSIGNMENTS');
+  const [rawActiveSubTab, setActiveSubTab] = useState<'ASSIGNMENTS' | 'WORKLOAD_MEASUREMENT'>('ASSIGNMENTS');
+  const activeSubTab = !canManageSetup ? 'ASSIGNMENTS' : rawActiveSubTab;
   const [viewMode, setViewMode] = useState<'LIST' | 'KANBAN'>('LIST');
   const [isSetupViewOpen, setIsSetupViewOpen] = useState<boolean>(false);
 
@@ -519,7 +520,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   // Filtered tasks
   const filteredTasks = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const myName = (currentUser.name || '').trim().toLowerCase();
     return tasks.filter(t => {
+      if (!canManageSetup && t.pic.trim().toLowerCase() !== myName) return false;
       const tSource = getTaskSource(t);
       if (sourceFilter !== 'ALL' && tSource !== sourceFilter) return false;
       if (categoryFilter !== 'ALL' && inferCategory(t) !== categoryFilter) return false;
@@ -996,6 +999,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       </StatRow>
 
       {/* 1B. MANAGER QUICK BALANCING & EXCEPTION RADAR */}
+      {canManageSetup && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Card 1: Nhân sự thiếu tỷ lệ Việc khó Bảng 4 */}
         <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
@@ -1121,6 +1125,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* 2. TOP NAVIGATION & ACTION BAR */}
       <div className="bg-surface border border-line rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
@@ -1130,14 +1135,18 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           items={[
             {
               key: 'ASSIGNMENTS',
-              label: 'Bảng điều phối công việc',
+              label: canManageSetup ? 'Bảng điều phối công việc' : 'Nhiệm vụ được giao',
               count: filteredTasks.length,
             },
-            {
-              key: 'WORKLOAD_MEASUREMENT',
-              label: 'Tải công việc nhân sự',
-              count: computedStaffWorkloads.length,
-            },
+            ...(canManageSetup
+              ? [
+                  {
+                    key: 'WORKLOAD_MEASUREMENT' as const,
+                    label: 'Tải công việc nhân sự',
+                    count: computedStaffWorkloads.length,
+                  },
+                ]
+              : []),
           ]}
           className="border-b-0"
         />
@@ -1154,26 +1163,30 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             />
           )}
 
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={Sliders}
-            onClick={() => setIsSetupViewOpen(true)}
-          >
-            Cấu hình định mức
-          </Button>
+          {canManageSetup && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Sliders}
+                onClick={() => setIsSetupViewOpen(true)}
+              >
+                Cấu hình định mức
+              </Button>
 
-          <Button
-            variant="primary"
-            size="sm"
-            icon={Plus}
-            onClick={() => {
-              setFormTaskSource('DIRECTOR_ASSIGNED');
-              setIsAssignModalOpen(true);
-            }}
-          >
-            Giao việc mới
-          </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Plus}
+                onClick={() => {
+                  setFormTaskSource('DIRECTOR_ASSIGNED');
+                  setIsAssignModalOpen(true);
+                }}
+              >
+                Giao việc mới
+              </Button>
+            </>
+          )}
         </div>
       </div>
 

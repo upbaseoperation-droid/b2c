@@ -67,6 +67,7 @@ import {
   buildDefaultWeeklyMatrix,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
+import { filterScopedPlans } from '../../lib/rbacScope';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
@@ -216,6 +217,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // Master Monthly Plans State
   const [monthlyPlans, setMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
+  const scopedStudioPlans = useMemo(
+    () => filterScopedPlans(monthlyPlans, currentUser, storePortfolios),
+    [monthlyPlans, currentUser, storePortfolios]
+  );
   // View mode: false = Màn hình Quản Lý Kế Hoạch Theo Tháng (MonthlyPlanHub), true = Studio Chi tiết Phân Rã
   const [isShowingStudio, setIsShowingStudio] = useState<boolean>(initialShowStudio);
 
@@ -1589,7 +1594,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <select
             value={planState.id}
             onChange={(e) => {
-              const found = monthlyPlans.find(p => p.id === e.target.value);
+              const found = scopedStudioPlans.find(p => p.id === e.target.value);
               if (found) {
                 setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
                 setPlanState(found);
@@ -1598,7 +1603,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[220px] truncate"
             title="Chuyển sang gian hàng khác"
           >
-            {monthlyPlans.map(p => (
+            {scopedStudioPlans.map(p => (
               <option key={p.id} value={p.id}>
                 {p.brandName} · {p.month}
               </option>
@@ -1719,13 +1724,17 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     icon: <Layers className="w-3.5 h-3.5" />,
                     onClick: () => setIsVersionHistoryModalOpen(true),
                   },
-                  {
-                    label: 'Phân bổ cho team',
-                    icon: <Users className="w-3.5 h-3.5" />,
-                    onClick: () => setIsAllocationModalOpen(true),
-                    disabled: isPlanLocked,
-                    hint: isPlanLocked ? 'Đã chốt' : undefined
-                  },
+                  ...(isLeadUser
+                    ? [
+                        {
+                          label: 'Phân bổ cho team',
+                          icon: <Users className="w-3.5 h-3.5" />,
+                          onClick: () => setIsAllocationModalOpen(true),
+                          disabled: isPlanLocked,
+                          hint: isPlanLocked ? 'Đã chốt' : undefined,
+                        },
+                      ]
+                    : []),
                   {
                     label: 'Xuất file Excel 4.1.1',
                     icon: <Download className="w-3.5 h-3.5" />,
