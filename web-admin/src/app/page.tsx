@@ -539,7 +539,127 @@ export default function App() {
     }
   }, [router]);
 
-  const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
+  const [kocs, setKocs] = useState<KocItem[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_KOCS;
+    try {
+      const raw = localStorage.getItem('upbase_saved_kocs_v1');
+      if (!raw) return INITIAL_KOCS;
+      const savedMap = JSON.parse(raw) as Record<string, KocItem>;
+      const customItems = Object.values(savedMap || {});
+      if (customItems.length === 0) return INITIAL_KOCS;
+      const byId = new Map<string, KocItem>();
+      const byHandle = new Map<string, KocItem>();
+      for (const item of customItems) {
+        if (item.id) byId.set(item.id, item);
+        const h = (item.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        if (h) byHandle.set(h, item);
+      }
+      const matchedKeys = new Set<string>();
+      const mergedBase = INITIAL_KOCS.map((base) => {
+        const h = (base.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        const override = byId.get(base.id) || (h ? byHandle.get(h) : undefined);
+        if (override) {
+          matchedKeys.add(override.id);
+          if (h) matchedKeys.add(h);
+          return { ...base, ...override };
+        }
+        return base;
+      });
+      const brandNew = customItems.filter((item) => {
+        const h = (item.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        return !matchedKeys.has(item.id) && (!h || !matchedKeys.has(h));
+      });
+      return [...brandNew, ...mergedBase];
+    } catch {
+      return INITIAL_KOCS;
+    }
+  });
+
+  const syncCustomKocsIntoState = useCallback((customItems: KocItem[]) => {
+    if (!Array.isArray(customItems) || customItems.length === 0) return;
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('upbase_saved_kocs_v1');
+        const map: Record<string, KocItem> = raw ? JSON.parse(raw) : {};
+        for (const item of customItems) {
+          const key = (item.channelId || item.id || '').trim().toLowerCase().replace(/^@+/, '') || item.id;
+          if (key) map[key] = item;
+        }
+        localStorage.setItem('upbase_saved_kocs_v1', JSON.stringify(map));
+      }
+    } catch {
+      // ignore storage quota
+    }
+    setKocs((prev) => {
+      const byId = new Map<string, KocItem>();
+      const byHandle = new Map<string, KocItem>();
+      for (const item of customItems) {
+        if (item.id) byId.set(item.id, item);
+        const h = (item.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        if (h) byHandle.set(h, item);
+      }
+      const matchedHandles = new Set<string>();
+      const matchedIds = new Set<string>();
+      const next = prev.map((existing) => {
+        const h = (existing.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        const hit = byId.get(existing.id) || (h ? byHandle.get(h) : undefined);
+        if (hit) {
+          matchedIds.add(hit.id);
+          const hitH = (hit.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+          if (hitH) matchedHandles.add(hitH);
+          if (h) matchedHandles.add(h);
+          return { ...existing, ...hit };
+        }
+        return existing;
+      });
+      const createdNew = customItems.filter((item) => {
+        const h = (item.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+        return !matchedIds.has(item.id) && (!h || !matchedHandles.has(h));
+      });
+      return createdNew.length > 0 ? [...createdNew, ...next] : next;
+    });
+  }, []);
+
+  const persistKocsToDatabase = useCallback(
+    async (payload: { created?: KocItem[]; updated?: KocItem[] }) => {
+      const created = payload.created || [];
+      const updated = payload.updated || [];
+      const combined = [...created, ...updated];
+      if (combined.length === 0) return;
+
+      syncCustomKocsIntoState(combined);
+
+      try {
+        const res = await fetch('/api/kocs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ created, updated }),
+        });
+        const json = await res.json().catch(() => null);
+        if (res.ok && json?.success && Array.isArray(json.items)) {
+          syncCustomKocsIntoState(json.items as KocItem[]);
+        }
+      } catch {
+        // Đã lưu dự phòng vào localStorage nếu mất kết nối tạm thời
+      }
+    },
+    [syncCustomKocsIntoState]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/kocs', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json?.success && Array.isArray(json.items) && json.items.length > 0) {
+          syncCustomKocsIntoState(json.items as KocItem[]);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [syncCustomKocsIntoState]);
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
   const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
@@ -1092,13 +1212,13 @@ export default function App() {
   };
 
   const handleKocCreated = (newKoc: KocItem) => {
-    setKocs(prev => [newKoc, ...prev]);
-    showToast(`Đã thêm ${newKoc.stageName} vào danh bạ (${newKoc.salaryGrade})`);
+    void persistKocsToDatabase({ created: [newKoc], updated: [] });
+    showToast(`Đã thêm và lưu CSDL ${newKoc.stageName} vào danh bạ (${newKoc.salaryGrade})`);
   };
 
   const handleKocUpdated = (updatedKoc: KocItem) => {
-    setKocs(prev => prev.map(k => k.id === updatedKoc.id ? updatedKoc : k));
-    showToast(`Đã cập nhật hồ sơ pháp lý của ${updatedKoc.stageName}`);
+    void persistKocsToDatabase({ created: [], updated: [updatedKoc] });
+    showToast(`Đã cập nhật và lưu CSDL hồ sơ của ${updatedKoc.stageName}`);
   };
 
   const handleContributorCreated = (newCtv: Contributor) => {
@@ -1905,13 +2025,9 @@ export default function App() {
               deals={scopedDeals}
               onSaveScrapedKocs={({ created, updated }) => {
                 if (created.length > 0 || updated.length > 0) {
-                  setKocs((prev) => {
-                    const updatedMap = new Map(updated.map((u) => [u.id, u]));
-                    const next = prev.map((item) => updatedMap.get(item.id) || item);
-                    return [...created, ...next];
-                  });
+                  void persistKocsToDatabase({ created, updated });
                   showToast(
-                    `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
+                    `Đã lưu vào CSDL Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
                     'success'
                   );
                 }
@@ -1944,13 +2060,9 @@ export default function App() {
               selectedBrand={selectedBrandContext}
               onSaveScrapedKocs={({ created, updated }) => {
                 if (created.length > 0 || updated.length > 0) {
-                  setKocs((prev) => {
-                    const updatedMap = new Map(updated.map((u) => [u.id, u]));
-                    const next = prev.map((item) => updatedMap.get(item.id) || item);
-                    return [...created, ...next];
-                  });
+                  void persistKocsToDatabase({ created, updated });
                   showToast(
-                    `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
+                    `Đã lưu vào CSDL Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
                     'success'
                   );
                 }
