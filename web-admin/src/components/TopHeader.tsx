@@ -4,7 +4,7 @@ import React from 'react';
 import { Menu, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
-import { PageActionsSlot, PageHeaderNavSlot } from './ui';
+import { PageActionsSlot, PageHeaderNavSlot, Segmented } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
 
 interface TopHeaderProps {
@@ -14,6 +14,7 @@ interface TopHeaderProps {
   onOpenImport?: () => void;
   title: string;
   activeTab?: TabKey;
+  groupTabs?: { key: TabKey; label: string }[];
   selectedBrand?: string;
   onBrandChange?: (brand: string) => void;
   onNavigateTab?: (tab: TabKey) => void;
@@ -28,6 +29,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
   title,
   activeTab,
+  groupTabs,
+  onNavigateTab,
   onToggleMobileSidebar,
   isSidebarCollapsed = false,
   onToggleSidebarCollapse,
@@ -72,6 +75,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         <div className="min-w-0 flex-1 flex items-center gap-2.5 sm:gap-3 flex-wrap">
           <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight min-w-0 max-w-full truncate sm:shrink-0">{title}</h1>
+          {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
+            <Segmented<TabKey>
+              items={groupTabs}
+              value={activeTab}
+              onChange={onNavigateTab}
+            />
+          )}
           <PageHeaderNavSlot />
         </div>
       </div>

@@ -69,10 +69,31 @@ function downloadCsv(results: LinkAirResult[]) {
   URL.revokeObjectURL(url);
 }
 
+export interface LinkAirRestorePayload {
+  nonce: number;
+  rawInput: string;
+  results: LinkAirResult[];
+  expect?: LinkAirExpectation;
+}
+
 export function LinkAirCheckerPanel({
   onNotify,
+  historyBar,
+  historyTable,
+  restorePayload,
+  onSaveHistory,
 }: {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  historyBar?: React.ReactNode;
+  historyTable?: React.ReactNode;
+  restorePayload?: LinkAirRestorePayload | null;
+  onSaveHistory?: (payload: {
+    rawInput: string;
+    queryKey: string;
+    queryLabel: string;
+    linkAirResults: LinkAirResult[];
+    linkAirExpect: LinkAirExpectation;
+  }) => void;
 }) {
   const [linksText, setLinksText] = useState('');
   const [handle, setHandle] = useState('');
@@ -88,6 +109,23 @@ export function LinkAirCheckerPanel({
   const [results, setResults] = useState<LinkAirResult[]>([]);
   const [filter, setFilter] = useState<VerdictFilter>('ALL');
   const [openKey, setOpenKey] = useState<string | null>(null);
+
+  const [syncedNonce, setSyncedNonce] = useState<number>(0);
+  if (restorePayload && restorePayload.nonce !== syncedNonce) {
+    setSyncedNonce(restorePayload.nonce);
+    setLinksText(restorePayload.rawInput || '');
+    setResults(restorePayload.results || []);
+    setFilter('ALL');
+    setError('');
+    const ex = restorePayload.expect;
+    setHandle(ex?.handle || '');
+    setAirFrom(ex?.airFrom || '');
+    setAirTo(ex?.airTo || '');
+    setHashtags((ex?.requiredHashtags || []).join(', '));
+    setKeywords((ex?.requiredKeywords || []).join(', '));
+    setMinViews(ex?.minViews ? String(ex.minViews) : '');
+    setRequireProductLink(Boolean(ex?.requireProductLink));
+  }
 
   const links = useMemo(() => splitLinkInput(linksText), [linksText]);
   const tooMany = links.length > MAX_LINKS;
@@ -135,6 +173,19 @@ export function LinkAirCheckerPanel({
         s ? `Đã kiểm tra ${s.total} link: ${s.pass} đạt, ${s.review} cần xem lại, ${s.fail} không đạt` : `Đã kiểm tra ${data.results.length} link`,
         s && s.fail > 0 ? 'warning' : 'success'
       );
+
+      if (data.results.length > 0 && onSaveHistory) {
+        const firstAuthor = data.results[0]?.author?.handle
+          ? `@${data.results[0].author.handle}`
+          : handle.trim() || 'Đa kênh';
+        onSaveHistory({
+          rawInput: links.join('\n'),
+          queryKey: `${firstAuthor}-${links.length}-${links[0]?.slice(-12) || ''}`.toLowerCase(),
+          queryLabel: `Nghiệm thu ${data.results.length} link air (${firstAuthor})`,
+          linkAirResults: data.results,
+          linkAirExpect: expect,
+        });
+      }
     } catch {
       setError('Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
     } finally {
@@ -152,6 +203,7 @@ export function LinkAirCheckerPanel({
     setMinViews('');
     setRequireProductLink(false);
     setError('');
+    setResults([]);
   };
 
   const columns: Column<LinkAirResult>[] = [
@@ -195,148 +247,149 @@ export function LinkAirCheckerPanel({
 
   return (
     <div className="space-y-3">
-      <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2.5">
-        <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
+      <Panel flush>
+        <div className="px-3.5 py-2.5 bg-surface space-y-2.5 border-b border-line">
+          <div className="grid gap-2.5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
+            <div>
+              <Textarea
+                id="link-air-input"
+                aria-label={`Link air (${links.length}/${MAX_LINKS})`}
+                rows={3}
+                value={linksText}
+                onChange={(e) => setLinksText(e.target.value)}
+                placeholder={`Dán danh sách link TikTok, Shopee Video, Facebook, Instagram (${links.length}/${MAX_LINKS} link - mỗi dòng 1 link)...`}
+                className="font-code text-xs"
+              />
+              {tooMany && (
+                <p className="mt-1 text-2xs text-critical">
+                  Tối đa {MAX_LINKS} link mỗi lần. Bớt {links.length - MAX_LINKS} link rồi kiểm tra lại.
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Input
+                id="link-air-handle"
+                aria-label="Kênh KOC"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="Kênh KOC (@handle)"
+                className="h-8 text-xs"
+              />
+              <Input
+                id="link-air-views"
+                aria-label="View tối thiểu"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={minViews}
+                onChange={(e) => setMinViews(e.target.value)}
+                placeholder="View tối thiểu"
+                className="h-8 text-xs"
+              />
+              <Input
+                id="link-air-hashtags"
+                aria-label="Hashtag bắt buộc"
+                value={hashtags}
+                onChange={(e) => setHashtags(e.target.value)}
+                placeholder="Hashtag (#tag1, #tag2)"
+                className="h-8 text-xs"
+              />
+              <Input
+                id="link-air-from"
+                aria-label="Air từ ngày"
+                type="date"
+                value={airFrom}
+                onChange={(e) => setAirFrom(e.target.value)}
+                title="Air từ ngày"
+                className="h-8 text-xs"
+              />
+              <Input
+                id="link-air-to"
+                aria-label="Đến ngày"
+                type="date"
+                value={airTo}
+                onChange={(e) => setAirTo(e.target.value)}
+                title="Air đến ngày"
+                className="h-8 text-xs"
+              />
+              <Input
+                id="link-air-keywords"
+                aria-label="Brand / key message"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="Brand / từ khoá bắt buộc"
+                className="h-8 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+            <label className="flex items-center gap-2 text-xs text-ink cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={requireProductLink}
+                onChange={(e) => setRequireProductLink(e.target.checked)}
+                className="w-3.5 h-3.5 accent-(--color-primary)"
+              />
+              Bắt buộc gắn giỏ hàng / link sản phẩm
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {error && <span className="text-2xs text-critical">{error}</span>}
+              <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetForm} disabled={loading}>
+                Xoá nhập
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={ShieldCheck}
+                onClick={runCheck}
+                disabled={loading || links.length === 0 || tooMany}
+              >
+                {loading ? `Đang kiểm tra ${links.length} link…` : `Kiểm tra link (${links.length})`}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {historyBar}
+
+        {(results.length > 0 || loading) ? (
           <div>
-            <Textarea
-              id="link-air-input"
-              aria-label={`Link air (${links.length}/${MAX_LINKS})`}
-              rows={3}
-              value={linksText}
-              onChange={(e) => setLinksText(e.target.value)}
-              placeholder={`Dán danh sách link TikTok, Shopee Video, Facebook, Instagram (${links.length}/${MAX_LINKS} link - mỗi dòng 1 link)...`}
-              className="font-code text-xs"
-            />
-            {tooMany && (
-              <p className="mt-1 text-2xs text-critical">
-                Tối đa {MAX_LINKS} link mỗi lần. Bớt {links.length - MAX_LINKS} link rồi kiểm tra lại.
-              </p>
-            )}
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <Input
-              id="link-air-handle"
-              aria-label="Kênh KOC"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder="Kênh KOC (@handle)"
-              className="h-8 text-xs"
-            />
-            <Input
-              id="link-air-views"
-              aria-label="View tối thiểu"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={minViews}
-              onChange={(e) => setMinViews(e.target.value)}
-              placeholder="View tối thiểu"
-              className="h-8 text-xs"
-            />
-            <Input
-              id="link-air-hashtags"
-              aria-label="Hashtag bắt buộc"
-              value={hashtags}
-              onChange={(e) => setHashtags(e.target.value)}
-              placeholder="Hashtag (#tag1, #tag2)"
-              className="h-8 text-xs"
-            />
-            <Input
-              id="link-air-from"
-              aria-label="Air từ ngày"
-              type="date"
-              value={airFrom}
-              onChange={(e) => setAirFrom(e.target.value)}
-              title="Air từ ngày"
-              className="h-8 text-xs"
-            />
-            <Input
-              id="link-air-to"
-              aria-label="Đến ngày"
-              type="date"
-              value={airTo}
-              onChange={(e) => setAirTo(e.target.value)}
-              title="Air đến ngày"
-              className="h-8 text-xs"
-            />
-            <Input
-              id="link-air-keywords"
-              aria-label="Brand / key message"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Brand / từ khoá bắt buộc"
-              className="h-8 text-xs"
+            <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
+              <FilterBar
+                chips={
+                  <Chips<VerdictFilter>
+                    label="Kết luận"
+                    value={filter}
+                    onChange={setFilter}
+                    items={[
+                      { key: 'ALL', label: 'Tất cả', count: counts.ALL },
+                      { key: 'FAIL', label: 'Không đạt', count: counts.FAIL },
+                      { key: 'REVIEW', label: 'Cần xem lại', count: counts.REVIEW },
+                      { key: 'PASS', label: 'Đạt', count: counts.PASS },
+                    ]}
+                  />
+                }
+              />
+              <Button size="sm" variant="secondary" icon={Download} onClick={() => downloadCsv(visible)} disabled={visible.length === 0}>
+                Tải CSV ({visible.length})
+              </Button>
+            </div>
+            <DataTable
+              rows={visible}
+              columns={columns}
+              rowKey={(r) => r.inputUrl}
+              loading={loading}
+              onRowClick={(r) => setOpenKey(r.inputUrl)}
+              empty={<EmptyState title="Không có link nào ở nhóm này." />}
             />
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-          <label className="flex items-center gap-2 text-xs text-ink cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={requireProductLink}
-              onChange={(e) => setRequireProductLink(e.target.checked)}
-              className="w-3.5 h-3.5 accent-(--color-primary)"
-            />
-            Bắt buộc gắn giỏ hàng / link sản phẩm
-          </label>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {error && <span className="text-2xs text-critical">{error}</span>}
-            <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetForm} disabled={loading}>
-              Xoá nhập
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              icon={ShieldCheck}
-              onClick={runCheck}
-              disabled={loading || links.length === 0 || tooMany}
-            >
-              {loading ? `Đang kiểm tra ${links.length} link…` : `Kiểm tra link (${links.length})`}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {(results.length > 0 || loading) && (
-        <Panel
-          title={`Kết quả kiểm tra (${visible.length}/${results.length})`}
-          flush
-          actions={
-            <Button size="sm" variant="secondary" icon={Download} onClick={() => downloadCsv(visible)} disabled={visible.length === 0}>
-              Tải CSV
-            </Button>
-          }
-        >
-          <div className="px-4 py-2.5 border-b border-line">
-            <FilterBar
-              chips={
-                <Chips<VerdictFilter>
-                  label="Kết luận"
-                  value={filter}
-                  onChange={setFilter}
-                  items={[
-                    { key: 'ALL', label: 'Tất cả', count: counts.ALL },
-                    { key: 'FAIL', label: 'Không đạt', count: counts.FAIL },
-                    { key: 'REVIEW', label: 'Cần xem lại', count: counts.REVIEW },
-                    { key: 'PASS', label: 'Đạt', count: counts.PASS },
-                  ]}
-                />
-              }
-            />
-          </div>
-          <DataTable
-            rows={visible}
-            columns={columns}
-            rowKey={(r) => r.inputUrl}
-            loading={loading}
-            onRowClick={(r) => setOpenKey(r.inputUrl)}
-            empty={<EmptyState title="Không có link nào ở nhóm này." />}
-          />
-        </Panel>
-      )}
+        ) : (
+          historyTable
+        )}
+      </Panel>
 
       <LinkAirDetailModal result={opened} onClose={() => setOpenKey(null)} />
     </div>

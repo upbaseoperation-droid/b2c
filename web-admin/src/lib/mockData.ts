@@ -114,6 +114,22 @@ export const USERS: UserProfile[] = [
     loginProvider: 'LARK',
     assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA']
   },
+  {
+    id: 'user-huu-chien',
+    name: 'Trần Hữu Chiến',
+    email: 'chienth@upbase.vn',
+    role: 'ADMIN',
+    roleTitle: 'Business Operation Leader (Operation)',
+    avatar: 'HC',
+    staffCode: 'HN979',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Khối Vận Hành (Operation)',
+    teamName: 'Operation',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA'],
+    permissions: ['ALL_PERMISSIONS']
+  },
 
   // =========================================================================
   // 2. TRƯỞNG NHÓM & CHUYÊN VIÊN TÁC NGHIỆP 3 KHỐI (MARKETING B2C - GROWTH - MEDIA)

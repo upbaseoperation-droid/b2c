@@ -30,7 +30,7 @@ export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision
   const master = UPBASE_STAFF_MASTER.find(s => `staff-${s.id}` === user.id || sameEmail(s.email));
   let result = { ...user };
   if (staff?.status === 'SUSPENDED' || staff?.canLogin === false) return null;
-  if (staff) result = { ...result, role: staff.role, roleTitle: staff.roleTitle, assignedBrands: staff.picBrands, permissions: Object.entries(staff.permissions).filter(([, v]) => v).map(([k]) => k) };
+  if (staff) result = { ...result, role: staff.role, roleTitle: staff.roleTitle, permissions: Object.entries(staff.permissions).filter(([, v]) => v).map(([k]) => k) };
   if (master && (result.role !== 'ADMIN' || policy.staffOverrides[master.id])) {
     const classified = classifyMasterStaffMember(master, policy.deptRules, policy.staffOverrides);
     if (!classified.canLogin) return null;

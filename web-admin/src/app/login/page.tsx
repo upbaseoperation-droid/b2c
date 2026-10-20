@@ -110,6 +110,9 @@ function LoginContent() {
 
   const handleLarkLogin = () => {
     setIsLoading(true);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('upbase_selected_user_id');
+    }
     router.push(`/api/auth/lark/login?returnTo=${encodeURIComponent(returnTo)}`);
   };
 

@@ -100,7 +100,15 @@ export interface KocProfileProps {
   /** `page`: hai cột, có đầu trang. `modal`: một cột, tên KOC nằm ở tiêu đề modal. */
   layout?: 'page' | 'modal';
   /** Điều hướng trong trang chi tiết. */
-  nav?: { onBack: () => void; onPrev?: () => void; onNext?: () => void; position?: number; total?: number };
+  nav?: {
+    onBack: () => void;
+    onReturnToSource?: () => void;
+    returnToSourceLabel?: string;
+    onPrev?: () => void;
+    onNext?: () => void;
+    position?: number;
+    total?: number;
+  };
   onOpenKoc?: (kocId: string) => void;
   onCreateBooking?: (koc: KocItem) => void;
   onUpdateMetrics?: (koc: KocItem) => void;
@@ -161,9 +169,22 @@ export function KocProfile({
     <div className="space-y-6">
       {isPage && nav && (
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-2.5">
-            Danh bạ KOC
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {nav.onReturnToSource && nav.returnToSourceLabel ? (
+              <>
+                <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={nav.onReturnToSource}>
+                  {nav.returnToSourceLabel}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={nav.onBack}>
+                  Xem bảng Danh bạ KOC
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack} className="-ml-2.5">
+                Danh bạ KOC
+              </Button>
+            )}
+          </div>
           {(nav.onPrev || nav.onNext) && (
             <div className="flex items-center gap-1.5 text-2xs text-ink-3">
               {nav.position && nav.total ? (

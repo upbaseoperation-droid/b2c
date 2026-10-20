@@ -51,7 +51,11 @@ import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { KocChannelBriefMatcherModal } from '../koc/KocChannelBriefMatcherModal';
 import type { KocBriefAnalysisBackgroundJob } from '../../lib/kocChannelBriefAnalyzer';
-import { LinkAirCheckerPanel } from '../crawler/LinkAirCheckerPanel';
+import {
+  LinkAirCheckerPanel,
+  type LinkAirRestorePayload,
+} from '../crawler/LinkAirCheckerPanel';
+import type { LinkAirExpectation, LinkAirResult } from '../../lib/linkAirCheck';
 import {
   CompetitorVideoScriptModal,
   type ScriptExtractFallbackContext,
@@ -63,12 +67,12 @@ import {
   Chips,
   DataTable,
   PageActions,
-  PageHeaderNav,
   Panel,
   SearchInput,
   Segmented,
   Select,
   Status,
+  Tabs,
 } from '../ui';
 import type { Column } from '../ui';
 
@@ -151,10 +155,22 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [activeTab, setActiveTab] = useState<CrawlerTabKey>('COMPETITOR_KOCS');
   const period: PeriodKey = '30d';
 
-  // --- Lịch sử quét chung trong ngày giữa các nhân viên ---
+  // --- Lịch sử crawl theo tuần (7 ngày gần nhất) cho từng tab ---
   const [dailyHistory, setDailyHistory] = useState<TikTokCrawlerDailyHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [historyDayFilter, setHistoryDayFilter] = useState<
+    'ALL_WEEK' | 'TODAY' | 'YESTERDAY' | 'EARLIER'
+  >('ALL_WEEK');
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
+  const [showAllTabsInBar, setShowAllTabsInBar] = useState(false);
+  const [expandedWeeklyTableByTab, setExpandedWeeklyTableByTab] = useState<
+    Record<string, boolean>
+  >({});
+  const [linkAirRestorePayload, setLinkAirRestorePayload] =
+    useState<LinkAirRestorePayload | null>(null);
+
+  const WEEKLY_HISTORY_STORAGE_KEY = 'upbase_b2c_tiktok_weekly_crawl_history_v1';
 
   const fetchDailyHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -163,11 +179,32 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       const json = await res.json();
       if (res.ok && json.success && Array.isArray(json.items)) {
         setDailyHistory(json.items);
+        try {
+          window.localStorage.setItem(
+            WEEKLY_HISTORY_STORAGE_KEY,
+            JSON.stringify(json.items)
+          );
+        } catch {
+          // ignore storage quota
+        }
+        return;
       }
     } catch {
-      // ignore background history fetch error
+      // fallback to localStorage if offline
     } finally {
       setHistoryLoading(false);
+    }
+
+    try {
+      const cached = window.localStorage.getItem(WEEKLY_HISTORY_STORAGE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setDailyHistory(parsed);
+        }
+      }
+    } catch {
+      // ignore
     }
   }, []);
 
@@ -181,12 +218,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       rawInput: string;
       queryKey?: string;
       queryLabel: string;
+      summaryNote?: string;
       compProfile?: TikTokCompetitorProfileSummary | null;
       compResults?: TikTokCompetitorKocResult[];
       tagResults?: TikTokHashtagKocResult[];
       commentData?: TikTokVideoCommentsScrapeResult | null;
       trendingCategory?: TrendingKocCategoryKey;
       trendingCreators?: TikTokTrendingCreatorItem[];
+      scrapedChannels?: TikTokScrapedKocResult[];
+      linkAirResults?: LinkAirResult[];
+      linkAirExpect?: LinkAirExpectation;
     }) => {
       try {
         const res = await fetch('/api/integrations/tiktok-koc/history', {
@@ -200,6 +241,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const json = await res.json();
         if (res.ok && json.success && Array.isArray(json.items)) {
           setDailyHistory(json.items);
+          try {
+            window.localStorage.setItem(
+              WEEKLY_HISTORY_STORAGE_KEY,
+              JSON.stringify(json.items)
+            );
+          } catch {
+            // ignore
+          }
           const first = json.items[0] as TikTokCrawlerDailyHistoryItem | undefined;
           if (first && first.tab === payload.tab) {
             setActiveHistoryId(first.id);
@@ -213,14 +262,23 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   );
 
   const deleteHistoryEntry = useCallback(
-    async (id: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setDailyHistory((prev) => prev.filter((it) => it.id !== id));
+    async (id: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      setDailyHistory((prev) => {
+        const next = prev.filter((it) => it.id !== id);
+        try {
+          window.localStorage.setItem(WEEKLY_HISTORY_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
       if (activeHistoryId === id) setActiveHistoryId(null);
       try {
-        const res = await fetch(`/api/integrations/tiktok-koc/history?id=${encodeURIComponent(id)}`, {
-          method: 'DELETE',
-        });
+        const res = await fetch(
+          `/api/integrations/tiktok-koc/history?id=${encodeURIComponent(id)}`,
+          { method: 'DELETE' }
+        );
         const json = await res.json();
         if (res.ok && json.success && Array.isArray(json.items)) {
           setDailyHistory(json.items);
@@ -230,6 +288,34 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       }
     },
     [activeHistoryId]
+  );
+
+  const clearTabWeeklyHistory = useCallback(
+    async (tab: CrawlerHistoryTabKey) => {
+      setDailyHistory((prev) => {
+        const next = prev.filter((it) => it.tab !== tab);
+        try {
+          window.localStorage.setItem(WEEKLY_HISTORY_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+      try {
+        const res = await fetch(
+          `/api/integrations/tiktok-koc/history?tab=${encodeURIComponent(tab)}`,
+          { method: 'DELETE' }
+        );
+        const json = await res.json();
+        if (res.ok && json.success && Array.isArray(json.items)) {
+          setDailyHistory(json.items);
+        }
+        onNotify?.('Đã xóa lịch sử quét trong tuần của tab này.', 'info');
+      } catch {
+        // ignore
+      }
+    },
+    [onNotify]
   );
 
   // --- State Tab 1: Quét KOC của Đối thủ ---
@@ -2015,9 +2101,53 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
   ];
 
+  const todayVnDateKey = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+    } catch {
+      return new Date().toISOString().slice(0, 10);
+    }
+  }, []);
+
+  const yesterdayVnDateKey = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    } catch {
+      return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    }
+  }, []);
+
+  const formatHistoryDayBadge = useCallback(
+    (dateKey: string) => {
+      if (!dateKey || dateKey === todayVnDateKey) return 'Hôm nay';
+      if (dateKey === yesterdayVnDateKey) return 'Hôm qua';
+      const parts = dateKey.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}`;
+      }
+      return dateKey;
+    },
+    [todayVnDateKey, yesterdayVnDateKey]
+  );
+
   const applyHistoryEntry = useCallback(
     (item: TikTokCrawlerDailyHistoryItem) => {
       setActiveHistoryId(item.id);
+      if (item.tab === 'HANDLE_SCRAPE') {
+        setScraperInitialHandle(item.rawInput);
+        setScraperModalOpen(true);
+        return;
+      }
       if (activeTab !== item.tab) {
         setActiveTab(item.tab);
       }
@@ -2054,143 +2184,458 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         setTrendingRequestedCount(list.length || item.resultCount);
         setTrendingFilter('ALL');
         setTrendingSearch('');
+      } else if (item.tab === 'LINK_AIR_CHECK') {
+        setLinkAirRestorePayload({
+          nonce: Date.now(),
+          rawInput: item.rawInput,
+          results: Array.isArray(item.linkAirResults) ? item.linkAirResults : [],
+          expect: item.linkAirExpect,
+        });
       }
     },
     [activeTab]
   );
 
+  const rerunHistoryEntry = useCallback(
+    (item: TikTokCrawlerDailyHistoryItem) => {
+      if (item.tab === 'HANDLE_SCRAPE') {
+        setScraperInitialHandle(item.rawInput);
+        setScraperModalOpen(true);
+        return;
+      }
+      if (activeTab !== item.tab) {
+        setActiveTab(item.tab);
+      }
+      if (item.tab === 'COMPETITOR_KOCS') {
+        setCompetitorInput(item.rawInput);
+        void runCompetitorCrawl(item.rawInput, period, { targetCount: compTargetCount });
+      } else if (item.tab === 'HASHTAG_DISCOVERY') {
+        setHashtagInput(item.rawInput);
+        void runHashtagCrawl(item.rawInput, period, { targetCount: tagTargetCount });
+      } else if (item.tab === 'COMMENTS_AND_TRENDING') {
+        setVideoCommentUrl(item.rawInput);
+        void runVideoCommentsCrawl(item.rawInput, { targetCount: commentTargetCount });
+      } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
+        const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
+        setTrendingCategory(cat);
+        void runTrendingCreatorsCrawl(cat, { targetCount: trendingTargetCount });
+      } else if (item.tab === 'LINK_AIR_CHECK') {
+        applyHistoryEntry(item);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeTab, period, compTargetCount, tagTargetCount, commentTargetCount, trendingTargetCount, applyHistoryEntry]
+  );
+
+  const tabShortLabel: Record<CrawlerHistoryTabKey, string> = {
+    COMPETITOR_KOCS: 'KOC của đối thủ',
+    HASHTAG_DISCOVERY: 'KOC theo #Hashtag',
+    COMMENTS_AND_TRENDING: 'Bình luận video',
+    CHANNEL_AND_VIDEO_TOOLS: 'KOC xu hướng',
+    LINK_AIR_CHECK: 'Kiểm tra link air',
+    HANDLE_SCRAPE: 'Kênh @handle',
+  };
+
+  const unitLabel: Record<CrawlerHistoryTabKey, string> = {
+    COMPETITOR_KOCS: 'KOC',
+    HASHTAG_DISCOVERY: 'KOC',
+    COMMENTS_AND_TRENDING: 'BL',
+    CHANNEL_AND_VIDEO_TOOLS: 'KOC',
+    LINK_AIR_CHECK: 'Link',
+    HANDLE_SCRAPE: 'KOC',
+  };
+
   const renderDailyHistoryBar = (currentTab: CrawlerHistoryTabKey, hasContentBelow: boolean) => {
-    if (dailyHistory.length === 0) return null;
-
-    const sortedItems = [
-      ...dailyHistory.filter((it) => it.tab === currentTab),
-      ...dailyHistory.filter((it) => it.tab !== currentTab),
-    ];
-
-    const tabShortLabel: Record<CrawlerHistoryTabKey, string> = {
-      COMPETITOR_KOCS: 'Đối thủ',
-      HASHTAG_DISCOVERY: 'Hashtag',
-      COMMENTS_AND_TRENDING: 'Bình luận',
-      CHANNEL_AND_VIDEO_TOOLS: 'Xu hướng',
-    };
-
-    const unitLabel: Record<CrawlerHistoryTabKey, string> = {
-      COMPETITOR_KOCS: 'KOC',
-      HASHTAG_DISCOVERY: 'KOC',
-      COMMENTS_AND_TRENDING: 'BL',
-      CHANNEL_AND_VIDEO_TOOLS: 'KOC',
-    };
+    const tabItems = dailyHistory.filter(
+      (it) =>
+        it.tab === currentTab ||
+        (currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
+    );
+    const itemsToShow = showAllTabsInBar
+      ? [
+          ...tabItems,
+          ...dailyHistory.filter(
+            (it) =>
+              it.tab !== currentTab &&
+              !(currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
+          ),
+        ]
+      : tabItems;
+    const isTableExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
 
     return (
       <div
-        className={`px-3.5 py-1.5 bg-surface-2/60 flex flex-wrap items-center justify-between gap-2 ${
-          hasContentBelow ? 'border-b border-line' : ''
+        className={`px-3.5 py-2 bg-surface-2/60 flex flex-wrap items-center justify-between gap-2 ${
+          hasContentBelow || isTableExpanded || tabItems.length > 0 ? 'border-b border-line' : ''
         }`}
       >
         <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
           <span className="inline-flex items-center gap-1 text-2xs font-semibold text-ink-2 whitespace-nowrap mr-0.5">
             <Clock className="w-3 h-3 text-accent shrink-0" />
-            <span>Lịch sử quét hôm nay ({dailyHistory.length}):</span>
+            <span>
+              Lịch sử crawl trong tuần · {tabShortLabel[currentTab]} ({tabItems.length}):
+            </span>
           </span>
 
-          {sortedItems.map((item) => {
-            const isSelected = activeHistoryId === item.id;
-            const isOtherTab = item.tab !== currentTab;
-            const shortStaff = (item.staffName || 'Nhân sự')
-              .trim()
-              .split(/\s+/)
-              .slice(-2)
-              .join(' ');
+          {itemsToShow.length === 0 ? (
+            <span className="text-2xs text-ink-3">
+              Chưa có phiên quét nào trong 7 ngày qua ở tab này.
+            </span>
+          ) : (
+            itemsToShow.slice(0, 8).map((item) => {
+              const isSelected = activeHistoryId === item.id;
+              const isOtherTab =
+                item.tab !== currentTab &&
+                !(currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && item.tab === 'HANDLE_SCRAPE');
+              const shortStaff = (item.staffName || 'Nhân sự')
+                .trim()
+                .split(/\s+/)
+                .slice(-2)
+                .join(' ');
+              const dayBadge = formatHistoryDayBadge(item.dateKey);
 
-            return (
-              <div
-                key={item.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => applyHistoryEntry(item)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    applyHistoryEntry(item);
-                  }
-                }}
-                title={`${tabShortLabel[item.tab]}: ${item.queryLabel} (${item.resultCount} kết quả) · Quét bởi ${item.staffName} lúc ${item.timeLabel} · Bấm để xem ngay`}
-                className={`group inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-full border text-2xs transition cursor-pointer select-none ${
-                  isSelected
-                    ? 'border-accent bg-accent-soft/60 text-accent font-semibold'
-                    : 'border-line bg-surface hover:border-accent/50 text-ink'
-                }`}
-              >
-                {isOtherTab && (
-                  <span className="text-ink-3 font-normal">{tabShortLabel[item.tab]}:</span>
-                )}
-                <span className="font-code font-semibold truncate max-w-[160px]">
-                  {item.queryLabel}
-                </span>
-                <span className="px-1 py-0.2 rounded-full bg-surface-2 text-ink-2 font-code tabular-nums">
-                  {item.resultCount} {unitLabel[item.tab]}
-                </span>
-                <span className="text-ink-3 whitespace-nowrap">
-                  · {shortStaff} · {item.timeLabel}
-                </span>
-                <button
-                  type="button"
-                  onClick={(e) => void deleteHistoryEntry(item.id, e)}
-                  title="Xóa khỏi lịch sử hôm nay"
-                  className="w-4 h-4 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-critical hover:bg-critical-soft/60 transition"
+              return (
+                <div
+                  key={item.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => applyHistoryEntry(item)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      applyHistoryEntry(item);
+                    }
+                  }}
+                  title={`${tabShortLabel[item.tab]}: ${item.queryLabel} (${item.resultCount} kết quả)${item.summaryNote ? ` · ${item.summaryNote}` : ''} · Quét bởi ${item.staffName} (${dayBadge} ${item.timeLabel}) · Bấm để xem ngay`}
+                  className={`group inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-full border text-2xs transition cursor-pointer select-none ${
+                    isSelected
+                      ? 'border-accent bg-accent-soft/60 text-accent font-semibold'
+                      : 'border-line bg-surface hover:border-accent/50 text-ink'
+                  }`}
                 >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            );
-          })}
+                  {isOtherTab && (
+                    <span className="text-ink-3 font-normal">{tabShortLabel[item.tab]}:</span>
+                  )}
+                  <span className="font-code font-semibold truncate max-w-[160px]">
+                    {item.queryLabel}
+                  </span>
+                  <span className="px-1 py-0.2 rounded-full bg-surface-2 text-ink-2 font-code tabular-nums">
+                    {item.resultCount} {unitLabel[item.tab]}
+                  </span>
+                  <span className="text-ink-3 whitespace-nowrap">
+                    · {dayBadge} {item.timeLabel} · {shortStaff}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => void deleteHistoryEntry(item.id, e)}
+                    title="Xóa khỏi lịch sử tuần"
+                    className="w-4 h-4 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-critical hover:bg-critical-soft/60 transition"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => void fetchDailyHistory()}
-          disabled={historyLoading}
-          title="Đồng bộ lịch sử quét mới nhất từ các nhân viên khác"
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-surface hover:bg-surface-2 text-2xs text-ink-2 hover:text-ink transition shrink-0 cursor-pointer"
-        >
-          <RefreshCw className={`w-3 h-3 ${historyLoading ? 'animate-spin text-accent' : ''}`} />
-          <span>Làm mới</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          {dailyHistory.length > tabItems.length && (
+            <button
+              type="button"
+              onClick={() => setShowAllTabsInBar((prev) => !prev)}
+              className={`inline-flex items-center gap-1 h-6 px-2 rounded-md border text-2xs transition cursor-pointer ${
+                showAllTabsInBar
+                  ? 'border-accent bg-accent-soft/50 text-accent font-semibold'
+                  : 'border-line bg-surface hover:bg-surface-2 text-ink-2'
+              }`}
+            >
+              <span>
+                {showAllTabsInBar
+                  ? `Chỉ tab này (${tabItems.length})`
+                  : `Tất cả tab (${dailyHistory.length})`}
+              </span>
+            </button>
+          )}
+
+          {hasContentBelow && (
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedWeeklyTableByTab((prev) => ({
+                  ...prev,
+                  [currentTab]: !prev[currentTab],
+                }))
+              }
+              className={`inline-flex items-center gap-1 h-6 px-2 rounded-md border text-2xs transition cursor-pointer ${
+                isTableExpanded
+                  ? 'border-accent bg-accent text-white font-semibold'
+                  : 'border-line bg-surface hover:bg-surface-2 text-ink-2 hover:text-ink'
+              }`}
+            >
+              <Clock className="w-3 h-3" />
+              <span>
+                {isTableExpanded
+                  ? 'Ẩn bảng lịch sử tuần'
+                  : `Bảng lịch sử tuần (${tabItems.length})`}
+              </span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => void fetchDailyHistory()}
+            disabled={historyLoading}
+            title="Đồng bộ lịch sử quét trong tuần (7 ngày gần nhất)"
+            className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-surface hover:bg-surface-2 text-2xs text-ink-2 hover:text-ink transition shrink-0 cursor-pointer"
+          >
+            <RefreshCw className={`w-3 h-3 ${historyLoading ? 'animate-spin text-accent' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTabWeeklyHistorySection = (
+    currentTab: CrawlerHistoryTabKey,
+    hasActiveResults: boolean
+  ) => {
+    const isExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
+    if (hasActiveResults && !isExpanded) return null;
+
+    const allTabItems = dailyHistory.filter(
+      (it) =>
+        it.tab === currentTab ||
+        (currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
+    );
+
+    const todayCount = allTabItems.filter((it) => it.dateKey === todayVnDateKey).length;
+    const yesterdayCount = allTabItems.filter((it) => it.dateKey === yesterdayVnDateKey).length;
+    const earlierCount = allTabItems.length - todayCount - yesterdayCount;
+
+    const filteredHistoryRows = allTabItems.filter((it) => {
+      if (historyDayFilter === 'TODAY' && it.dateKey !== todayVnDateKey) return false;
+      if (historyDayFilter === 'YESTERDAY' && it.dateKey !== yesterdayVnDateKey) return false;
+      if (
+        historyDayFilter === 'EARLIER' &&
+        (it.dateKey === todayVnDateKey || it.dateKey === yesterdayVnDateKey)
+      ) {
+        return false;
+      }
+      if (historySearchQuery.trim()) {
+        const q = historySearchQuery.trim().toLowerCase();
+        const hitLabel = it.queryLabel.toLowerCase().includes(q);
+        const hitRaw = it.rawInput.toLowerCase().includes(q);
+        const hitStaff = (it.staffName || '').toLowerCase().includes(q);
+        const hitNote = (it.summaryNote || '').toLowerCase().includes(q);
+        if (!hitLabel && !hitRaw && !hitStaff && !hitNote) return false;
+      }
+      return true;
+    });
+
+    const historyColumns: Column<TikTokCrawlerDailyHistoryItem>[] = [
+      {
+        key: 'query',
+        header: 'Nội dung / Từ khóa đã quét',
+        width: 280,
+        render: (it) => (
+          <div className="grid gap-0.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-code font-semibold text-xs text-ink truncate">
+                {it.queryLabel}
+              </span>
+              {activeHistoryId === it.id && (
+                <Status tone="info">Đang mở</Status>
+              )}
+            </div>
+            <span className="text-2xs text-ink-3 font-code truncate max-w-[290px]" title={it.rawInput}>
+              Đầu vào: {it.rawInput}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'result',
+        header: 'Kết quả lưu trữ',
+        width: 260,
+        render: (it) => (
+          <div className="grid gap-0.5 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <Status tone="positive">
+                {it.resultCount} {unitLabel[it.tab]}
+              </Status>
+              <span className="text-2xs text-ink-2 font-medium">
+                {tabShortLabel[it.tab]}
+              </span>
+            </div>
+            {it.summaryNote && (
+              <span className="text-2xs text-ink-3 truncate">{it.summaryNote}</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'staff',
+        header: 'Nhân sự thực hiện',
+        width: 170,
+        render: (it) => (
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar name={it.staffName || 'Nhân sự'} size={24} />
+            <span className="text-xs font-medium text-ink truncate">
+              {it.staffName || 'Nhân sự B2C'}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'time',
+        header: 'Thời gian quét (7 ngày)',
+        width: 175,
+        render: (it) => {
+          const badge = formatHistoryDayBadge(it.dateKey);
+          const isToday = it.dateKey === todayVnDateKey;
+          return (
+            <div className="grid gap-0.5 tabular-nums">
+              <div className="flex items-center gap-1.5">
+                <Status tone={isToday ? 'positive' : 'neutral'}>{badge}</Status>
+                <span className="text-xs font-semibold text-ink font-code">
+                  {it.timeLabel}
+                </span>
+              </div>
+              <span className="text-2xs text-ink-3">{formatDate(it.dateKey)}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'actions',
+        header: 'Thao tác',
+        align: 'right',
+        width: 230,
+        render: (it) => (
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                applyHistoryEntry(it);
+              }}
+            >
+              Xem kết quả
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={RefreshCw}
+              onClick={(e) => {
+                e.stopPropagation();
+                rerunHistoryEntry(it);
+              }}
+            >
+              Quét lại
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={X}
+              onClick={(e) => void deleteHistoryEntry(it.id, e)}
+            >
+              Xóa
+            </Button>
+          </div>
+        ),
+      },
+    ];
+
+    return (
+      <div className={hasActiveResults ? 'border-b border-line bg-surface' : 'bg-surface'}>
+        <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-accent" />
+              <span>
+                Lịch sử crawl trong tuần (7 ngày gần nhất) — {tabShortLabel[currentTab]}
+              </span>
+            </span>
+            <Chips<'ALL_WEEK' | 'TODAY' | 'YESTERDAY' | 'EARLIER'>
+              items={[
+                { key: 'ALL_WEEK', label: 'Tất cả 7 ngày', count: allTabItems.length },
+                { key: 'TODAY', label: 'Hôm nay', count: todayCount },
+                { key: 'YESTERDAY', label: 'Hôm qua', count: yesterdayCount },
+                { key: 'EARLIER', label: 'Trong tuần', count: earlierCount },
+              ]}
+              value={historyDayFilter}
+              onChange={setHistoryDayFilter}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <SearchInput
+              value={historySearchQuery}
+              onChange={setHistorySearchQuery}
+              placeholder="Tìm từ khóa, @handle, nhân sự quét..."
+              className="w-56 [&_input]:h-7 [&_input]:text-xs"
+            />
+            {allTabItems.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={RotateCcw}
+                onClick={() => void clearTabWeeklyHistory(currentTab)}
+              >
+                Xóa lịch sử tab
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <DataTable
+          rows={filteredHistoryRows}
+          columns={historyColumns}
+          rowKey={(it) => it.id}
+          onRowClick={(it) => applyHistoryEntry(it)}
+          fitContainer
+          empty="Chưa có phiên crawl nào được lưu trong 7 ngày qua ở tab này. Nhập thông tin bên trên và bấm Quét để lưu tự động vào lịch sử tuần."
+        />
       </div>
     );
   };
 
   return (
     <div className="space-y-3">
-      {/* Đưa cụm chuyển tab lên thẳng TopHeader cạnh tiêu đề trang để tiết kiệm 1 hàng dọc */}
-      <PageHeaderNav>
-        <Segmented<CrawlerTabKey>
-          items={[
-            {
-              key: 'COMPETITOR_KOCS',
-              label: 'KOC của đối thủ',
-            },
-            {
-              key: 'HASHTAG_DISCOVERY',
-              label: 'KOC theo #Hashtag',
-            },
-            {
-              key: 'COMMENTS_AND_TRENDING',
-              label: 'Bình luận video',
-            },
-            {
-              key: 'CHANNEL_AND_VIDEO_TOOLS',
-              label: 'KOC xu hướng',
-            },
-            {
-              key: 'LINK_AIR_CHECK',
-              label: 'Kiểm tra link air',
-            },
-          ]}
-          value={activeTab}
-          onChange={(t) => setActiveTab(t)}
-        />
-      </PageHeaderNav>
+      {/* Thanh chuyển 5 công cụ con của Crawler KOC & Đối thủ */}
+      <Tabs<CrawlerTabKey>
+        items={[
+          {
+            key: 'COMPETITOR_KOCS',
+            label: 'KOC của đối thủ',
+            count: compResults.length > 0 ? compResults.length : undefined,
+          },
+          {
+            key: 'HASHTAG_DISCOVERY',
+            label: 'KOC theo #Hashtag',
+            count: tagResults.length > 0 ? tagResults.length : undefined,
+          },
+          {
+            key: 'COMMENTS_AND_TRENDING',
+            label: 'Bình luận video',
+            count: commentData?.comments.length ? commentData.comments.length : undefined,
+          },
+          {
+            key: 'CHANNEL_AND_VIDEO_TOOLS',
+            label: 'KOC xu hướng',
+            count: trendingCreators.length > 0 ? trendingCreators.length : undefined,
+          },
+          {
+            key: 'LINK_AIR_CHECK',
+            label: 'Kiểm tra link air',
+          },
+        ]}
+        value={activeTab}
+        onChange={(t) => setActiveTab(t)}
+      />
 
       {/* Nút chính bên trái, menu tiện ích ⋯ ở ngoài cùng bên phải */}
       <PageActions>
@@ -2455,6 +2900,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {renderDailyHistoryBar(
             'COMPETITOR_KOCS',
             Boolean(compError || compLoading || compResults.length > 0)
+          )}
+
+          {renderTabWeeklyHistorySection(
+            'COMPETITOR_KOCS',
+            Boolean(compLoading || compResults.length > 0)
           )}
 
           {compError && (
@@ -2805,6 +3255,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             Boolean(tagError || tagLoading || tagResults.length > 0)
           )}
 
+          {renderTabWeeklyHistorySection(
+            'HASHTAG_DISCOVERY',
+            Boolean(tagLoading || tagResults.length > 0)
+          )}
+
           {tagError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -3108,6 +3563,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             Boolean(commentError || commentLoading || commentData)
           )}
 
+          {renderTabWeeklyHistorySection(
+            'COMMENTS_AND_TRENDING',
+            Boolean(commentLoading || commentData)
+          )}
+
           {commentError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -3374,6 +3834,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             Boolean(trendingLoading || trendingHandleSearching || trendingCreators.length > 0)
           )}
 
+          {renderTabWeeklyHistorySection(
+            'CHANNEL_AND_VIDEO_TOOLS',
+            Boolean(trendingLoading || trendingHandleSearching || trendingCreators.length > 0)
+          )}
+
           {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
             <>
               <div className="px-3.5 py-2 border-b border-line bg-sunken/30 space-y-1.5">
@@ -3477,7 +3942,24 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       )}
 
       {/* TAB 5: KIỂM TRA LINK AIR ĐA NỀN TẢNG (qua crawler-worker) */}
-      {activeTab === 'LINK_AIR_CHECK' && <LinkAirCheckerPanel onNotify={onNotify} />}
+      {activeTab === 'LINK_AIR_CHECK' && (
+        <LinkAirCheckerPanel
+          onNotify={onNotify}
+          restorePayload={linkAirRestorePayload}
+          historyBar={renderDailyHistoryBar('LINK_AIR_CHECK', true)}
+          historyTable={renderTabWeeklyHistorySection('LINK_AIR_CHECK', false)}
+          onSaveHistory={(payload) => {
+            void saveDailyHistorySession({
+              tab: 'LINK_AIR_CHECK',
+              rawInput: payload.rawInput,
+              queryKey: payload.queryKey,
+              queryLabel: payload.queryLabel,
+              linkAirResults: payload.linkAirResults,
+              linkAirExpect: payload.linkAirExpect,
+            });
+          }}
+        />
+      )}
 
       <TikTokKocScraperModal
         open={scraperModalOpen}
@@ -3485,6 +3967,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         existingKocs={kocs}
         initialHandle={scraperInitialHandle}
         onApplyResults={onSaveScrapedKocs}
+        onSaveScrapedSession={({ rawInput, results }) => {
+          const handles = results.map((r) => `@${r.handle}`);
+          const label =
+            handles.length === 1
+              ? `Kênh ${handles[0]}`
+              : `${handles.slice(0, 2).join(', ')}${handles.length > 2 ? ` +${handles.length - 2}` : ''}`;
+          void saveDailyHistorySession({
+            tab: 'HANDLE_SCRAPE',
+            rawInput,
+            queryKey: handles.join(',').toLowerCase(),
+            queryLabel: label,
+            summaryNote: `${results.length} kênh · ${results.reduce((s, r) => s + (r.recentVideos?.length || 0), 0)} video`,
+          });
+        }}
         onOpenKocInMaster={
           onNavigateToKocMaster
             ? (koc) => {

@@ -36,6 +36,10 @@ interface TikTokKocScraperModalProps {
   existingKocs: KocItem[];
   initialHandle?: string;
   onApplyResults: (payload: { created: KocItem[]; updated: KocItem[] }) => void;
+  onSaveScrapedSession?: (payload: {
+    rawInput: string;
+    results: TikTokScrapedKocResult[];
+  }) => void;
   onOpenKocInMaster?: (koc: KocItem) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
@@ -49,6 +53,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   existingKocs,
   initialHandle = '',
   onApplyResults,
+  onSaveScrapedSession,
   onOpenKocInMaster,
   onNotify,
 }) => {
@@ -114,6 +119,10 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
       setResults(json.results);
       setSelectedHandle(json.results[0].handle);
+      onSaveScrapedSession?.({
+        rawInput: trimmed,
+        results: json.results as TikTokScrapedKocResult[],
+      });
       if (parsedHandles.length > json.results.length) {
         onNotify?.(
           `Chỉ lấy được ${json.results.length}/${parsedHandles.length} kênh KOC yêu cầu (thiếu ${parsedHandles.length - json.results.length} kênh).`,

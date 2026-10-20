@@ -179,22 +179,68 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
   };
 }
 
+function normalizePersonName(value?: string): string {
+  return (value || '')
+    .normalize('NFC')
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+    .replace(/[-_•·|]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function stripVietnameseTones(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
+function matchPersonName(candidateName: string | undefined, larkName: string, larkEnName?: string): boolean {
+  const normCandidate = normalizePersonName(candidateName);
+  if (!normCandidate) return false;
+  const normLark = normalizePersonName(larkName);
+  const normEn = normalizePersonName(larkEnName);
+  if (
+    normCandidate === normLark ||
+    normCandidate === normEn ||
+    (normLark.length >= 4 && normLark.includes(normCandidate)) ||
+    (normEn.length >= 4 && normEn.includes(normCandidate))
+  ) {
+    return true;
+  }
+  const asciiCandidate = stripVietnameseTones(normCandidate);
+  const asciiLark = stripVietnameseTones(normLark);
+  const asciiEn = stripVietnameseTones(normEn);
+  return (
+    Boolean(asciiCandidate) &&
+    (asciiCandidate === asciiLark ||
+      asciiCandidate === asciiEn ||
+      (asciiLark.length >= 6 && asciiLark.includes(asciiCandidate)) ||
+      (asciiEn.length >= 6 && asciiEn.includes(asciiCandidate)))
+  );
+}
+
 /**
  * Phân giải Lark User thành UserProfile chuẩn của B2C Ops Hub.
- * Chỉ khớp danh tính theo định danh đã đăng ký (open_id hoặc email Lark), không bao giờ khớp theo họ tên:
- * họ tên trên Lark do người dùng tự đặt, nên khớp theo tên cho phép mạo danh tài khoản có vai trò cao hơn.
- * Tài khoản không khớp danh sách thành viên hoặc danh bạ nhân sự bị từ chối (fail closed).
+ * Ưu tiên đối soát theo open_id hoặc email Lark; hỗ trợ đối soát tên nhân sự nội bộ khi Lark App
+ * chưa trả scope email (nhưng tuyệt đối không cho phép khớp tên vào tài khoản Tổng Giám Đốc).
  */
 export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   const email = (larkUser.enterprise_email || larkUser.email || '').toLowerCase().trim();
   const openId = (larkUser.open_id || '').trim();
   const name = larkUser.name || larkUser.en_name || 'Thành viên UpBase';
   const sameEmail = (candidate?: string) => !!email && !!candidate && candidate.toLowerCase().trim() === email;
+  const allowInternalNameLookup = !email || email.endsWith('@upbase.vn') || openId.startsWith('ou_');
 
-  // 1. Đối soát với danh sách thành viên cốt lõi trong USERS (theo open_id đã đăng ký hoặc email)
+  // 1. Đối soát với danh sách thành viên cốt lõi trong USERS (theo open_id, email, hoặc tên nhân sự trừ tài khoản CEO)
   const existingUser =
     USERS.find(u => openId && u.larkOpenId === openId) ||
-    USERS.find(u => sameEmail(u.email));
+    USERS.find(u => sameEmail(u.email)) ||
+    (allowInternalNameLookup
+      ? USERS.find(u => u.id !== 'user-admin-giang' && matchPersonName(u.name, name, larkUser.en_name))
+      : undefined);
 
   if (existingUser) {
     if (existingUser.canLogin === false) {
@@ -204,15 +250,19 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     }
     return {
       ...existingUser,
-      name: larkUser.name || existingUser.name,
-      avatar: larkUser.name ? getInitials(larkUser.name) : existingUser.avatar,
+      name: existingUser.name,
+      avatar: existingUser.avatar || getInitials(existingUser.name),
       larkOpenId: larkUser.open_id,
       larkAvatarUrl: larkUser.avatar_url
     };
   }
 
-  // 2. Đối soát với danh bạ nhân sự UPBASE_STAFF_MASTER (chỉ theo email Lark)
-  const masterMember = UPBASE_STAFF_MASTER.find(m => sameEmail(m.email));
+  // 2. Đối soát với danh bạ nhân sự UPBASE_STAFF_MASTER (theo email Lark hoặc họ tên nhân sự)
+  const masterMember =
+    UPBASE_STAFF_MASTER.find(m => sameEmail(m.email)) ||
+    (allowInternalNameLookup
+      ? UPBASE_STAFF_MASTER.find(m => matchPersonName(m.name, name, larkUser.en_name))
+      : undefined);
 
   if (masterMember) {
     const classified = classifyMasterStaffMember(masterMember, INITIAL_DEPARTMENT_ACCESS_RULES, {});

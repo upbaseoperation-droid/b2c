@@ -80,7 +80,7 @@ import {
   filterScopedDeals, 
   getUserScopeSummary
 } from '../lib/rbacScope';
-import { Button, PageActiveContext, Skeleton, SkeletonRows, Tabs, ToastStack, useToastQueue } from '../components/ui';
+import { Button, PageActiveContext, Skeleton, SkeletonRows, ToastStack, useToastQueue } from '../components/ui';
 
 import { 
   USERS, 
@@ -185,7 +185,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>(() => resolveInitialTab(USERS[0]));
   const hasUserNavigatedRef = useRef<boolean>(false);
   const [brandInitialDetailTab, setBrandInitialDetailTab] = useState<'PRODUCTS' | undefined>(undefined);
-  const handleSelectTab = useCallback((tab: TabKey) => {
+  const [kocMasterReturnTab, setKocMasterReturnTab] = useState<'tiktok-crawler' | 'koc-hub' | null>(null);
+  const [kocMasterOpenTrigger, setKocMasterOpenTrigger] = useState<number>(0);
+  const isPopStateNavigatingRef = useRef<boolean>(false);
+
+  const handleSelectTab = useCallback((tab: TabKey, options?: { keepReturnContext?: boolean }) => {
     hasUserNavigatedRef.current = true;
     const resolvedTab: TabKey = tab === 'content-angles' ? 'brand-knowledge' : tab;
     if (tab === 'content-angles') {
@@ -193,11 +197,39 @@ export default function App() {
     } else if (tab === 'brand-knowledge') {
       setBrandInitialDetailTab(undefined);
     }
+    if (!options?.keepReturnContext) {
+      setKocMasterReturnTab(null);
+    }
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, resolvedTab);
+      if (!isPopStateNavigatingRef.current) {
+        const currentState = window.history.state as { upbaseTab?: TabKey } | null;
+        if (currentState?.upbaseTab !== resolvedTab) {
+          window.history.pushState({ ...currentState, upbaseTab: resolvedTab }, '');
+        }
+      }
     }
     setActiveTab(resolvedTab);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const currentState = window.history.state as { upbaseTab?: TabKey } | null;
+    if (!currentState?.upbaseTab) {
+      window.history.replaceState({ ...currentState, upbaseTab: activeTab }, '');
+    }
+    const onPopState = (event: PopStateEvent) => {
+      const targetTab = (event.state as { upbaseTab?: TabKey } | null)?.upbaseTab;
+      if (targetTab) {
+        isPopStateNavigatingRef.current = true;
+        handleSelectTab(targetTab);
+        isPopStateNavigatingRef.current = false;
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleSelectTab]);
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
@@ -322,7 +354,10 @@ export default function App() {
           const data = await res.json();
           if (data.authenticated && data.user) {
             let resolvedUser: UserProfile = initialPolicy?.user || data.user;
-            if (savedUserId && savedUserId !== data.user.id) {
+            const isAutoFallbackSession = Boolean(
+              data.isAutoLogin || (!data.user.larkOpenId && data.user.loginProvider !== 'GMAIL')
+            );
+            if (isAutoFallbackSession && savedUserId && savedUserId !== data.user.id) {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
                 resolvedUser = matched;
@@ -1001,6 +1036,7 @@ export default function App() {
           onOpenImport={() => setIsImportOpen(true)}
           title={pageTitleOf(activeTab)}
           activeTab={activeTab}
+          groupTabs={activeGroupTabs}
           onNavigateTab={handleSelectTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           isSidebarCollapsed={isSidebarCollapsed}
@@ -1062,10 +1098,6 @@ export default function App() {
             </div>
           ) : (
             <>
-          {activeGroupTabs.length > 1 && (
-            <Tabs items={activeGroupTabs} value={activeTab} onChange={handleSelectTab} />
-          )}
-
           <KeepAliveTab tabKey="cockpit" currentTab={activeTab}>
             <CockpitView
               currentUser={currentUser}
@@ -1372,13 +1404,30 @@ export default function App() {
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               selectedKocId={selectedKocContext}
+              externalOpenTrigger={kocMasterOpenTrigger}
+              returnToSourceLabel={
+                kocMasterReturnTab === 'tiktok-crawler'
+                  ? 'Quay lại Crawl KOC Xu hướng'
+                  : kocMasterReturnTab === 'koc-hub'
+                    ? 'Quay lại Cổng KOC'
+                    : undefined
+              }
+              onReturnToSource={
+                kocMasterReturnTab
+                  ? () => {
+                      const target = kocMasterReturnTab;
+                      setKocMasterReturnTab(null);
+                      handleSelectTab(target);
+                    }
+                  : undefined
+              }
               onSelectKocId={setSelectedKocContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
               onOpenKocPortal={(kocId: string | null) => {
                 setSelectedKocContext(kocId);
-                setActiveTab('koc-hub');
+                handleSelectTab('koc-hub');
               }}
               onSelectDealForContract={openContractForDeal}
               onNotify={showToast}
@@ -1544,7 +1593,9 @@ export default function App() {
               onOpenContractForDeal={openContractForDeal}
               onOpenKocMaster={(kocId: string | null) => {
                 setSelectedKocContext(kocId);
-                setActiveTab('koc-master');
+                setKocMasterReturnTab('koc-hub');
+                setKocMasterOpenTrigger((v) => v + 1);
+                handleSelectTab('koc-master', { keepReturnContext: true });
               }}
               onNotify={showToast}
               onNavigateToBrandHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('brand-hub') : undefined}
@@ -1610,7 +1661,9 @@ export default function App() {
                 if (kocId) {
                   setSelectedKocContext(kocId);
                 }
-                handleSelectTab('koc-master');
+                setKocMasterReturnTab('tiktok-crawler');
+                setKocMasterOpenTrigger((v) => v + 1);
+                handleSelectTab('koc-master', { keepReturnContext: true });
               }}
             />
           </KeepAliveTab>

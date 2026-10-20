@@ -758,6 +758,35 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     authMethod: 'LARK_SSO'
   },
   {
+    id: 'user-huu-chien',
+    staffCode: 'HN979',
+    name: 'Trần Hữu Chiến',
+    email: 'chienth@upbase.vn',
+    avatar: 'HC',
+    role: 'ADMIN',
+    roleTitle: 'Business Operation Leader (Operation)',
+    department: 'Operation',
+    team: 'Operation',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'ADMIN_EXPLICIT',
+    position: 'Business Operation Leader',
+    picBrands: ['ALL_BRANDS'],
+    permissions: {
+      canApproveBudget: true,
+      canApproveP3: true,
+      canApprovePayment: true,
+      canViewAllBrands: true,
+      canExportRawData: true,
+      canManageMasterData: true
+    },
+    status: 'ACTIVE',
+    lastActive: 'Vừa xong',
+    authMethod: 'LARK_SSO'
+  },
+  {
     id: 'user-ngoc-tam',
     staffCode: 'HN088',
     name: 'Nguyễn Thị Ngọc Tâm',
@@ -1516,20 +1545,27 @@ export function classifyMasterStaffMember(
     }
   }
 
-  // 5. Nhận diện BOD / Admin
-  if (/\bbod\b/i.test(dept) || /\bbod\b/i.test(team)) {
+  // 5. Nhận diện BOD / Admin & Business Operation
+  if (
+    /\bbod\b/i.test(dept) ||
+    /\bbod\b/i.test(team) ||
+    (!isLivestreamOnly && (/business operation/i.test(pos) || /^operation$/i.test(team) || /^operation$/i.test(dept)))
+  ) {
+    const isBizOp = /operation/i.test(`${dept} ${team} ${pos}`);
     return {
       ...staff,
       departmentScope: 'MARKETING_B2C',
       classifiedScope: 'MARKETING_B2C',
       canLogin: true,
-      role: 'ADMIN',
-      mappedRole: 'ADMIN',
-      roleTitle: pos || 'Ban Giám Đốc (BOD)',
-      managerName: 'Hội đồng Quản trị',
+      role: isLeaderOrHead || !isBizOp ? 'ADMIN' : 'LEADER',
+      mappedRole: isLeaderOrHead || !isBizOp ? 'ADMIN' : 'LEADER',
+      roleTitle: pos || (isBizOp ? 'Business Operation Leader' : 'Ban Giám Đốc (BOD)'),
+      managerName: isBizOp ? 'Ban Giám Đốc (BOD)' : 'Hội đồng Quản trị',
       ruleId: 'rule-bod',
       accessSource: 'ADMIN_EXPLICIT',
-      reason: 'Thành viên Ban Giám Đốc (BOD) — Toàn quyền truy cập'
+      reason: isBizOp
+        ? 'Thuộc bộ phận Business Operation — Được cấp quyền vận hành hệ thống'
+        : 'Thành viên Ban Giám Đốc (BOD) — Toàn quyền truy cập'
     };
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react';
-import { ConfirmDialog, Tabs, Presence } from '../ui';
+import { ConfirmDialog, Modal, Tabs, Presence } from '../ui';
 import {
   KeyRound,
   Search,
@@ -440,7 +440,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [editingStaff, setEditingStaff] = useState<InternalStaffRbacMember | null>(null);
   const [staffFormRole, setStaffFormRole] = useState<UserRole>('MEMBER');
   const [staffFormRoleTitle, setStaffFormRoleTitle] = useState<string>('');
-  const [staffFormPicBrands, setStaffFormPicBrands] = useState<string[]>([]);
   const [staffFormPerms, setStaffFormPerms] = useState({
     canApproveBudget: false,
     canApproveP3: false,
@@ -703,8 +702,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         return (
           staff.name.toLowerCase().includes(q) ||
           staff.email.toLowerCase().includes(q) ||
-          staff.position.toLowerCase().includes(q) ||
-          staff.picBrands.some(b => b.toLowerCase().includes(q))
+          staff.department.toLowerCase().includes(q) ||
+          staff.position.toLowerCase().includes(q)
         );
       }
       return true;
@@ -716,7 +715,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     setEditingStaff(staff);
     setStaffFormRole(staff.role);
     setStaffFormRoleTitle(staff.roleTitle);
-    setStaffFormPicBrands([...staff.picBrands]);
     setStaffFormPerms({ ...staff.permissions });
   };
 
@@ -731,7 +729,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           ...s,
           role: staffFormRole,
           roleTitle: staffFormRoleTitle || ROLE_DISPLAY_NAME[staffFormRole] || s.roleTitle,
-          picBrands: staffFormPicBrands,
           permissions: { ...staffFormPerms }
         };
       }
@@ -748,7 +745,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actorRole: currentUser?.role || 'ADMIN',
       actionType: 'ROLE_CHANGE',
       targetUserOrEntity: `${editingStaff.name} (${editingStaff.email})`,
-      description: `Cập nhật phân vai trò thành ${staffFormRole}, phụ trách các brand: ${staffFormPicBrands.join(', ') || 'Chưa gán'}.`,
+      description: `Cập nhật phân vai trò thành ${staffFormRole}.`,
       ipAddress: 'Bản nháp',
       deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
@@ -756,7 +753,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
 
     setEditingStaff(null);
-    if (onNotify) onNotify(`Đã sửa bản nháp: phân quyền và nhãn phụ trách cho ${editingStaff.name}!`, 'info');
+    if (onNotify) onNotify(`Đã sửa bản nháp: phân quyền cho ${editingStaff.name}!`, 'info');
   };
 
   // Lọc Audit Logs
@@ -1834,7 +1831,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm nhân sự, email, nhãn phụ trách..."
+                  placeholder="Tìm nhân sự, email, phòng ban..."
                   value={searchStaff}
                   onChange={(e) => setSearchStaff(e.target.value)}
                   className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-line focus:outline-none focus:border-accent/20 bg-canvas"
@@ -1873,7 +1870,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <th className="py-3 px-4">Nhân Sự & Email Lark</th>
                     <th className="py-3 px-4">Vai Trò Hệ Thống</th>
                     <th className="py-3 px-4">Phòng Ban & Vị Trí</th>
-                    <th className="py-3 px-4">Cụm Nhãn Phụ Trách (PIC)</th>
                     <th className="py-3 px-4">Quyền Phê Duyệt Đặc Thù</th>
                     <th className="py-3 px-4 text-center">Thao Tác</th>
                   </tr>
@@ -1917,25 +1913,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <td className="py-3 px-4">
                         <span className="font-medium text-ink-2 block">{staff.department}</span>
                         <span className="text-2xs text-ink-3">{staff.position}</span>
-                      </td>
-
-                      {/* PIC Brands */}
-                      <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {staff.picBrands.includes('ALL_BRANDS') ? (
-                            <span className="text-positive -positive/20 text-2xs font-semibold">
-                              Tất cả nhãn hàng
-                            </span>
-                          ) : staff.picBrands.length > 0 ? (
-                            staff.picBrands.map((b, i) => (
-                              <span key={i} className="text-accent -accent/20 text-2xs font-medium">
-                                {b}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-2xs text-ink-3 italic">Chưa gán nhãn</span>
-                          )}
-                        </div>
                       </td>
 
                       {/* Special Permissions Badges */}
@@ -1983,150 +1960,105 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </table>
             </div>
           </div>
-
-          {/* Edit Internal Staff Modal */}
-          <Presence show={!!editingStaff}>
-          {editingStaff && (
-            <div className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-              <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-line space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-                <div className="flex items-center justify-between border-b border-line pb-3">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-accent" />
-                    <div>
-                      <h3 className="font-semibold text-sm text-ink">Phân Vai Trò & Phụ Trách Nhãn</h3>
-                      <span className="text-2xs text-ink-3">{editingStaff.name} ({editingStaff.email})</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setEditingStaff(null)}
-                    className="p-1 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <form onSubmit={handleSaveStaff} className="space-y-4 text-xs">
-                  {/* Role select */}
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-ink-2">Vai trò hệ thống *</label>
-                    <select
-                      value={staffFormRole}
-                      onChange={(e) => setStaffFormRole(e.target.value as UserRole)}
-                      className="w-full h-9 px-3 rounded-lg border border-line bg-white font-semibold focus:outline-none focus:border-accent/20"
-                    >
-                      <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
-                      <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
-                      <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
-                      <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
-                      <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
-                      <option value="BOOKING_MEMBER">Chuyên Viên Booking KOC (BOOKING_MEMBER)</option>
-                      <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
-                      <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
-                      <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản (CONTENT_MEMBER)</option>
-                      <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
-                      <option value="LEGAL">Pháp Chế (LEGAL)</option>
-                      <option value="FINANCE">Kế Toán (FINANCE)</option>
-                      <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
-                    </select>
-                  </div>
-
-                  {/* Brand PIC assignment */}
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-ink-2">Nhãn hàng phụ trách (PIC Brands):</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
-                      {brands.map(b => {
-                        const isChecked = staffFormPicBrands.includes(b.name);
-                        return (
-                          <label
-                            key={b.id}
-                            className={`px-2.5 py-1 rounded-lg border text-2xs font-medium cursor-pointer transition flex items-center gap-1.5 ${
-                              isChecked ? 'bg-accent-soft text-accent border-accent/20 font-semibold' : 'bg-white text-ink-2 border-line'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setStaffFormPicBrands(prev => [...prev, b.name]);
-                                } else {
-                                  setStaffFormPicBrands(prev => prev.filter(x => x !== b.name));
-                                }
-                              }}
-                              className="rounded text-accent focus:ring-0"
-                            />
-                            <span>{b.name}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Special Permission Checkboxes */}
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-ink-2">Quyền phê duyệt đặc thù:</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-accent-soft rounded-xl border border-accent/20">
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
-                        <input
-                          type="checkbox"
-                          checked={staffFormPerms.canApproveBudget}
-                          onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveBudget: e.target.checked }))}
-                          className="rounded text-accent"
-                        />
-                        <span>Duyệt Ngân Sách Tháng</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
-                        <input
-                          type="checkbox"
-                          checked={staffFormPerms.canApproveP3}
-                          onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveP3: e.target.checked }))}
-                          className="rounded text-accent"
-                        />
-                        <span>Đánh giá & Duyệt P3</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
-                        <input
-                          type="checkbox"
-                          checked={staffFormPerms.canApprovePayment}
-                          onChange={(e) => setStaffFormPerms(p => ({ ...p, canApprovePayment: e.target.checked }))}
-                          className="rounded text-accent"
-                        />
-                        <span>Duyệt Chi Thanh Toán</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
-                        <input
-                          type="checkbox"
-                          checked={staffFormPerms.canExportRawData}
-                          onChange={(e) => setStaffFormPerms(p => ({ ...p, canExportRawData: e.target.checked }))}
-                          className="rounded text-accent"
-                        />
-                        <span>Xuất File Báo Cáo Excel</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-line">
-                    <button
-                      type="button"
-                      onClick={() => setEditingStaff(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken transition"
-                    >
-                      Hủy bỏ
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white text-xs font-semibold transition shadow-md shadow-xs"
-                    >
-                      Lưu Thay Đổi
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-          </Presence>
         </div>
       )}
+
+      {/* Edit Internal Staff Modal */}
+      <Modal
+        open={!!editingStaff}
+        onClose={() => setEditingStaff(null)}
+        title={editingStaff ? `Phân vai trò & quyền phê duyệt — ${editingStaff.name}` : 'Phân vai trò & quyền phê duyệt'}
+        size="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setEditingStaff(null)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken transition"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="submit"
+              form="edit-internal-staff-rbac-form"
+              className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white text-xs font-semibold transition shadow-xs"
+            >
+              Lưu Thay Đổi
+            </button>
+          </>
+        }
+      >
+        {editingStaff && (
+          <form id="edit-internal-staff-rbac-form" onSubmit={handleSaveStaff} className="space-y-4 text-xs">
+            {/* Role select */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-ink-2">Vai trò hệ thống *</label>
+              <select
+                value={staffFormRole}
+                onChange={(e) => setStaffFormRole(e.target.value as UserRole)}
+                className="w-full h-9 px-3 rounded-lg border border-line bg-white font-semibold focus:outline-none focus:border-accent/20"
+              >
+                <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
+                <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
+                <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
+                <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
+                <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
+                <option value="BOOKING_MEMBER">Chuyên Viên Booking KOC (BOOKING_MEMBER)</option>
+                <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
+                <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
+                <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản (CONTENT_MEMBER)</option>
+                <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
+                <option value="LEGAL">Pháp Chế (LEGAL)</option>
+                <option value="FINANCE">Kế Toán (FINANCE)</option>
+                <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
+              </select>
+            </div>
+
+            {/* Special Permission Checkboxes */}
+            <div className="space-y-1.5">
+              <label className="font-semibold text-ink-2">Quyền phê duyệt đặc thù:</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-accent-soft rounded-xl border border-accent/20">
+                <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={staffFormPerms.canApproveBudget}
+                    onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveBudget: e.target.checked }))}
+                    className="rounded text-accent"
+                  />
+                  <span>Duyệt Ngân Sách Tháng</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={staffFormPerms.canApproveP3}
+                    onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveP3: e.target.checked }))}
+                    className="rounded text-accent"
+                  />
+                  <span>Đánh giá & Duyệt P3</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={staffFormPerms.canApprovePayment}
+                    onChange={(e) => setStaffFormPerms(p => ({ ...p, canApprovePayment: e.target.checked }))}
+                    className="rounded text-accent"
+                  />
+                  <span>Duyệt Chi Thanh Toán</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={staffFormPerms.canExportRawData}
+                    onChange={(e) => setStaffFormPerms(p => ({ ...p, canExportRawData: e.target.checked }))}
+                    className="rounded text-accent"
+                  />
+                  <span>Xuất File Báo Cáo Excel</span>
+                </label>
+              </div>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       {/* ========================================================================= */}
       {/* SUB-TAB 3: ĐỐI TÁC BÊN THỨ 3 (GMAIL SSO SETUP VIEW) */}

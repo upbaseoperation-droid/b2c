@@ -11,7 +11,8 @@ import {
   Calculator,
   Plus,
   Upload,
-  Video
+  Video,
+  Send
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -32,6 +33,7 @@ import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
+import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
@@ -152,6 +154,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   // Filters for Booking Deals
   const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
+  const [dealPeriodScope, setDealPeriodScope] = useState<'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE'>('CURRENT_PAID');
+  const [selectedDealPicFilter, setSelectedDealPicFilter] = useState<string>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>(selectedBrand || 'ALL');
   const [dealsPage, setDealsPage] = useState(1);
@@ -170,6 +174,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     setHandledBookingDrilldownNonce(bookingDrilldownIntent.nonce);
     setActiveSubTab('BOOKING_DEALS');
     setDealsFilter('ALL');
+    setSelectedDealPicFilter('ALL');
     if (bookingDrilldownIntent.brandName) {
       setSelectedBrandFilter(bookingDrilldownIntent.brandName);
     } else {
@@ -177,6 +182,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     }
     if (bookingDrilldownIntent.dealCode) {
       setDealsSearch(bookingDrilldownIntent.dealCode);
+      setDealPeriodScope('ALL_ARCHIVE');
     } else {
       setDealsSearch('');
     }
@@ -218,6 +224,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
   const [inspectorDeal, setInspectorDeal] = useState<BookingDealItem | null>(null);
   const [inspectorInitialUrl, setInspectorInitialUrl] = useState<string>('');
+  const [isPaymentRequestOpen, setIsPaymentRequestOpen] = useState(false);
+  const [paymentRequestDeal, setPaymentRequestDeal] = useState<BookingDealItem | null>(null);
   const [handoffForm, setHandoffForm] = useState({
     sparkAdsCode: '',
     tiktokVideoUrl: '',
@@ -394,6 +402,37 @@ export const BookingView: React.FC<BookingViewProps> = ({
     });
   }, [localKocs, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, searchTerm]);
 
+  const baseScopedDeals = useMemo(() => {
+    const shortSelectedStaff = selectedStaffName.split(' ').slice(-2).join(' ').toLowerCase();
+    return deals.filter((deal) => {
+      // 1. Lọc theo kỳ & loại deal (Tách bạch Deal đang chạy có phí vs Lịch sử & FOC 0đ)
+      const isOperationalCurrent = !deal.id.startsWith('deal-real-') && !deal.id.startsWith('deal-hist-');
+      const isCurrentMonthBatch = deal.bookingBatch === '2026/10';
+      const isPaid = (deal.totalValue || 0) > 0;
+
+      if (dealPeriodScope === 'CURRENT_PAID') {
+        if (!isPaid || (!isOperationalCurrent && !isCurrentMonthBatch)) return false;
+      } else if (dealPeriodScope === 'ALL_PAID') {
+        if (!isPaid) return false;
+      } else if (dealPeriodScope === 'FOC_ONLY') {
+        if (isPaid) return false;
+      }
+
+      // 2. Lọc theo Gian hàng / Thương hiệu
+      if (selectedBrandFilter !== 'ALL' && deal.brandName !== selectedBrandFilter) return false;
+
+      // 3. Lọc theo Chuyên viên PIC
+      if (selectedDealPicFilter === 'SELECTED_STAFF') {
+        const pic = (deal.bookingPic || deal.assignedStaff || '').toLowerCase();
+        if (!pic.includes(selectedStaffName.toLowerCase()) && !pic.includes(shortSelectedStaff)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [deals, dealPeriodScope, selectedBrandFilter, selectedDealPicFilter, selectedStaffName]);
+
   const dealFilterCounts = useMemo(() => {
     let brandPending = 0;
     let brandApproved = 0;
@@ -402,17 +441,32 @@ export const BookingView: React.FC<BookingViewProps> = ({
     let adsCodePending = 0;
     let hasGmv = 0;
     let breakEven = 0;
-    for (const d of deals) {
+    let paidCount = 0;
+    let totalCost = 0;
+    let totalGmv = 0;
+    let top20Gmv = 0;
+
+    for (const d of baseScopedDeals) {
       if (d.brandApprovalStatus === 'CHỜ_DUYỆT') brandPending++;
       else if (d.brandApprovalStatus === 'ĐÃ_DUYỆT') brandApproved++;
       else if (d.brandApprovalStatus === 'TỪ_CHỐI') brandRejected++;
-      if (d.isWinnerTop20) winnerTop20++;
+      if (d.isWinnerTop20) {
+        winnerTop20++;
+        top20Gmv += d.gmv30 || 0;
+      }
       if (d.adsCodeStatus === 'CHƯA_CẤP') adsCodePending++;
       if ((d.gmv30 || 0) > 0) hasGmv++;
       if ((d.roi || 0) >= 1) breakEven++;
+      if ((d.totalValue || 0) > 0) paidCount++;
+      totalCost += d.totalValue || 0;
+      totalGmv += d.gmv30 || 0;
     }
     return {
-      all: deals.length,
+      all: baseScopedDeals.length,
+      paidCount,
+      totalCost,
+      totalGmv,
+      top20Gmv,
       brandPending,
       brandApproved,
       brandRejected,
@@ -421,12 +475,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
       hasGmv,
       breakEven,
     };
-  }, [deals]);
+  }, [baseScopedDeals]);
 
   const filteredDeals = useMemo(() => {
     const q = dealsSearch.trim().toLowerCase();
-    return deals.filter((deal) => {
-      if (selectedBrandFilter !== 'ALL' && deal.brandName !== selectedBrandFilter) return false;
+    return baseScopedDeals.filter((deal) => {
       if (dealsFilter === 'BRAND_PENDING' && deal.brandApprovalStatus !== 'CHỜ_DUYỆT') return false;
       if (dealsFilter === 'BRAND_APPROVED' && deal.brandApprovalStatus !== 'ĐÃ_DUYỆT') return false;
       if (dealsFilter === 'BRAND_REJECTED' && deal.brandApprovalStatus !== 'TỪ_CHỐI') return false;
@@ -444,7 +497,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         (deal.brandName ? deal.brandName.toLowerCase().includes(q) : false)
       );
     });
-  }, [deals, dealsSearch, selectedBrandFilter, dealsFilter]);
+  }, [baseScopedDeals, dealsSearch, dealsFilter]);
 
   const safeDealsPage = Math.min(dealsPage, Math.max(1, Math.ceil(filteredDeals.length / dealsPageSize)));
   const pagedDeals = useMemo(
@@ -617,11 +670,21 @@ export const BookingView: React.FC<BookingViewProps> = ({
         items={[
           { key: 'MY_PLAN', label: 'Kế hoạch của tôi' },
           { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
-          { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: deals.length },
+          { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: dealFilterCounts.all },
           { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
         ]}
         actions={
           <>
+            <Button
+              variant="secondary"
+              icon={Send}
+              onClick={() => {
+                setPaymentRequestDeal(null);
+                setIsPaymentRequestOpen(true);
+              }}
+            >
+              Tạo ĐNTT Lark
+            </Button>
             <Button
               variant="secondary"
               icon={Video}
@@ -801,21 +864,42 @@ export const BookingView: React.FC<BookingViewProps> = ({
           '5_SETTLEMENT': { label: '5. Quyết toán', tone: 'positive' },
         };
         const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
+        const totalDealsInScope = dealFilterCounts.all;
+        const top20SharePct = dealFilterCounts.totalGmv > 0
+          ? ((dealFilterCounts.top20Gmv / dealFilterCounts.totalGmv) * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
+          : '0';
         return (
           <div className="space-y-4">
             <StatRow>
-              <Stat label="Video booking có phí" value="622" />
-              <Stat label="Ngân sách đã giải ngân" value="2,83 tỷ" />
-              <Stat label="Video có doanh thu" value="274/622" progress={{ value: 274, max: 622, target: 0.5 }} />
-              <Stat label="Video hoàn vốn" value="93/622" progress={{ value: 93, max: 622, target: 0.3 }} tone="warning" />
+              <Stat
+                label={dealPeriodScope === 'FOC_ONLY' ? 'Đơn gửi mẫu FOC (0đ)' : 'Video booking có phí'}
+                value={formatNumber(dealPeriodScope === 'FOC_ONLY' ? totalDealsInScope : dealFilterCounts.paidCount)}
+              />
+              <Stat
+                label="Ngân sách đã giải ngân"
+                value={formatVndShort(dealFilterCounts.totalCost)}
+              />
+              <Stat
+                label="Video có doanh thu"
+                value={`${formatNumber(dealFilterCounts.hasGmv)}/${formatNumber(totalDealsInScope)}`}
+                progress={{ value: dealFilterCounts.hasGmv, max: Math.max(1, totalDealsInScope), target: 0.5 }}
+              />
+              <Stat
+                label="Video hoàn vốn"
+                value={`${formatNumber(dealFilterCounts.breakEven)}/${formatNumber(totalDealsInScope)}`}
+                progress={{ value: dealFilterCounts.breakEven, max: Math.max(1, totalDealsInScope), target: 0.3 }}
+                tone="warning"
+              />
             </StatRow>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-accent-soft">
               <p className="text-[13px] text-ink-2 min-w-0">
-                <strong className="font-semibold text-ink">Top 20 video đóng góp 55,8% GMV (709 tr).</strong>{' '}
-                5 video đứng đầu đều từ creator đã từng hợp tác. Ưu tiên tái ký các deal có ROI trên 1.
+                <strong className="font-semibold text-ink">
+                  Nhóm Top video đóng góp {top20SharePct}% GMV ({formatVndShort(dealFilterCounts.top20Gmv)} / {formatVndShort(dealFilterCounts.totalGmv)}).
+                </strong>{' '}
+                Ưu tiên tái ký các deal có ROI từ 1 trở lên.
               </p>
-              <Button size="sm" onClick={() => { setDealsFilter('WINNER_TOP20'); setDealsPage(1); }}>Xem top 20</Button>
+              <Button size="sm" onClick={() => { setDealsFilter('WINNER_TOP20'); setDealsPage(1); }}>Xem nhóm Top ({dealFilterCounts.winnerTop20})</Button>
             </div>
 
             <Panel flush title="Job booking">
@@ -823,9 +907,31 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 <FilterBar
                   search={{ value: dealsSearch, onChange: (v) => { setDealsSearch(v); setDealsPage(1); }, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
                   filters={
-                    <Select value={selectedBrandFilter} onChange={e => { setSelectedBrandFilter(e.target.value); setDealsPage(1); }} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
-                      {brandsList.map(b => <option key={b.key} value={b.key}>{b.key === 'ALL' ? 'Mọi gian hàng' : b.label}</option>)}
-                    </Select>
+                    <>
+                      <Select
+                        value={dealPeriodScope}
+                        onChange={e => { setDealPeriodScope(e.target.value as 'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE'); setDealsPage(1); }}
+                        className="w-auto min-w-[210px]"
+                        aria-label="Phạm vi kỳ & loại deal"
+                      >
+                        <option value="CURRENT_PAID">Kỳ hiện tại · Có phí (2026/10)</option>
+                        <option value="ALL_PAID">Lịch sử HĐ có phí (Tất cả kỳ)</option>
+                        <option value="FOC_ONLY">Đơn gửi mẫu FOC (0đ)</option>
+                        <option value="ALL_ARCHIVE">Toàn bộ lịch sử ({formatNumber(deals.length)} deal)</option>
+                      </Select>
+                      <Select
+                        value={selectedDealPicFilter}
+                        onChange={e => { setSelectedDealPicFilter(e.target.value); setDealsPage(1); }}
+                        className="w-auto min-w-[170px]"
+                        aria-label="Lọc theo PIC phụ trách"
+                      >
+                        <option value="ALL">Mọi chuyên viên PIC</option>
+                        <option value="SELECTED_STAFF">Của {selectedStaffName}</option>
+                      </Select>
+                      <Select value={selectedBrandFilter} onChange={e => { setSelectedBrandFilter(e.target.value); setDealsPage(1); }} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
+                        {brandsList.map(b => <option key={b.key} value={b.key}>{b.key === 'ALL' ? 'Mọi gian hàng' : b.label}</option>)}
+                      </Select>
+                    </>
                   }
                   resultCount={filteredDeals.length}
                   chips={
@@ -837,7 +943,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                         { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: dealFilterCounts.brandPending },
                         { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: dealFilterCounts.brandApproved },
                         { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
-                        { key: 'WINNER_TOP20', label: 'Top 20', count: dealFilterCounts.winnerTop20 },
+                        { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
                         { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
                         { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
                         { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
@@ -976,12 +1082,17 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     ),
                   },
                   {
-                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 120, render: d => (
+                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 135, render: d => (
                       <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
                         <span className="text-ink font-semibold">{formatVndShort(d.totalValue)}</span>
                         {d.pricingDisplayMode && (
                           <span className="text-2xs text-ink-3">
                             {d.pricingDisplayMode === 'PACKAGE_TOTAL' ? 'Gói trọn cục' : 'Tách lẻ SOW'}
+                          </span>
+                        )}
+                        {(d.larkFinalApprovalCode || d.larkAdvanceApprovalCode) && (
+                          <span className="text-2xs font-code text-positive font-semibold">
+                            {d.larkFinalApprovalCode || d.larkAdvanceApprovalCode}
                           </span>
                         )}
                         <span className="text-2xs text-ink-3">GMV {formatVndShort(d.gmv30)}</span>
@@ -990,7 +1101,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     ),
                   },
                   {
-                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: d => (
+                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 150, render: d => (
                       <div className="flex items-center justify-end gap-1">
                         {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
                           <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Air</Button>
@@ -998,6 +1109,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
                         <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth" />
                         <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
                         <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
+                        {(d.totalValue || 0) > 0 && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              setPaymentRequestDeal(d);
+                              setIsPaymentRequestOpen(true);
+                            }}
+                            title="Tạo phiếu đề nghị thanh toán / tạm ứng trên Lark"
+                          >
+                            ĐNTT
+                          </Button>
+                        )}
                       </div>
                     ),
                   },
@@ -1495,6 +1619,21 @@ export const BookingView: React.FC<BookingViewProps> = ({
               status: 'VIDEO_VERIFIED',
               statusLabel: 'Đã Nghiệm Thu Video',
             }));
+          }
+        }}
+      />
+
+      {/* Hộp thoại Tạo phiếu ĐNTT / Tạm ứng & Đồng bộ Lark Approval / Larkbase 3.2 */}
+      <LarkPaymentRequestModal
+        open={isPaymentRequestOpen}
+        onClose={() => setIsPaymentRequestOpen(false)}
+        initialDeal={paymentRequestDeal}
+        allDeals={deals}
+        kocs={localKocs}
+        currentUserName={currentUser?.name || selectedStaffName}
+        onSuccessUpdateDeals={(updatedList) => {
+          if (onUpdateDeal) {
+            updatedList.forEach(d => onUpdateDeal(d));
           }
         }}
       />

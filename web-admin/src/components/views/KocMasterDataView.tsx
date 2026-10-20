@@ -10,7 +10,7 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Check, CloudDownload, FileScan, FileText, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
+import { ArrowLeft, Check, CloudDownload, FileScan, FileText, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
 import { LegalOcrModal } from '../LegalOcrModal';
@@ -58,6 +58,9 @@ interface KocMasterDataViewProps {
   /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả) */
   selectedBrand?: string;
   selectedKocId?: string | null;
+  externalOpenTrigger?: number;
+  returnToSourceLabel?: string;
+  onReturnToSource?: () => void;
   onSelectKocId?: (kocId: string | null) => void;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
@@ -119,6 +122,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   allDeals,
   currentUser,
   selectedKocId = null,
+  externalOpenTrigger = 0,
+  returnToSourceLabel,
+  onReturnToSource,
   onSelectKocId,
   onOpenQuickBookWithKoc,
   onKocUpdated,
@@ -136,11 +142,11 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   const [openKocId, setOpenKocId] = useState<string | null>(selectedKocId);
   const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedKocId);
-  if (selectedKocId !== syncedSelectedId) {
+  const [syncedTrigger, setSyncedTrigger] = useState<number>(externalOpenTrigger);
+  if (selectedKocId !== syncedSelectedId || externalOpenTrigger !== syncedTrigger) {
     setSyncedSelectedId(selectedKocId);
-    if (selectedKocId) {
-      setOpenKocId(selectedKocId);
-    }
+    setSyncedTrigger(externalOpenTrigger);
+    setOpenKocId(selectedKocId);
   }
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -535,6 +541,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           duplicates={duplicates.get(openKoc.id)}
           nav={{
             onBack: () => backToList(openKoc.id),
+            onReturnToSource,
+            returnToSourceLabel,
             onPrev: navIndex > 0 ? () => openProfile(navList[navIndex - 1].id) : undefined,
             onNext:
               navIndex >= 0 && navIndex < navList.length - 1
@@ -554,6 +562,11 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       ) : (
         <>
           <PageActions>
+            {onReturnToSource && returnToSourceLabel && (
+              <Button variant="secondary" icon={ArrowLeft} onClick={onReturnToSource}>
+                {returnToSourceLabel}
+              </Button>
+            )}
             <Button
               variant="secondary"
               icon={CloudDownload}
