@@ -3,6 +3,8 @@
 // & ĐIỀU PHỐI CÔNG CỤ THEO MỤC ĐÍCH NGHIỆP VỤ B2C
 // ============================================================================
 
+import { formatDateTimeVn, getVietnamIsoString } from './format';
+
 export type ApiProviderId = 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL';
 
 export type OperationalApiPurposeId =
@@ -930,7 +932,7 @@ export function saveApiWorkspaceConfig(config: ApiWorkspaceConfigState): void {
   try {
     const updated: ApiWorkspaceConfigState = {
       ...config,
-      updatedAt: new Date().toISOString(),
+      updatedAt: getVietnamIsoString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent(API_CONFIG_UPDATED_EVENT, { detail: updated }));
@@ -1189,13 +1191,17 @@ export function saveApiUsageLogs(logs: ApiUsageLogItem[]): void {
   }
 }
 
+export function formatApiLogTimestamp(rawTimestamp?: string): string {
+  return formatDateTimeVn(rawTimestamp);
+}
+
 export function recordApiUsageLog(
   item: Omit<ApiUsageLogItem, 'id' | 'timestamp'>
 ): ApiUsageLogItem {
   const newLog: ApiUsageLogItem = {
     ...item,
     id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    timestamp: new Date().toISOString(),
+    timestamp: getVietnamIsoString(),
   };
 
   const current = loadApiUsageLogs();

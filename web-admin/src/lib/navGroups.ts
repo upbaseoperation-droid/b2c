@@ -71,6 +71,7 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
       { key: 'manager', label: TAB_LABELS.manager },
       { key: 'task-delegation', label: TAB_LABELS['task-delegation'] },
       { key: 'workload-3d', label: TAB_LABELS['workload-3d'] },
+      { key: 'performance-p3', label: TAB_LABELS['performance-p3'] },
     ],
   },
   {
@@ -79,6 +80,7 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
     tabs: [
       { key: 'brand-knowledge', label: TAB_LABELS['brand-knowledge'] },
       { key: 'stores', label: TAB_LABELS.stores },
+      { key: 'push-products', label: TAB_LABELS['push-products'] },
     ],
   },
   {

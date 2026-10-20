@@ -37,6 +37,7 @@ import {
   MOCK_SAMPLE_SHIPMENTS
 } from '../../lib/mockData';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import { getVietnamDateTimeShort } from '../../lib/format';
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
@@ -1065,7 +1066,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       ...deal,
       currentStage: status === 'ĐÃ_DUYỆT' ? '2_DEAL_CONTRACT' : '1_PLAN_SOURCING',
       brandApprovalStatus: status,
-      brandApprovalDate: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      brandApprovalDate: getVietnamDateTimeShort(),
       brandRejectReason: status === 'TỪ_CHỐI' ? rejectReason : undefined,
       pipelineText: status === 'ĐÃ_DUYỆT' ? 'Đã tạo BO' : 'Brand từ chối',
       status: status === 'ĐÃ_DUYỆT' ? 'CONTRACT_GENERATED' : 'CANCELLED',
@@ -2289,7 +2290,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
               const created = {
                 ...newItem,
                 id: `plan-item-${Date.now()}`,
-                updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+                updatedAt: getVietnamDateTimeShort()
               };
               setLocalPlanItems(prev => [created, ...prev]);
               if (externalOnAddPlanItem) externalOnAddPlanItem(created);

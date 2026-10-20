@@ -1,5 +1,5 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
-import { canReadStoreMonth, hasPicList, isFormerStorePic, isStorePic, personIdentity, type PersonIdentity } from './storePics';
+import { hasPicList, isStorePic, personIdentity, planParticipantNames, type PersonIdentity } from './storePics';
 
 /**
  * Kiểm tra xem người dùng có quyền quản trị toàn cục (Admin / Giám đốc B2C / Toàn quyền mọi nhãn hàng) hay không.
@@ -111,10 +111,7 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
   return base;
 }
 
-/**
- * mode 'work': đang phụ trách (xem + sửa). mode 'view': thêm cả PIC cũ, để gian hiện trong danh sách và mở lại dữ liệu cũ (chỉ đọc).
- */
-function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase, mode: 'work' | 'view' = 'work'): boolean {
+function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): boolean {
   const { userNameLower, allowedStoresLower } = base;
 
   if (allowedStoresLower.size > 0) {
@@ -128,9 +125,7 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase, m
   }
 
   // Gian đã có danh sách PIC: chỉ danh sách (theo mã nhân sự) quyết định, bỏ qua các trường PIC theo tên.
-  if (hasPicList(store.pics)) {
-    return isStorePic(store.pics, base.identity) || (mode === 'view' && isFormerStorePic(store.formerPics, base.identity));
-  }
+  if (hasPicList(store.pics)) return isStorePic(store.pics, base.identity);
 
   if (!userNameLower) return false;
 
@@ -264,8 +259,7 @@ export function isBrandManagedByUser(
 }
 
 /**
- * Kiểm tra xem người dùng có được XEM gian hàng hay không (gồm cả PIC cũ, để mở lại dữ liệu đã phụ trách).
- * Để kiểm tra quyền sửa, dùng canWorkOnStore.
+ * Kiểm tra xem một gian hàng cụ thể có thuộc quyền quản lý của người dùng hay không (PIC gian: xem + làm việc).
  */
 export function isStoreManagedByUser(
   store: StorePortfolioItem,
@@ -276,7 +270,7 @@ export function isStoreManagedByUser(
   const base = getUserScopeBase(user);
   if (base.isGlobal) return true;
 
-  if (checkStoreDirectMatch(store, base, 'view')) {
+  if (checkStoreDirectMatch(store, base)) {
     return true;
   }
 
@@ -288,26 +282,6 @@ export function isStoreManagedByUser(
   }
 
   return false;
-}
-
-/**
- * Người dùng có được LÀM VIỆC (sửa dữ liệu, lập / sửa kế hoạch) trên gian hay không. PIC cũ chỉ còn quyền xem.
- */
-export function canWorkOnStore(
-  store: StorePortfolioItem,
-  user: UserProfile | null | undefined
-): boolean {
-  if (!user) return false;
-  const base = getUserScopeBase(user);
-  if (base.isGlobal) return true;
-
-  if (checkStoreDirectMatch(store, base, 'work')) {
-    return true;
-  }
-
-  // Nhãn hàng do Admin cấp cố định là quyền hệ thống, không phụ thuộc danh sách PIC.
-  const storeBrand = (store.brandName || store.storeName.split('_')[0] || '').trim().toLowerCase();
-  return !!storeBrand && base.assignedBrandsLower.has(storeBrand);
 }
 
 /**
@@ -324,21 +298,9 @@ export function isPlanManagedByUser(
 
   const { userNameLower } = base;
 
-  // 0. PIC cũ của gian: xem lại kế hoạch các tháng mình phụ trách (chỉ đọc — quyền sửa xét bằng canWorkOnStore)
-  const planStore = allStores?.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
-  if (planStore && hasPicList(planStore.pics) && canReadStoreMonth(planStore.pics, planStore.formerPics, base.identity, plan.month)) {
-    return true;
-  }
-
-  // 1. Trực tiếp là PIC phụ trách lập/giao/thẩm định kế hoạch
-  //    (người có tên trong kế hoạch xem được kế hoạch đó; quyền ghi vẫn đòi phải đang thuộc danh sách PIC gian).
-  if (
-    userNameLower &&
-    (hasUserInPicField(plan.pic, userNameLower) ||
-      hasUserInPicField(plan.growthPic, userNameLower) ||
-      hasUserInPicField(plan.mediaPic, userNameLower) ||
-      hasUserInPicField(plan.submittedBy, userNameLower))
-  ) {
+  // 1. Được phân việc trong kế hoạch = PIC tham gia gian trong tháng đó → xem được kế hoạch,
+  //    kể cả khi đã rời danh sách PIC gian. Quyền sửa kế hoạch vẫn đòi phải đang là PIC gian.
+  if (userNameLower && planParticipantNames(plan).some(name => hasUserInPicField(name, userNameLower))) {
     return true;
   }
 

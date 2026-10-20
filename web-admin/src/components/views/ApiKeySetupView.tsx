@@ -58,11 +58,13 @@ import {
   recordApiUsageLog,
   clearApiUsageLogs,
   getAggregatedUsageMetrics,
+  formatApiLogTimestamp,
   ApiUsageLogItem,
   ExecutionCostReport,
   USD_TO_VND_RATE,
   API_USAGE_LOGGED_EVENT,
 } from '../../lib/apiKeyConfig';
+import { getVietnamDateYmd } from '../../lib/format';
 import { UserProfile } from '../../lib/types';
 import { CloudflareR2SetupPanel } from '../brands/CloudflareR2SetupPanel';
 
@@ -239,9 +241,9 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       'Nguồn gọi',
     ];
     const rows = filteredLogs.map(l => [
-      `"${l.timestamp}"`,
+      `"${formatApiLogTimestamp(l.timestamp)}"`,
       `"${l.purposeTitle.replace(/"/g, '""')}"`,
-      `"${l.provider}"`,
+      `"${PROVIDER_META[l.provider]?.shortName || l.provider}"`,
       `"${l.modelUsed}"`,
       l.promptTokens,
       l.completionTokens,
@@ -260,7 +262,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
     link.setAttribute('href', encodedUri);
     link.setAttribute(
       'download',
-      `doi-soat-token-chi-phi-b2c-${new Date().toISOString().slice(0, 10)}.csv`
+      `doi-soat-token-chi-phi-b2c-${getVietnamDateYmd()}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -300,7 +302,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
         }),
       });
       const data = await res.json();
-      const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const nowStr = formatApiLogTimestamp(new Date().toISOString());
 
       if (data.ok) {
         updateAndPersistConfig(prev => ({
@@ -373,7 +375,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       apiKey: newKeyValue.trim(),
       defaultModel: newKeyModel,
       departmentScope: newKeyDept,
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt: getVietnamDateYmd(),
       notes: newKeyNotes.trim() || undefined,
     };
 
@@ -490,6 +492,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
           costVnd: usageData.costVnd,
           latencyMs: data.latencyMs,
           status: data.usedFallback ? 'FALLBACK' : 'SUCCESS',
+          errorMessage: data.fallbackReason,
           source: 'PLAYGROUND',
         });
       } else {
@@ -1954,18 +1957,18 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
             </div>
           </div>
 
-          {/* PHÂN BỔ TOKEN & CHI PHÍ THEO 6 NGHIỆP VỤ B2C */}
+          {/* PHÂN BỔ TOKEN & CHI PHÍ THEO 9 NGHIỆP VỤ B2C */}
           <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
             <div className="px-5 py-4 border-b border-line bg-sunken flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-accent" />
-                  <span>Phân Bổ Lượng Token &amp; Chi Phí Theo 6 Nghiệp Vụ B2C</span>
+                  <span>Phân Bổ Lượng Token &amp; Chi Phí Theo {purposeList.length} Nghiệp Vụ B2C</span>
                 </h4>
                 
               </div>
               <div className="text-2xs font-semibold text-accent bg-accent-soft px-3 py-1 rounded-md border border-line shrink-0">
-                6 Nghiệp vụ đang hoạt động
+                {purposeList.length} Nghiệp vụ đang hoạt động
               </div>
             </div>
 
@@ -2161,7 +2164,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   onChange={e => setMetricFilterPurpose(e.target.value as 'ALL' | OperationalApiPurposeId)}
                   className="px-2.5 py-1.5 text-2xs rounded-lg border border-line bg-surface text-ink font-medium"
                 >
-                  <option value="ALL">Tất cả 6 nghiệp vụ</option>
+                  <option value="ALL">Tất cả {purposeList.length} nghiệp vụ</option>
                   {purposeList.map(p => (
                     <option key={p.purposeId} value={p.purposeId}>
                       {p.title.replace(/^\d+\.\s*/, '')}
@@ -2210,17 +2213,29 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <tbody className="divide-y divide-line font-mono">
                     {filteredLogs.map(item => (
                       <tr key={item.id} className="hover:bg-surface-subtle/50 transition">
-                        <td className="py-2 px-4 text-2xs text-ink-3 whitespace-nowrap">
-                          {item.timestamp}
+                        <td
+                          className="py-2 px-4 text-2xs text-ink-2 font-mono whitespace-nowrap"
+                          title={`Chuỗi gốc: ${item.timestamp}`}
+                        >
+                          {formatApiLogTimestamp(item.timestamp)}
                         </td>
                         <td className="py-2 px-3 font-sans text-xs font-medium text-ink max-w-[180px] truncate" title={item.purposeTitle}>
                           {item.purposeTitle}
                         </td>
                         <td className="py-2 px-3 font-sans text-2xs">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-ink">{item.provider}</span>
+                            <span className="font-semibold text-ink">
+                              {item.provider === 'INTERNAL'
+                                ? 'Bộ xử lý nội bộ'
+                                : PROVIDER_META[item.provider]?.shortName || item.provider}
+                            </span>
                             <span className="text-ink-3 font-mono">({item.modelUsed})</span>
                           </div>
+                          {item.errorMessage && (
+                            <div className="text-2xs text-warning mt-0.5 truncate max-w-[260px]" title={item.errorMessage}>
+                              {item.errorMessage}
+                            </div>
+                          )}
                         </td>
                         <td className="py-2 px-3 text-right text-2xs text-ink-3">
                           {item.promptTokens.toLocaleString('vi-VN')}

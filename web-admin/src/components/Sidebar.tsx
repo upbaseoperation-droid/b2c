@@ -183,8 +183,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
       items: [NAV.booking, NAV.content, NAV.kocListing, NAV.selfChannel, NAV.ctvMaster],
     },
     {
-      title: 'Hợp đồng & Hiệu suất',
-      items: [contractsNav, NAV.pushProducts, NAV.performance],
+      title: 'Hợp đồng & Pháp lý',
+      items: [contractsNav],
     },
     {
       title: 'Hệ thống',

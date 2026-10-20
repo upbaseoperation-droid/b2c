@@ -29,6 +29,7 @@ import {
 } from '../../lib/types';
 import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
+import { getVietnamDateTimeShort } from '../../lib/format';
 import {
   classifyMasterStaffMember,
   getSavedDeptAccessRules,
@@ -420,7 +421,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     }
 
     const groupId = `grp-task-${Date.now()}`;
-    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    const nowStr = getVietnamDateTimeShort();
 
     assignees.forEach((slot, idx) => {
       const staffObj = allAssignableStaff.find(s => s.name === slot.staffName);

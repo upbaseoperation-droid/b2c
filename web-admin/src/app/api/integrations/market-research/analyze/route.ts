@@ -9,7 +9,10 @@ import {
   type LiveScrapedCompetitorSignal,
   type LiveWebInspectionResult,
 } from '@/lib/brandMarketResearchEngine';
-import { scrapeLiveBrandWebIntelligence } from '@/lib/liveBrandWebScraper';
+import {
+  scrapeLiveBrandWebIntelligence,
+  scrapeWebSearchSnippets,
+} from '@/lib/liveBrandWebScraper';
 import { listProfiles } from '@/lib/brands/store';
 import { brandKey } from '@/lib/brands/types';
 import {
@@ -367,6 +370,7 @@ export async function POST(req: NextRequest) {
     // Mặc định: BRAND_DOSSIER (Cào tự động đa nguồn)
     const brandNameOrQuery = String(body.brandName || body.query || 'Kutieskin').trim();
     const customCategory = body.category ? String(body.category).trim() : undefined;
+    const extraSearchQuery = body.searchQuery ? String(body.searchQuery).trim() : undefined;
     const websiteUrl = body.websiteUrl
       ? String(body.websiteUrl).trim()
       : resolveOfficialWebsiteForBrand(brandNameOrQuery) || '';
@@ -380,20 +384,38 @@ export async function POST(req: NextRequest) {
     const [
       savedBrandProfile,
       liveAutoWebIntel,
+      competitorWebSnippets,
       liveWebInspection,
       liveScrapedCompetitors,
       primaryTikTok,
     ] = await Promise.all([
       resolveSavedBrandProfile(brandNameOrQuery),
-      scrapeLiveBrandWebIntelligence(brandNameOrQuery, websiteUrl || undefined).catch(
-        () => null
-      ),
+      scrapeLiveBrandWebIntelligence(
+        brandNameOrQuery,
+        websiteUrl || undefined,
+        extraSearchQuery
+      ).catch(() => null),
+      rawCompetitors.length > 0
+        ? scrapeWebSearchSnippets(
+            `${brandNameOrQuery} so sánh ${rawCompetitors.slice(0, 2).join(' ')} giá bán review`
+          ).catch(() => [])
+        : Promise.resolve([]),
       websiteUrl
         ? inspectCompetitorWebsiteUrl(websiteUrl).catch(() => null)
         : Promise.resolve<LiveWebInspectionResult | null>(null),
       fetchLiveCompetitorSignals(rawCompetitors),
       fetchPrimaryBrandLiveTikTok(brandNameOrQuery),
     ]);
+
+    if (liveAutoWebIntel && competitorWebSnippets.length > 0) {
+      const seenUrls = new Set(liveAutoWebIntel.searchSnippets.map((s) => s.url));
+      for (const sn of competitorWebSnippets) {
+        if (!seenUrls.has(sn.url)) {
+          seenUrls.add(sn.url);
+          liveAutoWebIntel.searchSnippets.push(sn);
+        }
+      }
+    }
 
     const resolvedWebInspection =
       liveWebInspection ||

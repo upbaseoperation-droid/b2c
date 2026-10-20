@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { AuditLogEntry, UserProfile, UserRole } from '../../lib/types';
 import { INITIAL_AUDIT_LOGS } from '../../lib/enterpriseMasterConfig';
+import { formatDateTimeVn, getVietnamDateYmd } from '../../lib/format';
 import { Button, EmptyState, Panel, Stat, StatRow } from '../ui';
 
 interface AuditTrailViewProps {
@@ -92,7 +93,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
     const headers = ['Mã Audit', 'Thời gian', 'Đối tượng', 'Mã đối tượng', 'Tên đối tượng', 'Hành động', 'Người thực hiện', 'Vai trò', 'Ghi chú thay đổi'];
     const rows = filteredLogs.map(l => [
       l.id,
-      l.timestamp,
+      `"${formatDateTimeVn(l.timestamp)}"`,
       l.entityType,
       l.entityId,
       `"${(l.entityName || '').replace(/"/g, '""')}"`,
@@ -106,7 +107,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `nhat_ky_kiem_toan_b2c_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `nhat_ky_kiem_toan_b2c_${getVietnamDateYmd()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
     onNotify?.(`Đã xuất ${filteredLogs.length} bản ghi kiểm toán ra tệp CSV.`);
@@ -258,8 +259,8 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
                       <td className="py-3 px-4 font-mono font-medium text-ink-2 text-2xs">
                         {log.id}
                       </td>
-                      <td className="py-3 px-4 font-mono text-2xs text-ink-3">
-                        {log.timestamp.replace('T', ' ').slice(0, 19)}
+                      <td className="py-3 px-4 font-mono text-2xs text-ink-3 whitespace-nowrap">
+                        {formatDateTimeVn(log.timestamp)}
                       </td>
                       <td className="py-3 px-4">
                         <span className={`text-xs font-medium ${textTone}`}>

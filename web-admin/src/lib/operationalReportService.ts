@@ -9,6 +9,7 @@ import {
   recordApiUsageLog,
   PROVIDER_MODELS_CATALOG,
 } from './apiKeyConfig';
+import { getVietnamIsoString } from './format';
 
 export interface ExecuteOperationalReportParams {
   purposeId: OperationalApiPurposeId;
@@ -119,6 +120,7 @@ export async function executeOperationalReport(
       costVnd: usageReport.costVnd,
       latencyMs,
       status: !data.ok ? 'ERROR' : data.usedFallback ? 'FALLBACK' : 'SUCCESS',
+      errorMessage: data.fallbackReason || data.error,
       source:
         params.sourceTag ||
         (params.purposeId === 'PLAN_ADS_ANALYSIS'
@@ -131,6 +133,14 @@ export async function executeOperationalReport(
           ? 'CONTRACT'
           : params.purposeId === 'LEGAL_OCR'
           ? 'LEGAL_OCR'
+          : params.purposeId === 'BRAND_MARKET_RESEARCH'
+          ? 'MARKET_RESEARCH'
+          : params.purposeId === 'KOC_HISTORY_EVALUATION'
+          ? 'KOC_DISCOVERY'
+          : params.purposeId === 'KOC_MATCHING'
+          ? 'KOC_MATCHING'
+          : params.purposeId === 'KNOWLEDGE_QA'
+          ? 'QA'
           : 'PLAYGROUND'),
     });
   }
@@ -151,6 +161,6 @@ export async function executeOperationalReport(
     outputText: finalOutput,
     output: finalOutput,
     usage: usageReport,
-    generatedAt: new Date().toISOString(),
+    generatedAt: getVietnamIsoString(),
   };
 }

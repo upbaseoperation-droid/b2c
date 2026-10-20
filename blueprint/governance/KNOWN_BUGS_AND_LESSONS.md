@@ -284,6 +284,23 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Loại bỏ toàn bộ dữ liệu seed mẫu và bổ sung cơ chế tự động dọn dẹp các ID `log-seed-*` cũ trong `localStorage`.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát 100% tất cả các điểm gọi mô hình trong hệ thống: `KOC_MATCHING` (Dò tìm kênh MXH, Khớp Brief), `STAFF_REVIEW` (Đánh giá nhân sự 4P & SLA), `SCRIPT_REVIEW` (Kiểm duyệt kịch bản video), `CONTRACT_DRAFTING` (Soạn thảo hợp đồng), `PLAN_ADS_ANALYSIS` (Đối soát kế hoạch tháng & Ads), `KOC_HISTORY_EVALUATION` (Đánh giá lịch sử KOC), `KNOWLEDGE_QA` (Hỏi đáp sổ tay), `BRAND_MARKET_RESEARCH` (Nghiên cứu thị trường 4P) và `PLAYGROUND` (Chạy thử).
 
+---
+
+### BUG-018 — Nhật Ký Đo Lường API Hiển Thị Chuỗi Thời Gian UTC Gốc (Lệch -7 Tiếng So Với Giờ Việt Nam) & Bị Ngắt Kết Nối 15 Giây Đẩy Về `INTERNAL` Dự Phòng
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/format.ts`, `web-admin/src/lib/apiKeyConfig.ts`, `web-admin/src/components/views/ApiKeySetupView.tsx`, `web-admin/src/app/api/integrations/llm/route.ts`, `web-admin/src/lib/operationalReportService.ts`, `web-admin/src/components/views/AuditTrailView.tsx`, `web-admin/src/components/views/BookingView.tsx`, `web-admin/src/components/views/TaskDelegationView.tsx`, `web-admin/src/components/views/Workload3dMapView.tsx`.
+- **Triệu chứng:**
+  1. Trên bảng **Nhật Ký Chi Tiết & Đối Soát Từng Lượt Gọi API** (`ApiKeySetupView.tsx`), cột **Thời gian** hiển thị nguyên chuỗi kỹ thuật ISO UTC đuôi `Z` (ví dụ `2026-10-20T09:25:41.775Z`) bị lùi 7 tiếng so với giờ thực tế tại Việt Nam (`16:25:41 · 20/10/2026`).
+  2. Lượt gọi phân tích dài (như `Nghiên cứu Kutieskin Mama & Baby` với >2.000 token đầu vào) bị ngắt ở mốc `15009ms` và tự động nhảy sang `INTERNAL (upbase-local-engine)` ở trạng thái `Dự phòng`.
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Ghi và hiển thị trực tiếp `new Date().toISOString()` (UTC+0):** Hàm `recordApiUsageLog` lưu chuỗi `toISOString()` theo giờ quốc tế UTC+0 và bảng UI in thẳng `{item.timestamp}` mà không quy đổi sang múi giờ `Asia/Ho_Chi_Minh` (GMT+7). Nhiều màn hình khác (`AuditTrailView`, `BookingView`, `TaskDelegationView`, `Workload3dMapView`) cũng cắt chuỗi `.toISOString().replace('T', ' ').slice(0, 16)` làm giờ ghi nhận bị lùi 7 tiếng.
+  2. **Thử tuần tự các mã model alias trước model thực tế & ngưỡng cắt 15 giây không bắt lỗi trong vòng lặp (`llm/route.ts`):** Khi gọi tới endpoint mặc định (`generativelanguage.googleapis.com`, `api.openai.com`, `api.anthropic.com`), hệ thống thử tuần tự các mã danh mục trước khi tới model thực tế (`gemini-2.5-flash`), cộng thêm `AbortSignal.timeout(15000)` chưa bọc `try/catch` cho từng ứng viên nên khi vượt 15 giây đã thoát thẳng sang luồng dự phòng `INTERNAL`.
+- **Cách khắc phục:**
+  1. Xây dựng bộ hàm chuẩn hóa múi giờ Việt Nam (`Asia/Ho_Chi_Minh`, GMT+7) trong `web-admin/src/lib/format.ts`: `formatDateTimeVn` (`HH:mm:ss · DD/MM/YYYY`), `getVietnamIsoString` (`+07:00`), `getVietnamDateYmd` và `getVietnamDateTimeShort`.
+  2. Áp dụng `formatApiLogTimestamp` trên bảng Nhật ký API và file CSV xuất ra (tự động quy đổi cả các bản ghi UTC cũ đã lưu trong `localStorage` sang giờ Việt Nam chính xác), đồng thời hiển thị rõ lý do chuyển dự phòng (`errorMessage`) dưới tên nhà cung cấp.
+  3. Trong `/api/integrations/llm/route.ts`: ưu tiên gọi ngay model thực tế trên máy chủ chính thức, nâng ngưỡng chờ lên `30000ms` (30s) và bọc `try/catch` cho từng model ứng viên để tự động chuyển sang model nhanh hơn trước khi fallback về `INTERNAL`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các bảng nhật ký (`ApiKeySetupView`, `AuditTrailView`) và các thao tác ghi nhận thời gian duyệt/giao việc (`BookingView`, `TaskDelegationView`, `Workload3dMapView`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

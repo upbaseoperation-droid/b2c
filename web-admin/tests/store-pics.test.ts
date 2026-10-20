@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { NextRequest } from 'next/server';
 import { EMPTY_STORE_PICS, isStorePic, personIdentity, setStorePics, suggestPicsFromLegacy } from '../src/lib/storePics';
-import { canWorkOnStore, isPlanManagedByUser, isStoreManagedByUser } from '../src/lib/rbacScope';
+import { isPlanManagedByUser, isStoreManagedByUser } from '../src/lib/rbacScope';
 import { DEFAULT_MASTER_CATALOG } from '../src/lib/masterCatalog';
 import { encodeSessionToken, SESSION_COOKIE_NAME } from '../src/lib/larkAuth';
 import { USERS } from '../src/lib/mockData';
@@ -16,9 +16,8 @@ import type { InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '.
 const stores = new Set(['S1']);
 
 test('Danh sách PIC: chuẩn hóa mã/email, bỏ trùng, từ chối gian lạ hoặc thiếu định danh', () => {
-  const now = new Date('2026-10-20T03:00:00Z');
-  const data = setStorePics(EMPTY_STORE_PICS, 'S1', [{ staffId: ' hn782 ', email: ' A@Upbase.vn ', name: 'A', since: '2020-01-01' }, { staffId: 'HN782', name: 'A trùng' }, { email: 'b@upbase.vn', name: 'B' }], { name: 'TP' }, stores, now);
-  assert.deepEqual(data.S1.pics, [{ staffId: 'HN782', email: 'a@upbase.vn', name: 'A', since: '2026-10-20' }, { email: 'b@upbase.vn', name: 'B', since: '2026-10-20' }], 'ngày nhận do hệ thống ghi, không lấy từ client');
+  const data = setStorePics(EMPTY_STORE_PICS, 'S1', [{ staffId: ' hn782 ', email: ' A@Upbase.vn ', name: 'A' }, { staffId: 'HN782', name: 'A trùng' }, { email: 'b@upbase.vn', name: 'B' }], { name: 'TP' }, stores);
+  assert.deepEqual(data.S1.pics, [{ staffId: 'HN782', email: 'a@upbase.vn', name: 'A' }, { email: 'b@upbase.vn', name: 'B' }]);
   assert.throws(() => setStorePics(EMPTY_STORE_PICS, 'S9', [], { name: 'TP' }, stores), /không tồn tại/);
   assert.throws(() => setStorePics(EMPTY_STORE_PICS, 'S1', [{ email: '', name: 'X' }], { name: 'TP' }, stores), /Thiếu mã nhân sự hoặc email/);
 });
@@ -31,36 +30,6 @@ test('Đăng nhập Lark: khớp PIC theo mã nhân sự dù email Lark khác em
   assert.equal(isStorePic(pics, personIdentity({ id: 'user-y', email: 'STAFF_HN782@upbase.vn' })), true, 'email vẫn là khóa phụ');
   assert.equal(isStorePic(pics, personIdentity({ id: 'staff-HN999', email: 'khac@upbase.vn' })), false);
   assert.equal(isStorePic(pics, personIdentity({ id: '', email: '' })), false, 'không định danh thì không khớp');
-});
-
-test('Đổi nhân viên sau vài tháng: PIC cũ chỉ xem các tháng đã phụ trách, PIC mới làm việc từ ngày nhận', () => {
-  const A = { staffId: 'HN001', name: 'A' };
-  const B = { staffId: 'HN002', name: 'B' };
-  let data = setStorePics(EMPTY_STORE_PICS, 'S1', [A], { name: 'TP' }, stores, new Date('2026-07-01T03:00:00Z'));
-  data = setStorePics(data, 'S1', [A], { name: 'TP' }, stores, new Date('2026-08-15T03:00:00Z'));
-  assert.equal(data.S1.pics[0].since, '2026-07-01', 'lưu lại danh sách không làm mất ngày nhận');
-  data = setStorePics(data, 'S1', [B], { name: 'TP' }, stores, new Date('2026-10-10T03:00:00Z'));
-  assert.deepEqual(data.S1.former, [{ staffId: 'HN001', name: 'A', since: '2026-07-01', until: '2026-10-10' }]);
-
-  const store = { id: 'S1', storeName: 'S1_TTS', brandName: 'BrandX', accountOwnerName: '', b2cOwnerName: '', pics: data.S1.pics, formerPics: data.S1.former } as unknown as StorePortfolioItem;
-  const userA = { id: 'staff-HN001', name: 'A', email: 'staff_hn001@upbase.vn', role: 'BOOKING_MEMBER' } as UserProfile;
-  const userB = { id: 'staff-HN002', name: 'B', email: 'staff_hn002@upbase.vn', role: 'BOOKING_MEMBER' } as UserProfile;
-  const plan = (month: string) => ({ id: `p-${month}`, storeId: 'S1', storeName: 'S1_TTS', month, pic: 'Ai đó' }) as unknown as InputPlanBreakdownState;
-
-  assert.equal(isStoreManagedByUser(store, userA), true, 'A vẫn thấy gian để mở dữ liệu cũ');
-  assert.equal(canWorkOnStore(store, userA), false, 'A không còn sửa được');
-  assert.equal(isPlanManagedByUser(plan('2026/08'), userA, [store]), true);
-  assert.equal(isPlanManagedByUser(plan('2026/10'), userA, [store]), true, 'tháng bàn giao vẫn xem được');
-  assert.equal(isPlanManagedByUser(plan('2026/11'), userA, [store]), false, 'không xem tháng của người sau');
-  assert.equal(isPlanManagedByUser(plan('2026/06'), userA, [store]), false, 'không xem tháng trước khi nhận');
-
-  assert.equal(canWorkOnStore(store, userB), true);
-  assert.equal(isPlanManagedByUser(plan('2026/08'), userB, [store]), true, 'PIC hiện tại xem toàn bộ lịch sử gian');
-
-  // Gắn lại A: A trở lại làm việc với ngày nhận mới, lịch sử cũ vẫn giữ
-  data = setStorePics(data, 'S1', [A, B], { name: 'TP' }, stores, new Date('2026-12-01T03:00:00Z'));
-  assert.equal(data.S1.pics.find(p => p.staffId === 'HN001')!.since, '2026-12-01');
-  assert.equal(data.S1.former!.length, 1);
 });
 
 test('Gợi ý PIC từ các trường tên cũ trên hồ sơ gian', () => {
@@ -83,6 +52,12 @@ test('rbacScope: gian có danh sách PIC thì chỉ danh sách quyết định; 
   assert.equal(isPlanManagedByUser(oldPlan, oldPic, [store]), true, 'PIC cũ xem lại kế hoạch tháng mình làm');
   assert.equal(isPlanManagedByUser(newPlan, oldPic, [store]), false);
   assert.equal(isPlanManagedByUser(oldPlan, pic, [store]), true, 'PIC hiện tại xem toàn bộ kế hoạch của gian');
+
+  // Người được phân việc ở bất kỳ vị trí nào trong kế hoạch đều là PIC tham gia tháng đó
+  const member = (name: string) => ({ id: 'u-' + name, name, email: '', role: 'BOOKING_MEMBER' }) as UserProfile;
+  const plan = { id: 'p10', storeId: 'S1', storeName: 'S1_TTS', month: '2026/10', pic: 'A', primaryPic: 'Chủ Trì', assignedMembers: ['Thành Viên'], items: [{ assignedStaff: 'Người Nhận Slot' }] } as unknown as InputPlanBreakdownState;
+  for (const name of ['Chủ Trì', 'Thành Viên', 'Người Nhận Slot']) assert.equal(isPlanManagedByUser(plan, member(name), [store]), true, name);
+  assert.equal(isPlanManagedByUser(plan, member('Người Ngoài'), [store]), false);
 });
 
 // ---------- API ----------
@@ -118,13 +93,8 @@ test('API: Trưởng phòng gắn PIC cho gian; nhân viên được gắn thấ
   const catalog = await (await getCatalog(req(member, 'GET', undefined, '/api/master-data'))).json();
   assert.deepEqual(catalog.data.stores.map((s: StorePortfolioItem) => s.id), [store.id]);
 
-  // Gỡ khỏi gian: vẫn thấy gian (chỉ xem dữ liệu cũ), được ghi vào danh sách PIC cũ, không còn quyền làm việc
+  // Gỡ khỏi gian: không còn là PIC gian (dữ liệu cũ xem qua các kế hoạch tháng có tên mình)
   assert.equal((await putStorePics(req(lead, 'PUT', { revision: 1, storeId: store.id, pics: [] }))).status, 200);
   const after = await (await getCatalog(req(member, 'GET', undefined, '/api/master-data'))).json();
-  assert.deepEqual(after.data.stores.map((s: StorePortfolioItem) => s.id), [store.id]);
-  const removed = after.data.stores[0] as StorePortfolioItem;
-  assert.deepEqual(removed.pics, []);
-  assert.equal(removed.formerPics?.[0]?.email, member.email);
-  assert.equal(canWorkOnStore(removed, member), false);
-  assert.equal(isStoreManagedByUser(removed, member), true);
+  assert.equal(after.data.stores.length, 0);
 });

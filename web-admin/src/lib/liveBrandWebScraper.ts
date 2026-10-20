@@ -558,6 +558,65 @@ async function scrapeEcommerceMarketplaceCatalog(
 }
 
 /**
+ * Tìm kiếm trực tiếp trên Web (Bing Search vi-VN & DuckDuckGo HTML) để lấy kết quả trang web, bài viết đánh giá, giá bán
+ */
+export async function scrapeWebSearchSnippets(
+  searchQuery: string
+): Promise<LiveSearchSnippetEvidence[]> {
+  const cleanQ = searchQuery.trim();
+  if (!cleanQ) return [];
+  const snippets: LiveSearchSnippetEvidence[] = [];
+  const seenUrls = new Set<string>();
+
+  try {
+    const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(
+      cleanQ
+    )}&mkt=vi-VN&setlang=vi&cc=VN&count=10`;
+    const res = await fetch(bingUrl, {
+      headers: {
+        'User-Agent': BROWSER_UA,
+        'Accept-Language': 'vi-VN,vi;q=0.9',
+      },
+      signal: AbortSignal.timeout(4500),
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const algoBlocks = html.split(/<li class="b_algo"/i).slice(1, 9);
+      for (const block of algoBlocks) {
+        const linkMatch = block.match(/<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+        if (!linkMatch) continue;
+        const rawUrl = decodeHtmlEntities(linkMatch[1]);
+        const title = stripTags(linkMatch[2]);
+        if (!rawUrl.startsWith('http') || !title || seenUrls.has(rawUrl)) continue;
+        const captionMatch =
+          block.match(/<div class="b_caption"[^>]*>([\s\S]*?)<\/div>/i) ||
+          block.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+        const snippetText = captionMatch ? stripTags(captionMatch[1]).slice(0, 260) : title;
+        let domain = 'web';
+        try {
+          domain = new URL(rawUrl).hostname.replace(/^www\./i, '').toLowerCase();
+        } catch {
+          // ignore
+        }
+        seenUrls.add(rawUrl);
+        snippets.push({
+          title,
+          url: rawUrl,
+          domain,
+          snippet: snippetText,
+          extractedPricesVnd: extractVndPricesFromText(`${title} ${snippetText}`),
+        });
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return snippets;
+}
+
+/**
  * Cào trực tiếp các thẻ video & tiêu đề thực tế từ Bing Video Search (vi-VN) cho thương hiệu/đối thủ
  */
 async function scrapeBingVideoSnippetsForBrand(
@@ -779,18 +838,24 @@ function inferBrandOriginAndCategoryFromText(
  */
 export async function scrapeLiveBrandWebIntelligence(
   brandQuery: string,
-  knownWebsiteUrl?: string
+  knownWebsiteUrl?: string,
+  extraSearchQuery?: string
 ): Promise<LiveAutoScrapedBrandIntelligence> {
   const cleanName = brandQuery.replace(/^@+/, '').trim();
+  const webQuery = extraSearchQuery?.trim()
+    ? `${cleanName} ${extraSearchQuery.trim()}`
+    : `${cleanName} sản phẩm giá bán đánh giá`;
 
   // Chạy song song:
   // 1) Dò tìm Website chính thức
   // 2) Cào danh mục sản phẩm & giá thật trên Sàn TMĐT
   // 3) Cào danh sách video thực tế từ Bing Video Search
-  const [officialUrl, ecommerceData, videoSnippets] = await Promise.all([
+  // 4) Tìm kiếm trực tiếp trên Web (Bing Search vi-VN)
+  const [officialUrl, ecommerceData, videoSnippets, webSnippets] = await Promise.all([
     discoverOfficialBrandWebsite(cleanName, knownWebsiteUrl),
     scrapeEcommerceMarketplaceCatalog(cleanName),
     scrapeBingVideoSnippetsForBrand(cleanName),
+    scrapeWebSearchSnippets(webQuery),
   ]);
 
   // Nếu tìm thấy Website chính thức, cào sâu ngay danh mục sản phẩm (`/collections/all/products.json`, `/products.json`, `/wp-json/wc/store/products`, trang chủ)
@@ -877,11 +942,12 @@ export async function scrapeLiveBrandWebIntelligence(
             snippet:
               officialCatalog.metaDescription ||
               officialCatalog.headings.slice(0, 4).join(' · ') ||
-              `Trang chủ chính thức ${officialCatalog.domain} (${officialCatalog.products.length} SKU sản phẩm vừa cào)`,
+              `Trang chủ chính thức ${officialCatalog.domain} (${officialCatalog.products.length} sản phẩm)`,
             extractedPricesVnd: officialCatalog.pricesVnd.slice(0, 6),
           },
         ]
       : []),
+    ...webSnippets,
     ...ecommerceData.snippets,
     ...videoSnippets,
   ];

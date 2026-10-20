@@ -994,7 +994,9 @@ export default function App() {
     try {
       const raw = localStorage.getItem('upbase_store_overrides_v1');
       const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
-      overrides[updatedStore.id] = updatedStore;
+      // Danh sách PIC do server quản lý (store-pics); không lưu bản sao để khỏi đè danh sách mới khi tải lại.
+      const { pics: _pics, ...storeOverride } = updatedStore;
+      overrides[updatedStore.id] = storeOverride;
       localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
     } catch {
       // ignore storage errors
@@ -1361,6 +1363,13 @@ export default function App() {
               currentUser={currentUser}
               brands={scopedBrands}
               onNotify={showToast}
+              onOpenBookingWithProduct={(product) => {
+                if (product.brandName) {
+                  setSelectedBrandContext(product.brandName);
+                }
+                setActiveTab('booking');
+                showToast(`Đã mở Quản lý Booking cho SKU ${product.sku} (${product.brandName})`);
+              }}
             />
           </KeepAliveTab>
 
@@ -1496,6 +1505,7 @@ export default function App() {
               kocs={kocs}
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
+              onNotify={showToast}
               bookingDrilldownIntent={bookingDrilldownIntent}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onOpenQuickBook={() => {
@@ -1564,6 +1574,7 @@ export default function App() {
               deals={scopedDeals}
               currentUser={currentUser}
               onNotify={showToast}
+              onUpdateDeal={handleUpdateDeal}
               onUpdateDealWithSparkAds={(dealCode, sparkCode) => {
                 setDeals(prev => prev.map(d => d.dealCode === dealCode ? {
                   ...d,

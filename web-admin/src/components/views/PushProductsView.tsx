@@ -45,7 +45,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { formatDate, formatVnd } from '../../lib/format';
-import { Button, ChannelTag, PageActions, Presence, ShopeeLogo, TikTokLogo, LazadaLogo } from '../ui';
+import { BrandAvatar, Button, ChannelTag, Modal, PageActions, Presence, ShopeeLogo, Stat, StatRow, TikTokLogo, LazadaLogo } from '../ui';
 
 interface PushProductsViewProps {
   currentUser: UserProfile;
@@ -64,6 +64,19 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
 }) => {
   // Master Push Products State
   const [products, setProducts] = useState<PushProductItem[]>(INITIAL_PUSH_PRODUCTS);
+
+  const availableBrands = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; category: string }>();
+    brands.forEach((b) => {
+      map.set(b.id, { id: b.id, name: b.name, category: b.category || 'Tiêu dùng & Bán lẻ' });
+    });
+    products.forEach((p) => {
+      if (!map.has(p.brandId)) {
+        map.set(p.brandId, { id: p.brandId, name: p.brandName, category: p.brandCategory || 'Tiêu dùng & Bán lẻ' });
+      }
+    });
+    return Array.from(map.values());
+  }, [brands, products]);
 
   // Active Role Switcher for Collaboration Simulation
   const [activeRole, setActiveRole] = useState<PushProductRole>(
@@ -1065,60 +1078,34 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       </div>
 
       {/* KPI Cards Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Tổng sản phẩm</span>
-            <Boxes className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-xl font-semibold text-slate-900">{metrics.totalCount} <span className="text-xs font-normal text-slate-500">SKU</span></div>
-          <div className="text-2xs text-slate-400 mt-0.5">Theo gian hàng sàn</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-            <span>Đã chốt duyệt</span>
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-xl font-semibold text-slate-900">{metrics.lockedCount}</div>
-          <div className="text-2xs text-slate-500 mt-0.5">
-            Đạt {metrics.lockRatio}% tổng danh mục
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-            <span>Đang trao đổi</span>
-            <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-xl font-semibold text-slate-900">{metrics.inDiscussionCount}</div>
-          <div className="text-2xs text-slate-500 mt-0.5">Phản biện điều kiện deal/mẫu</div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-            <span>Hạn mức mẫu</span>
-            <Package className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-lg font-semibold text-slate-900">
-            {metrics.totalSampleAllocated} <span className="text-xs font-normal text-slate-500">/ {metrics.totalSampleQuota}</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-0.5">
-            Đã cấp {metrics.totalSampleQuota > 0 ? Math.round((metrics.totalSampleAllocated / metrics.totalSampleQuota) * 100) : 0}% quota
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
-            <span>Tồn kho khả dụng</span>
-            <Store className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-lg font-semibold text-slate-900">
-            {metrics.totalAvailableStock.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-500">SP</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-0.5">Cam kết cho chiến dịch</div>
-        </div>
-      </div>
+      <StatRow>
+        <Stat
+          label="Tổng sản phẩm"
+          value={`${metrics.totalCount} SKU`}
+          note="Theo gian hàng sàn"
+        />
+        <Stat
+          label="Đã chốt duyệt"
+          value={String(metrics.lockedCount)}
+          note={`Đạt ${metrics.lockRatio}% tổng danh mục`}
+          tone="positive"
+        />
+        <Stat
+          label="Đang trao đổi"
+          value={String(metrics.inDiscussionCount)}
+          note={`${metrics.changeReqCount} yêu cầu đổi`}
+        />
+        <Stat
+          label="Hạn mức mẫu"
+          value={`${metrics.totalSampleAllocated} / ${metrics.totalSampleQuota}`}
+          note={`Đã cấp ${metrics.totalSampleQuota > 0 ? Math.round((metrics.totalSampleAllocated / metrics.totalSampleQuota) * 100) : 0}% quota`}
+        />
+        <Stat
+          label="Tồn kho khả dụng"
+          value={`${metrics.totalAvailableStock.toLocaleString('vi-VN')} SP`}
+          note="Cam kết chiến dịch"
+        />
+      </StatRow>
 
       {/* Filter and Control Bar */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
@@ -1186,11 +1173,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               onChange={(e) => setSelectedBrandId(e.target.value)}
               className="bg-transparent font-semibold text-slate-700 focus:outline-none cursor-pointer max-w-[160px]"
             >
-              <option value="ALL">Tất cả thương hiệu</option>
-              <option value="brand-kutieskin">Kutieskin Mama & Baby</option>
-              <option value="brand-bye-bye-blemish">Bye Bye Blemish</option>
-              <option value="brand-royal-ausnz">Royal Ausnz Úc</option>
-              <option value="brand-phcare">pHCare Japan</option>
+              <option value="ALL">Tất cả thương hiệu ({availableBrands.length})</option>
+              {availableBrands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1260,9 +1248,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <div className="bg-white rounded-xl p-12 text-center border border-slate-200 space-y-3">
               <Package className="w-12 h-12 text-slate-300 mx-auto" />
               <div className="text-base font-semibold text-slate-700">Không tìm thấy sản phẩm thúc đẩy phù hợp</div>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Không có sản phẩm nào trong giai đoạn {timeHorizon === 'AVAILABLE' ? 'đang mở bán' : timeHorizon === 'FUTURE' ? 'kế hoạch sắp tới' : 'lịch sử'}.
-              </p>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
@@ -1277,9 +1262,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 {/* Brand Header Banner */}
                 <div className="bg-slate-50 p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                    <div className="w-11 h-11 rounded-xl bg-primary text-white font-semibold flex items-center justify-center text-lg shadow-sm shrink-0">
-                      {bGroup.brandName.slice(0, 2).toUpperCase()}
-                    </div>
+                    <BrandAvatar brandName={bGroup.brandName} size={44} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <h2 className="text-lg font-semibold text-slate-900">{bGroup.brandName}</h2>
@@ -2191,28 +2174,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       </Presence>
 
       {/* MODAL: KHỞI TẠO ĐỀ XUẤT SẢN PHẨM THÚC ĐẨY MỚI (GROWTH KHỞI TẠO) */}
-      <Presence show={!!isCreateModalOpen}>
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-rose-500" />
-                  Khởi tạo sản phẩm thúc đẩy mới
-                </h3>
-                
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateNewProduct} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+      <Modal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Khởi tạo sản phẩm thúc đẩy mới"
+        size="lg"
+      >
+            <form onSubmit={handleCreateNewProduct} className="space-y-4 text-xs">
               {/* Row 1: Brand & Gian Hàng Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -2234,10 +2202,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     }}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 font-medium"
                   >
-                    <option value="brand-kutieskin">Kutieskin Mama & Baby</option>
-                    <option value="brand-bye-bye-blemish">Bye Bye Blemish</option>
-                    <option value="brand-royal-ausnz">Royal Ausnz Úc</option>
-                    <option value="brand-phcare">pHCare Japan</option>
+                    {availableBrands.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -2448,36 +2417,17 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+      </Modal>
 
       {/* MODAL: B2C BỔ SUNG & CẬP NHẬT THÔNG TIN BRIEF KOC / CREATOR */}
-      <Presence show={!!(isEditBriefModalOpen && briefFormProduct)}>
-      {isEditBriefModalOpen && briefFormProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-accent" />
-                  Cập nhật thông tin brief KOC
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Sản phẩm: <strong>{briefFormProduct.productName}</strong> ({briefFormProduct.sku}) • Gian hàng: <strong>{briefFormProduct.storeName}</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsEditBriefModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveB2cBrief} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
+      <Modal
+        open={Boolean(isEditBriefModalOpen && briefFormProduct)}
+        onClose={() => setIsEditBriefModalOpen(false)}
+        title={briefFormProduct ? `Cập nhật brief KOC · ${briefFormProduct.sku}` : 'Cập nhật brief KOC'}
+        size="lg"
+      >
+        {briefFormProduct && (
+            <form onSubmit={handleSaveB2cBrief} className="space-y-4 text-xs">
 
 
               {/* USP */}
@@ -2611,34 +2561,17 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* MODAL: TẠO CHANGE REQUEST (YÊU CẦU THAY ĐỔI ĐIỀU KIỆN / CHU KỲ) */}
-      <Presence show={!!isChangeRequestModalOpen}>
-      {isChangeRequestModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <FileEdit className="w-4 h-4 text-accent" />
-                  Yêu cầu thay đổi: {changeRequestForm.fieldLabel}
-                </h3>
-                
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsChangeRequestModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitChangeRequest} className="p-6 space-y-4 text-xs">
+      <Modal
+        open={isChangeRequestModalOpen}
+        onClose={() => setIsChangeRequestModalOpen(false)}
+        title={`Yêu cầu thay đổi: ${changeRequestForm.fieldLabel}`}
+        size="md"
+      >
+            <form onSubmit={handleSubmitChangeRequest} className="space-y-4 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <span className="text-slate-400 block text-2xs">Giá trị hiện tại:</span>
                 <span className="font-mono font-semibold text-slate-800 text-sm">{String(changeRequestForm.oldValue)}</span>
@@ -2713,10 +2646,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+      </Modal>
     </div>
   );
 };

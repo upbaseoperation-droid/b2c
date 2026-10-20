@@ -35,7 +35,7 @@ import {
   getStoreTierByCoefficient,
   normalizeStoreCoefficient,
 } from '../../lib/types';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, getVietnamDateTimeShort } from '../../lib/format';
 import { Button, BrandAvatar, PlatformBadge, Status } from '../ui';
 import {
   B2C_28_STAFF_WORKLOAD_ROSTER,
@@ -1274,7 +1274,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     }
     const stdPt = selectedQuickSow?.basePoint || 4.0;
     const diffCoef = DIFFICULTY_TIER_BADGE[quickTaskDifficulty].coef;
-    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    const nowStr = getVietnamDateTimeShort();
     const newTask: SlaTask = {
       id: `task-3d-${Date.now()}`,
       title: cleanTitle,

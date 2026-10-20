@@ -1,12 +1,12 @@
 /**
- * Danh sách PIC theo gian — nguồn duy nhất trả lời "ai được xem dữ liệu gian X".
+ * Danh sách PIC theo gian — nguồn duy nhất trả lời "ai đang phụ trách gian X".
  *
- * Quy tắc:
- * - Mỗi gian có một danh sách PIC hiện tại. PIC hiện tại xem và làm việc trên toàn bộ dữ liệu của gian.
- * - Trưởng phòng chỉ thêm / bớt người; hệ thống tự ghi ngày nhận (since) và ngày rời (until).
- * - PIC cũ (đã rời) vẫn CHỈ XEM được dữ liệu các tháng mình phụ trách; không sửa, không xem tháng của người sau.
- * - Việc cụ thể từng tháng do kế hoạch tháng phân chia (plan.pic / growthPic / mediaPic), không quản lý ở đây.
- * - Gian chưa có danh sách vẫn dùng các trường PIC cũ trên hồ sơ gian (giai đoạn chuyển đổi).
+ * Phân quyền 2 nấc:
+ * 1. PIC gian (danh sách này): xem và làm việc trên toàn bộ dữ liệu của gian.
+ * 2. Người được phân việc trong kế hoạch tháng của gian (plan.pic, primaryPic, growthPic, mediaPic,
+ *    assignedMembers, người nhận từng dòng việc): là PIC tham gia gian trong tháng đó, xem được kế hoạch ấy —
+ *    kể cả sau khi đã rời danh sách PIC gian. Kế hoạch tháng chính là lịch sử ai làm gian nào, tháng nào.
+ * Gian chưa có danh sách vẫn dùng các trường PIC cũ trên hồ sơ gian (giai đoạn chuyển đổi).
  *
  * Định danh: đăng nhập Lark được đối soát về danh bạ nhân sự đã chuẩn hóa; khóa chính là MÃ NHÂN SỰ (staffId),
  * email chỉ là khóa phụ.
@@ -16,16 +16,10 @@ export interface StorePic {
   staffId?: string; // mã nhân sự trong danh bạ (HN782...), khóa chính
   email?: string; // khóa phụ, luôn chữ thường
   name: string; // chỉ để hiển thị
-  since?: string; // YYYY-MM-DD, ngày được gắn vào gian (hệ thống tự ghi)
-}
-
-export interface FormerStorePic extends StorePic {
-  until: string; // YYYY-MM-DD, ngày bị gỡ khỏi gian (tính cả ngày này)
 }
 
 export interface StorePicEntry {
   pics: StorePic[];
-  former?: FormerStorePic[];
   updatedBy: string;
   updatedAt: string;
 }
@@ -39,25 +33,6 @@ export class StorePicRuleError extends Error {}
 
 export const normEmail = (email: string | null | undefined) => (email || '').trim().toLowerCase();
 export const normStaffId = (id: string | null | undefined) => (id || '').trim().toUpperCase();
-
-/** Ngày hôm nay theo giờ Việt Nam, dạng YYYY-MM-DD. */
-export function todayVN(now: Date = new Date()): string {
-  return new Date(now.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
-}
-
-/** Chuẩn hóa tháng từ các biến thể đang có trong dữ liệu: 2026/10, 2026-10, 10/2026 → { start, end }. */
-export function monthBounds(raw: string | null | undefined): { start: string; end: string } | null {
-  const s = (raw || '').trim();
-  let y: number, m: number;
-  let match = s.match(/^(\d{4})[/-](\d{1,2})$/);
-  if (match) { y = +match[1]; m = +match[2]; }
-  else if ((match = s.match(/^(\d{1,2})[/-](\d{4})$/))) { y = +match[2]; m = +match[1]; }
-  else return null;
-  if (m < 1 || m > 12) return null;
-  const mm = String(m).padStart(2, '0');
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { start: `${y}-${mm}-01`, end: `${y}-${mm}-${String(last).padStart(2, '0')}` };
-}
 
 /** Các định danh của người đang đăng nhập dùng để so với danh sách PIC. */
 export interface PersonIdentity {
@@ -74,40 +49,24 @@ export function personIdentity(user: { id?: string; email?: string; staffCode?: 
   return { staffIds, email: normEmail(user?.email) };
 }
 
-const samePerson = (p: StorePic, who: PersonIdentity) =>
-  !!((p.staffId && who.staffIds.has(p.staffId)) || (p.email && who.email && p.email === who.email));
-
-const picKey = (p: StorePic) => p.staffId || p.email || '';
-
 /** Gian có danh sách PIC (kể cả rỗng sau khi gỡ hết) thì danh sách quyết định, bỏ qua các trường PIC theo tên. */
 export const hasPicList = (pics: StorePic[] | undefined): pics is StorePic[] => Array.isArray(pics);
 
-/** Đang là PIC của gian: được xem và sửa. */
-export const isStorePic = (pics: StorePic[] | undefined, who: PersonIdentity) => !!pics?.some(p => samePerson(p, who));
+export const isStorePic = (pics: StorePic[] | undefined, who: PersonIdentity) =>
+  !!pics?.some(p => (p.staffId && who.staffIds.has(p.staffId)) || (p.email && who.email && p.email === who.email));
 
-/** Từng là PIC của gian (đã rời): chỉ được xem dữ liệu trong thời gian mình phụ trách. */
-export const isFormerStorePic = (former: FormerStorePic[] | undefined, who: PersonIdentity) => !!former?.some(p => samePerson(p, who));
-
-/**
- * Được xem dữ liệu của gian thuộc tháng `month` không: PIC hiện tại xem mọi tháng;
- * PIC cũ chỉ xem các tháng có giao với thời gian mình phụ trách.
- */
-export function canReadStoreMonth(
-  pics: StorePic[] | undefined,
-  former: FormerStorePic[] | undefined,
-  who: PersonIdentity,
-  month: string | null | undefined
-): boolean {
-  if (isStorePic(pics, who)) return true;
-  const bounds = monthBounds(month);
-  if (!bounds) return false;
-  return !!former?.some(p => samePerson(p, who) && (p.since || '0000-01-01') <= bounds.end && p.until >= bounds.start);
+/** Tất cả người được phân việc trong một kế hoạch tháng (theo tên, như kế hoạch đang lưu). */
+export function planParticipantNames(plan: {
+  pic?: string; primaryPic?: string; growthPic?: string; mediaPic?: string; submittedBy?: string;
+  assignedMembers?: string[]; items?: { assignedStaff?: string }[];
+}): string[] {
+  return [
+    plan.pic, plan.primaryPic, plan.growthPic, plan.mediaPic, plan.submittedBy,
+    ...(plan.assignedMembers || []),
+    ...(plan.items || []).map(i => i.assignedStaff),
+  ].filter((n): n is string => !!n && !!n.trim());
 }
 
-/**
- * Thay danh sách PIC hiện tại của một gian. Người mới được ghi ngày nhận là hôm nay;
- * người bị gỡ chuyển sang danh sách PIC cũ với ngày rời là hôm nay.
- */
 export function setStorePics(
   data: StorePicData,
   storeId: string,
@@ -118,10 +77,6 @@ export function setStorePics(
 ): StorePicData {
   if (!storeIds.has(storeId)) throw new StorePicRuleError(`Gian hàng ${storeId} không tồn tại.`);
   if (!Array.isArray(pics) || pics.length > 50) throw new StorePicRuleError('Danh sách PIC không hợp lệ.');
-  const today = todayVN(now);
-  const prev = data[storeId];
-  const prevByKey = new Map((prev?.pics || []).map(p => [picKey(p), p]));
-
   const seen = new Set<string>();
   const clean: StorePic[] = [];
   for (const p of pics) {
@@ -131,27 +86,9 @@ export function setStorePics(
     const key = staffId || email;
     if (seen.has(key)) continue;
     seen.add(key);
-    clean.push({
-      ...(staffId ? { staffId } : {}),
-      ...(email ? { email } : {}),
-      name: (p.name || '').trim() || staffId || email,
-      since: prevByKey.get(key)?.since || today, // ngày nhận do hệ thống quản lý, không lấy từ client
-    });
+    clean.push({ ...(staffId ? { staffId } : {}), ...(email ? { email } : {}), name: (p.name || '').trim() || staffId || email });
   }
-
-  const removed: FormerStorePic[] = (prev?.pics || [])
-    .filter(p => !seen.has(picKey(p)))
-    .map(p => ({ ...p, until: today }));
-
-  return {
-    ...data,
-    [storeId]: {
-      pics: clean,
-      former: [...(prev?.former || []), ...removed],
-      updatedBy: actor.name,
-      updatedAt: now.toISOString(),
-    },
-  };
+  return { ...data, [storeId]: { pics: clean, updatedBy: actor.name, updatedAt: now.toISOString() } };
 }
 
 /** Gợi ý danh sách PIC ban đầu từ các trường PIC theo tên đang có trên hồ sơ gian. */

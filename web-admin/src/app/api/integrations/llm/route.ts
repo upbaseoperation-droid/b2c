@@ -8,7 +8,11 @@ import {
 } from '@/lib/apiKeyConfig';
 import { synthesizeMarketingKnowledgeAnswer } from '@/lib/marketingKnowledgeBase';
 import { generateBrandMarketResearchDossier } from '@/lib/brandMarketResearchEngine';
-import { formatVnd, formatVndShort } from '@/lib/format';
+import {
+  scrapeLiveBrandWebIntelligence,
+  scrapeWebSearchSnippets,
+} from '@/lib/liveBrandWebScraper';
+import { formatVnd } from '@/lib/format';
 
 interface LlmApiRequestBody {
   action: 'TEST_CONNECTION' | 'EXECUTE_PURPOSE';
@@ -67,26 +71,37 @@ function normalizeGoogleBaseUrl(raw?: string): string {
   return trimmed;
 }
 
-function buildGoogleCandidateModels(requestedModel: string): string[] {
+function buildGoogleCandidateModels(requestedModel: string, baseUrl?: string): string[] {
   const clean = (requestedModel || 'gemini-3.8-flash').trim().replace(/^models\//i, '');
+  const isOfficialGoogle = !baseUrl || /generativelanguage\.googleapis\.com/i.test(baseUrl);
   const isProTier = /argon|pro/i.test(clean);
-  const fallbacks = isProTier
+  const isSyntheticCatalogAlias = /^gemini-(4-argon|3\.(8|6|5|1))/i.test(clean);
+
+  // Nếu gọi trực tiếp tới Google AI Studio (generativelanguage.googleapis.com),
+  // ưu tiên gọi ngay các mã model thực tế đang mở trên máy chủ Google để tránh tốn 3-4 lượt chờ 404.
+  const fallbacks = isOfficialGoogle && isSyntheticCatalogAlias
+    ? isProTier
+      ? [
+          'gemini-2.5-pro',
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+          clean,
+        ]
+      : [
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+          'gemini-2.0-flash-lite',
+          clean,
+        ]
+    : isProTier
     ? [
         clean,
-        'gemini-4-argon',
-        'gemini-3.1-pro-preview',
         'gemini-2.5-pro',
-        'gemini-3.8-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
       ]
     : [
         clean,
-        'gemini-3.8-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
         'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-2.0-flash-lite',
@@ -109,11 +124,12 @@ async function callGoogleGemini(params: {
   const requestedModelId = (params.model || 'gemini-3.8-flash').trim();
   const cleanKey = params.apiKey.trim();
 
-  const candidates = buildGoogleCandidateModels(requestedModelId);
+  const candidates = buildGoogleCandidateModels(requestedModelId, cleanBase);
   const triedModels = new Set<string>();
   let lastStatus = 0;
   let lastErrBody = '';
   let lastStatusText = '';
+  const perModelTimeoutMs = params.isConnectionTest ? 12000 : 30000;
 
   const tryGenerateWithModel = async (upstreamModel: string) => {
     triedModels.add(upstreamModel);
@@ -123,7 +139,9 @@ async function callGoogleGemini(params: {
       contents: [{ role: 'user', parts: [{ text: params.userPrompt }] }],
       generationConfig: {
         temperature: params.temperature ?? 0.2,
-        maxOutputTokens: params.maxTokens ?? 1800,
+        maxOutputTokens: params.isConnectionTest
+          ? (params.maxTokens ?? 60)
+          : Math.max(params.maxTokens ?? 2048, 2048),
       },
     };
     if (params.systemInstruction) {
@@ -132,15 +150,26 @@ async function callGoogleGemini(params: {
       };
     }
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': cleanKey,
-      },
-      body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(15000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': cleanKey,
+        },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(perModelTimeoutMs),
+      });
+    } catch (fetchErr: unknown) {
+      lastStatus = 504;
+      lastStatusText = 'Gateway Timeout';
+      lastErrBody =
+        fetchErr instanceof Error
+          ? `Quá thời gian chờ (${Math.round(perModelTimeoutMs / 1000)}s) khi gọi model ${upstreamModel}: ${fetchErr.message}`
+          : `Quá thời gian chờ khi gọi model ${upstreamModel}`;
+      return null;
+    }
 
     if (!res.ok) {
       lastStatus = res.status;
@@ -249,24 +278,34 @@ async function callGoogleGemini(params: {
   throw new Error(extractReadableApiError('Google Gemini', lastStatus || 503, lastErrBody, lastStatusText));
 }
 
-function buildOpenAiCandidateModels(requestedModel: string): string[] {
+function buildOpenAiCandidateModels(requestedModel: string, baseUrl?: string): string[] {
   const clean = (requestedModel || 'gpt-6.1-sol').trim();
+  const isOfficialOpenAi = !baseUrl || /api\.openai\.com/i.test(baseUrl);
   const isLightweight = /luna|mini|nano/i.test(clean);
-  const fallbacks = isLightweight
+  const isSyntheticCatalogAlias = /^gpt-(6|5\.)/i.test(clean);
+
+  const fallbacks = isOfficialOpenAi && isSyntheticCatalogAlias
+    ? isLightweight
+      ? [
+          'gpt-4.1-mini',
+          'gpt-4o-mini',
+          clean,
+        ]
+      : [
+          'gpt-4.1',
+          'gpt-4o',
+          'gpt-4.1-mini',
+          'gpt-4o-mini',
+          clean,
+        ]
+    : isLightweight
     ? [
         clean,
-        'gpt-6-luna',
-        'gpt-5.6-luna',
-        'gpt-5-mini',
         'gpt-4.1-mini',
         'gpt-4o-mini',
       ]
     : [
         clean,
-        'gpt-6.1-sol',
-        'gpt-5.6-sol',
-        'gpt-5.6-terra',
-        'gpt-5',
         'gpt-4.1',
         'gpt-4o',
         'gpt-4.1-mini',
@@ -292,6 +331,7 @@ async function callOpenAiChatGpt(params: {
   const cleanKey = params.apiKey.trim();
   const chatUrl = `${cleanBase}/chat/completions`;
   const responsesUrl = `${cleanBase}/responses`;
+  const perModelTimeoutMs = params.isConnectionTest ? 12000 : 30000;
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
   if (params.systemInstruction) {
@@ -299,7 +339,7 @@ async function callOpenAiChatGpt(params: {
   }
   messages.push({ role: 'user', content: params.userPrompt });
 
-  const candidates = buildOpenAiCandidateModels(requestedModelId);
+  const candidates = buildOpenAiCandidateModels(requestedModelId, cleanBase);
   let lastStatus = 0;
   let lastErrBody = '';
   let lastStatusText = '';
@@ -314,15 +354,26 @@ async function callOpenAiChatGpt(params: {
       resPayload.instructions = params.systemInstruction;
     }
 
-    const res = await fetch(responsesUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cleanKey}`,
-      },
-      body: JSON.stringify(resPayload),
-      signal: AbortSignal.timeout(15000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(responsesUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanKey}`,
+        },
+        body: JSON.stringify(resPayload),
+        signal: AbortSignal.timeout(perModelTimeoutMs),
+      });
+    } catch (fetchErr: unknown) {
+      lastStatus = 504;
+      lastStatusText = 'Gateway Timeout';
+      lastErrBody =
+        fetchErr instanceof Error
+          ? `Quá thời gian chờ (${Math.round(perModelTimeoutMs / 1000)}s) khi gọi OpenAI ${candidateModel}`
+          : `Quá thời gian chờ khi gọi OpenAI ${candidateModel}`;
+      return null;
+    }
 
     if (!res.ok) {
       lastStatus = res.status;
@@ -394,15 +445,26 @@ async function callOpenAiChatGpt(params: {
       payload.temperature = params.temperature ?? 0.2;
     }
 
-    const res = await fetch(chatUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${cleanKey}`,
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(chatUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${cleanKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(perModelTimeoutMs),
+      });
+    } catch (fetchErr: unknown) {
+      lastStatus = 504;
+      lastStatusText = 'Gateway Timeout';
+      lastErrBody =
+        fetchErr instanceof Error
+          ? `Quá thời gian chờ (${Math.round(perModelTimeoutMs / 1000)}s) khi gọi OpenAI ${candidateModel}`
+          : `Quá thời gian chờ khi gọi OpenAI ${candidateModel}`;
+      continue;
+    }
 
     if (!res.ok) {
       lastStatus = res.status;
@@ -465,40 +527,46 @@ async function callOpenAiChatGpt(params: {
   throw new Error(extractReadableApiError('OpenAI (ChatGPT)', lastStatus || 503, lastErrBody, lastStatusText));
 }
 
-function buildClaudeCandidateModels(requestedModel: string): string[] {
+function buildClaudeCandidateModels(requestedModel: string, baseUrl?: string): string[] {
   const clean = (requestedModel || 'claude-sonnet-5-5').trim();
+  const isOfficialAnthropic = !baseUrl || /api\.anthropic\.com/i.test(baseUrl);
   const isHaiku = /haiku/i.test(clean);
   const isOpusOrFable = /opus|fable/i.test(clean);
-  const fallbacks = isHaiku
+  const isSyntheticCatalogAlias = /^claude-(sonnet-5|opus-5|haiku-5|fable|opus-4-8)/i.test(clean);
+
+  const fallbacks = isOfficialAnthropic && isSyntheticCatalogAlias
+    ? isHaiku
+      ? [
+          'claude-haiku-4-5',
+          'claude-3-5-haiku-latest',
+          'claude-sonnet-4-20250514',
+          clean,
+        ]
+      : isOpusOrFable
+      ? [
+          'claude-sonnet-4-20250514',
+          'claude-3-7-sonnet-latest',
+          'claude-3-5-sonnet-latest',
+          clean,
+        ]
+      : [
+          'claude-sonnet-4-20250514',
+          'claude-3-7-sonnet-latest',
+          'claude-3-5-sonnet-latest',
+          'claude-3-5-haiku-latest',
+          clean,
+        ]
+    : isHaiku
     ? [
         clean,
-        'claude-haiku-5-5',
-        'claude-haiku-4-5',
         'claude-3-5-haiku-latest',
-        'claude-sonnet-5-5',
-        'claude-sonnet-4-5',
-      ]
-    : isOpusOrFable
-    ? [
-        clean,
-        'claude-opus-5-5',
-        'claude-opus-4-8',
-        'claude-opus-4-5',
-        'claude-sonnet-5-5',
-        'claude-sonnet-4-6',
-        'claude-sonnet-4-5',
         'claude-sonnet-4-20250514',
-        'claude-3-7-sonnet-latest',
       ]
     : [
         clean,
-        'claude-sonnet-5-5',
-        'claude-sonnet-4-6',
-        'claude-sonnet-4-5',
         'claude-sonnet-4-20250514',
         'claude-3-7-sonnet-latest',
         'claude-3-5-sonnet-latest',
-        'claude-haiku-5-5',
         'claude-3-5-haiku-latest',
       ];
   return Array.from(new Set(fallbacks.filter(Boolean)));
@@ -521,8 +589,9 @@ async function callAnthropicClaude(params: {
   const requestedModelId = (params.model || 'claude-sonnet-5-5').trim();
   const cleanKey = params.apiKey.trim();
   const url = `${cleanBase}/messages`;
+  const perModelTimeoutMs = params.isConnectionTest ? 12000 : 30000;
 
-  const candidates = buildClaudeCandidateModels(requestedModelId);
+  const candidates = buildClaudeCandidateModels(requestedModelId, cleanBase);
   const triedModels = new Set<string>();
   let lastStatus = 0;
   let lastErrBody = '';
@@ -540,16 +609,27 @@ async function callAnthropicClaude(params: {
       payload.system = params.systemInstruction;
     }
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': cleanKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': cleanKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(perModelTimeoutMs),
+      });
+    } catch (fetchErr: unknown) {
+      lastStatus = 504;
+      lastStatusText = 'Gateway Timeout';
+      lastErrBody =
+        fetchErr instanceof Error
+          ? `Quá thời gian chờ (${Math.round(perModelTimeoutMs / 1000)}s) khi gọi Claude ${candidateModel}`
+          : `Quá thời gian chờ khi gọi Claude ${candidateModel}`;
+      return null;
+    }
 
     if (!res.ok) {
       lastStatus = res.status;
@@ -669,6 +749,12 @@ function buildBrandMarketResearchInternalReport(cleanInput: string, cleanPrompt:
   const researchMode = modeMatch?.[1]?.trim() || 'COMPREHENSIVE';
   const customQuestionMatch = cleanInput.match(/\[YÊU CẦU NGHIÊN CỨU CỤ THỂ\]:\s*([\s\S]+?)(?:\n\[|$)/i);
   const customQuestion = customQuestionMatch?.[1]?.trim() || '';
+  const webSearchSectionMatch = cleanInput.match(/\[KẾT QUẢ TÌM KIẾM TRÊN MẠNG[^\]]*\]:\s*([\s\S]+?)(?:\n\[|$)/i);
+  const webSearchLines = (webSearchSectionMatch?.[1] || '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean)
+    .slice(0, 6);
 
   const dossier = generateBrandMarketResearchDossier({
     brandNameOrQuery: rawBrandName,
@@ -696,160 +782,163 @@ function buildBrandMarketResearchInternalReport(cleanInput: string, cleanPrompt:
   if (researchMode === 'COMPETITOR_DEEP_DIVE' || focusCompetitorName) {
     const primaryComp = compList[0];
     return [
-      `PHÂN TÍCH ĐỐI ĐẦU TRỰC DIỆN: ${dossier.brandName.toUpperCase()} vs. ${
-        focusCompetitorName
-          ? focusCompetitorName.toUpperCase()
-          : compList.map(c => c.competitorName).join(', ')
+      `So sánh đối thủ: ${dossier.brandName} và ${
+        focusCompetitorName || compList.map(c => c.competitorName).join(', ')
       }`,
-      '════════════════════════════════════════════════════════════════════',
-      ...(customQuestion ? [`• Trọng tâm câu hỏi: "${customQuestion}"`, ''] : []),
-      '1. SO SÁNH VỊ THẾ THƯƠNG MẠI & ĐỊNH GIÁ TRÊN ĐƠN VỊ (UNIT ECONOMICS):',
-      `  • ${dossier.brandName} (${dossier.originCountry} · ${dossier.category}):`,
-      `    - SKU chủ lực: ${heroSku ? `${heroSku.productName} (${heroSku.packSize})` : dossier.fourP.heroSkuHighlight}`,
-      `    - Giá chốt đơn thực tế: ${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText} (Chiết khấu ~${dossier.fourP.avgDealDiscountPct}% · Hoa hồng KOC: ${dossier.fourP.affiliateCommissionRange})`,
-      `    - Tỷ trọng kênh: TikTok Shop ${dossier.fourP.channelMixRatio.tiktokShopPct}% · Shopee Mall ${dossier.fourP.channelMixRatio.shopeeMallPct}%`,
-      ...compList.slice(0, 4).flatMap((c, idx) => [
-        `  • Đối thủ #${idx + 1}: ${c.competitorName} (${c.tiktokHandle} · ${c.originCountry}):`,
-        `    - SKU đối đầu: ${c.heroSkuName} — Giá bán: ${formatVnd(c.dealPriceVnd)} (Niêm yết: ${formatVnd(c.listPriceVnd)} · Hoa hồng KOC: ${c.affiliateCommissionPct}%)`,
-        ...(c.pricePerUnitComparison ? [`    - Chênh lệch đơn giá/đơn vị: ${c.pricePerUnitComparison}`] : []),
-        `    - Điểm mạnh của ${c.competitorName}: ${c.keyUsps.join('; ')}`,
-        `    - Điểm yếu bị khách hàng phàn nàn (Khe hở thị trường): ${c.customerComplaints.join('; ')}`,
-        `    - Đòn phản công cho ${dossier.brandName}: ${c.upbaseCounterPlay}`,
+      ...(customQuestion ? [`• Yêu cầu: ${customQuestion}`, ''] : []),
+      ...(webSearchLines.length > 0
+        ? [
+            '0. Thông tin tìm kiếm trên mạng:',
+            ...webSearchLines.map(l => `  ${l.startsWith('•') || l.startsWith('-') ? l : `• ${l}`}`),
+            '',
+          ]
+        : []),
+      '1. Giá bán, hoa hồng & kênh bán:',
+      `  • ${dossier.brandName} (${dossier.originCountry}):`,
+      `    - Sản phẩm chính: ${heroSku ? `${heroSku.productName} (${heroSku.packSize})` : dossier.fourP.heroSkuHighlight}`,
+      `    - Giá bán: ${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText} (Giảm ${dossier.fourP.avgDealDiscountPct}% · Hoa hồng: ${dossier.fourP.affiliateCommissionRange})`,
+      `    - Kênh bán: TikTok Shop ${dossier.fourP.channelMixRatio.tiktokShopPct}% · Shopee Mall ${dossier.fourP.channelMixRatio.shopeeMallPct}%`,
+      ...compList.slice(0, 4).flatMap(c => [
+        `  • ${c.competitorName} (${c.tiktokHandle} · ${c.originCountry}):`,
+        `    - Sản phẩm: ${c.heroSkuName} — Giá: ${formatVnd(c.dealPriceVnd)} (Niêm yết: ${formatVnd(c.listPriceVnd)} · Hoa hồng: ${c.affiliateCommissionPct}%)`,
+        ...(c.pricePerUnitComparison ? [`    - Đơn giá: ${c.pricePerUnitComparison}`] : []),
+        `    - Điểm mạnh: ${c.keyUsps.join('; ')}`,
+        `    - Khách phàn nàn: ${c.customerComplaints.join('; ')}`,
+        `    - Hướng cạnh tranh: ${c.upbaseCounterPlay}`,
       ]),
       '',
-      '2. KỊCH BẢN PHẢN CÔNG TRỰC DIỆN TRÊN VIDEO KOC (COUNTER-SCRIPT):',
-      `  • Mở đầu 3 giây (Đánh vào điểm nghẽn của ${primaryComp?.competitorName || 'đối thủ'}):`,
-      `    "${primaryComp?.customerComplaints?.[0] ? `Ai từng dùng dòng ngoại nhập mà gặp cảnh '${primaryComp.customerComplaints[0].toLowerCase()}' hoặc xót ví vì giá cao thì xem ngay bài test đối chứng này!` : `Đừng vội xuống tiền mua các dòng giá cao khi chưa xem bài test độ thấm và bảng thành phần của ${dossier.brandName}!`}"`,
-      '  • Cảnh quay đối chứng bắt buộc (Visual Proof):',
-      `    - Quay split-screen hoặc test trên mu bàn tay: So sánh tốc độ thấm, độ rít trên da và tính nhẩm chi phí sử dụng mỗi ngày của ${heroSku?.productName || dossier.brandName}.`,
-      `    - Đưa cận cảnh bảo chứng: ${(dossier.positioning.rtbs || []).slice(0, 2).join(' + ')}.`,
-      '  • Cơ chế Deal & Hoa hồng hút KOC từ đối thủ:',
-      `    - Thiết lập gói Combo (Hero SKU ${heroSku?.productName || ''} + Quà thử) giữ mức giá dưới ngưỡng tâm lý ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}, nâng hoa hồng Affiliate của SKU phễu lên ${(heroSku?.affiliateCommissionPct || 12) + 3}% trong 14 ngày cao điểm để kéo tệp KOC đang gắn giỏ hàng cho ${primaryComp?.competitorName || 'đối thủ'}.`,
+      '2. Gợi ý triển khai:',
+      `  • Nội dung video: Quay cận cảnh chất sản phẩm trên da, đối chiếu bảng thành phần và chi phí mỗi lần dùng của ${heroSku?.productName || dossier.brandName} để xử lý điểm khách hay chê ở đối thủ (${primaryComp?.customerComplaints?.[0]?.toLowerCase() || 'giá cao, khó thấm'}).`,
+      `  • Chính sách KOC: Giữ combo ${heroSku?.productName || ''} dưới ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}, tăng hoa hồng lên ${
+        (heroSku?.affiliateCommissionPct || 12) + 2
+      }% cho sản phẩm đầu phễu để thu hút nhóm KOC đang gắn giỏ hàng của ${primaryComp?.competitorName || 'đối thủ'}.`,
     ].join('\n');
   }
 
   if (researchMode === 'CONTENT_HOOKS_5') {
     return [
-      `5 KHUNG KỊCH BẢN & HOOK 3 GIÂY CHUYỂN ĐỔI CAO — ${dossier.brandName.toUpperCase()}`,
-      '════════════════════════════════════════════════════════════════════',
-      ...(customQuestion ? [`• Yêu cầu cụ thể: "${customQuestion}"`, ''] : []),
-      '1. NGUYÊN TẮC BẮT BUỘC TRƯỚC KHI QUAY (THEO HỒ SƠ THƯƠNG HIỆU):',
-      `  • Giọng điệu chủ đạo (Tone of Voice): ${dossier.positioning.toneOfVoice}`,
-      `  • Bảo chứng bắt buộc lên hình (RTB): ${(dossier.positioning.rtbs || []).slice(0, 3).join(' | ')}`,
-      `  • Từ ngữ cấm tuyệt đối trên sàn: ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).slice(0, 6).map(p => `"${p}"`).join(', ')}`,
+      `Gợi ý kịch bản video KOC — ${dossier.brandName}`,
+      ...(customQuestion ? [`• Yêu cầu: ${customQuestion}`, ''] : []),
+      ...(webSearchLines.length > 0
+        ? [
+            '0. Dữ liệu thực tế tìm kiếm trên mạng:',
+            ...webSearchLines.slice(0, 4).map(l => `  ${l.startsWith('•') || l.startsWith('-') ? l : `• ${l}`}`),
+            '',
+          ]
+        : []),
+      '1. Lưu ý khi lên kịch bản:',
+      `  • Giọng điệu: ${dossier.positioning.toneOfVoice}`,
+      `  • Điểm cần nêu rõ: ${(dossier.positioning.rtbs || []).slice(0, 3).join(' | ')}`,
+      `  • Từ cấm trên sàn: ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).slice(0, 6).map(p => `"${p}"`).join(', ')}`,
       '',
-      '2. CHI TIẾT 5 GÓC KỊCH BẢN KOC THỰC CHIẾN:',
+      '2. Các góc kịch bản:',
       ...dossier.contentAngleBlueprints.map((angle, idx) => [
-        `  [Góc #${idx + 1}] ${angle.pillarName.toUpperCase()} (Dành cho: ${angle.targetPersona} · Phân tầng: ${angle.bestKocTier})`,
-        `    • Hook 3 giây đầu: "${angle.hook3s}"`,
-        `    • Cảnh quay chứng minh (Visual Proof): ${angle.visualProof}`,
-        `    • Thông điệp thuyết phục (RTB): ${angle.keyMessageRtb}`,
-        `    • Kêu gọi mua hàng (CTA): "${angle.recommendedCta}"`,
+        `  [Góc #${idx + 1}] ${angle.pillarName} (${angle.bestKocTier})`,
+        `    • Mở đầu: "${angle.hook3s}"`,
+        `    • Cảnh quay: ${angle.visualProof}`,
+        `    • Thông tin chính: ${angle.keyMessageRtb}`,
+        `    • Điều hướng mua: "${angle.recommendedCta}"`,
       ].join('\n')),
       ...(dossier.reviewClusters.slice(0, 2).map((cluster, idx) => [
-        `  [Góc bổ sung #${dossier.contentAngleBlueprints.length + idx + 1} - Giải đáp bình luận (${cluster.sharePct}% lượt hỏi)] ${cluster.topicTitle.toUpperCase()}`,
-        `    • Câu hỏi thực tế của khách: "${cluster.sampleQuotes[0] || cluster.suggestedFaqQuestion}"`,
-        `    • Hook 3 giây trả lời video (Reply-to-comment): "${cluster.recommendedScriptHook}"`,
-        `    • Lời thoại giải đáp chuẩn: "${cluster.suggestedFaqAnswer}"`,
+        `  [Góc #${dossier.contentAngleBlueprints.length + idx + 1} - Trả lời bình luận (${cluster.sharePct}% lượt hỏi)] ${cluster.topicTitle}`,
+        `    • Câu hỏi của khách: "${cluster.sampleQuotes[0] || cluster.suggestedFaqQuestion}"`,
+        `    • Mở đầu: "${cluster.recommendedScriptHook}"`,
+        `    • Nội dung trả lời: "${cluster.suggestedFaqAnswer}"`,
       ].join('\n'))),
     ].join('\n');
   }
 
   if (researchMode === 'KOC_BUDGET_ALLOCATION') {
-    const budget =
-      dossier.internalExecutionAudit.totalBudgetNetVnd > 0
-        ? dossier.internalExecutionAudit.totalBudgetNetVnd
-        : dossier.monthlyPlanBudgetVnd > 0
-        ? dossier.monthlyPlanBudgetVnd
-        : 60_000_000;
+    const budget = 60_000_000;
     return [
-      `PHƯƠNG ÁN PHÂN BỔ NGÂN SÁCH NET & CƠ CẤU KOC (KL1–KL4 + FOC) — ${dossier.brandName.toUpperCase()}`,
-      '════════════════════════════════════════════════════════════════════',
-      `• Ngân sách Order Net tham chiếu: ${formatVnd(budget)} | Hiện trạng thực thi: ${dossier.internalExecutionAudit.totalBookedOrders} đơn book / ${dossier.internalExecutionAudit.totalAiredVideos} video đã Air (Tỷ lệ đúng hạn: ${dossier.internalExecutionAudit.onTimeAirRatePct}%)`,
+      `Phân bổ KOC & ngân sách chiến dịch — ${dossier.brandName}`,
+      `• Quy mô chiến dịch tham chiếu: ${formatVnd(budget)}`,
       '',
-      '1. PHÂN BỔ NGÂN SÁCH THEO PHÂN TẦNG KOC (TỐI ƯU CIR & GMV):',
+      '1. Tỷ trọng theo nhóm KOC:',
       ...dossier.kocTierStrategy.map(t => {
         const tierBudget = Math.round((budget * t.budgetWeightPct) / 100);
         return [
-          `  • ${t.tierCode} — ${t.tierLabel} (${t.followerRange}):`,
-          `    - Tỷ trọng Ngân sách Net: ${t.budgetWeightPct}% (~${formatVnd(tierBudget)}) | Tỷ trọng số lượng video: ${t.videoVolumeWeightPct}%`,
-          `    - Đơn giá tham chiếu File 3.2: ${t.avgBookingCostRangeVnd}`,
-          `    - Vai trò chuyển đổi: ${t.funnelRole} | Định dạng: ${t.primaryFormats.join(', ')}`,
-          `    - KPI mục tiêu: ROAS ${t.targetRoas} · Hook 2s ${t.targetHookRate2sPct} · CTR ${t.targetCtrPct} · CVR ${t.targetCvrPct}`,
+          `  • ${t.tierCode} (${t.followerRange}):`,
+          `    - Tỷ trọng chi phí: ${t.budgetWeightPct}% (~${formatVnd(tierBudget)}) | Số lượng video: ${t.videoVolumeWeightPct}%`,
+          `    - Khung giá thị trường: ${t.avgBookingCostRangeVnd}`,
+          `    - Mục đích: ${t.funnelRole}`,
+          `    - Chỉ tiêu: ROAS ${t.targetRoas} · CTR ${t.targetCtrPct} · CVR ${t.targetCvrPct}`,
         ].join('\n');
       }),
       '',
-      '2. CƠ CẤU SẢN PHẨM ĐẨY BOOKING THEO VAI TRÒ PHỄU:',
+      '2. Phân bổ theo sản phẩm:',
       ...(trafficSku
-        ? [`  • SKU Phễu kéo khách (40% số lượng video — Ưu tiên KL1/KL2 & FOC): ${trafficSku.productName} (${formatVnd(trafficSku.dealPriceVnd)} · Hoa hồng ${trafficSku.affiliateCommissionPct}%)`]
+        ? [`  • Sản phẩm kéo khách (40% số video — KL1/KL2 & FOC): ${trafficSku.productName} (${formatVnd(trafficSku.dealPriceVnd)} · Hoa hồng ${trafficSku.affiliateCommissionPct}%)`]
         : []),
       ...(heroSku
-        ? [`  • SKU Chủ lực gánh GMV (45% số lượng video — Ưu tiên KL2/KL3 chạy Spark Ads): ${heroSku.productName} (${formatVnd(heroSku.dealPriceVnd)} · Đóng góp ~${heroSku.estimatedGmvSharePct}% GMV)`]
+        ? [`  • Sản phẩm chủ lực (45% số video — KL2/KL3): ${heroSku.productName} (${formatVnd(heroSku.dealPriceVnd)} · ~${heroSku.estimatedGmvSharePct}% doanh số)`]
         : []),
       ...(bundleSku && bundleSku.id !== heroSku?.id
-        ? [`  • Combo nâng AOV (15% số lượng video — Ưu tiên KL3/KL4 & Ghim đầu Livestream): ${bundleSku.productName} (${formatVnd(bundleSku.dealPriceVnd)})`]
+        ? [`  • Combo tăng giá trị đơn (15% số video — KL3/KL4 & Livestream): ${bundleSku.productName} (${formatVnd(bundleSku.dealPriceVnd)})`]
         : []),
-      '',
-      '3. KỶ LUẬT VẬN HÀNH & KIỂM SOÁT RỦI RO BOOKING B2C:',
-      '  • Tách biệt rõ ngân sách Paid KOC và chỉ tiêu gửi mẫu miễn phí 0đ (FOC) để kéo giảm chi phí trung bình trên mỗi video lên sóng (CPO).',
-      '  • Ràng buộc KOC nộp video nháp trong 5 ngày kể từ khi nhận mẫu và cấp mã Spark Ads tối thiểu 30–60 ngày cho các video có CTR > 2.5%.',
     ].join('\n');
   }
 
   if (researchMode === 'CUSTOMER_PAIN_FAQ') {
     return [
-      `GIẢI MÃ TÂM LÝ KHÁCH HÀNG, RÀO CẢN MUA HÀNG & BỘ Q&A CHỐT ĐƠN — ${dossier.brandName.toUpperCase()}`,
-      '════════════════════════════════════════════════════════════════════',
-      '1. BA TRỤ CỘT TÂM LÝ NGƯỜI MUA (PAIN · BARRIER · RTB):',
-      '  • Nỗi đau thúc đẩy tìm kiếm (Pain Points):',
+      `Vấn đề của khách & Câu hỏi thường gặp — ${dossier.brandName}`,
+      ...(webSearchLines.length > 0
+        ? [
+            '0. Ghi nhận từ tìm kiếm trên mạng:',
+            ...webSearchLines.slice(0, 4).map(l => `  ${l.startsWith('•') || l.startsWith('-') ? l : `• ${l}`}`),
+            '',
+          ]
+        : []),
+      '1. Tâm lý mua hàng:',
+      '  • Vấn đề khách gặp phải:',
       ...(dossier.positioning.painPoints || []).map(p => `    - ${p}`),
-      '  • Rào cản khiến khách chần chừ chưa chốt đơn (Barriers to Trial):',
+      '  • Lý do khách còn phân vân:',
       ...(dossier.positioning.barriersToTrial || []).map(b => `    - ${b}`),
-      '  • Bằng chứng đập tan nghi ngại (Reasons to Believe - RTB):',
+      '  • Điểm thuyết phục:',
       ...(dossier.positioning.rtbs || []).map(r => `    - ${r}`),
       '',
-      '2. PHÂN TÍCH CỤM BÌNH LUẬN THỰC TẾ & KỊCH BẢN GIẢI ĐÁP (FAQ):',
+      '2. Nhóm bình luận & câu trả lời:',
       ...dossier.reviewClusters.map((c, idx) => [
-        `  [Cụm #${idx + 1} - ${c.categoryLabel} · Chiếm ${c.sharePct}% thảo luận (${c.mentionCount} lượt nhắc)] ${c.topicTitle}`,
-        `    • Trích dẫn bình luận thật: ${c.sampleQuotes.map(q => `"${q}"`).join(' | ')}`,
-        `    • Hook làm video giải đáp: "${c.recommendedScriptHook}"`,
-        `    • Câu trả lời chuẩn cho CSKH / Host Livestream: "${c.suggestedFaqAnswer}"`,
+        `  [Nhóm #${idx + 1} - ${c.categoryLabel} · ${c.sharePct}% (${c.mentionCount} bình luận)] ${c.topicTitle}`,
+        `    • Bình luận mẫu: ${c.sampleQuotes.map(q => `"${q}"`).join(' | ')}`,
+        `    • Mở đầu video: "${c.recommendedScriptHook}"`,
+        `    • Câu trả lời mẫu: "${c.suggestedFaqAnswer}"`,
       ].join('\n')),
     ].join('\n');
   }
 
-  // Mặc định: Báo cáo Chiến lược Tổng thể 4P, SKU, Đối thủ & Kế hoạch Hành động
   return [
-    `BÁO CÁO NGHIÊN CỨU CHIẾN LƯỢC THƯƠNG HIỆU & ĐỐI THỦ — ${dossier.brandName.toUpperCase()} (${dossier.category.toUpperCase()})`,
-    '════════════════════════════════════════════════════════════════════',
-    ...(customQuestion ? [`• Trả lời trọng tâm yêu cầu: "${customQuestion}"`, ''] : []),
-    ...(cleanPrompt ? [`• Định hướng phân tích: "${cleanPrompt.slice(0, 160)}${cleanPrompt.length > 160 ? '...' : ''}"`, ''] : []),
-    '1. TÓM TẮT ĐỊNH VỊ & LỢI THẾ CỐT LÕI (EXECUTIVE SUMMARY):',
-    `  • ${dossier.executiveSummary}`,
-    `  • Chân dung khách hàng mục tiêu: ${dossier.positioning.targetAudience}`,
-    `  • Khoảng giá chủ đạo: ${dossier.fourP.priceRangeText} | AOV trung bình: ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)} | Tỷ lệ mua lặp lại: ${dossier.marketLandscape.repeatPurchaseRatePct}% (Chu kỳ ${dossier.marketLandscape.replenishmentCycleDays} ngày).`,
-    '',
-    '2. CHIẾN LƯỢC SẢN PHẨM (SKU PHỄU vs. SKU CHỦ LỰC) & CẤU TRÚC 4P:',
-    ...dossier.skuPortfolio.slice(0, 4).map(
-      s =>
-        `  • [${s.roleLabel}] ${s.productName} (${s.packSize}): Giá bán ${formatVnd(s.dealPriceVnd)} (-${s.discountPct}% so với ${formatVnd(s.listPriceVnd)}) · Hoa hồng KOC ${s.affiliateCommissionPct}% · Đóng góp ~${s.estimatedGmvSharePct}% GMV.\n    → Điểm nhấn thành phần/công năng: ${s.coreIngredientsOrSpecs}`
-    ),
-    `  • Cơ chế Combo/Promotion thắng đơn: ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
-    '',
-    '3. BỨC TRANH ĐỐI THỦ CẠNH TRANH & ĐÒN PHẢN CÔNG TRỰC DIỆN:',
-    ...compList.slice(0, 3).map(
-      c =>
-        `  • vs. ${c.competitorName} (${c.tiktokHandle} · Giá SKU đối đầu: ${formatVnd(c.dealPriceVnd)} · HH ${c.affiliateCommissionPct}%):\n    - Điểm yếu đối thủ bị khách phàn nàn: ${c.customerComplaints[0]}\n    - Đòn phản công cho ${dossier.brandName}: ${c.upbaseCounterPlay}`
-    ),
-    '',
-    '4. ĐỀ XUẤT HÀNH ĐỘNG NGAY CHO ĐỘI BOOKING & CONTENT B2C:',
-    `  • Về Kịch bản Content: Tập trung khai thác ${dossier.contentAngleBlueprints.length} trụ cột (${dossier.contentAngleBlueprints.map(a => a.pillarName).join(', ')}), đưa bảo chứng "${(dossier.positioning.rtbs || [])[0] || 'kiểm nghiệm an toàn'}" lên 3 giây đầu tiên để vượt qua rào cản "${(dossier.positioning.barriersToTrial || [])[0] || 'ngần ngại chất lượng'}".`,
-    `  • Về Điều phối KOC: Dồn ${dossier.kocTierStrategy.slice(0, 2).reduce((s, t) => s + t.budgetWeightPct, 0)}% ngân sách Net vào nhóm ${dossier.kocTierStrategy.slice(0, 2).map(t => `${t.tierCode} (${t.avgBookingCostRangeVnd})`).join(' & ')} kết hợp tối thiểu 30% suất gửi mẫu FOC 0đ để tối ưu CIR.`,
-    ...(dossier.internalExecutionAudit.totalBudgetNetVnd > 0
+    `Tổng quan thương hiệu & đối thủ — ${dossier.brandName} (${dossier.category})`,
+    ...(customQuestion ? [`• Yêu cầu: ${customQuestion}`, ''] : []),
+    ...(cleanPrompt ? [`• Ghi chú: ${cleanPrompt.slice(0, 140)}${cleanPrompt.length > 140 ? '...' : ''}`, ''] : []),
+    ...(webSearchLines.length > 0
       ? [
-          `  • Về Tiến độ Thực thi Nội bộ: Đang giải ngân ${formatVndShort(dossier.internalExecutionAudit.totalActualSpentNetVnd)} / ${formatVndShort(dossier.internalExecutionAudit.totalBudgetNetVnd)} (${dossier.internalExecutionAudit.budgetUtilizationPct}% hạn mức Net), đã lên sóng ${dossier.internalExecutionAudit.totalAiredVideos}/${dossier.internalExecutionAudit.totalBookedOrders} đơn book.`,
+          '0. Dữ liệu thực tế tìm kiếm trên mạng:',
+          ...webSearchLines.map(l => `  ${l.startsWith('•') || l.startsWith('-') ? l : `• ${l}`}`),
+          '',
         ]
       : []),
+    '1. Định vị & khách hàng:',
+    `  • ${dossier.executiveSummary}`,
+    `  • Khách hàng mục tiêu: ${dossier.positioning.targetAudience}`,
+    `  • Khoảng giá: ${dossier.fourP.priceRangeText} | Giá trị đơn TB: ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)} | Mua lại: ${dossier.marketLandscape.repeatPurchaseRatePct}% (${dossier.marketLandscape.replenishmentCycleDays} ngày).`,
+    '',
+    '2. Sản phẩm chính:',
+    ...dossier.skuPortfolio.slice(0, 4).map(
+      s =>
+        `  • [${s.roleLabel}] ${s.productName} (${s.packSize}): ${formatVnd(s.dealPriceVnd)} (-${s.discountPct}% so với ${formatVnd(s.listPriceVnd)}) · Hoa hồng ${s.affiliateCommissionPct}% · ~${s.estimatedGmvSharePct}% doanh số.\n    - Thành phần/Đặc điểm: ${s.coreIngredientsOrSpecs}`
+    ),
+    `  • Khuyến mãi / Combo: ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
+    '',
+    '3. Đối thủ cùng phân khúc:',
+    ...compList.slice(0, 3).map(
+      c =>
+        `  • ${c.competitorName} (${c.tiktokHandle} · ${formatVnd(c.dealPriceVnd)} · Hoa hồng ${c.affiliateCommissionPct}%):\n    - Khách phàn nàn: ${c.customerComplaints[0]}\n    - Hướng cạnh tranh: ${c.upbaseCounterPlay}`
+    ),
+    '',
+    '4. Việc cần làm cho đội Booking & Content:',
+    `  • Nội dung: Triển khai ${dossier.contentAngleBlueprints.length} nhóm kịch bản (${dossier.contentAngleBlueprints.map(a => a.pillarName).join(', ')}), nêu rõ "${(dossier.positioning.rtbs || [])[0] || 'kiểm nghiệm an toàn'}" để giải quyết lo ngại "${(dossier.positioning.barriersToTrial || [])[0] || 'chất lượng'}".`,
+    `  • Booking KOC: Tập trung ${dossier.kocTierStrategy.slice(0, 2).reduce((s, t) => s + t.budgetWeightPct, 0)}% ngân sách vào ${dossier.kocTierStrategy.slice(0, 2).map(t => `${t.tierCode} (${t.avgBookingCostRangeVnd})`).join(' và ')}, kết hợp gửi mẫu FOC 0đ.`,
   ].join('\n');
 }
 
@@ -961,21 +1050,7 @@ function buildInternalPurposeOutput(
         ].join('\n');
 
       case 'BRAND_MARKET_RESEARCH':
-        return [
-          `BÁO CÁO NGHIÊN CỨU THỊ TRƯỜNG, ĐỊNH VỊ 4P & ĐÀO BÌNH LUẬN KHÁCH HÀNG — ${headerLine.replace(/^\[|\]$/g, '')}`,
-          '────────────────────────────────────────────────────────────────────',
-          ...(promptNoteLine ? [promptNoteLine, ''] : []),
-          '1. TỔNG HỢP HỒ SƠ 4P & DỮ LIỆU THỊ TRƯỜNG:',
-          ...bulletLines,
-          '',
-          '2. ĐỊNH VỊ KHOẢNG GIÁ & LỢI THẾ CẠNH TRANH TRỰC DIỆN:',
-          '  • Khai thác SKU dẫn phễu (Traffic Driver) ở vùng giá dễ chốt đơn xung lực trên TikTok Shop kết hợp combo nâng AOV trên Shopee Mall.',
-          '  • Đánh trực diện vào điểm yếu khách hàng phàn nàn ở đối thủ (kết cấu bết dính, mùi hương nồng hoặc giá cao trên mỗi ml/gram).',
-          '',
-          '3. GÓC NỘI DUNG GIẢI QUYẾT NỖI ĐAU & RÀO CẢN MUA HÀNG (TỪ BÌNH LUẬN THỰC TẾ):',
-          '  • Nhóm Nỗi đau & Nghi ngại an toàn: Làm video giải thích bảng thành phần lành tính, quay cận cảnh giấy kiểm định và kết cấu thấm nhanh trong 3 giây đầu.',
-          '  • Nhóm Hỏi đáp cách dùng (FAQ): Ghim video hướng dẫn liều lượng sử dụng theo độ tuổi / tình trạng da ngay tại đầu trang gian hàng.',
-        ].join('\n');
+        return buildBrandMarketResearchInternalReport(cleanInput, cleanPrompt);
 
       case 'KOC_MATCHING':
       default:
@@ -1097,22 +1172,7 @@ function buildInternalPurposeOutput(
       ].join('\n');
 
     case 'BRAND_MARKET_RESEARCH':
-      return [
-        'BÁO CÁO NGHIÊN CỨU THỊ TRƯỜNG, ĐỊNH VỊ 4P & ĐÀO BÌNH LUẬN KHÁCH HÀNG:',
-        '──────────────────────────────────────────────────',
-        ...(promptNoteLine ? [promptNoteLine, ''] : []),
-        '1. ĐỊNH VỊ 4P & KHOẢNG GIÁ TỐI ƯU:',
-        '   • Tập trung đẩy SKU chủ lực (Hero SKU) ở vùng giá 95.000đ – 245.000đ trên TikTok Shop để chốt đơn xung lực, đồng thời đóng gói Combo gia đình trên Shopee Mall để nâng giá trị đơn hàng trung bình (AOV).',
-        '',
-        '2. ĐIỂM YẾU ĐỐI THỦ CẦN KHAI THÁC TRONG KỊCH BẢN KOC:',
-        '   • Đối thủ ngoại nhập có mức giá cao gấp 1.6x–2.2x trên mỗi ml và kết cấu đặc dễ gây bí da mùa nóng.',
-        '   • Kịch bản KOC cần quay cận cảnh độ thấm nhanh trong 3 giây đầu và so sánh chi phí sử dụng thực tế mỗi ngày.',
-        '',
-        '3. GÓC NỘI DUNG GIẢI ĐÁP NỖI ĐAU & BÌNH LUẬN KHÁCH HÀNG:',
-        '   • Giải tỏa rào cản "Sợ chứa corticoid / kích ứng da nhạy cảm": Đưa phiếu kiểm nghiệm lâm sàng lên đầu video.',
-        '   • Giải đáp câu hỏi thường gặp (FAQ): Hướng dẫn rõ liều lượng bôi và độ tuổi sử dụng ngay trong phần mô tả giỏ hàng.',
-        inputText ? `\n(Dữ liệu thương hiệu đã phân tích: ${inputText.slice(0, 160)}...)` : '',
-      ].join('\n');
+      return buildBrandMarketResearchInternalReport(cleanInput, cleanPrompt);
 
     case 'KOC_MATCHING':
     default:
@@ -1249,9 +1309,82 @@ export async function POST(req: NextRequest) {
           ? process.env.ANTHROPIC_API_KEY || ''
           : '');
 
-      const inputText = (body.inputText || '').trim();
+      let inputText = (body.inputText || '').trim();
       const systemInstruction = (body.systemInstruction || '').trim();
       const startTime = Date.now();
+      let primaryErrorDetail = '';
+
+      // Nếu là mục đích Nghiên cứu Thương hiệu & Đối thủ, tự động tìm kiếm thông tin trên mạng TRƯỚC khi đưa vào Prompt
+      if (purposeId === 'BRAND_MARKET_RESEARCH') {
+        const brandMatch =
+          inputText.match(/Thương hiệu:\s*([^\n(·]+)/i) ||
+          inputText.match(/\[DỮ LIỆU PHÂN HỆ:[^—\]]*—\s*([^\]]+)\]/i);
+        const targetBrand = (brandMatch?.[1] || '').trim();
+        const compMatch = inputText.match(/\[ĐỐI THỦ TRỌNG TÂM:\s*([^\]]+)\]/i);
+        const targetComp = (compMatch?.[1] || '').trim();
+        const questionMatch = inputText.match(/\[YÊU CẦU NGHIÊN CỨU CỤ THỂ\]:\s*([\s\S]+?)(?:\n\[|$)/i);
+        const customQuery = (questionMatch?.[1] || '').trim();
+
+        const needsLiveSearch =
+          !inputText.includes('[KẾT QUẢ TÌM KIẾM TRÊN MẠNG') || Boolean(customQuery);
+
+        if (needsLiveSearch && (targetBrand || customQuery)) {
+          try {
+            const searchQueryStr = customQuery
+              ? `${targetBrand} ${targetComp} ${customQuery}`.trim()
+              : `${targetBrand} ${targetComp} sản phẩm giá bán review chính hãng`.trim();
+
+            const [webIntel, extraSnippets] = await Promise.all([
+              targetBrand && !inputText.includes('[KẾT QUẢ TÌM KIẾM TRÊN MẠNG')
+                ? scrapeLiveBrandWebIntelligence(targetBrand, undefined, searchQueryStr).catch(
+                    () => null
+                  )
+                : Promise.resolve(null),
+              scrapeWebSearchSnippets(searchQueryStr).catch(() => []),
+            ]);
+
+            const linesToAppend: string[] = [];
+            if (webIntel?.officialWebsiteUrl) {
+              linesToAppend.push(
+                `• Website chính thức tìm thấy: ${webIntel.officialWebsiteUrl} (${webIntel.metaTitle || targetBrand})`
+              );
+            }
+            if (webIntel?.priceRangeVnd) {
+              linesToAppend.push(
+                `• Khoảng giá cào trực tiếp trên mạng: ${webIntel.priceRangeVnd.formattedRange}`
+              );
+            }
+            if (webIntel?.scrapedProducts?.length) {
+              linesToAppend.push(
+                `• Sản phẩm đang mở bán trên Web/Sàn (${webIntel.scrapedProducts.length} SKU): ${webIntel.scrapedProducts
+                  .slice(0, 6)
+                  .map(
+                    (p) =>
+                      `${p.productName} (${p.priceVnd.toLocaleString('vi-VN')}đ - ${p.sourceDomain})`
+                  )
+                  .join(' | ')}`
+              );
+            }
+            const mergedSnippets = [
+              ...(extraSnippets || []),
+              ...(webIntel?.searchSnippets || []),
+            ].slice(0, 8);
+            for (const sn of mergedSnippets) {
+              linesToAppend.push(
+                `• [${sn.domain}] ${sn.title}: ${sn.snippet}${
+                  sn.extractedPricesVnd?.[0] ? ` (Giá: ${sn.extractedPricesVnd[0].toLocaleString('vi-VN')}đ)` : ''
+                } (${sn.url})`
+              );
+            }
+
+            if (linesToAppend.length > 0) {
+              inputText = `${inputText}\n\n[KẾT QUẢ TÌM KIẾM TRÊN MẠNG TRƯỚC KHI PHÂN TÍCH]:\n${linesToAppend.join('\n')}`;
+            }
+          } catch {
+            // Tiếp tục nếu tìm kiếm trực tuyến quá thời gian chờ
+          }
+        }
+      }
 
       // 2.1 Thử gọi Nhà cung cấp chính (nếu khác INTERNAL và có API Key)
       if (primaryProvider !== 'INTERNAL' && primaryKey) {
@@ -1279,6 +1412,7 @@ export async function POST(req: NextRequest) {
             usage: costReport,
           });
         } catch (primaryErr: unknown) {
+          primaryErrorDetail = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
           console.warn(`[LLM Purpose ${purposeId}] Primary ${primaryProvider} failed, trying fallback:`, primaryErr);
         }
       }
@@ -1303,6 +1437,9 @@ export async function POST(req: NextRequest) {
             providerUsed: `${fbRes.providerLabel} (Dự phòng)`,
             modelUsed: fbRes.modelUsed,
             usedFallback: true,
+            fallbackReason: !primaryKey
+              ? `Chưa nhập khóa API cho ${primaryProvider} — Đã chuyển sang công cụ dự phòng ${fallbackProvider}`
+              : `Công cụ chính ${primaryProvider} gặp sự cố (${primaryErrorDetail.slice(0, 120)}) — Đã chuyển sang ${fallbackProvider}`,
             latencyMs: Date.now() - startTime,
             output: fbRes.text.trim(),
             usage: costReport,
@@ -1320,7 +1457,7 @@ export async function POST(req: NextRequest) {
           ? 'Đang cấu hình sử dụng Bộ xử lý nội bộ'
           : !primaryKey
           ? `Chưa nhập khóa API cho ${primaryProvider} — Tự động chuyển sang Bộ xử lý nội bộ`
-          : `Kết nối ${primaryProvider} không phản hồi — Tự động chuyển sang Bộ xử lý nội bộ`;
+          : `Kết nối ${primaryProvider} gặp sự cố (${primaryErrorDetail.slice(0, 120) || 'Không phản hồi'}) — Tự động chuyển sang Bộ xử lý nội bộ`;
 
       const estimatedPromptTokens = Math.max(1, Math.ceil((inputText.length + systemInstruction.length) / 3.8));
       const estimatedCompletionTokens = Math.max(1, Math.ceil(internalOutput.length / 3.8));
