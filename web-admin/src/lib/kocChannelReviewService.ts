@@ -141,6 +141,26 @@ export function getVerdictTone(
 
 export const INITIAL_CHANNEL_REVIEW_SEEDS: KocChannelReviewItem[] = [
   {
+    id: 'rev-me_bap_cai-20261020-2248',
+    handle: 'me_bap_cai',
+    channelHandle: 'me_bap_cai',
+    channelName: 'Mẹ Bắp Cải Chăm Con',
+    channelUrl: 'https://www.tiktok.com/@me_bap_cai',
+    verdict: 'NOT_SUITABLE',
+    verdictLabel: 'Không phù hợp',
+    reasonTags: ['Tệp khán giả không khớp ngành hàng'],
+    note: 'Không phù hợp với ngành này',
+    brandScope: '4PM',
+    brandName: '4PM',
+    sourceScreen: 'Danh bạ KOC',
+    reviewerName: 'Trần Hữu Chiến',
+    reviewerRole: 'Business Operation Leader (Operation)',
+    reviewerEmail: 'chienth@upbase.vn',
+    createdAt: '2026-10-20T22:48:00+07:00',
+    dateLabel: '20/10/2026',
+    timeLabel: '22:48',
+  },
+  {
     id: 'seed-rev-quinskincareholic-1',
     handle: 'quinskincareholic',
     channelName: 'Quin Skincare Holic',
@@ -381,41 +401,40 @@ export async function submitKocChannelReview(payload: {
   const optimisticNext = mergeAndSortReviewItems([optimisticItem], baseBeforeSubmit);
   writeCachedReviewsToStorage(optimisticNext);
 
-  // 2. Đồng bộ lên máy chủ
-  try {
-    const res = await fetch('/api/integrations/tiktok-koc/channel-reviews', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...payload,
-        handle: cleanHandle,
-      }),
-    });
-    const json = await res.json();
-    if (res.ok && json.success && Array.isArray(json.items)) {
-      const serverItem = (json.item as KocChannelReviewItem | undefined) || optimisticItem;
-      const withoutTemp = readCachedReviewsFromStorage().filter(
-        (it) => it.id !== optimisticItem.id
-      );
-      const synced = mergeAndSortReviewItems(
-        [serverItem, ...(json.items as KocChannelReviewItem[])],
-        withoutTemp
-      );
-      writeCachedReviewsToStorage(synced);
-      return {
-        success: true,
-        item: serverItem,
-        items: synced,
-      };
+  // 2. Đồng bộ lên máy chủ ở chế độ nền (keepalive) để giao diện phản hồi tức thì 0ms
+  void (async () => {
+    try {
+      const res = await fetch('/api/integrations/tiktok-koc/channel-reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          ...payload,
+          id: optimisticItem.id,
+          handle: cleanHandle,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.items)) {
+        const serverItem = (json.item as KocChannelReviewItem | undefined) || optimisticItem;
+        const withoutTemp = readCachedReviewsFromStorage().filter(
+          (it) => it.id !== optimisticItem.id
+        );
+        const synced = mergeAndSortReviewItems(
+          [serverItem, ...(json.items as KocChannelReviewItem[])],
+          withoutTemp
+        );
+        writeCachedReviewsToStorage(synced);
+      }
+    } catch {
+      // Giữ nguyên bản ghi đã lưu tức thì ở bước 1
     }
-  } catch {
-    // Giữ nguyên bản ghi đã lưu tức thì ở bước 1
-  }
+  })();
 
   return {
     success: true,
     item: optimisticItem,
-    items: readCachedReviewsFromStorage(),
+    items: optimisticNext,
   };
 }
 

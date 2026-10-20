@@ -438,18 +438,34 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
-### BUG-026 — Lưu Đánh Giá Kênh KOC Không Hiện Ngay Ở Bảng Bên Cạnh Trong Hộp Thoại & Bảng Danh Sách
+### BUG-026 — Lưu Đánh Giá Kênh KOC Không Hiện Ngay Ở Bảng Bên Cạnh & Báo Lỗi 500 Client Reference Trên Server Route
 - **Ngày phát hiện:** 20/10/2026
 - **Phân hệ / File liên quan:** `web-admin/src/components/koc/KocChannelReviewModal.tsx`, `web-admin/src/lib/kocChannelReviewService.ts`, `web-admin/src/app/api/integrations/tiktok-koc/channel-reviews/route.ts`, `web-admin/src/lib/server/accessPolicy.ts`.
-- **Triệu chứng:** Khi bấm `Lưu đánh giá vào lịch sử` trong hộp thoại `Đánh giá Kênh & Lịch sử đánh giá`, kết quả đánh giá mới không hiển thị ngay ở bảng bên phải (`Lịch sử đánh giá kênh @...`) và cột `Đánh giá & Brand` trên bảng danh sách phía sau.
+- **Triệu chứng:** Khi bấm `Lưu đánh giá vào lịch sử` trong hộp thoại `Đánh giá Kênh & Lịch sử đánh giá`, kết quả đánh giá mới không lưu được hoặc không hiển thị ngay ở bảng bên phải (`Lịch sử đánh giá kênh @...`) và cột `Đánh giá & Brand` trên bảng danh sách phía sau.
 - **Nguyên nhân gốc (Root Cause):**
-  1. `KocChannelReviewModal.tsx` chỉ đọc dữ liệu từ prop `reviews` của màn hình cha mà không có state đồng bộ cục bộ tức thời (`localReviews` + `useKocChannelReviews()`).
-  2. `submitKocChannelReview` trong `kocChannelReviewService.ts` chờ phản hồi mạng xong mới cập nhật bộ nhớ đệm; nếu API trả về mã lỗi xác thực (`!res.ok` do `userWithPolicy` trong `accessPolicy.ts` chỉ khớp `s.id === user.id || sameEmail(s.email)` mà chưa khớp `staffCode` / `name` cho phiên Lark SSO không trả email), hàm trả về `success: false` mà không rơi vào nhánh lưu cục bộ (`catch`), làm lượt đánh giá không được ghi nhận vào bảng bên cạnh.
+  1. **Route Handler máy chủ gọi hàm từ file có `'use client'` (`channel-reviews/route.ts`):** `src/lib/kocChannelReviewService.ts` khai báo `'use client'` ở dòng đầu, nhưng `src/app/api/integrations/tiktok-koc/channel-reviews/route.ts` lại import và gọi hàm `normalizeKocChannelHandle()` và `getVerdictLabel()` từ file đó trên server, khiến React Server Runtime ném lỗi HTTP 500: `Attempted to call normalizeKocChannelHandle() from the server but normalizeKocChannelHandle is on the client`.
+  2. `KocChannelReviewModal.tsx` trước đó chỉ đọc dữ liệu từ prop `reviews` của màn hình cha và đặt thông báo lỗi ở cuối cột trái (bị khuất bên dưới vùng cuộn của hộp thoại).
+  3. `submitKocChannelReview` trong `kocChannelReviewService.ts` chờ phản hồi mạng xong mới cập nhật bộ nhớ đệm; khi API trả về 500 (hoặc 403), hàm trả về `success: false` mà không rơi vào nhánh `catch`, làm lượt đánh giá không được ghi nhận.
 - **Cách khắc phục:**
-  1. Cập nhật `submitKocChannelReview` (`kocChannelReviewService.ts`) thực hiện **lưu và phát sự kiện cập nhật tức thì (0ms)** vào bộ nhớ đệm + `localStorage` + `KOC_CHANNEL_REVIEWS_UPDATED_EVENT` ngay khi bấm nút, sau đó đồng bộ ngầm với máy chủ (`/api/integrations/tiktok-koc/channel-reviews`) và giữ nguyên bản ghi nếu máy chủ phản hồi lỗi.
-  2. Tích hợp `localReviews` + `useKocChannelReviews()` trực tiếp trong `KocChannelReviewModal.tsx`, bổ sung cột `Ý kiến & Lý do` vào bảng tổng hợp bên phải và đánh dấu nổi bật (`Mới lưu`) cho lượt đánh giá vừa lưu.
-  3. Mở rộng `userWithPolicy` (`accessPolicy.ts`) khớp đầy đủ theo `id`, `email`, `staffCode` (`staff-${code}`) và `name`.
-- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các màn hình sử dụng `KocChannelReviewModal` (`KocMasterDataView`, `KocProfile`, `TikTokCrawlerHubView`, `TikTokKocScraperModal`, `StoreShortlistFilterModal`).
+  1. Tách riêng các hàm thuần túy (`normalizeKocChannelHandle`, `getVerdictLabel`) trực tiếp trong `src/app/api/integrations/tiktok-koc/channel-reviews/route.ts` và chỉ dùng `import type` đối với `kocChannelReviewService.ts` để triệt tiêu hoàn toàn lỗi ranh giới Client/Server trên Next.js 16.
+  2. Cập nhật `submitKocChannelReview` (`kocChannelReviewService.ts`) thực hiện **lưu và phát sự kiện cập nhật tức thì (0ms)** vào bộ nhớ đệm + `localStorage` + `KOC_CHANNEL_REVIEWS_UPDATED_EVENT` ngay khi bấm nút, sau đó đồng bộ ngầm (`keepalive: true`) với máy chủ (`/api/integrations/tiktok-koc/channel-reviews`) cùng một mã `id` thống nhất.
+  3. Tích hợp `localReviews` + `useKocChannelReviews()` trực tiếp trong `KocChannelReviewModal.tsx`, hiển thị thông báo xác nhận xanh ngay tại chân hộp thoại và trong form, đồng thời đánh dấu nổi bật (`Mới lưu`) cho lượt đánh giá vừa lưu ở bảng bên phải.
+  4. Mở rộng `userWithPolicy` (`accessPolicy.ts`) khớp đầy đủ theo `id`, `email`, `staffCode` (`staff-${code}`) và `name`, đồng bộ trực tiếp vào `AppSharedRecord` trên Supabase PostgreSQL.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các file trong `src/app/api/` và `src/lib/server/` để đảm bảo không có route máy chủ nào import hàm runtime từ module có `'use client'`.
+
+### BUG-027 — Màn Hình Nghiên Cứu Brand & Đối Thủ Tự Động Chạy API Mô Hình Ngôn Ngữ Khi Tải Màn Hình & Khi Đổi Nhãn Hàng
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/BrandMarketResearchHubView.tsx` và `web-admin/src/components/crawler/CompetitorVideoScriptModal.tsx`.
+- **Triệu chứng:** Mở màn hình Nghiên cứu Brand & Đối thủ hoặc chuyển đổi giữa các thương hiệu làm phát sinh hàng loạt lượt gọi API đến Mô hình Ngôn ngữ (`Nghiên cứu Kutieskin — Toàn diện...`, gọi Google Gemini `gemini-3.8-flash` hoặc fallback Bộ xử lý nội bộ) ghi nhận tại Nhật ký Chi tiết & Đối soát API, tiêu tốn token và thời gian xử lý mà người dùng chưa bấm nút nghiên cứu. Tương tự, hộp thoại tách lời thoại video đối thủ tự động gọi bóc tách ngay khi vừa mở.
+- **Nguyên nhân gốc (Root Cause):**
+  1. `BrandMarketResearchHubView.tsx` chứa `useEffect` khởi tạo (`hasInitializedModelReport`) tự động gọi `handleRunModelResearch({ targetDossier: dossier, playbook: 'COMPREHENSIVE' })` ngay khi render lần đầu.
+  2. Khối so sánh `selectedBrand !== prevSelectedBrand` trong `BrandMarketResearchHubView.tsx` tự động kích hoạt `handleRunModelResearch(...)` mỗi khi đổi thương hiệu.
+  3. `CompetitorVideoScriptModal.tsx` tự động gọi `runExtract` bên trong `useEffect` khi `isOpen` và có `initialUrl`.
+- **Cách khắc phục:**
+  1. Xóa bỏ hoàn toàn `useEffect` khởi tạo và biến cờ `hasInitializedModelReport` trong `BrandMarketResearchHubView.tsx`.
+  2. Trong khối đổi `selectedBrand`, chỉ cập nhật dữ liệu hồ sơ tĩnh (`setDossier`, `setMinedClusters`) và đặt `setModelResearchResult(null)`, không tự động gọi `handleRunModelResearch`. API chỉ được gọi khi người dùng bấm nút tường minh (`Tìm & Tổng hợp`, `Nghiên cứu` hoặc chọn Playbook phân tích).
+  3. Xóa bỏ lệnh gọi `runExtract` trong `useEffect` của `CompetitorVideoScriptModal.tsx`, chỉ điền sẵn ô nhập đường dẫn và chờ người dùng bấm `Tách lời thoại & Hook` hoặc nhấn Enter.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các view và drawer tích hợp API mô hình và crawler, đảm bảo 100% tuân thủ `RULE-API-02`.
 
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 

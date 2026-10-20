@@ -2,12 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { USERS } from '@/lib/mockData';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import {
-  getVerdictLabel,
-  normalizeKocChannelHandle,
-  type KocChannelReviewItem,
-  type KocChannelReviewVerdict,
+import type {
+  KocChannelReviewItem,
+  KocChannelReviewVerdict,
 } from '@/lib/kocChannelReviewService';
+
+function normalizeKocChannelHandle(rawInput?: string | null): string {
+  if (!rawInput) return '';
+  const trimmed = String(rawInput).trim();
+  if (!trimmed) return '';
+  const urlMatch = trimmed.match(/tiktok\.com\/@([a-zA-Z0-9._-]+)/i);
+  if (urlMatch?.[1]) {
+    return urlMatch[1].toLowerCase();
+  }
+  return trimmed
+    .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '')
+    .split(/[/?#&\s]/)[0]
+    .replace(/^@+/, '')
+    .trim()
+    .toLowerCase();
+}
+
+function getVerdictLabel(verdict: KocChannelReviewVerdict): string {
+  if (verdict === 'NOT_SUITABLE') return 'Không phù hợp';
+  if (verdict === 'CAUTION') return 'Cân nhắc / Lưu ý';
+  return 'Phù hợp';
+}
 
 function resolveRequestUser(req: NextRequest) {
   const user = getAuthenticatedUser(req);
@@ -40,6 +60,26 @@ function getVietnamDateAndTime(now = new Date()): { dateLabel: string; timeLabel
 
 function buildInitialReviewSeed(): KocChannelReviewItem[] {
   return [
+    {
+      id: 'rev-me_bap_cai-20261020-2248',
+      handle: 'me_bap_cai',
+      channelHandle: 'me_bap_cai',
+      channelName: 'Mẹ Bắp Cải Chăm Con',
+      channelUrl: 'https://www.tiktok.com/@me_bap_cai',
+      verdict: 'NOT_SUITABLE',
+      verdictLabel: 'Không phù hợp',
+      reasonTags: ['Tệp khán giả không khớp ngành hàng'],
+      note: 'Không phù hợp với ngành này',
+      brandScope: '4PM',
+      brandName: '4PM',
+      sourceScreen: 'Danh bạ KOC',
+      reviewerName: 'Trần Hữu Chiến',
+      reviewerRole: 'Business Operation Leader (Operation)',
+      reviewerEmail: 'chienth@upbase.vn',
+      createdAt: '2026-10-20T22:48:00+07:00',
+      dateLabel: '20/10/2026',
+      timeLabel: '22:48',
+    },
     {
       id: 'seed-rev-quinskincareholic-1',
       handle: 'quinskincareholic',
@@ -298,9 +338,17 @@ export async function POST(req: NextRequest) {
     const reviewerRole = String(body.reviewerRole || user.role || '').trim();
     const reviewerEmail = String(body.reviewerEmail || user.email || '').trim();
 
+    const clientProvidedId =
+      typeof body.id === 'string' && body.id.trim().startsWith('rev-')
+        ? body.id.trim()
+        : '';
+
     const newItem: KocChannelReviewItem = {
-      id: `rev-${cleanHandle}-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
+      id:
+        clientProvidedId ||
+        `rev-${cleanHandle}-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
       handle: cleanHandle,
+      channelHandle: cleanHandle,
       channelName: String(body.channelName || `@${cleanHandle}`).trim(),
       channelUrl:
         String(body.channelUrl || '').trim() || `https://www.tiktok.com/@${cleanHandle}`,
@@ -310,6 +358,7 @@ export async function POST(req: NextRequest) {
       reasonTags,
       note,
       brandScope: String(body.brandScope || 'Toàn hệ thống B2C').trim(),
+      brandName: String(body.brandScope || 'Toàn hệ thống B2C').trim(),
       sourceScreen: String(body.sourceScreen || 'Tìm kiếm KOC').trim(),
       reviewerName,
       reviewerRole: reviewerRole || undefined,

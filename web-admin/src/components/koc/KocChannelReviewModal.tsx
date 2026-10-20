@@ -188,6 +188,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
+  const [justSavedNotice, setJustSavedNotice] = useState<string | null>(null);
   const { reviews: liveHookReviews } = useKocChannelReviews();
   const [localReviews, setLocalReviews] = useState<KocChannelReviewItem[]>(reviews);
 
@@ -227,6 +228,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       setNote('');
       setErrorMsg(null);
       setJustSavedId(null);
+      setJustSavedNotice(null);
       setActiveTab(clean ? initialMode : 'ALL_HISTORY');
     }
   }
@@ -396,14 +398,15 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       setErrorMsg('Vui lòng nhập @handle hoặc đường dẫn kênh KOC cần đánh giá.');
       return;
     }
-    const cleanNote = note.trim() || selectedReasons.join(', ');
-    if (!cleanNote) {
-      setErrorMsg('Vui lòng ghi rõ ý kiến đánh giá hoặc chọn ít nhất một lý do trước khi lưu.');
-      return;
-    }
+    const effectiveReasons =
+      selectedReasons.length > 0
+        ? selectedReasons
+        : [getReasonPresetsByVerdict(verdict)[0]];
+    const cleanNote = note.trim() || effectiveReasons.join(', ');
 
     setSubmitting(true);
     setErrorMsg(null);
+    setJustSavedNotice(null);
     try {
       const resolvedName =
         channelNameInput.trim() ||
@@ -418,7 +421,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
           target?.channelUrl || `https://www.tiktok.com/@${activeCleanHandle}`,
         avatarUrl: target?.avatarUrl,
         verdict,
-        reasonTags: selectedReasons,
+        reasonTags: effectiveReasons,
         note: cleanNote,
         brandScope,
         sourceScreen: target?.sourceScreen || 'Tìm kiếm KOC',
@@ -436,15 +439,18 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       if (result.item?.id) {
         setJustSavedId(result.item.id);
       }
+      const verdictShort =
+        verdict === 'NOT_SUITABLE'
+          ? 'Không phù hợp'
+          : verdict === 'CAUTION'
+            ? 'Cân nhắc'
+            : 'Phù hợp';
+      setJustSavedNotice(
+        `Đã lưu "${verdictShort}" (${brandScope}) cho @${activeCleanHandle}`
+      );
       setNote('');
       onNotify?.(
-        `Đã lưu lịch sử đánh giá (${
-          verdict === 'NOT_SUITABLE'
-            ? 'Không phù hợp'
-            : verdict === 'CAUTION'
-              ? 'Cân nhắc'
-              : 'Phù hợp'
-        }) cho kênh @${activeCleanHandle}`,
+        `Đã lưu lịch sử đánh giá (${verdictShort}) cho kênh @${activeCleanHandle}`,
         verdict === 'NOT_SUITABLE' ? 'warning' : 'success'
       );
     } finally {
@@ -493,10 +499,24 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       }
       size="xl"
       footer={
-        <div className="flex items-center justify-between gap-2 w-full">
-          <div className="text-2xs text-ink-3">
-            Người đánh giá: <strong className="text-ink">{currentUserName}</strong> · Thời gian:{' '}
-            <strong className="text-ink font-code">{nowPreview}</strong>
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <div className="text-2xs text-ink-3">
+              Người đánh giá: <strong className="text-ink">{currentUserName}</strong> · Thời gian:{' '}
+              <strong className="text-ink font-code">{nowPreview}</strong>
+            </div>
+            {errorMsg && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-critical-soft border border-critical/30 text-2xs font-semibold text-critical">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{errorMsg}</span>
+              </span>
+            )}
+            {!errorMsg && justSavedNotice && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-positive-soft border border-positive/30 text-2xs font-semibold text-positive">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>{justSavedNotice}</span>
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -607,9 +627,9 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                     </div>
                   </Field>
 
-                  <Field label="Ý kiến đánh giá của nhân viên *">
+                  <Field label="Ý kiến đánh giá của nhân viên">
                     <Textarea
-                      rows={4}
+                      rows={3}
                       autoFocus={Boolean(activeCleanHandle)}
                       value={note}
                       onChange={(e) => {
@@ -660,6 +680,25 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                       <span>{errorMsg}</span>
                     </div>
                   )}
+
+                  {justSavedNotice && !errorMsg && (
+                    <div className="px-3 py-2 rounded-lg bg-positive-soft border border-positive/30 text-xs text-positive font-medium flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>{justSavedNotice} — Đã cập nhật sang bảng bên phải.</span>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex justify-end">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={Check}
+                      disabled={submitting}
+                      onClick={() => void handleSaveReview()}
+                    >
+                      {submitting ? 'Đang lưu...' : 'Lưu đánh giá vào lịch sử'}
+                    </Button>
+                  </div>
                 </div>
               </Panel>
             </div>
