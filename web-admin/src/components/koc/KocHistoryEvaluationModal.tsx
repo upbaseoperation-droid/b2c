@@ -192,15 +192,6 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
     }
   };
 
-  useEffect(() => {
-    if (open && evaluation && !llmReport && !isRunningReport) {
-      const initialPrompt =
-        effectiveRoute.purpose.systemInstruction || defaultRoute.systemInstruction;
-      void handleRunReport(initialPrompt);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, evaluation?.kocId]);
-
   const handleCopyReport = () => {
     if (!llmReport?.output) return;
     navigator.clipboard.writeText(llmReport.output);
@@ -235,18 +226,11 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           <div className="flex items-center gap-2">
             <Button
               variant="secondary"
-              icon={Sliders}
-              onClick={() => setShowPromptSetup(v => !v)}
-            >
-              {showPromptSetup ? 'Ẩn thiết lập câu lệnh (Prompt)' : 'Thiết lập câu lệnh (Prompt)'}
-            </Button>
-            <Button
-              variant="secondary"
               icon={RefreshCw}
               onClick={() => void handleRunReport()}
               disabled={isRunningReport}
             >
-              {isRunningReport ? 'Đang lập báo cáo...' : 'Chạy đánh giá lại'}
+              {isRunningReport ? 'Đang lập báo cáo...' : llmReport ? 'Chạy đánh giá lại' : 'Chạy đánh giá'}
             </Button>
           </div>
           <div className="flex items-center gap-2">
@@ -353,48 +337,17 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
             </div>
           </div>
 
-          {/* Thanh bật/tắt Thiết lập câu lệnh (Prompt) */}
+          {/* Thanh bật/tắt Xem dữ liệu lịch sử */}
           <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={() => setShowPromptSetup(v => !v)}
-                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                {showPromptSetup ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                Thiết lập câu lệnh (Prompt) đánh giá lịch sử & rủi ro KOC
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowContextPreview(v => !v)}
-                className="text-xs font-medium text-ink-3 hover:text-ink flex items-center gap-1 cursor-pointer"
-              >
-                {showContextPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                Xem dữ liệu lịch sử gửi phân tích
-              </button>
-            </div>
-
-            {promptToast && (
-              <span className="text-xs font-semibold text-success flex items-center gap-1">
-                <Check className="w-3.5 h-3.5" />
-                {promptToast}
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowContextPreview(v => !v)}
+              className="text-xs font-medium text-ink-3 hover:text-ink flex items-center gap-1 cursor-pointer"
+            >
+              {showContextPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              Xem dữ liệu lịch sử gửi phân tích
+            </button>
           </div>
-
-          {showPromptSetup && (
-            <div className="mt-3">
-              <InlinePurposeApiSetup
-                purposeId="KOC_HISTORY_EVALUATION"
-                onConfigSaved={() => {
-                  const eff = getEffectiveConfigForPurpose('KOC_HISTORY_EVALUATION');
-                  setSelectedProvider(eff.primaryProvider);
-                  setSelectedModel(eff.primaryModel);
-                  setEditablePrompt(eff.purpose.systemInstruction);
-                }}
-              />
-            </div>
-          )}
 
           {showContextPreview && (
             <div className="mt-3 p-3 rounded-xl bg-sunken border border-line">
@@ -540,7 +493,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-ink">
-                Báo cáo nhận xét chi tiết (Theo câu lệnh Prompt phân hệ)
+                Báo cáo nhận xét chi tiết
               </h3>
               {llmReport && (
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-sunken border border-line text-ink-2">

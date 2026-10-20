@@ -1943,14 +1943,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       <PageActions>
         <Button
           size="sm"
-          variant="ghost"
-          icon={Sliders}
-          onClick={() => setShowApiSetupPanel((v) => !v)}
-        >
-          {showApiSetupPanel ? 'Ẩn cấu hình API' : 'Cấu hình API'}
-        </Button>
-        <Button
-          size="sm"
           variant="secondary"
           icon={FileText}
           onClick={() => setIsReportDrawerOpen(true)}
@@ -1990,10 +1982,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           Lưu định vị vào hồ sơ
         </Button>
       </PageActions>
-
-      {showApiSetupPanel && (
-        <InlinePurposeApiSetup purposeId="BRAND_MARKET_RESEARCH" />
-      )}
 
       {/* ===================================================================== */}
       {/* 1. THANH ĐIỀU KHIỂN THƯƠNG HIỆU / ĐỐI THỦ                              */}

@@ -502,23 +502,16 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               </div>
             </div>
 
-            {/* Khung Thiết lập Câu lệnh (Prompt) & Nhận xét Biên tập Kịch bản */}
+            {/* Khung Nhận xét Biên tập Kịch bản */}
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-blue-600" />
                   <span className="text-xs font-semibold text-slate-800">
-                    Biên tập kịch bản theo câu lệnh (Prompt phân hệ SCRIPT_REVIEW)
+                    Rà soát &amp; biên tập kịch bản
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPromptEditor(v => !v)}
-                    className="px-2.5 py-1 rounded border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
-                  >
-                    {showPromptEditor ? 'Ẩn cấu hình API & câu lệnh' : 'Cấu hình API & câu lệnh'}
-                  </button>
                   <button
                     type="button"
                     disabled={isRunningLlmReview}
@@ -553,20 +546,6 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   </button>
                 </div>
               </div>
-
-              {promptToast && (
-                <div className="text-xs font-semibold text-emerald-600">{promptToast}</div>
-              )}
-
-              {showPromptEditor && (
-                <InlinePurposeApiSetup
-                  purposeId="SCRIPT_REVIEW"
-                  onConfigSaved={() => {
-                    const eff = getEffectiveConfigForPurpose('SCRIPT_REVIEW');
-                    setScriptPrompt(eff.purpose.systemInstruction);
-                  }}
-                />
-              )}
 
               {llmReviewResult && (
                 <div className="p-3.5 bg-white rounded-lg border border-slate-200 space-y-2">

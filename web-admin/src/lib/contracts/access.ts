@@ -9,7 +9,7 @@ export const DEMO_ACTORS: ContractActor[] = [
   { id: 'user-ngoc-tam', name: 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm)', roles: ['LEAD', 'CREATOR'], brands: ['ClubClio', 'Cindy Bloom', 'EUPC', 'Mine', 'Cathy Doll', 'L\'Occitane Việt Nam', 'Bye Bye Blemish', 'Rejuran'], allBrands: true },
   { id: 'user-yen-nhi', name: 'Đặng Thị Yến Nhi (Trưởng phòng B2C)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'user-admin-giang', name: 'Đỗ Văn Giang (Tổng Giám Đốc)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
-  { id: 'user-growth-manager-quyen', name: 'Trần Thị Đỗ Quyên (Trưởng phòng Growth)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
+  { id: 'user-growth-manager-quyen', name: 'Nguyễn Thị Thu Thủy (Trưởng phòng Growth)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'user-media-manager-quang', name: 'Nguyễn Đức Quảng (Trưởng phòng Media)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'contract-demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },
 ];

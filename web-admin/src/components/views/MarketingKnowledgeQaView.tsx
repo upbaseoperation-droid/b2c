@@ -686,23 +686,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                   <Button
                     variant="secondary"
                     size="sm"
-                    icon={Sliders}
-                    onClick={() => setShowPromptEditor(v => !v)}
-                  >
-                    {showPromptEditor ? 'Ẩn cấu hình API & câu lệnh' : 'Cấu hình API & câu lệnh'}
-                  </Button>
-                  {onNavigateToTab && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onNavigateToTab('api-settings')}
-                    >
-                      Trung tâm API
-                    </Button>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="sm"
                     icon={RotateCcw}
                     onClick={() => {
                       const firstQ = ROLE_SUGGESTED_QUESTIONS[0].question;
@@ -740,16 +723,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               }
             >
               <div className="space-y-4">
-                {showPromptEditor && (
-                  <InlinePurposeApiSetup
-                    purposeId="KNOWLEDGE_QA"
-                    onConfigSaved={() => {
-                      const eff = getEffectiveConfigForPurpose('KNOWLEDGE_QA');
-                      setCustomQaPrompt(eff.purpose.systemInstruction);
-                    }}
-                  />
-                )}
-
                 {/* Gợi ý câu hỏi nhanh theo chủ đề */}
                 <div className="pb-3 border-b border-line">
                   <div className="flex flex-wrap gap-1.5">

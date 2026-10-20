@@ -97,7 +97,7 @@ const SCOPE_LABELS: Record<
     label: 'Khối Growth Ecom',
     shortLabel: 'Growth Ecom',
     badgeClass: 'bg-positive-soft text-positive border-positive/20',
-    managerLabel: 'Trần Thị Đỗ Quyên',
+    managerLabel: 'Nguyễn Thị Thu Thủy',
   },
   MEDIA: {
     label: 'Khối Media & Ads',
@@ -536,7 +536,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       role: nextRole,
       managerName:
         nextScope === 'GROWTH'
-          ? 'Trần Thị Đỗ Quyên'
+          ? 'Nguyễn Thị Thu Thủy'
           : nextScope === 'MEDIA'
           ? 'Nguyễn Đức Quảng'
           : 'Đặng Thị Yến Nhi',
@@ -2315,7 +2315,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       setDirEditScope(nextScope);
                       if (nextScope === 'GROWTH') {
                         setDirEditRole('GROWTH_MEMBER');
-                        setDirEditManager('Trần Thị Đỗ Quyên');
+                        setDirEditManager('Nguyễn Thị Thu Thủy');
                       } else if (nextScope === 'MEDIA') {
                         setDirEditRole('MEDIA_MEMBER');
                         setDirEditManager('Nguyễn Đức Quảng');

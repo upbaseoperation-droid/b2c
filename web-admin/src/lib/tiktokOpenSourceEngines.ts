@@ -349,6 +349,8 @@ export interface RealTikTokVideoAndAuthorDetail {
   cartProductId?: string;
   cartSellerId?: string;
   cartProducts?: TikTokCartProductItem[];
+  onScreenStickers?: string[];
+  subtitleUrl?: string;
   author: {
     handle: string;
     secUid?: string;
@@ -914,7 +916,15 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
   const saves = Math.max(Number(stats1.collectCount || 0), Number(stats2.collectCount || 0));
   const durationSeconds = Number(itemStruct.video?.duration || 0);
 
-  if (views === 0 && likes === 0 && comments === 0 && durationSeconds === 0) {
+  if (
+    !itemStruct.createTime &&
+    !itemStruct.desc &&
+    !itemStruct.imagePost &&
+    views === 0 &&
+    likes === 0 &&
+    comments === 0 &&
+    durationSeconds === 0
+  ) {
     return null;
   }
 
@@ -945,15 +955,36 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     : '';
   const imagePostTitle =
     typeof itemStruct.imagePost?.title === 'string' ? itemStruct.imagePost.title.trim() : '';
-  const stickerText = Array.isArray(itemStruct.stickersOnItem)
+  const onScreenStickers: string[] = Array.isArray(itemStruct.stickersOnItem)
     ? itemStruct.stickersOnItem
         .flatMap((st: { stickerText?: string[] }) =>
           Array.isArray(st?.stickerText) ? st.stickerText : []
         )
         .map((t: unknown) => (typeof t === 'string' ? t.trim() : ''))
         .filter(Boolean)
-        .join(' ')
-    : '';
+    : [];
+  const stickerText = onScreenStickers.join(' ');
+
+  const captionInfos: Array<{
+    languageCodeName?: string;
+    LanguageCodeName?: string;
+    url?: string;
+    Url?: string;
+    urlList?: string[];
+  }> = [
+    ...(Array.isArray(itemStruct.video?.claInfo?.captionInfos)
+      ? itemStruct.video.claInfo.captionInfos
+      : []),
+    ...(Array.isArray(itemStruct.video?.subtitleInfos) ? itemStruct.video.subtitleInfos : []),
+  ];
+  const preferredSub =
+    captionInfos.find((c) =>
+      (c.languageCodeName || c.LanguageCodeName || '').toLowerCase().includes('vie')
+    ) || captionInfos[0];
+  const subtitleUrl =
+    preferredSub?.url ||
+    preferredSub?.Url ||
+    (Array.isArray(preferredSub?.urlList) ? preferredSub.urlList[0] : undefined);
 
   const rawCaption =
     String(itemStruct.desc || '').trim() ||
@@ -1023,6 +1054,8 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
     cartProductId,
     cartSellerId,
     cartProducts,
+    onScreenStickers: onScreenStickers.length > 0 ? onScreenStickers : undefined,
+    subtitleUrl,
     author: {
       handle,
       secUid,
@@ -2379,7 +2412,7 @@ export async function discoverRealTikTokVideoUrlsByQuery(
         }
 
         const cardAria = block.match(/aria-label="([^"]*)"/i)?.[1] || '';
-        const cardTitle = block.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
+        const cardTitle = block.match(/class="mc_vtvc_title[^"]*"[^>]*title="([^"]*)"/i)?.[1] || '';
         const cardStrong =
           block
             .match(/mc_vtvc_title[^>]*>([\s\S]*?)<\/div>/i)?.[1]
@@ -2896,30 +2929,33 @@ async function fetchRawCommentsByAwemeId(
         const data = await store.tiktokLimiter.run(async () => {
           const qs = new URLSearchParams({
             aid: '1988',
-            app_language: 'ja-JP',
+            app_language: 'vi-VN',
             app_name: 'tiktok_web',
             aweme_id: awemeId,
-            browser_language: 'en-US',
+            browser_language: 'vi-VN',
             browser_name: 'Mozilla',
             browser_online: 'true',
-            browser_platform: 'Linux x86_64',
-            browser_version: '5.0 (X11)',
+            browser_platform: 'Win32',
+            browser_version: '5.0 (Windows NT 10.0; Win64; x64)',
             channel: 'tiktok_web',
             cookie_enabled: 'true',
             count: '50',
             cursor: String(currentCursor),
             device_id: deviceId,
-            os: 'linux',
-            region: 'ID',
-            screen_height: '768',
-            screen_width: '1366',
+            os: 'windows',
+            priority_region: 'VN',
+            region: 'VN',
+            screen_height: '1080',
+            screen_width: '1920',
+            tz_name: 'Asia/Saigon',
           });
           const res = await fetch(`https://www.tiktok.com/api/comment/list/?${qs.toString()}`, {
             method: 'GET',
             headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36',
+              'User-Agent': DEFAULT_BROWSER_UA,
               Accept: 'application/json, text/plain, */*',
+              'Accept-Language': 'vi-VN,vi;q=0.9,en-US;q=0.8',
+              Referer: 'https://www.tiktok.com/',
             },
             signal: AbortSignal.timeout(6000),
             cache: 'no-store',
@@ -3993,11 +4029,12 @@ function getUpbaseMasterKocsForTrendingCategory(
     const resolvedKey: TrendingCategoryKey = primaryKey || (categoryConfig ? categoryConfig.key : 'SKINCARE');
     const resolvedConfig = TRENDING_CATEGORY_CATALOG[resolvedKey];
 
-    const followers = Math.max(12000, Number(koc.followers) || 45000 + ((idx * 17389) % 380000));
-    const avgViews = Math.max(3500, Number(koc.avgViews) || Math.round(followers * 0.24));
-    const videoCount = 85 + ((idx * 29) % 420);
-    const engagementRate = Number((3.4 + ((idx * 7) % 38) / 10).toFixed(1));
-    const totalLikes = Math.max(followers * 8, Math.round(avgViews * videoCount * (engagementRate / 100) * 4));
+    const followers = Number(koc.followers) || 0;
+    if (followers <= 0) continue;
+    const avgViews = Number(koc.avgViews) || 0;
+    const videoCount = Number((koc as { videoCount?: number }).videoCount) || 0;
+    const engagementRate = Number((koc as { engagementRate?: number }).engagementRate) || 0;
+    const totalLikes = Number((koc as { totalLikes?: number }).totalLikes) || 0;
 
     const phoneMatch = (koc.phone || '').match(/(?:\+?84|0)\d{8,10}/);
     const extractedPhone = phoneMatch ? phoneMatch[0] : undefined;
@@ -4013,17 +4050,17 @@ function getUpbaseMasterKocsForTrendingCategory(
       handle: cleanHandle,
       nickname: koc.stageName || koc.realName || cleanHandle,
       bio: bioParts.join(' | '),
-      verified: followers >= 500000,
+      verified: Boolean((koc as { verified?: boolean }).verified),
       followers,
       totalLikes,
       videoCount,
-      followingCount: 60 + ((idx * 19) % 240),
+      followingCount: Number((koc as { followingCount?: number }).followingCount) || 0,
       secUid: '',
       channelUrl: koc.channelLink || `https://www.tiktok.com/@${cleanHandle}`,
       extractedPhone,
       categoryKey: resolvedConfig.key,
       categoryLabel: resolvedConfig.label,
-      latestVideoCaption: `Review trải nghiệm thực tế ngành ${resolvedConfig.label}${koc.brandName ? ` (${koc.brandName})` : ''}`,
+      latestVideoCaption: `KOC ngành ${resolvedConfig.label}${koc.brandName ? ` (${koc.brandName})` : ''}`,
       latestVideoViews: avgViews,
       latestVideoLikes: Math.round(avgViews * (engagementRate / 100)),
       engagementRate,

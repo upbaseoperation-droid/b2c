@@ -313,7 +313,9 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
       INSTAGRAM: Boolean(koc.instagramChannel),
       THREADS: Boolean(koc.threadsChannel),
     });
-    void runSearch(koc, initProv, initModel);
+    setDiscoveryResult(null);
+    setErrorMsg(null);
+    setLoading(false);
 
     return () => {
       if (abortControllerRef.current) {
@@ -381,7 +383,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
             onClick={() => runSearch(koc)}
             disabled={loading}
           >
-            {loading ? 'Đang tìm...' : 'Quét lại'}
+            {loading ? 'Đang tìm...' : discoveryResult ? 'Quét lại' : 'Dò tìm kênh tự động'}
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -465,14 +467,6 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
-                variant="ghost"
-                icon={Sliders}
-                onClick={() => setShowApiSetup((v) => !v)}
-              >
-                {showApiSetup ? 'Ẩn cấu hình API' : 'Cấu hình API & Khóa'}
-              </Button>
-              <Button
-                size="sm"
                 variant="secondary"
                 icon={Search}
                 onClick={() => void runSearch(koc)}
@@ -482,19 +476,6 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               </Button>
             </div>
           </div>
-
-          {showApiSetup && (
-            <InlinePurposeApiSetup
-              purposeId="KOC_MATCHING"
-              onConfigSaved={() => {
-                const eff = getEffectiveConfigForPurpose('KOC_MATCHING');
-                if (eff.primaryProvider !== 'INTERNAL') {
-                  setSelectedProvider(eff.primaryProvider);
-                  setSelectedModel(eff.primaryModel);
-                }
-              }}
-            />
-          )}
 
           {/* Ô nhập đường dẫn link trực tiếp để bóc tách kênh ngay */}
           <div className="flex items-center gap-2 pt-2 border-t border-line">

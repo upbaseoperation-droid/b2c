@@ -254,26 +254,12 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowOcrPromptEditor(v => !v)}
-              className="px-2.5 py-1 rounded-md border border-line bg-surface hover:bg-hover text-2xs font-semibold text-ink flex items-center gap-1 cursor-pointer"
-            >
-              <Sliders className="w-3.5 h-3.5 text-primary" />
-              {showOcrPromptEditor ? 'Ẩn cấu hình API & câu lệnh' : 'Cấu hình API & câu lệnh'}
-            </button>
             <div className="text-2xs text-muted flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-success" />
               Bảo mật thông tin nhân thân theo luật an ninh mạng Việt Nam
             </div>
           </div>
         </div>
-
-        {showOcrPromptEditor && (
-          <div className="px-4 sm:px-6 py-3 bg-surface border-b border-line shrink-0">
-            <InlinePurposeApiSetup purposeId="LEGAL_OCR" />
-          </div>
-        )}
 
         {ocrError && (
           <div className="mx-4 sm:mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">

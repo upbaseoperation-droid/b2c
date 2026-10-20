@@ -37,7 +37,7 @@ export interface InlinePurposeApiSetupProps {
 export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
   purposeId,
   onConfigSaved,
-  showPromptEditor = true,
+  showPromptEditor = false,
   className = '',
 }) => {
   const [configVersion, setConfigVersion] = useState(0);

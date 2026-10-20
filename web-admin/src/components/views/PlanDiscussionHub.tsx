@@ -84,7 +84,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     let authorTitle = 'Booking Specialist';
 
     if (activeAuthorRole === 'GROWTH') {
-      authorName = (['GROWTH_MEMBER', 'GROWTH_MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.growthPic || 'Trần Thị Đỗ Quyên';
+      authorName = (['GROWTH_MEMBER', 'GROWTH_MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.growthPic || 'Nguyễn Thị Thu Thủy';
       authorTitle = currentUser?.role === 'GROWTH_MANAGER' ? 'Trưởng phòng Growth' : 'Growth PIC / Chiến lược & PnL';
     } else if (activeAuthorRole === 'MEDIA') {
       authorName = (['MEDIA_MEMBER', 'MEDIA_MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.mediaPic || 'Nguyễn Đức Quảng';

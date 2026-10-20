@@ -10,7 +10,7 @@ import type { StatusTone } from '../../components/ui';
 import { sanitizeReturnTo } from '@/lib/urlUtils';
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Quản trị (BOD)',
+  ADMIN: 'Quản trị',
   MANAGER: 'Trưởng phòng B2C',
   GROWTH_MANAGER: 'Trưởng phòng Growth',
   MEDIA_MANAGER: 'Trưởng phòng Media',
@@ -464,12 +464,12 @@ function LoginContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      setStaffIdentifierInput('HN222');
-                      handleDirectoryStaffLogin('HN222');
+                      setStaffIdentifierInput('HN028');
+                      handleDirectoryStaffLogin('HN028');
                     }}
                     className="text-2xs px-2.5 py-1.5 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
                   >
-                    HN222 · Đỗ Quyên (TP Growth)
+                    HN028 · Nguyễn Thị Thu Thủy (TP Growth)
                   </button>
                   <button
                     type="button"

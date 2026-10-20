@@ -11,6 +11,12 @@ import {
   extractShoppingUrlsFromText,
   inspectLiveTikTokVideoPage,
 } from './tiktokOpenSourceEngines';
+import {
+  detectProductMentionMoments,
+  parseWebVttToSegments,
+  scanBlacklistViolations,
+  type TikTokSubtitleSegment,
+} from './tiktokVideoInspector';
 
 const LINK_PREVIEW_UA =
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
@@ -87,6 +93,91 @@ function readMeta(html: string, nameOrProp: string): string | null {
   );
   const val = html.match(re1)?.[1] ?? html.match(re2)?.[1] ?? null;
   return val !== null ? decodeHtmlEntities(val) : null;
+}
+
+function unixSecondsToIso(seconds: number | null | undefined): string | null {
+  if (!seconds || !Number.isFinite(seconds) || seconds < 1_000_000_000) return null;
+  return new Date(seconds * 1000).toISOString();
+}
+
+function readJsonNumber(source: string, key: string, from = 0): number | null {
+  const pattern = new RegExp(`"${key}":(\\d+)`, 'g');
+  pattern.lastIndex = from;
+  const match = pattern.exec(source);
+  return match ? Number(match[1]) : null;
+}
+
+function readJsonString(source: string, key: string, from = 0): string | null {
+  const pattern = new RegExp(`"${key}":"((?:[^"\\\\]|\\\\.)*)"`, 'g');
+  pattern.lastIndex = from;
+  const match = pattern.exec(source);
+  if (!match) return null;
+  try {
+    return JSON.parse(`"${match[1]}"`) as string;
+  } catch {
+    return match[1];
+  }
+}
+
+const IG_MONTHS: Record<string, number> = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+};
+
+function parseInstagramDescription(description: string): {
+  likes: number | null;
+  comments: number | null;
+  handle: string | null;
+  publishedAt: string | null;
+  caption: string;
+} {
+  const text = decodeHtmlEntities(description).trim();
+  const likes = text.match(/([\d.,]+\s?[KMB]?)\s+likes?\b/i)?.[1] ?? null;
+  const comments = text.match(/([\d.,]+\s?[KMB]?)\s+comments?\b/i)?.[1] ?? null;
+  const byLine = text.match(/(?:^|-\s)([\w.]+) on ([A-Z][a-z]+) (\d{1,2}), (\d{4})/);
+  let publishedAt: string | null = null;
+  if (byLine) {
+    const month = IG_MONTHS[byLine[2].toLowerCase()];
+    if (month) {
+      publishedAt = `${byLine[4]}-${String(month).padStart(2, '0')}-${byLine[3].padStart(2, '0')}`;
+    }
+  }
+  const captionMatch = text.match(/:\s*"([\s\S]*)"?\s*$/);
+  const caption = captionMatch ? captionMatch[1].replace(/"\s*$/, '').trim() : text;
+  return {
+    likes: parseCompactNumber(likes),
+    comments: parseCompactNumber(comments),
+    handle: byLine ? byLine[1].toLowerCase() : null,
+    publishedAt,
+    caption,
+  };
+}
+
+function parseFacebookOgTitle(title: string): {
+  views: number | null;
+  reactions: number | null;
+  ownerName: string | null;
+} {
+  const parts = title.split(' | ').map((p) => p.trim());
+  const stats = parts[0] ?? '';
+  const views = parseCompactNumber(
+    stats.match(/([\d.,]+\s?[KMB]?)\s+(?:views|lượt xem)/i)?.[1]
+  );
+  const reactions = parseCompactNumber(
+    stats.match(/([\d.,]+\s?[KMB]?)\s+(?:reactions|cảm xúc)/i)?.[1]
+  );
+  const ownerName = parts.length >= 3 ? parts[parts.length - 1] : null;
+  return { views, reactions, ownerName };
 }
 
 function toUrl(raw: string): URL | null {
@@ -323,6 +414,13 @@ export function buildLinkAirChecks(
     | 'productUrl'
     | 'productId'
     | 'cartProducts'
+    | 'onScreenStickers'
+    | 'transcriptText'
+    | 'firstProductAppearanceSec'
+    | 'firstProductMentionTimeLabel'
+    | 'firstProductMentionTerm'
+    | 'firstProductMentionQuote'
+    | 'policyViolations'
   >,
   expect: LinkAirExpectation = {}
 ): LinkAirCheckItem[] {
@@ -453,6 +551,11 @@ export function buildLinkAirChecks(
   }
 
   const captionFolded = foldText(input.caption);
+  const stickersFolded = foldText((input.onScreenStickers || []).join(' '));
+  const transcriptFolded = foldText(input.transcriptText || '');
+  const productTitleFolded = foldText(
+    [input.productTitle || '', ...(input.cartProducts || []).map((p) => p.title || '')].join(' ')
+  );
 
   if (expect.requiredHashtags?.length) {
     const have = new Set(input.hashtags.map((h) => foldText(h)));
@@ -479,26 +582,77 @@ export function buildLinkAirChecks(
   }
 
   if (expect.requiredKeywords?.length) {
-    const missing = expect.requiredKeywords.filter(
-      (k) => k.trim() && !captionFolded.includes(foldText(k.trim()))
-    );
+    const matchedSources: string[] = [];
+    const missing: string[] = [];
+    for (const rawKw of expect.requiredKeywords) {
+      const cleanKw = rawKw.trim();
+      if (!cleanKw) continue;
+      const kwFolded = foldText(cleanKw);
+      if (captionFolded.includes(kwFolded)) {
+        matchedSources.push(`"${cleanKw}" (Caption)`);
+      } else if (transcriptFolded.includes(kwFolded)) {
+        matchedSources.push(`"${cleanKw}" (Lời thoại phụ đề)`);
+      } else if (stickersFolded.includes(kwFolded)) {
+        matchedSources.push(`"${cleanKw}" (Chữ trên màn hình)`);
+      } else if (productTitleFolded.includes(kwFolded)) {
+        matchedSources.push(`"${cleanKw}" (Tên SP giỏ hàng)`);
+      } else {
+        missing.push(cleanKw);
+      }
+    }
+
     checks.push(
       missing.length === 0
         ? {
             key: 'keywords',
             label: 'Brand / key message',
             status: 'PASS',
-            detail: 'Caption có nhắc brand / key message.',
+            detail: `Đã nhắc đủ: ${matchedSources.join(', ')}.`,
           }
         : {
             key: 'keywords',
             label: 'Brand / key message',
             status: 'WARN',
-            detail: input.caption
-              ? `Caption chưa nhắc: ${missing.join(', ')} (có thể KOC nói trong video, cần xem lại).`
-              : 'Không đọc được caption.',
+            detail: input.caption || input.transcriptText
+              ? `Chưa thấy nhắc trong caption/phụ đề: ${missing.join(', ')}${
+                  matchedSources.length > 0 ? ` (Đã có: ${matchedSources.join(', ')})` : ''
+                }.`
+              : 'Không đọc được caption/phụ đề.',
           }
     );
+  }
+
+  if (
+    input.firstProductAppearanceSec !== null &&
+    input.firstProductAppearanceSec !== undefined
+  ) {
+    const sec = input.firstProductAppearanceSec;
+    const term = input.firstProductMentionTerm ? `"${input.firstProductMentionTerm}"` : 'sản phẩm';
+    const timeRange = input.firstProductMentionTimeLabel
+      ? ` (${input.firstProductMentionTimeLabel})`
+      : '';
+    checks.push({
+      key: 'product_mention_time',
+      label: 'Giây nhắc tên SP',
+      status: sec <= 10 ? 'PASS' : 'WARN',
+      detail: `Nhắc ${term} lần đầu ở giây ${sec}s${timeRange}${
+        input.firstProductMentionQuote ? ` — "${input.firstProductMentionQuote}"` : ''
+      }.`,
+    });
+  }
+
+  if (input.policyViolations && input.policyViolations.length > 0) {
+    const hasHigh = input.policyViolations.some(
+      (v) => v.category === 'CHÍNH_SÁCH_SÀN' || v.category === 'Y_TẾ_QUÁ_ĐÀ'
+    );
+    checks.push({
+      key: 'policy_safety',
+      label: 'An toàn chính sách sàn',
+      status: hasHigh ? 'FAIL' : 'WARN',
+      detail: `Phát hiện ${input.policyViolations.length} từ ngữ nhạy cảm: ${input.policyViolations
+        .map((v) => `"${v.word}" (${v.category})`)
+        .join(', ')}.`,
+    });
   }
 
   if (expect.expectedProductUrl && expect.expectedProductUrl.trim()) {
@@ -698,6 +852,50 @@ export async function checkSingleLinkServerless(
 
     const hashtags =
       inspected.hashtags.length > 0 ? inspected.hashtags : extractHashtags(inspected.caption);
+
+    let subtitleSegments: TikTokSubtitleSegment[] = [];
+    let transcriptText: string | null = null;
+    if (inspected.subtitleUrl) {
+      try {
+        const subRes = await fetch(inspected.subtitleUrl, {
+          headers: {
+            'User-Agent': BROWSER_UA,
+            Referer: 'https://www.tiktok.com/',
+          },
+          signal: AbortSignal.timeout(3500),
+          cache: 'no-store',
+        });
+        if (subRes.ok) {
+          const vttText = await subRes.text();
+          subtitleSegments = parseWebVttToSegments(vttText);
+          if (subtitleSegments.length > 0) {
+            transcriptText = subtitleSegments.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
+          }
+        }
+      } catch {
+        // Bỏ qua nếu link phụ đề hết hạn
+      }
+    }
+
+    const mentionDetection = detectProductMentionMoments({
+      segments: subtitleSegments,
+      productName: inspected.cartAnchorTitle,
+      cartAnchorTitle: inspected.cartAnchorTitle,
+      cartProducts: inspected.cartProducts,
+      caption: inspected.caption,
+      hashtags,
+      uspKeywords: expect.requiredKeywords,
+    });
+
+    const combinedTextForPolicy = [
+      inspected.caption,
+      ...(inspected.onScreenStickers || []),
+      transcriptText || '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const policyViolations = scanBlacklistViolations(combinedTextForPolicy);
+
     const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
       inputUrl,
       platform: 'tiktok',
@@ -730,6 +928,14 @@ export async function checkSingleLinkServerless(
       productId: inspected.cartProductId || null,
       sellerId: inspected.cartSellerId || null,
       cartProducts: inspected.cartProducts || [],
+      onScreenStickers: inspected.onScreenStickers,
+      transcriptText,
+      firstProductAppearanceSec: mentionDetection.firstProductAppearanceSec,
+      firstProductMentionTimeLabel: mentionDetection.firstProductMentionTimeLabel || null,
+      firstProductMentionTerm: mentionDetection.firstProductMentionTerm || null,
+      firstProductMentionQuote: mentionDetection.firstProductMentionQuote || null,
+      productMentionMoments: mentionDetection.productMentionMoments,
+      policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
       limitations: [],
       source: 'tiktok-ssr-waf',
       fetchedAt,
@@ -740,10 +946,11 @@ export async function checkSingleLinkServerless(
     return { ...base, checks, verdict: verdictOf(checks) };
   }
 
-  // Facebook / Instagram / Shopee Video fallback
+  // Shopee Video / Facebook / Instagram dedicated parsers
   try {
     const res = await fetch(parsed.url, {
       method: 'GET',
+      redirect: 'follow',
       headers: {
         'User-Agent': parsed.platform === 'shopee' ? BROWSER_UA : LINK_PREVIEW_UA,
         'Accept-Language': 'en-US,en;q=0.9',
@@ -751,7 +958,393 @@ export async function checkSingleLinkServerless(
       signal: AbortSignal.timeout(9000),
       cache: 'no-store',
     });
+    const finalUrl = res.url || parsed.url;
     const html = await res.text();
+
+    if (parsed.platform === 'shopee') {
+      const nextDataRaw = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1];
+      if (res.status === 404) {
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'shopee',
+          contentType: 'video',
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: 'UNAVAILABLE',
+          statusDetail: 'Video Shopee không tồn tại.',
+          author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+          publishedAt: null,
+          caption: '',
+          hashtags: [],
+          mentions: [],
+          durationSeconds: null,
+          metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+          hasProductLink: null,
+          productTitle: null,
+          limitations: [],
+          source: 'shopee-share-page',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+      if (nextDataRaw) {
+        try {
+          const media = JSON.parse(nextDataRaw)?.props?.pageProps?.mediaInfo;
+          if (!media?.video) {
+            const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+              inputUrl,
+              platform: 'shopee',
+              contentType: 'video',
+              contentId: parsed.contentId,
+              canonicalUrl: parsed.url,
+              status: 'UNAVAILABLE',
+              statusDetail: 'Video Shopee đã bị xoá hoặc ẩn.',
+              author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+              publishedAt: null,
+              caption: '',
+              hashtags: [],
+              mentions: [],
+              durationSeconds: null,
+              metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+              hasProductLink: null,
+              productTitle: null,
+              limitations: [],
+              source: 'shopee-share-page',
+              fetchedAt,
+              fromCache: false,
+              durationMs: Date.now() - started,
+            };
+            const checks = buildLinkAirChecks(base, expect);
+            return { ...base, checks, verdict: verdictOf(checks) };
+          }
+          const handle = media.userInfo?.videoUserName?.toLowerCase() ?? parsed.handle ?? null;
+          const host = new URL(parsed.url).hostname.replace(/^sv\./, '');
+          const count = media.count ?? {};
+          const caption = String(media.video.caption ?? '').trim();
+          const captionShoppingUrls = extractShoppingUrlsFromText(caption);
+          const policyViolations = scanBlacklistViolations(caption);
+          const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+            inputUrl,
+            platform: 'shopee',
+            contentType: 'video',
+            contentId: parsed.contentId,
+            canonicalUrl: parsed.url,
+            status: 'LIVE',
+            statusDetail: null,
+            author: {
+              handle,
+              name: handle,
+              profileUrl: handle ? `https://${host}/${handle}` : null,
+              followers: null,
+            },
+            publishedAt: null,
+            caption,
+            hashtags: extractHashtags(caption),
+            mentions: extractMentions(caption),
+            durationSeconds: media.video.duration ? Math.round(media.video.duration / 1000) : null,
+            metrics: {
+              views: count.viewCount ?? null,
+              likes: count.likeCount ?? null,
+              comments: count.commentCount ?? null,
+              shares: count.shareCount ?? null,
+              saves: null,
+            },
+            hasProductLink: captionShoppingUrls.length > 0 ? true : null,
+            productTitle:
+              captionShoppingUrls.length > 0 ? 'Link mua hàng gắn trong bài đăng' : null,
+            productUrl: captionShoppingUrls[0] || null,
+            cartProducts: captionShoppingUrls.map((url) => ({
+              productId: '',
+              title: 'Link mua hàng gắn trong bài đăng',
+              productUrl: url,
+              source: 'Caption Link',
+            })),
+            policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+            limitations: [
+              'Trang chia sẻ Shopee Video không công khai lượt xem, ngày đăng và sản phẩm gắn kèm.',
+              'Ngày air và GMV cần đối chiếu trong Shopee Affiliate / Seller Center.',
+            ],
+            source: 'shopee-share-page',
+            fetchedAt,
+            fromCache: false,
+            durationMs: Date.now() - started,
+          };
+          const checks = buildLinkAirChecks(base, expect);
+          return { ...base, checks, verdict: verdictOf(checks) };
+        } catch {
+          // Rơi xuống nhánh meta nếu JSON lỗi
+        }
+      }
+    }
+
+    if (parsed.platform === 'facebook') {
+      const ogUrl = readMeta(html, 'og:url') ?? finalUrl;
+      const ogTitle = readMeta(html, 'og:title');
+      const ogDescription = readMeta(html, 'og:description') ?? '';
+
+      if (res.status === 404 || !ogTitle || /\/login(\.php)?|checkpoint/.test(finalUrl)) {
+        const isBlocked = /\/login|checkpoint/.test(finalUrl) || (res.status >= 400 && res.status !== 404);
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'facebook',
+          contentType: parsed.contentType,
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: isBlocked ? 'BLOCKED' : 'UNAVAILABLE',
+          statusDetail: isBlocked
+            ? 'Facebook yêu cầu đăng nhập để xem bài này (bài riêng tư hoặc bị chặn IP).'
+            : 'Bài đã bị xoá, ẩn hoặc chỉ bạn bè xem được.',
+          author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+          publishedAt: null,
+          caption: '',
+          hashtags: [],
+          mentions: [],
+          durationSeconds: null,
+          metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+          hasProductLink: null,
+          productTitle: null,
+          limitations: [],
+          source: 'facebook-html',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+
+      const idFromUrl =
+        ogUrl.match(/\/(?:reel|videos)\/(\d{6,})/)?.[1] ??
+        ogUrl.match(/[?&]v=(\d{6,})/)?.[1] ??
+        ogUrl.match(/\/posts\/([\w]+)/)?.[1] ??
+        null;
+      const contentId = idFromUrl ?? parsed.contentId;
+      const contentType = /\/reel\//.test(ogUrl)
+        ? 'reel'
+        : /\/videos\/|watch/.test(ogUrl)
+        ? 'video'
+        : parsed.contentType ?? 'post';
+
+      const anchor = contentId
+        ? html.indexOf(
+            `"associated_video":{"is_live_streaming":false,"is_profile_video":false,"id":"${contentId}"`
+          )
+        : -1;
+      const fromAnchor = anchor >= 0 ? anchor : 0;
+      const titleStats = parseFacebookOgTitle(ogTitle);
+
+      const views =
+        readJsonNumber(html, 'video_view_count', fromAnchor) ??
+        readJsonNumber(html, 'play_count') ??
+        titleStats.views;
+      const reactionsMatch = html.match(/"reaction_count":\{"count":(\d+)/);
+      const reactions = reactionsMatch ? Number(reactionsMatch[1]) : titleStats.reactions;
+      const comments = readJsonNumber(html, 'total_comment_count');
+      const shareMatch =
+        html.match(/"share_count":\{"count":(\d+)/) ??
+        html.match(/"share_count_reduced":"([\d.,KMB]+)"/);
+      const shares = shareMatch ? parseCompactNumber(shareMatch[1]) : null;
+      const publishTime =
+        readJsonNumber(html, 'publish_time') ?? readJsonNumber(html, 'creation_time');
+      const durationMs = readJsonNumber(html, 'playable_duration_in_ms');
+
+      const pageMatch = html.match(
+        /"owner_as_page":\{"id":"(\d+)","name":"((?:[^"\\]|\\.)*)"/
+      );
+      let ownerName = titleStats.ownerName;
+      if (pageMatch) {
+        try {
+          ownerName = JSON.parse(`"${pageMatch[2]}"`) as string;
+        } catch {
+          ownerName = pageMatch[2];
+        }
+      }
+      const vanity = readJsonString(html, 'vanity') ?? parsed.handle;
+      const messageAt = html.indexOf('"message":{"text"');
+      const caption = (
+        (messageAt >= 0 ? readJsonString(html, 'text', messageAt) : null) ?? ogDescription
+      ).trim();
+      const hasProductTag =
+        /"comet_product_tag_feed_overlay_renderer":\{/.test(html) ||
+        /"product_item":\{/.test(html);
+      const captionShoppingUrls = extractShoppingUrlsFromText(caption);
+      const hasAnyShopLink = hasProductTag || captionShoppingUrls.length > 0;
+      const policyViolations = scanBlacklistViolations(caption);
+
+      const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+        inputUrl,
+        platform: 'facebook',
+        contentType,
+        contentId,
+        canonicalUrl: ogUrl.split('?')[0],
+        status: 'LIVE',
+        statusDetail: null,
+        author: {
+          handle: vanity ? vanity.toLowerCase() : null,
+          name: ownerName,
+          profileUrl: vanity ? `https://www.facebook.com/${vanity}` : null,
+          followers: null,
+        },
+        publishedAt: unixSecondsToIso(publishTime),
+        caption,
+        hashtags: extractHashtags(caption),
+        mentions: extractMentions(caption),
+        durationSeconds: durationMs ? Math.round(durationMs / 1000) : null,
+        metrics: { views, likes: reactions, comments, shares, saves: null },
+        hasProductLink: hasAnyShopLink ? true : null,
+        productTitle:
+          captionShoppingUrls.length > 0
+            ? 'Link mua hàng gắn trong bài đăng'
+            : hasProductTag
+            ? 'Sản phẩm gắn thẻ trên Facebook'
+            : null,
+        productUrl: captionShoppingUrls[0] || null,
+        cartProducts: captionShoppingUrls.map((url) => ({
+          productId: '',
+          title: 'Link mua hàng gắn trong bài đăng',
+          productUrl: url,
+          source: 'Caption Link',
+        })),
+        policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        limitations: [
+          '"Likes" là tổng reactions (thích, yêu thích, haha...).',
+          'Không đọc được số follower của trang.',
+        ],
+        source: 'facebook-html',
+        fetchedAt,
+        fromCache: false,
+        durationMs: Date.now() - started,
+      };
+      const checks = buildLinkAirChecks(base, expect);
+      return { ...base, checks, verdict: verdictOf(checks) };
+    }
+
+    if (parsed.platform === 'instagram') {
+      const pageTitle = html.match(/<title>([\s\S]*?)<\/title>/)?.[1]?.trim() ?? '';
+      if (res.status === 404 || /Page Not Found/i.test(pageTitle)) {
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'instagram',
+          contentType: parsed.contentType ?? 'post',
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: 'UNAVAILABLE',
+          statusDetail: 'Bài Instagram đã bị xoá, ẩn hoặc tài khoản riêng tư.',
+          author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+          publishedAt: null,
+          caption: '',
+          hashtags: [],
+          mentions: [],
+          durationSeconds: null,
+          metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+          hasProductLink: null,
+          productTitle: null,
+          limitations: [],
+          source: 'instagram-meta',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+
+      const description = readMeta(html, 'og:description') ?? readMeta(html, 'description');
+      const ogUrl = readMeta(html, 'og:url');
+      if (res.status === 429 || !description || !ogUrl) {
+        const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+          inputUrl,
+          platform: 'instagram',
+          contentType: parsed.contentType ?? 'post',
+          contentId: parsed.contentId,
+          canonicalUrl: parsed.url,
+          status: 'BLOCKED',
+          statusDetail:
+            res.status === 429
+              ? 'Instagram giới hạn tần suất truy cập (HTTP 429). Thử lại sau.'
+              : 'Instagram trả trang đăng nhập thay vì bài đăng.',
+          author: { handle: parsed.handle, name: null, profileUrl: null, followers: null },
+          publishedAt: null,
+          caption: '',
+          hashtags: [],
+          mentions: [],
+          durationSeconds: null,
+          metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
+          hasProductLink: null,
+          productTitle: null,
+          limitations: [],
+          source: 'instagram-meta',
+          fetchedAt,
+          fromCache: false,
+          durationMs: Date.now() - started,
+        };
+        const checks = buildLinkAirChecks(base, expect);
+        return { ...base, checks, verdict: verdictOf(checks) };
+      }
+
+      const igParsed = parseInstagramDescription(description);
+      const ownerFromUrl =
+        ogUrl.match(/instagram\.com\/([\w.]+)\/(?:p|reel)\//)?.[1]?.toLowerCase() ?? null;
+      const handle = igParsed.handle ?? ownerFromUrl ?? parsed.handle;
+      const ogTitle = readMeta(html, 'og:title') ?? '';
+      const displayName = ogTitle.match(/^(.*?) on Instagram/)?.[1]?.trim() || null;
+      const captionShoppingUrls = extractShoppingUrlsFromText(igParsed.caption);
+      const policyViolations = scanBlacklistViolations(igParsed.caption);
+
+      const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
+        inputUrl,
+        platform: 'instagram',
+        contentType: parsed.contentType ?? 'post',
+        contentId: parsed.contentId,
+        canonicalUrl: parsed.url,
+        status: 'LIVE',
+        statusDetail: null,
+        author: {
+          handle,
+          name: displayName,
+          profileUrl: handle ? `https://www.instagram.com/${handle}/` : null,
+          followers: null,
+        },
+        publishedAt: igParsed.publishedAt,
+        caption: igParsed.caption,
+        hashtags: extractHashtags(igParsed.caption),
+        mentions: extractMentions(igParsed.caption),
+        durationSeconds: null,
+        metrics: {
+          views: null,
+          likes: igParsed.likes,
+          comments: igParsed.comments,
+          shares: null,
+          saves: null,
+        },
+        hasProductLink: captionShoppingUrls.length > 0 ? true : null,
+        productTitle:
+          captionShoppingUrls.length > 0 ? 'Link mua hàng gắn trong bài đăng' : null,
+        productUrl: captionShoppingUrls[0] || null,
+        cartProducts: captionShoppingUrls.map((url) => ({
+          productId: '',
+          title: 'Link mua hàng gắn trong bài đăng',
+          productUrl: url,
+          source: 'Caption Link',
+        })),
+        policyViolations: policyViolations.length > 0 ? policyViolations : undefined,
+        limitations: [
+          'Instagram không công khai lượt xem reel khi chưa đăng nhập.',
+          'Không đọc được nhãn "Paid partnership" và link sản phẩm.',
+          'Likes và bình luận là số làm tròn (VD 1.2K).',
+        ],
+        source: 'instagram-meta',
+        fetchedAt,
+        fromCache: false,
+        durationMs: Date.now() - started,
+      };
+      const checks = buildLinkAirChecks(base, expect);
+      return { ...base, checks, verdict: verdictOf(checks) };
+    }
+
     const ogTitle = readMeta(html, 'og:title') || '';
     const ogDesc = readMeta(html, 'og:description') || readMeta(html, 'description') || '';
 

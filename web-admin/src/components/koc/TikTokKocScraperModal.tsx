@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Check,
   Clock,
@@ -94,7 +94,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setErrorMsg(null);
       setResults([]);
       setSelectedHandle('');
-      setLoading(Boolean(initialHandle.trim()));
+      setLoading(false);
     } else {
       setLoading(false);
       setLoadingMoreHandle(null);
@@ -178,44 +178,6 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       setLoadingMoreHandle(null);
     }
   };
-
-  useEffect(() => {
-    if (!open || !initialHandle.trim()) return;
-    let active = true;
-    fetch('/api/integrations/tiktok-koc/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rawInput: initialHandle.trim(),
-        period,
-        videoLimit: 24,
-      }),
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (!active) return;
-        if (json.success && Array.isArray(json.results) && json.results.length > 0) {
-          setResults(json.results);
-          setSelectedHandle(json.results[0].handle);
-        } else {
-          setErrorMsg(json.message || 'Không lấy được dữ liệu kênh TikTok.');
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setErrorMsg('Không kết nối được dịch vụ lấy dữ liệu TikTok.');
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [open, initialHandle, period]);
 
   const existingByHandle = useMemo(() => {
     const map = new Map<string, KocItem>();

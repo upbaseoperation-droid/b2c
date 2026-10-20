@@ -358,6 +358,13 @@ function parseVttTimestampToSec(raw: string): number {
   return 0;
 }
 
+function formatSecToMmSs(sec: number): string {
+  const safe = Math.max(0, Math.floor(sec));
+  const mm = String(Math.floor(safe / 60)).padStart(2, '0');
+  const ss = String(safe % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
 export function parseWebVttToSegments(vttRaw: string): TikTokSubtitleSegment[] {
   if (!vttRaw) return [];
   const lines = vttRaw.split(/\r?\n/);
@@ -376,9 +383,9 @@ export function parseWebVttToSegments(vttRaw: string): TikTokSubtitleSegment[] {
       const rawEnd = parts[1]?.trim().split(' ')[0] || '00:03.000';
       startSec = Math.round(parseVttTimestampToSec(rawStart) * 10) / 10;
       endSec = Math.round(parseVttTimestampToSec(rawEnd) * 10) / 10;
-      const startShort = rawStart.replace(/\.\d+$/, '').replace(/^00:/, '') || '00:00';
-      const endShort = rawEnd.replace(/\.\d+$/, '').replace(/^00:/, '') || '';
-      timeLabel = endShort ? `${startShort} - ${endShort}` : startShort;
+      const startFloor = Math.floor(startSec);
+      const endCeil = Math.max(startFloor + 1, Math.round(endSec));
+      timeLabel = `${formatSecToMmSs(startFloor)} - ${formatSecToMmSs(endCeil)}`;
       continue;
     }
 
@@ -387,6 +394,9 @@ export function parseWebVttToSegments(vttRaw: string): TikTokSubtitleSegment[] {
       const prev = result[result.length - 1];
       if (prev && prev.text === cleanText) {
         prev.endSec = Math.max(prev.endSec, endSec);
+        const startFloor = Math.floor(prev.startSec);
+        const endCeil = Math.max(startFloor + 1, Math.round(prev.endSec));
+        prev.timeLabel = `${formatSecToMmSs(startFloor)} - ${formatSecToMmSs(endCeil)}`;
       } else {
         result.push({
           startSec,
@@ -519,6 +529,49 @@ const GENERIC_TITLE_STOPWORDS = new Set([
   'hop',
   'chai',
   'tuyp',
+  'super',
+  'white',
+  'ultra',
+  'extra',
+  'plus',
+  'pro',
+  'max',
+  'pure',
+  'care',
+  'daily',
+  'fresh',
+  'natural',
+  'beauty',
+  'water',
+  'light',
+  'soft',
+  'smooth',
+  'clear',
+  'bright',
+  'glow',
+  'deep',
+  'high',
+  'multi',
+  'total',
+  'hydra',
+  'aqua',
+  'vital',
+  'active',
+  'perfect',
+  'gold',
+  'silver',
+  'pink',
+  'blue',
+  'green',
+  'black',
+  'red',
+  'rich',
+  'repair',
+  'balance',
+  'control',
+  'extract',
+  'complex',
+  'formula',
 ]);
 
 /**
@@ -580,6 +633,22 @@ export function detectProductMentionMoments(params: {
   ]
     .filter(Boolean)
     .join(' ');
+
+  // Ưu tiên cụm từ tên riêng Latin 2-3 từ đi liền nhau (VD: "Nucos Super White", "La Roche Posay", "Club Clio")
+  const latinPhrases =
+    allProductTitles
+      .replace(/\[[^\]]*\]/g, ' ')
+      .match(/\b[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*){1,2}\b/g) || [];
+  for (const phrase of latinPhrases) {
+    const words = phrase.trim().split(/\s+/);
+    const hasSpecificWord = words.some((w) => {
+      const f = foldForMatch(w);
+      return f.length >= 4 && !GENERIC_TITLE_STOPWORDS.has(f);
+    });
+    if (hasSpecificWord) {
+      addCandidate(phrase.trim(), 1);
+    }
+  }
 
   const rawTokens = allProductTitles
     .replace(/\[[^\]]*\]/g, ' ')
@@ -773,7 +842,8 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
               : decodeTikTokVideoIdTimestamp(itemId) || undefined;
 
           const author = itemStruct.author || {};
-          const stats = itemStruct.stats || itemStruct.statsV2 || {};
+          const stats1 = itemStruct.stats || {};
+          const stats2 = itemStruct.statsV2 || {};
           const video = itemStruct.video || {};
           const music = itemStruct.music || {};
 
@@ -814,12 +884,17 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
               (c.languageCodeName || c.LanguageCodeName || '').toLowerCase().includes('vie')
             ) || captionInfos[0];
 
-          const subUrl =
-            preferredSub?.url ||
-            preferredSub?.Url ||
-            (Array.isArray(preferredSub?.urlList) ? preferredSub.urlList[0] : undefined);
+          const subCandidateUrls = Array.from(
+            new Set(
+              [
+                preferredSub?.url,
+                preferredSub?.Url,
+                ...(Array.isArray(preferredSub?.urlList) ? preferredSub.urlList : []),
+              ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+            )
+          );
 
-          if (subUrl) {
+          for (const subUrl of subCandidateUrls) {
             try {
               const subCtrl = new AbortController();
               const subTimer = setTimeout(() => subCtrl.abort(), 4000);
@@ -840,10 +915,11 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
                   subtitleSegments = parsedSegs;
                   transcriptText = parsedSegs.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
                   subtitleSource = 'TIKTOK_AUTO_CAPTIONS_VTT';
+                  break;
                 }
               }
             } catch {
-              // Bỏ qua nếu link phụ đề hết hạn
+              // Thử URL dự phòng tiếp theo trong urlList
             }
           }
 
@@ -904,11 +980,17 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
               : undefined,
             musicAuthor: music.authorName,
             coverUrl: video.cover || video.originCover || oembedCoverUrl,
-            viewsCount: Number(stats.playCount) || 0,
-            likesCount: Number(stats.diggCount) || 0,
-            commentsCount: Number(stats.commentCount) || 0,
-            sharesCount: Number(stats.shareCount) || 0,
-            savesCount: Number(stats.collectCount) || 0,
+            viewsCount: Math.max(Number(stats1.playCount || 0), Number(stats2.playCount || 0)),
+            likesCount: Math.max(Number(stats1.diggCount || 0), Number(stats2.diggCount || 0)),
+            commentsCount: Math.max(
+              Number(stats1.commentCount || 0),
+              Number(stats2.commentCount || 0)
+            ),
+            sharesCount: Math.max(Number(stats1.shareCount || 0), Number(stats2.shareCount || 0)),
+            savesCount: Math.max(
+              Number(stats1.collectCount || 0),
+              Number(stats2.collectCount || 0)
+            ),
             transcriptText,
             subtitleSegments,
             subtitleSource,

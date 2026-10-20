@@ -407,31 +407,6 @@ export const KocChannelBriefMatcherModal: React.FC<
           {errorMessage && (
             <p className="text-2xs text-critical">{errorMessage}</p>
           )}
-
-          {/* Khung thiết lập Câu lệnh (Prompt) đánh giá kênh KOC */}
-          <div className="pt-2 border-t border-line space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setShowPromptEditor(v => !v)}
-                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Cấu hình kết nối API & Câu lệnh (Prompt) đánh giá kênh KOC
-              </button>
-            </div>
-
-            {showPromptEditor && (
-              <InlinePurposeApiSetup
-                purposeId="KOC_MATCHING"
-                onConfigSaved={() => {
-                  const eff = getEffectiveConfigForPurpose('KOC_MATCHING');
-                  setCustomPrompt(eff.purpose.systemInstruction);
-                }}
-              />
-            )}
-          </div>
         </div>
 
         {/* Hàng đợi các tiến trình phân tích chạy ngầm */}

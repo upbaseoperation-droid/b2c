@@ -59,6 +59,24 @@ export interface LinkAirResult {
   productId?: string | null;
   sellerId?: string | null;
   cartProducts?: LinkAirCartProduct[];
+  onScreenStickers?: string[];
+  transcriptText?: string | null;
+  firstProductAppearanceSec?: number | null;
+  firstProductMentionTimeLabel?: string | null;
+  firstProductMentionTerm?: string | null;
+  firstProductMentionQuote?: string | null;
+  productMentionMoments?: Array<{
+    startSec: number;
+    endSec: number;
+    timeLabel: string;
+    matchedTerm: string;
+    quote: string;
+  }>;
+  policyViolations?: Array<{
+    word: string;
+    category: string;
+    suggestion: string;
+  }>;
   checks: LinkAirCheckItem[];
   verdict: LinkAirVerdict;
   limitations: string[];
@@ -118,6 +136,7 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     'Tên sản phẩm giỏ hàng',
     'Mã SP (Product ID)',
     'Link giỏ hàng',
+    'Giây nhắc tên SP',
     'Link chuẩn',
     'Ghi chú',
   ];
@@ -140,6 +159,9 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     r.productTitle ?? '',
     r.productId ?? '',
     r.productUrl ?? '',
+    r.firstProductAppearanceSec !== null && r.firstProductAppearanceSec !== undefined
+      ? `Giây ${r.firstProductAppearanceSec}s${r.firstProductMentionTerm ? ` (${r.firstProductMentionTerm})` : ''}`
+      : '',
     r.canonicalUrl ?? '',
     r.checks
       .filter((c) => c.status !== 'PASS')

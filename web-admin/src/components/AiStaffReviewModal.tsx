@@ -343,44 +343,15 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
             />
           </StatRow>
 
-          <div className="pt-1 border-t border-line">
-            <button
-              type="button"
-              onClick={() => setShowApiSettings(!showApiSettings)}
-              className="text-xs font-medium text-ink-2 hover:text-ink flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Key className="w-3.5 h-3.5 text-ink-3" />
-              <span>Cấu hình kết nối API và yêu cầu bổ sung</span>
-              {showApiSettings ? (
-                <ChevronUp className="w-3.5 h-3.5 text-ink-3" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
-              )}
-            </button>
-
-            {showApiSettings && (
-              <div className="mt-3 pt-3 border-t border-line space-y-3">
-                <InlinePurposeApiSetup
-                  purposeId="STAFF_REVIEW"
-                  onConfigSaved={() => {
-                    const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
-                    if (eff.primaryProvider === 'GOOGLE') setApiProvider('GEMINI');
-                    else if (eff.primaryProvider === 'OPENAI') setApiProvider('OPENAI');
-                    else if (eff.primaryProvider === 'CLAUDE') setApiProvider('CLAUDE');
-                    else setApiProvider('AUTO');
-                    setCustomApiKey(eff.primaryApiKey || '');
-                  }}
-                />
-                <Field label="Ghi chú yêu cầu thêm cho kỳ đánh giá này">
-                  <Input
-                    type="text"
-                    placeholder="VD: Rà soát chuẩn bị chiến dịch 10.10, kiểm tra trễ hạn gửi mẫu..."
-                    value={customInstruction}
-                    onChange={(e) => setCustomInstruction(e.target.value)}
-                  />
-                </Field>
-              </div>
-            )}
+          <div className="pt-2 border-t border-line">
+            <Field label="Ghi chú yêu cầu thêm cho kỳ đánh giá này">
+              <Input
+                type="text"
+                placeholder="VD: Rà soát chuẩn bị chiến dịch 10.10, kiểm tra trễ hạn gửi mẫu..."
+                value={customInstruction}
+                onChange={(e) => setCustomInstruction(e.target.value)}
+              />
+            </Field>
           </div>
         </div>
 

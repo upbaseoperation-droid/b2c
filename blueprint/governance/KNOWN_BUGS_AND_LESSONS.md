@@ -23,6 +23,7 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 | **RULE-UI-01** | **Chuẩn hóa ngôn ngữ nghiệp vụ & Cấm phụ đề thừa (`UI_COPY_AND_SUBTITLE_VIOLATION`)** | Cấm dùng từ ngữ quảng cáo/buzzword ("AI", "Trí tuệ nhân tạo", "Smart", "1-chạm", "Siêu tốc") trên giao diện và cấm viết dòng chữ giải thích xám (`subtitle`, `description`) dưới tiêu đề Trang, Khung (`Panel`), Hộp thoại (`Modal`), Khối (`SectionHeader`). |
 | **RULE-AUTH-01** | **Bảo vệ toàn diện Endpoint API & Cách ly Đối tác ngoài (`API_SESSION_AND_PARTNER_ISOLATION`)** | Mọi API route nội bộ đều bắt buộc kiểm tra phiên đăng nhập (`getAuthenticatedUser` / `decodeSessionToken`) trả mã HTTP 401 khi chưa đăng nhập, và chặn đứng tài khoản đối tác ngoài (`user.partnerType` / `role.endsWith('_PARTNER')`) với mã HTTP 403 khi truy cập API nghiệp vụ nội bộ. |
 | **RULE-RBAC-01** | **Ưu tiên kích hoạt Quyền phê duyệt đặc thù cá nhân (`SPECIAL_PERMISSION_OVERRIDE_PRECEDENCE`)** | Khi người dùng được gán các cờ quyền cá nhân (`canApprovePayment`, `canApproveBudget`, `canApproveP3`, `canManageMasterData`, `canExportRawData`), hệ thống phải kiểm tra và cho phép thao tác độc lập, không được để điều kiện `level !== 'DENIED'` của vai trò gốc làm vô hiệu hóa quyền đặc thù. |
+| **RULE-API-02** | **Cấm tự động chạy API phân tích / cào dữ liệu khi mở hộp thoại (`AUTO_RUN_API_ON_OPEN`)** | Tuyệt đối **KHÔNG** gọi `executeOperationalReport`, `/api/integrations/llm`, `social-discovery`, `scrape` hay `link-air-check` bên trong `useEffect` ngay khi mở Modal/Drawer (`open` / `isOpen`). Chỉ gọi API khi người dùng chủ động bấm nút thực thi (`Đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động`, `Lấy dữ liệu kênh`). |
 
 ---
 
@@ -403,6 +404,37 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   2. **Cụm 2:** Chuyển tra cứu tự động KOC sang `onBlur` (`handleIdKenhBlur`); tự động đồng bộ 2 chiều giữa `StaffBrandListingSheetWorkspace`, `KocListingBatchHubView` và `ApprovedBookingListView`; dùng nền đặc (`bg-sunken`, `bg-accent-soft`) cho toàn bộ ô `sticky left-*`; giữ dòng đang sửa (`editingRowId`) không bị ẩn khỏi bộ lọc cho đến khi `onBlur`; xóa toàn bộ số liệu nghiệm thu giả trong `approvedBookingList.ts`.
   3. **Cụm 3:** Xóa toàn bộ số liệu giả khi KOC có `0` deal (`kocUtils.ts`, `kocHistoryEvaluator.ts`, `KocProfile.tsx`, `BookingView.tsx`, `KocKolHubView.tsx`); nâng cấp `TikTokSellerSyncModal` cho phép nhập và lưu chỉ số trực tiếp qua `onUpdateKoc`; khử trùng lặp theo `item.id` trong `/api/kocs/route.ts` và `page.tsx` khi đổi handle; lắng nghe sự kiện `upbase:koc-master-contact-synced` tại `page.tsx` để đồng bộ tức thời.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ 3 cụm Tìm kiếm KOC (`tiktok-crawler`), Đợt đề xuất & List duyệt book (`koc-listing`, `approved-booking-list`), Danh bạ KOC & Quản lý Booking (`koc-master`, `koc-hub`, `booking`).
+
+---
+
+### BUG-024 — Kiểm Toán Chuyên Sâu Phân Hệ Crawler, Nghiệm Thu Video & Kiểm Tra Link Air Đa Nền Tảng
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/linkAirCheck.ts`, `web-admin/src/lib/linkAirCheckServer.ts`, `web-admin/src/components/crawler/LinkAirCheckerPanel.tsx`, `web-admin/src/lib/tiktokOpenSourceEngines.ts`, `web-admin/src/lib/tiktokVideoInspector.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Thiếu bộ giải mã chuyên biệt cho Shopee Video, Facebook và Instagram trong `checkSingleLinkServerless` (`linkAirCheckServer.ts`):** Khi không cấu hình `CRAWLER_WORKER_URL`, luồng serverless trong `web-admin` chỉ dùng regex thẻ `og:title`/`og:description` cơ bản thay vì bóc tách `<script id="__NEXT_DATA__">` (`mediaInfo`) của Shopee Video, JSON nhúng (`video_view_count`, `reaction_count`, `total_comment_count`, `share_count`, `publish_time`, `playable_duration_in_ms`, `owner_as_page`, `vanity`, `message.text`, `comet_product_tag_feed_overlay_renderer`) của Facebook, và định dạng `parseInstagramDescription` (`likes, comments - handle on Month Day, Year: "caption"`) của Instagram.
+  2. **Tab "Kiểm tra link air" (`LinkAirCheckerPanel.tsx` / `linkAirCheckServer.ts`) chưa trích xuất phụ đề lời thoại WebVTT, chữ chèn trên màn hình (`stickersOnItem`), giây xuất hiện tên sản phẩm và từ cấm chính sách:** `inspectLiveTikTokVideoPage` chưa lưu `subtitleUrl` và `onScreenStickers`, dẫn đến khi KOC nói tên thương hiệu/từ khóa trong video hoặc gắn chữ trên màn hình nhưng không viết trong caption thì vẫn bị cảnh báo thiếu từ khóa, và hộp thoại chi tiết thiếu mốc giây nhắc tên sản phẩm.
+  3. **Từ khóa tính từ tiếng Anh thông dụng (`White`, `Super`...) bị bắt nhầm làm tên riêng trong `detectProductMentionMoments` (`tiktokVideoInspector.ts`):** Khi kiểm tra video sản phẩm có tên tiếng Anh ghép (như `Nucos Super White`), các từ đơn `White`, `Super` chưa nằm trong `GENERIC_TITLE_STOPWORDS` nên bị khớp đơn lẻ; đồng thời nhãn thời gian `11.2s - 12.2s` bị cắt phần thập phân thành `00:11 - 00:11`.
+  4. **Lỗi regex thẻ tiêu đề Bing Video, điều kiện loại nhầm bài Photo Carousel 0 giây và công thức modulo trong `tiktokOpenSourceEngines.ts`:**
+     - Dòng 2382 dùng `class="mc_vtvc_title"` không khớp với HTML thực tế của Bing (`class="mc_vtvc_title b_promtxt"`).
+     - Dòng 917 trả về `null` khi `views === 0 && durationSeconds === 0`, làm các bài Photo Carousel mới đăng (`durationSeconds === 0`) bị báo nhầm là `UNAVAILABLE`.
+     - `fetchRawCommentsByAwemeId` dùng tham số vùng `app_language: 'ja-JP', region: 'ID'` thay vì `vi-VN` / `VN`.
+     - `getUpbaseMasterKocsForTrendingCategory` còn công thức modulo `(idx * 17389) % 380000` (`RULE-DATA-01`).
+- **Cách khắc phục:**
+  1. Tích hợp đầy đủ bộ giải mã chuyên biệt cho Shopee Video (`__NEXT_DATA__`), Facebook (JSON nhúng + `publish_time` + `owner_as_page` + `comet_product_tag_feed_overlay_renderer`) và Instagram (`parseInstagramDescription`) vào `web-admin/src/lib/linkAirCheckServer.ts`.
+  2. Bổ sung `onScreenStickers` và `subtitleUrl` vào `RealTikTokVideoAndAuthorDetail` (`tiktokOpenSourceEngines.ts`); tự động tải phụ đề WebVTT, phát hiện mốc giây nhắc tên sản phẩm (`detectProductMentionMoments`), quét từ cấm chính sách (`scanBlacklistViolations`), đối chiếu `requiredKeywords` trên cả 4 nguồn (Caption + Phụ đề lời thoại + Chữ trên màn hình + Tên giỏ hàng) và hiển thị trực quan trên bảng + `LinkAirDetailModal` + file CSV xuất ra.
+  3. Mở rộng `GENERIC_TITLE_STOPWORDS`, ưu tiên cụm tên riêng Latin 2–3 từ đi liền nhau (`Nucos Super White`, `La Roche Posay`), chuẩn hóa `formatSecToMmSs` trong `parseWebVttToSegments`, lấy `Math.max` giữa `stats` và `statsV2` và thử toàn bộ `urlList` phụ đề trong `tiktokVideoInspector.ts`.
+  4. Sửa regex `class="mc_vtvc_title[^"]*"`, giữ hợp lệ bài Photo Carousel / bài mới đăng trong `parseTikTokItemStructToDetail`, chuyển `fetchRawCommentsByAwemeId` sang `vi-VN`/`VN`, và xóa bỏ hoàn toàn công thức modulo trong `getUpbaseMasterKocsForTrendingCategory`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ phân hệ Crawler (`tiktokOpenSourceEngines.ts`, `tiktokKocScraper.ts`, `tiktokVideoInspector.ts`, `linkAirCheckServer.ts`, `LinkAirCheckerPanel.tsx`, `crawler-worker`).
+
+---
+
+### BUG-025 — Tự Động Gọi API Phân Tích / Dò Tìm / Cào Dữ Liệu Ngay Khi Vừa Mở Hộp Thoại Mà Chưa Bấm Nút
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/koc/KocHistoryEvaluationModal.tsx`, `web-admin/src/components/OperationalReportDrawer.tsx`, `web-admin/src/components/koc/KocSocialChannelsModal.tsx`, `web-admin/src/components/koc/TikTokKocScraperModal.tsx`, `web-admin/src/components/crawler/LinkAirCheckerPanel.tsx`.
+- **Triệu chứng:** Khi người dùng mở hộp thoại **Báo cáo đánh giá lịch sử & rủi ro KOC** (`KocHistoryEvaluationModal`), **Báo cáo phân tích vận hành** (`OperationalReportDrawer`), **Tìm & xác nhận kênh MXH** (`KocSocialChannelsModal`), **Lấy dữ liệu kênh TikTok** (`TikTokKocScraperModal`) hoặc **Chi tiết kiểm tra Link Air** (`LinkAirDetailModal`), hệ thống tự động gọi ngay API mô hình ngôn ngữ / API cào dữ liệu mà không chờ người dùng kiểm tra tham số và bấm nút.
+- **Nguyên nhân gốc (Root Cause):** Các component trên đặt lệnh gọi `handleRunReport()`, `handleGenerateReport()`, `runSearch()`, `fetch('/api/integrations/tiktok-koc/scrape')` và `fetch('/api/integrations/link-air-check')` bên trong `useEffect([open, ...])` ngay khi hộp thoại mở.
+- **Cách khắc phục:** Xóa bỏ toàn bộ `useEffect` tự động gọi API khi mở hộp thoại trên cả 5 component; chỉ thực thi API khi người dùng chủ động bấm nút (`Đánh giá` / `Chạy đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động` / `Quét qua mô hình & Google`, `Lấy dữ liệu kênh`, `Tải chi tiết giỏ hàng`). Ban hành quy tắc bắt buộc **`RULE-API-02`**.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các hộp thoại và ngăn kéo có tích hợp LLM hoặc crawler trong toàn hệ thống.
 
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 

@@ -29539,7 +29539,7 @@ export const UPBASE_STAFF_MASTER: StaffMasterMember[] = [
   },
   {
     "id": "HN575",
-    "name": "Trần Thị Đỗ Quyên",
+    "name": "Nguyễn Thị Thu Thủy",
     "staffCode": "HN575",
     "role": "MANAGER",
     "team": "Growth 1",

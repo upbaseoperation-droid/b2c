@@ -299,6 +299,12 @@ export function LinkAirCheckerPanel({
                   : '✕ Lệch link giỏ mẫu'}
               </span>
             )}
+            {r.firstProductAppearanceSec !== null && r.firstProductAppearanceSec !== undefined && (
+              <span className="text-2xs text-ink-2 block">
+                Nhắc SP: <strong className="text-ink font-semibold">giây {r.firstProductAppearanceSec}s</strong>
+                {r.firstProductMentionTerm ? ` (${r.firstProductMentionTerm})` : ''}
+              </span>
+            )}
           </div>
         );
       },
@@ -510,9 +516,8 @@ function LinkAirDetailModal({
       !result.productUrl
   );
 
-  useEffect(() => {
-    if (!result || !needsCartEnrichment) return;
-    let cancelled = false;
+  const handleEnrichCartDetails = () => {
+    if (!result || enrichingCart) return;
     setEnrichingCart(true);
     fetch('/api/integrations/link-air-check', {
       method: 'POST',
@@ -521,7 +526,6 @@ function LinkAirDetailModal({
     })
       .then((res) => res.json())
       .then((data: LinkAirCheckResponse) => {
-        if (cancelled) return;
         const fresh = data?.results?.[0];
         if (fresh && ((fresh.cartProducts && fresh.cartProducts.length > 0) || fresh.productUrl)) {
           onEnrichedResult?.({
@@ -531,19 +535,28 @@ function LinkAirDetailModal({
             productId: fresh.productId || result.productId,
             sellerId: fresh.sellerId || result.sellerId,
             cartProducts: fresh.cartProducts || result.cartProducts,
+            onScreenStickers: fresh.onScreenStickers || result.onScreenStickers,
+            transcriptText: fresh.transcriptText ?? result.transcriptText,
+            firstProductAppearanceSec:
+              fresh.firstProductAppearanceSec ?? result.firstProductAppearanceSec,
+            firstProductMentionTimeLabel:
+              fresh.firstProductMentionTimeLabel ?? result.firstProductMentionTimeLabel,
+            firstProductMentionTerm:
+              fresh.firstProductMentionTerm ?? result.firstProductMentionTerm,
+            firstProductMentionQuote:
+              fresh.firstProductMentionQuote ?? result.firstProductMentionQuote,
+            productMentionMoments: fresh.productMentionMoments || result.productMentionMoments,
+            policyViolations: fresh.policyViolations || result.policyViolations,
           });
         }
       })
       .catch(() => {
-        // ignore background enrichment failure
+        // ignore enrichment failure
       })
       .finally(() => {
-        if (!cancelled) setEnrichingCart(false);
+        setEnrichingCart(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [result?.inputUrl, needsCartEnrichment]);
+  };
 
   if (!result) return <Modal open={false} onClose={onClose} title="">{null}</Modal>;
   const r = result;
@@ -717,9 +730,21 @@ function LinkAirDetailModal({
                 <span>Đang tải chi tiết sản phẩm và đường dẫn giỏ hàng từ TikTok Shop...</span>
               </div>
             ) : r.hasProductLink ? (
-              <p className="text-xs text-ink-2">
-                Bài đăng có bật cờ gắn giỏ hàng thương mại điện tử nhưng nền tảng không công khai đường dẫn chi tiết trên bản web.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-ink-2">
+                  Bài đăng có bật cờ gắn giỏ hàng thương mại điện tử.
+                </p>
+                {needsCartEnrichment && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={RefreshCw}
+                    onClick={handleEnrichCartDetails}
+                  >
+                    Tải chi tiết giỏ hàng
+                  </Button>
+                )}
+              </div>
             ) : null}
           </section>
         )}
@@ -747,6 +772,80 @@ function LinkAirDetailModal({
           <section className="grid gap-2">
             <h4 className="text-sm font-semibold text-ink">Caption</h4>
             <p className="text-[13px] text-ink-2 whitespace-pre-line max-h-40 overflow-y-auto">{r.caption}</p>
+          </section>
+        )}
+
+        {r.firstProductAppearanceSec !== null && r.firstProductAppearanceSec !== undefined && (
+          <section className="grid gap-2 p-3 rounded-xl border border-line bg-surface-2/50">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold text-ink">
+                Mốc giây xuất hiện tên sản phẩm / thương hiệu trong lời thoại
+              </h4>
+              <Status tone={r.firstProductAppearanceSec <= 5 ? 'positive' : r.firstProductAppearanceSec <= 10 ? 'info' : 'warning'}>
+                Giây thứ {r.firstProductAppearanceSec}s
+                {r.firstProductMentionTimeLabel ? ` (${r.firstProductMentionTimeLabel})` : ''}
+              </Status>
+            </div>
+            <p className="text-xs text-ink-2">
+              Từ khóa phát hiện:{' '}
+              <strong className="text-ink font-semibold">
+                &ldquo;{r.firstProductMentionTerm || 'Sản phẩm'}&rdquo;
+              </strong>
+              {r.firstProductMentionQuote ? ` — Lời thoại: "${r.firstProductMentionQuote}"` : ''}
+            </p>
+            {r.productMentionMoments && r.productMentionMoments.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {r.productMentionMoments.slice(0, 6).map((m, idx) => (
+                  <span
+                    key={`${m.startSec}-${idx}`}
+                    className="px-2 py-0.5 rounded-md bg-surface border border-line text-2xs font-code text-ink-2"
+                    title={m.quote}
+                  >
+                    [{m.timeLabel}] {m.matchedTerm}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {r.policyViolations && r.policyViolations.length > 0 && (
+          <section className="grid gap-1.5 p-3 rounded-xl border border-critical/30 bg-critical-soft/20">
+            <h4 className="text-sm font-semibold text-critical">
+              Cảnh báo từ ngữ nhạy cảm / chính sách sàn ({r.policyViolations.length})
+            </h4>
+            <ul className="grid gap-1 text-xs text-ink-2">
+              {r.policyViolations.map((v, idx) => (
+                <li key={`${v.word}-${idx}`}>
+                  <strong className="text-critical">&ldquo;{v.word}&rdquo;</strong> ({v.category}): {v.suggestion}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {r.onScreenStickers && r.onScreenStickers.length > 0 && (
+          <section className="grid gap-1.5">
+            <h4 className="text-sm font-semibold text-ink">Chữ chèn trên màn hình video</h4>
+            <div className="flex flex-wrap gap-1.5">
+              {r.onScreenStickers.map((st, idx) => (
+                <span
+                  key={`${st}-${idx}`}
+                  className="px-2 py-1 rounded-lg bg-surface-2 border border-line text-xs text-ink"
+                >
+                  {st}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {r.transcriptText && (
+          <section className="grid gap-1.5">
+            <h4 className="text-sm font-semibold text-ink">Phụ đề lời thoại tự động (WebVTT)</h4>
+            <p className="text-xs text-ink-2 whitespace-pre-line max-h-36 overflow-y-auto p-2.5 rounded-xl bg-surface-2/60 border border-line font-code leading-relaxed">
+              {r.transcriptText}
+            </p>
           </section>
         )}
 

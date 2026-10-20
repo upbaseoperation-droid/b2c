@@ -139,15 +139,6 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
     }
   };
 
-  // Tự động tổng hợp báo cáo ngay khi mở nếu chưa có kết quả
-  useEffect(() => {
-    if (isOpen && !result && !isRunning) {
-      const initialPrompt = effectiveRoute.purpose.systemInstruction || customSystemPrompt || defaultRoute.systemInstruction;
-      void handleGenerateReport(initialPrompt);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-
   const handleCopy = () => {
     if (!result?.outputText) return;
     navigator.clipboard.writeText(result.outputText);
@@ -187,7 +178,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-bold text-ink">
               <Sliders className="w-3.5 h-3.5 text-accent" />
-              <span>Cấu hình công cụ xử lý & Câu lệnh (Prompt):</span>
+              <span>Công cụ xử lý báo cáo:</span>
             </div>
             <span
               className={`px-2 py-0.5 rounded-full text-2xs font-bold border ${
@@ -239,85 +230,17 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
             </div>
           </div>
 
-          {/* Nút bật/tắt Thiết lập khóa API, Thiết lập câu lệnh (Prompt) và Xem dữ liệu đầu vào */}
+          {/* Nút bật/tắt Xem dữ liệu đầu vào */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/60">
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setShowApiKeyEditor(v => !v)}
-                className="text-2xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                {showApiKeyEditor ? 'Ẩn khóa API & Kiểm tra kết nối' : 'Thiết lập khóa API & Kiểm tra kết nối'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPromptEditor(v => !v)}
-                className="text-2xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Thiết lập câu lệnh (Prompt) phân hệ
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowContextEditor(v => !v)}
-                className="text-2xs font-semibold text-ink-2 hover:text-ink flex items-center gap-1 cursor-pointer"
-              >
-                {showContextEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Dữ liệu đầu vào ({editableContext.split('\n').length} dòng)
-              </button>
-            </div>
-            {promptSavedToast && (
-              <span className="text-2xs font-semibold text-success flex items-center gap-1">
-                <Check className="w-3 h-3" />
-                {promptSavedToast}
-              </span>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowContextEditor(v => !v)}
+              className="text-2xs font-semibold text-ink-2 hover:text-ink flex items-center gap-1 cursor-pointer"
+            >
+              {showContextEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              Dữ liệu đầu vào ({editableContext.split('\n').length} dòng)
+            </button>
           </div>
-
-          {showApiKeyEditor && (
-            <InlinePurposeApiSetup
-              purposeId={purposeId}
-              showPromptEditor={false}
-              className="bg-surface"
-            />
-          )}
-
-          {/* Khung chỉnh sửa Câu lệnh (Prompt) */}
-          {showPromptEditor && (
-            <div className="pt-1.5 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-2xs font-bold text-ink">
-                  Câu lệnh chỉ dẫn (System Prompt) áp dụng cho {effectiveRoute.purpose.title}:
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleResetPromptDefault}
-                    className="px-2 py-1 rounded border border-line bg-surface hover:bg-hover text-2xs font-semibold text-ink-2 flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Khôi phục gốc
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSavePromptDefault}
-                    className="px-2.5 py-1 rounded bg-accent-soft hover:bg-accent/20 text-accent border border-accent-line text-2xs font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Save className="w-3 h-3" />
-                    Lưu làm mặc định
-                  </button>
-                </div>
-              </div>
-              <textarea
-                rows={3}
-                value={editablePrompt}
-                onChange={e => setEditablePrompt(e.target.value)}
-                placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho báo cáo phân hệ này..."
-                className="w-full px-3 py-2 bg-surface border border-line rounded-lg text-xs text-ink leading-relaxed outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-          )}
 
           {/* Khung xem / sửa dữ liệu phân hệ đưa vào */}
           {showContextEditor && (
@@ -387,10 +310,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 bg-sunken border-t border-line flex items-center justify-between shrink-0">
-          <p className="text-2xs text-muted">
-            Bạn có thể tùy chỉnh câu lệnh (Prompt) ngay phía trên hoặc quản lý tập trung tại mục <strong>Cấu hình API</strong>.
-          </p>
+        <div className="px-5 py-3 bg-sunken border-t border-line flex items-center justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
