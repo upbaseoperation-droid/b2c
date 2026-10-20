@@ -167,7 +167,10 @@ export function useFlipList(containerRef: React.RefObject<HTMLElement | null>, o
     // Bảng bị ẩn rồi hiện lại (đổi tab, đổi chế độ xem): vị trí cũ không còn đúng, đo lại từ đầu.
     if (root !== prevRoot.current) prev.current = null;
     prevRoot.current = root;
-    if (!root) return;
+    if (!root || root.offsetParent === null) {
+      prev.current = null;
+      return;
+    }
     const items = Array.from(root.querySelectorAll<HTMLElement>(':scope > [data-flip]')).slice(0, limit);
     const next = new Map<string, number>();
     const animate = prev.current !== null && !prefersReducedMotion() && typeof root.animate === 'function';
