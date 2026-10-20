@@ -30,6 +30,7 @@ import {
   KOC_EMAIL_CATEGORY_LABELS,
   KOC_EMAIL_MERGE_VARIABLES,
   buildGmailComposeUrl,
+  buildLarkMailWebUrl,
   buildMailtoUrl,
   hydrateKocOutreachEmailStateFromServer,
   loadKocOutreachEmailState,
@@ -333,11 +334,11 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     }
   };
 
-  // Ghi nhận log khi mở Gmail / Mailto / Copy
+  // Ghi nhận log khi mở Lark Mail / Gmail / Mailto / Copy
   const recordQuickClientLog = (
     row: StaffListingSheetRow,
-    method: 'GMAIL_WEB' | 'MAILTO_CLIENT' | 'COPIED',
-    status: 'OPENED_GMAIL' | 'COPIED'
+    method: 'LARK_MAIL_WEB' | 'GMAIL_WEB' | 'MAILTO_CLIENT' | 'COPIED',
+    status: 'OPENED_LARK' | 'OPENED_GMAIL' | 'COPIED'
   ) => {
     const clean = normalizeTikTokId(row.idKenh).toLowerCase();
     const effEmail = getEffectiveRowEmail(row);
@@ -398,6 +399,27 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         trangThai: 'Đang liên hệ',
       });
     }
+  };
+
+  // Mở Lark Mail Web & Tự động sao chép nội dung thư đã cá nhân hóa
+  const handleOpenLarkMailForCurrentPreview = async () => {
+    if (!activePreviewRow) return;
+    const to = getEffectiveRowEmail(activePreviewRow);
+    const fullClipboard = `Người nhận (To): ${to || ''}\nTiêu đề (Subject): ${renderedPreview.subject}\n\n${renderedPreview.body}`;
+    try {
+      await navigator.clipboard.writeText(renderedPreview.body);
+    } catch {
+      // ignore clipboard error
+    }
+    void fullClipboard;
+    window.open(buildLarkMailWebUrl(), '_blank', 'noopener,noreferrer');
+    recordQuickClientLog(activePreviewRow, 'LARK_MAIL_WEB', 'OPENED_LARK');
+    onNotify?.(
+      `Đã mở Lark Mail (mail.larksuite.com) và tự động copy sẵn nội dung thư của KOC ${
+        activePreviewRow.tenKenh || activePreviewRow.idKenh
+      }.`,
+      'success'
+    );
   };
 
   // Mở Gmail Web soạn sẵn cho KOC đang xem
@@ -847,6 +869,13 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               <Button
                 variant="secondary"
                 icon={ExternalLink}
+                onClick={() => void handleOpenLarkMailForCurrentPreview()}
+              >
+                Mở Lark Mail
+              </Button>
+              <Button
+                variant="secondary"
+                icon={ExternalLink}
                 onClick={handleOpenGmailForCurrentPreview}
               >
                 Mở Gmail soạn sẵn
@@ -858,8 +887,8 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 onClick={() => void handleSendBatchDirect()}
               >
                 {isSendingBatch
-                  ? 'Đang gửi thư mời...'
-                  : `Gửi trực tiếp qua hệ thống (${selectedRowsWithValidEmail.length} KOC)`}
+                  ? 'Đang gửi qua Lark Mail...'
+                  : `Gửi trực tiếp qua Lark / Hệ thống (${selectedRowsWithValidEmail.length} KOC)`}
               </Button>
             </div>
           </div>
@@ -919,13 +948,21 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               },
               {
                 key: 'SETTINGS_LOGS',
-                label: '3. Cấu hình Mail & Nhật ký đã gửi',
+                label: '3. Cấu hình Lark Mail & Nhật ký',
                 count: emailState.logs.length,
               },
             ]}
           />
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Settings}
+              onClick={() => setActiveTab('SETTINGS_LOGS')}
+            >
+              Setup Lark Mail
+            </Button>
             <button
               type="button"
               onClick={() => setManagerModeEnabled((v) => !v)}
@@ -949,6 +986,46 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         {/* TAB 1: SOẠN & GỬI THƯ MỜI HỢP TÁC KOC                             */}
         {/* ================================================================= */}
         {activeTab === 'COMPOSE' && (
+          <div className="space-y-3">
+            {/* Thanh trạng thái kết nối Lark Mail ngay trên màn hình soạn thư */}
+            <div className="px-3.5 py-2 rounded-lg bg-sunken border border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2 text-ink-2">
+                <Mail className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span>
+                  Đầu mối gửi mail đang bật:{' '}
+                  <strong className="text-ink">
+                    {emailState.serverConfig.deliveryMode === 'LARK_SMTP'
+                      ? `Lark Mail SMTP (${emailState.serverConfig.larkSmtpHost || 'smtp.larksuite.com'}:${emailState.serverConfig.larkSmtpPort || 465})`
+                      : emailState.serverConfig.deliveryMode === 'LARK_OPEN_API'
+                        ? `Lark Open Platform API (${emailState.serverConfig.larkAppId || 'cli_aa45bfd4edf85f05'})`
+                        : emailState.serverConfig.deliveryMode === 'RESEND_API'
+                          ? 'Resend Email API'
+                          : emailState.serverConfig.deliveryMode === 'WEBHOOK_GMAIL'
+                            ? 'Webhook Gmail Apps Script'
+                            : `SMTP Relay (${emailState.serverConfig.smtpHost})`}
+                  </strong>
+                </span>
+                <span>·</span>
+                <span>
+                  Hòm thư gửi:{' '}
+                  <strong className="font-mono text-ink">
+                    {emailState.serverConfig.larkMailboxEmail ||
+                      emailState.serverConfig.senderEmail}
+                  </strong>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('SETTINGS_LOGS')}
+                  className="text-xs font-semibold text-accent hover:underline"
+                >
+                  Cấu hình kết nối Lark Mail →
+                </button>
+              </div>
+            </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Cột trái (5 cột): Danh sách KOC người nhận & Điền nhanh Email Cột AO */}
             <div className="lg:col-span-5 flex flex-col border border-line rounded-xl overflow-hidden bg-surface">
@@ -1348,6 +1425,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               </div>
             </div>
           </div>
+          </div>
         )}
 
         {/* ================================================================= */}
@@ -1611,7 +1689,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
         )}
 
         {/* ================================================================= */}
-        {/* TAB 3: CẤU HÌNH MÁY CHỦ GỬI MAIL & NHẬT KÝ ĐÃ GỬI                 */}
+        {/* TAB 3: CẤU HÌNH LARK MAIL / MÁY CHỦ GỬI MAIL & NHẬT KÝ ĐÃ GỬI    */}
         {/* ================================================================= */}
         {activeTab === 'SETTINGS_LOGS' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -1620,7 +1698,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
               <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
                 <div className="flex items-center gap-2 text-xs font-semibold text-ink">
                   <Settings className="w-4 h-4 text-ink-2" />
-                  <span>Cấu hình Máy chủ Gửi Mail Phòng Booking</span>
+                  <span>Cấu hình Kết nối Lark Mail & Máy chủ Gửi Thư</span>
                 </div>
                 <Button
                   variant="secondary"
@@ -1648,17 +1726,176 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                     }))
                   }
                 >
+                  <option value="LARK_SMTP">
+                    Lark Mail SMTP (smtp.larksuite.com:465 — Mật khẩu ứng dụng Lark)
+                  </option>
+                  <option value="LARK_OPEN_API">
+                    Lark Open Platform API & AnyCross Webhook (UpBase Lark App)
+                  </option>
                   <option value="WEBHOOK_GMAIL">
                     Google Apps Script / Webhook Gmail Phòng Booking
                   </option>
                   <option value="RESEND_API">
-                    Resend Email API (Gửi hàng loạt tốc độ cao)
+                    Resend Email API (Gửi hàng loạt qua tên miền upbase.vn)
                   </option>
                   <option value="SMTP_RELAY">
-                    Máy chủ SMTP / Gmail App Password
+                    Máy chủ SMTP khác / Gmail App Password
                   </option>
                 </Select>
               </Field>
+
+              {/* Khối cấu hình chuyên biệt cho LARK MAIL SMTP */}
+              {configDraft.deliveryMode === 'LARK_SMTP' && (
+                <div className="p-3 rounded-lg bg-sunken border border-line space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-ink">
+                      Thiết lập tài khoản Lark Mail SMTP (SSL/TLS)
+                    </span>
+                    <a
+                      href="https://mail.larksuite.com/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-2xs font-semibold text-accent hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Mở Lark Mail Web</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <Field label="Địa chỉ Email Lark (@upbase.vn)">
+                      <Input
+                        value={configDraft.larkMailboxEmail || ''}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkMailboxEmail: e.target.value,
+                            senderEmail: e.target.value || prev.senderEmail,
+                          }))
+                        }
+                        placeholder="booking.b2c@upbase.vn"
+                      />
+                    </Field>
+                    <Field label="Mật khẩu ứng dụng Lark Mail (16 ký tự)">
+                      <Input
+                        type="password"
+                        value={configDraft.larkAppPassword || ''}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkAppPassword: e.target.value,
+                          }))
+                        }
+                        placeholder="Nhập Dedicated Password..."
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <Field label="Lark SMTP Server">
+                      <Input
+                        value={configDraft.larkSmtpHost || 'smtp.larksuite.com'}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkSmtpHost: e.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Cổng SSL (Port)">
+                      <Input
+                        type="number"
+                        value={configDraft.larkSmtpPort || 465}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkSmtpPort: Number(e.target.value) || 465,
+                          }))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="p-2 rounded bg-surface border border-line text-2xs text-ink-2 space-y-1 leading-relaxed">
+                    <div className="font-semibold text-ink">
+                      Cách lấy Mật khẩu ứng dụng trên Lark Mail (30 giây):
+                    </div>
+                    <div>
+                      1. Mở ứng dụng <strong>Lark</strong> → Vào mục <strong>Mail</strong> → Bấm biểu tượng <strong>Cài đặt (Settings)</strong> góc phải.
+                    </div>
+                    <div>
+                      2. Chọn <strong>Third-party email client login</strong> (Đăng nhập ứng dụng mail bên thứ 3) → Bấm <strong>Generate new password</strong>.
+                    </div>
+                    <div>
+                      3. Dán mã 16 ký tự vào ô trên → Bấm <strong>Lưu cấu hình máy chủ</strong> và <strong>Kiểm tra kết nối</strong>.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Khối cấu hình chuyên biệt cho LARK OPEN PLATFORM API / ANYCROSS */}
+              {configDraft.deliveryMode === 'LARK_OPEN_API' && (
+                <div className="p-3 rounded-lg bg-sunken border border-line space-y-2.5">
+                  <div className="text-xs font-semibold text-ink">
+                    Kết nối qua Lark Open Platform API / Lark AnyCross
+                  </div>
+
+                  <Field label="Hòm thư Lark nguồn (Mailbox gửi thư)">
+                    <Input
+                      value={configDraft.larkMailboxEmail || ''}
+                      onChange={(e) =>
+                        setConfigDraft((prev) => ({
+                          ...prev,
+                          larkMailboxEmail: e.target.value,
+                          senderEmail: e.target.value || prev.senderEmail,
+                        }))
+                      }
+                      placeholder="booking.b2c@upbase.vn"
+                    />
+                  </Field>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <Field label="Lark App ID (Mặc định UpBase)">
+                      <Input
+                        value={configDraft.larkAppId || 'cli_aa45bfd4edf85f05'}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkAppId: e.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Lark App Secret (Để trống dùng mặc định)">
+                      <Input
+                        type="password"
+                        value={configDraft.larkAppSecret || ''}
+                        onChange={(e) =>
+                          setConfigDraft((prev) => ({
+                            ...prev,
+                            larkAppSecret: e.target.value,
+                          }))
+                        }
+                        placeholder="Đã tích hợp sẵn trong máy chủ..."
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="URL Webhook Lark AnyCross / Lark Base Automation (Tùy chọn)">
+                    <Input
+                      value={configDraft.larkAnycrossWebhookUrl || ''}
+                      onChange={(e) =>
+                        setConfigDraft((prev) => ({
+                          ...prev,
+                          larkAnycrossWebhookUrl: e.target.value,
+                        }))
+                      }
+                      placeholder="https://open.larksuite.com/anycross/trigger/callback/..."
+                    />
+                  </Field>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <Field label="Tên hiển thị người gửi">
@@ -1751,6 +1988,19 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
               )}
 
+              <Field label="Webhook Bot Nhóm Chat Lark B2C (Báo tự động vào nhóm khi gửi xong)">
+                <Input
+                  value={configDraft.larkNotifyBotWebhookUrl || ''}
+                  onChange={(e) =>
+                    setConfigDraft((prev) => ({
+                      ...prev,
+                      larkNotifyBotWebhookUrl: e.target.value,
+                    }))
+                  }
+                  placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/..."
+                />
+              </Field>
+
               <Field label="Chữ ký chuẩn cuối thư ({{chu_ky_phong}})">
                 <Textarea
                   rows={4}
@@ -1791,7 +2041,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
               </div>
 
-              <div className="divide-y divide-line max-h-[480px] overflow-y-auto">
+              <div className="divide-y divide-line max-h-[560px] overflow-y-auto">
                 {emailState.logs.length === 0 ? (
                   <div className="py-12 text-center text-xs text-ink-3">
                     Chưa có lượt gửi thư mời hợp tác nào được ghi nhận.
@@ -1822,12 +2072,14 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                             }
                           >
                             {log.channelMethod === 'SYSTEM_DIRECT'
-                              ? 'Đã gửi hệ thống'
-                              : log.channelMethod === 'GMAIL_WEB'
-                                ? 'Mở Gmail Web'
-                                : log.channelMethod === 'MAILTO_CLIENT'
-                                  ? 'Mở App Mail'
-                                  : 'Đã Copy thư'}
+                              ? 'Đã gửi qua Lark / Hệ thống'
+                              : log.channelMethod === 'LARK_MAIL_WEB'
+                                ? 'Mở Lark Mail'
+                                : log.channelMethod === 'GMAIL_WEB'
+                                  ? 'Mở Gmail Web'
+                                  : log.channelMethod === 'MAILTO_CLIENT'
+                                    ? 'Mở App Mail'
+                                    : 'Đã Copy thư'}
                           </Status>
                           <Button
                             variant="secondary"

@@ -1064,95 +1064,113 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
 
   if (activeProvider === 'GOOGLE' && googleKey) {
     const cleanBase = (cfg?.baseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
-    const modelId = cfg?.model || 'gemini-2.5-flash';
-    const url = `${cleanBase}/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(googleKey.trim())}`;
+    const requestedModel = (cfg?.model || 'gemini-3.8-flash').trim();
 
-    // Thử gọi kèm công cụ Google Search Grounding trước, nếu model không hỗ trợ thì gọi chế độ tiêu chuẩn
-    for (const useGrounding of [true, false]) {
-      try {
-        const bodyPayload: Record<string, unknown> = {
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemInstruction}\n\n${promptContext}` }],
+    // Tự động map sang các model chính thức trên máy chủ Google AI Studio để tránh lỗi 404
+    const candidateModels: string[] = [];
+    if (/argon|pro|3\.1-pro/i.test(requestedModel)) {
+      candidateModels.push('gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash');
+    } else if (/3\.5-flash-lite|2\.0-flash-lite/i.test(requestedModel)) {
+      candidateModels.push('gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash');
+    } else {
+      candidateModels.push('gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash');
+    }
+    const cleanModel = requestedModel.replace(/^models\//i, '');
+    if (!candidateModels.includes(cleanModel)) {
+      candidateModels.push(cleanModel);
+    }
+
+    for (const modelId of candidateModels) {
+      const url = `${cleanBase}/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(googleKey.trim())}`;
+
+      // Thử gọi kèm công cụ Google Search Grounding trước, nếu model không hỗ trợ thì gọi chế độ tiêu chuẩn
+      for (const useGrounding of [true, false]) {
+        try {
+          const bodyPayload: Record<string, unknown> = {
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemInstruction}\n\n${promptContext}` }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 1200,
             },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1200,
-          },
-        };
-        if (useGrounding) {
-          bodyPayload.tools = [{ google_search: {} }];
-        }
+          };
+          if (useGrounding) {
+            bodyPayload.tools = [{ googleSearch: {} }];
+          }
 
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyPayload),
-          signal: AbortSignal.timeout(8500),
-        });
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyPayload),
+            signal: AbortSignal.timeout(8500),
+          });
 
-        if (!res.ok) {
+          if (!res.ok) {
+            if (useGrounding) continue;
+            break;
+          }
+
+          const data: any = await res.json();
+          const replyText =
+            data?.candidates?.[0]?.content?.parts
+              ?.map((p: any) => p?.text || '')
+              .join('\n') || '';
+
+          const groundingUrls: string[] = [];
+          const chunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+          if (Array.isArray(chunks)) {
+            for (const ch of chunks) {
+              if (ch?.web?.uri) groundingUrls.push(String(ch.web.uri));
+              if (ch?.web?.title) groundingUrls.push(String(ch.web.title));
+            }
+          }
+
+          const sourceTag = useGrounding
+            ? `Google Gemini (${modelId}) + Search`
+            : `Google Gemini (${modelId})`;
+          const parsed = parseJsonCandidatesFromLlmReply(
+            `${replyText}\n${groundingUrls.join('\n')}`,
+            sourceTag
+          );
+
+          const promptTokens =
+            data?.usageMetadata?.promptTokenCount ||
+            Math.max(1, Math.ceil((systemInstruction.length + promptContext.length) / 3.8));
+          const completionTokens =
+            data?.usageMetadata?.candidatesTokenCount ||
+            Math.max(1, Math.ceil(replyText.length / 3.8));
+          const totalTokens =
+            data?.usageMetadata?.totalTokenCount || promptTokens + completionTokens;
+          const latencyMs = Date.now() - startTime;
+
+          return {
+            candidates: parsed.candidates,
+            analysis: {
+              providerUsed: 'Google Gemini',
+              modelUsed: requestedModel,
+              groundedSearchUsed: useGrounding,
+              reasoningSummary:
+                parsed.summary ||
+                `Đã phân tích tiểu sử TikTok, liên kết Bio và đối chiếu chỉ mục tìm kiếm cho @${params.tiktokHandle}.`,
+              candidatesFoundCount: parsed.candidates.length,
+            },
+            usage: {
+              provider: 'GOOGLE',
+              modelUsed: requestedModel,
+              promptTokens,
+              completionTokens,
+              totalTokens,
+              latencyMs,
+            },
+          };
+        } catch {
           if (useGrounding) continue;
           break;
         }
-
-        const data: any = await res.json();
-        const replyText =
-          data?.candidates?.[0]?.content?.parts
-            ?.map((p: any) => p?.text || '')
-            .join('\n') || '';
-
-        const groundingUrls: string[] = [];
-        const chunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks;
-        if (Array.isArray(chunks)) {
-          for (const ch of chunks) {
-            if (ch?.web?.uri) groundingUrls.push(String(ch.web.uri));
-            if (ch?.web?.title) groundingUrls.push(String(ch.web.title));
-          }
-        }
-
-        const sourceTag = useGrounding
-          ? `Mô hình ${modelId} + Google Search`
-          : `Mô hình ${modelId}`;
-        const parsed = parseJsonCandidatesFromLlmReply(
-          `${replyText}\n${groundingUrls.join('\n')}`,
-          sourceTag
-        );
-
-        const promptTokens =
-          data?.usageMetadata?.promptTokenCount ||
-          Math.max(1, Math.ceil((systemInstruction.length + promptContext.length) / 3.8));
-        const completionTokens =
-          data?.usageMetadata?.candidatesTokenCount ||
-          Math.max(1, Math.ceil(replyText.length / 3.8));
-        const totalTokens =
-          data?.usageMetadata?.totalTokenCount || promptTokens + completionTokens;
-        const latencyMs = Date.now() - startTime;
-
-        return {
-          candidates: parsed.candidates,
-          analysis: {
-            providerUsed: 'Google Gemini',
-            modelUsed: modelId,
-            groundedSearchUsed: useGrounding,
-            reasoningSummary:
-              parsed.summary ||
-              `Đã phân tích tiểu sử TikTok, liên kết Bio và đối chiếu chỉ mục tìm kiếm cho @${params.tiktokHandle}.`,
-            candidatesFoundCount: parsed.candidates.length,
-          },
-          usage: {
-            provider: 'GOOGLE',
-            modelUsed: modelId,
-            promptTokens,
-            completionTokens,
-            totalTokens,
-            latencyMs,
-          },
-        };
-      } catch {
-        if (useGrounding) continue;
       }
     }
   }
@@ -1304,6 +1322,7 @@ export async function discoverKocSocialChannels(params: {
   phone?: string;
   niche?: string;
   bio?: string;
+  customUrl?: string;
   llmConfig?: KocSocialLlmConfig;
   existingChannels?: {
     shopeeChannel?: string;
@@ -1384,6 +1403,24 @@ export async function discoverKocSocialChannels(params: {
     });
   }
 
+  // 1.5. Nếu có đường link do người dùng cung cấp trực tiếp (Bio link, Fanpage, Beacons, Website...)
+  let customUrlCollectedText = '';
+  if (params.customUrl?.trim()) {
+    const rawCustomUrl = params.customUrl.trim();
+    // Bóc tách nhanh nếu đó là link mạng xã hội (VD: người dùng paste link facebook, instagram, shopee...)
+    extractSocialLinksFromText(rawCustomUrl, 'Link do người dùng cung cấp trực tiếp', 'CAO').forEach(addCandidate);
+
+    if (/^https?:\/\//i.test(rawCustomUrl)) {
+      const customPageHtml = await fetchUrlTextSafe(rawCustomUrl, 5500);
+      if (customPageHtml) {
+        customUrlCollectedText = `\n[Nội dung từ link người dùng dán (${rawCustomUrl})]:\n${decodeRedirectUrlsInText(customPageHtml).slice(0, 3000)}`;
+        extractSocialLinksFromText(customPageHtml, `Trích xuất từ link dán (${rawCustomUrl})`, 'CAO').forEach(addCandidate);
+        const shopeeFromCustom = await unrollShopeeShortlinks(customPageHtml, `Trích xuất từ link dán (${rawCustomUrl})`);
+        shopeeFromCustom.forEach(addCandidate);
+      }
+    }
+  }
+
   // 2. Lấy tiểu sử (bio) & bioLink từ TikTok + YouTube About + Web Search Engines song song
   let bioText = params.bio || '';
   let bioLinkUrl = '';
@@ -1449,7 +1486,7 @@ export async function discoverKocSocialChannels(params: {
     niche: params.niche,
     bioText,
     bioLinkUrl,
-    bioHubText: bioHubCollectedText,
+    bioHubText: [bioHubCollectedText, customUrlCollectedText].filter(Boolean).join('\n'),
     youtubeAboutText: youtubeDiscovery.rawText ? youtubeDiscovery.rawText.slice(0, 1500) : undefined,
     searchSnippets: webSearchDiscovery.searchSnippets,
     llmConfig: params.llmConfig,

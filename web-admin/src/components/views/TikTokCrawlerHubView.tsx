@@ -68,7 +68,13 @@ import {
   KocChannelReviewModal,
   type KocChannelReviewTarget,
 } from '../koc/KocChannelReviewModal';
-import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
+import {
+  VERDICT_META,
+  normalizeChannelHandle,
+  useKocChannelReviews,
+  type KocChannelReviewEntry,
+  type KocChannelReviewVerdict,
+} from '../../lib/kocChannelReviewService';
 import type { KocBriefAnalysisBackgroundJob } from '../../lib/kocChannelBriefAnalyzer';
 import {
   LinkAirCheckerPanel,
@@ -428,6 +434,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [channelReviewModalOpen, setChannelReviewModalOpen] = useState(false);
   const [channelReviewTarget, setChannelReviewTarget] = useState<KocChannelReviewTarget | null>(null);
   const [channelReviewInitialMode, setChannelReviewInitialMode] = useState<'CHANNEL_DETAIL' | 'ALL_HISTORY'>('CHANNEL_DETAIL');
+  const [expandedReviewHistoryByTab, setExpandedReviewHistoryByTab] = useState<Record<string, boolean>>({});
+  const [quickExpandedChannelHandle, setQuickExpandedChannelHandle] = useState<string | null>(null);
+  const [inlineReviewVerdictFilter, setInlineReviewVerdictFilter] = useState<'ALL' | KocChannelReviewVerdict>('ALL');
+  const [inlineReviewSearch, setInlineReviewSearch] = useState('');
   const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
 
   const openChannelReviewModal = useCallback(
@@ -1995,9 +2005,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       );
     }
 
+    const isQuickExpanded = quickExpandedChannelHandle === reviewSummary.channelHandle;
+
     return (
       <div
-        className="grid gap-1 min-w-0 max-w-[240px]"
+        className="grid gap-1 min-w-0 max-w-[260px]"
         onClick={(e) => e.stopPropagation()}
       >
         <KocChannelReviewBadge
@@ -2023,6 +2035,21 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <div className="flex flex-wrap items-center gap-1 pt-0.5">
           <button
             type="button"
+            onClick={() =>
+              setQuickExpandedChannelHandle((prev) =>
+                prev === reviewSummary.channelHandle
+                  ? null
+                  : reviewSummary.channelHandle || null
+              )
+            }
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-accent/35 bg-accent-soft text-accent text-[10px] font-semibold hover:bg-accent-soft/80 transition cursor-pointer"
+            title="Xem nhanh toàn bộ lịch sử đánh giá của kênh ngay tại dòng"
+          >
+            <History className="w-2.5 h-2.5" />
+            <span>{isQuickExpanded ? 'Thu gọn' : `Xem nhanh (${reviewSummary.totalReviews})`}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => openForVerdict('SUITABLE')}
             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-[10px] font-semibold hover:bg-positive-soft transition cursor-pointer"
           >
@@ -2038,6 +2065,45 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             <span>+ K.Phù hợp</span>
           </button>
         </div>
+
+        {isQuickExpanded && (
+          <div className="mt-1 rounded-md border border-line bg-sunken/40 p-2 space-y-1.5 max-h-48 overflow-y-auto">
+            <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-ink-2">
+              <span>Lịch sử ĐG ({reviewSummary.totalReviews} lượt)</span>
+              <button
+                type="button"
+                onClick={() => openForVerdict()}
+                className="text-accent hover:underline cursor-pointer"
+              >
+                Mở chi tiết
+              </button>
+            </div>
+            {reviewSummary.reviews.map((rev) => {
+              const meta = VERDICT_META[rev.verdict];
+              return (
+                <div
+                  key={rev.id}
+                  className="rounded border border-line bg-surface p-1.5 text-[10px] leading-snug space-y-0.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-1">
+                    <span className="font-semibold text-ink">
+                      {rev.brandName || 'Toàn hệ thống B2C'}
+                    </span>
+                    <Status tone={meta.tone}>{meta.shortLabel}</Status>
+                  </div>
+                  {rev.note && (
+                    <div className="text-ink break-words">
+                      Ý kiến: &ldquo;{rev.note}&rdquo;
+                    </div>
+                  )}
+                  <div className="text-ink-3">
+                    {rev.reviewerName} · {rev.timeLabel} {rev.dateLabel}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -2074,6 +2140,23 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     };
     return (
       <div className="flex items-center justify-end gap-1.5">
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={reviewSummary ? History : Check}
+          onClick={(e) => {
+            e.stopPropagation();
+            openChannelReviewModal({
+              handle: params.handle,
+              channelName: params.nickname || params.scriptContext?.nickname || params.handle,
+              channelUrl: params.channelUrl,
+              avatarUrl: params.avatarUrl,
+              sourceScreen: tabShortLabel[activeTab] || 'Crawler KOC',
+            });
+          }}
+        >
+          {reviewSummary ? `Lịch sử ĐG (${reviewSummary.totalReviews})` : 'Đánh giá'}
+        </Button>
         <Button
           size="sm"
           variant="secondary"
@@ -2743,31 +2826,266 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         (currentTab === 'CHANNEL_AND_VIDEO_TOOLS' && it.tab === 'HANDLE_SCRAPE')
     );
     const isTableExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
+    const isReviewExpanded = Boolean(expandedReviewHistoryByTab[currentTab]);
+    const showKocReviewBtn =
+      currentTab === 'COMPETITOR_KOCS' ||
+      currentTab === 'HASHTAG_DISCOVERY' ||
+      currentTab === 'CHANNEL_AND_VIDEO_TOOLS' ||
+      currentTab === 'HANDLE_SCRAPE';
 
     return (
-      <Button
-        size="sm"
-        variant={isTableExpanded ? 'primary' : 'secondary'}
-        icon={Clock}
-        onClick={() =>
-          setExpandedWeeklyTableByTab((prev) => ({
-            ...prev,
-            [currentTab]: !prev[currentTab],
-          }))
-        }
-        title="Mở bảng lịch sử quét trong 7 ngày gần nhất"
-      >
-        <span>Lịch sử{tabItems.length > 0 ? ` (${tabItems.length})` : ''}</span>
-      </Button>
+      <div className="inline-flex items-center gap-1.5">
+        {showKocReviewBtn && (
+          <Button
+            size="sm"
+            variant={isReviewExpanded ? 'primary' : 'secondary'}
+            icon={History}
+            onClick={() =>
+              setExpandedReviewHistoryByTab((prev) => ({
+                ...prev,
+                [currentTab]: !prev[currentTab],
+              }))
+            }
+            title="Xem nhanh bảng Lịch sử đánh giá KOC theo Brand ngay tại màn hình này"
+          >
+            <span>Lịch sử ĐG KOC ({channelReviews.length})</span>
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant={isTableExpanded ? 'primary' : 'secondary'}
+          icon={Clock}
+          onClick={() =>
+            setExpandedWeeklyTableByTab((prev) => ({
+              ...prev,
+              [currentTab]: !prev[currentTab],
+            }))
+          }
+          title="Mở bảng lịch sử quét trong 7 ngày gần nhất"
+        >
+          <span>Lịch sử{tabItems.length > 0 ? ` (${tabItems.length})` : ''}</span>
+        </Button>
+      </div>
     );
   };
 
   const renderDailyHistoryBar = (currentTab: CrawlerHistoryTabKey, _compact?: boolean) =>
     renderHistoryButton(currentTab);
 
+  const renderInlineKocReviewHistoryPanel = (currentTab: CrawlerHistoryTabKey) => {
+    if (!expandedReviewHistoryByTab[currentTab]) return null;
+
+    const filteredReviews = channelReviews.filter((rev) => {
+      if (inlineReviewVerdictFilter !== 'ALL' && rev.verdict !== inlineReviewVerdictFilter) {
+        return false;
+      }
+      if (inlineReviewSearch.trim()) {
+        const q = inlineReviewSearch.trim().toLowerCase();
+        const hay = [
+          rev.channelHandle,
+          rev.channelName,
+          rev.brandName,
+          rev.note,
+          rev.reviewerName,
+          ...rev.reasonTags,
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    const suitableCount = channelReviews.filter((r) => r.verdict === 'SUITABLE').length;
+    const cautionCount = channelReviews.filter((r) => r.verdict === 'CAUTION').length;
+    const notSuitableCount = channelReviews.filter((r) => r.verdict === 'NOT_SUITABLE').length;
+
+    const inlineReviewColumns: Column<KocChannelReviewEntry>[] = [
+      {
+        key: 'channel',
+        header: 'Kênh KOC',
+        width: 210,
+        render: (rev) => (
+          <div className="flex items-center gap-2 min-w-0">
+            <Avatar name={rev.channelName || rev.channelHandle || 'KOC'} src={rev.avatarUrl} size={26} />
+            <div className="min-w-0 grid">
+              <span className="font-semibold text-xs text-ink truncate">
+                {rev.channelName || `@${rev.channelHandle || rev.handle}`}
+              </span>
+              <span className="font-code text-2xs text-ink-3 truncate">@{rev.channelHandle || rev.handle}</span>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'brand',
+        header: 'Brand đánh giá',
+        width: 155,
+        render: (rev) => (
+          <Status tone="info">{rev.brandName || 'Toàn hệ thống B2C'}</Status>
+        ),
+      },
+      {
+        key: 'verdict',
+        header: 'Kết luận',
+        width: 140,
+        render: (rev) => {
+          const meta = VERDICT_META[rev.verdict];
+          return <Status tone={meta.tone}>{meta.label}</Status>;
+        },
+      },
+      {
+        key: 'note',
+        header: 'Ý kiến nhân viên & Tiêu chí',
+        render: (rev) => (
+          <div className="grid gap-1 min-w-0">
+            {rev.note && (
+              <span className="text-xs text-ink break-words">
+                &ldquo;{rev.note}&rdquo;
+              </span>
+            )}
+            {rev.reasonTags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {rev.reasonTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-1.5 py-0.5 rounded bg-sunken border border-line text-[10px] text-ink-2"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: 'reviewer',
+        header: 'Người đánh giá & Thời gian',
+        width: 200,
+        render: (rev) => (
+          <div className="grid gap-0.5 text-xs">
+            <span className="font-semibold text-ink">{rev.reviewerName}</span>
+            <span className="text-2xs text-ink-3 font-code">
+              {rev.timeLabel} · {rev.dateLabel}
+            </span>
+          </div>
+        ),
+      },
+      {
+        key: 'actions',
+        header: 'Thao tác',
+        align: 'right',
+        width: 150,
+        render: (rev) => (
+          <div className="flex items-center justify-end gap-1.5">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                openChannelReviewModal({
+                  handle: rev.channelHandle || rev.handle,
+                  channelName: rev.channelName,
+                  channelUrl: rev.channelUrl,
+                  avatarUrl: rev.avatarUrl,
+                  initialBrandName: rev.brandName,
+                  sourceScreen: tabShortLabel[activeTab] || 'Crawler KOC',
+                });
+              }}
+            >
+              Đánh giá thêm
+            </Button>
+          </div>
+        ),
+      },
+    ];
+
+    return (
+      <div className="bg-surface border-b border-line">
+        <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5 text-accent" />
+              <span>Lịch sử đánh giá KOC theo Brand ({channelReviews.length} lượt)</span>
+            </span>
+            <Chips<'ALL' | KocChannelReviewVerdict>
+              items={[
+                { key: 'ALL', label: 'Tất cả', count: channelReviews.length },
+                { key: 'SUITABLE', label: 'Phù hợp', count: suitableCount },
+                { key: 'CAUTION', label: 'Cân nhắc', count: cautionCount },
+                { key: 'NOT_SUITABLE', label: 'Không phù hợp', count: notSuitableCount },
+              ]}
+              value={inlineReviewVerdictFilter}
+              onChange={setInlineReviewVerdictFilter}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <SearchInput
+              value={inlineReviewSearch}
+              onChange={setInlineReviewSearch}
+              placeholder="Tìm @handle, Brand, ý kiến, người ĐG..."
+              className="w-56 [&_input]:h-7 [&_input]:text-xs"
+            />
+            <Button
+              size="sm"
+              variant="primary"
+              icon={Plus}
+              onClick={() => openChannelReviewModal(null, 'CHANNEL_DETAIL')}
+            >
+              Đánh giá kênh mới
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => openChannelReviewModal(null, 'ALL_HISTORY')}
+            >
+              Mở cửa sổ đầy đủ
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={X}
+              onClick={() =>
+                setExpandedReviewHistoryByTab((prev) => ({
+                  ...prev,
+                  [currentTab]: false,
+                }))
+              }
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+        <DataTable
+          rows={filteredReviews}
+          columns={inlineReviewColumns}
+          rowKey={(r) => r.id}
+          onRowClick={(rev) =>
+            openChannelReviewModal({
+              handle: rev.channelHandle || rev.handle,
+              channelName: rev.channelName,
+              channelUrl: rev.channelUrl,
+              avatarUrl: rev.avatarUrl,
+              initialBrandName: rev.brandName,
+              sourceScreen: tabShortLabel[activeTab] || 'Crawler KOC',
+            })
+          }
+          fitContainer
+          empty="Chưa có đánh giá KOC nào khớp bộ lọc."
+        />
+      </div>
+    );
+  };
+
   const renderTabWeeklyHistorySection = (currentTab: CrawlerHistoryTabKey, _inline?: boolean) => {
     const isExpanded = Boolean(expandedWeeklyTableByTab[currentTab]);
-    if (!isExpanded) return null;
+    const isReviewExpanded = Boolean(expandedReviewHistoryByTab[currentTab]);
+    if (!isExpanded && !isReviewExpanded) return null;
+
+    if (!isExpanded && isReviewExpanded) {
+      return renderInlineKocReviewHistoryPanel(currentTab);
+    }
 
     const tabOnlyItems = dailyHistory.filter(
       (it) =>
@@ -2917,6 +3235,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
     return (
       <div className="bg-surface">
+        {renderInlineKocReviewHistoryPanel(currentTab)}
         <div className="px-3.5 py-2 border-b border-line bg-sunken/30 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
