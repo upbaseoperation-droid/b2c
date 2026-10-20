@@ -59,19 +59,37 @@ export function ContractForm({
   onSave: (payload: ContractFormPayload) => void;
 }) {
   const editing = !!record;
-  const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId));
+  const initialParent = data.records.find(r => r.id === (record?.parentId || init?.parentId));
+  const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId || initialParent?.dealId));
   const [dealId, setDealId] = useState(initialDeal?.id || '');
   const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
     record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.templateId ? (isAcceptance(init.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT',
   );
+  const inferAcceptanceTemplate = (parentTplId?: string) => {
+    if (!parentTplId) return '';
+    const prefix = parentTplId.split('-')[0];
+    const candidate = `${prefix}-BBNT`;
+    return data.templates.some(t => t.id === candidate) ? candidate : '';
+  };
   const [templateId, setTemplateId] = useState(
-    record?.templateId || init?.templateId || (initialDeal ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT', initialDeal, data.templates) : ''),
+    record?.templateId ||
+      init?.templateId ||
+      (initialDeal
+        ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT', initialDeal, data.templates)
+        : init?.kind === 'ACCEPTANCE' && initialParent
+          ? inferAcceptanceTemplate(initialParent.templateId) || 'IND-BBNT'
+          : ''),
   );
   const [title, setTitle] = useState(
-    record?.title || (initialDeal ? [init?.kind === 'ACCEPTANCE' ? 'Nghiệm thu video' : 'Hợp đồng video', initialDeal.kocStageName, initialDeal.brandName].filter(Boolean).join(' · ') : ''),
+    record?.title ||
+      (initialDeal
+        ? [init?.kind === 'ACCEPTANCE' ? 'Nghiệm thu video' : 'Hợp đồng video', initialDeal.kocStageName, initialDeal.brandName].filter(Boolean).join(' · ')
+        : initialParent && init?.kind === 'ACCEPTANCE'
+          ? ['Nghiệm thu video', initialParent.partner, initialParent.brand].filter(Boolean).join(' · ')
+          : ''),
   );
-  const [brand, setBrand] = useState(record?.brand || initialDeal?.brandName || data.actor.brands[0] || '');
-  const [partner, setPartner] = useState(record?.partner || (initialDeal ? partnerName(findKoc(kocs, initialDeal), initialDeal) : ''));
+  const [brand, setBrand] = useState(record?.brand || initialDeal?.brandName || initialParent?.brand || data.actor.brands[0] || '');
+  const [partner, setPartner] = useState(record?.partner || (initialDeal ? partnerName(findKoc(kocs, initialDeal), initialDeal) : initialParent?.partner || ''));
   const [parentId, setParentId] = useState(record?.parentId || init?.parentId || '');
   const [values, setValues] = useState<Record<string, string>>(record?.values || {});
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
@@ -108,9 +126,17 @@ export function ContractForm({
   );
   const kocDocxInputRef = useRef<HTMLInputElement | null>(null);
 
+  const parentRecord = useMemo(() => data.records.find(r => r.id === parentId), [data.records, parentId]);
+  const parentTemplate = useMemo(
+    () => (parentRecord ? data.templates.find(t => t.id === parentRecord.templateId) : undefined),
+    [data.templates, parentRecord],
+  );
   const deal = useMemo(() => deals.find(d => d.id === dealId), [deals, dealId]);
-  const koc = useMemo(() => findKoc(kocs, deal), [kocs, deal]);
-  const targetKocId = koc?.id || deal?.kocId || record?.kocId;
+  const koc = useMemo(
+    () => findKoc(kocs, deal) || (parentRecord?.kocId ? kocs.find(k => k.id === parentRecord.kocId) : undefined),
+    [kocs, deal, parentRecord],
+  );
+  const targetKocId = koc?.id || deal?.kocId || record?.kocId || parentRecord?.kocId;
   const kocTemplates = data.templates.filter(
     t => (t.scope === 'KOC_CUSTOM' && t.kocId === targetKocId) || (t.kocId && t.kocId === targetKocId),
   );
@@ -126,7 +152,13 @@ export function ContractForm({
         if (cancelled) return;
         setTemplate(r.template); setLoadError('');
         if (!record) {
-          const result = prefill(uniqueFields(r.template), {}, { koc, deal, existingRecords: data.records });
+          const result = prefill(uniqueFields(r.template), {}, {
+            koc,
+            deal,
+            existingRecords: data.records,
+            parentRecord,
+            parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
+          });
           setValues(result.values); setPrefilled(new Set(result.filled));
         }
       })
@@ -565,7 +597,27 @@ export function ContractForm({
                 )}
                 {kind === 'ACCEPTANCE' && (
                   <Field label="Hợp đồng gốc" htmlFor="ct-parent" className="md:col-span-2">
-                    <Select id="ct-parent" value={parentId} onChange={e => setParentId(e.target.value)}>
+                    <Select
+                      id="ct-parent"
+                      value={parentId}
+                      onChange={e => {
+                        const nextParentId = e.target.value;
+                        setParentId(nextParentId);
+                        const pRec = data.records.find(r => r.id === nextParentId);
+                        if (pRec) {
+                          if (!brand.trim()) setBrand(pRec.brand);
+                          if (!partner.trim()) setPartner(pRec.partner);
+                          if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
+                          if (!title.trim()) setTitle(['Nghiệm thu video', pRec.partner, pRec.brand].filter(Boolean).join(' · '));
+                          const inferredTpl = inferAcceptanceTemplate(pRec.templateId);
+                          if (inferredTpl && inferredTpl !== templateId) {
+                            setTemplate(null);
+                            setValues({});
+                            setTemplateId(inferredTpl);
+                          }
+                        }
+                      }}
+                    >
                       <option value="">Chọn hợp đồng</option>
                       {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                     </Select>

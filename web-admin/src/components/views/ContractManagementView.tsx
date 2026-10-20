@@ -67,13 +67,18 @@ export function ContractManagementView({
 
   useEffect(() => {
     (async () => {
-      if (process.env.NODE_ENV === 'development') await contractApi('/api/auth/me').catch(() => undefined);
+      if (currentUserId?.startsWith('contract-demo-')) {
+        await contractApi('/api/contracts/demo', { id: currentUserId }).catch(() => undefined);
+      } else if (process.env.NODE_ENV === 'development') {
+        await contractApi('/api/auth/me').catch(() => undefined);
+      }
       await refresh();
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
   }, [refresh, currentUserId]);
 
   // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
   useEffect(() => {
+    setQuickViewDoc(null);
     if (!quickViewRecord) return;
     let cancelled = false;
     contractApi<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> }>(`/api/contracts/${quickViewRecord.id}/document?preview=1`)
@@ -315,6 +320,7 @@ export function ContractManagementView({
           onEdit={() => setScreen({ mode: 'form', editId: record.id })}
           onOpen={id => setScreen({ mode: 'detail', id })}
           onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
+          kocs={kocs}
         />
       ) : (
         <Panel flush>
@@ -406,7 +412,6 @@ export function ContractManagementView({
         onClose={() => setIsContractReportOpen(false)}
         purposeId="CONTRACT_DRAFTING"
         moduleTitle="Báo Cáo Rà Soát Hồ Sơ Hợp Đồng, Điều Khoản Pháp Chế & Khấu Trừ Thuế TNCN"
-        moduleSubtitle={`Tổng số hồ sơ hợp đồng/nghiệm thu: ${data.records.length} | Biểu mẫu pháp chế chuẩn: ${data.templates.length} | Hồ sơ hiển thị: ${rows.length}`}
         contextDataText={[
           `[DỮ LIỆU PHÂN HỆ: Quản Lý Hợp Đồng, Biên Bản Nghiệm Thu & Thuế TNCN]`,
           `- Tổng quan hồ sơ pháp lý B2C: ${data.records.length} hồ sơ, ${data.templates.length} mẫu hợp đồng & biên bản nghiệm thu chuẩn.`,

@@ -787,7 +787,6 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
         onClose={() => setIsAdsReportOpen(false)}
         purposeId="PLAN_ADS_ANALYSIS"
         moduleTitle={`Báo Cáo Quảng Cáo Tuần & Spark Ads (${activeReportData?.meta.reportWeek || selectedFileName})`}
-        moduleSubtitle="Phân tích ROAS, CPA, Top KOC hiệu quả cao và kiểm soát mã ủy quyền Spark Ads"
         contextDataText={[
           `[DỮ LIỆU PHÂN HỆ: Báo Cáo Quảng Cáo Tuần TikTok Seller (${activeReportData?.meta.reportWeek || selectedFileName})]`,
           `- Tổng chi phí Ads: ${formatVndShort(activeReportData?.meta.totalSpend || 30250000)} | Tổng doanh thu GMV: ${formatVndShort(activeReportData?.meta.totalGmv || 165200000)}.`,

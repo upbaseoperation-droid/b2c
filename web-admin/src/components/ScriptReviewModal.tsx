@@ -26,10 +26,9 @@ import {
 import {
   loadApiWorkspaceConfig,
   getEffectiveConfigForPurpose,
-  updatePurposeSystemInstruction,
-  resetPurposeSystemInstruction,
 } from '../lib/apiKeyConfig';
 import { executeOperationalReport, OperationalReportResult } from '../lib/operationalReportService';
+import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 
 interface ScriptReviewModalProps {
   isOpen: boolean;
@@ -518,7 +517,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onClick={() => setShowPromptEditor(v => !v)}
                     className="px-2.5 py-1 rounded border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
                   >
-                    {showPromptEditor ? 'Ẩn câu lệnh (Prompt)' : 'Thiết lập câu lệnh (Prompt)'}
+                    {showPromptEditor ? 'Ẩn cấu hình API & câu lệnh' : 'Cấu hình API & câu lệnh'}
                   </button>
                   <button
                     type="button"
@@ -526,6 +525,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                     onClick={async () => {
                       setIsRunningLlmReview(true);
                       try {
+                        const latestPrompt = getEffectiveConfigForPurpose('SCRIPT_REVIEW').purpose.systemInstruction;
                         const inputContext = [
                           `[DỮ LIỆU PHÂN HỆ: Kiểm Duyệt & Biên Tập Kịch Bản Video KOC]`,
                           `- Nhãn hàng: ${detectedBrandProfile?.brandName || script.campaignTitle}`,
@@ -539,7 +539,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                         const res = await executeOperationalReport({
                           purposeId: 'SCRIPT_REVIEW',
                           inputContextText: inputContext,
-                          customSystemInstruction: scriptPrompt,
+                          customSystemInstruction: latestPrompt || scriptPrompt,
                         });
                         setLlmReviewResult(res);
                       } finally {
@@ -559,47 +559,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               )}
 
               {showPromptEditor && (
-                <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-700">
-                      Câu lệnh chỉ dẫn (System Prompt) kiểm duyệt & viết lại kịch bản:
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const reset = resetPurposeSystemInstruction('SCRIPT_REVIEW');
-                          setScriptPrompt(reset.systemInstruction);
-                          setPromptToast('Đã khôi phục câu lệnh gốc');
-                          setTimeout(() => setPromptToast(null), 2200);
-                        }}
-                        className="px-2 py-1 rounded border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-medium text-slate-700 flex items-center gap-1 cursor-pointer"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Khôi phục gốc
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const saved = updatePurposeSystemInstruction('SCRIPT_REVIEW', scriptPrompt);
-                          setScriptPrompt(saved.systemInstruction);
-                          setPromptToast('Đã lưu làm câu lệnh mặc định');
-                          setTimeout(() => setPromptToast(null), 2200);
-                        }}
-                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Save className="w-3 h-3" />
-                        Lưu làm mặc định
-                      </button>
-                    </div>
-                  </div>
-                  <textarea
-                    rows={3}
-                    value={scriptPrompt}
-                    onChange={e => setScriptPrompt(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+                <InlinePurposeApiSetup
+                  purposeId="SCRIPT_REVIEW"
+                  onConfigSaved={() => {
+                    const eff = getEffectiveConfigForPurpose('SCRIPT_REVIEW');
+                    setScriptPrompt(eff.purpose.systemInstruction);
+                  }}
+                />
               )}
 
               {llmReviewResult && (

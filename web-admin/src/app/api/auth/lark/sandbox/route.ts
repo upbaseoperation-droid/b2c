@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { USERS } from '@/lib/mockData';
 import { UPBASE_STAFF_MASTER } from '@/lib/importedMasterData';
-import { classifyMasterStaffMember, INITIAL_DEPARTMENT_ACCESS_RULES } from '@/lib/rbacData';
+import { classifyMasterStaffMember } from '@/lib/rbacData';
+import { readPolicy } from '@/lib/server/accessPolicy';
 import { encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib/larkAuth';
 import { UserProfile } from '@/lib/types';
 
@@ -69,10 +70,11 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        const { data: policy } = await readPolicy();
         const classified = classifyMasterStaffMember(
           masterStaff,
-          INITIAL_DEPARTMENT_ACCESS_RULES,
-          staffOverrides || {}
+          policy.deptRules,
+          { ...policy.staffOverrides, ...(staffOverrides || {}) }
         );
 
         if (!classified.canLogin) {

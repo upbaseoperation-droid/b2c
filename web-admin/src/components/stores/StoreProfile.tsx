@@ -25,14 +25,15 @@ import {
   Video,
 } from 'lucide-react';
 import { INITIAL_STORE_ASSIGNMENT_HISTORY } from '../../lib/enterpriseMasterConfig';
-import type {
-  BookingDealItem,
-  BrandDetail,
-  InputPlanBreakdownState,
-  InputPlanRowItem,
-  SalaryGrade,
-  StorePortfolioItem,
-  UserProfile,
+import {
+  type BookingDealItem,
+  type BrandDetail,
+  type InputPlanBreakdownState,
+  type InputPlanRowItem,
+  type SalaryGrade,
+  type StorePortfolioItem,
+  type UserProfile,
+  normalizeStoreCoefficient,
 } from '../../lib/types';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 import {
@@ -1373,6 +1374,16 @@ export function StoreProfile({
               </div>
 
               <div className="py-2 flex items-center justify-between gap-2">
+                <dt className="text-ink-3">Hệ số gian hàng</dt>
+                <dd className="text-ink font-medium">
+                  {normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier).tier}{' '}
+                  <span className="font-mono font-semibold text-ink-2">
+                    · ×{normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier).label}
+                  </span>
+                </dd>
+              </div>
+
+              <div className="py-2 flex items-center justify-between gap-2">
                 <dt className="text-ink-3">Hoa hồng sàn mặc định</dt>
                 <dd className="font-code text-ink">{store.affiliateRate || 15}%</dd>
               </div>
@@ -1391,18 +1402,13 @@ export function StoreProfile({
             </dl>
           </Panel>
 
-          {/* Lịch sử phân công & bàn giao */}
-          <Panel title="Lịch sử phân công & bàn giao">
-            {store.assignmentNotes ? (
+          {store.assignmentNotes && (
+            <Panel title="Ghi chú phân công">
               <p className="text-2xs text-ink-2 leading-relaxed whitespace-pre-line">
                 {store.assignmentNotes}
               </p>
-            ) : (
-              <p className="text-2xs text-ink-3">
-                Chưa có ghi chú phân công hoặc bàn giao phát sinh.
-              </p>
-            )}
-          </Panel>
+            </Panel>
+          )}
         </div>
       </div>
 
@@ -1412,7 +1418,6 @@ export function StoreProfile({
           open={Boolean(inspectedBooking)}
           onClose={() => setInspectedBooking(null)}
           title={`Chi tiết Booking [${inspectedBooking.dealCode}] — ${inspectedBooking.kocName}`}
-          description={`Gian hàng ${inspectedBooking.storeName} · Kỳ hồ sơ ${inspectedBooking.month} · ${inspectedBooking.weekLabel}`}
           size="lg"
           footer={
             <>

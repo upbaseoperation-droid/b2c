@@ -585,7 +585,7 @@ export const MOCK_PLAN_SCENARIOS: MockPlanScenario[] = [
     name: '1. Fresh — Đẩy Mạnh Doanh Số E2E (W41 Chuẩn Đẹp)',
     badge: 'Khớp 100% KPI',
     brandName: 'Fresh_TikTok_E2E-C',
-    description: 'Ngân sách 150M, 76 nội dung. Cân đối toàn diện giữa TikTok Affiliate (KL1-KL5), Shopee Video và Livestream Add-in.',
+    description: 'Ngân sách 150M, 76 nội dung. Phân bổ cân đối giữa TikTok Affiliate (KL1-KL5), Shopee Video và Livestream Add-in.',
     state: {
       id: 'PLAN-TEST-FRESH',
       title: 'Kế Hoạch B2C Tháng 10 - Fresh E2E Campaign W41',
@@ -968,7 +968,7 @@ export const MOCK_PLAN_SCENARIOS: MockPlanScenario[] = [
     name: '2. Face Republic — Tối Ưu Chi Phí Dược Mỹ Phẩm (W41)',
     badge: 'Tiết Kiệm (ROI 6.8x)',
     brandName: 'Face Republic_TikTok_E2E-O',
-    description: 'Ngân sách vừa 70M, 54 nội dung. Trọng tâm KOC KL1-KL3, đẩy mạnh video AI + Kênh tự xây in-house và Shopee Video.',
+    description: 'Ngân sách vừa 70M, 54 nội dung. Trọng tâm KOC KL1-KL3, đẩy mạnh video đồ họa + Kênh tự xây in-house và Shopee Video.',
     state: {
       id: 'PLAN-TEST-FACEREPUBLIC',
       title: 'Kế Hoạch Tối Ưu Chi Phí & Doanh Số - Face Republic W41',
@@ -1734,7 +1734,7 @@ export const MOCK_PLAN_SCENARIOS: MockPlanScenario[] = [
     name: '4. TM Clean — Đẩy Mạnh Kênh Tự Xây & Gia Dụng (W41)',
     badge: 'Kênh In-House (40M)',
     brandName: 'TM Clean_TikTok_E2E-C',
-    description: 'Ngân sách nhỏ 40M, 46 video. Đánh mạnh kênh tự xây (Voice, AI, POV) và KOC Nano KL1 FOC giúp tối ưu ROI lên tới 7.2x.',
+    description: 'Ngân sách nhỏ 40M, 46 video. Đánh mạnh kênh tự xây (Voice, Đồ họa, POV) và KOC Nano KL1 FOC giúp đạt ROI lên tới 7.2x.',
     state: {
       id: 'PLAN-TEST-TMCLEAN',
       title: 'Kế Hoạch Sản Phẩm Làm Sạch Nhà Cửa - TM Clean W41',

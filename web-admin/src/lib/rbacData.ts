@@ -23,6 +23,7 @@ import {
   InternalStaffRbacMember, 
   RbacAuditLogItem 
 } from './types';
+import { TAB_LABELS, TAB_ALIASES } from './navGroups';
 
 // =========================================================================
 // 1. ROLE DEFINITIONS (ĐỊNH NGHĨA VAI TRÒ HỆ THỐNG THEO 3 KHỐI: MARKETING - GROWTH - MEDIA)
@@ -46,7 +47,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Quản Trị Hệ Thống (Admin)',
     scopeType: 'INTERNAL',
     badgeColor: 'bg-red-50 text-red-700 border-red-200',
-    description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C, Growth, Media được phép đăng nhập hệ thống; phân quyền toàn cục.',
+    description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C, Growth, Media được phép đăng nhập hệ thống; phân quyền hệ thống.',
     defaultLandingTab: 'cockpit',
     userCount: 2
   },
@@ -377,7 +378,7 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
     category: 'CONTRACTS_FINANCE',
     categoryTitle: '3. Hợp Đồng, Pháp Lý & Thanh Toán',
     featureName: 'Quét OCR giấy tờ KOC (CCCD, Mã số thuế, Ngân hàng)',
-    description: 'Trích xuất tự động thông tin định danh bằng AI/OCR để lập hồ sơ pháp lý.',
+    description: 'Đọc ảnh CCCD/ĐKKD để điền thông tin lập hồ sơ pháp lý.',
     permissions: {
       ADMIN: 'ALL',
       MANAGER: 'ALL',
@@ -609,6 +610,9 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
 export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_MATRIX.map(item => {
   let growthManagerPerm: PermissionAccessLevel = 'VIEW';
   let mediaManagerPerm: PermissionAccessLevel = 'VIEW';
+  let legalPerm: PermissionAccessLevel = 'DENIED';
+  let financePerm: PermissionAccessLevel = 'DENIED';
+  let signAdminPerm: PermissionAccessLevel = 'DENIED';
 
   if (item.category === 'PLANNING') {
     growthManagerPerm = item.id === 'plan_target_month' ? 'APPROVE' : item.id === 'delegation_pic_assignment' ? 'ALL' : 'SCOPED';
@@ -619,12 +623,44 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
   } else if (item.category === 'CONTRACTS_FINANCE') {
     growthManagerPerm = item.id === 'agency_financial_margins' ? 'ALL' : 'VIEW';
     mediaManagerPerm = item.id === 'agency_financial_margins' ? 'VIEW' : 'DENIED';
+
+    if (item.id === 'legal_ocr_extraction') {
+      legalPerm = 'ALL';
+      financePerm = 'VIEW';
+      signAdminPerm = 'VIEW';
+    } else if (item.id === 'contract_creation') {
+      legalPerm = 'APPROVE';
+      financePerm = 'APPROVE';
+      signAdminPerm = 'ALL';
+    } else if (item.id === 'payment_request_submission') {
+      legalPerm = 'VIEW';
+      financePerm = 'ALL';
+      signAdminPerm = 'VIEW';
+    } else if (item.id === 'payment_approval_disbursement') {
+      legalPerm = 'VIEW';
+      financePerm = 'APPROVE';
+      signAdminPerm = 'DENIED';
+    } else if (item.id === 'agency_financial_margins') {
+      legalPerm = 'VIEW';
+      financePerm = 'ALL';
+      signAdminPerm = 'DENIED';
+    }
   } else if (item.category === 'PERFORMANCE_ADS') {
     growthManagerPerm = item.id === 'p3_performance_evaluation' ? 'APPROVE' : 'ALL';
     mediaManagerPerm = item.id === 'p3_performance_evaluation' ? 'APPROVE' : 'ALL';
+    if (item.id === 'raw_data_export') {
+      legalPerm = 'VIEW';
+      financePerm = 'ALL';
+      signAdminPerm = 'VIEW';
+    }
   } else if (item.category === 'SYSTEM_MASTER') {
     growthManagerPerm = ['master_data_brand_stores', 'staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
     mediaManagerPerm = ['master_data_brand_stores', 'staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
+    if (item.id === 'security_audit_log_access') {
+      legalPerm = 'VIEW';
+      financePerm = 'VIEW';
+      signAdminPerm = 'VIEW';
+    }
   }
 
   return {
@@ -633,6 +669,9 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
       ...item.permissions,
       GROWTH_MANAGER: item.permissions.GROWTH_MANAGER || growthManagerPerm,
       MEDIA_MANAGER: item.permissions.MEDIA_MANAGER || mediaManagerPerm,
+      LEGAL: item.permissions.LEGAL || legalPerm,
+      FINANCE: item.permissions.FINANCE || financePerm,
+      SIGN_ADMIN: item.permissions.SIGN_ADMIN || signAdminPerm,
     }
   };
 });
@@ -1763,6 +1802,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
+    'cloudflare-admin',
     'knowledge-qa',
     'audit-trail',
     'tiktok-crawler',
@@ -1803,6 +1843,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
+    'cloudflare-admin',
     'knowledge-qa',
     'audit-trail',
     'tiktok-crawler',
@@ -2090,46 +2131,31 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 };
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
-  if (
-    (tab === 'task-delegation' ||
-      tab === 'workload-3d' ||
-      tab === 'tiktok-crawler' ||
-      tab === 'market-research' ||
-      tab === 'contracts') &&
-    ROLE_ALLOWED_TABS[role]?.includes(tab)
-  ) {
-    return true;
-  }
   const map = getSavedRoleAllowedTabs();
   const allowed = map[role] || ROLE_ALLOWED_TABS[role];
   if (!allowed) return false;
-  return allowed.includes(tab);
+  if (allowed.includes(tab)) return true;
+  const canonical = TAB_ALIASES[tab];
+  return canonical ? allowed.includes(canonical) : false;
 }
 
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
-  const list = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
-  if (ROLE_ALLOWED_TABS[role]?.includes('workload-3d') && !list.includes('workload-3d')) {
-    list.push('workload-3d');
+  const base = [...(map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'])];
+  for (const [aliasKey, canonicalKey] of Object.entries(TAB_ALIASES) as Array<[TabKey, TabKey]>) {
+    if (canonicalKey && base.includes(canonicalKey) && !base.includes(aliasKey)) {
+      base.push(aliasKey);
+    }
   }
-  if (ROLE_ALLOWED_TABS[role]?.includes('tiktok-crawler') && !list.includes('tiktok-crawler')) {
-    list.push('tiktok-crawler');
-  }
-  if (ROLE_ALLOWED_TABS[role]?.includes('market-research') && !list.includes('market-research')) {
-    list.push('market-research');
-  }
-  if (ROLE_ALLOWED_TABS[role]?.includes('contracts') && !list.includes('contracts')) {
-    list.push('contracts');
-  }
-  return list;
+  return base;
 }
 
 export function getDefaultLandingTabForRole(role: UserRole): TabKey {
   const allowed = getAllowedTabsForRole(role);
-  if (allowed.includes('cockpit')) return 'cockpit';
   const landingMap = getSavedRoleDefaultLanding();
   const candidate = landingMap[role] || ROLE_DEFAULT_LANDING[role] || 'cockpit';
   if (allowed.includes(candidate)) return candidate;
+  if (allowed.includes('cockpit')) return 'cockpit';
   return allowed[0] || candidate;
 }
 
@@ -2141,7 +2167,7 @@ export interface SystemScreenCatalogItem {
   description: string;
 }
 
-export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
+const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'cockpit', label: 'Việc của tôi (Cockpit)', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Không gian làm việc cá nhân, việc cần xử lý trong ngày.' },
   { key: 'dashboard-brand', label: 'Dashboard Thương hiệu & Ngân sách', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi ngân sách 42 thương hiệu B2C.' },
   { key: 'dashboard-air-sync', label: 'Dashboard Lịch Air Tuần & Độ Đồng Loạt', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Đối chiếu lịch air kế hoạch theo tuần (W40–W45) và kiểm soát độ đồng loạt lên sóng thực tế.' },
@@ -2172,12 +2198,98 @@ export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'ads-report', label: 'Báo cáo Ads TikTok', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Báo cáo hiệu quả chạy quảng cáo GMV, ROAS, CPA.' },
   { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Tính điểm hiệu suất P3 và quỹ thưởng nhân sự.' },
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
-  { key: 'partner-access', label: 'Phân quyền & Tài khoản (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
+  { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
+  { key: 'audit-trail', label: 'Nhật ký kiểm toán (Audit Trail)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Theo dõi lịch sử đăng nhập, thay đổi phân quyền và thao tác nhạy cảm.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
   { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
+  { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản lý kết nối Cloudflare R2 và tệp đính kèm của 42 thương hiệu B2C.' },
   { key: 'brand-hub', label: 'Cổng đối tác Brand', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho đại diện thương hiệu duyệt KOC & kịch bản.' },
   { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho Creator cập nhật hồ sơ, ký hợp đồng và nộp bài.' },
 ];
+
+// Tự động phát hiện bất kỳ màn hình mới nào được khai báo thêm trong TAB_LABELS (src/lib/navGroups.ts)
+// để màn hình Phân quyền luôn tự động cập nhật khi hệ thống mở rộng tính năng.
+export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = (() => {
+  const knownKeys = new Set<TabKey>(BASE_SYSTEM_SCREENS.map((s) => s.key));
+  const autoDiscovered: SystemScreenCatalogItem[] = [];
+  for (const [rawKey, label] of Object.entries(TAB_LABELS) as Array<[TabKey, string]>) {
+    if (knownKeys.has(rawKey)) continue;
+    if (rawKey in TAB_ALIASES) continue;
+    autoDiscovered.push({
+      key: rawKey,
+      label,
+      group: 'SYSTEM_ADMIN',
+      groupTitle: '5. Hệ Thống & Quản Trị',
+      description: `Màn hình chức năng ${label}.`,
+    });
+  }
+  return [...BASE_SYSTEM_SCREENS, ...autoDiscovered];
+})();
+
+export function getSavedPermissionMatrix(): PermissionMatrixItem[] {
+  return serverPolicy?.matrix || INITIAL_PERMISSION_MATRIX;
+}
+
+export type RbacAction = 'read' | 'write' | 'create' | 'update' | 'delete' | 'approve' | 'export';
+
+export function canUserPerformAction(
+  user: UserProfile | null | undefined,
+  featureId: string,
+  action: RbacAction = 'read'
+): boolean {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true;
+  const matrix = getSavedPermissionMatrix();
+  const item = matrix.find((p) => p.id === featureId);
+  const memberRoles: UserRole[] = [
+    'BOOKING_MEMBER',
+    'CONTENT_MEMBER',
+    'BRAND_MEMBER',
+    'GROWTH_MEMBER',
+    'MEDIA_MEMBER',
+  ];
+  const level: PermissionAccessLevel =
+    item?.permissions[user.role] ??
+    (memberRoles.includes(user.role) ? item?.permissions.MEMBER : undefined) ??
+    'DENIED';
+
+  // Kiểm tra quyền đặc thù cá nhân (Special Staff Permissions) được Admin/Manager cấp riêng
+  const perms = user.permissions || [];
+  if (
+    (featureId === 'payment_approval_disbursement' || featureId === 'payment_request_submission' || featureId === 'finance_payment_request') &&
+    perms.includes('canApprovePayment')
+  ) {
+    if (action === 'read' || action === 'approve') return true;
+  }
+  if (featureId === 'plan_target_month' && perms.includes('canApproveBudget')) {
+    if (action === 'read' || action === 'approve') return true;
+  }
+  if (
+    (featureId === 'p3_performance_evaluation' || featureId === 'performance_p3_scoring') &&
+    perms.includes('canApproveP3')
+  ) {
+    if (action === 'read' || action === 'approve') return true;
+  }
+  if (
+    featureId === 'master_data_brand_stores' &&
+    perms.includes('canManageMasterData')
+  ) {
+    return true;
+  }
+  if (
+    featureId === 'raw_data_export' &&
+    perms.includes('canExportRawData')
+  ) {
+    if (action === 'read' || action === 'export' || action === 'write') return true;
+  }
+
+  if (action === 'read') return level !== 'DENIED';
+  if (action === 'approve') return level === 'APPROVE' || level === 'ALL';
+  if (action === 'delete') {
+    return level === 'ALL';
+  }
+  return ['ALL', 'APPROVE', 'SCOPED'].includes(level);
+}
 
 export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
   ...RBAC_ROLE_DEFINITIONS.slice(0, 5),
@@ -2236,7 +2348,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     defaultLandingTab: 'cockpit',
     userCount: 30
   },
-  ...RBAC_ROLE_DEFINITIONS.slice(5),
+  ...RBAC_ROLE_DEFINITIONS.slice(6),
 ];
 
 export const ROLE_SCREEN_PERMS_STORAGE_KEY = 'upbase_b2c_role_screen_perms_v1';

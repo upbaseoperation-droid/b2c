@@ -3749,16 +3749,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-blue-600" />
-                  Hậu cần gửi hàng mẫu (SLA 48h): {selectedTask.taskCode}
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  VJ: <strong>{selectedTask.contributorName || 'Chưa gán'}</strong> • SKU:{' '}
-                  <span className="font-mono">{selectedTask.linkedSku}</span>
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Truck className="w-4 h-4 text-blue-600" />
+                Hậu cần gửi hàng mẫu (SLA 48h): {selectedTask.taskCode}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsSampleShippingModalOpen(false)}
@@ -3827,15 +3821,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  Duyệt Kịch bản chi tiết (SLA 24h): {selectedTask.taskCode}
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  VJ: <strong>{selectedTask.contributorName}</strong> • {selectedTask.title}
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-blue-600" />
+                Duyệt Kịch bản chi tiết (SLA 24h): {selectedTask.taskCode}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsScriptReviewModalOpen(false)}
@@ -3846,6 +3835,11 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             </div>
 
             <div className="p-6 space-y-4 text-xs">
+              <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+                <span>VJ: <strong className="text-ink">{selectedTask.contributorName}</strong></span>
+                <span>·</span>
+                <span className="text-ink truncate">{selectedTask.title}</span>
+              </div>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2.5">
                 <span className="font-semibold text-slate-800 block text-xs">Nội dung kịch bản VJ đã nộp:</span>
                 <div className="space-y-2">
@@ -3943,16 +3937,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  Vòng 1 — Duyệt QA Nội bộ &amp; Lưu Drive Gian hàng: {selectedTask.taskCode}
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Phiên bản: v{selectedTask.videoDeliverables?.currentVersion || 1} • VJ:{' '}
-                  <strong>{selectedTask.contributorName}</strong>
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                Vòng 1 — Duyệt QA Nội bộ &amp; Lưu Drive Gian hàng: {selectedTask.taskCode}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsVideoQaModalOpen(false)}
@@ -4107,16 +4095,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-blue-600" />
-                  Vòng 2 — Brand Nghiệm thu &amp; Đăng kênh: {selectedTask.taskCode}
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  VJ: <strong>{selectedTask.contributorName}</strong> • Thù lao:{' '}
-                  <strong>{formatVnd(selectedTask.remuneration)}</strong>
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-blue-600" />
+                Vòng 2 — Brand Nghiệm thu &amp; Đăng kênh: {selectedTask.taskCode}
+              </h3>
               <button
                 type="button"
                 onClick={() => setIsBrandAcceptModalOpen(false)}
@@ -4346,16 +4328,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-emerald-600" />
-                  Phiếu Đề Nghị Thanh Toán (DNTT) — {dnttTargetCtv.name}
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Mã CTV: <span className="font-mono">{dnttTargetCtv.code || dnttTargetCtv.id}</span> • Hợp đồng:{' '}
-                  <span className="font-mono font-semibold text-emerald-700">{dnttTargetCtv.contractCode}</span>
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                Phiếu Đề Nghị Thanh Toán (DNTT) — {dnttTargetCtv.name}
+              </h3>
               <button
                 type="button"
                 onClick={() => {

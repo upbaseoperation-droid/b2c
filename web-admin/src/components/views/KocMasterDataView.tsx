@@ -86,32 +86,17 @@ export const hasKocPlatform = (
   k: KocItem,
   platform: 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads',
 ): boolean => {
-  if (platform === 'shopee' && k.shopeeChannel) return true;
-  if (platform === 'facebook' && k.facebookChannel) return true;
-  if (platform === 'instagram' && k.instagramChannel) return true;
-  if (platform === 'threads' && k.threadsChannel) return true;
-
-  if (k.platforms && k.platforms.length > 0) {
-    const pUpper = platform.toUpperCase();
-    return k.platforms.some((p) => p.toUpperCase() === pUpper);
-  }
-
-  // Dữ liệu mẫu phân bổ thực tế cho các KOC chưa gán platform tường minh
-  const str = `${k.id}_${k.stageName}`;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-
   switch (platform) {
     case 'tiktok':
-      return Boolean(k.channelId || k.channelLink || k.tiktokSellerSyncedAt || true);
+      return Boolean(k.channelId?.trim() || k.channelLink?.trim() || k.tiktokChannel?.trim());
     case 'shopee':
-      return Boolean(k.shopeeChannel) || hash % 3 !== 0;
+      return Boolean(k.shopeeChannel?.trim());
     case 'facebook':
-      return Boolean(k.facebookChannel) || hash % 2 === 0;
+      return Boolean(k.facebookChannel?.trim());
     case 'instagram':
-      return Boolean(k.instagramChannel) || (k.followers || 0) > 30000 || hash % 3 === 0;
+      return Boolean(k.instagramChannel?.trim());
     case 'threads':
-      return Boolean(k.threadsChannel) || hash % 4 === 1;
+      return Boolean(k.threadsChannel?.trim());
     default:
       return false;
   }

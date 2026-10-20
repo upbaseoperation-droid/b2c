@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   analyzeSingleKocChannelForBrief,
   BrandBriefCriteriaInput,
@@ -9,6 +10,20 @@ import {
 import { parseTikTokHandles } from '@/lib/tiktokKocScraper';
 
 export async function GET(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền xem phân tích kênh KOC.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const jobId = searchParams.get('jobId')?.trim();
@@ -48,6 +63,20 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền kích hoạt phân tích kênh KOC.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
     const rawHandlesInput: string | string[] =

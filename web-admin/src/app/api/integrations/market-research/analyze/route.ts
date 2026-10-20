@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   analyzeRawCustomerCommentsToClusters,
   generateBrandMarketResearchDossier,
@@ -194,6 +195,20 @@ async function fetchLiveCompetitorSignals(
  * GET /api/integrations/market-research/analyze?brand=ClubClio&competitors=@romand_vn,@espoir_vietnam&url=https://...
  */
 export async function GET(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền truy cập nghiên cứu thị trường.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const sp = req.nextUrl.searchParams;
     const brandQuery = sp.get('brand') || sp.get('query') || 'Kutieskin';
@@ -273,6 +288,20 @@ export async function GET(req: NextRequest) {
  * 3. mode = 'MINE_REVIEWS': Đào bình luận khách hàng từ link video TikTok thực tế + danh sách đánh giá Shopee/TikTok
  */
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền kích hoạt phân tích nghiên cứu thị trường.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const mode = body.mode || 'BRAND_DOSSIER';

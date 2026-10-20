@@ -38,3 +38,16 @@
 - **Cấm để tài liệu lỗi thời:** Tuyệt đối không để tài liệu ở trạng thái "Chưa tạo" hoặc giữ nguyên mô tả "prototype cũ" trong khi mã nguồn thực tế đã hoàn thiện và vận hành.
 - **Duy trì tính chính xác của Sổ đăng ký tài liệu (`blueprint/README.md`):** Sổ đăng ký tài liệu phải luôn phản ánh đúng hiện trạng tài liệu thiết kế hệ thống, kiến trúc, phân quyền và tích hợp API.
 - **Rà soát định kỳ:** Trước khi hoàn thành bất kỳ phiên làm việc nào về mã nguồn, trợ lý phải đối soát lại tài liệu xem đặc tả chức năng, tham số API, phân quyền vai trò và luồng dữ liệu đã ăn khớp 100% với mã nguồn hay chưa.
+
+## 5. Hệ Thống Hóa Lỗi & Quy Tắc Phòng Ngừa Tái Phát (`blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`)
+- **Sổ đăng ký lỗi chuẩn (`HUB-GOV-04`):** Mọi lỗi do người dùng hoặc trợ lý phát hiện phải được ghi nhận đầy đủ (Triệu chứng, Nguyên nhân gốc, Cách khắc phục, Phạm vi rà soát mở rộng) tại `blueprint/governance/KNOWN_BUGS_AND_LESSONS.md`.
+- **Các quy tắc phòng ngừa bắt buộc áp dụng chéo cho toàn hệ thống:**
+  - **`RULE-DATA-01` (Cấm sinh trạng thái giả bằng hàm băm / ngẫu nhiên):** Tuyệt đối KHÔNG dùng `hash % N`, `Math.random()` hay `|| true` để hiển thị dấu tích (`✓`) hoặc trạng thái nghiệp vụ (có kênh MXH, đủ giấy tờ, đã ký hợp đồng, đã duyệt chi...). Chỉ hiển thị dấu tích khi trường dữ liệu thực tế có giá trị hợp lệ; nếu trống phải hiển thị `—` hoặc `Chưa xác nhận`.
+  - **`RULE-SYNC-01` (Đồng bộ 100% giữa Bảng danh sách và Màn chi tiết):** Cột trạng thái trên bảng danh sách (`DataTable`) và thông tin trong trang chi tiết (`Profile` / `Modal`) phải dùng chung một nguồn kiểm tra dữ liệu gốc duy nhất.
+  - **`RULE-UX-01` (Cấm tự động tích xác nhận ứng viên độ tin cậy thấp):** Khi dò tìm hoặc gợi ý dữ liệu tự động, chỉ điền sẵn kết quả có độ tin cậy `CAO` / `TRUNG_BÌNH` đã xác thực tồn tại; mức `GỢI_Ý` chỉ hiển thị để người dùng chủ động chọn.
+  - **`RULE-TS-01` (Tuân thủ chặt chữ ký hàm & Props của Component UI):** Phân biệt rõ `<Modal open onClose={...}>` và `<ConfirmDialog open onCancel={...} onConfirm={...}>`; kiểm tra đúng kiểu trả về của các hàm dùng chung (`normalizeStoreCoefficient`...) trước khi build.
+  - **`RULE-API-01` (Bắt buộc trang bị Màn hình / Khung Cấu hình API cho mọi tính năng phân tích & tự động hóa mới):** Bất kỳ tính năng phân tích, bóc tách dữ liệu, đánh giá hay tổng hợp báo cáo nào mới được thêm vào hệ thống BẮT BUỘC phải đáp ứng đủ 3 điều kiện:
+    1. Đăng ký mã mục đích nghiệp vụ (`OperationalApiPurposeId`) trong `web-admin/src/lib/apiKeyConfig.ts` và hiển thị đầy đủ tại Trung tâm Cấu hình API (`ApiKeySetupView.tsx`).
+    2. Tích hợp trực tiếp khung thiết lập nhanh `<InlinePurposeApiSetup purposeId="..." />` (hoặc `<OperationalReportDrawer purposeId="..." />`) ngay trên màn hình/hộp thoại của tính năng đó để người dùng chọn Nhà cung cấp (`Google Gemini`, `OpenAI`, `Anthropic Claude`, `Xử lý nội bộ`), chọn Mô hình, nhập Khóa API, bấm **Kiểm tra kết nối** và chỉnh sửa Câu lệnh chỉ dẫn (`System Prompt`) tại chỗ.
+    3. Có luồng xử lý dự phòng nội bộ (`INTERNAL`) trong `/api/integrations/llm/route.ts` để tính năng luôn hoạt động ổn định kể cả khi chưa nhập khóa API ngoài hoặc máy chủ mô hình quá tải.
+

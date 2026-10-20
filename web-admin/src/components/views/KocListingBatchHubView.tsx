@@ -16,7 +16,7 @@ import {
   KocItem,
   BookingDealItem
 } from '@/lib/types';
-import { ActionMenu, ConfirmDialog, FilterBar, PageActions, Button, Presence, Select, Stat, StatRow, Tabs } from '../ui';
+import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Presence, Select, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
@@ -1726,26 +1726,13 @@ export function KocListingBatchHubView({
       )}
 
       {/* MODAL 1: ADD NEW KOC TO BATCH (DRAFT + LINKED TO KL) */}
-      <Presence show={!!showAddModal}>
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Thêm KOC vào bản nháp (Draft) gắn với Plan Final
-                </h3>
-                
-              </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-lg leading-none"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleAddNewKoc} className="p-4 space-y-3.5 text-xs">
+      <Modal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Thêm KOC vào bản nháp gắn với Plan Final"
+        size="lg"
+      >
+        <form onSubmit={handleAddNewKoc} className="space-y-3.5 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
@@ -1956,43 +1943,28 @@ export function KocListingBatchHubView({
                   type="submit"
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm"
                 >
-                  Lưu vào Bản nháp (Draft)
+                  Lưu vào Bản nháp
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+      </Modal>
 
-      {/* MODAL 2: LUỒNG DUYỆT & TRAO ĐỔI CHI TIẾT (SUBMIT BRAND -> BRAND REVIEW & KOC NEGOTIATION -> FINAL APPROVE) */}
-      <Presence show={!!inspectingListing}>
-      {inspectingListing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    Luồng duyệt &amp; Trao đổi KOC: {inspectingListing.kocName} ({inspectingListing.kocHandle})
-                  </h3>
-                  <span className="font-code text-2xs font-semibold text-blue-700">
-                    · {inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}
-                  </span>
-                </div>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Gian hàng: <strong>{inspectingListing.storeName}</strong> · Plan: <strong>{inspectingListing.sourcePlanId || matchedPlanFinal?.id || 'Tháng 10/2026'} ({inspectingListing.sourcePlanVersion || 'v1.0'})</strong>
-                </p>
-              </div>
-              <button
-                onClick={() => setInspectingListingId(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
-              >
-                &times;
-              </button>
+      {/* MODAL 2: LUỒNG DUYỆT & TRAO ĐỔI CHI TIẾT */}
+      <Modal
+        open={!!inspectingListing}
+        onClose={() => setInspectingListingId(null)}
+        title={inspectingListing ? `Luồng duyệt & Trao đổi KOC: ${inspectingListing.kocName} (${inspectingListing.kocHandle})` : ''}
+        size="2xl"
+      >
+        {inspectingListing && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span className="font-semibold text-ink">Gian hàng: {inspectingListing.storeName}</span>
+              <span>·</span>
+              <span>Plan: {inspectingListing.sourcePlanId || matchedPlanFinal?.id || 'Tháng 10/2026'} ({inspectingListing.sourcePlanVersion || 'v1.0'})</span>
+              <span>·</span>
+              <span className="font-mono text-accent">{inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}</span>
             </div>
-
-            <div className="p-4 overflow-y-auto space-y-4 text-xs flex-1">
               {/* Thanh tiến trình 3 bước của Listing */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                 <div className={`p-2 rounded border ${inspectingListing.overallStatus === 'DRAFT' ? 'bg-white border-slate-400 font-semibold text-slate-900 shadow-2xs' : 'bg-emerald-50/60 border-emerald-200 text-emerald-800'}`}>
@@ -2188,37 +2160,24 @@ export function KocListingBatchHubView({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* MODAL 3: UPDATE AIR VIDEO PROGRESS */}
-      <Presence show={!!(showAirUpdateModal && selectedListingForAir)}>
-      {showAirUpdateModal && selectedListingForAir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Cập nhật tiến độ video lên sóng
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  KOC: {selectedListingForAir.kocName} · {selectedListingForAir.kocHandle}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAirUpdateModal(false);
-                  setSelectedListingForAir(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 text-lg leading-none"
-              >
-                &times;
-              </button>
+      <Modal
+        open={!!(showAirUpdateModal && selectedListingForAir)}
+        onClose={() => {
+          setShowAirUpdateModal(false);
+          setSelectedListingForAir(null);
+        }}
+        title="Cập nhật tiến độ video lên sóng"
+        size="md"
+      >
+        {selectedListingForAir && (
+          <div className="space-y-3.5 text-xs">
+            <div className="text-2xs text-ink-3 pb-2 border-b border-line">
+              KOC: <strong className="text-ink">{selectedListingForAir.kocName}</strong> · <span className="font-mono">{selectedListingForAir.kocHandle}</span>
             </div>
-
-            <div className="p-4 space-y-3.5 text-xs">
               <div>
                 <label className="block text-2xs font-semibold text-slate-700 mb-1">
                   Giai đoạn hiện tại *
@@ -2315,16 +2274,14 @@ export function KocListingBatchHubView({
 
                     handleSaveAirUpdate(stage, url, isAnchored, sparkCode, actualDate);
                   }}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm cursor-pointer"
                 >
                   Lưu thay đổi
                 </button>
               </div>
-            </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* Modal xác nhận duyệt KOC */}
       <ConfirmDialog

@@ -59,6 +59,7 @@ export type TabKey =
   | 'koc-hub'
   | 'ads-report'
   | 'api-settings'
+  | 'cloudflare-admin'
   | 'knowledge-qa'
   | 'audit-trail'
   | 'tiktok-crawler'

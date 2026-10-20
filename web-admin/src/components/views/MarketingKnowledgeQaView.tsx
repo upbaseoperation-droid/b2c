@@ -55,6 +55,7 @@ import {
 } from '../../lib/apiKeyConfig';
 import { BrandDetail, KocItem, StorePortfolioItem, TabKey, UserProfile } from '../../lib/types';
 import { formatVnd, formatVndShort } from '../../lib/format';
+import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 interface MarketingKnowledgeQaViewProps {
   currentUser: UserProfile;
@@ -665,7 +666,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     icon={Sliders}
                     onClick={() => setShowPromptEditor(v => !v)}
                   >
-                    {showPromptEditor ? 'Ẩn câu lệnh (Prompt)' : 'Thiết lập câu lệnh (Prompt)'}
+                    {showPromptEditor ? 'Ẩn cấu hình API & câu lệnh' : 'Cấu hình API & câu lệnh'}
                   </Button>
                   {onNavigateToTab && (
                     <Button
@@ -673,7 +674,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                       size="sm"
                       onClick={() => onNavigateToTab('api-settings')}
                     >
-                      Cấu hình API
+                      Trung tâm API
                     </Button>
                   )}
                   <Button
@@ -717,52 +718,13 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
             >
               <div className="space-y-4">
                 {showPromptEditor && (
-                  <div className="p-3.5 rounded-xl bg-sunken border border-line space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-ink">
-                        Câu lệnh chỉ dẫn (System Prompt) cho Hỏi đáp nghiệp vụ B2C:
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        {promptSavedMsg && (
-                          <span className="text-2xs font-semibold text-success mr-1">
-                            {promptSavedMsg}
-                          </span>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={RotateCcw}
-                          onClick={() => {
-                            const reset = resetPurposeSystemInstruction('KNOWLEDGE_QA');
-                            setCustomQaPrompt(reset.systemInstruction);
-                            setPromptSavedMsg('Đã khôi phục câu lệnh gốc');
-                            setTimeout(() => setPromptSavedMsg(null), 2200);
-                          }}
-                        >
-                          Khôi phục gốc
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          icon={Check}
-                          onClick={() => {
-                            const saved = updatePurposeSystemInstruction('KNOWLEDGE_QA', customQaPrompt);
-                            setCustomQaPrompt(saved.systemInstruction);
-                            setPromptSavedMsg('Đã lưu câu lệnh mặc định');
-                            setTimeout(() => setPromptSavedMsg(null), 2200);
-                          }}
-                        >
-                          Lưu làm mặc định
-                        </Button>
-                      </div>
-                    </div>
-                    <Textarea
-                      rows={3}
-                      value={customQaPrompt}
-                      onChange={e => setCustomQaPrompt(e.target.value)}
-                      placeholder="Nhập câu lệnh chỉ dẫn (Prompt) cho Cố vấn Hỏi đáp quy trình B2C..."
-                    />
-                  </div>
+                  <InlinePurposeApiSetup
+                    purposeId="KNOWLEDGE_QA"
+                    onConfigSaved={() => {
+                      const eff = getEffectiveConfigForPurpose('KNOWLEDGE_QA');
+                      setCustomQaPrompt(eff.purpose.systemInstruction);
+                    }}
+                  />
                 )}
 
                 {/* Gợi ý câu hỏi nhanh theo chủ đề */}

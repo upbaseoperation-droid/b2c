@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   extractCompetitorVideoScriptAndHook,
   inspectTikTokVideoBatch,
@@ -8,6 +9,20 @@ import {
 import { INITIAL_DEALS } from '@/lib/mockData';
 
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập để phân tích video TikTok.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền sử dụng công cụ phân tích video.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
 

@@ -37,6 +37,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'koc-hub': 'Cổng đối tác KOC / KOL',
   'ads-report': 'Báo cáo Ads TikTok',
   'api-settings': 'Cấu hình API',
+  'cloudflare-admin': 'Quản lý Cloudflare R2',
   'knowledge-qa': 'Sổ tay & Hỏi đáp',
   'audit-trail': 'Nhật ký kiểm toán',
   'tiktok-crawler': 'Crawler KOC & Đối thủ',

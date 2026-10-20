@@ -33,6 +33,7 @@ import {
   formatSocialChannelUrl,
   type KocSocialDiscoveryResult,
 } from '../lib/kocSocialDiscovery';
+import { getEffectiveConfigForPurpose, loadApiWorkspaceConfig } from '../lib/apiKeyConfig';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -126,6 +127,21 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     setIsSearchingSocial(true);
     setFormError(null);
     try {
+      const workspaceCfg = loadApiWorkspaceConfig();
+      const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
+      const provider = effective.primaryProvider === 'INTERNAL' ? 'GOOGLE' : effective.primaryProvider;
+      const llmConfig = {
+        provider,
+        model:
+          effective.primaryProvider === 'INTERNAL'
+            ? workspaceCfg.providers.GOOGLE?.defaultModel || 'gemini-3.8-flash'
+            : effective.primaryModel,
+        apiKey:
+          effective.primaryProvider === 'INTERNAL'
+            ? workspaceCfg.providers.GOOGLE?.apiKey || ''
+            : effective.primaryApiKey,
+        baseUrl: workspaceCfg.providers[provider]?.baseUrl,
+      };
       const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -134,23 +150,25 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           stageName: targetName || targetHandle,
           realName: realName.trim() || undefined,
           phone: phone.trim() || undefined,
+          niche: kocCategory,
           bio: scrapedCache?.channelProfile.bio,
+          llmConfig,
         }),
       });
       const json = await res.json();
       if (res.ok && json.success && json.data) {
         const data: KocSocialDiscoveryResult = json.data;
         setSocialCandidates(data);
-        if (!shopeeChannel && data.candidatesByPlatform.SHOPEE[0]) {
+        if (!shopeeChannel && data.candidatesByPlatform.SHOPEE[0] && data.candidatesByPlatform.SHOPEE[0].confidence !== 'GỢI_Ý') {
           setShopeeChannel(data.candidatesByPlatform.SHOPEE[0].handle);
         }
-        if (!facebookChannel && data.candidatesByPlatform.FACEBOOK[0]) {
+        if (!facebookChannel && data.candidatesByPlatform.FACEBOOK[0] && data.candidatesByPlatform.FACEBOOK[0].confidence !== 'GỢI_Ý') {
           setFacebookChannel(data.candidatesByPlatform.FACEBOOK[0].handle);
         }
-        if (!instagramChannel && data.candidatesByPlatform.INSTAGRAM[0]) {
+        if (!instagramChannel && data.candidatesByPlatform.INSTAGRAM[0] && data.candidatesByPlatform.INSTAGRAM[0].confidence !== 'GỢI_Ý') {
           setInstagramChannel(data.candidatesByPlatform.INSTAGRAM[0].handle);
         }
-        if (!threadsChannel && data.candidatesByPlatform.THREADS[0]) {
+        if (!threadsChannel && data.candidatesByPlatform.THREADS[0] && data.candidatesByPlatform.THREADS[0].confidence !== 'GỢI_Ý') {
           setThreadsChannel(data.candidatesByPlatform.THREADS[0].handle);
         }
       } else {

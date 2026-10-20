@@ -14,7 +14,9 @@ import {
   Clock,
   RotateCcw,
   Save,
+  KeyRound,
 } from 'lucide-react';
+import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 import {
   OperationalApiPurposeId,
   ApiProviderId,
@@ -33,7 +35,6 @@ export interface OperationalReportDrawerProps {
   onClose: () => void;
   purposeId: OperationalApiPurposeId;
   moduleTitle: string;
-  moduleSubtitle?: string;
   contextDataText: string;
   customSystemPrompt?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
@@ -54,6 +55,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
   const [editableContext, setEditableContext] = useState<string>(contextDataText);
   const [showPromptEditor, setShowPromptEditor] = useState<boolean>(true);
   const [showContextEditor, setShowContextEditor] = useState<boolean>(false);
+  const [showApiKeyEditor, setShowApiKeyEditor] = useState<boolean>(false);
   const [promptSavedToast, setPromptSavedToast] = useState<string | null>(null);
 
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -237,9 +239,17 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
             </div>
           </div>
 
-          {/* Nút bật/tắt Thiết lập câu lệnh (Prompt) và Xem dữ liệu đầu vào */}
+          {/* Nút bật/tắt Thiết lập khóa API, Thiết lập câu lệnh (Prompt) và Xem dữ liệu đầu vào */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-line/60">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowApiKeyEditor(v => !v)}
+                className="text-2xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                {showApiKeyEditor ? 'Ẩn khóa API & Kiểm tra kết nối' : 'Thiết lập khóa API & Kiểm tra kết nối'}
+              </button>
               <button
                 type="button"
                 onClick={() => setShowPromptEditor(v => !v)}
@@ -264,6 +274,14 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
               </span>
             )}
           </div>
+
+          {showApiKeyEditor && (
+            <InlinePurposeApiSetup
+              purposeId={purposeId}
+              showPromptEditor={false}
+              className="bg-surface"
+            />
+          )}
 
           {/* Khung chỉnh sửa Câu lệnh (Prompt) */}
           {showPromptEditor && (

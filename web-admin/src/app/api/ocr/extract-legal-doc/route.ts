@@ -14,6 +14,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (user.role === 'BRAND_PARTNER' || user.partnerType === 'BRAND') {
+    return NextResponse.json(
+      { success: false, error: 'Đối tác thương hiệu không có quyền quét hoặc bóc tách giấy tờ pháp lý cá nhân của Creator.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await request.json();
 

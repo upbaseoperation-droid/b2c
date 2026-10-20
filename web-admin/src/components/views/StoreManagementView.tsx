@@ -111,8 +111,9 @@ export function StoreManagementView({
   const [activeSubTab, setActiveSubTab] = useState<StoreViewSubTab>('DIRECTORY');
 
   const storeList = useMemo(() => {
+    if (onUpdateStore) return stores;
     return stores.map(s => storeOverrides[s.id] || s);
-  }, [stores, storeOverrides]);
+  }, [stores, storeOverrides, onUpdateStore]);
 
   // Selected store key for detailed profile mode
   const [openStoreKey, setOpenStoreKey] = useState<string | null>(() => {
@@ -267,18 +268,31 @@ export function StoreManagementView({
   }, [storeList, getStoreReport]);
 
   // Handle store updates
+  const canManageStores = Boolean(
+    currentUser && (
+      isStaffGlobalAdminOrManager(currentUser) ||
+      currentUser.permissions?.includes('canManageMasterData')
+    )
+  );
+
   const handleSaveStore = (updated: StorePortfolioItem) => {
+    if (!canManageStores) {
+      onNotify?.('Bạn không có quyền chỉnh sửa thông số gian hàng.', 'warning');
+      return;
+    }
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
     onNotify?.(`Đã cập nhật thông số định danh gian hàng ${updated.storeName}`, 'success');
   };
 
   const handleSilentUpdateStore = (updated: StorePortfolioItem) => {
+    if (!canManageStores) return;
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
   };
 
   const handleBulkUpdateStores = (updatedStores: StorePortfolioItem[]) => {
+    if (!canManageStores) return;
     setStoreOverrides(prev => {
       const next = { ...prev };
       updatedStores.forEach(st => {
@@ -293,6 +307,10 @@ export function StoreManagementView({
     updated: StorePortfolioItem,
     logEntry: { fromPic: string; toPic: string; effectiveDate: string; reason: string }
   ) => {
+    if (!canManageStores) {
+      onNotify?.('Bạn không có quyền bàn giao PIC gian hàng.', 'warning');
+      return;
+    }
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
     onNotify?.(
@@ -346,16 +364,16 @@ export function StoreManagementView({
             total: visibleStores.length,
           }}
           onNavigateToBrandProfile={onNavigateToBrandProfile}
-          onOpenHandover={s => setHandoverTarget(s)}
-          onOpenEdit={s => setEditTarget(s)}
-          onUpdateStore={handleSaveStore}
+          onOpenHandover={canManageStores ? s => setHandoverTarget(s) : undefined}
+          onOpenEdit={canManageStores ? s => setEditTarget(s) : undefined}
+          onUpdateStore={canManageStores ? handleSaveStore : undefined}
           onDrilldownToPlan={onDrilldownToPlan}
           onDrilldownToListing={onDrilldownToListing}
           onDrilldownToBooking={onDrilldownToBooking}
           onSelectDealForContract={onSelectDealForContract}
         />
 
-        {handoverTarget && (
+        {canManageStores && handoverTarget && (
           <StoreHandoverDialog
             open={Boolean(handoverTarget)}
             onClose={() => setHandoverTarget(null)}
@@ -364,7 +382,7 @@ export function StoreManagementView({
           />
         )}
 
-        {editTarget && (
+        {canManageStores && editTarget && (
           <StoreEditDialog
             open={Boolean(editTarget)}
             onClose={() => setEditTarget(null)}
@@ -459,19 +477,19 @@ export function StoreManagementView({
     },
     {
       key: 'storeCoefficient',
-      header: 'Hệ số (Bảng 2)',
+      header: 'Hệ số gian hàng',
       width: 110,
       align: 'center',
       render: s => {
         const norm = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
         return (
           <div
-            className="inline-flex flex-col items-center gap-0.5 cursor-pointer"
-            onClick={e => {
+            className={`inline-flex flex-col items-center gap-0.5 ${canManageStores ? 'cursor-pointer hover:opacity-80' : ''}`}
+            onClick={canManageStores ? e => {
               e.stopPropagation();
               setEditTarget(s);
-            }}
-            title={`${norm.tier} (HS ${norm.label}): ${norm.rule.definition}`}
+            } : undefined}
+            title={canManageStores ? 'Bấm để chỉnh sửa thông số gian hàng' : undefined}
           >
             <span className="inline-flex items-center gap-1 text-xs font-medium text-ink">
               <span>{norm.tier}</span>
@@ -622,7 +640,7 @@ export function StoreManagementView({
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Hệ số Gian hàng (Bảng 2)</span>
+            <span>Hệ số Gian hàng</span>
           </button>
         </div>
       </div>
@@ -749,7 +767,7 @@ export function StoreManagementView({
               onPageChange={setPage}
             />
 
-            {handoverTarget && (
+            {canManageStores && handoverTarget && (
               <StoreHandoverDialog
                 open={Boolean(handoverTarget)}
                 onClose={() => setHandoverTarget(null)}
@@ -758,7 +776,7 @@ export function StoreManagementView({
               />
             )}
 
-            {editTarget && (
+            {canManageStores && editTarget && (
               <StoreEditDialog
                 open={Boolean(editTarget)}
                 onClose={() => setEditTarget(null)}

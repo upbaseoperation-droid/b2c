@@ -33,6 +33,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
 | HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
 | HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng |
+| **HUB-GOV-04** | [**Sổ đăng ký lỗi & Quy tắc phòng ngừa tái phát**](governance/KNOWN_BUGS_AND_LESSONS.md) | **Đang dùng (Bắt buộc đối chiếu chéo toàn hệ thống)** |
 | HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành toàn diện (Gộp nhóm điều hướng NAV_GROUPS, khử trùng lặp tab chéo, chuẩn hóa Modal & loại bỏ phụ đề giải thích thừa) |
 
 ## Giai đoạn 1 — Yêu cầu
@@ -59,6 +60,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, Luồng đẩy Phiếu ĐNTT / Tạm ứng Bảng 3.2 sang Lark Approval & Larkbase, TikTok Seller, Kalodata, Nghiên cứu Brand & Đối thủ, Crawler KOC & Đối thủ (TikTok Open-Source Engines), LLM Gateway & Prompt Setup 8 phân hệ, WeSign, OCR |
 | **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Đã hoàn thành** | Phân quyền 8 vai trò (CEO, Giám Đốc MKT, Growth/Media Head, Leader, Specialist, Legal, Finance, Brand) & Động cơ phân quyền phạm vi (Data Scoping Engine) |
 | HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, `NAV_GROUPS` & `TAB_LABELS`, nguyên tắc Single Source of Truth, Mobile Responsive (`360px–1023px`) và component UI |
+| **HUB-2.9** | [**Dự toán chi phí API & Định hướng Báo cáo, Phân tích dữ liệu và Hỗ trợ nhập liệu**](2-design/2.9_API_COST_AND_WORKFLOW_ACCELERATION_BACKLOG.md) | **Đã lưu trữ** | Tập trung 2 trụ cột: (1) Hỗ trợ nhập liệu nhanh & chuẩn hóa (`ENTRY-01`..`ENTRY-04`), (2) Báo cáo điều hành & phân tích đối soát dữ liệu (`REPORT-01`..`REPORT-04`) kèm dự toán chi phí cho 69 gian hàng B2C |
 
 ## Mã nguồn & Sản phẩm thực thi
 

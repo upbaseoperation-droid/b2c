@@ -13,7 +13,8 @@ export type OperationalApiPurposeId =
   | 'PLAN_ADS_ANALYSIS'
   | 'KOC_MATCHING'
   | 'KOC_HISTORY_EVALUATION'
-  | 'KNOWLEDGE_QA';
+  | 'KNOWLEDGE_QA'
+  | 'BRAND_MARKET_RESEARCH';
 
 export interface ApiModelOption {
   id: string;
@@ -60,7 +61,7 @@ export interface ApiUsageLogItem {
   latencyMs: number;
   status: 'SUCCESS' | 'FALLBACK' | 'ERROR';
   errorMessage?: string;
-  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'TEST';
+  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'MARKET_RESEARCH' | 'TEST';
 }
 
 export const USD_TO_VND_RATE = 25450; // Tỷ giá quy đổi chuẩn USD -> VNĐ
@@ -149,14 +150,14 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       contextWindowTokens: 1_000_000,
     },
     {
-      id: 'gemini-3.5-flash',
-      label: 'Gemini 3.5 Flash',
+      id: 'gemini-3.6-flash',
+      label: 'Gemini 3.6 Flash',
       badge: 'Ổn định',
-      description: 'Cân bằng tốc độ và độ sâu phân tích cho các nghiệp vụ rà soát nội dung và danh bạ KOC.',
+      description: 'Bản nâng cấp kế nhiệm Gemini 3.5 Flash: cân bằng tốc độ và độ sâu phân tích cho rà soát nội dung và danh bạ KOC.',
       supportsVision: true,
       recommendedFor: ['KOC_MATCHING', 'SCRIPT_REVIEW'],
-      inputCostPerMillionUsd: 1.50,
-      outputCostPerMillionUsd: 9.00,
+      inputCostPerMillionUsd: 0.60,
+      outputCostPerMillionUsd: 3.00,
       contextWindowTokens: 1_000_000,
     },
     {
@@ -168,6 +169,17 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       recommendedFor: ['LEGAL_OCR', 'STAFF_REVIEW'],
       inputCostPerMillionUsd: 0.30,
       outputCostPerMillionUsd: 2.50,
+      contextWindowTokens: 1_000_000,
+    },
+    {
+      id: 'gemini-3.5-flash',
+      label: 'Gemini 3.5 Flash',
+      badge: 'Đa năng',
+      description: 'Xử lý ổn định các tác vụ phân tích kịch bản, trích xuất hồ sơ thương hiệu và đánh giá lịch sử KOC.',
+      supportsVision: true,
+      recommendedFor: ['KOC_MATCHING', 'SCRIPT_REVIEW'],
+      inputCostPerMillionUsd: 1.50,
+      outputCostPerMillionUsd: 9.00,
       contextWindowTokens: 1_000_000,
     },
     {
@@ -201,35 +213,89 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       outputCostPerMillionUsd: 0.60,
       contextWindowTokens: 1_000_000,
     },
+    {
+      id: 'gemini-2.0-flash',
+      label: 'Gemini 2.0 Flash',
+      badge: 'Dự phòng nhanh',
+      description: 'Mô hình phản hồi độ trễ thấp, luôn sẵn sàng làm luồng dự phòng khi cụm chính quá tải.',
+      supportsVision: true,
+      inputCostPerMillionUsd: 0.10,
+      outputCostPerMillionUsd: 0.40,
+      contextWindowTokens: 1_000_000,
+    },
   ],
   OPENAI: [
     {
-      id: 'gpt-5',
-      label: 'GPT-5 (Standard)',
+      id: 'gpt-6.1-sol',
+      label: 'GPT-6.1 Sol',
       badge: 'Khuyên dùng',
-      description: 'Mô hình chủ lực thế hệ 5 của OpenAI: xử lý chính xác bảng số liệu, đối soát kế hoạch tháng và đánh giá vận hành.',
+      description: 'Mô hình chủ lực thế hệ 6.1 của OpenAI: tối ưu đối soát kế hoạch tháng, báo cáo Ads đa sàn và thẩm định hồ sơ KOC.',
       supportsVision: true,
-      recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW', 'CONTRACT_DRAFTING'],
-      inputCostPerMillionUsd: 1.25,
+      recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW', 'CONTRACT_DRAFTING', 'KOC_HISTORY_EVALUATION'],
+      inputCostPerMillionUsd: 2.00,
       outputCostPerMillionUsd: 10.00,
-      contextWindowTokens: 400_000,
+      contextWindowTokens: 1_050_000,
+    },
+    {
+      id: 'gpt-6-astra',
+      label: 'GPT-6 Astra (Flagship)',
+      badge: 'Flagship',
+      description: 'Mô hình cao cấp nhất dòng GPT-6 với ngữ cảnh 1.05M token, giải quyết bài toán chiến lược tài chính và pháp chế phức tạp.',
+      supportsVision: true,
+      recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
+      inputCostPerMillionUsd: 10.00,
+      outputCostPerMillionUsd: 50.00,
+      contextWindowTokens: 1_050_000,
+    },
+    {
+      id: 'gpt-6-luna',
+      label: 'GPT-6 Luna',
+      badge: 'Tốc độ cao',
+      description: 'Mô hình nhanh và tiết kiệm nhất thế hệ GPT-6, rất phù hợp đánh giá nhân sự 4P, kiểm tra SLA và phân loại KOC.',
+      supportsVision: true,
+      recommendedFor: ['STAFF_REVIEW', 'KOC_MATCHING', 'KNOWLEDGE_QA', 'LEGAL_OCR'],
+      inputCostPerMillionUsd: 0.10,
+      outputCostPerMillionUsd: 0.50,
+      contextWindowTokens: 1_050_000,
     },
     {
       id: 'gpt-5.6-sol',
-      label: 'GPT-5.6 Sol (Flagship)',
-      badge: 'Flagship',
-      description: 'Mô hình mạnh nhất hiện tại của OpenAI với ngữ cảnh 1.5M token, chuyên giải quyết bài toán chiến lược phức tạp.',
+      label: 'GPT-5.6 Sol',
+      badge: 'Chuyên sâu',
+      description: 'Phiên bản cao cấp dòng GPT-5.6 với ngữ cảnh 1.05M token, chuyên phân tích báo cáo vận hành và hợp đồng dịch vụ.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
       inputCostPerMillionUsd: 5.00,
       outputCostPerMillionUsd: 30.00,
-      contextWindowTokens: 1_500_000,
+      contextWindowTokens: 1_050_000,
+    },
+    {
+      id: 'gpt-5.6-terra',
+      label: 'GPT-5.6 Terra',
+      badge: 'Cân bằng',
+      description: 'Cân bằng giữa năng lực suy luận và chi phí vận hành với cửa sổ ngữ cảnh 1.05M token.',
+      supportsVision: true,
+      recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW'],
+      inputCostPerMillionUsd: 2.00,
+      outputCostPerMillionUsd: 12.00,
+      contextWindowTokens: 1_050_000,
+    },
+    {
+      id: 'gpt-5.6-luna',
+      label: 'GPT-5.6 Luna',
+      badge: 'Tối ưu chi phí',
+      description: 'Bản thu gọn tốc độ cao của dòng GPT-5.6 cho tác vụ phân loại và trích xuất dữ liệu.',
+      supportsVision: true,
+      recommendedFor: ['STAFF_REVIEW', 'KOC_MATCHING'],
+      inputCostPerMillionUsd: 0.20,
+      outputCostPerMillionUsd: 1.20,
+      contextWindowTokens: 1_050_000,
     },
     {
       id: 'gpt-5.5',
       label: 'GPT-5.5',
-      badge: 'Chuyên sâu',
-      description: 'Hiệu năng cao với cửa sổ ngữ cảnh 1.1M token, phù hợp phân tích báo cáo Ads đa sàn và hợp đồng.',
+      badge: 'Ổn định',
+      description: 'Hiệu năng ổn định với cửa sổ ngữ cảnh 1.1M token, phù hợp phân tích báo cáo Ads đa sàn và hợp đồng.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW'],
       inputCostPerMillionUsd: 3.00,
@@ -237,10 +303,21 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       contextWindowTokens: 1_100_000,
     },
     {
+      id: 'gpt-5',
+      label: 'GPT-5 (Standard)',
+      badge: 'Bản chuẩn 5.0',
+      description: 'Mô hình tiêu chuẩn thế hệ 5 của OpenAI: xử lý bảng số liệu, đối soát kế hoạch tháng và đánh giá vận hành.',
+      supportsVision: true,
+      recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW', 'CONTRACT_DRAFTING'],
+      inputCostPerMillionUsd: 1.25,
+      outputCostPerMillionUsd: 10.00,
+      contextWindowTokens: 400_000,
+    },
+    {
       id: 'gpt-5-mini',
       label: 'GPT-5 mini',
-      badge: 'Tối ưu chi phí',
-      description: 'Tốc độ phản hồi nhanh, chi phí thấp, rất phù hợp đánh giá nhân sự 4P, kiểm tra SLA và phân loại KOC.',
+      badge: 'Tiết kiệm',
+      description: 'Tốc độ phản hồi nhanh, chi phí thấp cho đánh giá nhân sự 4P, kiểm tra SLA và phân loại KOC.',
       supportsVision: true,
       recommendedFor: ['STAFF_REVIEW', 'KOC_MATCHING', 'KNOWLEDGE_QA'],
       inputCostPerMillionUsd: 0.25,
@@ -250,8 +327,8 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5-nano',
       label: 'GPT-5 nano',
-      badge: 'Tiết kiệm',
-      description: 'Rẻ nhất trong dòng GPT-5, chuyên dùng trích xuất trường dữ liệu, chuẩn hóa định dạng và kiểm tra nhanh.',
+      badge: 'Siêu nhẹ',
+      description: 'Chuyên dùng trích xuất trường dữ liệu, chuẩn hóa định dạng và kiểm tra nhanh.',
       supportsVision: true,
       recommendedFor: ['LEGAL_OCR', 'STAFF_REVIEW'],
       inputCostPerMillionUsd: 0.05,
@@ -282,7 +359,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     },
     {
       id: 'gpt-4.1',
-      label: 'GPT-4.1 (1M Context)',
+      label: 'GPT-4.1 (1M Context LTS)',
       badge: 'Định dạng JSON',
       description: 'Tuân thủ chặt chẽ cấu trúc JSON đầu ra và danh sách quy định từ cấm của nhãn hàng.',
       supportsVision: true,
@@ -293,7 +370,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     },
     {
       id: 'gpt-4.1-mini',
-      label: 'GPT-4.1 mini',
+      label: 'GPT-4.1 mini (LTS)',
       badge: 'Ngữ cảnh 1M',
       description: 'Bản thu gọn của GPT-4.1 với ngữ cảnh 1M token và chi phí hợp lý.',
       supportsVision: true,
@@ -318,7 +395,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       id: 'claude-opus-5-5',
       label: 'Claude Opus 5.5 (Flagship)',
       badge: 'Pháp chế',
-      description: 'Đỉnh cao về ngôn từ tiếng Việt, phân tích điều khoản pháp lý phức tạp và viết lại kịch bản khó.',
+      description: 'Phù hợp rà soát điều khoản pháp lý và biên tập kịch bản tiếng Việt.',
       supportsVision: true,
       recommendedFor: ['CONTRACT_DRAFTING', 'SCRIPT_REVIEW'],
       inputCostPerMillionUsd: 4.00,
@@ -329,7 +406,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       id: 'claude-haiku-5-5',
       label: 'Claude Haiku 5.5',
       badge: 'Tốc độ cao',
-      description: 'Phản hồi tức thì cho tác vụ quét lỗi chính tả, từ nhạy cảm và tóm tắt trao đổi trong sổ kế hoạch tháng.',
+      description: 'Phản hồi nhanh cho tác vụ quét lỗi chính tả, từ nhạy cảm và tóm tắt trao đổi trong sổ kế hoạch tháng.',
       supportsVision: true,
       recommendedFor: ['STAFF_REVIEW', 'KNOWLEDGE_QA'],
       inputCostPerMillionUsd: 0.10,
@@ -338,9 +415,9 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     },
     {
       id: 'claude-fable-5-1',
-      label: 'Claude Fable 5.1',
+      label: 'Claude Fable 5.1 (Frontier)',
       badge: 'Chiến dịch lớn',
-      description: 'Chuyên xử lý các hồ sơ chiến dịch quy mô lớn, thẩm định rủi ro hợp đồng đa bên.',
+      description: 'Mô hình suy luận chuyên sâu của Anthropic: xử lý hồ sơ chiến dịch quy mô lớn và thẩm định rủi ro hợp đồng đa bên.',
       supportsVision: true,
       recommendedFor: ['CONTRACT_DRAFTING', 'PLAN_ADS_ANALYSIS'],
       inputCostPerMillionUsd: 10.00,
@@ -348,9 +425,31 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
       contextWindowTokens: 1_000_000,
     },
     {
+      id: 'claude-opus-4-8',
+      label: 'Claude Opus 4.8',
+      badge: 'Soạn thảo 4.8',
+      description: 'Phiên bản Opus 4.8 chuyên xử lý văn bản hợp đồng thương mại và đối chiếu quy chuẩn nhãn hàng.',
+      supportsVision: true,
+      recommendedFor: ['CONTRACT_DRAFTING', 'SCRIPT_REVIEW'],
+      inputCostPerMillionUsd: 5.00,
+      outputCostPerMillionUsd: 25.00,
+      contextWindowTokens: 500_000,
+    },
+    {
+      id: 'claude-sonnet-4-6',
+      label: 'Claude Sonnet 4.6',
+      badge: 'Biên tập 4.6',
+      description: 'Phiên bản Sonnet 4.6 ổn định cho rà soát kịch bản 4 phần và gợi ý câu mở đầu 3 giây.',
+      supportsVision: true,
+      recommendedFor: ['SCRIPT_REVIEW', 'KOC_MATCHING'],
+      inputCostPerMillionUsd: 3.00,
+      outputCostPerMillionUsd: 15.00,
+      contextWindowTokens: 500_000,
+    },
+    {
       id: 'claude-sonnet-4-5',
-      label: 'Claude Sonnet 4.5',
-      badge: 'Biên tập & Pháp chế (Bản 4.5)',
+      label: 'Claude Sonnet 4.5 (Bản LTS)',
+      badge: 'Bản LTS',
       description: 'Viết lại Hook 3s đầu, lời thoại KOC theo đúng giọng văn nhãn hàng (Mẹ bỉm, Chuyên gia da liễu).',
       supportsVision: true,
       recommendedFor: ['SCRIPT_REVIEW', 'CONTRACT_DRAFTING'],
@@ -360,12 +459,22 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     },
     {
       id: 'claude-opus-4-5',
-      label: 'Claude Opus 4.5',
-      badge: 'Soạn thảo chuyên sâu (Bản 4.5)',
-      description: 'Phiên bản Opus 4.5 ổn định cho các nghiệp vụ biên tập nội dung và hợp đồng thương mại.',
+      label: 'Claude Opus 4.5 (Bản LTS)',
+      badge: 'Bản LTS',
+      description: 'Phiên bản Opus 4.5 ổn định dài hạn cho các nghiệp vụ biên tập nội dung và hợp đồng thương mại.',
       supportsVision: true,
       inputCostPerMillionUsd: 5.00,
       outputCostPerMillionUsd: 25.00,
+      contextWindowTokens: 200_000,
+    },
+    {
+      id: 'claude-haiku-4-5',
+      label: 'Claude Haiku 4.5 (Bản LTS)',
+      badge: 'Tiết kiệm',
+      description: 'Phiên bản Haiku 4.5 nhẹ và ổn định cho các tác vụ hỏi đáp sổ tay quy trình.',
+      supportsVision: true,
+      inputCostPerMillionUsd: 0.80,
+      outputCostPerMillionUsd: 4.00,
       contextWindowTokens: 200_000,
     },
   ],
@@ -388,6 +497,7 @@ export const PROVIDER_META: Record<
   {
     name: string;
     shortName: string;
+    badgeLabel?: string;
     badgeClass: string;
     borderClass: string;
     keyPlaceholder: string;
@@ -472,7 +582,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       company: 'OpenAI',
       enabled: true,
       apiKey: '',
-      defaultModel: 'gpt-5',
+      defaultModel: 'gpt-6.1-sol',
       baseUrl: 'https://api.openai.com/v1',
       organizationId: '',
       monthlyBudgetLimitUsd: 100,
@@ -523,7 +633,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       label: 'Key ChatGPT — Đối soát Plan 4.1 & Báo cáo Ads',
       providerId: 'OPENAI',
       apiKey: '',
-      defaultModel: 'gpt-5',
+      defaultModel: 'gpt-6.1-sol',
       departmentScope: 'GROWTH_ADS',
       createdAt: '2026-10-03',
       notes: 'Khóa riêng cho Trưởng phòng & Growth đối soát hạn mức Order Net và ROAS.',
@@ -558,7 +668,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       primaryProvider: 'CLAUDE',
       primaryModel: 'claude-sonnet-5-5',
       fallbackProvider: 'OPENAI',
-      fallbackModel: 'gpt-5',
+      fallbackModel: 'gpt-6.1-sol',
       temperature: 0.3,
       maxTokens: 2000,
       systemInstruction:
@@ -592,7 +702,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       description:
         'Tổng hợp tỷ lệ lấp đầy slot W1-W4, tỷ lệ đúng hạn SLA, điểm khối lượng việc P3 theo độ khó gian hàng và soạn lời phê / tin nhắn nhắc việc Lark cho Trưởng phòng.',
       primaryProvider: 'OPENAI',
-      primaryModel: 'gpt-5-mini',
+      primaryModel: 'gpt-6-luna',
       fallbackProvider: 'GOOGLE',
       fallbackModel: 'gemini-3.8-flash',
       temperature: 0.2,
@@ -610,7 +720,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       description:
         'Phân tích chênh lệch hạn mức Order Gross/Net (File 4.1) với thực chi (File 3.2), cảnh báo vượt trần ngân sách gian hàng và phân tích chỉ số ROAS, GMV từ báo cáo TikTok Seller.',
       primaryProvider: 'OPENAI',
-      primaryModel: 'gpt-5',
+      primaryModel: 'gpt-6.1-sol',
       fallbackProvider: 'GOOGLE',
       fallbackModel: 'gemini-4-argon',
       temperature: 0.1,
@@ -648,7 +758,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       primaryProvider: 'GOOGLE',
       primaryModel: 'gemini-3.8-flash',
       fallbackProvider: 'OPENAI',
-      fallbackModel: 'gpt-5-mini',
+      fallbackModel: 'gpt-6-luna',
       temperature: 0.2,
       maxTokens: 2200,
       systemInstruction:
@@ -674,8 +784,26 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       sampleInputText:
         'KOC cá nhân chốt giá thực nhận Net là 4.500.000đ thì trên hợp đồng ghi giá Gross bao nhiêu, khấu trừ thuế thế nào và dùng mẫu hợp đồng số mấy?',
     },
+    BRAND_MARKET_RESEARCH: {
+      purposeId: 'BRAND_MARKET_RESEARCH',
+      title: '9. Nghiên cứu thị trường, phân tích 4P nhãn hàng & đào bình luận',
+      departmentTag: 'Chiến lược & Thương hiệu',
+      usedInScreens: ['Nghiên cứu thị trường & đối thủ', 'Hồ sơ thương hiệu'],
+      description:
+        'Tổng hợp hồ sơ 4P của thương hiệu, đối chiếu ma trận đối thủ cạnh tranh trên TikTok Shop/Shopee Mall, bóc tách bình luận nỗi đau khách hàng và đề xuất chiến lược định vị.',
+      primaryProvider: 'GOOGLE',
+      primaryModel: 'gemini-3.8-flash',
+      fallbackProvider: 'OPENAI',
+      fallbackModel: 'gpt-6.1-sol',
+      temperature: 0.25,
+      maxTokens: 2200,
+      systemInstruction:
+        'Bạn là Chuyên gia Nghiên cứu Thị trường & Định vị Thương hiệu B2C tại Upbase. Dựa trên dữ liệu 4P nhãn hàng, danh mục SKU, ma trận đối thủ cạnh tranh và các cụm bình luận khách hàng trên TikTok/Shopee, hãy lập báo cáo gồm: (1) Định vị & khoảng giá tối ưu, (2) Điểm yếu của đối thủ cần khai thác ngay trong kịch bản KOC, (3) 3 góc nội dung giải quyết trực diện nỗi đau & rào cản mua hàng của khách.',
+      sampleInputText:
+        'Thương hiệu: Kutieskin (Chăm sóc da Mẹ & Bé)\nKhoảng giá chủ lực: 85.000đ - 245.000đ | SKU mũi nhọn: Kem mẩn ngứa hăm (95.000đ), Kem chàm sữa (215.000đ).\nĐối thủ trực diện: Bepanthen, Mustela, Cỏ Mềm.\nCụm bình luận khách hàng nhiều nhất: Sợ chứa corticoid (42%), Hỏi trẻ sơ sinh 1 tháng tuổi bôi mặt được không (31%).',
+    },
   },
-  updatedAt: '2026-10-14T12:00:00.000Z',
+  updatedAt: '2026-10-20T12:00:00.000Z',
 };
 
 const STORAGE_KEY = 'upbase_b2c_api_workspace_config_v2';
@@ -689,8 +817,8 @@ const LEGACY_MODEL_UPGRADE_MAP: Record<string, string> = {
   'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
   'gemini-1.5-pro': 'gemini-4-argon',
   'gemini-1.5-flash': 'gemini-3.8-flash',
-  'gpt-4o': 'gpt-5',
-  'gpt-4o-mini': 'gpt-5-mini',
+  'gpt-4o': 'gpt-6.1-sol',
+  'gpt-4o-mini': 'gpt-6-luna',
   'o1': 'o3',
   'o3-mini': 'o4-mini',
   'claude-3-7-sonnet-20250219': 'claude-sonnet-5-5',
@@ -776,6 +904,7 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
         KOC_MATCHING: mergeRoute('KOC_MATCHING'),
         KOC_HISTORY_EVALUATION: mergeRoute('KOC_HISTORY_EVALUATION'),
         KNOWLEDGE_QA: mergeRoute('KNOWLEDGE_QA'),
+        BRAND_MARKET_RESEARCH: mergeRoute('BRAND_MARKET_RESEARCH'),
       },
       updatedAt: parsed.updatedAt || INITIAL_API_WORKSPACE_CONFIG.updatedAt,
     };
@@ -843,6 +972,42 @@ export function updatePurposeSystemInstruction(
 export function resetPurposeSystemInstruction(purposeId: OperationalApiPurposeId): PurposeRoutingRule {
   const defaultRule = INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId];
   return updatePurposeSystemInstruction(purposeId, defaultRule.systemInstruction);
+}
+
+/**
+ * Cập nhật nhanh cấu hình kết nối (Nhà cung cấp, Mô hình, Khóa API riêng, Dự phòng, Câu lệnh) cho một phân hệ ngay trên màn hình tính năng
+ */
+export function updatePurposeRoutingRule(
+  purposeId: OperationalApiPurposeId,
+  patch: Partial<Pick<PurposeRoutingRule, 'primaryProvider' | 'primaryModel' | 'fallbackProvider' | 'fallbackModel' | 'customApiKeyOverride' | 'namedKeyId' | 'systemInstruction' | 'temperature' | 'maxTokens'>>
+): PurposeRoutingRule {
+  const cfg = loadApiWorkspaceConfig();
+  const base = cfg.purposeRoutes[purposeId] || INITIAL_API_WORKSPACE_CONFIG.purposeRoutes[purposeId];
+  const updatedRule: PurposeRoutingRule = {
+    ...base,
+    ...patch,
+  };
+  cfg.purposeRoutes[purposeId] = updatedRule;
+  saveApiWorkspaceConfig(cfg);
+  return updatedRule;
+}
+
+/**
+ * Lưu nhanh khóa API mặc định cho một nhà cung cấp (Google / OpenAI / Claude) từ màn hình tính năng
+ */
+export function updateProviderApiKey(
+  providerId: Exclude<ApiProviderId, 'INTERNAL'>,
+  apiKey: string,
+  defaultModel?: string
+): void {
+  const cfg = loadApiWorkspaceConfig();
+  if (!cfg.providers[providerId]) return;
+  cfg.providers[providerId] = {
+    ...cfg.providers[providerId],
+    apiKey: apiKey.trim(),
+    ...(defaultModel ? { defaultModel } : {}),
+  };
+  saveApiWorkspaceConfig(cfg);
 }
 
 /**
@@ -1190,6 +1355,7 @@ export function getAggregatedUsageMetrics(logs: ApiUsageLogItem[]) {
     KOC_MATCHING: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     KOC_HISTORY_EVALUATION: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
     KNOWLEDGE_QA: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
+    BRAND_MARKET_RESEARCH: { calls: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, costVnd: 0 },
   };
 
   for (const log of logs) {

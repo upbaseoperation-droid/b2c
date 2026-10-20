@@ -17,6 +17,21 @@ export interface SocialChannelCandidate {
   followerCount?: number;
 }
 
+export interface KocSocialLlmConfig {
+  provider?: 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL';
+  model?: string;
+  apiKey?: string;
+  baseUrl?: string;
+}
+
+export interface KocSocialLlmAnalysisSummary {
+  providerUsed: string;
+  modelUsed: string;
+  groundedSearchUsed: boolean;
+  reasoningSummary: string;
+  candidatesFoundCount: number;
+}
+
 export interface KocSocialDiscoveryResult {
   kocId?: string;
   tiktokHandle: string;
@@ -24,6 +39,7 @@ export interface KocSocialDiscoveryResult {
   scannedAt: string;
   bioExtracted?: string;
   bioLinkExtracted?: string;
+  llmAnalysis?: KocSocialLlmAnalysisSummary;
   candidatesByPlatform: Record<SocialPlatformKey, SocialChannelCandidate[]>;
 }
 
@@ -342,7 +358,7 @@ function extractSocialLinksFromText(
   }
 
   for (const m of normalized.matchAll(
-    /(?:\b(?:fb|facebook|fanpage)\b)\s*[:\-–]\s*(?:https?:\/\/)?(?:www\.|m\.)?(?:(?:facebook|fb)\.com\/)?([a-zA-Z0-9.]{4,35})/gi
+    /(?:\b(?:fb|facebook|fanpage)|phở\s*bò|pho\s*bo)\s*[:\-–=]\s*(?:https?:\/\/)?(?:www\.|m\.)?(?:(?:facebook|fb)\.com\/)?@?([a-zA-Z0-9._]{4,35})/gi
   )) {
     const h = m[1].trim().replace(/\/+$/, '').replace(/\.+$/, '');
     const lower = h.toLowerCase();
@@ -356,7 +372,21 @@ function extractSocialLinksFromText(
     });
   }
 
-  // 4. Direct Shopee shop URLs
+  for (const m of normalized.matchAll(
+    /(?:\b(?:threads)|thờ\s*rét|tho\s*ret)\s*[:\-–=]\s*(?:https?:\/\/)?(?:www\.)?(?:threads\.(?:net|com)\/)?@?([a-zA-Z0-9._]{3,30})/gi
+  )) {
+    const h = m[1].toLowerCase().replace(/\/+$/, '').replace(/\.+$/, '');
+    if (IGNORED_IG_PATHS.has(h) || h.length < 3) continue;
+    candidates.push({
+      platform: 'THREADS',
+      handle: `@${h}`,
+      url: `https://www.threads.net/@${h}`,
+      confidence: 'CAO',
+      sourceLabel,
+    });
+  }
+
+  // 4. Direct Shopee shop URLs & bio mentions
   for (const m of normalized.matchAll(
     /(?:https?:\/\/)?(?:www\.|vn\.)?(?:shopee\.vn)\/(?:shop\/|universal-link\/)?([a-zA-Z0-9._-]{3,35})/gi
   )) {
@@ -375,6 +405,21 @@ function extractSocialLinksFromText(
       handle: h,
       url: `https://shopee.vn/${h}`,
       confidence,
+      sourceLabel,
+    });
+  }
+
+  for (const m of normalized.matchAll(
+    /(?:\b(?:shopee|shop\s*shopee)|sóp\s*pi|sop\s*pi|sọp\s*pe)\s*[:\-–=]\s*(?:https?:\/\/)?(?:www\.|vn\.)?(?:shopee\.vn\/)?@?([a-zA-Z0-9._-]{3,35})/gi
+  )) {
+    const h = m[1].trim().replace(/\/+$/, '').replace(/\.+$/, '');
+    const lower = h.toLowerCase();
+    if (IGNORED_SHOPEE_PATHS.has(lower) || /^(link|bio|ở|đầu|trang|của|mình)$/i.test(lower)) continue;
+    candidates.push({
+      platform: 'SHOPEE',
+      handle: h,
+      url: `https://shopee.vn/${h}`,
+      confidence: 'CAO',
       sourceLabel,
     });
   }
@@ -554,7 +599,12 @@ function isExplicitOfficialSource(sourceLabel: string): boolean {
     sourceLabel.includes('Bio') ||
     sourceLabel.includes('YouTube') ||
     sourceLabel.includes('danh bạ') ||
-    sourceLabel.includes('Đồng bộ từ tài khoản Instagram')
+    sourceLabel.includes('Đồng bộ từ tài khoản Instagram') ||
+    sourceLabel.includes('Gemini') ||
+    sourceLabel.includes('OpenAI') ||
+    sourceLabel.includes('Claude') ||
+    sourceLabel.includes('Google Search') ||
+    sourceLabel.includes('Mô hình ngôn ngữ')
   );
 }
 
@@ -805,13 +855,378 @@ function buildHandleVariants(tiktokHandle: string, stageName: string, realName?:
   return [...variants];
 }
 
+async function discoverFromWebSearchEngines(
+  stageName: string,
+  tiktokHandle: string,
+  realName: string
+): Promise<{ candidates: SocialChannelCandidate[]; searchSnippets: string }> {
+  const cleanStage = (stageName || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+  const queryTerms = [cleanStage, tiktokHandle ? `@${tiktokHandle}` : '', realName]
+    .filter((v) => v && v.length >= 3)
+    .slice(0, 2)
+    .join(' ');
+  if (!queryTerms) return { candidates: [], searchSnippets: '' };
+
+  const dorkQuery = `${queryTerms} (site:shopee.vn OR site:facebook.com OR site:instagram.com OR site:threads.net)`;
+  const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(dorkQuery)}`;
+  const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(dorkQuery)}&count=15`;
+
+  const [ddgHtml, bingHtml] = await Promise.all([
+    fetchUrlTextSafe(ddgUrl, 4200),
+    fetchUrlTextSafe(bingUrl, 4200),
+  ]);
+
+  const combinedHtml = [ddgHtml, bingHtml].filter(Boolean).join('\n');
+  if (!combinedHtml) return { candidates: [], searchSnippets: '' };
+
+  const candidates = extractSocialLinksFromText(
+    combinedHtml,
+    'Tìm kiếm chỉ mục Web (Google / Bing / DuckDuckGo)',
+    'TRUNG_BÌNH'
+  );
+
+  // Rút trích đoạn văn bản tóm tắt kết quả tìm kiếm để cung cấp ngữ cảnh cho mô hình ngôn ngữ
+  const plainSnippets = decodeHtmlEntities(
+    decodeRedirectUrlsInText(combinedHtml)
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+  ).slice(0, 3500);
+
+  return { candidates, searchSnippets: plainSnippets };
+}
+
+function parseJsonCandidatesFromLlmReply(
+  rawReply: string,
+  sourceTag: string
+): { candidates: SocialChannelCandidate[]; summary: string } {
+  const candidates: SocialChannelCandidate[] = [];
+  let summary = '';
+
+  // Luôn trích xuất thêm bằng bộ nhận diện link phòng trường hợp mô hình trả kèm URL trong văn bản
+  candidates.push(...extractSocialLinksFromText(rawReply, sourceTag, 'CAO'));
+
+  const jsonMatch =
+    rawReply.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1] ||
+    rawReply.match(/(\{[\s\S]*\})/)?.[1];
+
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch.trim());
+      if (typeof parsed.summary === 'string') {
+        summary = parsed.summary.trim();
+      }
+      const platforms: SocialPlatformKey[] = ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'];
+      for (const p of platforms) {
+        const entry = parsed[p] || parsed[p.toLowerCase()];
+        const list = Array.isArray(entry) ? entry : entry ? [entry] : [];
+        for (const item of list) {
+          const rawHandle =
+            typeof item === 'string'
+              ? item
+              : typeof item?.handle === 'string'
+              ? item.handle
+              : typeof item?.url === 'string'
+              ? item.url
+              : '';
+          if (!rawHandle || rawHandle === 'null' || rawHandle === 'none' || rawHandle === 'N/A') {
+            continue;
+          }
+          const cleanH = extractHandleFromSocialInput(p, rawHandle);
+          if (!cleanH || cleanH.length < 3) continue;
+          const bareLower = cleanH.toLowerCase().replace(/^@+/, '');
+          if (
+            (p === 'INSTAGRAM' && IGNORED_IG_PATHS.has(bareLower)) ||
+            (p === 'THREADS' && IGNORED_IG_PATHS.has(bareLower)) ||
+            (p === 'FACEBOOK' && IGNORED_FB_PATHS.has(bareLower)) ||
+            (p === 'SHOPEE' && IGNORED_SHOPEE_PATHS.has(bareLower))
+          ) {
+            continue;
+          }
+          const confRaw = String(item?.confidence || 'CAO').toUpperCase();
+          const confidence: SocialConfidenceLevel =
+            confRaw === 'CAO' || confRaw === 'HIGH'
+              ? 'CAO'
+              : confRaw === 'TRUNG_BÌNH' || confRaw === 'MEDIUM'
+              ? 'TRUNG_BÌNH'
+              : 'CAO';
+
+          candidates.push({
+            platform: p,
+            handle: p === 'INSTAGRAM' || p === 'THREADS' ? `@${bareLower}` : bareLower,
+            url: formatSocialChannelUrl(p, cleanH),
+            displayName: typeof item?.displayName === 'string' ? item.displayName : undefined,
+            confidence,
+            sourceLabel: typeof item?.reason === 'string' && item.reason.trim()
+              ? `${sourceTag}: ${item.reason.trim()}`
+              : sourceTag,
+          });
+        }
+      }
+    } catch {
+      // Fallback sang regex đã chạy ở trên
+    }
+  }
+
+  return { candidates, summary };
+}
+
+async function discoverSocialChannelsViaLlm(params: {
+  tiktokHandle: string;
+  stageName: string;
+  realName?: string;
+  phone?: string;
+  niche?: string;
+  bioText?: string;
+  bioLinkUrl?: string;
+  bioHubText?: string;
+  youtubeAboutText?: string;
+  searchSnippets?: string;
+  llmConfig?: KocSocialLlmConfig;
+}): Promise<{
+  candidates: SocialChannelCandidate[];
+  analysis?: KocSocialLlmAnalysisSummary;
+}> {
+  const cfg = params.llmConfig;
+  const googleKey =
+    (cfg?.provider === 'GOOGLE' && cfg.apiKey ? cfg.apiKey : '') ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    '';
+  const openAiKey =
+    (cfg?.provider === 'OPENAI' && cfg.apiKey ? cfg.apiKey : '') ||
+    process.env.OPENAI_API_KEY ||
+    '';
+  const claudeKey =
+    (cfg?.provider === 'CLAUDE' && cfg.apiKey ? cfg.apiKey : '') ||
+    process.env.ANTHROPIC_API_KEY ||
+    '';
+
+  const activeProvider: 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL' =
+    cfg?.provider === 'GOOGLE' && googleKey
+      ? 'GOOGLE'
+      : cfg?.provider === 'OPENAI' && openAiKey
+      ? 'OPENAI'
+      : cfg?.provider === 'CLAUDE' && claudeKey
+      ? 'CLAUDE'
+      : googleKey
+      ? 'GOOGLE'
+      : openAiKey
+      ? 'OPENAI'
+      : claudeKey
+      ? 'CLAUDE'
+      : 'INTERNAL';
+
+  const promptContext = [
+    `THÔNG TIN ĐỊNH DANH KOC CẦN TÌM KÊNH MẠNG XÃ HỘI:`,
+    `- TikTok Handle: @${params.tiktokHandle}`,
+    `- Nghệ danh / Tên kênh: ${params.stageName}`,
+    params.realName ? `- Họ tên thật / Pháp nhân: ${params.realName}` : '',
+    params.phone ? `- Số điện thoại / Zalo: ${params.phone}` : '',
+    params.niche ? `- Ngành hàng / Nội dung: ${params.niche}` : '',
+    params.bioText ? `- Tiểu sử TikTok (Bio): ${params.bioText}` : '',
+    params.bioLinkUrl ? `- Liên kết Bio TikTok: ${params.bioLinkUrl}` : '',
+    params.bioHubText ? `- Nội dung trang Bio Link: ${params.bioHubText.slice(0, 1500)}` : '',
+    params.youtubeAboutText ? `- Thông tin kênh YouTube: ${params.youtubeAboutText.slice(0, 1200)}` : '',
+    params.searchSnippets ? `- Kết quả tìm kiếm Web: ${params.searchSnippets.slice(0, 1800)}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const systemInstruction = `Bạn là chuyên gia dữ liệu KOC/KOL tại Việt Nam. Nhiệm vụ của bạn là tìm chính xác tài khoản Shopee, Facebook, Instagram và Threads chính thức của KOC dựa trên thông tin định danh, tiểu sử TikTok (bao gồm cả các từ viết lách như "phở bò" = Facebook, "ig/ins" = Instagram, "sóp pi" = Shopee, "thờ rét" = Threads) và kết quả tìm kiếm.
+Chỉ trả về duy nhất 1 khối JSON hợp lệ theo cấu trúc:
+{
+  "summary": "Tóm tắt ngắn gọn 1-2 câu về các dấu hiệu nhận diện kênh tìm được",
+  "SHOPEE": [{ "handle": "username_shopee", "url": "https://shopee.vn/...", "displayName": "Tên shop", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "FACEBOOK": [{ "handle": "username_fb", "url": "https://www.facebook.com/...", "displayName": "Tên FB", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "INSTAGRAM": [{ "handle": "@username_ig", "url": "https://www.instagram.com/...", "displayName": "Tên IG", "confidence": "CAO", "reason": "Lý do khớp" }],
+  "THREADS": [{ "handle": "@username_threads", "url": "https://www.threads.net/@...", "displayName": "Tên Threads", "confidence": "CAO", "reason": "Lý do khớp" }]
+}
+Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng rỗng []. Không tự bịa đặt tài khoản.`;
+
+  if (activeProvider === 'GOOGLE' && googleKey) {
+    const cleanBase = (cfg?.baseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
+    const modelId = cfg?.model || 'gemini-2.5-flash';
+    const url = `${cleanBase}/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(googleKey.trim())}`;
+
+    // Thử gọi kèm công cụ Google Search Grounding trước, nếu model không hỗ trợ thì gọi chế độ tiêu chuẩn
+    for (const useGrounding of [true, false]) {
+      try {
+        const bodyPayload: Record<string, unknown> = {
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemInstruction}\n\n${promptContext}` }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1200,
+          },
+        };
+        if (useGrounding) {
+          bodyPayload.tools = [{ google_search: {} }];
+        }
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyPayload),
+          signal: AbortSignal.timeout(8500),
+        });
+
+        if (!res.ok) {
+          if (useGrounding) continue;
+          break;
+        }
+
+        const data: any = await res.json();
+        const replyText =
+          data?.candidates?.[0]?.content?.parts
+            ?.map((p: any) => p?.text || '')
+            .join('\n') || '';
+
+        const groundingUrls: string[] = [];
+        const chunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        if (Array.isArray(chunks)) {
+          for (const ch of chunks) {
+            if (ch?.web?.uri) groundingUrls.push(String(ch.web.uri));
+            if (ch?.web?.title) groundingUrls.push(String(ch.web.title));
+          }
+        }
+
+        const sourceTag = useGrounding
+          ? `Mô hình ${modelId} + Google Search`
+          : `Mô hình ${modelId}`;
+        const parsed = parseJsonCandidatesFromLlmReply(
+          `${replyText}\n${groundingUrls.join('\n')}`,
+          sourceTag
+        );
+
+        return {
+          candidates: parsed.candidates,
+          analysis: {
+            providerUsed: 'Google Gemini',
+            modelUsed: modelId,
+            groundedSearchUsed: useGrounding,
+            reasoningSummary:
+              parsed.summary ||
+              `Đã phân tích tiểu sử TikTok, liên kết Bio và đối chiếu chỉ mục tìm kiếm cho @${params.tiktokHandle}.`,
+            candidatesFoundCount: parsed.candidates.length,
+          },
+        };
+      } catch {
+        if (useGrounding) continue;
+      }
+    }
+  }
+
+  if (activeProvider === 'OPENAI' && openAiKey) {
+    try {
+      const cleanBase = (cfg?.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+      const modelId = cfg?.model || 'gpt-5-mini';
+      const res = await fetch(`${cleanBase}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${openAiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: promptContext },
+          ],
+          temperature: 0.1,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        const replyText = data?.choices?.[0]?.message?.content || '';
+        const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
+        return {
+          candidates: parsed.candidates,
+          analysis: {
+            providerUsed: 'OpenAI',
+            modelUsed: modelId,
+            groundedSearchUsed: false,
+            reasoningSummary:
+              parsed.summary ||
+              `Đã bóc tách ngữ cảnh tiểu sử, Bio Link và kết quả tìm kiếm cho @${params.tiktokHandle}.`,
+            candidatesFoundCount: parsed.candidates.length,
+          },
+        };
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  if (activeProvider === 'CLAUDE' && claudeKey) {
+    try {
+      const cleanBase = (cfg?.baseUrl || 'https://api.anthropic.com/v1').replace(/\/+$/, '');
+      const modelId = cfg?.model || 'claude-sonnet-5-5';
+      const res = await fetch(`${cleanBase}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeKey.trim(),
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: modelId,
+          max_tokens: 1000,
+          temperature: 0.1,
+          system: systemInstruction,
+          messages: [{ role: 'user', content: promptContext }],
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        const replyText = data?.content?.[0]?.text || '';
+        const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
+        return {
+          candidates: parsed.candidates,
+          analysis: {
+            providerUsed: 'Anthropic Claude',
+            modelUsed: modelId,
+            groundedSearchUsed: false,
+            reasoningSummary:
+              parsed.summary ||
+              `Đã bóc tách ngữ cảnh tiểu sử, Bio Link và kết quả tìm kiếm cho @${params.tiktokHandle}.`,
+            candidatesFoundCount: parsed.candidates.length,
+          },
+        };
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return {
+    candidates: [],
+    analysis: {
+      providerUsed: 'Bộ phân tích ngữ nghĩa & Tìm kiếm đa nguồn UpBase',
+      modelUsed: 'upbase-social-discovery-v2',
+      groundedSearchUsed: true,
+      reasoningSummary: `Đã quét trực tiếp tiểu sử TikTok, giải mã trang Bio Link, đối chiếu kênh YouTube và truy vấn chỉ mục tìm kiếm cho @${params.tiktokHandle} (${params.stageName}).`,
+      candidatesFoundCount: 0,
+    },
+  };
+}
+
 export async function discoverKocSocialChannels(params: {
   kocId?: string;
   tiktokHandle: string;
   stageName: string;
   realName?: string;
   phone?: string;
+  niche?: string;
   bio?: string;
+  llmConfig?: KocSocialLlmConfig;
   existingChannels?: {
     shopeeChannel?: string;
     facebookChannel?: string;
@@ -891,13 +1306,15 @@ export async function discoverKocSocialChannels(params: {
     });
   }
 
-  // 2. Lấy tiểu sử (bio) & bioLink trực tiếp từ TikTok kết hợp tìm kiếm kênh YouTube chính thức song song
+  // 2. Lấy tiểu sử (bio) & bioLink từ TikTok + YouTube About + Web Search Engines song song
   let bioText = params.bio || '';
   let bioLinkUrl = '';
+  let bioHubCollectedText = '';
 
-  const [liveProfile, youtubeDiscovery] = await Promise.all([
+  const [liveProfile, youtubeDiscovery, webSearchDiscovery] = await Promise.all([
     cleanHandle ? fetchLiveTikTokPublicProfile(cleanHandle) : Promise.resolve(null),
     discoverFromYouTubeAboutPage(stageName, cleanHandle, realName),
+    discoverFromWebSearchEngines(stageName, cleanHandle, realName),
   ]);
 
   if (liveProfile?.bio && !bioText) {
@@ -931,6 +1348,7 @@ export async function discoverKocSocialChannels(params: {
     for (const hubUrl of [...new Set(bioHubMatches)].slice(0, 2)) {
       const hubHtml = await fetchUrlTextSafe(hubUrl, 4000);
       if (hubHtml) {
+        bioHubCollectedText += `\n${decodeRedirectUrlsInText(hubHtml).slice(0, 2500)}`;
         extractSocialLinksFromText(hubHtml, `Trích xuất từ trang Bio (${hubUrl})`, 'CAO').forEach(
           addCandidate
         );
@@ -940,10 +1358,27 @@ export async function discoverKocSocialChannels(params: {
     }
   }
 
-  // 3. Đưa toàn bộ ứng viên trích xuất từ trang giới thiệu kênh YouTube chính thức của KOC vào danh sách
+  // 3. Đưa ứng viên từ YouTube & Tìm kiếm Web vào danh sách
   youtubeDiscovery.candidates.forEach(addCandidate);
+  webSearchDiscovery.candidates.forEach(addCandidate);
 
-  // 4. Sinh các biến thể @handle thông minh để đưa vào diện kiểm tra tồn tại thực tế (Live Probe)
+  // 4. Phân tích chuyên sâu qua Mô hình ngôn ngữ (Gemini + Google Search Grounding / OpenAI / Claude)
+  const llmDiscovery = await discoverSocialChannelsViaLlm({
+    tiktokHandle: cleanHandle,
+    stageName,
+    realName,
+    phone: params.phone,
+    niche: params.niche,
+    bioText,
+    bioLinkUrl,
+    bioHubText: bioHubCollectedText,
+    youtubeAboutText: youtubeDiscovery.rawText ? youtubeDiscovery.rawText.slice(0, 1500) : undefined,
+    searchSnippets: webSearchDiscovery.searchSnippets,
+    llmConfig: params.llmConfig,
+  });
+  llmDiscovery.candidates.forEach(addCandidate);
+
+  // 5. Sinh các biến thể @handle thông minh để đưa vào diện kiểm tra tồn tại thực tế (Live Probe)
   const handleVariants = buildHandleVariants(cleanHandle, stageName, realName);
   for (const variant of handleVariants.slice(0, 4)) {
     addCandidate({
@@ -1010,7 +1445,7 @@ export async function discoverKocSocialChannels(params: {
     });
   }
 
-  // 5. XÁC THỰC TỒN TẠI TRỰC TIẾP (LIVE PROFILE VERIFICATION) & SẮP XẾP ƯU TIÊN TÀI KHOẢN CHÍNH THỨC
+  // 6. XÁC THỰC TỒN TẠI TRỰC TIẾP (LIVE PROFILE VERIFICATION) & SẮP XẾP ƯU TIÊN TÀI KHOẢN CHÍNH THỨC
   const verifyPlatformList = async (platform: SocialPlatformKey): Promise<SocialChannelCandidate[]> => {
     const rawList = [...bucket[platform].values()].slice(0, 6);
     const verifiedResults = await Promise.all(
@@ -1044,6 +1479,9 @@ export async function discoverKocSocialChannels(params: {
     verifyPlatformList('THREADS'),
   ]);
 
+  const totalVerified =
+    shopeeVerified.length + facebookVerified.length + instagramVerified.length + threadsVerified.length;
+
   return {
     kocId: params.kocId,
     tiktokHandle: cleanHandle,
@@ -1051,6 +1489,12 @@ export async function discoverKocSocialChannels(params: {
     scannedAt: new Date().toISOString(),
     bioExtracted: bioText || undefined,
     bioLinkExtracted: bioLinkUrl || undefined,
+    llmAnalysis: llmDiscovery.analysis
+      ? {
+          ...llmDiscovery.analysis,
+          candidatesFoundCount: totalVerified,
+        }
+      : undefined,
     candidatesByPlatform: {
       SHOPEE: shopeeVerified,
       FACEBOOK: facebookVerified,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   ingestLarkbaseWebhookRecord,
   listIngestedLarkbasePlanRecords,
@@ -9,6 +10,20 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/integrations/larkbase/booking-plans — Lấy trạng thái kết nối & danh sách bản ghi trong bảng hứng kế hoạch B2C Booking từ Larkbase / AnyCross
 export async function GET(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Vui lòng đăng nhập để xem danh sách kế hoạch Larkbase.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { error: 'Tài khoản đối tác không có quyền truy cập dữ liệu bảng hứng kế hoạch nội bộ.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const month = request.nextUrl.searchParams.get('month') || undefined;
     const data = await listIngestedLarkbasePlanRecords(month);
@@ -103,12 +118,29 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Trường hợp bấm nút đồng bộ từ giao diện
+    const user = getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Vui lòng đăng nhập để thực hiện đồng bộ kế hoạch.' },
+        { status: 401 }
+      );
+    }
+    const canSync =
+      ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'LEADER'].includes(user.role) ||
+      user.permissions?.includes('canApproveBudget');
+    if (!canSync) {
+      return NextResponse.json(
+        { error: 'Bạn không có quyền kích hoạt đồng bộ kế hoạch từ Larkbase.' },
+        { status: 403 }
+      );
+    }
+
     const result = await pullApprovedBookingPlansFromLarkbase({
       appToken: body.appToken,
       tableId: body.tableId,
       viewId: body.viewId,
       month: body.month,
-      actorName: body.actorName
+      actorName: body.actorName || user.name
     });
 
     return NextResponse.json(result);

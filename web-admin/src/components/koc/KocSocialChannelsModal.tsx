@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Check, ExternalLink, Loader2, RefreshCw, Search, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, ExternalLink, Loader2, RefreshCw, Search, Sliders, X } from 'lucide-react';
+import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 import type { KocItem } from '../../lib/types';
 import {
   extractHandleFromSocialInput,
@@ -12,12 +13,19 @@ import {
   type SocialPlatformKey,
 } from '../../lib/kocSocialDiscovery';
 import {
+  type ApiProviderId,
+  PROVIDER_MODELS_CATALOG,
+  getEffectiveConfigForPurpose,
+  loadApiWorkspaceConfig,
+} from '../../lib/apiKeyConfig';
+import {
   Avatar,
   Button,
   FacebookLogo,
   Input,
   InstagramLogo,
   Modal,
+  Select,
   ShopeeLogo,
   Status,
   ThreadsLogo,
@@ -95,6 +103,9 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [discoveryResult, setDiscoveryResult] = useState<KocSocialDiscoveryResult | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>('GOOGLE');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
+  const [showApiSetup, setShowApiSetup] = useState<boolean>(false);
 
   // Giá trị người dùng chọn / chỉnh sửa trước khi bấm Xác nhận
   const [selectedValues, setSelectedValues] = useState<Record<SocialPlatformKey, string>>({
@@ -112,10 +123,52 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
     THREADS: false,
   });
 
-  const runSearch = async (target: KocItem) => {
+  const availableModels = useMemo(
+    () => PROVIDER_MODELS_CATALOG[selectedProvider] || [],
+    [selectedProvider]
+  );
+
+  const handleProviderChange = (prov: ApiProviderId) => {
+    setSelectedProvider(prov);
+    const models = PROVIDER_MODELS_CATALOG[prov] || [];
+    if (models.length > 0) {
+      setSelectedModel(models[0].id);
+    }
+  };
+
+  const resolveLlmConfig = (provOverride?: ApiProviderId, modelOverride?: string) => {
+    const workspaceCfg = loadApiWorkspaceConfig();
+    const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
+    const provider = provOverride || selectedProvider || effective.primaryProvider || 'GOOGLE';
+    const model =
+      modelOverride ||
+      selectedModel ||
+      (provider === effective.primaryProvider
+        ? effective.primaryModel
+        : provider === 'INTERNAL'
+        ? 'upbase-social-discovery-v2'
+        : workspaceCfg.providers[provider]?.defaultModel || 'gemini-3.8-flash');
+    const apiKey =
+      provider === effective.primaryProvider && effective.primaryApiKey
+        ? effective.primaryApiKey
+        : provider === 'INTERNAL'
+        ? ''
+        : workspaceCfg.providers[provider]?.apiKey || '';
+    const baseUrl =
+      provider === 'INTERNAL' ? undefined : workspaceCfg.providers[provider]?.baseUrl;
+
+    return { provider, model, apiKey, baseUrl };
+  };
+
+  const runSearch = async (
+    target: KocItem,
+    provOverride?: ApiProviderId,
+    modelOverride?: string
+  ) => {
     setLoading(true);
     setErrorMsg(null);
     try {
+      const llmConfig = resolveLlmConfig(provOverride, modelOverride);
       const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,7 +178,9 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
           stageName: target.stageName,
           realName: target.realName,
           phone: target.phone,
+          niche: target.niche || target.kocCategory,
           bio: target.bio,
+          llmConfig,
           existingChannels: {
             shopeeChannel: target.shopeeChannel,
             facebookChannel: target.facebookChannel,
@@ -178,6 +233,15 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
 
   useEffect(() => {
     if (!open || !koc) return;
+    const workspaceCfg = loadApiWorkspaceConfig();
+    const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
+    const initProv = effective.primaryProvider === 'INTERNAL' ? 'GOOGLE' : effective.primaryProvider;
+    const initModel =
+      effective.primaryProvider === 'INTERNAL'
+        ? workspaceCfg.providers.GOOGLE?.defaultModel || 'gemini-3.8-flash'
+        : effective.primaryModel;
+    setSelectedProvider(initProv);
+    setSelectedModel(initModel);
     setSelectedValues({
       SHOPEE: koc.shopeeChannel || '',
       FACEBOOK: koc.facebookChannel || '',
@@ -190,7 +254,8 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
       INSTAGRAM: Boolean(koc.instagramChannel),
       THREADS: Boolean(koc.threadsChannel),
     });
-    runSearch(koc);
+    void runSearch(koc, initProv, initModel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, koc]);
 
   if (!koc) return null;
@@ -300,6 +365,89 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
             {errorMsg}
           </div>
         )}
+
+        {/* Thanh cấu hình mô hình ngôn ngữ & tìm kiếm sâu */}
+        <div className="p-3 rounded-xl border border-line bg-surface space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-ink">Công cụ phân tích & tìm kiếm:</span>
+              <Select
+                value={selectedProvider}
+                onChange={(e) => handleProviderChange(e.target.value as ApiProviderId)}
+                aria-label="Nhà cung cấp mô hình"
+                className="w-auto text-xs"
+              >
+                <option value="GOOGLE">Google Gemini + Google Search</option>
+                <option value="OPENAI">OpenAI (ChatGPT)</option>
+                <option value="CLAUDE">Anthropic (Claude)</option>
+                <option value="INTERNAL">Bộ phân tích đa nguồn nội bộ</option>
+              </Select>
+              {selectedProvider !== 'INTERNAL' && availableModels.length > 0 && (
+                <Select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  aria-label="Mô hình phân tích"
+                  className="w-auto text-xs"
+                >
+                  {availableModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={Sliders}
+                onClick={() => setShowApiSetup((v) => !v)}
+              >
+                {showApiSetup ? 'Ẩn cấu hình API' : 'Cấu hình API & Khóa'}
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Search}
+                onClick={() => void runSearch(koc)}
+                disabled={loading}
+              >
+                {loading ? 'Đang dò tìm...' : 'Quét qua mô hình & Google'}
+              </Button>
+            </div>
+          </div>
+
+          {showApiSetup && (
+            <InlinePurposeApiSetup
+              purposeId="KOC_MATCHING"
+              onConfigSaved={() => {
+                const eff = getEffectiveConfigForPurpose('KOC_MATCHING');
+                if (eff.primaryProvider !== 'INTERNAL') {
+                  setSelectedProvider(eff.primaryProvider);
+                  setSelectedModel(eff.primaryModel);
+                }
+              }}
+            />
+          )}
+
+          {discoveryResult?.llmAnalysis && (
+            <div className="pt-2 border-t border-line flex flex-col gap-1 text-2xs text-ink-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-ink">
+                  {discoveryResult.llmAnalysis.providerUsed} ({discoveryResult.llmAnalysis.modelUsed})
+                </span>
+                {discoveryResult.llmAnalysis.groundedSearchUsed && (
+                  <Status tone="info">Kết hợp tìm kiếm Web</Status>
+                )}
+                <Status tone={discoveryResult.llmAnalysis.candidatesFoundCount > 0 ? 'positive' : 'neutral'}>
+                  {discoveryResult.llmAnalysis.candidatesFoundCount} tài khoản xác thực
+                </Status>
+              </div>
+              <div>{discoveryResult.llmAnalysis.reasoningSummary}</div>
+            </div>
+          )}
+        </div>
 
         {(discoveryResult?.bioExtracted || discoveryResult?.bioLinkExtracted) && (
           <div className="px-3 py-2 rounded-lg bg-surface border border-line text-2xs text-ink-2 space-y-1">

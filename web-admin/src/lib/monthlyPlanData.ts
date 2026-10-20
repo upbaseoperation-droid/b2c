@@ -212,7 +212,7 @@ const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
         confirmed: true,
         confirmedBy: 'Vân Ngọc (Trưởng Phòng)',
         confirmedAt: '2026-10-02T09:00:00Z',
-        note: 'Phê duyệt toàn diện cơ cấu 3 bên và đóng băng phiên bản v1.0.'
+        note: 'Phê duyệt cơ cấu 3 bên và chốt phiên bản v1.0.'
       }
     },
     discussions: [

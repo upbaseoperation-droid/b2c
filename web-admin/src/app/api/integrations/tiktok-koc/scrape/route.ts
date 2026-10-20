@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   discoverCompetitorKocs,
   discoverTikTokKocsByHashtag,
@@ -22,6 +23,20 @@ export const dynamic = 'force-dynamic';
  * hoặc GET /api/integrations/tiktok-koc/scrape?trending=1
  */
 export async function GET(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập để sử dụng tính năng tra cứu dữ liệu TikTok.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền sử dụng công cụ cào dữ liệu TikTok.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const videoUrlParam = searchParams.get('videoUrl') || '';

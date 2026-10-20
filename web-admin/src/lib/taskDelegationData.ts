@@ -3,7 +3,13 @@ import {
   TaskAssignmentRoleKey,
   TaskCategoryDifficultyConfig,
   TaskRoleWeightRule,
+  SlaTask,
+  BrandDetail,
+  StorePortfolioItem,
+  normalizeStoreCoefficient,
 } from './types';
+
+export { normalizeStoreCoefficient };
 
 export const TASK_DIFFICULTY_STORAGE_KEY = 'upbase_b2c_task_difficulty_configs_v1';
 export const SOW_POINT_POLICY_STORAGE_KEY = 'upbase_b2c_sow_point_policy_v1';
@@ -1281,8 +1287,362 @@ export function persistSowPolicies(next: SowPointPolicyItem[]): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(SOW_POINT_POLICY_STORAGE_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('upbase-sow-policies-updated'));
     } catch (e) {
       console.warn('Failed to save SOW policies:', e);
     }
   }
+}
+
+export function loadSavedManagerExceptions(): Record<string, boolean> {
+  if (typeof window === 'undefined') return { HN880: true };
+  try {
+    const saved = localStorage.getItem(STAFF_WORKLOAD_EXCEPTIONS_KEY);
+    if (!saved) return { HN880: true };
+    return JSON.parse(saved);
+  } catch {
+    return { HN880: true };
+  }
+}
+
+export function persistManagerExceptions(next: Record<string, boolean>): void {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(STAFF_WORKLOAD_EXCEPTIONS_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('upbase-workload-exceptions-updated', { detail: next }));
+    } catch (e) {
+      console.warn('Failed to save workload exceptions:', e);
+    }
+  }
+}
+
+export function getTargetCapacityByStaffLevel(level: string): number {
+  switch (level) {
+    case 'L3':
+      return 145;
+    case 'L2.5':
+      return 132;
+    case 'L2':
+      return 118;
+    case 'L1.5':
+      return 104;
+    case 'L1':
+      return 92;
+    case 'L0.5':
+      return 78;
+    default:
+      return 105;
+  }
+}
+
+export function getShortVietnameseStaffName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 2) return fullName;
+  return `${parts[parts.length - 2]} ${parts[parts.length - 1]}`;
+}
+
+export function resolveTaskSource(t: SlaTask): 'WORKFLOW_SYSTEM' | 'DIRECTOR_ASSIGNED' {
+  if (t.taskSource) return t.taskSource;
+  if (
+    t.type === 'RESEARCH_TASK' ||
+    t.taskCategory === 'RESEARCH' ||
+    t.assignedBy === 'Đặng Thị Yến Nhi'
+  ) {
+    return 'DIRECTOR_ASSIGNED';
+  }
+  return 'WORKFLOW_SYSTEM';
+}
+
+export type UnifiedWorkloadLoadStatus = 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD';
+export type UnifiedRoleFilterGroup =
+  | 'ALL'
+  | 'LEADER'
+  | 'BOOKING'
+  | 'CONTENT_BRAND'
+  | 'PLAN_STRATEGY'
+  | 'KEY_VISUAL'
+  | 'FOC_SAMPLE';
+
+export function classifyB2cStaffRoleCategory(roleGroup: string): UnifiedRoleFilterGroup {
+  const lower = roleGroup.toLowerCase();
+  if (lower.includes('trưởng nhóm') || lower.includes('lead')) return 'LEADER';
+  if (lower.includes('foc') || lower.includes('sample')) return 'FOC_SAMPLE';
+  if (lower.includes('key visual') || lower.includes('sis')) return 'KEY_VISUAL';
+  if (lower.includes('booking')) return 'BOOKING';
+  if (lower.includes('content') || lower.includes('brand main')) return 'CONTENT_BRAND';
+  if (lower.includes('plan') || lower.includes('strategy')) return 'PLAN_STRATEGY';
+  return 'BOOKING';
+}
+
+export interface UnifiedStaffWorkloadRow extends StaffWorkloadRosterMember {
+  id: string;
+  shortName: string;
+  roleFilterCategory: UnifiedRoleFilterGroup;
+  staffTasks: SlaTask[];
+  activeTasks: SlaTask[];
+  workflowPts: number;
+  directorPts: number;
+  dynamicTaskPts: number;
+  rawTotalPts: number;
+  totalPts: number;
+  hardPts: number;
+  requiredHardRatioPct: number;
+  actualHardRatioPct: number;
+  hardRatioPct: number;
+  minHardRatioReqPct: number;
+  meetsHardRatio: boolean;
+  isHardRatioPass: boolean;
+  hasException: boolean;
+  structureCoef: number;
+  finalMonthlyWorkloadPts: number;
+  targetCapacityPts: number;
+  loadPct: number;
+  loadStatus: UnifiedWorkloadLoadStatus;
+  assignedBrands: {
+    brandId: string;
+    brandName: string;
+    roles: string[];
+  }[];
+  assignedStores: {
+    storeId: string;
+    storeName: string;
+    brandName: string;
+    platform: string;
+    coef: number;
+    budgetNet: number;
+    roleLabel: string;
+  }[];
+  liveAssignedStoresCount: number;
+  liveStoresSummaryText: string;
+}
+
+export function computeUnifiedB2cStaffWorkloads(params: {
+  tasks: SlaTask[];
+  brands: BrandDetail[];
+  storePortfolios: StorePortfolioItem[];
+  managerExceptions?: Record<string, boolean>;
+}): UnifiedStaffWorkloadRow[] {
+  const { tasks, brands, storePortfolios, managerExceptions = { HN880: true } } = params;
+
+  const b2cStores = (() => {
+    const filtered = storePortfolios.filter(s => Boolean(s.requiresB2cPlan || s.isB2cManaged));
+    return filtered.length > 0 ? filtered : storePortfolios.slice(0, 69);
+  })();
+
+  return B2C_28_STAFF_WORKLOAD_ROSTER.map((member, rosterIdx) => {
+    // 1. Live Brand Assignments
+    const assignedBrands: UnifiedStaffWorkloadRow['assignedBrands'] = [];
+    brands.forEach(b => {
+      const roles: string[] = [];
+      const contentMain = b.contentBrandMainPic || b.contentPic || '';
+      const planStrat = b.planStrategyPic || b.brandPicName || '';
+      const kvSis = b.keyVisualSisPic || '';
+      const bookingLead = b.bookingPicLead || '';
+
+      if (contentMain.toLowerCase() === member.name.toLowerCase()) roles.push('Content / Brand');
+      if (planStrat.toLowerCase() === member.name.toLowerCase()) roles.push('Plan / Strategy');
+      if (kvSis.toLowerCase() === member.name.toLowerCase()) roles.push('Key Visual');
+      if (bookingLead.toLowerCase() === member.name.toLowerCase()) roles.push('Booking Lead');
+
+      if (roles.length > 0) {
+        assignedBrands.push({
+          brandId: b.id,
+          brandName: b.name,
+          roles,
+        });
+      }
+    });
+
+    // 2. Live Store Assignments
+    const assignedStores: UnifiedStaffWorkloadRow['assignedStores'] = [];
+    b2cStores.forEach(s => {
+      const matchOwner =
+        (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(member.name.toLowerCase())) ||
+        (s.assignedStaff && s.assignedStaff.toLowerCase().includes(member.name.toLowerCase())) ||
+        (s.b2cOwners && s.b2cOwners.some(o => o.toLowerCase().includes(member.name.toLowerCase())));
+      const matchLeader =
+        s.hasBookingLeader &&
+        s.bookingLeader &&
+        s.bookingLeader.toLowerCase().includes(member.name.toLowerCase());
+      const matchContent =
+        s.contentPic && s.contentPic.toLowerCase().includes(member.name.toLowerCase());
+      const matchLive =
+        s.livestreamPic && s.livestreamPic.toLowerCase().includes(member.name.toLowerCase());
+
+      if (matchOwner || matchLeader || matchContent || matchLive) {
+        const roleLabels: string[] = [];
+        if (matchOwner) roleLabels.push('PIC Gian');
+        if (matchLeader) roleLabels.push('Leader');
+        if (matchContent) roleLabels.push('Content');
+        if (matchLive) roleLabels.push('Live');
+
+        assignedStores.push({
+          storeId: s.id,
+          storeName: s.storeName,
+          brandName: s.brandName,
+          platform: s.platform,
+          coef: normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier,
+          budgetNet: s.budgetNet || s.monthlyBudget || 0,
+          roleLabel: roleLabels.join(' · '),
+        });
+      }
+    });
+
+    // Fallback from roster sample tokens if not yet explicitly linked
+    if (member.keyStoresSample) {
+      const sampleTokens = member.keyStoresSample
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+      sampleTokens.forEach(token => {
+        const matchedStore = b2cStores.find(
+          st =>
+            st.storeName.toLowerCase().includes(token.toLowerCase()) ||
+            st.brandName.toLowerCase().includes(token.toLowerCase())
+        );
+        if (matchedStore && !assignedStores.some(as => as.storeId === matchedStore.id)) {
+          assignedStores.push({
+            storeId: matchedStore.id,
+            storeName: matchedStore.storeName,
+            brandName: matchedStore.brandName,
+            platform: matchedStore.platform,
+            coef: normalizeStoreCoefficient(
+              matchedStore.difficultyTier,
+              matchedStore.difficultyMultiplier
+            ).multiplier,
+            budgetNet: matchedStore.budgetNet || matchedStore.monthlyBudget || 0,
+            roleLabel: 'PIC Phối hợp',
+          });
+        }
+        const matchedBrand = brands.find(br =>
+          br.name.toLowerCase().includes(token.toLowerCase())
+        );
+        if (matchedBrand && !assignedBrands.some(ab => ab.brandId === matchedBrand.id)) {
+          assignedBrands.push({
+            brandId: matchedBrand.id,
+            brandName: matchedBrand.name,
+            roles: [member.roleGroup.split('&')[0].trim()],
+          });
+        }
+      });
+    }
+
+    // 3. Tasks & Workload Points (Bảng 1 -> Bảng 6) + Đồng bộ trực tiếp Hệ số gian hàng & Bàn giao PIC
+    const staffTasks = tasks.filter(
+      t => t.pic && t.pic.toLowerCase() === member.name.toLowerCase()
+    );
+    const activeTasks = staffTasks.filter(t => t.urgency !== 'done');
+
+    let liveWorkflowPts = 0;
+    let liveWorkflowHardPts = 0;
+    let liveDirectorPts = 0;
+    let liveDirectorHardPts = 0;
+
+    staffTasks.forEach(t => {
+      const pts = t.calculatedWorkloadPoints ?? t.standardPoint ?? 2.0;
+      const isHard =
+        t.taskDifficultyTier === 'HARD' ||
+        (t.difficultyMultiplier && t.difficultyMultiplier >= 1.2) ||
+        t.urgency === 'critical';
+      const src = resolveTaskSource(t);
+      if (src === 'DIRECTOR_ASSIGNED') {
+        liveDirectorPts += pts;
+        if (isHard) liveDirectorHardPts += pts;
+      } else {
+        liveWorkflowPts += pts;
+        if (isHard) liveWorkflowHardPts += pts;
+      }
+    });
+
+    // Tác động trực tiếp từ Hệ số gian hàng (0,80 / 1,00 / 1,25 / 1,50) của các gian hàng đang phụ trách
+    const storeCoeffDeltaPts = assignedStores.reduce(
+      (sum, st) => sum + (st.coef - 1.0) * 14.0,
+      0
+    );
+    const storeHardDeltaPts = assignedStores.reduce(
+      (sum, st) => (st.coef >= 1.25 ? sum + (st.coef - 1.0) * 14.0 : sum),
+      0
+    );
+
+    const workflowPts = Number(
+      Math.max(0, member.baselineWorkflowTotalPts + liveWorkflowPts + storeCoeffDeltaPts).toFixed(2)
+    );
+    const directorPts = Number((member.baselineDirectorTotalPts + liveDirectorPts).toFixed(2));
+    const dynamicTaskPts = Number((liveWorkflowPts + liveDirectorPts + storeCoeffDeltaPts).toFixed(2));
+    const rawTotalPts = Number((workflowPts + directorPts).toFixed(2));
+    const hardPts = Number(
+      Math.max(
+        0,
+        member.baselineWorkflowHardPts +
+          member.baselineDirectorHardPts +
+          liveWorkflowHardPts +
+          liveDirectorHardPts +
+          storeHardDeltaPts
+      ).toFixed(2)
+    );
+
+    const levelRule =
+      STAFF_LEVEL_TABLE_4.find(l => l.level === member.level) || STAFF_LEVEL_TABLE_4[3];
+    const actualHardRatioPct =
+      rawTotalPts > 0 ? Number(((hardPts / rawTotalPts) * 100).toFixed(1)) : 0;
+    const meetsHardRatio = actualHardRatioPct >= levelRule.minHardRatioPct;
+    const hasException = !!managerExceptions[member.staffCode];
+    const structureCoef = meetsHardRatio || hasException ? 1.0 : 0.7;
+    const finalMonthlyWorkloadPts = Number((rawTotalPts * structureCoef).toFixed(2));
+
+    const targetCapacityPts = getTargetCapacityByStaffLevel(member.level);
+    const loadPct = Math.round((rawTotalPts / targetCapacityPts) * 100);
+
+    let loadStatus: UnifiedWorkloadLoadStatus = 'OPTIMAL';
+    if (loadPct >= 115) {
+      loadStatus = 'OVERLOAD';
+    } else if (loadPct < 96) {
+      loadStatus = 'UNDERLOAD';
+    }
+
+    const liveAssignedStoresCount =
+      member.staffCode === 'HN880'
+        ? Math.max(member.assignedStoresCount, assignedStores.length)
+        : assignedStores.length > 0
+        ? assignedStores.length
+        : member.assignedStoresCount;
+    const liveStoresSummaryText =
+      assignedStores.length > 0
+        ? assignedStores
+            .map(s => s.storeName.replace(/_TikTok.*|_Shopee.*| Official| Store/gi, ''))
+            .slice(0, 6)
+            .join(', ')
+        : member.keyStoresSample;
+
+    return {
+      ...member,
+      id: `staff-${member.staffCode}`,
+      shortName: getShortVietnameseStaffName(member.name),
+      roleFilterCategory: classifyB2cStaffRoleCategory(member.roleGroup),
+      staffTasks,
+      activeTasks,
+      workflowPts,
+      directorPts,
+      dynamicTaskPts,
+      rawTotalPts,
+      totalPts: rawTotalPts,
+      hardPts,
+      requiredHardRatioPct: levelRule.minHardRatioPct,
+      minHardRatioReqPct: levelRule.minHardRatioPct,
+      actualHardRatioPct,
+      hardRatioPct: actualHardRatioPct,
+      meetsHardRatio,
+      isHardRatioPass: meetsHardRatio,
+      hasException,
+      structureCoef,
+      finalMonthlyWorkloadPts,
+      targetCapacityPts,
+      loadPct,
+      loadStatus,
+      assignedBrands,
+      assignedStores,
+      liveAssignedStoresCount,
+      liveStoresSummaryText,
+    };
+  });
 }

@@ -667,7 +667,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     assignedStaffId: 'st-1',
     jobId: 'ID260952684',
     campaignCode: 'CAMP-ROYAL-AUSNZ',
-    campaignTitle: 'Chiến Dịch Sữa Hoàng Gia Úc Q4 — Phát Triển Toàn Diện',
+    campaignTitle: 'Chiến Dịch Sữa Hoàng Gia Úc Q4 — Tăng Trưởng Quý 4',
     brandName: 'Royal Ausnz',
     storeName: 'Royal Ausnz_Shopee_E2E-S',
     productName: 'Sữa Hoàng Gia Úc Premium 900g',
@@ -2154,7 +2154,7 @@ export const INITIAL_TASKS: SlaTask[] = [
   {
     id: 'task-res-03',
     title: 'Nghiên cứu & Lập kế hoạch Campaign >=2 sàn & 3 kênh social >1 tỷ cho Kutieskin',
-    description: 'Nghiên cứu toàn diện TikTok Shop, Shopee Mall, Lazada cho 3 line Chàm sữa, Kem dưỡng, Nước tắm; đề xuất định vị tổng thể.',
+    description: 'Nghiên cứu TikTok Shop, Shopee Mall, Lazada cho 3 line Chàm sữa, Kem dưỡng, Nước tắm; đề xuất định vị tổng thể.',
     type: 'RESEARCH_TASK',
     taskSource: 'DIRECTOR_ASSIGNED',
     sowStt: 30,
@@ -3156,7 +3156,7 @@ export const INITIAL_LEADERBOARD: LeaderboardItem[] = [
     videoCount: 32,
     gmv: 420000000,
     totalScore: 1120,
-    badge: 'Xuất Sắc Toàn Diện',
+    badge: 'Hoàn Thành Xuất Sắc',
     isTop3: true
   },
   {
@@ -6952,7 +6952,7 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     accountOwnerName: 'Hà Thị Thương',
     b2cOwnerName: 'Khánh Vy',
     b2cOwners: ['Khánh Vy'],
-    assignmentNotes: 'Chịu trách nhiệm toàn diện kịch bản y khoa & booking dược sĩ/KOC da liễu',
+    assignmentNotes: 'Phụ trách chính kịch bản y khoa & booking dược sĩ/KOC da liễu',
     activeCandidatesCount: 12,
     activeBookingsCount: 8,
     activeContentsCount: 15,

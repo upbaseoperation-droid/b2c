@@ -176,3 +176,39 @@ test('Khởi tạo đầy đủ hồ sơ cho toàn bộ 42 thương hiệu B2C t
 
 
 
+test('Cấu hình động Cloudflare R2 từ giao diện và chuẩn hóa S3 Endpoint', async () => {
+  process.env.BRAND_DATA_DIR = await mkdtemp(path.join(os.tmpdir(), 'brand-r2-cfg-'));
+  const {
+    normalizeR2ConnectionInput,
+    saveRuntimeR2Config,
+    getR2ConfigWithSource,
+    clearRuntimeR2Config,
+    buildR2EnvSnippet,
+  } = await import('../src/lib/brands/r2');
+
+  const normalized = normalizeR2ConnectionInput({
+    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+    secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    endpoint: 'https://8f9a2b3c4d5e.r2.cloudflarestorage.com/upbase-b2c-brands/',
+  });
+  assert.ok(normalized);
+  assert.equal(normalized.accountId, '8f9a2b3c4d5e');
+  assert.equal(normalized.bucket, 'upbase-b2c-brands');
+  assert.equal(normalized.endpoint, 'https://8f9a2b3c4d5e.r2.cloudflarestorage.com');
+
+  const savedCfg = await saveRuntimeR2Config({
+    accountId: 'acc123',
+    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+    secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    bucket: 'upbase-b2c-brands',
+    updatedBy: 'Đặng Thị Yến Nhi',
+  });
+  assert.equal(savedCfg.endpoint, 'https://acc123.r2.cloudflarestorage.com');
+  const activeSource = getR2ConfigWithSource();
+  assert.equal(activeSource.source, 'UI_CONFIG');
+  assert.equal(activeSource.config?.bucket, 'upbase-b2c-brands');
+  assert.match(buildR2EnvSnippet(savedCfg), /R2_BUCKET_NAME="upbase-b2c-brands"/);
+
+  await clearRuntimeR2Config();
+  assert.equal(getR2ConfigWithSource().source, 'NONE');
+});

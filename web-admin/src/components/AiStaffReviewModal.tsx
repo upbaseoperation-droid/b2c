@@ -41,6 +41,7 @@ import {
   calculateExecutionCost,
   recordApiUsageLog,
 } from '../lib/apiKeyConfig';
+import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 
 interface AiStaffReviewModalProps {
   isOpen: boolean;
@@ -359,35 +360,18 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
             {showApiSettings && (
               <div className="mt-3 pt-3 border-t border-line space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="Dịch vụ kết nối">
-                    <Select
-                      value={apiProvider}
-                      onChange={(e) =>
-                        setApiProvider(
-                          e.target.value as 'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'
-                        )
-                      }
-                    >
-                      <option value="AUTO">Tự động (Mặc định)</option>
-                      <option value="GEMINI">Google Gemini</option>
-                      <option value="OPENAI">OpenAI</option>
-                      <option value="CLAUDE">Anthropic Claude</option>
-                    </Select>
-                  </Field>
-
-                  <Field label="Khóa API">
-                    <Input
-                      type="password"
-                      placeholder="Nhập khóa API riêng (nếu có)"
-                      value={customApiKey}
-                      onChange={(e) => setCustomApiKey(e.target.value)}
-                      className="font-mono"
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Ghi chú yêu cầu thêm">
+                <InlinePurposeApiSetup
+                  purposeId="STAFF_REVIEW"
+                  onConfigSaved={() => {
+                    const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+                    if (eff.primaryProvider === 'GOOGLE') setApiProvider('GEMINI');
+                    else if (eff.primaryProvider === 'OPENAI') setApiProvider('OPENAI');
+                    else if (eff.primaryProvider === 'CLAUDE') setApiProvider('CLAUDE');
+                    else setApiProvider('AUTO');
+                    setCustomApiKey(eff.primaryApiKey || '');
+                  }}
+                />
+                <Field label="Ghi chú yêu cầu thêm cho kỳ đánh giá này">
                   <Input
                     type="text"
                     placeholder="VD: Rà soát chuẩn bị chiến dịch 10.10, kiểm tra trễ hạn gửi mẫu..."

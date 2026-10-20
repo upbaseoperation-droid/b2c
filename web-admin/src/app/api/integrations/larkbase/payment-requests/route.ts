@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchLarkAppAccessToken, getLarkConfig } from '@/lib/larkAuth';
+import { fetchLarkAppAccessToken, getLarkConfig, getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   buildLarkPaymentRequestSlip,
   type DealPaymentOverrides,
@@ -133,7 +133,21 @@ function getLarkPaymentIntegrationConfig() {
  * GET /api/integrations/larkbase/payment-requests
  * Lấy trạng thái cấu hình kết nối Lark Approval / Larkbase 3.2 và danh sách các phiếu ĐNTT đã đẩy
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Vui lòng đăng nhập để xem danh sách phiếu đề nghị thanh toán.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { error: 'Tài khoản đối tác không có quyền truy cập dữ liệu đề nghị thanh toán nội bộ.' },
+      { status: 403 }
+    );
+  }
+
   seedInitialPaymentSlips();
   const config = getLarkPaymentIntegrationConfig();
   const slips = Array.from(memoryPaymentRequestSlips.values()).sort((a, b) =>
@@ -158,6 +172,30 @@ export async function GET() {
  * Kiểm tra chặn cứng 100% hồ sơ Bảng 3.2 và đẩy phiếu Tạm ứng / ĐNTT sang Lark Approval API + Larkbase Bitable / AnyCross
  */
 export async function POST(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Vui lòng đăng nhập để tạo phiếu đề nghị thanh toán.' },
+      { status: 401 }
+    );
+  }
+  const allowedRoles = [
+    'ADMIN',
+    'MANAGER',
+    'GROWTH_MANAGER',
+    'MEDIA_MANAGER',
+    'LEADER',
+    'BOOKING_MEMBER',
+    'MEMBER',
+    'FINANCE'
+  ];
+  if (!allowedRoles.includes(user.role)) {
+    return NextResponse.json(
+      { error: 'Bạn không có quyền lập phiếu đề nghị thanh toán.' },
+      { status: 403 }
+    );
+  }
+
   try {
     seedInitialPaymentSlips();
     const body = (await request.json()) as {

@@ -14,6 +14,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Cloud,
   Download,
   ExternalLink,
   Eye,
@@ -78,6 +79,7 @@ import {
 } from './BrandEditors';
 import { StoreEditDialog } from '../stores/StoreEditDialog';
 import { ContentAngleSetupView } from '../views/ContentAngleSetupView';
+import { CloudflareR2SetupModal } from './CloudflareR2SetupPanel';
 import {
   DOC_CATEGORY_LABEL,
   KOC_APPROVAL_MODE_LABEL,
@@ -238,6 +240,7 @@ export function BrandProfileDetail({
   const [docFilter, setDocFilter] = useState<'ALL' | BrandDocCategory>('ALL');
   const [docSearch, setDocSearch] = useState('');
   const [previewDoc, setPreviewDoc] = useState<BrandDocument | null>(null);
+  const [r2SetupOpen, setR2SetupOpen] = useState(false);
   const quickFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const saveDialog = async (section: BrandSection, data: unknown) => {
@@ -1817,6 +1820,16 @@ export function BrandProfileDetail({
           {/* Danh sách tài liệu thương hiệu */}
           <Panel
             title={`Kho tài liệu & tệp thương hiệu ${row.name}`}
+            actions={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Cloud}
+                onClick={() => setR2SetupOpen(true)}
+              >
+                Cấu hình Cloudflare R2
+              </Button>
+            }
             flush
           >
             <div className="p-4 border-b border-line">
@@ -2388,11 +2401,6 @@ export function BrandProfileDetail({
         open={Boolean(inspectingBooking)}
         onClose={() => setInspectingBooking(null)}
         title={inspectingBooking ? `Chi tiết Booking & Báo cáo Video — ${inspectingBooking.kocName}` : ''}
-        description={
-          inspectingBooking
-            ? `${inspectingBooking.dealCode} · Gian hàng ${inspectingBooking.storeName} · Kỳ ${inspectingBooking.month}`
-            : undefined
-        }
         size="lg"
         footer={
           inspectingBooking ? (
@@ -2535,7 +2543,6 @@ export function BrandProfileDetail({
           open={Boolean(previewDoc)}
           onClose={() => setPreviewDoc(null)}
           title={previewDoc.title}
-          description={[DOC_CATEGORY_LABEL[previewDoc.category], previewDoc.fileName, formatFileSize(previewDoc.fileSize)].filter(Boolean).join(' · ')}
           size="lg"
           footer={
             <>
@@ -2552,13 +2559,22 @@ export function BrandProfileDetail({
             </>
           }
         >
-          <div className="rounded-lg border border-line bg-canvas overflow-hidden min-h-[420px] flex items-center justify-center">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span>{DOC_CATEGORY_LABEL[previewDoc.category]}</span>
+              {previewDoc.fileName && <span>·</span>}
+              {previewDoc.fileName && <span className="font-mono text-ink">{previewDoc.fileName}</span>}
+              {previewDoc.fileSize && <span>·</span>}
+              {previewDoc.fileSize && <span>{formatFileSize(previewDoc.fileSize)}</span>}
+            </div>
+            <div className="rounded-lg border border-line bg-canvas overflow-hidden min-h-[420px] flex items-center justify-center">
             {/^(image\/|\.(png|jpg|jpeg|webp|gif|svg)$)/i.test(previewDoc.mimeType || previewDoc.fileName || '') ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previewDoc.url} alt={previewDoc.title} className="max-h-[70vh] w-auto object-contain" />
             ) : (
               <iframe src={previewDoc.url} title={previewDoc.title} className="w-full h-[65vh] border-0" />
             )}
+            </div>
           </div>
         </Modal>
       )}
@@ -2636,6 +2652,12 @@ export function BrandProfileDetail({
           saveList(removing.list, list.filter((_, k) => k !== removing.index), `Xóa ${LIST_META[removing.list].noun}: ${String(gone?.name || gone?.question || gone?.title || '')}`);
         }}
         onOpenChange={o => !o && setRemoving(null)}
+      />
+
+      <CloudflareR2SetupModal
+        open={r2SetupOpen}
+        onClose={() => setR2SetupOpen(false)}
+        onNotify={onNotify}
       />
     </div>
   );

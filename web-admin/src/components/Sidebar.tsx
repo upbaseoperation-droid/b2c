@@ -34,6 +34,7 @@ import {
   Search,
   Clapperboard,
   Contact,
+  Cloud,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -103,6 +104,7 @@ const NAV = {
   performance: { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
   masterData: { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
+  cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
   audit: { key: 'audit-trail', label: 'Nhật ký kiểm toán', icon: ShieldCheck },
 } satisfies Record<string, NavItem>;
 
@@ -184,7 +186,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hệ thống',
-      items: [NAV.masterData, NAV.partnerAccess, NAV.audit],
+      items: [NAV.masterData, NAV.partnerAccess, NAV.cloudflareAdmin, NAV.audit],
     },
   ];
 }

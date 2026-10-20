@@ -39,8 +39,13 @@ import { formatVndShort } from '../../lib/format';
 import { Button, BrandAvatar, PlatformBadge, Status } from '../ui';
 import {
   B2C_28_STAFF_WORKLOAD_ROSTER,
-  STAFF_LEVEL_TABLE_4,
   STORE_SCOPE_TABLE_2,
+  DIFFICULTY_TIER_BADGE,
+  UnifiedStaffWorkloadRow,
+  computeUnifiedB2cStaffWorkloads,
+  loadSavedManagerExceptions,
+  persistManagerExceptions,
+  loadSavedSowPolicies,
 } from './TaskDelegationView';
 
 interface Workload3dMapViewProps {
@@ -71,41 +76,7 @@ type RoleFilterGroup =
   | 'FOC_SAMPLE';
 type LoadFilterMode = 'ALL' | 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD' | 'HARD_RATIO_LOW';
 
-interface StaffComputedWorkload {
-  id: string;
-  staffCode: string;
-  name: string;
-  shortName: string;
-  level: string;
-  roleGroup: string;
-  roleFilterCategory: RoleFilterGroup;
-  workflowPts: number;
-  directorPts: number;
-  dynamicTaskPts: number;
-  totalPts: number;
-  hardPts: number;
-  hardRatioPct: number;
-  minHardRatioReqPct: number;
-  isHardRatioPass: boolean;
-  targetCapacityPts: number;
-  loadPct: number;
-  loadStatus: WorkloadLoadStatus;
-  assignedBrands: {
-    brandId: string;
-    brandName: string;
-    roles: string[];
-  }[];
-  assignedStores: {
-    storeId: string;
-    storeName: string;
-    brandName: string;
-    platform: string;
-    coef: number;
-    budgetNet: number;
-    roleLabel: string;
-  }[];
-  activeTasks: SlaTask[];
-}
+type StaffComputedWorkload = UnifiedStaffWorkloadRow;
 
 interface Node3D {
   id: string;
@@ -142,42 +113,6 @@ interface Link3D {
   particleSpeed: number;
 }
 
-function getTargetCapacityByLevel(level: string): number {
-  switch (level) {
-    case 'L3':
-      return 145;
-    case 'L2.5':
-      return 132;
-    case 'L2':
-      return 118;
-    case 'L1.5':
-      return 104;
-    case 'L1':
-      return 92;
-    case 'L0.5':
-      return 78;
-    default:
-      return 105;
-  }
-}
-
-function getShortVietnameseName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length <= 2) return fullName;
-  return `${parts[parts.length - 2]} ${parts[parts.length - 1]}`;
-}
-
-function classifyStaffRoleCategory(roleGroup: string): RoleFilterGroup {
-  const lower = roleGroup.toLowerCase();
-  if (lower.includes('trưởng nhóm') || lower.includes('lead')) return 'LEADER';
-  if (lower.includes('foc') || lower.includes('sample')) return 'FOC_SAMPLE';
-  if (lower.includes('key visual') || lower.includes('sis')) return 'KEY_VISUAL';
-  if (lower.includes('booking')) return 'BOOKING';
-  if (lower.includes('content') || lower.includes('brand main')) return 'CONTENT_BRAND';
-  if (lower.includes('plan') || lower.includes('strategy')) return 'PLAN_STRATEGY';
-  return 'BOOKING';
-}
-
 export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   brands,
   storePortfolios,
@@ -201,203 +136,70 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   // Default null so ALL 28 staff, Brands, and Stores are shown at 100% full contrast initially!
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
+  const [sowPolicies] = useState(() => loadSavedSowPolicies());
+  const [managerExceptions, setManagerExceptions] = useState<Record<string, boolean>>(() =>
+    loadSavedManagerExceptions()
+  );
+
+  useEffect(() => {
+    const syncExceptions = () => setManagerExceptions(loadSavedManagerExceptions());
+    const handleFocusNode = (e: Event) => {
+      const custom = e as CustomEvent<string>;
+      if (custom.detail) {
+        setSelectedNodeId(custom.detail);
+      }
+    };
+    window.addEventListener('upbase-workload-exceptions-updated', syncExceptions);
+    window.addEventListener('upbase-focus-3d-node', handleFocusNode);
+    return () => {
+      window.removeEventListener('upbase-workload-exceptions-updated', syncExceptions);
+      window.removeEventListener('upbase-focus-3d-node', handleFocusNode);
+    };
+  }, []);
+
+  const toggleManagerException = (staffCode: string, staffName: string) => {
+    const next = { ...managerExceptions, [staffCode]: !managerExceptions[staffCode] };
+    setManagerExceptions(next);
+    persistManagerExceptions(next);
+    onNotify?.(
+      next[staffCode]
+        ? `Đã xác nhận ngoại lệ Bảng 4 cho ${staffName}: Giữ nguyên hệ số cơ cấu ×1,00`
+        : `Đã gỡ ngoại lệ Bảng 4 của ${staffName}: Áp dụng hệ số cơ cấu theo tỷ lệ thực tế`,
+      'info'
+    );
+  };
+
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
+  const [quickTaskSowStt, setQuickTaskSowStt] = useState<number>(26);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
   const [quickTaskBrand, setQuickTaskBrand] = useState('');
-  const [quickTaskPoints, setQuickTaskPoints] = useState<number>(6);
+  const [quickTaskQty, setQuickTaskQty] = useState<number>(1);
   const [quickTaskDifficulty, setQuickTaskDifficulty] = useState<'EASY' | 'STANDARD' | 'HARD'>('HARD');
+
+  const selectedQuickSow = useMemo(() => {
+    return sowPolicies.find(s => s.stt === quickTaskSowStt) || sowPolicies[0];
+  }, [sowPolicies, quickTaskSowStt]);
+
+  const quickTaskPoints = useMemo(() => {
+    const stdPt = selectedQuickSow?.basePoint || 4.0;
+    const diffCoef = DIFFICULTY_TIER_BADGE[quickTaskDifficulty].coef;
+    return Number((Math.max(1, quickTaskQty) * stdPt * diffCoef).toFixed(2));
+  }, [selectedQuickSow, quickTaskQty, quickTaskDifficulty]);
 
   const b2cStores = useMemo(() => {
     const filtered = storePortfolios.filter(s => Boolean(s.requiresB2cPlan || s.isB2cManaged));
     return filtered.length > 0 ? filtered : storePortfolios.slice(0, 69);
   }, [storePortfolios]);
 
-  // Compute Staff Workload accurately from Roster + Live Reassignments + Active Tasks
+  // Unified Staff Workload calculation synchronized 100% with TaskDelegationView
   const staffWorkloads = useMemo<StaffComputedWorkload[]>(() => {
-    return B2C_28_STAFF_WORKLOAD_ROSTER.map((roster, rosterIdx) => {
-      const assignedBrands: StaffComputedWorkload['assignedBrands'] = [];
-      brands.forEach(b => {
-        const roles: string[] = [];
-        const contentMain = b.contentBrandMainPic || b.contentPic || '';
-        const planStrat = b.planStrategyPic || b.brandPicName || '';
-        const kvSis = b.keyVisualSisPic || '';
-        const bookingLead = b.bookingPicLead || '';
-
-        if (contentMain.toLowerCase() === roster.name.toLowerCase()) roles.push('Content / Brand');
-        if (planStrat.toLowerCase() === roster.name.toLowerCase()) roles.push('Plan / Strategy');
-        if (kvSis.toLowerCase() === roster.name.toLowerCase()) roles.push('Key Visual');
-        if (bookingLead.toLowerCase() === roster.name.toLowerCase()) roles.push('Booking Lead');
-
-        if (roles.length > 0) {
-          assignedBrands.push({
-            brandId: b.id,
-            brandName: b.name,
-            roles,
-          });
-        }
-      });
-
-      const assignedStores: StaffComputedWorkload['assignedStores'] = [];
-      b2cStores.forEach(s => {
-        const matchOwner =
-          (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(roster.name.toLowerCase())) ||
-          (s.assignedStaff && s.assignedStaff.toLowerCase().includes(roster.name.toLowerCase())) ||
-          (s.b2cOwners && s.b2cOwners.some(o => o.toLowerCase().includes(roster.name.toLowerCase())));
-        const matchLeader =
-          s.hasBookingLeader &&
-          s.bookingLeader &&
-          s.bookingLeader.toLowerCase().includes(roster.name.toLowerCase());
-        const matchContent =
-          s.contentPic && s.contentPic.toLowerCase().includes(roster.name.toLowerCase());
-        const matchLive =
-          s.livestreamPic && s.livestreamPic.toLowerCase().includes(roster.name.toLowerCase());
-
-        if (matchOwner || matchLeader || matchContent || matchLive) {
-          const roleLabels: string[] = [];
-          if (matchOwner) roleLabels.push('PIC Gian');
-          if (matchLeader) roleLabels.push('Leader');
-          if (matchContent) roleLabels.push('Content');
-          if (matchLive) roleLabels.push('Live');
-
-          assignedStores.push({
-            storeId: s.id,
-            storeName: s.storeName,
-            brandName: s.brandName,
-            platform: s.platform,
-            coef: normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier,
-            budgetNet: s.budgetNet || s.monthlyBudget || 0,
-            roleLabel: roleLabels.join(' · '),
-          });
-        }
-      });
-
-      if (roster.keyStoresSample) {
-        const sampleTokens = roster.keyStoresSample
-          .split(',')
-          .map(t => t.trim())
-          .filter(Boolean);
-        sampleTokens.forEach(token => {
-          const matchedStore = b2cStores.find(
-            st =>
-              st.storeName.toLowerCase().includes(token.toLowerCase()) ||
-              st.brandName.toLowerCase().includes(token.toLowerCase())
-          );
-          if (matchedStore && !assignedStores.some(as => as.storeId === matchedStore.id)) {
-            assignedStores.push({
-              storeId: matchedStore.id,
-              storeName: matchedStore.storeName,
-              brandName: matchedStore.brandName,
-              platform: matchedStore.platform,
-              coef: normalizeStoreCoefficient(
-                matchedStore.difficultyTier,
-                matchedStore.difficultyMultiplier
-              ).multiplier,
-              budgetNet: matchedStore.budgetNet || matchedStore.monthlyBudget || 0,
-              roleLabel: 'PIC Phối hợp',
-            });
-          }
-          const matchedBrand = brands.find(br =>
-            br.name.toLowerCase().includes(token.toLowerCase())
-          );
-          if (matchedBrand && !assignedBrands.some(ab => ab.brandId === matchedBrand.id)) {
-            assignedBrands.push({
-              brandId: matchedBrand.id,
-              brandName: matchedBrand.name,
-              roles: [roster.roleGroup.split('&')[0].trim()],
-            });
-          }
-        });
-      }
-
-      if (assignedBrands.length === 0 && brands.length > 0) {
-        const fallbackBrand = brands[rosterIdx % brands.length];
-        assignedBrands.push({
-          brandId: fallbackBrand.id,
-          brandName: fallbackBrand.name,
-          roles: [roster.roleGroup.split('&')[0].trim()],
-        });
-      }
-      if (assignedStores.length === 0 && b2cStores.length > 0) {
-        const fallbackStore = b2cStores[rosterIdx % b2cStores.length];
-        assignedStores.push({
-          storeId: fallbackStore.id,
-          storeName: fallbackStore.storeName,
-          brandName: fallbackStore.brandName,
-          platform: fallbackStore.platform,
-          coef: normalizeStoreCoefficient(
-            fallbackStore.difficultyTier,
-            fallbackStore.difficultyMultiplier
-          ).multiplier,
-          budgetNet: fallbackStore.budgetNet || fallbackStore.monthlyBudget || 0,
-          roleLabel: 'Điều phối FOC/Mẫu',
-        });
-      }
-
-      const staffTasks = tasks.filter(
-        t => t.pic && t.pic.toLowerCase() === roster.name.toLowerCase() && t.urgency !== 'done'
-      );
-
-      const dynamicTaskPts = staffTasks.reduce(
-        (sum, t) => sum + (t.calculatedWorkloadPoints || t.standardPoint || 4.0),
-        0
-      );
-      const dynamicHardPts = staffTasks.reduce(
-        (sum, t) =>
-          t.taskDifficultyTier === 'HARD' || t.urgency === 'critical'
-            ? sum + (t.calculatedWorkloadPoints || t.standardPoint || 4.0)
-            : sum,
-        0
-      );
-
-      const workflowPts = roster.baselineWorkflowTotalPts;
-      const directorPts = roster.baselineDirectorTotalPts + dynamicTaskPts;
-      const totalPts = Math.round((workflowPts + directorPts) * 10) / 10;
-
-      const hardPts =
-        Math.round(
-          (roster.baselineWorkflowHardPts + roster.baselineDirectorHardPts + dynamicHardPts) * 10
-        ) / 10;
-      const hardRatioPct = totalPts > 0 ? Math.round((hardPts / totalPts) * 1000) / 10 : 0;
-
-      const levelRule = STAFF_LEVEL_TABLE_4.find(l => l.level === roster.level);
-      const minHardRatioReqPct = levelRule ? levelRule.minHardRatioPct : 25;
-      const isHardRatioPass = hardRatioPct >= minHardRatioReqPct;
-
-      const targetCapacityPts = getTargetCapacityByLevel(roster.level);
-      const loadPct = Math.round((totalPts / targetCapacityPts) * 100);
-
-      let loadStatus: WorkloadLoadStatus = 'OPTIMAL';
-      if (loadPct >= 115) {
-        loadStatus = 'OVERLOAD';
-      } else if (loadPct < 96) {
-        loadStatus = 'UNDERLOAD';
-      }
-
-      return {
-        id: `staff-${roster.staffCode}`,
-        staffCode: roster.staffCode,
-        name: roster.name,
-        shortName: getShortVietnameseName(roster.name),
-        level: roster.level,
-        roleGroup: roster.roleGroup,
-        roleFilterCategory: classifyStaffRoleCategory(roster.roleGroup),
-        workflowPts,
-        directorPts,
-        dynamicTaskPts,
-        totalPts,
-        hardPts,
-        hardRatioPct,
-        minHardRatioReqPct,
-        isHardRatioPass,
-        targetCapacityPts,
-        loadPct,
-        loadStatus,
-        assignedBrands,
-        assignedStores,
-        activeTasks: staffTasks,
-      };
+    return computeUnifiedB2cStaffWorkloads({
+      tasks,
+      brands,
+      storePortfolios,
+      managerExceptions,
     });
-  }, [brands, b2cStores, tasks]);
+  }, [tasks, brands, storePortfolios, managerExceptions]);
 
   // Filtered staff list (sorted by loadPct descending)
   const filteredStaff = useMemo(() => {
@@ -1463,32 +1265,54 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   };
 
   const handleCreateQuickTask = (targetStaffName: string) => {
-    if (!quickTaskTitle.trim()) {
+    const cleanTitle =
+      quickTaskTitle.trim() ||
+      (selectedQuickSow ? `${selectedQuickSow.name} — ${quickTaskBrand || 'ClubClio'}` : '');
+    if (!cleanTitle) {
       onNotify?.('Vui lòng nhập tên đầu việc cần giao', 'warning');
       return;
     }
+    const stdPt = selectedQuickSow?.basePoint || 4.0;
+    const diffCoef = DIFFICULTY_TIER_BADGE[quickTaskDifficulty].coef;
+    const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
     const newTask: SlaTask = {
       id: `task-3d-${Date.now()}`,
-      title: quickTaskTitle.trim(),
-      type: 'GENERAL_TASK',
+      title: cleanTitle,
+      description: `Quản lý giao từ Bản đồ 3D · ${selectedQuickSow?.group || 'Vận hành'}: ${selectedQuickSow?.name || cleanTitle}`,
+      type: selectedQuickSow?.categoryKey === 'RESEARCH' ? 'RESEARCH_TASK' : 'GENERAL_TASK',
+      taskCategory: selectedQuickSow?.categoryKey || 'BOOKING',
       team: 'Marketing B2C',
       pic: targetStaffName,
       targetRole: 'MEMBER',
-      deadline: '24h',
+      deadline: 'Trong vòng 24h',
       remainingText: 'Còn 24 giờ',
+      deadlineHours: 24,
       urgency: quickTaskDifficulty === 'HARD' ? 'critical' : 'warning',
       brand: quickTaskBrand || 'ClubClio',
       taskSource: 'DIRECTOR_ASSIGNED',
-      standardPoint: quickTaskPoints,
-      calculatedWorkloadPoints: quickTaskPoints,
+      sowStt: selectedQuickSow?.stt,
+      sowGroup: selectedQuickSow?.group,
+      sowName: selectedQuickSow?.name,
+      acceptedQuantity: Math.max(1, quickTaskQty),
+      standardPoint: stdPt,
+      scopeCoef: 1.0,
       taskDifficultyTier: quickTaskDifficulty,
+      taskDifficultyCoef: diffCoef,
+      timelineStatus: 'ON_TIME',
+      timelineCoef: 1.0,
+      multiPlatformCoef: 1.0,
+      assignmentRole: 'PIC_OWNER',
+      contributionWeightPct: 100,
+      baseWorkloadPoints: Number((Math.max(1, quickTaskQty) * stdPt).toFixed(2)),
+      calculatedWorkloadPoints: quickTaskPoints,
+      createdAt: nowStr,
       actionLabel: 'Thực hiện',
     };
     onAddTask(newTask);
     setQuickTaskTitle('');
     setIsQuickTaskOpen(false);
     onNotify?.(
-      `Đã giao việc "${newTask.title}" (+${quickTaskPoints} pt) cho ${targetStaffName}`,
+      `Đã giao việc "${newTask.title}" (+${quickTaskPoints} điểm) cho ${targetStaffName}`,
       'success'
     );
   };
@@ -1915,10 +1739,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     <div className="p-3 rounded-xl bg-surface border border-line space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="font-semibold text-ink">
-                          Tổng điểm Workload: {st.totalPts.toFixed(1)} pt
+                          Điểm tổng kết: {st.finalMonthlyWorkloadPts.toFixed(1)} đ
+                          <span className="text-2xs font-normal text-ink-3 ml-1">
+                            (Gốc {st.rawTotalPts.toFixed(1)} ×{st.structureCoef.toFixed(2)})
+                          </span>
                         </span>
                         <span className="text-2xs text-ink-3">
-                          Định mức {st.level}: {st.targetCapacityPts} pt
+                          Định mức {st.level}: {st.targetCapacityPts} đ
                         </span>
                       </div>
                       <div className="w-full h-2.5 rounded-full bg-sunken overflow-hidden flex">
@@ -1976,6 +1803,15 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         <Plus className="w-3.5 h-3.5 mr-1" />
                         Giao thêm việc
                       </Button>
+                      {!st.meetsHardRatio && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => toggleManagerException(st.staffCode, st.name)}
+                        >
+                          {st.hasException ? 'Gỡ ngoại lệ' : 'Duyệt ×1,00'}
+                        </Button>
+                      )}
                       {onPingStaff && (
                         <Button
                           variant="secondary"
@@ -1996,13 +1832,31 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     {isQuickTaskOpen && (
                       <div className="p-3 rounded-xl bg-surface border border-accent/40 space-y-2.5">
                         <div className="text-xs font-semibold text-ink">
-                          Giao việc trực tiếp cho {st.name}
+                          Giao việc chuẩn Bảng 1 cho {st.name}
                         </div>
+                        <select
+                          value={quickTaskSowStt}
+                          onChange={e => {
+                            const nextStt = Number(e.target.value);
+                            setQuickTaskSowStt(nextStt);
+                            const found = sowPolicies.find(sp => sp.stt === nextStt);
+                            if (found) {
+                              setQuickTaskDifficulty(found.defaultDifficultyTier);
+                            }
+                          }}
+                          className="w-full h-8 px-2 rounded-lg bg-sunken border border-line text-2xs text-ink"
+                        >
+                          {sowPolicies.map(sp => (
+                            <option key={sp.stt} value={sp.stt}>
+                              #{sp.stt} [{sp.group}] {sp.name} ({sp.basePoint}đ)
+                            </option>
+                          ))}
+                        </select>
                         <input
                           type="text"
                           value={quickTaskTitle}
                           onChange={e => setQuickTaskTitle(e.target.value)}
-                          placeholder="Nhập tên đầu việc..."
+                          placeholder="Tiêu đề đầu việc (để trống sẽ tự lấy theo Bảng 1)..."
                           className="w-full h-8 px-2.5 rounded-lg bg-sunken border border-line text-xs text-ink"
                         />
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -2025,16 +1879,17 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             }
                             className="h-8 px-2 rounded-lg bg-sunken border border-line text-2xs text-ink"
                           >
-                            <option value="HARD">Việc Khó (×1.2)</option>
-                            <option value="STANDARD">Tiêu chuẩn (×1.0)</option>
-                            <option value="EASY">Việc Dễ (×0.8)</option>
+                            <option value="HARD">Việc Khó (×1,20)</option>
+                            <option value="STANDARD">Tiêu chuẩn (×1,00)</option>
+                            <option value="EASY">Việc Dễ (×0,80)</option>
                           </select>
                           <input
                             type="number"
                             min={1}
-                            max={30}
-                            value={quickTaskPoints}
-                            onChange={e => setQuickTaskPoints(Number(e.target.value) || 4)}
+                            max={50}
+                            value={quickTaskQty}
+                            onChange={e => setQuickTaskQty(Math.max(1, Number(e.target.value) || 1))}
+                            title={`Số lượng (${selectedQuickSow?.scopeUnit || 'đầu việc'})`}
                             className="h-8 px-2 rounded-lg bg-sunken border border-line text-xs text-ink tabular-nums"
                           />
                         </div>
@@ -2051,7 +1906,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             size="sm"
                             onClick={() => handleCreateQuickTask(st.name)}
                           >
-                            Xác nhận (+{quickTaskPoints} pt)
+                            Xác nhận (+{quickTaskPoints.toFixed(2).replace('.', ',')} đ)
                           </Button>
                         </div>
                       </div>

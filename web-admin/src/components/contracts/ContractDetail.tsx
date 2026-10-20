@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
-import type { BookingDealItem } from '../../lib/types';
+import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status, Textarea } from '../ui';
 import type { ActionMenuItem, StatusTone } from '../ui';
@@ -31,6 +31,7 @@ export function ContractDetail({
   record,
   data,
   deals = [],
+  kocs = [],
   busy,
   onBack,
   onAction,
@@ -41,6 +42,7 @@ export function ContractDetail({
   record: ContractRecord;
   data: ContractBootstrap;
   deals?: BookingDealItem[];
+  kocs?: KocItem[];
   busy: boolean;
   onBack: () => void;
   onAction: Action;
@@ -69,6 +71,11 @@ export function ContractDetail({
   const hasAcceptance = data.records.some(r => r.parentId === record.id);
   const parent = record.parentId ? data.records.find(r => r.id === record.parentId) : undefined;
   const linkedDeal = deals.find(d => d.id === record.dealId || (record.dealCode && d.dealCode === record.dealCode));
+  const linkedKoc = kocs.find(
+    k =>
+      k.id === (record.kocId || linkedDeal?.kocId) ||
+      (linkedDeal?.kocChannelId && k.channelId.replace(/^@/, '').toLowerCase() === linkedDeal.kocChannelId.replace(/^@/, '').toLowerCase()),
+  );
 
   const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
   const [selectedVersion, setSelectedVersion] = useState<number>(record.version);
@@ -265,18 +272,25 @@ export function ContractDetail({
           {(() => {
             const allFields = previewData?.fields || template?.fields || [];
             const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
-            const parsedContractValue = moneyFields.reduce((max, f) => {
-              const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
-              const num = raw ? Number(raw) : 0;
-              return num > max ? num : max;
-            }, 0);
+            const customTokenRaw = (shownValues['token:[Tổng tiền trước thuế/sau thuế]'] || '').replace(/[^\d]/g, '');
+            const customTokenNum = customTokenRaw ? Number(customTokenRaw) : 0;
+            const parsedContractValue = Math.max(
+              customTokenNum,
+              moneyFields.reduce((max, f) => {
+                const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
+                const num = raw ? Number(raw) : 0;
+                return num > max ? num : max;
+              }, 0),
+            );
             const ruleEvaluation = evaluateContractRules({
+              koc: linkedKoc,
               deal: linkedDeal,
+              kind: isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT',
               totalValue: parsedContractValue || linkedDeal?.totalValue || 0,
               advanceAmount: linkedDeal?.advanceAmount || 0,
               actualSettledValue: parsedContractValue,
               hasCustomTerms: record.hasCustomTerms,
-              isKolForm: template?.scope === 'KOC_CUSTOM',
+              isKolForm: record.isKocOwnForm || template?.scope === 'KOC_CUSTOM',
               availableTemplates: data.templates,
             });
 
@@ -326,11 +340,16 @@ export function ContractDetail({
           {(() => {
             const allFields = previewData?.fields || template?.fields || [];
             const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
-            const parsedContractValue = moneyFields.reduce((max, f) => {
-              const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
-              const num = raw ? Number(raw) : 0;
-              return num > max ? num : max;
-            }, 0);
+            const customTokenRaw = (shownValues['token:[Tổng tiền trước thuế/sau thuế]'] || '').replace(/[^\d]/g, '');
+            const customTokenNum = customTokenRaw ? Number(customTokenRaw) : 0;
+            const parsedContractValue = Math.max(
+              customTokenNum,
+              moneyFields.reduce((max, f) => {
+                const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
+                const num = raw ? Number(raw) : 0;
+                return num > max ? num : max;
+              }, 0),
+            );
             const dealValue = linkedDeal?.totalValue || 0;
             const diff = dealValue > 0 && parsedContractValue > 0 ? parsedContractValue - dealValue : 0;
             const subject = template?.subject || 'Cá nhân';

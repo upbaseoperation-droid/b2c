@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import type {
   TikTokCompetitorKocResult,
@@ -713,6 +714,20 @@ async function mutateHistoryWithRetry(
 }
 
 export async function GET(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền xem lịch sử quét.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const store = await readWeeklyStore();
     const tabFilter = req.nextUrl.searchParams.get('tab') as CrawlerHistoryTabKey | null;
@@ -739,6 +754,20 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền lưu lịch sử quét.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = await req.json();
     const tab = body.tab as CrawlerHistoryTabKey;
@@ -864,10 +893,32 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền xóa lịch sử quét.' },
+      { status: 403 }
+    );
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  const tab = searchParams.get('tab') as CrawlerHistoryTabKey | null;
+
+  if (!id && !tab && !['ADMIN', 'MANAGER'].includes(user.role)) {
+    return NextResponse.json(
+      { success: false, error: 'Chỉ Quản trị viên hoặc Giám đốc mới có quyền xóa toàn bộ lịch sử quét.' },
+      { status: 403 }
+    );
+  }
+
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const tab = searchParams.get('tab') as CrawlerHistoryTabKey | null;
 
     const store = await mutateHistoryWithRetry((current) => {
       let nextItems = current.items;

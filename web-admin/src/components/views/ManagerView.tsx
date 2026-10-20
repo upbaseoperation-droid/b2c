@@ -101,7 +101,7 @@ import {
 } from 'lucide-react';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
-import { Button, Presence, Segmented, Select, Tabs } from '../ui';
+import { Button, Modal, Presence, Segmented, Select, Tabs } from '../ui';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
 import { ManagerDelegationHub } from './ManagerDelegationHub';
@@ -697,7 +697,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   Chế độ giám sát: Bạn có quyền xem tiến độ và chi tiết kế hoạch các chuyên viên.
                 </span>
               </div>
-              <span className="-warning/20 text-warning text-2xs font-semibold shrink-0">
+              <span className="px-2 py-0.5 rounded bg-warning/10 border border-warning/20 text-warning text-2xs font-semibold shrink-0">
                 Chỉ xem
               </span>
             </div>
@@ -724,7 +724,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div className="flex items-center gap-2">
                 {currentPlan.status === 'COMPLETED' ? (
-                  <span className=".5 -line text-ink-2 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
+                  <span className="px-2.5 py-1 rounded-lg bg-sunken border border-line text-ink-2 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-ink-3" />
                     <span>Đã chốt sổ (Chỉ xem)</span>
                   </span>
@@ -737,7 +737,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     <span>Cấu hình hạn mức 4 bậc</span>
                   </button>
                 ) : (
-                  <span className=".5 -line text-ink-3 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
+                  <span className="px-2.5 py-1 rounded-lg bg-sunken border border-line text-ink-3 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-ink-3" />
                     <span>Hạn mức định mức (khóa bởi Lead)</span>
                   </span>
@@ -1037,7 +1037,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   </button>
                 </div>
 
-                <span className="badge-blue .5 text-2xs font-semibold">
+                <span className="badge-blue px-2.5 py-0.5 text-2xs font-semibold">
                   {allocations.filter((staff) => {
                     const matchesSearch = staffSearch === '' || 
                       staff.staffName.toLowerCase().includes(staffSearch.toLowerCase()) ||
@@ -1122,7 +1122,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <div className="font-semibold text-ink text-xs">{staff.staffName}</div>
                           <div className="text-2xs text-ink-3 mt-0.5">{staff.roleTitle}</div>
                           {staff.isLagging && (
-                            <span className="inline-block mt-1 .5 py-0.2 -critical/20 text-critical text-2xs font-medium">
+                            <span className="inline-block mt-1 px-1.5 py-0.5 rounded bg-critical-soft border border-critical/20 text-critical text-2xs font-medium">
                               Chậm tiến độ
                             </span>
                           )}
@@ -1133,7 +1133,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1 max-w-[170px]">
                               {staff.assignedBrands.map(b => (
-                                <span key={b} className=".5 text-ink-2 text-2xs font-medium -line">
+                                <span key={b} className="px-1.5 py-0.5 rounded bg-canvas border border-line text-ink-2 text-2xs font-medium">
                                   {b}
                                 </span>
                               ))}
@@ -1166,7 +1166,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
-                              <span className="text-2xs font-semibold text-ink-2 -line">
+                              <span className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs font-semibold text-ink-2">
                                 {staff.tier4Videos ?? staff.planVideos}
                               </span>
                             </td>
@@ -1180,7 +1180,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             return (
                               <td key={brand} className="p-3 text-center font-mono">
                                 {isAssigned ? (
-                                  <span className="text-2xs font-semibold text-accent -accent/20">
+                                  <span className="px-1.5 py-0.5 rounded bg-accent-soft border border-accent/20 text-2xs font-semibold text-accent">
                                     {brandItemsCount > 0 ? `${brandItemsCount} clips` : 'Phụ trách'}
                                   </span>
                                 ) : (
@@ -1403,7 +1403,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         const count = allocations.filter(s => s.assignedBrands.some(ab => ab.toLowerCase().includes(b.toLowerCase()))).length;
                         return (
                           <td key={b} className="p-3 text-center">
-                            <span className="text-2xs font-medium text-accent -accent/20 inline-block">
+                            <span className="px-1.5 py-0.5 rounded bg-accent-soft border border-accent/20 text-2xs font-medium text-accent inline-block">
                               ✓ {count} NV
                             </span>
                           </td>
@@ -1418,7 +1418,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         return (
                           <td key={w} className="p-3 text-center">
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className=".5 py-0.2 text-2xs font-semibold text-ink-2 -line">
+                              <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs font-semibold text-ink-2">
                                 {phaseLabel}
                               </span>
                               <span className="text-2xs text-ink-2 font-mono">{count} clips</span>
@@ -1478,7 +1478,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           )}
 
           {/* Banner 1: Cửa Sổ Nghiệm Thu E2E & Quy Chuẩn Khóa Sổ */}
-          <div className="card-enterprise p-5 bg-warning/10 border-warning/20/80 shadow-xs space-y-4">
+          <div className="card-enterprise p-5 bg-warning/10 border border-warning/20 shadow-xs space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -1488,11 +1488,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <div>
                     <h3 className="font-semibold text-ink text-sm flex items-center gap-2">
                       Cửa Sổ Nghiệm Thu Đối Soát E2E B2C — Tháng {currentPlan.monthLabel}
-                      <span className="text-2xs font-semibold text-warning -warning/20">
+                      <span className="px-2 py-0.5 rounded bg-warning-soft border border-warning/20 text-2xs font-semibold text-warning">
                         ● {reconWindow.phaseLabel}
                       </span>
                     </h3>
-                    
                   </div>
                 </div>
               </div>
@@ -1505,7 +1504,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     {reconWindow.resolvedErrorsCount} / {reconWindow.totalErrorsReportedRound1} lỗi đã fix ({Math.round((reconWindow.resolvedErrorsCount / reconWindow.totalErrorsReportedRound1) * 100)}%)
                   </div>
                 </div>
-                <span className=".5 -xl font-semibold text-xs bg-warning text-white shadow-2xs">
+                <span className="px-3 py-1.5 rounded-xl font-semibold text-xs bg-warning text-white shadow-2xs">
                   Còn {reconWindow.pendingErrorsCount} lỗi cần xử lý
                 </span>
               </div>
@@ -1565,7 +1564,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="card-enterprise p-4 bg-white border border-line shadow-xs flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xs font-semibold text-warning -warning/20">
+                  <span className="px-2 py-0.5 rounded bg-warning-soft border border-warning/20 text-2xs font-semibold text-warning">
                     Nghẽn nghiệm thu mã Spark Ads
                   </span>
                   <span className="text-xs font-semibold text-ink">Cụm gian pHCare (50.000.000 đ)</span>
@@ -1591,7 +1590,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="card-enterprise p-4 bg-white border border-line shadow-xs flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xs font-semibold text-accent -accent/20">
+                  <span className="px-2 py-0.5 rounded bg-accent-soft border border-accent/20 text-2xs font-semibold text-accent">
                     Thiếu tải nhân sự Booking
                   </span>
                   <span className="text-xs font-semibold text-ink">Cụm EUPC / G.G.G / Rejuran (164.6M)</span>
@@ -1623,7 +1622,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <BellRing className="w-4 h-4 text-critical" />
                   Nhân sự có vi phạm SLA đang mở cần đốc thúc ({staffSlaReports.filter(s => s.activeViolationsCount > 0).length} nhân sự)
                 </h3>
-                
               </div>
               {onNavigateToTab && (
                 <button
@@ -1639,7 +1637,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               {staffSlaReports
                 .filter(s => s.activeViolationsCount > 0)
                 .map(staff => (
-                  <div key={staff.id} className="p-3 rounded-xl bg-critical-soft border border-critical/20/80 flex flex-col justify-between gap-2.5">
+                  <div key={staff.id} className="p-3 rounded-xl bg-critical-soft border border-critical/20 flex flex-col justify-between gap-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-critical text-white font-semibold text-2xs flex items-center justify-center shrink-0">
@@ -1650,12 +1648,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <div className="text-2xs text-ink-3">{staff.role} • {staff.onTimeRate}% đúng hạn</div>
                         </div>
                       </div>
-                      <span className="text-2xs font-semibold text-critical -critical/20">
+                      <span className="px-1.5 py-0.5 rounded bg-white border border-critical/20 text-2xs font-semibold text-critical">
                         {staff.activeViolationsCount} lỗi mở ({staff.penaltyPoints}đ)
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-critical/20/60">
+                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-critical/20">
                       <button
                         onClick={() => handlePingStaff(staff.staffName, 'Nhắc nhở xử lý vi phạm SLA B2C trước 17:00')}
                         className="flex-1 px-2 py-1 text-2xs font-semibold bg-critical hover:bg-critical text-white rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
@@ -1691,7 +1689,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <ShieldAlert className="w-4 h-4 text-critical" />
                   Danh sách vi phạm SLA đang kích hoạt & cần Leo Thang
                 </h3>
-                
               </div>
 
               {/* Severity & Category Filters */}
@@ -1758,7 +1755,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                           {/* Col 2: Brand */}
                           <td className="py-2 px-2">
-                            <span className="text-2xs font-semibold text-ink -line">
+                            <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs font-semibold text-ink">
                               {breach.brandName}
                             </span>
                           </td>
@@ -1840,503 +1837,430 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
           </div>
         </div>
+          )}
+        </div>
       )}
 
       {/* Modal: Chỉnh Sửa Phân Bổ Chỉ Tiêu Theo 4 Tier Cho Nhân Sự */}
-      <Presence show={!!editingAllocation}>
-      {editingAllocation && (() => {
-        const t1Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.avgCostPerVideo || 41258000;
-        const t2Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.avgCostPerVideo || 14703000;
-        const t3Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.avgCostPerVideo || 5018000;
-        const t4Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.avgCostPerVideo || 207000;
+      <Modal
+        open={Boolean(editingAllocation)}
+        onClose={() => setEditingAllocation(null)}
+        title={editingAllocation ? `Phân bổ kế hoạch 4 Tier — ${editingAllocation.staffName} (${currentPlan.monthLabel})` : 'Phân bổ kế hoạch 4 Tier'}
+        size="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setEditingAllocation(null)}>
+              Hủy bỏ
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSaveAlloc} icon={Save}>
+              Lưu phân bổ
+            </Button>
+          </div>
+        }
+      >
+        {editingAllocation && (() => {
+          const t1Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.avgCostPerVideo || 41258000;
+          const t2Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.avgCostPerVideo || 14703000;
+          const t3Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.avgCostPerVideo || 5018000;
+          const t4Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.avgCostPerVideo || 207000;
 
-        const calculatedVideos = Number(editAllocForm.tier1Videos || 0) + 
-          Number(editAllocForm.tier2Videos || 0) + 
-          Number(editAllocForm.tier3Videos || 0) + 
-          Number(editAllocForm.tier4Videos || 0);
+          const calculatedVideos = Number(editAllocForm.tier1Videos || 0) + 
+            Number(editAllocForm.tier2Videos || 0) + 
+            Number(editAllocForm.tier3Videos || 0) + 
+            Number(editAllocForm.tier4Videos || 0);
 
-        const suggestedBudget = (Number(editAllocForm.tier1Videos || 0) * t1Avg) +
-          (Number(editAllocForm.tier2Videos || 0) * t2Avg) +
-          (Number(editAllocForm.tier3Videos || 0) * t3Avg) +
-          (Number(editAllocForm.tier4Videos || 0) * t4Avg);
+          const suggestedBudget = (Number(editAllocForm.tier1Videos || 0) * t1Avg) +
+            (Number(editAllocForm.tier2Videos || 0) * t2Avg) +
+            (Number(editAllocForm.tier3Videos || 0) * t3Avg) +
+            (Number(editAllocForm.tier4Videos || 0) * t4Avg);
 
-        // Check if any tier exceeds quota
-        const t1Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 24;
-        const t2Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 63;
-        const t3Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 127;
-        const t4Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 5434;
+          const t1Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 24;
+          const t2Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 63;
+          const t3Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 127;
+          const t4Ceiling = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 5434;
 
-        const otherAllocatedT1 = (teamTierAllocated.TIER_1_CELEB || 0) - (editingAllocation.tier1Videos || 0);
-        const otherAllocatedT2 = (teamTierAllocated.TIER_2_MACRO || 0) - (editingAllocation.tier2Videos || 0);
-        const otherAllocatedT3 = (teamTierAllocated.TIER_3_MICRO || 0) - (editingAllocation.tier3Videos || 0);
-        const otherAllocatedT4 = (teamTierAllocated.TIER_4_AFFILIATE || 0) - (editingAllocation.tier4Videos ?? editingAllocation.planVideos ?? 0);
+          const otherAllocatedT1 = (teamTierAllocated.TIER_1_CELEB || 0) - (editingAllocation.tier1Videos || 0);
+          const otherAllocatedT2 = (teamTierAllocated.TIER_2_MACRO || 0) - (editingAllocation.tier2Videos || 0);
+          const otherAllocatedT3 = (teamTierAllocated.TIER_3_MICRO || 0) - (editingAllocation.tier3Videos || 0);
+          const otherAllocatedT4 = (teamTierAllocated.TIER_4_AFFILIATE || 0) - (editingAllocation.tier4Videos ?? editingAllocation.planVideos ?? 0);
 
-        const newTeamT1 = otherAllocatedT1 + Number(editAllocForm.tier1Videos || 0);
-        const newTeamT2 = otherAllocatedT2 + Number(editAllocForm.tier2Videos || 0);
-        const newTeamT3 = otherAllocatedT3 + Number(editAllocForm.tier3Videos || 0);
-        const newTeamT4 = otherAllocatedT4 + Number(editAllocForm.tier4Videos || 0);
+          const newTeamT1 = otherAllocatedT1 + Number(editAllocForm.tier1Videos || 0);
+          const newTeamT2 = otherAllocatedT2 + Number(editAllocForm.tier2Videos || 0);
+          const newTeamT3 = otherAllocatedT3 + Number(editAllocForm.tier3Videos || 0);
+          const newTeamT4 = otherAllocatedT4 + Number(editAllocForm.tier4Videos || 0);
 
-        return (
-          <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-            onClick={() => setEditingAllocation(null)}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div data-motion-panel
-              className="bg-white border border-line rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-canvas">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-semibold border border-accent/20">
-                    <Sliders className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-ink">Phân Bổ Kế Hoạch 4 Tier — {currentPlan.monthLabel}</h3>
-                    <p className="text-xs text-ink-3">{editingAllocation.staffName} • {editingAllocation.roleTitle}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setEditingAllocation(null)}
-                  className="p-1.5 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
-                  aria-label="Đóng"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+          return (
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-ink-2 font-semibold mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <LayersIcon className="w-3.5 h-3.5 text-accent" />
+                    Phân bổ số video theo 4 Tier KOC / KOL
+                  </span>
+                  <span className="text-2xs text-accent font-mono font-semibold">
+                    Tổng: {calculatedVideos} clips
+                  </span>
+                </label>
 
-              <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-                {/* Tier Quotas Grid inputs */}
-                <div>
-                  <label className="block text-ink-2 font-semibold mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <LayersIcon className="w-3.5 h-3.5 text-accent" />
-                      Phân bổ số video theo 4 Tier KOC / KOL
-                    </span>
-                    <span className="text-2xs text-accent font-mono font-semibold">
-                      Tổng: {calculatedVideos} clips
-                    </span>
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Tier 1 */}
-                    <div className="p-2.5 bg-critical-soft border border-critical/20 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-critical">Tier 1: Celeb / Mega</span>
-                        <span className="text-2xs text-critical font-mono">KL7 (&gt;25M)</span>
-                      </div>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editAllocForm.tier1Videos}
-                        onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier1Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-critical/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-critical/20 focus:border-critical/20"
-                      />
-                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
-                        <span>Đã air: {editingAllocation.tier1Videos || 0}</span>
-                        <span className={newTeamT1 > t1Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
-                          Toàn phòng: {newTeamT1}/{t1Ceiling}
-                        </span>
-                      </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Tier 1 */}
+                  <div className="p-2.5 bg-critical-soft border border-critical/20 rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xs font-semibold text-critical">Tier 1: Celeb / Mega</span>
+                      <span className="text-2xs text-critical font-mono">KL7 (&gt;25M)</span>
                     </div>
-
-                    {/* Tier 2 */}
-                    <div className="p-2.5 bg-accent-soft border border-accent/20 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-accent">Tier 2: Macro Creator</span>
-                        <span className="text-2xs text-accent font-mono">KL6 (10-25M)</span>
-                      </div>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editAllocForm.tier2Videos}
-                        onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier2Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-accent/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                      />
-                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
-                        <span>Đã air: {editingAllocation.tier2Videos || 0}</span>
-                        <span className={newTeamT2 > t2Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
-                          Toàn phòng: {newTeamT2}/{t2Ceiling}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Tier 3 */}
-                    <div className="p-2.5 bg-positive-soft border border-positive/20 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-positive">Tier 3: Micro Creator</span>
-                        <span className="text-2xs text-positive font-mono">KL4-KL5 (2.5-10M)</span>
-                      </div>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editAllocForm.tier3Videos}
-                        onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier3Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-positive/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-positive/20 focus:border-positive/20"
-                      />
-                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
-                        <span>Đã air: {editingAllocation.tier3Videos || 0}</span>
-                        <span className={newTeamT3 > t3Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
-                          Toàn phòng: {newTeamT3}/{t3Ceiling}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Tier 4 */}
-                    <div className="p-2.5 bg-canvas border border-line rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-ink">Tier 4: Nano & Affiliate</span>
-                        <span className="text-2xs text-ink-2 font-mono">KL1-KL3 (&lt;2.5M)</span>
-                      </div>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editAllocForm.tier4Videos}
-                        onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier4Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-line-strong rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-line-strong"
-                      />
-                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
-                        <span>Đã air: {editingAllocation.tier4Videos ?? editingAllocation.reportVideos}</span>
-                        <span className={newTeamT4 > t4Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
-                          Toàn phòng: {newTeamT4}/{t4Ceiling}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Warning banner if exceeding any tier ceiling */}
-                  {(newTeamT1 > t1Ceiling || newTeamT2 > t2Ceiling || newTeamT3 > t3Ceiling || newTeamT4 > t4Ceiling) && (
-                    <div className="mt-2.5 p-2 bg-critical-soft border border-critical/20 rounded-lg flex items-center gap-2 text-critical text-2xs">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-critical" />
-                      <span>
-                        Cảnh báo: Phân bổ này sẽ khiến trần của phòng bị vượt ({[
-                          newTeamT1 > t1Ceiling && `Tier 1 (+${newTeamT1 - t1Ceiling})`,
-                          newTeamT2 > t2Ceiling && `Tier 2 (+${newTeamT2 - t2Ceiling})`,
-                          newTeamT3 > t3Ceiling && `Tier 3 (+${newTeamT3 - t3Ceiling})`,
-                          newTeamT4 > t4Ceiling && `Tier 4 (+${newTeamT4 - t4Ceiling})`,
-                        ].filter(Boolean).join(', ')}). Vui lòng cân đối lại hạn mức.
+                    <input
+                      type="number"
+                      min="0"
+                      value={editAllocForm.tier1Videos}
+                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier1Videos: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full bg-white border border-critical/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-critical/20 focus:border-critical/20"
+                    />
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                      <span>Đã air: {editingAllocation.tier1Videos || 0}</span>
+                      <span className={newTeamT1 > t1Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
+                        Toàn phòng: {newTeamT1}/{t1Ceiling}
                       </span>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Tier 2 */}
+                  <div className="p-2.5 bg-accent-soft border border-accent/20 rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xs font-semibold text-accent">Tier 2: Macro Creator</span>
+                      <span className="text-2xs text-accent font-mono">KL6 (10-25M)</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editAllocForm.tier2Videos}
+                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier2Videos: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full bg-white border border-accent/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                    />
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                      <span>Đã air: {editingAllocation.tier2Videos || 0}</span>
+                      <span className={newTeamT2 > t2Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
+                        Toàn phòng: {newTeamT2}/{t2Ceiling}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tier 3 */}
+                  <div className="p-2.5 bg-positive-soft border border-positive/20 rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xs font-semibold text-positive">Tier 3: Micro Creator</span>
+                      <span className="text-2xs text-positive font-mono">KL4-KL5 (2.5-10M)</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editAllocForm.tier3Videos}
+                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier3Videos: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full bg-white border border-positive/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-positive/20 focus:border-positive/20"
+                    />
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                      <span>Đã air: {editingAllocation.tier3Videos || 0}</span>
+                      <span className={newTeamT3 > t3Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
+                        Toàn phòng: {newTeamT3}/{t3Ceiling}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tier 4 */}
+                  <div className="p-2.5 bg-canvas border border-line rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xs font-semibold text-ink">Tier 4: Nano & Affiliate</span>
+                      <span className="text-2xs text-ink-2 font-mono">KL1-KL3 (&lt;2.5M)</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editAllocForm.tier4Videos}
+                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier4Videos: Math.max(0, Number(e.target.value)) }))}
+                      className="w-full bg-white border border-line-strong rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-line-strong"
+                    />
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                      <span>Đã air: {editingAllocation.tier4Videos ?? editingAllocation.reportVideos}</span>
+                      <span className={newTeamT4 > t4Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
+                        Toàn phòng: {newTeamT4}/{t4Ceiling}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Budget input & Auto Calculation */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-ink-2 font-semibold">Ngân sách phân bổ (VND)</label>
-                    <button
-                      type="button"
-                      onClick={() => setEditAllocForm(prev => ({ ...prev, planBudget: suggestedBudget }))}
-                      className="text-2xs text-accent hover:text-accent font-medium underline transition flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      Áp dụng gợi ý 4 Tier: {(suggestedBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M đ
-                    </button>
+                {(newTeamT1 > t1Ceiling || newTeamT2 > t2Ceiling || newTeamT3 > t3Ceiling || newTeamT4 > t4Ceiling) && (
+                  <div className="mt-2.5 p-2 bg-critical-soft border border-critical/20 rounded-lg flex items-center gap-2 text-critical text-2xs">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-critical" />
+                    <span>
+                      Cảnh báo: Phân bổ này sẽ khiến trần của phòng bị vượt ({[
+                        newTeamT1 > t1Ceiling && `Tier 1 (+${newTeamT1 - t1Ceiling})`,
+                        newTeamT2 > t2Ceiling && `Tier 2 (+${newTeamT2 - t2Ceiling})`,
+                        newTeamT3 > t3Ceiling && `Tier 3 (+${newTeamT3 - t3Ceiling})`,
+                        newTeamT4 > t4Ceiling && `Tier 4 (+${newTeamT4 - t4Ceiling})`,
+                      ].filter(Boolean).join(', ')}). Vui lòng cân đối lại hạn mức.
+                    </span>
                   </div>
+                )}
+              </div>
+
+              {/* Budget input & Auto Calculation */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-ink-2 font-semibold">Ngân sách phân bổ (VND)</label>
+                  <button
+                    type="button"
+                    onClick={() => setEditAllocForm(prev => ({ ...prev, planBudget: suggestedBudget }))}
+                    className="text-2xs text-accent hover:text-accent font-medium underline transition flex items-center gap-1"
+                  >
+                    Áp dụng định mức 4 Tier: {(suggestedBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M đ
+                  </button>
+                </div>
+                <input
+                  type="number"
+                  step="1000000"
+                  value={editAllocForm.planBudget}
+                  onChange={(e) => setEditAllocForm(prev => ({ ...prev, planBudget: Number(e.target.value) }))}
+                  className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                />
+                <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                  <span>Đã giải ngân thực tế: {editingAllocation.reportBudget.toLocaleString('vi-VN')} đ</span>
+                  <span className="text-ink-3">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-ink-2 font-semibold mb-1">Target GMV (VND)</label>
                   <input
                     type="number"
                     step="1000000"
-                    value={editAllocForm.planBudget}
-                    onChange={(e) => setEditAllocForm(prev => ({ ...prev, planBudget: Number(e.target.value) }))}
+                    value={editAllocForm.targetGmv}
+                    onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
                     className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                   />
-                  <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
-                    <span>Đã giải ngân thực tế: {editingAllocation.reportBudget.toLocaleString('vi-VN')} đ</span>
-                    <span className="text-ink-3">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
-                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-ink-2 font-semibold mb-1">Target GMV (VND)</label>
-                    <input
-                      type="number"
-                      step="1000000"
-                      value={editAllocForm.targetGmv}
-                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
-                      className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-ink-2 font-semibold mb-1">Chỉ tiêu tuyển KOC mới</label>
+                  <input
+                    type="number"
+                    value={editAllocForm.targetNewKocs}
+                    onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetNewKocs: Number(e.target.value) }))}
+                    className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-ink-2 font-semibold mb-1">Chỉ tiêu tuyển KOC mới</label>
-                    <input
-                      type="number"
-                      value={editAllocForm.targetNewKocs}
-                      onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetNewKocs: Number(e.target.value) }))}
-                      className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-ink-2 font-semibold">
+                    Nhãn hàng / Brand phụ trách
+                  </label>
+                  <span className="text-2xs text-ink-3 font-medium">
+                    Đã gán {(editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean).length} nhãn hàng
+                  </span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-canvas border border-line rounded-lg">
+                  {(() => {
+                    const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
+                    if (list.length === 0) {
+                      return (
+                        <span className="text-ink-3 text-xs italic">
+                          Chưa gán nhãn hàng nào. Hãy chọn từ danh mục Master Data bên dưới.
+                        </span>
+                      );
+                    }
+                    return list.map(brandName => (
+                      <span
+                        key={brandName}
+                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-accent-soft border border-accent/20 text-accent text-xs font-semibold shadow-2xs"
+                      >
+                        <span>{brandName}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = list.filter(b => b !== brandName);
+                            setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
+                          }}
+                          className="w-4 h-4 rounded hover:bg-accent-soft text-accent flex items-center justify-center transition cursor-pointer"
+                          title="Xóa nhãn hàng này"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ));
+                  })()}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      onChange={(e) => {
+                        const val = e.target.value.trim();
+                        if (val) {
+                          const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
+                          if (!list.includes(val)) {
+                            const updated = [...list, val];
+                            setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
+                          }
+                          e.target.value = '';
+                        }
+                      }}
+                      defaultValue=""
+                      className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                    >
+                      <option value="" disabled>
+                        + Chọn nhãn hàng từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)...
+                      </option>
+                      <optgroup label="Nhãn hàng đang vận hành">
+                        {currentBrands.map(b => {
+                          const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
+                          const isSelected = list.includes(b.name);
+                          return (
+                            <option
+                              key={b.id}
+                              value={b.name}
+                              disabled={isSelected}
+                            >
+                              {b.name} {isSelected ? '(Đã chọn)' : ''}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                      <optgroup label="Tất cả Master Data Brands (192 Brands)">
+                        {UPBASE_BRANDS_MASTER.map(mb => {
+                          const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
+                          const isSelected = list.includes(mb.name);
+                          return (
+                            <option
+                              key={mb.id}
+                              value={mb.name}
+                              disabled={isSelected}
+                            >
+                              {mb.name} - {mb.category} {isSelected ? '(Đã chọn)' : ''}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-ink-2 font-semibold mb-1">Ghi chú chỉ đạo nghiệp vụ của trưởng phòng</label>
+                <textarea
+                  rows={2}
+                  value={editAllocForm.managerNote}
+                  onChange={(e) => setEditAllocForm(prev => ({ ...prev, managerNote: e.target.value }))}
+                  placeholder="Ghi chú điều phối tiến độ, ưu tiên nhóm Tier hoặc nhắc nhở deadline..."
+                  className="w-full bg-white border border-line-strong rounded-lg p-3 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 resize-none"
+                />
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Modal: Cấu Hình Hạn Mức 4 Tier Toàn Phòng */}
+      <Modal
+        open={Boolean(isTierQuotaModalOpen)}
+        onClose={() => setIsTierQuotaModalOpen(false)}
+        title={`Cấu hình hạn mức 4 Tier KOC / KOL — ${currentPlan.monthLabel}`}
+        size="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setIsTierQuotaModalOpen(false)}>
+              Hủy bỏ
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSaveTierQuota} icon={Save}>
+              Lưu hạn mức tháng
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div className="space-y-3">
+            {editTierForm.map((tier, idx) => {
+              const calculatedAvg = tier.targetVideos > 0 ? Math.round(tier.totalBudget / tier.targetVideos) : 0;
+              return (
+                <div key={tier.tierId} className="p-4 bg-canvas border border-line rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-ink-2 font-semibold">
-                      Nhãn hàng / Brand phụ trách
-                    </label>
-                    <span className="text-2xs text-ink-3 font-medium">
-                      Đã gán {(editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean).length} nhãn hàng
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-accent" />
+                      <span className="font-semibold text-ink text-xs">{tier.tierName}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-white border border-line text-2xs text-ink-2 font-mono">
+                        {tier.klRange}
+                      </span>
+                    </div>
+                    <span className="text-2xs text-ink-3">
+                      Đơn giá TB: <strong className="text-ink font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
                     </span>
                   </div>
 
-                  {/* Active selected brand tags */}
-                  <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-canvas border border-line rounded-lg">
-                    {(() => {
-                      const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
-                      if (list.length === 0) {
-                        return (
-                          <span className="text-ink-3 text-xs italic">
-                            Chưa gán nhãn hàng nào. Hãy chọn từ danh mục Master Data bên dưới.
-                          </span>
-                        );
-                      }
-                      return list.map(brandName => (
-                        <span
-                          key={brandName}
-                          className="inline-flex items-center gap-1.5 .5 text-accent -accent/20 text-xs font-semibold shadow-2xs"
-                        >
-                          <span>{brandName}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updated = list.filter(b => b !== brandName);
-                              setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
-                            }}
-                            className="w-4 h-4 rounded hover:bg-accent-soft text-accent flex items-center justify-center transition cursor-pointer"
-                            title="Xóa nhãn hàng này"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ));
-                    })()}
-                  </div>
-
-                  {/* Master Data Selector Dropdown */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <select
-                        onChange={(e) => {
-                          const val = e.target.value.trim();
-                          if (val) {
-                            const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
-                            if (!list.includes(val)) {
-                              const updated = [...list, val];
-                              setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
-                            }
-                            e.target.value = '';
-                          }
-                        }}
-                        defaultValue=""
-                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                      >
-                        <option value="" disabled>
-                          + Chọn nhãn hàng từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)...
-                        </option>
-                        <optgroup label="Nhãn hàng đang vận hành">
-                          {currentBrands.map(b => {
-                            const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
-                            const isSelected = list.includes(b.name);
-                            return (
-                              <option
-                                key={b.id}
-                                value={b.name}
-                                disabled={isSelected}
-                              >
-                                {b.name} {isSelected ? '(Đã chọn)' : ''}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                        <optgroup label="Tất cả Master Data Brands (192 Brands)">
-                          {UPBASE_BRANDS_MASTER.map(mb => {
-                            const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
-                            const isSelected = list.includes(mb.name);
-                            return (
-                              <option
-                                key={mb.id}
-                                value={mb.name}
-                                disabled={isSelected}
-                              >
-                                {mb.name} - {mb.category} {isSelected ? '(Đã chọn)' : ''}
-                              </option>
-                            );
-                          })}
-                        </optgroup>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-ink-2 font-semibold mb-1">Ghi chú chỉ đạo nghiệp vụ của trưởng phòng</label>
-                  <textarea
-                    rows={2}
-                    value={editAllocForm.managerNote}
-                    onChange={(e) => setEditAllocForm(prev => ({ ...prev, managerNote: e.target.value }))}
-                    placeholder="Ghi chú điều phối tiến độ, ưu tiên nhóm Tier hoặc nhắc nhở deadline..."
-                    className="w-full bg-white border border-line-strong rounded-lg p-3 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line bg-canvas">
-                <button
-                  onClick={() => setEditingAllocation(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  onClick={handleSaveAlloc}
-                  className="px-5 py-2 bg-accent hover:bg-accent text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Lưu phân bổ</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-      </Presence>
-
-      {/* Modal: Cấu Hình Hạn Mức 4 Tier Toàn Phòng (Top-Down Quota Configuration) */}
-      <Presence show={!!isTierQuotaModalOpen}>
-      {isTierQuotaModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-          onClick={() => setIsTierQuotaModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel
-            className="bg-white border border-line rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-canvas">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-semibold border border-accent/20">
-                  <SlidersHorizontal className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-ink">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
-                  
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsTierQuotaModalOpen(false)}
-                className="p-1.5 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
-                aria-label="Đóng"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-
-
-              <div className="space-y-3">
-                {editTierForm.map((tier, idx) => {
-                  const calculatedAvg = tier.targetVideos > 0 ? Math.round(tier.totalBudget / tier.targetVideos) : 0;
-                  return (
-                    <div key={tier.tierId} className="p-4 bg-canvas border border-line rounded-xl space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-accent" />
-                          <span className="font-semibold text-ink text-xs">{tier.tierName}</span>
-                          <span className="text-2xs text-ink-2 -line font-mono">
-                            {tier.klRange}
-                          </span>
-                        </div>
-                        <span className="text-2xs text-ink-3">
-                          Đơn giá TB: <strong className="text-ink font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần số video</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={tier.targetVideos}
-                            onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value));
-                              setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, targetVideos: val } : t));
-                            }}
-                            className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần ngân sách (VND)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="10000000"
-                            value={tier.totalBudget}
-                            onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value));
-                              setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, totalBudget: val } : t));
-                            }}
-                            className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
-                          />
-                        </div>
-                      </div>
-
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần số video</label>
                       <input
-                        type="text"
-                        value={tier.description}
+                        type="number"
+                        min="0"
+                        value={tier.targetVideos}
                         onChange={(e) => {
-                          const val = e.target.value;
-                          setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, description: val } : t));
+                          const val = Math.max(0, Number(e.target.value));
+                          setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, targetVideos: val } : t));
                         }}
-                        placeholder="Mô tả chiến lược và vai trò của Tier này trong tháng..."
-                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-2xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                       />
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* Total Summary */}
-              <div className="p-3.5 bg-canvas border border-line rounded-xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-ink-2">Tổng trần video tháng:</span>
-                  <span className="ml-2 font-semibold text-ink font-mono">
-                    {editTierForm.reduce((sum, t) => sum + (t.targetVideos || 0), 0).toLocaleString('vi-VN')} clips
-                  </span>
+                    <div>
+                      <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần ngân sách (VND)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000000"
+                        value={tier.totalBudget}
+                        onChange={(e) => {
+                          const val = Math.max(0, Number(e.target.value));
+                          setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, totalBudget: val } : t));
+                        }}
+                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                      />
+                    </div>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={tier.description}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, description: val } : t));
+                    }}
+                    placeholder="Mô tả chiến lược và vai trò của Tier này trong tháng..."
+                    className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-2xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
+                  />
                 </div>
-                <div>
-                  <span className="text-ink-2">Tổng trần ngân sách:</span>
-                  <span className="ml-2 font-semibold text-accent font-mono">
-                    {editTierForm.reduce((sum, t) => sum + (t.totalBudget || 0), 0).toLocaleString('vi-VN')} đ
-                  </span>
-                </div>
-              </div>
+              );
+            })}
+          </div>
+
+          <div className="p-3.5 bg-canvas border border-line rounded-xl flex items-center justify-between text-xs">
+            <div>
+              <span className="text-ink-2">Tổng trần video tháng:</span>
+              <span className="ml-2 font-semibold text-ink font-mono">
+                {editTierForm.reduce((sum, t) => sum + (t.targetVideos || 0), 0).toLocaleString('vi-VN')} clips
+              </span>
             </div>
-
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line bg-canvas">
-              <button
-                onClick={() => setIsTierQuotaModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleSaveTierQuota}
-                className="px-5 py-2 bg-accent hover:bg-accent text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Lưu hạn mức tháng</span>
-              </button>
+            <div>
+              <span className="text-ink-2">Tổng trần ngân sách:</span>
+              <span className="ml-2 font-semibold text-accent font-mono">
+                {editTierForm.reduce((sum, t) => sum + (t.totalBudget || 0), 0).toLocaleString('vi-VN')} đ
+              </span>
             </div>
           </div>
         </div>
-      )}
-      </Presence>
+      </Modal>
 
       {/* Modal: Soi Kế Hoạch Triển Khai Chi tiết Của Nhân Viên (Employee Plan Inspector) */}
       <EmployeePlanInspectorModal
@@ -2352,92 +2276,14 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       />
 
       {/* Modal: Chi tiết Tuân Thủ SLA Nhân Viên */}
-      <Presence show={!!inspectStaffModal}>
-      {inspectStaffModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-line rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            {/* Header */}
-            <div className="px-6 py-4 bg-canvas border-b border-line flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent text-white font-semibold flex items-center justify-center text-sm shadow-xs">
-                  {inspectStaffModal.avatar}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-ink text-sm">
-                    Báo Cáo Chi tiết SLA — {inspectStaffModal.staffName}
-                  </h3>
-                  <p className="text-xs text-ink-3">{inspectStaffModal.role} • {inspectStaffModal.team}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setInspectStaffModal(null)}
-                className="w-8 h-8 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken flex items-center justify-center transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-4 text-xs">
-              {/* Scorecard row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div className="p-3 bg-canvas rounded-xl border border-line">
-                  <span className="text-2xs text-ink-3 block">Tổng Jobs</span>
-                  <span className="text-lg font-semibold text-ink">{inspectStaffModal.totalJobs}</span>
-                </div>
-                <div className="p-3 bg-positive-soft rounded-xl border border-positive/20">
-                  <span className="text-2xs text-positive block">Đúng hạn</span>
-                  <span className="text-lg font-semibold text-positive">{inspectStaffModal.onTimeJobs}</span>
-                </div>
-                <div className="p-3 bg-critical-soft rounded-xl border border-critical/20">
-                  <span className="text-2xs text-critical block">Vi phạm trễ</span>
-                  <span className="text-lg font-semibold text-critical">{inspectStaffModal.breachedJobs}</span>
-                </div>
-                <div className="p-3 bg-accent-soft rounded-xl border border-accent/20">
-                  <span className="text-2xs text-accent block">Điểm KPI SLA</span>
-                  <span className="text-lg font-semibold text-accent">{inspectStaffModal.currentScore}/100</span>
-                </div>
-              </div>
-
-              {/* Vi Phạm Chi tiết */}
-              <div>
-                <h4 className="font-semibold text-ink text-xs mb-2 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-critical" />
-                  Danh sách vi phạm quy chuẩn đang ghi nhận:
-                </h4>
-                {inspectStaffModal.violations.length === 0 ? (
-                  <div className="p-4 bg-positive-soft text-positive rounded-xl text-center font-medium border border-positive/20">
-                    ✓ Nhân sự hoàn thành 100% công việc đúng hạn, không có vi phạm nào.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {inspectStaffModal.violations.map((v, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-critical-soft border border-critical/20 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-critical text-xs">{v.categoryLabel}</span>
-                          <span className="text-2xs font-semibold text-critical">
-                            Quá hạn {v.hoursOverdue}h
-                          </span>
-                        </div>
-                        <div className="text-2xs text-ink-2 flex items-center gap-2">
-                          <span>Deal: <strong>{v.dealCode}</strong></span>
-                          <span>•</span>
-                          <span>KOC: <strong>{v.kocName}</strong></span>
-                          <span>•</span>
-                          <span>Brand: <strong>{v.brandName}</strong></span>
-                        </div>
-                        <p className="text-2xs text-critical italic">
-                          {v.resolutionNotes}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 bg-canvas border-t border-line flex items-center justify-between">
+      <Modal
+        open={Boolean(inspectStaffModal)}
+        onClose={() => setInspectStaffModal(null)}
+        title={inspectStaffModal ? `Báo cáo chi tiết SLA — ${inspectStaffModal.staffName}` : 'Báo cáo chi tiết SLA'}
+        size="lg"
+        footer={
+          inspectStaffModal ? (
+            <div className="flex items-center justify-between w-full">
               <button
                 onClick={() => {
                   handlePingStaff(inspectStaffModal.staffName, 'Yêu cầu giải trình vi phạm SLA B2C');
@@ -2446,102 +2292,141 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 className="px-4 py-2 text-xs font-semibold text-critical bg-critical-soft hover:bg-critical-soft rounded-xl transition flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>Gửi Ping nhắc nhở Qua Lark</span>
+                <span>Gửi Ping nhắc nhở qua Lark</span>
               </button>
-              <button
-                onClick={() => setInspectStaffModal(null)}
-                className="px-5 py-2 text-xs font-semibold text-ink-2 bg-white hover:bg-sunken border border-line-strong rounded-xl transition"
-              >
+              <Button variant="secondary" size="sm" onClick={() => setInspectStaffModal(null)}>
                 Đóng
-              </button>
+              </Button>
+            </div>
+          ) : null
+        }
+      >
+        {inspectStaffModal && (
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3 bg-canvas rounded-xl border border-line">
+                <span className="text-2xs text-ink-3 block">Tổng Jobs</span>
+                <span className="text-lg font-semibold text-ink">{inspectStaffModal.totalJobs}</span>
+              </div>
+              <div className="p-3 bg-positive-soft rounded-xl border border-positive/20">
+                <span className="text-2xs text-positive block">Đúng hạn</span>
+                <span className="text-lg font-semibold text-positive">{inspectStaffModal.onTimeJobs}</span>
+              </div>
+              <div className="p-3 bg-critical-soft rounded-xl border border-critical/20">
+                <span className="text-2xs text-critical block">Vi phạm trễ</span>
+                <span className="text-lg font-semibold text-critical">{inspectStaffModal.breachedJobs}</span>
+              </div>
+              <div className="p-3 bg-accent-soft rounded-xl border border-accent/20">
+                <span className="text-2xs text-accent block">Điểm KPI SLA</span>
+                <span className="text-lg font-semibold text-accent">{inspectStaffModal.currentScore}/100</span>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-ink text-xs mb-2 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-critical" />
+                Danh sách vi phạm quy chuẩn đang ghi nhận:
+              </h4>
+              {inspectStaffModal.violations.length === 0 ? (
+                <div className="p-4 bg-positive-soft text-positive rounded-xl text-center font-medium border border-positive/20">
+                  ✓ Nhân sự hoàn thành 100% công việc đúng hạn, không có vi phạm nào.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {inspectStaffModal.violations.map((v, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-critical-soft border border-critical/20 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-critical text-xs">{v.categoryLabel}</span>
+                        <span className="text-2xs font-semibold text-critical">
+                          Quá hạn {v.hoursOverdue}h
+                        </span>
+                      </div>
+                      <div className="text-2xs text-ink-2 flex items-center gap-2">
+                        <span>Deal: <strong>{v.dealCode}</strong></span>
+                        <span>•</span>
+                        <span>KOC: <strong>{v.kocName}</strong></span>
+                        <span>•</span>
+                        <span>Brand: <strong>{v.brandName}</strong></span>
+                      </div>
+                      <p className="text-2xs text-critical italic">
+                        {v.resolutionNotes}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* Modal: Xử Lý Vi Phạm SLA */}
-      <Presence show={!!breachActionModal}>
-      {breachActionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 bg-critical-soft border-b border-critical/20 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <ShieldAlert className="w-5 h-5 text-critical" />
-                <div>
-                  <h3 className="font-semibold text-ink text-sm">Xử lý & Leo Thang vi phạm SLA</h3>
-                  <p className="text-2xs text-critical font-semibold">{breachActionModal.dealCode} • {breachActionModal.kocName}</p>
-                </div>
-              </div>
-              <button onClick={() => setBreachActionModal(null)} className="text-ink-3 hover:text-ink-2">
-                <X className="w-5 h-5" />
+      <Modal
+        open={Boolean(breachActionModal)}
+        onClose={() => setBreachActionModal(null)}
+        title={breachActionModal ? `Xử lý & leo thang vi phạm SLA — ${breachActionModal.dealCode}` : 'Xử lý vi phạm SLA'}
+        size="md"
+      >
+        {breachActionModal && (
+          <div className="space-y-3.5 text-xs">
+            <div className="p-3 bg-canvas rounded-xl border border-line space-y-1">
+              <div className="font-semibold text-ink">{breachActionModal.categoryLabel}</div>
+              <div className="text-ink-2">KOC: <strong>{breachActionModal.kocName}</strong> • Brand: <strong>{breachActionModal.brandName}</strong></div>
+              <div className="text-ink-2">Hạn chót: <strong>{breachActionModal.slaDeadline}</strong></div>
+              <div className="text-critical font-semibold">Số giờ quá hạn: {breachActionModal.hoursOverdue} giờ</div>
+              <div className="text-ink-3">PIC chịu trách nhiệm: <strong>{breachActionModal.picName} ({breachActionModal.picRole})</strong></div>
+              {breachActionModal.escalatedTo && (
+                <div className="text-accent font-semibold">Đã leo thang tới: <strong>{breachActionModal.escalatedTo}</strong></div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <span className="font-semibold text-ink-2 block">Thao tác can thiệp của Quản lý:</span>
+              
+              {breachActionModal.category === 'BRAND_ORIENTATION_AUTO_AIR' && (
+                <button
+                  onClick={() => handleResolveBreach(breachActionModal.id, 'Quản lý đã phê duyệt Tự Air do Brand quá hạn 3 ngày theo quy chế SLA B2C.')}
+                  className="w-full p-2.5 bg-positive hover:bg-positive text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Phê duyệt đề xuất tự Air</span>
+                </button>
+              )}
+
+              {breachActionModal.category === 'CONTRACT_OVER_9M_INVALID' && (
+                <button
+                  onClick={() => handleResolveBreach(breachActionModal.id, 'Đã yêu cầu chuyên viên nộp bổ sung bản Scan HĐ và CCCD trước 17:00.')}
+                  className="w-full p-2.5 bg-accent hover:bg-accent text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  <span>Yêu cầu bổ sung bản Scan ký 2 bên & CCCD</span>
+                </button>
+              )}
+
+              {breachActionModal.category === 'DATA_LOCKED_7_WORKING_DAYS' && (
+                <button
+                  onClick={() => handleResolveBreach(breachActionModal.id, 'Leader đã xác nhận giải trình và mở khóa tạm 24h để chuyên viên điền link.')}
+                  className="w-full p-2.5 bg-warning hover:bg-warning text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <Unlock className="w-4 h-4" />
+                  <span>Xác nhận mở khóa tạm 24h để điền link</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  handlePingStaff(breachActionModal.picName, `Yêu cầu xử lý gấp vi phạm SLA: ${breachActionModal.categoryLabel}`);
+                  handleResolveBreach(breachActionModal.id, `Quản lý đã gửi Ping qua Lark nhắc nhở chuyên viên ${breachActionModal.picName}.`);
+                }}
+                className="w-full p-2.5 bg-sunken hover:bg-sunken text-ink font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-line-strong"
+              >
+                <Send className="w-4 h-4 text-accent" />
+                <span>Ping Lark nhắc PIC xử lý ngay</span>
               </button>
             </div>
-
-            <div className="p-6 space-y-3.5 text-xs">
-              <div className="p-3 bg-canvas rounded-xl border border-line space-y-1">
-                <div className="font-semibold text-ink">{breachActionModal.categoryLabel}</div>
-                <div className="text-ink-2">Hạn chót: <strong>{breachActionModal.slaDeadline}</strong></div>
-                <div className="text-critical font-semibold">Số giờ quá hạn: {breachActionModal.hoursOverdue} giờ</div>
-                <div className="text-ink-3">PIC chịu trách nhiệm: <strong>{breachActionModal.picName} ({breachActionModal.picRole})</strong></div>
-                {breachActionModal.escalatedTo && (
-                  <div className="text-accent font-semibold">Đã leo thang tới: <strong>{breachActionModal.escalatedTo}</strong></div>
-                )}
-              </div>
-
-              {/* Action Buttons depending on Category */}
-              <div className="space-y-2">
-                <span className="font-semibold text-ink-2 block">Thao tác can thiệp của Quản lý:</span>
-                
-                {breachActionModal.category === 'BRAND_ORIENTATION_AUTO_AIR' && (
-                  <button
-                    onClick={() => handleResolveBreach(breachActionModal.id, 'Quản lý đã phê duyệt Tự Air do Brand quá hạn 3 ngày theo quy chế SLA B2C.')}
-                    className="w-full p-2.5 bg-positive hover:bg-positive text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span>Phê duyệt đề xuất tự Air</span>
-                  </button>
-                )}
-
-                {breachActionModal.category === 'CONTRACT_OVER_9M_INVALID' && (
-                  <button
-                    onClick={() => handleResolveBreach(breachActionModal.id, 'Đã yêu cầu chuyên viên nộp bổ sung bản Scan HĐ và CCCD trước 17:00.')}
-                    className="w-full p-2.5 bg-accent hover:bg-accent text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
-                  >
-                    <FileCheck className="w-4 h-4" />
-                    <span>Yêu cầu bổ Sung bản Scan ký 2 bên & CCCD</span>
-                  </button>
-                )}
-
-                {breachActionModal.category === 'DATA_LOCKED_7_WORKING_DAYS' && (
-                  <button
-                    onClick={() => handleResolveBreach(breachActionModal.id, 'Leader đã xác nhận giải trình và mở khóa tạm 24h để chuyên viên điền link.')}
-                    className="w-full p-2.5 bg-warning hover:bg-warning text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
-                  >
-                    <Unlock className="w-4 h-4" />
-                    <span>Xác nhận mở khóa tạm 24h để điền link</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => {
-                    handlePingStaff(breachActionModal.picName, `Yêu cầu xử lý gấp vi phạm SLA: ${breachActionModal.categoryLabel}`);
-                    handleResolveBreach(breachActionModal.id, `Quản lý đã gửi Ping qua Lark nhắc nhở chuyên viên ${breachActionModal.picName}.`);
-                  }}
-                  className="w-full p-2.5 bg-sunken hover:bg-sunken text-ink font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-line-strong"
-                >
-                  <Send className="w-4 h-4 text-accent" />
-                  <span>Ping Lark nhắc PIC xử lý ngay</span>
-                </button>
-              </div>
-            </div>
           </div>
-        </div>
-      )}
-      </Presence>
-
-        </div>
-      )}
+        )}
+      </Modal>
 
 
       {/* AI Staff Review Modal (API Powered) */}

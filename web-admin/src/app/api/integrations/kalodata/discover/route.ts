@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { kalodataClient } from '@/lib/kalodata/client';
 import { KalodataDiscoverFilter } from '@/lib/kalodata/types';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 
 export async function GET(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập để tra cứu dữ liệu Kalodata.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, error: 'Tài khoản đối tác không có quyền tra cứu danh bạ Creator Kalodata.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') || undefined;

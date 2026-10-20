@@ -287,20 +287,31 @@ function matchStorePlan(
   );
   if (exactStore) return exactStore;
 
-  // 2. Khớp theo brandName nếu cùng nền tảng hoặc chỉ có 1 plan của brand trong tháng
+  // 2. Khớp theo brandName chỉ khi cùng nền tảng sàn và không gắn cố định vào một storeId khác
+  const isShopee = sName.includes('shopee') || norm(store.platform).includes('shopee');
+  const isLazada = sName.includes('lazada') || norm(store.platform).includes('lazada');
   const brandPlans = monthPlans.filter(p => {
+    if (p.storeId && norm(p.storeId) !== sId && norm(p.storeId) !== sOpId) {
+      return false;
+    }
+    const target = `${norm(p.storeName)} ${norm(p.brandName)}`;
+    if (isShopee && (target.includes('tiktok') || target.includes('lazada'))) return false;
+    if (isLazada && (target.includes('tiktok') || target.includes('shopee'))) return false;
+    if (!isShopee && !isLazada && (target.includes('shopee') || target.includes('lazada'))) return false;
+
     const pb = norm(p.brandName).split('_')[0];
     const sb = bName.split('_')[0];
     return pb && sb && (pb === sb || norm(p.brandName) === bName);
   });
   if (brandPlans.length === 1) return brandPlans[0];
   if (brandPlans.length > 1) {
-    const isShopee = sName.includes('shopee') || norm(store.platform).includes('shopee');
     const platformMatched = brandPlans.find(p => {
       const target = `${norm(p.storeName)} ${norm(p.brandName)}`;
-      return isShopee ? target.includes('shopee') : target.includes('tiktok');
+      if (isShopee) return target.includes('shopee');
+      if (isLazada) return target.includes('lazada');
+      return target.includes('tiktok');
     });
-    return platformMatched || brandPlans[0];
+    return platformMatched || null;
   }
   return null;
 }
@@ -598,14 +609,15 @@ export function buildStoreMonthlyPlanReport(
           Math.round((store.actualSpentNet ?? baseBudgetNet * 0.94) * monthRatio);
 
   const gmvFromBookings = bookings.reduce((s, b) => s + b.gmv, 0);
+  const realTotalGmv = gmvFromBookings + adsGmv;
   const reportNmv =
     month === '2026/10'
-      ? Math.max(directPlan?.actualGmv ?? 0, gmvFromBookings + adsGmv, reportSpentNet > 0 ? Math.round(reportSpentNet * 3.8) : 0)
+      ? realTotalGmv > 0
+        ? realTotalGmv
+        : directPlan?.actualGmv ?? 0
       : month === '2026/11'
         ? directPlan?.actualGmv ?? 0
-        : directPlan?.actualGmv ||
-          gmvFromBookings + adsGmv ||
-          (planNmv > 0 ? Math.round(planNmv * (month === '2026/09' ? 1.03 : 0.97)) : 0);
+        : directPlan?.actualGmv || realTotalGmv || 0;
 
   const airedFromBookings = bookings.filter(b => Boolean(b.linkAir) || b.pipeline.includes('lên sóng') || b.pipeline.includes('nghiệm thu')).length;
   const reportBookedVideos =
@@ -657,10 +669,10 @@ export function buildStoreMonthlyPlanReport(
             : 'Bản nháp');
 
   const pic =
-    directPlan?.pic ||
     store.b2cOwnerName ||
     store.primaryPic ||
     (store.b2cOwners && store.b2cOwners[0]) ||
+    directPlan?.pic ||
     'Lê Phương Thảo';
 
   return {

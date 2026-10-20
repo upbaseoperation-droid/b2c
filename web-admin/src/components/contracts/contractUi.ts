@@ -141,17 +141,42 @@ const money = (n?: number) => (n !== undefined && !isNaN(n) && n !== 0 ? formatN
 export function prefill(
   fields: ContractField[],
   values: Record<string, string>,
-  ctx: { koc?: KocItem; deal?: BookingDealItem; today?: Date; existingRecords?: ContractRecord[] }
+  ctx: {
+    koc?: KocItem;
+    deal?: BookingDealItem;
+    today?: Date;
+    existingRecords?: ContractRecord[];
+    parentRecord?: ContractRecord;
+    parentFields?: ContractField[];
+  }
 ) {
-  const { koc, deal, existingRecords = [] } = ctx;
+  const { koc, deal, existingRecords = [], parentRecord, parentFields = [] } = ctx;
   const d = ctx.today || new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const subjectKind = detectSubjectKind(koc, deal);
   const type = koc ? legalTypeOf(koc) : 'INDIVIDUAL';
   const quantity = deal?.committedOutputsCount || 1;
-  const docDateStr = `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
-  const totalAmount = deal?.totalValue || 0;
+  const docDateStr = parentRecord?.values['token:[dd.mm.yy]'] || `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
+
+  // Hỗ trợ kế thừa giá trị theo source từ hợp đồng gốc (khi tạo BBNT từ HĐ đã ký)
+  const parentValueBySource = (src: NonNullable<ContractField['source']>): string => {
+    if (!parentRecord) return '';
+    const pf = parentFields.find(x => x.source === src && parentRecord.values[x.key]?.trim());
+    return pf ? parentRecord.values[pf.key].trim() : '';
+  };
+
+  const parentMoneyFallback = (() => {
+    const raw =
+      parentValueBySource('lineTotal') ||
+      parentValueBySource('netTotal') ||
+      parentRecord?.values['token:[Tổng tiền trước thuế/sau thuế]'] ||
+      '';
+    const num = Number(raw.replace(/[^\d]/g, ''));
+    return Number.isFinite(num) && num > 0 ? num : 0;
+  })();
+
+  const totalAmount = deal?.totalValue || parentMoneyFallback || 0;
   const unitPrice = quantity > 1 && totalAmount ? Math.round(totalAmount / quantity) : totalAmount;
 
   // Tính thuế và tổng giá trị hợp đồng theo quy định BR-09
@@ -165,6 +190,9 @@ export function prefill(
   const advanceAmount = totalAmount >= 2000000 ? Math.round(totalAmount * 0.5) : totalAmount;
 
   const getUniqueKocIdToken = () => {
+    if (parentRecord?.values['token:[ID KOC]']?.trim()) {
+      return parentRecord.values['token:[ID KOC]'].trim();
+    }
     const rawId = koc ? koc.channelId.replace(/^@/, '') : '';
     if (!rawId) return '';
     if (deal?.dealCode) {
@@ -184,29 +212,29 @@ export function prefill(
   const cccdWithIssue = (f: ContractField) =>
     koc?.cccd && f.start !== undefined && (koc.issueDate || koc.issuePlace)
       ? [koc.cccd, koc.issueDate && `cấp ngày ${koc.issueDate}`, koc.issuePlace && `tại ${koc.issuePlace}`].filter(Boolean).join(' ')
-      : koc?.cccd || '';
+      : koc?.cccd || parentValueBySource('cccd') || '';
 
   const source = (f: ContractField): string => {
-    // 1. Phân loại theo source có sẵn
+    // 1. Phân loại theo source có sẵn (ưu tiên KOC/Deal, dự phòng từ hợp đồng gốc khi lập BBNT)
     switch (f.source) {
-      case 'partyName': return koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '';
-      case 'ownerName': return koc?.legalRepresentative || koc?.realName || '';
-      case 'representative': return koc?.legalRepresentative || koc?.realName || '';
+      case 'partyName': return (koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '') || parentValueBySource('partyName') || parentRecord?.partner || '';
+      case 'ownerName': return koc?.legalRepresentative || koc?.realName || parentValueBySource('ownerName') || '';
+      case 'representative': return koc?.legalRepresentative || koc?.realName || parentValueBySource('representative') || '';
       case 'cccd': return cccdWithIssue(f);
-      case 'taxCode': return koc?.taxCode || '';
-      case 'address': return koc?.permanentAddress || '';
-      case 'phone': return koc?.phone || '';
-      case 'email': return koc?.email || '';
+      case 'taxCode': return koc?.taxCode || parentValueBySource('taxCode') || '';
+      case 'address': return koc?.permanentAddress || parentValueBySource('address') || '';
+      case 'phone': return koc?.phone || parentValueBySource('phone') || '';
+      case 'email': return koc?.email || parentValueBySource('email') || '';
       case 'kocId': return getUniqueKocIdToken();
       case 'docDate': return docDateStr;
       case 'signDay': return dd;
       case 'signMonth': return mm;
       case 'signYearDigit': return String(d.getFullYear()).slice(-1);
-      case 'product': return deal?.productName || '';
-      case 'unitPrice': return money(unitPrice);
-      case 'quantity': return quantity ? String(quantity) : '';
-      case 'lineTotal': return money(totalAmount);
-      case 'netTotal': return money(tax.netAmountToReceive);
+      case 'product': return deal?.productName || parentValueBySource('product') || '';
+      case 'unitPrice': return money(unitPrice) || parentValueBySource('unitPrice');
+      case 'quantity': return (quantity ? String(quantity) : '') || parentValueBySource('quantity');
+      case 'lineTotal': return money(totalAmount) || parentValueBySource('lineTotal');
+      case 'netTotal': return money(tax.netAmountToReceive) || parentValueBySource('netTotal');
     }
 
     // 2. Tự động nhận diện các ô thuế, tổng tiền, chữ ký, tiến độ từ ngữ cảnh biểu mẫu

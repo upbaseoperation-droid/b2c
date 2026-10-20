@@ -17,7 +17,7 @@ export interface ExecuteOperationalReportParams {
   overrideProvider?: 'ROUTE_DEFAULT' | ApiProviderId;
   overrideModel?: string;
   customSystemInstruction?: string;
-  sourceTag?: 'PLAYGROUND' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'STAFF_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA';
+  sourceTag?: 'PLAYGROUND' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'STAFF_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'MARKET_RESEARCH';
 }
 
 export interface OperationalReportResult {

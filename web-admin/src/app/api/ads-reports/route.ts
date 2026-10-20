@@ -9,6 +9,7 @@ import {
 import { INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { persistParsedAdsReportToDb } from '@/lib/server/tiktokSellerStore';
+import { actionAllowed } from '@/lib/server/accessPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,13 @@ export async function GET(req: NextRequest) {
     }, { status: 401 });
   }
 
+  if (!await actionAllowed(user, 'ads_report_bi', 'read')) {
+    return NextResponse.json({
+      success: false,
+      error: 'Bạn không có quyền xem báo cáo Ads TikTok.'
+    }, { status: 403 });
+  }
+
   try {
     const list = getStoredAdsReportsList();
     return NextResponse.json({
@@ -72,6 +80,13 @@ export async function POST(req: NextRequest) {
       success: false,
       error: 'Unauthorized: Vui lòng đăng nhập để xử lý báo cáo Ads.'
     }, { status: 401 });
+  }
+
+  if (!await actionAllowed(user, 'ads_report_bi', 'write')) {
+    return NextResponse.json({
+      success: false,
+      error: 'Bạn không có quyền tải lên hoặc đồng bộ báo cáo Ads TikTok.'
+    }, { status: 403 });
   }
 
   try {

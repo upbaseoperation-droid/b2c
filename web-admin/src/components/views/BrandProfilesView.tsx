@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, FileSpreadsheet, HardDrive, Layers, Loader2, Video } from 'lucide-react';
+import { Calendar, Cloud, FileSpreadsheet, HardDrive, Layers, Loader2, Video } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
@@ -41,6 +41,7 @@ import {
 } from '../ui';
 import type { Column } from '../ui';
 import { BrandProfileDetail, type BrandDetailTab } from '../brands/BrandProfileDetail';
+import { CloudflareR2SetupModal } from '../brands/CloudflareR2SetupPanel';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
 import { isBrandManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
@@ -104,6 +105,7 @@ export function BrandProfilesView({
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [page, setPage] = useState(1);
+  const [r2SetupOpen, setR2SetupOpen] = useState(false);
 
   const load = useCallback(
     () => request<{ profiles: BrandProfile[]; access: BrandAccess }>().then(r => {
@@ -407,8 +409,8 @@ export function BrandProfilesView({
         const kvSis = rep?.brandPlan?.keyVisualSisPic || real(r.master?.keyVisualSisPic);
 
         const subInfo = [
-          contentMain ? `Content: ${contentMain}` : null,
-          acc ? `Acc: ${acc}` : null,
+          contentMain && contentMain !== planStrat ? contentMain : null,
+          acc && acc !== planStrat && acc !== contentMain ? acc : null,
         ].filter(Boolean).join(' · ');
 
         const tooltip = [
@@ -420,17 +422,14 @@ export function BrandProfilesView({
 
         return (
           <div className="leading-tight text-xs space-y-0.5" title={tooltip}>
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-ink truncate max-w-[135px]">
-                {planStrat || acc || 'Chưa gán'}
-              </span>
-              <span className="text-2xs text-ink-3 px-1 py-0.5 rounded bg-sunken shrink-0">
-                Plan
-              </span>
+            <div className="font-medium text-ink truncate max-w-[160px]">
+              {planStrat || acc || 'Chưa gán'}
             </div>
-            <div className="text-2xs text-ink-3 truncate max-w-[160px]">
-              {subInfo || (kvSis ? `KV: ${kvSis}` : '—')}
-            </div>
+            {(subInfo || kvSis) && (
+              <div className="text-2xs text-ink-3 truncate max-w-[160px]">
+                {subInfo || kvSis}
+              </div>
+            )}
           </div>
         );
       },
@@ -504,22 +503,21 @@ export function BrandProfilesView({
     {
       key: 'videos',
       header: `Video (${selectedMonth})`,
-      width: 120,
+      width: 115,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const aired = rep?.reportAiredCount || 0;
         const plan = rep?.planTotalVideos || 0;
         const dealsCount = rep?.reportBookedCount || 0;
-        const ordersCount = rep?.reportTotalOrders || 0;
         return (
           <div className="leading-tight tabular-nums text-right">
-            <div className="text-xs">
+            <div className="text-xs font-mono">
               <strong className="text-positive font-semibold">{aired}</strong>
-              <span className="text-ink-3 font-normal"> / {plan > 0 ? `${plan} video` : '—'}</span>
+              <span className="text-ink-3 font-normal"> / {plan > 0 ? plan : '—'}</span>
             </div>
             <div className="text-2xs text-ink-3 mt-0.5">
-              {dealsCount} deal · {formatNumber(ordersCount)} đơn
+              {dealsCount} booking
             </div>
           </div>
         );
@@ -527,24 +525,22 @@ export function BrandProfilesView({
     },
     {
       key: 'status',
-      header: 'Hồ sơ tĩnh & Tệp',
+      header: 'SKU & Tài liệu',
       width: 110,
       render: r => {
         if (isSyncing) return <Skeleton className="w-20" />;
         const isComplete = r.done === r.total;
         return (
           <div className="leading-tight">
-            <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium ${
-                isComplete ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning'
-              }`}
-            >
-              {isComplete ? 'Đủ 8/8 mục' : `${r.done}/${r.total} mục`}
-            </span>
-            <div className="text-2xs text-ink-3 mt-1 flex items-center gap-1">
+            <div className="text-xs font-medium text-ink flex items-center gap-1">
               <HardDrive className="w-3 h-3 text-ink-3/70" />
               <span>{r.profile.products.length} SKU · {r.profile.documents.length} tệp</span>
             </div>
+            {!isComplete && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warning-soft text-warning mt-0.5">
+                {r.done}/{r.total} mục
+              </span>
+            )}
           </div>
         );
       },
@@ -650,21 +646,31 @@ export function BrandProfilesView({
               search={{ value: search, onChange: setSearch, placeholder: 'Tìm tên nhãn, mã brand, ngành hàng, Account/Booking PIC…' }}
               chips={<Chips items={chips} value={filter} onChange={setFilter} />}
               filters={
-                <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
-                  <Calendar className="w-3.5 h-3.5 text-accent" />
-                  <span className="text-ink-3">Kỳ hồ sơ:</span>
-                  <select
-                    value={selectedMonth}
-                    onChange={e => setSelectedMonth(e.target.value)}
-                    className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
-                    aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
+                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    <span className="text-ink-3">Kỳ hồ sơ:</span>
+                    <select
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(e.target.value)}
+                      className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
+                      aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
+                    >
+                      {PROFILE_MONTH_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Cloud}
+                    onClick={() => setR2SetupOpen(true)}
                   >
-                    {PROFILE_MONTH_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                    Cấu hình Cloudflare R2
+                  </Button>
                 </div>
               }
               resultCount={search.trim() ? visible.length : undefined}
@@ -686,6 +692,12 @@ export function BrandProfilesView({
         />
         <Pagination page={page} pageSize={20} total={visible.length} onPageChange={setPage} />
       </Panel>
+
+      <CloudflareR2SetupModal
+        open={r2SetupOpen}
+        onClose={() => setR2SetupOpen(false)}
+        onNotify={onNotify}
+      />
     </div>
   );
 }

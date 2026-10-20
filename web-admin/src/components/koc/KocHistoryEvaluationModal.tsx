@@ -44,6 +44,7 @@ import {
 import { executeOperationalReport, OperationalReportResult } from '../../lib/operationalReportService';
 import { evaluateKocCollaborationHistory, KocRiskCategory } from '../../lib/kocHistoryEvaluator';
 import { formatVnd, formatVndShort } from '../../lib/format';
+import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 export interface KocHistoryEvaluationModalProps {
   open: boolean;
@@ -382,38 +383,15 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           </div>
 
           {showPromptSetup && (
-            <div className="mt-3 p-3.5 rounded-xl bg-sunken border border-line space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-ink">
-                    Câu lệnh chỉ dẫn (System Prompt) cho Báo cáo thẩm định KOC:
-                  </span>
-                  <Select
-                    value={selectedModel}
-                    onChange={e => setSelectedModel(e.target.value)}
-                    className="w-auto text-xs"
-                  >
-                    {availableModels.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="secondary" size="sm" icon={RotateCcw} onClick={handleResetPromptDefault}>
-                    Khôi phục gốc
-                  </Button>
-                  <Button variant="secondary" size="sm" icon={Save} onClick={handleSavePromptDefault}>
-                    Lưu làm mặc định
-                  </Button>
-                </div>
-              </div>
-              <Textarea
-                rows={4}
-                value={editablePrompt}
-                onChange={e => setEditablePrompt(e.target.value)}
-                placeholder="Nhập câu lệnh chỉ dẫn (Prompt) đánh giá mức độ phù hợp và rủi ro của KOC..."
+            <div className="mt-3">
+              <InlinePurposeApiSetup
+                purposeId="KOC_HISTORY_EVALUATION"
+                onConfigSaved={() => {
+                  const eff = getEffectiveConfigForPurpose('KOC_HISTORY_EVALUATION');
+                  setSelectedProvider(eff.primaryProvider);
+                  setSelectedModel(eff.primaryModel);
+                  setEditablePrompt(eff.purpose.systemInstruction);
+                }}
               />
             </div>
           )}

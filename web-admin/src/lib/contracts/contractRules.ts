@@ -204,13 +204,20 @@ export function evaluateContractRules({
   const effectiveIsKolForm = isKolForm || templateScope === 'KOC_CUSTOM';
 
   // 1. Mẫu hợp đồng chuẩn theo bộ 8 biểu mẫu Ver052026
-  let recommendedTemplateId = `${subjectKind}-${kind === 'ACCEPTANCE' ? 'NT' : 'HD'}`;
-  let recommendedTemplateName = {
-    IND: 'Hợp đồng video · Cá nhân (BM.HĐ.VID.IND.Ver052026)',
-    HKD: 'Hợp đồng video · Hộ kinh doanh (BM.HĐ.VID.HKD.Ver052026)',
-    COM: 'Hợp đồng video · Công ty (BM.HĐ.VID.COM.Ver052026)',
-    CTV: 'Hợp đồng nguyên tắc · CTV tháng (BM.HĐVID.CTV.Ver052026)',
-  }[subjectKind];
+  let recommendedTemplateId = `${subjectKind}-${kind === 'ACCEPTANCE' ? 'BBNT' : 'HD'}`;
+  let recommendedTemplateName = kind === 'ACCEPTANCE'
+    ? {
+        IND: 'Nghiệm thu video · Cá nhân (BM.BBNT.VID.IND.Ver052026)',
+        HKD: 'Nghiệm thu video · Hộ kinh doanh (BM.BBNT.VID.HKD.Ver052026)',
+        COM: 'Nghiệm thu video · Công ty (BM.BBNT.VID.COM.Ver052026)',
+        CTV: 'Nghiệm thu · CTV tháng (BM.BBNTVID.CTV.Ver052026)',
+      }[subjectKind]
+    : {
+        IND: 'Hợp đồng video · Cá nhân (BM.HĐ.VID.IND.Ver052026)',
+        HKD: 'Hợp đồng video · Hộ kinh doanh (BM.HĐ.VID.HKD.Ver052026)',
+        COM: 'Hợp đồng video · Công ty (BM.HĐ.VID.COM.Ver052026)',
+        CTV: 'Hợp đồng nguyên tắc · CTV tháng (BM.HĐVID.CTV.Ver052026)',
+      }[subjectKind];
 
   // Kiểm tra mẫu duyệt riêng cho KOC
   if (koc?.id && availableTemplates.length > 0) {

@@ -1,7 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { kalodataClient } from '@/lib/kalodata/client';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized: Vui lòng đăng nhập để kiểm tra trạng thái Kalodata.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const status = kalodataClient.getConnectionStatus();
     return NextResponse.json({

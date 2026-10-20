@@ -30,6 +30,7 @@ import {
 import { MOCK_P3_STAFF_RECORDS, MOCK_STORE_DIFFICULTIES } from '@/lib/mockData';
 import { formatVnd } from '../../lib/format';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
+import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
 
 export interface PerformanceP3ViewProps {
   storePortfolios?: StorePortfolioItem[];
@@ -89,15 +90,43 @@ export default function PerformanceP3View({
   const [aiReviewStaff, setAiReviewStaff] = useState<string | null>(null);
   const [approvingRecord, setApprovingRecord] = useState<StaffP3Record | null>(null);
 
+  // Đồng bộ Hệ số gian hàng trực tiếp vào bảng tính điểm khối lượng & tiền thưởng P3
+  const liveStaffRecords = useMemo<StaffP3Record[]>(() => {
+    return staffRecords.map((r) => {
+      const assignedLower = r.assignedStore.toLowerCase();
+      const matchedStore =
+        storeConfigs.find(
+          (s) =>
+            assignedLower.includes(s.storeName.toLowerCase()) ||
+            s.storeName.toLowerCase().includes(assignedLower) ||
+            (s.brandName && assignedLower.includes(s.brandName.toLowerCase()))
+        ) ||
+        storeConfigs.find((s) => s.assignedPic.toLowerCase() === r.staffName.toLowerCase());
+
+      const liveMultiplier = matchedStore ? matchedStore.multiplier : r.storeMultiplier;
+      const livePoints = Number(
+        (r.completedCases * liveMultiplier * r.qualityMultiplier * r.slaMultiplier).toFixed(1)
+      );
+      const liveBonus = Math.round(livePoints * r.baseP3UnitRate);
+
+      return {
+        ...r,
+        storeMultiplier: liveMultiplier,
+        calculatedWorkloadPoints: livePoints,
+        estimatedBonusVnd: liveBonus,
+      };
+    });
+  }, [staffRecords, storeConfigs]);
+
   // KPI summaries
-  const totalBonusFund = staffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
-  const totalWorkloadPoints = staffRecords.reduce((sum, r) => sum + r.calculatedWorkloadPoints, 0);
-  const approvedCount = staffRecords.filter((r) => r.approvalStatus === 'ĐÃ_DUYỆT').length;
-  const pendingCount = staffRecords.filter((r) => r.approvalStatus === 'CHỜ_DUYỆT').length;
+  const totalBonusFund = liveStaffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
+  const totalWorkloadPoints = liveStaffRecords.reduce((sum, r) => sum + r.calculatedWorkloadPoints, 0);
+  const approvedCount = liveStaffRecords.filter((r) => r.approvalStatus === 'ĐÃ_DUYỆT').length;
+  const pendingCount = liveStaffRecords.filter((r) => r.approvalStatus === 'CHỜ_DUYỆT').length;
 
   const filteredStaff = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return staffRecords.filter((r) => {
+    return liveStaffRecords.filter((r) => {
       if (selectedRole !== 'ALL' && r.role !== selectedRole) return false;
       if (q) {
         const matchName = r.staffName.toLowerCase().includes(q);
@@ -106,7 +135,7 @@ export default function PerformanceP3View({
       }
       return true;
     });
-  }, [staffRecords, selectedRole, searchQuery]);
+  }, [liveStaffRecords, selectedRole, searchQuery]);
 
   const filteredStores = useMemo(() => {
     const q = storeSearchQuery.trim().toLowerCase();
@@ -145,9 +174,6 @@ export default function PerformanceP3View({
     if (onUpdateStoreDifficulty) {
       onUpdateStoreDifficulty(storeId, newMultiplier, tier);
     }
-    if (onNotify) {
-      onNotify(`Đã cập nhật hệ số gian hàng (${tier} — ${formatStoreCoefficient(newMultiplier)}) theo Bảng 2`);
-    }
   };
 
   return (
@@ -178,7 +204,7 @@ export default function PerformanceP3View({
       <Tabs
         items={[
           { key: 'CALC', label: 'Bảng tính thưởng P3', count: staffRecords.length },
-          { key: 'STORE_MATRIX', label: 'Bảng 2. Hệ số gian hàng', count: storeConfigs.length },
+          { key: 'STORE_MATRIX', label: 'Hệ số gian hàng', count: storeConfigs.length },
         ]}
         value={activeTab}
         onChange={setActiveTab}
@@ -335,82 +361,16 @@ export default function PerformanceP3View({
           />
         </Panel>
       ) : (
-        <Panel flush>
-          <FilterBar
-            search={{ value: storeSearchQuery, onChange: setStoreSearchQuery, placeholder: "Tìm gian hàng, thương hiệu, PIC..." }}
-            filters={
-              <span className="text-xs text-ink-3 tabular-nums">
-                {filteredStores.length} gian hàng
-              </span>
-            }
-          />
-
-          <DataTable
-            rows={filteredStores}
-            rowKey={(store) => store.id}
-            columns={[
-              {
-                key: 'storeName',
-                header: 'Gian hàng & sàn',
-                render: (store) => (
-                  <div>
-                    <div className="font-medium text-ink">{store.storeName}</div>
-                    <ChannelTag channel={store.platform} className="mt-0.5" />
-                  </div>
-                ),
-              },
-              {
-                key: 'brandName',
-                header: 'Thương hiệu & ngành hàng',
-                render: (store) => (
-                  <div>
-                    <div className="font-medium text-ink">{store.brandName}</div>
-                    <div className="text-xs text-ink-3">{store.category}</div>
-                  </div>
-                ),
-              },
-              {
-                key: 'assignedPic',
-                header: 'Chuyên viên phụ trách',
-                render: (store) => <span className="text-ink">{store.assignedPic}</span>,
-              },
-              {
-                key: 'monthlyTargetGmv',
-                header: 'Chỉ tiêu GMV tháng',
-                align: 'right',
-                render: (store) => (
-                  <span className="font-medium text-ink">{formatVnd(store.monthlyTargetGmv)}</span>
-                ),
-              },
-              {
-                key: 'difficultyTier',
-                header: 'Mức độ',
-                render: (store) => <span className="text-ink-2">{store.difficultyTier}</span>,
-              },
-              {
-                key: 'multiplier',
-                header: 'Hệ số gian hàng',
-                align: 'right',
-                width: 180,
-                render: (store) => (
-                  <Select
-                    aria-label={`Hệ số ${store.storeName}`}
-                    value={String(store.multiplier)}
-                    onChange={(e) =>
-                      handleUpdateStoreMultiplier(store.id, parseFloat(e.target.value))
-                    }
-                    className="w-auto font-mono"
-                  >
-                    <option value="0.8">0,80 (Cơ bản)</option>
-                    <option value="1">1,00 (Tiêu chuẩn)</option>
-                    <option value="1.25">1,25 (Vừa)</option>
-                    <option value="1.5">1,50 (Khó)</option>
-                  </Select>
-                ),
-              },
-            ]}
-          />
-        </Panel>
+        <StoreCoefficientHubSection
+          stores={storePortfolios}
+          onUpdateStore={(updated) => {
+            handleUpdateStoreMultiplier(updated.id, updated.difficultyMultiplier);
+          }}
+          onBulkUpdateStores={(updatedList) => {
+            updatedList.forEach((u) => handleUpdateStoreMultiplier(u.id, u.difficultyMultiplier));
+          }}
+          onNotify={onNotify}
+        />
       )}
 
       {aiReviewStaff && (

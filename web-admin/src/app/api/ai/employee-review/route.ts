@@ -12,8 +12,18 @@ export async function POST(req: NextRequest) {
   const user = getAuthenticatedUser(req);
   if (!user) {
     return NextResponse.json(
-      { error: 'Unauthorized: Vui lòng đăng nhập để sử dụng tính năng đánh giá nhân sự AI.' },
+      { error: 'Vui lòng đăng nhập để sử dụng tính năng đánh giá nhân sự.' },
       { status: 401 }
+    );
+  }
+
+  const canReview =
+    ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(user.role) ||
+    user.permissions?.includes('canApproveP3');
+  if (!canReview) {
+    return NextResponse.json(
+      { error: 'Bạn không có quyền thực hiện đánh giá hiệu suất nhân sự.' },
+      { status: 403 }
     );
   }
 
@@ -109,46 +119,50 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
       userCustomInstruction: sanitizedCustomPrompt || 'Không có yêu cầu đặc thù'
     };
 
-    // Try Gemini API if key available
+    // Try Gemini API if key available (fallback qua nhiều model khi 503 quá tải)
     if (resolvedGeminiKey) {
-      try {
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedGeminiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: 'user',
-                  parts: [
-                    { text: systemPrompt },
-                    { text: `DỮ LIỆU ĐỐI SOÁT CỦA NHÂN VIÊN:\n${JSON.stringify(contextPayload, null, 2)}` }
-                  ]
+      const geminiCandidates = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
+      for (const candidateModel of geminiCandidates) {
+        try {
+          const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${candidateModel}:generateContent?key=${encodeURIComponent(resolvedGeminiKey)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      { text: systemPrompt },
+                      { text: `DỮ LIỆU ĐỐI SOÁT CỦA NHÂN VIÊN:\n${JSON.stringify(contextPayload, null, 2)}` }
+                    ]
+                  }
+                ],
+                generationConfig: {
+                  temperature: 0.2,
+                  responseMimeType: 'application/json'
                 }
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: 'application/json'
-              }
-            })
-          }
-        );
+              }),
+              signal: AbortSignal.timeout(15000)
+            }
+          );
 
-        if (geminiRes.ok) {
-          const data = await geminiRes.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const parsed = JSON.parse(rawText.replace(/```json|```/g, '').trim());
-            return NextResponse.json({
-              ...parsed,
-              evaluatedAt: new Date().toISOString(),
-              providerUsed: 'Google Gemini 2.5 Flash (API)'
-            });
+          if (geminiRes.ok) {
+            const data = await geminiRes.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const parsed = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+              return NextResponse.json({
+                ...parsed,
+                evaluatedAt: new Date().toISOString(),
+                providerUsed: 'Google Gemini (API)'
+              });
+            }
           }
+        } catch (geminiError) {
+          console.warn(`Gemini API call (${candidateModel}) failed, attempting next fallback...`, geminiError);
         }
-      } catch (geminiError) {
-        console.warn('Gemini API call failed, attempting fallback...', geminiError);
       }
     }
 
@@ -240,7 +254,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
   } catch (error: any) {
     console.error('Error in employee review API:', error);
     return NextResponse.json(
-      { error: error?.message || 'Lỗi xử lý AI nhận xét nhân viên' },
+      { error: error?.message || 'Lỗi tổng hợp nhận xét nhân viên' },
       { status: 500 }
     );
   }
@@ -286,7 +300,7 @@ function generateDomainEmployeeReview(req: AiEmployeeReviewRequest): AiEmployeeR
   const coaching: string[] = [];
 
   if (onTimeRate >= 94) {
-    strengths.push(`Tỷ lệ tuân thủ SLA chặng tác nghiệp vượt trội (${onTimeRate.toFixed(1)}%), không để tồn đọng ca quá hạn.`);
+    strengths.push(`Tỷ lệ tuân thủ SLA đạt mức cao (${onTimeRate.toFixed(1)}%), không để tồn đọng ca quá hạn.`);
   } else {
     bottlenecks.push(`Tỷ lệ đúng hạn SLA đang ở mức ${onTimeRate.toFixed(1)}%, ghi nhận ${slaData?.breachedJobs || 1} ca phát sinh vi phạm.`);
   }
@@ -347,6 +361,6 @@ function generateDomainEmployeeReview(req: AiEmployeeReviewRequest): AiEmployeeR
     suggestedManagerNote,
     suggestedLarkPingMessage,
     evaluatedAt: new Date().toISOString(),
-    providerUsed: 'Upbase B2C Operations AI Core (Enterprise Evaluator Engine)'
+    providerUsed: 'Xử lý nội bộ'
   };
 }

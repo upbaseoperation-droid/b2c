@@ -2,8 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { kalodataClient } from '@/lib/kalodata/client';
 import { KalodataPeriod, KalodataSyncPayload } from '@/lib/kalodata/types';
 import { prisma } from '@/lib/prisma';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 
 export async function POST(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, message: 'Unauthorized: Vui lòng đăng nhập để đồng bộ dữ liệu Kalodata.' },
+      { status: 401 }
+    );
+  }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { success: false, message: 'Tài khoản đối tác không có quyền đồng bộ dữ liệu Kalodata.' },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = (await request.json()) as KalodataSyncPayload;
     const { kocId, channelId, period = '30d' } = body;

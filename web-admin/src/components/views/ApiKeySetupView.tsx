@@ -64,13 +64,14 @@ import {
   API_USAGE_LOGGED_EVENT,
 } from '../../lib/apiKeyConfig';
 import { UserProfile } from '../../lib/types';
+import { CloudflareR2SetupPanel } from '../brands/CloudflareR2SetupPanel';
 
 interface ApiKeySetupViewProps {
   currentUser?: UserProfile;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type SetupMainTab = 'providers' | 'routing' | 'metrics' | 'playground';
+type SetupMainTab = 'providers' | 'storage' | 'routing' | 'metrics' | 'playground';
 
 const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ className?: string }>> = {
   LEGAL_OCR: ShieldCheck,
@@ -81,6 +82,7 @@ const PURPOSE_ICONS: Record<OperationalApiPurposeId, React.ComponentType<{ class
   KOC_MATCHING: TrendingUp,
   KOC_HISTORY_EVALUATION: Users,
   KNOWLEDGE_QA: BookOpen,
+  BRAND_MARKET_RESEARCH: Search,
 };
 
 const DEPT_SCOPE_LABELS: Record<SavedNamedApiKey['departmentScope'], string> = {
@@ -621,10 +623,10 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
             className="p-3.5 rounded-xl bg-surface-subtle border border-line hover:border-line-strong transition cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-2xs font-semibold text-accent -accent/20">
+              <span className="text-2xs font-semibold text-accent">
                 Phân luồng nghiệp vụ
               </span>
-              <span className="text-2xs font-semibold text-positive">6/6 nghiệp vụ</span>
+              <span className="text-2xs font-semibold text-positive">{purposeList.length}/{purposeList.length} nghiệp vụ</span>
             </div>
             <div className="text-xs font-semibold text-ink">
               Tự động chuyển dự phòng
@@ -637,18 +639,25 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       </div>
 
       {/* ===================================================================== */}
-      {/* 2. THANH CHUYỂN TAB (4 MỤC)                                           */}
+      {/* 2. THANH CHUYỂN TAB (5 MỤC)                                           */}
       {/* ===================================================================== */}
       <Tabs
         items={[
           { key: 'providers', label: 'Khóa API & Nhà Cung Cấp', count: 3 },
-          { key: 'routing', label: 'Phân Bổ Nghiệp Vụ', count: 6 },
+          { key: 'storage', label: 'Kho Lưu Trữ Cloudflare R2' },
+          { key: 'routing', label: 'Phân Bổ Nghiệp Vụ', count: purposeList.length },
           { key: 'metrics', label: 'Đo Lường & Chi Phí', count: usageLogs.length },
           { key: 'playground', label: 'Chạy Thử Nghiệp Vụ' },
         ]}
         value={activeTab}
         onChange={k => setActiveTab(k as SetupMainTab)}
       />
+
+      {activeTab === 'storage' && (
+        <div className="animate-in fade-in duration-150">
+          <CloudflareR2SetupPanel onNotify={onNotify} />
+        </div>
+      )}
 
       {/* ===================================================================== */}
       {/* TAB 1: THIẾT LẬP KHÓA API (GOOGLE GEMINI · OPENAI CHATGPT · CLAUDE)   */}
@@ -820,7 +829,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                                       const val = e.target.value;
                                       setCustomModelInputs(prev => ({ ...prev, [pid]: val }));
                                     }}
-                                    placeholder="VD: gpt-5.6-sol, claude-opus-5-5, gemini-4-argon..."
+                                    placeholder="VD: gpt-6.1-sol, gpt-6-astra, claude-opus-5-5, gemini-4-argon..."
                                     className="flex-1 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-line-strong bg-surface text-ink focus:outline-none focus:border-accent"
                                   />
                                   <button
@@ -884,9 +893,11 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                           type="number"
                           min={0}
                           step={5}
-                          value={prov.monthlyBudgetLimitUsd}
+                          placeholder="0"
+                          value={prov.monthlyBudgetLimitUsd === 0 ? '' : String(prov.monthlyBudgetLimitUsd)}
                           onChange={e => {
-                            const val = Number(e.target.value) || 0;
+                            const cleaned = e.target.value.replace(/^0+(?=\d)/, '');
+                            const val = cleaned === '' ? 0 : Math.max(0, Number(cleaned) || 0);
                             updateAndPersistConfig(prev => ({
                               ...prev,
                               providers: {
@@ -963,7 +974,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                           {assignedPurposes.map(p => (
                             <span
                               key={p.purposeId}
-                              className="-line text-2xs font-medium text-ink"
+                              className="px-2 py-0.5 rounded-md bg-canvas border border-line text-2xs font-medium text-ink"
                             >
                               {p.title.replace(/^\d+\.\s*/, '')}
                             </span>
@@ -992,7 +1003,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                               ? `Kết nối thành công (${prov.lastTestLatencyMs}ms lúc ${prov.lastTestedAt})`
                               : `Chưa thông kết nối (${prov.lastTestedAt})`}
                           </div>
-                          <div className="truncate mt-0.5 opacity-90">{prov.lastTestMessage}</div>
+                          <div className="mt-0.5 opacity-90 break-words whitespace-normal leading-relaxed">{prov.lastTestMessage}</div>
                         </div>
                       </div>
                     )}

@@ -29,6 +29,7 @@ import {
 } from '../../lib/apiKeyConfig';
 import { formatNumber, formatVndShort } from '../../lib/format';
 import { Button, Modal, Status, Textarea } from '../ui';
+import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 interface KocChannelBriefMatcherModalProps {
   open?: boolean;
@@ -380,7 +381,7 @@ export const KocChannelBriefMatcherModal: React.FC<
               >
                 <Sliders className="w-3.5 h-3.5" />
                 {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                Thiết lập câu lệnh (Prompt) đánh giá kênh & chấm điểm Brief
+                Cấu hình kết nối API & Câu lệnh (Prompt) đánh giá kênh KOC
               </button>
               {promptToast && (
                 <span className="text-2xs font-semibold text-success flex items-center gap-1">
@@ -391,47 +392,13 @@ export const KocChannelBriefMatcherModal: React.FC<
             </div>
 
             {showPromptEditor && (
-              <div className="p-3 rounded-lg bg-sunken border border-line space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-2xs font-semibold text-ink">
-                    Câu lệnh chỉ dẫn (System Prompt) áp dụng cho Sàng lọc & Đề xuất KOC:
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={RotateCcw}
-                      onClick={() => {
-                        const reset = resetPurposeSystemInstruction('KOC_MATCHING');
-                        setCustomPrompt(reset.systemInstruction);
-                        setPromptToast('Đã khôi phục câu lệnh gốc');
-                        setTimeout(() => setPromptToast(null), 2200);
-                      }}
-                    >
-                      Khôi phục gốc
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={Save}
-                      onClick={() => {
-                        const saved = updatePurposeSystemInstruction('KOC_MATCHING', customPrompt);
-                        setCustomPrompt(saved.systemInstruction);
-                        setPromptToast('Đã lưu câu lệnh mặc định');
-                        setTimeout(() => setPromptToast(null), 2200);
-                      }}
-                    >
-                      Lưu làm mặc định
-                    </Button>
-                  </div>
-                </div>
-                <Textarea
-                  rows={3}
-                  value={customPrompt}
-                  onChange={e => setCustomPrompt(e.target.value)}
-                  placeholder="Nhập câu lệnh chỉ dẫn (Prompt) phân tích kênh KOC và đối chiếu với Brief thương hiệu..."
-                />
-              </div>
+              <InlinePurposeApiSetup
+                purposeId="KOC_MATCHING"
+                onConfigSaved={() => {
+                  const eff = getEffectiveConfigForPurpose('KOC_MATCHING');
+                  setCustomPrompt(eff.purpose.systemInstruction);
+                }}
+              />
             )}
           </div>
         </div>

@@ -185,20 +185,22 @@ test('E2E Monthly Planning Lifecycle: Tạo kế hoạch, cập nhật chỉ ti�
 });
 
 test('E2E Integrations: Kalodata, Larkbase và Ads Reports API', async () => {
+  const admin = USERS.find(u => u.role === 'ADMIN') || USERS[0];
+
   // 1. Kalodata connection status
-  const resKalodata = await kalodataStatusGet();
+  const reqKalodata = createReq('http://localhost:3000/api/integrations/kalodata/status', 'GET', admin);
+  const resKalodata = await kalodataStatusGet(reqKalodata);
   assert.equal(resKalodata.status, 200);
   const kaloData = await resKalodata.json();
   assert.equal(kaloData.success, true);
   assert.ok('connected' in kaloData.data || 'status' in kaloData.data);
 
   // 2. Larkbase sync records list
-  const reqLarkbase = createReq('http://localhost:3000/api/integrations/larkbase/booking-plans');
+  const reqLarkbase = createReq('http://localhost:3000/api/integrations/larkbase/booking-plans', 'GET', admin);
   const resLarkbase = await larkbasePlansGet(reqLarkbase);
   assert.equal(resLarkbase.status, 200);
 
   // 3. Ads reports endpoint
-  const admin = USERS.find(u => u.role === 'ADMIN') || USERS[0];
   const reqAds = createReq('http://localhost:3000/api/ads-reports', 'GET', admin);
   const resAds = await adsReportsGet(reqAds);
   assert.equal(resAds.status, 200);

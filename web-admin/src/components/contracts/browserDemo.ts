@@ -180,12 +180,21 @@ function write(state: DemoState) {
 const renderParagraphs = (record: ContractRecord): string[] => {
   const tpl = templates.find(t => t.id === record.templateId);
   if (!tpl) return [record.title, `${record.brand} · ${record.partner}`];
-  return tpl.paragraphs.map(p => {
+  return tpl.paragraphs.map((p, idx) => {
     let res = p;
-    for (const f of tpl.fields) {
-      const val = record.values[f.key];
-      if (val && f.start !== undefined && f.end !== undefined) {
-        // Token replacement
+    const pFields = tpl.fields
+      .filter(f => f.paragraph === idx || f.key.startsWith('token:'))
+      .sort((a, b) => (b.start ?? 0) - (a.start ?? 0));
+    for (const f of pFields) {
+      const val = record.values[f.key]?.trim();
+      if (!val) continue;
+      if (f.key.startsWith('token:')) {
+        const tokenStr = f.key.slice('token:'.length);
+        res = res.split(tokenStr).join(val);
+      } else if (f.paragraph === idx && f.start !== undefined && f.end !== undefined) {
+        res = res.slice(0, f.start) + val + res.slice(f.end);
+      } else if (f.paragraph === idx && f.start === undefined) {
+        res = res ? `${res} ${val}` : val;
       }
     }
     return res;
@@ -380,8 +389,36 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       actors.filter(a => (body.reviewers as string[]).includes(a.id)),
       { requireLegal: record.isKocOwnForm ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
     );
+  } else if (body.action === 'ADD_NOTE') {
+    requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
+    event(next, actor, 'NOTE', body.note.trim());
   } else if (body.action === 'DECIDE') {
     next = decideContract(record, actor, body.decision as ReviewStep['status'], String(body.note || ''));
+    const isLegal = actor.roles.includes('LEGAL') || record.steps.find(s => s.reviewerId === actor.id)?.role === 'LEGAL';
+    if (isLegal && body.decision === 'APPROVED' && body.saveAsKocTemplate === true && record.kocId) {
+      const customTplId = `KOC-${record.kocId.toUpperCase().replace(/[^A-Z0-9_-]/g, '')}`;
+      const baseTpl = templates.find(t => t.id === record.templateId) || templates[0];
+      const kocLegalNotes = typeof body.kocLegalNotes === 'string' ? body.kocLegalNotes.trim() : String(body.note || '');
+      const existingIdx = templates.findIndex(t => t.id === customTplId);
+      const customTpl: LegalTemplate = {
+        ...structuredClone(baseTpl),
+        id: customTplId,
+        name: `Mẫu duyệt riêng · ${record.partner || record.kocId}`,
+        version: `${baseTpl.version}-KOC`,
+        scope: 'KOC_CUSTOM',
+        kocId: record.kocId,
+        kocName: record.partner,
+        exemptLegalReview: true,
+        legalNotes: kocLegalNotes,
+        approvedByLegal: actor.name,
+        approvedAt: new Date().toISOString(),
+        originalContractId: record.id,
+        customType: record.isKocOwnForm ? 'KOC_FORM' : 'UPBASE_AMENDED',
+      };
+      if (existingIdx >= 0) templates[existingIdx] = customTpl;
+      else templates.push(customTpl);
+      event(next, actor, 'NOTE', `Pháp chế đã lưu mẫu này thành Mẫu đã duyệt cho KOC ${record.partner || record.kocId}.`);
+    }
   } else if (body.action === 'WITHDRAW') {
     requireCondition(
       record.ownerId === actor.id &&

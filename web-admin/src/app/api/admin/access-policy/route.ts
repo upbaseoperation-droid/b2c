@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { requestActor } from '@/lib/server/requestActor';
-import { defaultPolicy, readPolicy, userWithPolicy, type AccessPolicy } from '@/lib/server/accessPolicy';
+import { defaultPolicy, readPolicy, reconcileAccessPolicy, userWithPolicy, type AccessPolicy } from '@/lib/server/accessPolicy';
 import { RecordError, updateRecord } from '@/lib/server/sharedRecords';
 import { ALL_SYSTEM_SCREENS, ROLE_ALLOWED_TABS } from '@/lib/rbacData';
 
@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     const user = await requestActor(req);
     if (!user) throw new RecordError('Phiên không còn quyền truy cập.', 401);
     const record = await readPolicy();
-    if (user.role !== 'ADMIN') return NextResponse.json({ ...record, data: { ...record.data, staffOverrides: {}, deptRules: [], internalStaff: [], audit: [] }, user }, { headers });
+    const canViewRbacDirectory = ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role);
+    if (!canViewRbacDirectory) return NextResponse.json({ ...record, data: { ...record.data, staffOverrides: {}, deptRules: [], internalStaff: [], audit: [] }, user }, { headers });
     return NextResponse.json({ ...record, user }, { headers });
   } catch (e) { return failure(e); }
 }
@@ -26,8 +27,9 @@ export async function PUT(req: NextRequest) {
     if (Buffer.byteLength(raw) > 2_000_000) throw new RecordError('Cấu hình quá lớn.', 413);
     let parsed: { revision: number; data: AccessPolicy };
     try { parsed = JSON.parse(raw); } catch { throw new RecordError('Dữ liệu JSON không hợp lệ.'); }
-    const { revision, data } = parsed;
-    if (!data || !Array.isArray(data.internalStaff) || !Array.isArray(data.matrix) || !Array.isArray(data.deptRules) || !data.staffOverrides || !data.roleAllowedTabs || !data.roleDefaultLanding) throw new RecordError('Thiếu cấu hình quyền.');
+    const { revision, data: rawData } = parsed;
+    if (!rawData || !Array.isArray(rawData.internalStaff) || !Array.isArray(rawData.matrix) || !Array.isArray(rawData.deptRules) || !rawData.staffOverrides || !rawData.roleAllowedTabs || !rawData.roleDefaultLanding) throw new RecordError('Thiếu cấu hình quyền.');
+    const data = reconcileAccessPolicy(rawData);
     const roles = Object.keys(ROLE_ALLOWED_TABS);
     const screens = new Set([...ALL_SYSTEM_SCREENS.map(s => s.key), ...Object.values(ROLE_ALLOWED_TABS).flat()]);
     for (const role of roles as Array<keyof typeof ROLE_ALLOWED_TABS>) {
@@ -40,10 +42,7 @@ export async function PUT(req: NextRequest) {
     for (const staff of data.internalStaff) if (!staff || !staff.id || typeof staff.email !== 'string' || !roles.includes(staff.role) || !Array.isArray(staff.picBrands) || staff.picBrands.some(b => typeof b !== 'string') || !staff.permissions || Object.values(staff.permissions).some(v => typeof v !== 'boolean') || !['ACTIVE', 'SUSPENDED'].includes(staff.status)) throw new RecordError('Nhân sự không hợp lệ.');
     for (const override of Object.values(data.staffOverrides)) if (!override || !roles.includes(override.role) || typeof override.canLogin !== 'boolean') throw new RecordError('Ngoại lệ quyền không hợp lệ.');
     for (const item of data.matrix) if (!defaultPolicy.matrix.some(p => p.id === item.id) || Object.values(item.permissions).some(level => !['ALL', 'SCOPED', 'VIEW', 'APPROVE', 'DENIED'].includes(level))) throw new RecordError('Ma trận không hợp lệ.');
-    if (data.matrix.length !== defaultPolicy.matrix.length) throw new RecordError('Thiếu quyền trong ma trận.');
-    if (new Set(data.matrix.map(p => p.id)).size !== data.matrix.length) throw new RecordError('Quyền trong ma trận bị trùng.');
     for (const rule of data.deptRules) if (!rule || !defaultPolicy.deptRules.some(r => r.id === rule.id) || typeof rule.autoAllowLogin !== 'boolean') throw new RecordError('Quy tắc phòng ban không hợp lệ.');
-    if (new Set(data.deptRules.map(r => r.id)).size !== defaultPolicy.deptRules.length) throw new RecordError('Thiếu hoặc trùng quy tắc phòng ban.');
     const own = data.internalStaff.find(s => s.id === user.id || (!!user.email && s.email === user.email));
     if (own && (own.role !== 'ADMIN' || own.status === 'SUSPENDED' || own.canLogin === false)) throw new RecordError('Không tự thu hồi vai trò quản trị trong phiên hiện tại.');
     if (userWithPolicy(user, data)?.role !== 'ADMIN') throw new RecordError('Cấu hình này sẽ khóa tài khoản quản trị hiện tại.');
@@ -51,6 +50,6 @@ export async function PUT(req: NextRequest) {
       ...data,
       audit: [{ id: randomUUID(), timestamp: new Date().toISOString(), actorName: user.name, actorEmail: user.email, actorRole: user.role, actionType: 'PERMISSION_TOGGLE' as const, targetUserOrEntity: 'Cấu hình quyền dùng chung', description: `Lưu phiên bản ${revision + 1}; thay đổi: ${['staffOverrides', 'deptRules', 'roleAllowedTabs', 'roleDefaultLanding', 'internalStaff', 'matrix'].filter(k => JSON.stringify(previous[k as keyof AccessPolicy]) !== JSON.stringify(data[k as keyof AccessPolicy])).join(', ')}.`, ipAddress: 'Không thu thập', deviceInfo: (req.headers.get('user-agent') || 'Không xác định').slice(0, 200), status: 'SUCCESS' as const }, ...previous.audit].slice(0, 1000),
     }));
-    return NextResponse.json(result, { headers });
+    return NextResponse.json({ ...result, data: reconcileAccessPolicy(result.data) }, { headers });
   } catch (e) { return failure(e); }
 }

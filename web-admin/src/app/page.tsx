@@ -63,6 +63,7 @@ const CtvManagementView = dynamic(() => import('../components/views/CtvManagemen
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
+const CloudflareAdminView = dynamic(() => import('../components/views/CloudflareAdminView').then(m => m.CloudflareAdminView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
 const Workload3dMapView = dynamic(() => import('../components/views/Workload3dMapView').then(m => m.Workload3dMapView), { loading: ViewLoading });
@@ -299,7 +300,13 @@ export default function App() {
           newUser.id.startsWith('preview-role-') ||
           newUser.id.startsWith('tpa-') ||
           newUser.id.startsWith('staff-');
-        if (!isLocalPreview) {
+        if (newUser.id.startsWith('contract-demo-')) {
+          await fetch('/api/contracts/demo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: newUser.id }),
+          }).catch(() => undefined);
+        } else if (!isLocalPreview) {
           const partner = !!newUser.partnerType || newUser.role.endsWith('_PARTNER');
           const known = USERS.some(u => u.id === newUser.id);
           const res = await fetch(partner ? '/api/auth/partner/login' : '/api/auth/lark/sandbox', {
@@ -890,7 +897,6 @@ export default function App() {
 
   const handleUpdateStore = (updatedStore: StorePortfolioItem) => {
     setStorePortfolios(prev => prev.map(s => s.id === updatedStore.id ? updatedStore : s));
-    showToast(`Đã giao gian hàng ${updatedStore.storeName} cho ${updatedStore.b2cOwnerName || updatedStore.assignedStaff}`);
   };
 
   const handleImportSuccess = (result: { updatedDeals: number; totalGmvAdded: number }) => {
@@ -1628,6 +1634,20 @@ export default function App() {
             <ApiKeySetupView
               currentUser={currentUser}
               onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="cloudflare-admin" currentTab={activeTab}>
+            <CloudflareAdminView
+              currentUser={currentUser}
+              brands={scopedBrands}
+              onNotify={showToast}
+              onNavigateToBrandProfile={(brandName) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
             />
           </KeepAliveTab>
 

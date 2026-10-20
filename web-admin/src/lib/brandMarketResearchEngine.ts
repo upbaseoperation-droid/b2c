@@ -556,7 +556,7 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
       'Routine tắm & dưỡng hàng ngày cho bé ngủ ngon, mẹ nhàn tênh',
     ],
     promotionMechanics: [
-      'Combo Tắm + Bôi dịu da + Dưỡng ẩm toàn diện cho bé kèm quà tặng mini',
+      'Combo Tắm + Bôi dịu da + Dưỡng ẩm hàng ngày cho bé kèm quà tặng mini',
       'Ưu đãi mua kèm Kem rạn cho mẹ và Nước tắm thảo dược cho bé',
     ],
     complianceRules: [
@@ -620,7 +620,7 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
         keyUsps: ['Giá bình dân dễ mua tại quầy thuốc nhỏ', 'Quen thuộc với phụ huynh truyền thống'],
         customerComplaints: ['Khả năng dưỡng ẩm sâu cho da chàm khô nứt nẻ mùa đông còn hạn chế', 'Bao bì truyền thống'],
         kocStrategySummary: 'Phủ rộng nhà thuốc offline và video ngắn mẹo vặt gia đình.',
-        upbaseCounterPlay: 'Nêu bật công nghệ chiết xuất chuẩn hóa châu Âu và hệ sinh thái chăm sóc toàn diện từ nước tắm tới kem dưỡng.',
+        upbaseCounterPlay: 'Nêu bật công nghệ chiết xuất chuẩn hóa châu Âu và bộ sản phẩm chăm sóc bé từ nước tắm tới kem dưỡng.',
       },
     ],
   },
@@ -788,9 +788,9 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
       'Thiết kế tối ưu thao tác thay bỉm (cài lệch, cài vai, bodysuit liền tất/bao tay) với đường may phẳng không gây cộm ngứa',
     ],
     contentPillars: [
-      'Checklist Giỏ đồ đi sinh tối giản & thông minh: Cần bao nhiêu bộ Newborn / 0–3M theo mùa để không lãng phí',
+      'Checklist Giỏ đồ đi sinh gọn gàng: Cần bao nhiêu bộ Newborn / 0–3M theo mùa để không lãng phí',
       'Zoom cận cảnh chất vải (Nu Petit / Nu Air / Sợi tre) sau 10 lần giặt và hướng dẫn chọn size chuẩn theo cân nặng bé',
-      'Phối đồ sơ sinh & kết hợp hệ sinh thái chăm sóc bé toàn diện (Quần áo thoáng mát + Nước giặt dịu nhẹ Docilee + Kem dưỡng Kutieskin + Bỉm Nabizam)',
+      'Phối đồ sơ sinh & kết hợp bộ sản phẩm chăm sóc bé (Quần áo thoáng mát + Nước giặt dịu nhẹ Docilee + Kem dưỡng Kutieskin + Bỉm Nabizam)',
     ],
     promotionMechanics: [
       'Combo Trọn gói Giỏ đồ đi sinh (5–7 bộ Bodysuit + Phụ kiện mũ/bao tay/khăn sữa) giảm sâu theo nấc',
@@ -927,7 +927,7 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
         dealPriceVnd: 72000,
         affiliateCommissionPct: 10,
         keyUsps: ['Thương hiệu lâu đời, độ phủ siêu thị và nhà thuốc rộng'],
-        customerComplaints: ['Mùi hương truyền thống ít sự đột phá với tệp khách hàng Gen Z'],
+        customerComplaints: ['Mùi hương truyền thống ít mới mẻ với tệp khách hàng Gen Z'],
         kocStrategySummary: 'Quảng cáo nhận diện thương hiệu đại chúng.',
         upbaseCounterPlay: 'Khai thác góc tiếp cận hiện đại, phân tích chuyên sâu chiết xuất Vỏ sồi/Cúc La Mã/pH chuẩn 5.0.',
       },
@@ -1461,7 +1461,7 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
     ],
     contentPillars: [
       'Visual Test: Đổ trực tiếp chất nước giặt sánh đặc & giặt thử vết bẩn thực tế (cà phê, dầu mỡ, bùn đất)',
-      'Bài toán chi tiêu thông minh của người giữ tay hòm chìa khóa: Mua Combo can lớn dùng cả quý tiết kiệm một nửa chi phí',
+      'Bài toán tiết kiệm chi phí gia đình: Mua Combo can lớn dùng cả quý giảm một nửa chi phí',
     ],
     promotionMechanics: [
       'Combo 2 Can lớn / Thùng tiết kiệm + Mã Freeship Xtra tận nhà',
@@ -2607,7 +2607,7 @@ const EXTERNAL_COMPETITOR_BRAND_CONFIG_MAP: Record<string, SpecificBrandConfig> 
     storeBrandAliases: ['rhysman', 'rhysmanvn', 'rhysmanofficial'],
     keySpecs: [
       'Công thức tắm gội nam 3-trong-1 (Tắm – Gội – Rửa mặt) làm sạch sâu bã nhờn kết hợp nốt hương nước hoa nam tính',
-      'Hệ sinh thái chăm sóc nam giới toàn diện: Sữa tắm gội, Bọt vệ sinh nam, Xịt thơm cơ thể, Nước hoa nam, Sáp & Xịt phồng tóc',
+      'Bộ sản phẩm chăm sóc nam giới: Sữa tắm gội, Bọt vệ sinh nam, Xịt thơm cơ thể, Nước hoa nam, Sáp & Xịt phồng tóc',
       'Thế mạnh đóng gói Box quà tặng nam giới theo mùa vụ lễ (19/11, Valentine, Sinh nhật) kèm phụ kiện thiết thực',
     ],
     customerComplaints: [
