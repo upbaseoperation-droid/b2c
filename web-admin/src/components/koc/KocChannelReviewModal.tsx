@@ -516,8 +516,8 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
             <div className="lg:col-span-6 space-y-3">
               <Panel title="Ghi nhận đánh giá mới">
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <Field label="Mã kênh (@handle hoặc link TikTok) *">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end">
+                    <Field label="Mã kênh (@handle) *">
                       <Input
                         value={channelHandleInput}
                         onChange={(e) => setChannelHandleInput(e.target.value)}
@@ -535,47 +535,51 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                     </Field>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <Field label="Nhãn hàng (Brand) đánh giá *">
-                      <Select
-                        value={brandScope}
-                        onChange={(e) => setBrandScope(e.target.value)}
-                        className="text-xs font-semibold"
-                      >
-                        {brandOptions.map((b) => (
-                          <option key={b} value={b}>
-                            {b}
-                          </option>
-                        ))}
-                      </Select>
-                    </Field>
+                  <Field label="Nhãn hàng (Brand) đánh giá *">
+                    <Select
+                      value={brandScope}
+                      onChange={(e) => setBrandScope(e.target.value)}
+                      className="text-xs font-semibold"
+                    >
+                      {brandOptions.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
 
-                    <Field label="Kết luận đánh giá cho Brand *">
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {KOC_REVIEW_VERDICT_OPTIONS.map((opt) => {
-                          const isSelected = verdict === opt.key;
-                          return (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              onClick={() => handleSelectVerdict(opt.key)}
-                              className={`h-8 px-2 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
-                                isSelected
-                                  ? opt.tone === 'critical'
-                                    ? 'bg-critical text-white border-critical'
-                                    : opt.tone === 'warning'
-                                      ? 'bg-warning text-white border-warning'
-                                      : 'bg-positive text-white border-positive'
-                                  : 'bg-surface border-line text-ink-2 hover:bg-sunken'
-                              }`}
-                            >
-                              <span>{opt.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </Field>
-                  </div>
+                  <Field label="Kết luận đánh giá cho Brand *">
+                    <div className="grid grid-cols-3 gap-2">
+                      {KOC_REVIEW_VERDICT_OPTIONS.map((opt) => {
+                        const isSelected = verdict === opt.key;
+                        const shortBtnLabel =
+                          opt.key === 'SUITABLE'
+                            ? '✓ Phù hợp'
+                            : opt.key === 'CAUTION'
+                              ? 'Cân nhắc'
+                              : '✕ Không phù hợp';
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => handleSelectVerdict(opt.key)}
+                            className={`h-9 px-2.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 whitespace-nowrap transition cursor-pointer ${
+                              isSelected
+                                ? opt.tone === 'critical'
+                                  ? 'bg-critical text-white border-critical shadow-xs'
+                                  : opt.tone === 'warning'
+                                    ? 'bg-warning text-white border-warning shadow-xs'
+                                    : 'bg-positive text-white border-positive shadow-xs'
+                                : 'bg-surface border-line text-ink-2 hover:bg-sunken'
+                            }`}
+                          >
+                            <span>{shortBtnLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
 
                   <Field label="Ý kiến đánh giá của nhân viên *">
                     <Textarea
