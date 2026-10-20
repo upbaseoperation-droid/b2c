@@ -88,6 +88,7 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'dashboard-bi': 'dashboard-brand',
   'dashboard-air-sync': 'dashboard-team-sla',
   leaderboard: 'dashboard-staff',
+  'content-angles': 'brand-knowledge',
 };
 
 export function getNavGroupForTab(tab: TabKey): NavGroupDefinition | null {

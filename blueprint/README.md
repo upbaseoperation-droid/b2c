@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-REG |
 | Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
 | Giai đoạn hiện tại | **2 — Phân tích & Thiết kế kỹ thuật** |
-| Cập nhật | 19/10/2026 |
+| Cập nhật | 20/10/2026 |
 
 Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự án. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
 
@@ -52,7 +52,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 
 | Mã | Tài liệu | Trạng thái | Ghi chú |
 | --- | --- | --- | --- |
-| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn, Kế hoạch tháng 3 tab, Nhóm điều hướng `NAV_GROUPS`, Nghiên cứu Brand & Đối thủ, Báo cáo đánh giá lịch sử & rủi ro KOC, Thiết lập Prompt đa phân hệ, Booking, Hợp đồng & Cổng đối tác |
+| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn, Kế hoạch tháng 3 tab, Nhóm điều hướng `NAV_GROUPS`, Nghiên cứu Brand & Đối thủ, Động cơ Đề xuất & Chấm điểm KOC 100 điểm (`kocRecommendationEngine`), Báo cáo đánh giá lịch sử & rủi ro KOC, Thiết lập Prompt đa phân hệ, Booking, Hợp đồng & Cổng đối tác |
 | HUB-2.2 | User stories + tiêu chí nghiệm thu | Đang hoàn thiện | Các kịch bản nghiệp vụ theo 8 nhóm quyền |
 | HUB-2.3 | Kiến trúc tổng thể | Đang hoàn thiện | Next.js App Router, Micro-services API, State Sync |
 | HUB-2.4 | Mô hình dữ liệu | Đang hoàn thiện | Cấu trúc dữ liệu Brand, Store, Monthly Plan, KOC Master (4.820 KOC chuẩn hóa 100% danh bạ) & Booking Deal (16.024 video/deal lịch sử hợp tác) |

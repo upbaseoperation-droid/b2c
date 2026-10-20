@@ -47,7 +47,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     scopeType: 'INTERNAL',
     badgeColor: 'bg-red-50 text-red-700 border-red-200',
     description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C, Growth, Media được phép đăng nhập hệ thống; phân quyền toàn cục.',
-    defaultLandingTab: 'partner-access',
+    defaultLandingTab: 'cockpit',
     userCount: 2
   },
   {
@@ -69,7 +69,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'GROWTH',
     badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
     description: 'Quản lý đội ngũ chuyên viên Growth (Growth 1-6, HCM), phân công gian hàng, giao & duyệt chỉ tiêu Input Plan tháng (GMV, Ngân sách Order Net/Gross).',
-    defaultLandingTab: 'manager',
+    defaultLandingTab: 'cockpit',
     userCount: 3
   },
   {
@@ -80,7 +80,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MEDIA',
     badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
     description: 'Quản lý đội ngũ chuyên viên Media (Media Omni, Media TikTok), phân công nhận mã Spark Ads, duyệt phân bổ ngân sách quảng cáo & kiểm soát ROAS/CPA.',
-    defaultLandingTab: 'manager',
+    defaultLandingTab: 'cockpit',
     userCount: 2
   },
   {
@@ -91,7 +91,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MARKETING_B2C',
     badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
     description: 'Phụ trách cụm Brand/Store có nhóm, duyệt ứng viên KOC/Deal bước 1, duyệt kịch bản sơ bộ, theo dõi tiến độ lên bài của nhóm.',
-    defaultLandingTab: 'booking',
+    defaultLandingTab: 'cockpit',
     userCount: 4
   },
   {
@@ -2000,16 +2000,16 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
 };
 
 export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
-  ADMIN: 'partner-access',
+  ADMIN: 'cockpit',
   MANAGER: 'cockpit',
-  GROWTH_MANAGER: 'manager',
-  MEDIA_MANAGER: 'manager',
+  GROWTH_MANAGER: 'cockpit',
+  MEDIA_MANAGER: 'cockpit',
   LEADER: 'cockpit',
-  BOOKING_MEMBER: 'booking',
-  CONTENT_MEMBER: 'content',
-  BRAND_MEMBER: 'campaigns',
-  GROWTH_MEMBER: 'input-plan',
-  MEDIA_MEMBER: 'input-plan',
+  BOOKING_MEMBER: 'cockpit',
+  CONTENT_MEMBER: 'cockpit',
+  BRAND_MEMBER: 'cockpit',
+  GROWTH_MEMBER: 'cockpit',
+  MEDIA_MEMBER: 'cockpit',
   MEMBER: 'cockpit',
   LEGAL: 'contracts',
   FINANCE: 'contracts',
@@ -2051,8 +2051,9 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
 }
 
 export function getDefaultLandingTabForRole(role: UserRole): TabKey {
-  const landingMap = getSavedRoleDefaultLanding();
   const allowed = getAllowedTabsForRole(role);
+  if (allowed.includes('cockpit')) return 'cockpit';
+  const landingMap = getSavedRoleDefaultLanding();
   const candidate = landingMap[role] || ROLE_DEFAULT_LANDING[role] || 'cockpit';
   if (allowed.includes(candidate)) return candidate;
   return allowed[0] || candidate;
@@ -2114,7 +2115,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MARKETING_B2C',
     badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     description: 'Tìm kiếm KOC, tạo deal booking, soạn hợp đồng và theo dõi video lên bài cho các gian hàng được giao.',
-    defaultLandingTab: 'booking',
+    defaultLandingTab: 'cockpit',
     userCount: 118
   },
   {
@@ -2125,7 +2126,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MARKETING_B2C',
     badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
     description: 'Xây dựng góc nội dung, viết kịch bản video KOC & kênh tự xây (Self-channel), điều phối CTV quay dựng.',
-    defaultLandingTab: 'content',
+    defaultLandingTab: 'cockpit',
     userCount: 10
   },
   {
@@ -2136,7 +2137,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MARKETING_B2C',
     badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     description: 'Làm việc trực tiếp với nhãn hàng, quản lý chiến dịch Brand, sản phẩm đẩy và trình duyệt kịch bản.',
-    defaultLandingTab: 'campaigns',
+    defaultLandingTab: 'cockpit',
     userCount: 6
   },
   {
@@ -2147,7 +2148,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'GROWTH',
     badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
     description: 'Lập kế hoạch tháng (Input Plan 4.1), quản lý PnL gian hàng và giao hạn mức Order Net/Gross.',
-    defaultLandingTab: 'input-plan',
+    defaultLandingTab: 'cockpit',
     userCount: 136
   },
   {
@@ -2158,7 +2159,7 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     departmentScope: 'MEDIA',
     badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
     description: 'Nhận mã Spark Ads, vận hành chiến dịch quảng cáo TikTok và cập nhật báo cáo Ads hàng tuần.',
-    defaultLandingTab: 'input-plan',
+    defaultLandingTab: 'cockpit',
     userCount: 30
   },
   ...RBAC_ROLE_DEFINITIONS.slice(5),

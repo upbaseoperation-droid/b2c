@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ConfirmDialog, PageActions, StatRow, Stat, Button, Presence } from '../ui';
 import { 
   Layers, 
@@ -22,17 +22,30 @@ import {
   Info,
   X
 } from 'lucide-react';
-import { ContentAngleItem, UserProfile, MasterContentPillar, PushProductItem } from '../../lib/types';
+import { ContentAngleItem, UserProfile, MasterContentPillar, PushProductItem, StorePortfolioItem } from '../../lib/types';
+import type { BrandProduct } from '../../lib/brands/types';
 import { INITIAL_CONTENT_ANGLES, generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { INITIAL_MASTER_PILLARS } from '../../lib/selfChannelData';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 
 interface ContentAngleSetupViewProps {
-  currentUser?: UserProfile;
+  currentUser?: UserProfile | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onSelectAngleForBooking?: (angle: ContentAngleItem) => void;
   initialProductId?: string;
   initialStoreName?: string;
+  /** Gắn trực tiếp vào Hồ sơ thương hiệu: tự động lọc theo Brand và đồng bộ danh sách SKU của Brand */
+  brandName?: string;
+  brandProducts?: BrandProduct[];
+  brandStores?: StorePortfolioItem[];
+  embedded?: boolean;
+}
+
+function matchesBrandName(candidate?: string, targetBrand?: string): boolean {
+  if (!candidate || !targetBrand) return false;
+  const a = candidate.trim().toLowerCase();
+  const b = targetBrand.trim().toLowerCase();
+  return a === b || a.includes(b) || b.includes(a);
 }
 
 export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
@@ -40,12 +53,149 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   onNotify,
   onSelectAngleForBooking,
   initialProductId,
-  initialStoreName
+  initialStoreName,
+  brandName,
+  brandProducts,
+  brandStores,
+  embedded = false,
 }) => {
-  // Master Angles State
-  const [angles, setAngles] = useState<ContentAngleItem[]>(INITIAL_CONTENT_ANGLES);
   const [pillars] = useState<MasterContentPillar[]>(INITIAL_MASTER_PILLARS);
-  const [products] = useState<PushProductItem[]>(INITIAL_PUSH_PRODUCTS);
+
+  // Đồng bộ danh sách sản phẩm theo Thương hiệu (kết hợp INITIAL_PUSH_PRODUCTS và SKU trong Hồ sơ thương hiệu)
+  const products = useMemo<PushProductItem[]>(() => {
+    const baseMatched = brandName
+      ? INITIAL_PUSH_PRODUCTS.filter(p => matchesBrandName(p.brandName, brandName))
+      : INITIAL_PUSH_PRODUCTS;
+
+    if (!brandName) return baseMatched;
+
+    const primaryStore = brandStores?.[0];
+    const defaultStoreName = primaryStore?.storeName || `${brandName} Official Store`;
+    const defaultPlatform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA' =
+      primaryStore?.platform === 'Shopee Mall'
+        ? 'SHOPEE_MALL'
+        : primaryStore?.platform === 'Lazada'
+          ? 'LAZADA'
+          : 'TIKTOK_SHOP';
+
+    const convertedFromBrandProfile: PushProductItem[] = (brandProducts || [])
+      .filter(bp => !baseMatched.some(m => m.sku === bp.skuCode || m.productName.toLowerCase() === bp.name.toLowerCase()))
+      .map((bp, idx) => ({
+        id: bp.id || `bp-${brandName.toLowerCase().replace(/\s+/g, '-')}-${idx + 1}`,
+        sku: bp.skuCode || `${brandName.toUpperCase().slice(0, 4)}-SKU-${idx + 1}`,
+        productName: bp.name,
+        brandId: `brand-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
+        brandName,
+        brandCategory: 'Chăm sóc & Làm đẹp',
+        storeId: primaryStore?.id || `store-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
+        storeName: defaultStoreName,
+        platform: defaultPlatform,
+        cycleMonth: '2026/10',
+        campaignName: `Chiến dịch ${brandName}`,
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+        originalPrice: bp.priceVnd || 250000,
+        promotionalPrice: bp.dealPriceVnd || bp.priceVnd || 199000,
+        discountPercent: bp.priceVnd && bp.dealPriceVnd ? Math.max(0, Math.round((1 - bp.dealPriceVnd / bp.priceVnd) * 100)) : 15,
+        affiliateRate: bp.commissionOrganicPct ?? 10,
+        availableStock: bp.sampleStockStatus === 'OUT_OF_STOCK' ? 0 : 100,
+        monthlySampleQuota: 30,
+        allocatedSampleCount: 10,
+        usp: bp.usps?.join(' · ') || bp.mechanism || `Sản phẩm chủ lực chính hãng ${brandName}`,
+        viralAngle: bp.mechanism || 'Chia sẻ trải nghiệm thực tế và điểm nổi bật sản phẩm',
+        targetKocNiche: bp.targetUser ? [bp.targetUser] : ['Khách hàng mục tiêu'],
+        pdpUrl: bp.pdpUrl,
+        feasibilityScore: 'HIGH_VIRAL',
+        growthPic: primaryStore?.growthPic || 'Lê Phương Thảo',
+        b2cPic: primaryStore?.b2cOwnerName || 'Lê Phương Thảo',
+        status: 'LOCKED_APPROVED',
+        proposedAt: '2026-10-01',
+        comments: [],
+        changeRequests: [],
+        auditLogs: [],
+      }));
+
+    const combined = [...baseMatched, ...convertedFromBrandProfile];
+    if (combined.length > 0) return combined;
+
+    return [
+      {
+        id: `bp-default-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
+        sku: `${brandName.toUpperCase().slice(0, 4)}-HERO-01`,
+        productName: `${brandName} - Sản phẩm chủ lực`,
+        brandId: `brand-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
+        brandName,
+        brandCategory: 'Chăm sóc & Làm đẹp',
+        storeId: primaryStore?.id || `store-${brandName.toLowerCase().replace(/\s+/g, '-')}`,
+        storeName: defaultStoreName,
+        platform: defaultPlatform,
+        cycleMonth: '2026/10',
+        campaignName: `Chiến dịch ${brandName}`,
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+        originalPrice: 290000,
+        promotionalPrice: 229000,
+        discountPercent: 21,
+        affiliateRate: 10,
+        availableStock: 100,
+        monthlySampleQuota: 30,
+        allocatedSampleCount: 8,
+        usp: `Sản phẩm chủ lực chính hãng từ ${brandName}`,
+        viralAngle: 'Tình huống thực tế & đánh giá chất sản phẩm',
+        targetKocNiche: ['Khách hàng mục tiêu'],
+        feasibilityScore: 'HIGH_VIRAL',
+        growthPic: primaryStore?.growthPic || 'Lê Phương Thảo',
+        b2cPic: primaryStore?.b2cOwnerName || 'Lê Phương Thảo',
+        status: 'LOCKED_APPROVED',
+        proposedAt: '2026-10-01',
+        comments: [],
+        changeRequests: [],
+        auditLogs: [],
+      },
+    ];
+  }, [brandName, brandProducts, brandStores]);
+
+  // Khởi tạo danh sách góc nội dung theo Brand
+  const initialScopedAngles = useMemo<ContentAngleItem[]>(() => {
+    if (!brandName) return INITIAL_CONTENT_ANGLES;
+    const matched = INITIAL_CONTENT_ANGLES.filter(
+      a =>
+        matchesBrandName(a.brandName, brandName) ||
+        products.some(p => p.id === a.productId || p.sku === a.productSku),
+    );
+    if (matched.length > 0) return matched;
+
+    const firstProd = products[0];
+    if (!firstProd) return [];
+    const codePrefix = brandName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 4) || 'ANG';
+    return generateAiAngleSuggestions(firstProd.productName, 'Nỗi đau - Giải pháp', brandName).map((sugg, idx) => ({
+      ...sugg,
+      id: `ang-${codePrefix.toLowerCase()}-seed-${idx + 1}`,
+      code: `ANG-${codePrefix}-0${idx + 1}`,
+      productId: firstProd.id,
+      productName: firstProd.productName,
+      productSku: firstProd.sku,
+      brandId: firstProd.brandId,
+      brandName,
+      storeId: firstProd.storeId,
+      storeName: firstProd.storeName,
+      platform: firstProd.platform,
+      keySellingPoints: firstProd.usp ? firstProd.usp.split(' · ').filter(Boolean) : sugg.keySellingPoints,
+      targetAudience: firstProd.targetKocNiche?.join(', ') || sugg.targetAudience,
+      usageCount: (3 - idx) * 4,
+      avgViewsEstimate: 65000 + idx * 15000,
+      createdBy: currentUser?.name || 'Đặng Thị Yến Nhi',
+      createdAt: '2026-10-01',
+      updatedAt: '2026-10-15',
+    }));
+  }, [brandName, products, currentUser?.name]);
+
+  // Master Angles State
+  const [angles, setAngles] = useState<ContentAngleItem[]>(initialScopedAngles);
+
+  useEffect(() => {
+    setAngles(initialScopedAngles);
+  }, [initialScopedAngles]);
 
   // Active View Mode: 'CARDS' | 'MATRIX' | 'TABLE'
   const [viewMode, setViewMode] = useState<'CARDS' | 'MATRIX' | 'TABLE'>('CARDS');
@@ -56,6 +206,14 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<string>(initialProductId || 'ALL');
   const [selectedPillar, setSelectedPillar] = useState<string>('ALL');
   const [selectedStatus] = useState<string>('ALL');
+
+  useEffect(() => {
+    if (initialProductId) {
+      setSelectedProduct(initialProductId);
+    } else {
+      setSelectedProduct('ALL');
+    }
+  }, [initialProductId, brandName]);
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -321,21 +479,38 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
   return (
     <div className="space-y-4 animate-in fade-in duration-150">
-      <PageActions>
-        <Button variant="secondary" icon={Lightbulb} onClick={handleOpenAiModal}>
-          Gợi ý góc tiếp cận
-        </Button>
-        <Button variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
-          Thêm góc tiếp cận
-        </Button>
-      </PageActions>
+      {!embedded && (
+        <PageActions>
+          <Button variant="secondary" icon={Lightbulb} onClick={handleOpenAiModal}>
+            Gợi ý góc tiếp cận
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
+            Thêm góc tiếp cận
+          </Button>
+        </PageActions>
+      )}
 
-      <StatRow>
-        <Stat label="Tổng số góc tiếp cận" value={angles.length} note={`${activeCount} đang dùng`} />
-        <Stat label="Sản phẩm đã có góc tiếp cận" value={`${new Set(angles.map(a => a.productId)).size} / ${products.length}`} />
-        <Stat label="Trụ cột nội dung tham gia" value={`${new Set(angles.map(a => a.pillarId)).size} / ${pillars.length}`} />
-        <Stat label="Lượt booking KOC đã dùng" value={totalBookingsApplied} tone="positive" />
-      </StatRow>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex-1">
+          <StatRow>
+            <Stat label="Tổng số góc tiếp cận" value={angles.length} note={`${activeCount} đang dùng`} />
+            <Stat label="Sản phẩm đã có góc tiếp cận" value={`${new Set(angles.map(a => a.productId)).size} / ${products.length}`} />
+            <Stat label="Trụ cột nội dung tham gia" value={`${new Set(angles.map(a => a.pillarId)).size} / ${pillars.length}`} />
+            <Stat label="Lượt booking KOC đã dùng" value={totalBookingsApplied} tone="positive" />
+          </StatRow>
+        </div>
+      </div>
+
+      {embedded && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="secondary" size="sm" icon={Lightbulb} onClick={handleOpenAiModal}>
+            Gợi ý góc tiếp cận
+          </Button>
+          <Button variant="primary" size="sm" icon={Plus} onClick={() => handleOpenCreateModal()}>
+            Thêm góc tiếp cận
+          </Button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2. FILTER & TOOLBAR                                                       */}

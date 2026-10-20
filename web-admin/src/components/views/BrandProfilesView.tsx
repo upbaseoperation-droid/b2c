@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, FileSpreadsheet, HardDrive, Loader2, Video } from 'lucide-react';
+import { Calendar, FileSpreadsheet, HardDrive, Layers, Loader2, Video } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
@@ -40,7 +40,7 @@ import {
   sharedFrom,
 } from '../ui';
 import type { Column } from '../ui';
-import { BrandProfileDetail } from '../brands/BrandProfileDetail';
+import { BrandProfileDetail, type BrandDetailTab } from '../brands/BrandProfileDetail';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
 import { isBrandManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
@@ -76,6 +76,7 @@ export function BrandProfilesView({
   onDrilldownToListing,
   onDrilldownToBooking,
   onSelectDealForContract,
+  initialDetailTab,
 }: {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
@@ -91,12 +92,14 @@ export function BrandProfilesView({
   onDrilldownToListing?: (params: { storeName?: string; brandName?: string; month: string }) => void;
   onDrilldownToBooking?: (params: { storeName?: string; brandName?: string; dealCode?: string; month: string }) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  initialDetailTab?: BrandDetailTab;
 }) {
   const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => getSharedProfilesSnapshot()?.profiles || brandProfilesClientCache?.profiles || null);
   const [access, setAccess] = useState<BrandAccess | undefined>(() => getSharedProfilesSnapshot()?.access || brandProfilesClientCache?.access);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [busy, setBusy] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
+  const [detailTab, setDetailTab] = useState<BrandDetailTab | undefined>(initialDetailTab);
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -271,6 +274,15 @@ export function BrandProfilesView({
     }
   };
 
+  useEffect(() => {
+    if (initialDetailTab) {
+      setDetailTab(initialDetailTab);
+      if (!openKey && visible.length > 0) {
+        setOpenKey(visible[0].key);
+      }
+    }
+  }, [initialDetailTab, openKey, visible]);
+
   if (loadError && !profiles) {
     return (
       <Panel>
@@ -284,7 +296,10 @@ export function BrandProfilesView({
   }
 
   // Danh sách ↔ hồ sơ: ảnh và tên thương hiệu bay giữa hàng bảng và đầu hồ sơ (DESIGN_SYSTEM.md §9).
-  const openBrand = (key: string) => openShared(key, () => setOpenKey(key));
+  const openBrand = (key: string, tab?: BrandDetailTab) => {
+    setDetailTab(tab);
+    openShared(key, () => setOpenKey(key));
+  };
   const closeBrand = (key: string) => closeShared(key, () => setOpenKey(null));
 
   const open = openKey ? rows.find(r => r.key === openKey) : undefined;
@@ -317,6 +332,8 @@ export function BrandProfilesView({
         onDrilldownToBooking={onDrilldownToBooking}
         onSelectDealForContract={onSelectDealForContract}
         onNotify={onNotify}
+        initialTab={detailTab}
+        currentUser={currentUser}
       />
     );
   }
@@ -535,10 +552,19 @@ export function BrandProfilesView({
     {
       key: 'drilldown',
       header: 'Thao tác',
-      width: 120,
+      width: 175,
       align: 'right',
       render: r => (
         <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 h-6 px-2 rounded text-2xs font-medium text-ink bg-surface hover:bg-sunken border border-line-strong transition-colors shadow-2xs"
+            title={`Mở Sản phẩm & Góc nội dung của ${r.name}`}
+            onClick={() => openBrand(r.key, 'PRODUCTS')}
+          >
+            <Layers className="w-3 h-3 text-accent" />
+            <span>Góc SP</span>
+          </button>
           {onDrilldownToPlan && (
             <button
               type="button"

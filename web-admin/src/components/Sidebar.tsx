@@ -123,7 +123,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung', icon: Layers },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
           ],
@@ -281,7 +280,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung', icon: Layers },
           ],
         },
         {
@@ -373,7 +371,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'workload-3d', label: 'Bản đồ 3D & Workload', icon: Compass },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
             { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ', icon: Compass },
-            { key: 'content-angles', label: 'Góc nội dung', icon: Compass },
             { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
           ],
@@ -727,7 +724,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [currentUser.role, rbacTick, badgeCounts]);
 
   const isAnyDashboardActive = DASHBOARD_TAB_KEYS.includes(activeTab);
-  const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(true);
+  const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(false);
 
   // Nền + vạch của mục đang mở là một phần tử, trượt sang mục mới khi chuyển màn.
   const navRef = useRef<HTMLElement>(null);

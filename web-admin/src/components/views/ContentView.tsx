@@ -33,7 +33,7 @@ interface ContentViewProps {
   onNavigateToAngles?: () => void;
 }
 
-type ContentSubTab = 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS' | 'PILLARS';
+type ContentSubTab = 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -259,7 +259,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
           { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
           { key: 'PUBLICATIONS', label: 'Đối soát bài đăng', count: publications.length },
-          { key: 'PILLARS', label: 'Trụ cột & Góc SP' },
         ]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -269,7 +268,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                 icon={Layers}
                 onClick={onNavigateToAngles}
               >
-                Góc tiếp cận SP
+                Góc nội dung (Hồ sơ Brand)
               </Button>
             )}
             <Button
@@ -600,112 +599,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View 5: Master Pillars & Product Angles */}
-      {activeSubTab === 'PILLARS' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="card-enterprise overflow-hidden p-6 bg-white border border-slate-200 rounded-2xl shadow-xs">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 text-accent font-medium text-2xs">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Chuẩn hóa kiến trúc nội dung Upbase</span>
-                </div>
-                <h3 className="text-base font-semibold text-slate-900">
-                  Trụ cột nội dung & góc tiếp cận theo sản phẩm
-                </h3>
-                
-              </div>
-
-              {onNavigateToAngles && (
-                <button
-                  onClick={onNavigateToAngles}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs transition flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0"
-                >
-                  <span>Thiết lập góc tiếp cận</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* 3 Master Pillars Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
-              <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-code text-2xs font-medium text-ink-3">
-                    PIL-02 · PROBLEM_SOLUTION
-                  </span>
-                  <span className="text-2xs text-rose-600 font-semibold">Tỷ lệ chuyển đổi cao</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Nỗi đau & giải pháp</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Đặt vấn đề nhức nhối của khách hàng và đưa sản phẩm vào như giải pháp phù hợp. Thường dùng cấu trúc trước/sau khi dùng.
-                </p>
-                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-rose-200/60">
-                  <div><strong>Định mức thù lao:</strong> 1.500.000 đ / video</div>
-                  <div><strong>Định dạng đề xuất:</strong> Góc nhìn cá nhân, lồng tiếng, trước/sau</div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-code text-2xs font-medium text-ink-3">
-                    PIL-01 · DIRECT_REVIEW
-                  </span>
-                  <span className="text-2xs text-blue-600 font-semibold">Xây dựng uy tín</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Review trực tiếp</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  KOC trải nghiệm thực tế sản phẩm, chiếm &gt;70% thời lượng video. Tập trung vào kết cấu, thành phần, cảm nhận khi dùng và kết quả thực tế.
-                </p>
-                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-blue-200/60">
-                  <div><strong>Định mức thù lao:</strong> 1.500.000 đ / video</div>
-                  <div><strong>Định dạng đề xuất:</strong> Chia sẻ trực tiếp, lồng tiếng, quay cận cảnh</div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-code text-2xs font-medium text-ink-3">
-                    PIL-03 · UNBOXING
-                  </span>
-                  <span className="text-2xs text-emerald-600 font-semibold">Tự nhiên & chân thực</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Mở hộp & trải nghiệm</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Mở hộp bao bì, âm thanh chân thực, tạo cảm giác người tiêu dùng tự đặt mua và mở kiện hàng. Phù hợp cho Affiliate và KOC nhỏ.
-                </p>
-                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-emerald-200/60">
-                  <div><strong>Định mức thù lao:</strong> 1.000.000 đ / video</div>
-                  <div><strong>Định dạng đề xuất:</strong> Mở hộp lồng tiếng, âm thanh thực, ảnh cuộn</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Action Banner */}
-            <div className="mt-6 p-4 rounded-xl bg-accent-soft border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent text-white flex items-center justify-center shrink-0">
-                  <Layers className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-900">
-                    Thiết lập góc tiếp cận theo từng sản phẩm
-                  </div>
-                </div>
-              </div>
-              {onNavigateToAngles && (
-                <button
-                  onClick={onNavigateToAngles}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white transition whitespace-nowrap"
-                >
-                  Mở thiết lập →
-                </button>
-              )}
             </div>
           </div>
         </div>

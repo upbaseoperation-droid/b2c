@@ -850,7 +850,7 @@ export function KocListingBatchHubView({
             setShowShortlistModal(true);
           }}
         >
-          Lọc KOC theo KL
+          Đề xuất KOC
         </Button>
       </PageActions>
 
@@ -2438,13 +2438,14 @@ export function KocListingBatchHubView({
         onCancel={() => setRejectingItem(null)}
       />
 
-      {/* Modal Lọc Shortlist KOC cho gian hàng (Gắn với Plan Final & Khung lương KL) */}
+      {/* Modal Đề xuất & Chấm điểm KOC cho gian hàng (Gắn với Plan Final & Khung lương KL) */}
       <StoreShortlistFilterModal
         isOpen={showShortlistModal}
         onClose={() => setShowShortlistModal(false)}
         stores={stores}
         kocs={kocs}
         deals={deals}
+        existingListings={listings}
         initialStoreId={matchedStoreObj?.id}
         initialSalaryGrade={shortlistTargetGrade}
         activePlan={matchedPlanFinal}
@@ -2457,7 +2458,6 @@ export function KocListingBatchHubView({
         onClose={() => setIsKocReportOpen(false)}
         purposeId="KOC_MATCHING"
         moduleTitle={`Báo Cáo Đánh Giá Cơ Cấu KOC Đề Xuất Theo KL — Kỳ ${selectedMonth}`}
-        moduleSubtitle={`Kỳ ${selectedMonth} | Đợt: ${selectedCycle === 'ALL' ? 'Tất cả đợt (10-20-30)' : selectedCycle} | Gian hàng: ${selectedStore === 'ALL' ? 'Toàn bộ gian hàng' : selectedStore} | Tổng hồ sơ: ${metrics.total}`}
         contextDataText={[
           `[DỮ LIỆU PHÂN HỆ: Đề Xuất KOC Theo Đợt (10 - 20 - 30) & Đối Soát Plan Final Theo KL]`,
           `- Kỳ kế hoạch: ${selectedMonth} | Gian hàng: ${selectedStore} | Plan gốc: ${matchedPlanFinal?.id || 'Toàn bộ'} (${matchedPlanFinal?.currentVersionCode || 'v1.0'})`,

@@ -57,7 +57,6 @@ const PushProductsView = dynamic(() => import('../components/views/PushProductsV
 const SelfChannelCtvHubView = dynamic(() => import('../components/views/SelfChannelCtvHubView').then(m => m.SelfChannelCtvHubView), { loading: ViewLoading });
 const StoreManagementView = dynamic(() => import('../components/views/StoreManagementView').then(m => m.StoreManagementView), { loading: ViewLoading });
 const KocKolHubView = dynamic(() => import('../components/views/KocKolHubView').then(m => m.KocKolHubView), { loading: ViewLoading });
-const ContentAngleSetupView = dynamic(() => import('../components/views/ContentAngleSetupView').then(m => m.ContentAngleSetupView), { loading: ViewLoading });
 const CentralizedRbacHubView = dynamic(() => import('../components/views/CentralizedRbacHubView').then(m => m.CentralizedRbacHubView), { loading: ViewLoading });
 const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
 const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
@@ -178,13 +177,6 @@ function resolveInitialTab(user: UserProfile | null): TabKey {
   if (targetUser.id.startsWith('contract-demo-')) {
     return 'contracts';
   }
-  const allowed = getAllowedTabsForRole(targetUser.role);
-  if (typeof window !== 'undefined') {
-    const savedTab = sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY) as TabKey | null;
-    if (savedTab && allowed.includes(savedTab)) {
-      return savedTab;
-    }
-  }
   return getDefaultLandingTabForRole(targetUser.role);
 }
 
@@ -195,15 +187,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>(() => resolveInitialTab(USERS[0]));
   const hasUserNavigatedRef = useRef<boolean>(false);
   const [crawlerResetKey, setCrawlerResetKey] = useState<number>(0);
+  const [brandInitialDetailTab, setBrandInitialDetailTab] = useState<'PRODUCTS' | undefined>(undefined);
   const handleSelectTab = useCallback((tab: TabKey) => {
     hasUserNavigatedRef.current = true;
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, tab);
+    const resolvedTab: TabKey = tab === 'content-angles' ? 'brand-knowledge' : tab;
+    if (tab === 'content-angles') {
+      setBrandInitialDetailTab('PRODUCTS');
+    } else if (tab === 'brand-knowledge') {
+      setBrandInitialDetailTab(undefined);
     }
-    if (tab === 'tiktok-crawler') {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, resolvedTab);
+    }
+    if (resolvedTab === 'tiktok-crawler') {
       setCrawlerResetKey((prev) => prev + 1);
     }
-    setActiveTab(tab);
+    setActiveTab(resolvedTab);
   }, []);
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
@@ -346,7 +345,7 @@ export default function App() {
               if (retryPolicy?.user) resolvedUser = retryPolicy.user;
             }
             await handleUserChange(resolvedUser, true);
-            if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+            if (!hasUserNavigatedRef.current) {
               const nextDefaultTab = getDefaultLandingTabForRole(resolvedUser.role);
               setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
             }
@@ -357,7 +356,7 @@ export default function App() {
 
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         await handleUserChange(fallbackUser, true);
-        if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+        if (!hasUserNavigatedRef.current) {
           const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
           setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
         }
@@ -367,7 +366,7 @@ export default function App() {
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         await handleUserChange(fallbackUser, true);
-        if (!hasUserNavigatedRef.current && !savedTab && !hadSavedUser) {
+        if (!hasUserNavigatedRef.current) {
           const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
           setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
         }
@@ -1304,6 +1303,7 @@ export default function App() {
               stores={scopedStores}
               deals={scopedDeals}
               monthlyPlans={scopedMonthlyPlans}
+              initialDetailTab={brandInitialDetailTab}
               onNotify={showToast}
               onOpenBooking={() => setActiveTab('booking')}
               onUpdateStore={handleUpdateStore}
@@ -1323,17 +1323,9 @@ export default function App() {
           <KeepAliveTab tabKey="content" currentTab={activeTab}>
             <ContentView
               onScriptApprovedNotification={handleScriptApprovedNotification}
-              onNavigateToAngles={() => setActiveTab('content-angles')}
-            />
-          </KeepAliveTab>
-
-          <KeepAliveTab tabKey="content-angles" currentTab={activeTab}>
-            <ContentAngleSetupView
-              currentUser={currentUser}
-              onNotify={showToast}
-              onSelectAngleForBooking={(angle) => {
-                setActiveTab('booking');
-                showToast(`Đã chọn góc kịch bản "${angle.name}" cho Booking`);
+              onNavigateToAngles={() => {
+                setBrandInitialDetailTab('PRODUCTS');
+                setActiveTab('brand-knowledge');
               }}
             />
           </KeepAliveTab>
@@ -1665,7 +1657,10 @@ export default function App() {
                 }
                 setActiveTab('brand-knowledge');
               }}
-              onNavigateToContentAngles={() => setActiveTab('content-angles')}
+              onNavigateToContentAngles={() => {
+                setBrandInitialDetailTab('PRODUCTS');
+                setActiveTab('brand-knowledge');
+              }}
               onNotify={showToast}
             />
           </KeepAliveTab>
