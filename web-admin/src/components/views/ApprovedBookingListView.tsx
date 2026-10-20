@@ -917,6 +917,36 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       onCreateOrUpdateDeals(dealsToSync);
     }
 
+    // Tự động đăng ký các videoId vừa nghiệm thu vào Kho lịch sử Video Ads & KOC tuần (/api/koc-video-history)
+    result.updatedApprovedItems.forEach((it) => {
+      if (!it.videoId && !it.linkAir) return;
+      void fetch('/api/koc-video-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REGISTER_NEW_VIDEO',
+          videoId: it.videoId,
+          linkAir: it.linkAir,
+          dealCode: it.maBooking,
+          kocChannelId: it.idKenh,
+          kocStageName: it.tenKenh,
+          brandName: it.brandName,
+          storeName: it.storeName,
+          productName: it.sanPham,
+          airDate: it.actualAirDate,
+          weekKey: it.tuanReal ? `2026-${it.tuanReal}` : '2026-W42',
+          pic: it.nguoiPhuTrach,
+          klGrade: it.klGrade,
+          bookingCostNet: it.chiPhiBookingNetCuoi,
+          sparkAdsCode: it.sparkAdsCode,
+          initialGmv: it.gmv30d,
+          initialOrders: it.orders30d,
+          initialViews: it.views30d,
+          source: 'SYSTEM_BOOKING',
+        }),
+      }).catch(() => {});
+    });
+
     setIsAcceptanceModalOpen(false);
     onNotify?.(
       `Đã tự động khớp kênh KOC và điền nghiệm thu cho ${result.matchedCount} video (đồng bộ cả List duyệt book, Sheet Brand & Quản lý Booking).${

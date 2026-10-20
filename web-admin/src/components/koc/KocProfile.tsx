@@ -85,6 +85,7 @@ import {
   type KocPerformanceSummary,
 } from './kocUtils';
 import { KocHistoryEvaluationModal } from './KocHistoryEvaluationModal';
+import { KocVideoWeeklyHistoryPanel } from './KocVideoWeeklyHistoryPanel';
 
 const cx = (...p: Array<string | false | null | undefined>) => p.filter(Boolean).join(' ');
 
@@ -1413,6 +1414,9 @@ function CollaborationHistorySection({
           }
         />
       </Panel>
+
+      {/* KHO LỊCH SỬ VIDEO ADS THEO TUẦN (ĐỐI SOÁT THEO VIDEO ID HỆ THỐNG) */}
+      <KocVideoWeeklyHistoryPanel targetKoc={koc} />
 
       {/* Modal hỏi đồng nghiệp */}
       {askDeal && (

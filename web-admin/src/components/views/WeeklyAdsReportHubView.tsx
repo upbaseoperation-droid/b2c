@@ -11,9 +11,14 @@ import {
   Zap,
   Database,
   FileText,
-  ShieldCheck
+  ShieldCheck,
+  History,
+  Plus,
+  Code2
 } from 'lucide-react';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
+import { KocVideoWeeklyHistoryPanel } from '../koc/KocVideoWeeklyHistoryPanel';
+import { KocVideoHistoryRegistryModal, type RegistryModalTab } from '../koc/KocVideoHistoryRegistryModal';
 import { 
   WeeklyAdsReportMeta, 
   AdsReportParseResult,
@@ -46,8 +51,11 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isMappingApplied, setIsMappingApplied] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'CAMPAIGNS' | 'KOC_MAPPING' | 'CREATIVES' | 'INSIGHTS'>('CAMPAIGNS');
+  const [activeTab, setActiveTab] = useState<'CAMPAIGNS' | 'KOC_MAPPING' | 'CREATIVES' | 'WEEKLY_HISTORY' | 'INSIGHTS'>('CAMPAIGNS');
   const [isAdsReportOpen, setIsAdsReportOpen] = useState<boolean>(false);
+  const [registryModalOpen, setRegistryModalOpen] = useState<boolean>(false);
+  const [registryInitialTab, setRegistryInitialTab] = useState<RegistryModalTab>('NEW_VIDEO');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -116,8 +124,14 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       if (data.success && data.data) {
         setActiveReportData(data.data);
         setSelectedFileName(file.name);
+        setHistoryRefreshKey((k) => k + 1);
         await fetchReportsList();
-        notify(`Đã tải lên và đọc ${file.name}`);
+        const syncInfo = data.weeklyHistorySync;
+        notify(
+          syncInfo
+            ? `Đã tải lên ${file.name} và ghi nhận vào kho lịch sử tuần (${syncInfo.matchedCount} Video ID hệ thống)`
+            : `Đã tải lên và đọc ${file.name}`
+        );
       } else {
         notify(data.error || 'Lỗi khi tải file', 'error');
       }
@@ -240,6 +254,35 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
           items={[
             { label: 'Lập báo cáo hiệu quả Ads', icon: FileText, onSelect: () => setIsAdsReportOpen(true) },
             {
+              label: 'Đăng ký Video ID mới',
+              icon: Plus,
+              onSelect: () => {
+                setRegistryInitialTab('NEW_VIDEO');
+                setRegistryModalOpen(true);
+              },
+            },
+            {
+              label: 'Phát sinh KOC mới',
+              icon: Plus,
+              onSelect: () => {
+                setRegistryInitialTab('NEW_KOC');
+                setRegistryModalOpen(true);
+              },
+            },
+            {
+              label: 'Cổng API KOC & Video mới',
+              icon: Code2,
+              onSelect: () => {
+                setRegistryInitialTab('API_DOCS');
+                setRegistryModalOpen(true);
+              },
+            },
+            {
+              label: 'Kho lịch sử Tuần (Video ID)',
+              icon: History,
+              onSelect: () => setActiveTab('WEEKLY_HISTORY'),
+            },
+            {
               label: isMappingApplied ? 'Đã đồng bộ KOC & deal' : 'Đồng bộ vào danh bạ KOC',
               icon: isMappingApplied ? Check : Database,
               disabled: isLoading || !activeReportData || isMappingApplied,
@@ -247,6 +290,17 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             },
           ]}
         />
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={Plus}
+          onClick={() => {
+            setRegistryInitialTab('NEW_VIDEO');
+            setRegistryModalOpen(true);
+          }}
+        >
+          Đăng ký Video / KOC
+        </Button>
         <Button size="sm" variant="primary" icon={Upload} disabled={isUploading} onClick={() => fileInputRef.current?.click()}>
           {isUploading ? 'Đang tải file…' : 'Tải báo cáo (.xlsx)'}
         </Button>
@@ -275,6 +329,10 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                 key: 'CREATIVES',
                 label: 'Video & Spark Ads',
                 count: activeReportData?.topCreatives.length,
+              },
+              {
+                key: 'WEEKLY_HISTORY',
+                label: 'Kho lịch sử Tuần (Video ID & KOC)',
               },
               { key: 'INSIGHTS', label: 'Gợi ý tối ưu' },
             ]}
@@ -781,6 +839,34 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: KHO LỊCH SỬ TUẦN (VIDEO ID HỆ THỐNG & LŨY KẾ KOC) */}
+      {/* ========================================================================= */}
+      {activeTab === 'WEEKLY_HISTORY' && (
+        <KocVideoWeeklyHistoryPanel
+          key={historyRefreshKey}
+          onNotify={notify}
+          onKocCreated={(newKoc) => {
+            if (onUpdateKocsWithAdsData) {
+              onUpdateKocsWithAdsData([newKoc, ...kocs]);
+            }
+          }}
+        />
+      )}
+
+      <KocVideoHistoryRegistryModal
+        open={registryModalOpen}
+        onClose={() => setRegistryModalOpen(false)}
+        initialTab={registryInitialTab}
+        onSuccess={(res) => {
+          setHistoryRefreshKey((k) => k + 1);
+          if (res.newKoc && onUpdateKocsWithAdsData) {
+            onUpdateKocsWithAdsData([res.newKoc, ...kocs]);
+          }
+          notify(res.message, 'success');
+        }}
+      />
 
       <OperationalReportDrawer
         isOpen={isAdsReportOpen}

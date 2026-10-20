@@ -20,6 +20,7 @@ import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 import { KocProfile } from '../koc/KocProfile';
 import { KocHistoryEvaluationModal } from '../koc/KocHistoryEvaluationModal';
+import { KocVideoHistoryRegistryModal } from '../koc/KocVideoHistoryRegistryModal';
 import { KocSocialChannelsModal } from '../koc/KocSocialChannelsModal';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import {
@@ -175,6 +176,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [historyEvalTarget, setHistoryEvalTarget] = useState<KocItem | null>(null);
   const [sheetTargetKocs, setSheetTargetKocs] = useState<KocItem[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [videoRegistryOpen, setVideoRegistryOpen] = useState(false);
   const [scraperOpen, setScraperOpen] = useState(false);
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
   const [channelReviewModalOpen, setChannelReviewModalOpen] = useState(false);
@@ -807,6 +809,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             </Button>
             <Button
               variant="secondary"
+              icon={FileSpreadsheet}
+              onClick={() => setVideoRegistryOpen(true)}
+            >
+              Video ID &amp; API Tuần
+            </Button>
+            <Button
+              variant="secondary"
               icon={CloudDownload}
               onClick={() => {
                 setScraperInitialHandle('');
@@ -1070,6 +1079,19 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           }
         }}
         onNotify={onNotify}
+      />
+
+      <KocVideoHistoryRegistryModal
+        open={videoRegistryOpen}
+        onClose={() => setVideoRegistryOpen(false)}
+        initialTab="NEW_VIDEO"
+        onSuccess={(res) => {
+          if (res.newKoc) {
+            setLocalKocs((prev) => [res.newKoc!, ...prev]);
+            onKocCreated?.(res.newKoc);
+          }
+          onNotify?.(res.message, 'success');
+        }}
       />
     </div>
   );

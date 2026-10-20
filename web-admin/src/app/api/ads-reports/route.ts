@@ -10,6 +10,66 @@ import { INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { persistParsedAdsReportToDb } from '@/lib/server/tiktokSellerStore';
 import { actionAllowed } from '@/lib/server/accessPolicy';
+import { readRecord, updateRecord } from '@/lib/server/sharedRecords';
+import {
+  KOC_VIDEO_HISTORY_RECORD_KEY,
+  buildInitialWeeklyHistoryStore,
+  convertParsedAdsReportToWeeklyRows,
+  ingestWeeklyRowsBySystemVideoId,
+  resolveWeekMeta,
+  type KocVideoWeeklyHistoryStoreData,
+} from '@/lib/kocVideoWeeklyHistory';
+
+async function syncParsedReportToWeeklyHistoryStore(params: {
+  result: Awaited<ReturnType<typeof parseAdsExcelFile>>;
+  fileName: string;
+  weekKey?: string;
+  brandName?: string;
+  storeName?: string;
+  actorName: string;
+}) {
+  try {
+    const fallback = buildInitialWeeklyHistoryStore();
+    const current = await readRecord<KocVideoWeeklyHistoryStoreData>(
+      KOC_VIDEO_HISTORY_RECORD_KEY,
+      fallback
+    );
+    const weekMeta = resolveWeekMeta(params.weekKey, params.result.meta?.reportWeek);
+    const rows = convertParsedAdsReportToWeeklyRows(
+      params.result,
+      params.brandName,
+      params.storeName
+    );
+    if (rows.length === 0) return null;
+
+    const ingested = ingestWeeklyRowsBySystemVideoId(current.data, {
+      weekKey: weekMeta.weekKey,
+      weekLabel: weekMeta.weekLabel,
+      dateRange: params.result.meta?.dateRange || weekMeta.dateRange,
+      fileName: params.fileName,
+      sourceType: 'EXCEL_UPLOAD',
+      importedBy: params.actorName,
+      defaultBrandName: params.brandName,
+      defaultStoreName: params.storeName,
+      rows,
+    });
+
+    await updateRecord<KocVideoWeeklyHistoryStoreData>(
+      KOC_VIDEO_HISTORY_RECORD_KEY,
+      fallback,
+      current.revision,
+      () => ingested.nextStore
+    );
+
+    return {
+      weekKey: ingested.batchLog.weekKey,
+      matchedCount: ingested.matchedCount,
+      newlyRegisteredVideosCount: ingested.newlyRegisteredVideosCount,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +155,7 @@ export async function POST(req: NextRequest) {
     // Trường hợp 1: Phân tích báo cáo đã lưu sẵn trên ổ đĩa
     if (contentType.includes('application/json')) {
       const body = await req.json();
-      const { fileName, kocs, deals, storeName, brandName } = body;
+      const { fileName, kocs, deals, storeName, brandName, weekKey } = body;
 
       if (!fileName) {
         return NextResponse.json({ success: false, error: 'Thiếu tham số fileName' }, { status: 400 });
@@ -123,11 +183,20 @@ export async function POST(req: NextRequest) {
         storeName || 'Fresh_TikTok_E2E-C',
         brandName || 'Fresh'
       );
+      const weeklyHistorySync = await syncParsedReportToWeeklyHistoryStore({
+        result,
+        fileName: path.basename(fileName),
+        weekKey,
+        brandName: brandName || 'Fresh',
+        storeName: storeName || 'Fresh_TikTok_E2E-C',
+        actorName: user.name,
+      });
 
       return NextResponse.json({
         success: true,
         data: result,
-        dbPersistence
+        dbPersistence,
+        weeklyHistorySync
       });
     }
 
@@ -137,6 +206,7 @@ export async function POST(req: NextRequest) {
       const file = formData.get('file') as File | null;
       const storeName = (formData.get('storeName') as string) || 'Fresh_TikTok_E2E-C';
       const brandName = (formData.get('brandName') as string) || 'Fresh';
+      const weekKey = (formData.get('weekKey') as string) || undefined;
 
       if (!file) {
         return NextResponse.json({ success: false, error: 'Không tìm thấy file upload' }, { status: 400 });
@@ -170,12 +240,21 @@ export async function POST(req: NextRequest) {
       // Phân tích nội dung file và ghi xuống bảng DB TikTok Seller
       const result = await parseAdsExcelFile(buffer, cleanBaseName, INITIAL_KOCS, INITIAL_DEALS);
       const dbPersistence = await persistParsedAdsReportToDb(result, cleanBaseName, storeName, brandName);
+      const weeklyHistorySync = await syncParsedReportToWeeklyHistoryStore({
+        result,
+        fileName: cleanBaseName,
+        weekKey,
+        brandName,
+        storeName,
+        actorName: user.name,
+      });
 
       return NextResponse.json({
         success: true,
         message: `Đã lưu và đồng bộ vào DB báo cáo ${cleanBaseName} (${dbPersistence.savedCampaigns} chiến dịch, ${dbPersistence.savedVideos} video)!`,
         data: result,
-        dbPersistence
+        dbPersistence,
+        weeklyHistorySync
       });
     }
 
