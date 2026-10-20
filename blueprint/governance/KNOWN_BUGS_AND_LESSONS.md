@@ -268,6 +268,22 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   2. Thay thế `prisma.$transaction` tương tác trong `sharedRecords.ts` bằng cơ chế đọc kiểm tra `revision`, chạy `transform` ngoài transaction và thực thi 1 câu lệnh SQL `UPDATE ... WHERE key = ... AND revision = ...` (hoặc `INSERT ... ON CONFLICT DO UPDATE WHERE revision = 0`) nguyên tử duy nhất.
 - **Phạm vi rà soát mở rộng sang phần khác:** Mọi bản ghi dùng chung trong `AppSharedRecord` (`master-catalog`, `access-policy`, `store-pics`).
 
+---
+
+### BUG-017 — Một Số Tính Năng Dò Tìm KOC & Khớp Brief Chưa Trả Về Token/Chi Phí Và Chưa Ghi Nhận Vào Bảng Đo Lường API
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/kocSocialDiscovery.ts`, `web-admin/src/components/koc/KocSocialChannelsModal.tsx`, `web-admin/src/components/CreateKocModal.tsx`, `web-admin/src/lib/kocChannelBriefAnalyzer.ts`, `web-admin/src/components/koc/KocChannelBriefMatcherModal.tsx`, `web-admin/src/app/api/ai/employee-review/route.ts`.
+- **Triệu chứng:** Người dùng đã gắn khóa API và thực hiện tính năng tìm kiếm các kênh MXH của KOC hoặc khớp kênh theo Brief nhãn hàng, nhưng khi vào tab "Đo Lường & Chi Phí" thì không thấy lượt gọi, số token và chi phí phát sinh được ghi nhận. Đồng thời hệ thống còn chứa 6 bản ghi mock dữ liệu cũ (`log-seed-*`).
+- **Nguyên nhân gốc (Root Cause):**
+  1. Module `kocSocialDiscovery.ts` và `kocChannelBriefAnalyzer.ts` khi gọi Gemini/OpenAI/Claude chưa bóc tách và trả về đối tượng `usage` (promptTokens, completionTokens, totalTokens, latencyMs).
+  2. Các component hộp thoại UI tương ứng (`KocSocialChannelsModal`, `CreateKocModal`, `KocChannelBriefMatcherModal`) chưa gọi `recordApiUsageLog` để lưu giao dịch vào kho đo lường `upbase_b2c_api_usage_logs_v1`.
+  3. `loadApiUsageLogs()` mặc định trả về 6 bản ghi seed mẫu khi bộ nhớ trống.
+- **Cách khắc phục:**
+  1. Bổ sung trích xuất dữ liệu token và độ trễ phản hồi tại tầng API/Service (`usageMetadata` từ Google Gemini, `usage` từ OpenAI/Claude) và trả về đối tượng kết quả.
+  2. Đấu nối `recordApiUsageLog` và `calculateExecutionCost` tại tất cả các component kích hoạt tính năng để ghi nhận chính xác chi phí USD và VNĐ.
+  3. Loại bỏ toàn bộ dữ liệu seed mẫu và bổ sung cơ chế tự động dọn dẹp các ID `log-seed-*` cũ trong `localStorage`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát 100% tất cả các điểm gọi mô hình trong hệ thống: `KOC_MATCHING` (Dò tìm kênh MXH, Khớp Brief), `STAFF_REVIEW` (Đánh giá nhân sự 4P & SLA), `SCRIPT_REVIEW` (Kiểm duyệt kịch bản video), `CONTRACT_DRAFTING` (Soạn thảo hợp đồng), `PLAN_ADS_ANALYSIS` (Đối soát kế hoạch tháng & Ads), `KOC_HISTORY_EVALUATION` (Đánh giá lịch sử KOC), `KNOWLEDGE_QA` (Hỏi đáp sổ tay), `BRAND_MARKET_RESEARCH` (Nghiên cứu thị trường 4P) và `PLAYGROUND` (Chạy thử).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

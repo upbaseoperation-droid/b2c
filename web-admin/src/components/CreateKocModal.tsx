@@ -33,7 +33,12 @@ import {
   formatSocialChannelUrl,
   type KocSocialDiscoveryResult,
 } from '../lib/kocSocialDiscovery';
-import { getEffectiveConfigForPurpose, loadApiWorkspaceConfig } from '../lib/apiKeyConfig';
+import {
+  getEffectiveConfigForPurpose,
+  loadApiWorkspaceConfig,
+  recordApiUsageLog,
+  calculateExecutionCost,
+} from '../lib/apiKeyConfig';
 
 interface CreateKocModalProps {
   isOpen: boolean;
@@ -159,6 +164,29 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       if (res.ok && json.success && json.data) {
         const data: KocSocialDiscoveryResult = json.data;
         setSocialCandidates(data);
+
+        if (data.usage && data.usage.provider !== 'INTERNAL') {
+          const costReport = calculateExecutionCost(data.usage.modelUsed, {
+            promptTokens: data.usage.promptTokens,
+            completionTokens: data.usage.completionTokens,
+            totalTokens: data.usage.totalTokens,
+          });
+
+          recordApiUsageLog({
+            purposeId: 'KOC_MATCHING',
+            purposeTitle: 'Dò tìm kênh KOC (@' + (targetHandle || '') + ')',
+            provider: data.usage.provider,
+            modelUsed: data.usage.modelUsed,
+            promptTokens: costReport.promptTokens,
+            completionTokens: costReport.completionTokens,
+            totalTokens: costReport.totalTokens,
+            costUsd: costReport.costUsd,
+            costVnd: costReport.costVnd,
+            latencyMs: data.usage.latencyMs,
+            status: 'SUCCESS',
+            source: 'KOC_DISCOVERY',
+          });
+        }
         if (!shopeeChannel && data.candidatesByPlatform.SHOPEE[0] && data.candidatesByPlatform.SHOPEE[0].confidence !== 'GỢI_Ý') {
           setShopeeChannel(data.candidatesByPlatform.SHOPEE[0].handle);
         }

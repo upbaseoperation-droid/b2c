@@ -1,4 +1,4 @@
-import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
+import { isPlanManagedByUser, isBrandManagedByUser, canWorkOnStore, isStaffGlobalAdminOrManager } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
 import { readCatalogWithPics } from './storePicStore';
@@ -158,7 +158,7 @@ export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: Use
     const targetStore = plan.storeId || plan.storeName;
     if (targetStore) {
       const store = data.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
-      if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
+      if (!store || !canWorkOnStore(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
     }
     const targetBrand = plan.brandName || plan.parentBrand;
     if (targetBrand) {

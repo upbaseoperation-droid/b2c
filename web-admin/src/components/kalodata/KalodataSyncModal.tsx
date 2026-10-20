@@ -526,7 +526,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                     <div className="text-2xs font-medium text-muted">
                       Phân bổ độ tuổi
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                       <div className="p-2 bg-sunken rounded-xl border border-line">
                         <div className="text-2xs text-muted">18 - 24 tuổi</div>
                         <div className="text-xs font-semibold text-ink mt-0.5 tabular-nums">

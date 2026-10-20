@@ -52,6 +52,8 @@ import {
   updatePurposeSystemInstruction,
   resetPurposeSystemInstruction,
   API_CONFIG_UPDATED_EVENT,
+  recordApiUsageLog,
+  calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
 import { BrandDetail, KocItem, StorePortfolioItem, TabKey, UserProfile } from '../../lib/types';
 import { formatVnd, formatVndShort } from '../../lib/format';
@@ -442,6 +444,27 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
 
         const data = await res.json();
         if (data.ok && data.output) {
+          const usageData = data.usage || calculateExecutionCost(data.modelUsed || effectiveQaRoute.primaryModel, {
+            promptTokens: Math.max(1, Math.ceil(contextPrompt.length / 3.8)),
+            completionTokens: Math.max(1, Math.ceil(data.output.length / 3.8)),
+            totalTokens: Math.max(2, Math.ceil((contextPrompt.length + data.output.length) / 3.8)),
+          });
+
+          recordApiUsageLog({
+            purposeId: 'KNOWLEDGE_QA',
+            purposeTitle: 'Hỏi đáp nghiệp vụ & Tra cứu sổ tay',
+            provider: data.provider || effectiveQaRoute.primaryProvider,
+            modelUsed: data.modelUsed || effectiveQaRoute.primaryModel,
+            promptTokens: usageData.promptTokens,
+            completionTokens: usageData.completionTokens,
+            totalTokens: usageData.totalTokens,
+            costUsd: usageData.costUsd,
+            costVnd: usageData.costVnd,
+            latencyMs: data.latencyMs || 18,
+            status: data.usedFallback ? 'FALLBACK' : 'SUCCESS',
+            source: 'QA',
+          });
+
           seqIdRef.current += 1;
           const assistantMsg: QaChatMessage = {
             id: `asst-${seqIdRef.current}`,

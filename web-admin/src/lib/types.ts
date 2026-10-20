@@ -739,6 +739,13 @@ export interface BookingDealItem {
   growthHandoffStatus?: 'CHƯA_BÀN_GIAO' | 'ĐÃ_GIAO_MÃ_ADS' | 'GROWTH_ĐANG_CHẠY' | 'HOÀN_TẤT';
   sparkAdsCode?: string;
   sampleStatus?: 'CHƯA_GỬI' | 'ĐANG_GIAO' | 'ĐÃ_NHẬN';
+  sampleCarrier?: 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress';
+  sampleTrackingCode?: string;
+  sampleSentDate?: string;
+  sampleDeliveredDate?: string;
+  sampleRecipientPhone?: string;
+  sampleShippingAddress?: string;
+  sparkAdsExpiryDays?: number;
   adsCodeStatus?: 'CHƯA_CẤP' | 'ĐÃ_NGHIỆM_THU' | 'KHÔNG_DÙNG';
   tiktokVideoUrl?: string;
   
@@ -2315,6 +2322,8 @@ export interface StorePortfolioItem {
   backupOwnerName?: string; // Tên nhân sự dự phòng
   /** Danh sách PIC của gian (server gắn khi đọc từ store-pics). Có danh sách thì thay thế các trường PIC ở trên khi xét quyền. */
   pics?: import('./storePics').StorePic[];
+  /** PIC đã rời gian kèm thời gian phụ trách — chỉ được xem dữ liệu các tháng đó. */
+  formerPics?: import('./storePics').FormerStorePic[];
   isBackupActive?: boolean; // Trạng thái kích hoạt chuyển quyền backup
   backupReason?: string; // Lý do chuyển giao: Nghỉ phép, Đi công tác, Quá tải
 

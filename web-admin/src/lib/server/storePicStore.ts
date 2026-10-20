@@ -4,7 +4,7 @@ import type { MasterCatalog } from '../masterCatalog';
 import { readRecord, updateRecord, RecordError, type SharedRecord } from './sharedRecords';
 import { readMasterCatalog } from './masterCatalogStore';
 import { actionAllowed } from './accessPolicy';
-import { EMPTY_STORE_PICS, StorePicRuleError, normEmail, setStorePics, type StorePic, type StorePicData } from '../storePics';
+import { EMPTY_STORE_PICS, StorePicRuleError, isFormerStorePic, isStorePic, personIdentity, setStorePics, type StorePic, type StorePicData } from '../storePics';
 
 const KEY = 'store-pics';
 
@@ -15,7 +15,7 @@ export async function readCatalogWithPics(): Promise<SharedRecord<MasterCatalog>
   const [catalog, pics] = await Promise.all([readMasterCatalog(), readStorePics()]);
   return {
     ...catalog,
-    data: { ...catalog.data, stores: catalog.data.stores.map(s => (pics.data[s.id] ? { ...s, pics: pics.data[s.id].pics } : s)) },
+    data: { ...catalog.data, stores: catalog.data.stores.map(s => (pics.data[s.id] ? { ...s, pics: pics.data[s.id].pics, formerPics: pics.data[s.id].former || [] } : s)) },
   };
 }
 
@@ -25,11 +25,11 @@ export async function canManageStorePics(user: UserProfile) {
   return actionAllowed(user, 'delegation_pic_assignment', 'approve');
 }
 
-/** Người không có quyền quản lý chỉ thấy các gian mình được gắn. */
+/** Người không có quyền quản lý chỉ thấy các gian mình đang hoặc từng được gắn. */
 export function visibleStorePics(data: StorePicData, user: UserProfile, manager: boolean): StorePicData {
   if (manager) return data;
-  const me = normEmail(user.email);
-  return Object.fromEntries(Object.entries(data).filter(([, entry]) => entry.pics.some(p => p.email === me)));
+  const me = personIdentity(user);
+  return Object.fromEntries(Object.entries(data).filter(([, entry]) => isStorePic(entry.pics, me) || isFormerStorePic(entry.former, me)));
 }
 
 export async function saveStorePics(user: UserProfile, revision: number, storeId: string, pics: StorePic[]) {

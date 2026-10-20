@@ -98,7 +98,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 text-xs text-ink-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs text-ink-2">
           <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={26} />
           <span className="font-semibold text-ink">{currentUser.name}</span>
           <span className="text-ink-3">·</span>

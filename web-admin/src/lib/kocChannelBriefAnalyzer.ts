@@ -140,6 +140,14 @@ export interface KocChannelBriefAnalysisReport {
   };
 
   analyzedVideos: KocAnalyzedVideoSample[];
+  llmUsage?: {
+    provider: 'GOOGLE' | 'OPENAI';
+    modelUsed: string;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    latencyMs: number;
+  };
 }
 
 export type KocBriefAnalysisJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
@@ -397,7 +405,16 @@ async function tryEnhanceWithLlmIfConfigured(
     content: string;
   }[];
   usedLlm: boolean;
+  llmUsage?: {
+    provider: 'GOOGLE' | 'OPENAI';
+    modelUsed: string;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    latencyMs: number;
+  };
 }> {
+  const startTime = Date.now();
   const apiKey =
     criteria.llmConfig?.apiKey?.trim() ||
     process.env.GEMINI_API_KEY?.trim() ||
@@ -414,12 +431,12 @@ async function tryEnhanceWithLlmIfConfigured(
 
   const sampleHooks = report.analyzedVideos
     .slice(0, 6)
-    .map((v, i) => `${i + 1}. [${v.views.toLocaleString('vi-VN')} view] Hook: "${v.hook3sText}" | Caption: ${v.caption.slice(0, 120)}`)
+    .map((v, i) => `${i + 1}. "${v.hook3sText || v.caption}" (Views: ${v.views.toLocaleString('vi-VN')})`)
     .join('\n');
 
-  const sampleComments = report.audienceCommentProfile.topBuyerQuestions
-    .slice(0, 5)
-    .map((c) => `- @${c.username}: "${c.text}"`)
+  const sampleComments = (report.audienceCommentProfile?.topBuyerQuestions || [])
+    .slice(0, 8)
+    .map((q) => `- "${q.text}" (${q.likeCount} thích)`)
     .join('\n');
 
   const customInstructionLine = criteria.llmConfig?.systemInstruction?.trim()
@@ -427,8 +444,11 @@ async function tryEnhanceWithLlmIfConfigured(
     : '';
 
   const prompt = [
-    ...(customInstructionLine ? [customInstructionLine] : []),
-    `Phân tích kênh TikTok @${report.handle} (${report.nickname}, ${report.followers.toLocaleString('vi-VN')} followers, View trung vị ${report.videoSampleStats.medianViews.toLocaleString('vi-VN')}, ER ${report.videoSampleStats.avgEngagementRatePct}%) để ghép với Brief của thương hiệu "${criteria.brandName}" (${criteria.productName || 'Sản phẩm chủ lực'}).`,
+    `Bạn là Chuyên gia Cố vấn Nội dung & Booking KOC cấp cao tại Upbase B2C.`,
+    customInstructionLine,
+    `Hãy phân tích kênh KOC @${report.handle} (${report.nickname}) dựa trên dữ liệu video thật sau đây để đưa ra nhận định khớp với yêu cầu nhãn hàng ${criteria.brandName}:`,
+    `Tên sản phẩm: ${criteria.productName || 'Sản phẩm chủ đạo của thương hiệu'}.`,
+    `Ngành hàng: ${criteria.category || 'Mỹ phẩm / Chăm sóc cá nhân / Tiêu dùng'}.`,
     `USP bắt buộc của sản phẩm: ${(criteria.requiredUspKeywords || []).join(', ') || 'Chính hãng, hiệu quả thực tế'}.`,
     `Đối tượng mục tiêu: ${criteria.targetAudience || 'Khách hàng mục tiêu của nhãn hàng'}.`,
     `Các câu mở đầu (Hook 3s) thực tế trên kênh @${report.handle}:`,
@@ -441,6 +461,11 @@ async function tryEnhanceWithLlmIfConfigured(
 
   try {
     let rawJsonText = '';
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let totalTokens = 0;
+    let resolvedModelUsed = '';
+
     if (provider === 'GEMINI') {
       const requestedModel = (criteria.llmConfig?.model || 'gemini-2.5-flash').trim();
       const aliasMap: Record<string, string> = {
@@ -470,7 +495,13 @@ async function tryEnhanceWithLlmIfConfigured(
         if (res.ok) {
           const data = await res.json();
           rawJsonText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (rawJsonText) break;
+          if (rawJsonText) {
+            resolvedModelUsed = candidateModel;
+            promptTokens = data?.usageMetadata?.promptTokenCount || Math.max(1, Math.ceil(prompt.length / 3.8));
+            completionTokens = data?.usageMetadata?.candidatesTokenCount || Math.max(1, Math.ceil(rawJsonText.length / 3.8));
+            totalTokens = data?.usageMetadata?.totalTokenCount || promptTokens + completionTokens;
+            break;
+          }
         }
       }
     } else {
@@ -492,18 +523,24 @@ async function tryEnhanceWithLlmIfConfigured(
       if (res.ok) {
         const data = await res.json();
         rawJsonText = data?.choices?.[0]?.message?.content || '';
+        resolvedModelUsed = modelId;
+        promptTokens = data?.usage?.prompt_tokens || Math.max(1, Math.ceil(prompt.length / 3.8));
+        completionTokens = data?.usage?.completion_tokens || Math.max(1, Math.ceil(rawJsonText.length / 3.8));
+        totalTokens = data?.usage?.total_tokens || promptTokens + completionTokens;
       }
     }
 
     const cleaned = rawJsonText
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```$/i, '')
+      .replace(/^\`\`\`json\s*/i, '')
+      .replace(/^\`\`\`\s*/i, '')
+      .replace(/\`\`\`$/i, '')
       .trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { usedLlm: false };
 
     const parsed = JSON.parse(jsonMatch[0]) as Record<string, string>;
+    const latencyMs = Date.now() - startTime;
+
     return {
       spokenToneSummary: parsed.spokenToneSummary || undefined,
       recommendedAngleForKoc: parsed.recommendedAngleForKoc || undefined,
@@ -538,6 +575,14 @@ async function tryEnhanceWithLlmIfConfigured(
             ]
           : undefined,
       usedLlm: true,
+      llmUsage: {
+        provider: provider === 'GEMINI' ? 'GOOGLE' : 'OPENAI',
+        modelUsed: resolvedModelUsed || (provider === 'GEMINI' ? 'gemini-2.5-flash' : 'gpt-4o-mini'),
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        latencyMs,
+      },
     };
   } catch {
     return { usedLlm: false };
@@ -1110,6 +1155,7 @@ export async function analyzeSingleKocChannelForBrief(
 
   const llmEnhanced = await tryEnhanceWithLlmIfConfigured(baseReport, criteria);
   if (llmEnhanced.usedLlm) {
+    baseReport.llmUsage = llmEnhanced.llmUsage;
     if (llmEnhanced.spokenToneSummary) {
       baseReport.contentPersonaProfile.spokenToneSummary =
         llmEnhanced.spokenToneSummary;

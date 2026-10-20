@@ -286,7 +286,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               <Layers className="w-3.5 h-3.5 text-accent" />
               So Khớp 4 Tier
             </span>
-            <div className="grid grid-cols-4 gap-1.5 text-center font-code">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-center font-code">
               <div className="p-1 rounded bg-canvas border border-line">
                 <span className="text-2xs text-ink-3 block font-semibold">T1 Celeb</span>
                 <span className="text-xs font-semibold text-ink">{planTierCounts.TIER_1_CELEB}/{targetTierCounts.TIER_1_CELEB}</span>

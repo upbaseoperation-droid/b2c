@@ -1142,6 +1142,18 @@ const VN_HASHTAG_SPACED_DICTIONARY: Record<string, string[]> = {
   babe: ['babe', 'babé', 'sữa rửa mặt babe', 'kem dưỡng babe', 'kem chống nắng babe'],
   cathydoll: ['cathy doll', 'kem chống nắng cathy doll', 'sữa tắm cathy doll'],
   nabizam: ['nabizam', 'bỉm nabizam', 'tã nabizam'],
+  tatreem: [
+    'tã trẻ em',
+    'ta tre em',
+    'bỉm trẻ em',
+    'bim tre em',
+    'tã bỉm',
+    'bỉm tã',
+    'tã cho bé',
+    'bỉm cho bé',
+  ],
+  bimtreem: ['bỉm trẻ em', 'bim tre em', 'bỉm cho bé', 'tã bỉm', 'tã trẻ em'],
+  tabim: ['tã bỉm', 'ta bim', 'tã bỉm cho bé', 'bỉm tã'],
   nousvietnam: [
     '#quanaonous',
     '#nousbaby',

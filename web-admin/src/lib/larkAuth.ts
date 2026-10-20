@@ -276,6 +276,7 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
       id: `staff-${masterMember.id}`,
       name: masterMember.name,
       email: masterMember.email || email,
+      staffCode: masterMember.staffCode || masterMember.id,
       role: classified.role,
       roleTitle: `${masterMember.position || masterMember.roleTitle} (${masterMember.department || masterMember.team || 'UpBase'})`,
       avatar: masterMember.avatar || getInitials(masterMember.name),

@@ -26,6 +26,8 @@ import {
   getEffectiveConfigForPurpose,
   updatePurposeSystemInstruction,
   resetPurposeSystemInstruction,
+  recordApiUsageLog,
+  calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
 import { formatNumber, formatVndShort } from '../../lib/format';
 import { Button, Modal, Status, Textarea } from '../ui';
@@ -80,6 +82,7 @@ export const KocChannelBriefMatcherModal: React.FC<
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [selectedHandle, setSelectedHandle] = useState<string>('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const loggedReportsRef = React.useRef<Set<string>>(new Set());
 
   const initSyncKey = `${isOpen}:${initialHandles.join(',')}:${initialBrandName}`;
   const [prevSyncKey, setPrevSyncKey] = useState<string>(initSyncKey);
@@ -101,11 +104,43 @@ export const KocChannelBriefMatcherModal: React.FC<
         setJobs(json.jobs);
         onJobsChange?.(json.jobs);
         setSelectedJobId((prev) => prev || json.jobs[0]?.jobId || '');
+
+        // Ghi nhận đo lường token và chi phí các bài phân tích vừa hoàn thành
+        const logged = loggedReportsRef.current;
+        for (const j of json.jobs) {
+          if (j.status === 'COMPLETED' && Array.isArray(j.results)) {
+            for (const rep of j.results) {
+              const logKey = `${j.jobId}-${rep.handle}`;
+              if (!logged.has(logKey) && rep.llmUsage) {
+                logged.add(logKey);
+                const costReport = calculateExecutionCost(rep.llmUsage.modelUsed, {
+                  promptTokens: rep.llmUsage.promptTokens,
+                  completionTokens: rep.llmUsage.completionTokens,
+                  totalTokens: rep.llmUsage.totalTokens,
+                });
+                recordApiUsageLog({
+                  purposeId: 'KOC_MATCHING',
+                  purposeTitle: `Khớp Brief KOC @${rep.handle} (${rep.briefMatchEvaluation?.brandName || brandName || 'Brand'})`,
+                  provider: rep.llmUsage.provider,
+                  modelUsed: rep.llmUsage.modelUsed,
+                  promptTokens: costReport.promptTokens,
+                  completionTokens: costReport.completionTokens,
+                  totalTokens: costReport.totalTokens,
+                  costUsd: costReport.costUsd,
+                  costVnd: costReport.costVnd,
+                  latencyMs: rep.llmUsage.latencyMs,
+                  status: 'SUCCESS',
+                  source: 'KOC_MATCHING',
+                });
+              }
+            }
+          }
+        }
       }
     } catch {
       // ignore background poll error
     }
-  }, [onJobsChange]);
+  }, [brandName, onJobsChange]);
 
   useEffect(() => {
     void fetchAllJobs();

@@ -41,8 +41,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface/95 backdrop-blur border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface/95 backdrop-blur border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3 shrink-0">
+      {/* Khối 1: Nút menu di động / ẩn menu desktop & Tiêu đề trang */}
+      <div className="order-1 flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
         {onToggleMobileSidebar && (
           <button
             type="button"
@@ -77,20 +78,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <div className="min-w-0 flex-1 flex items-center gap-2.5 sm:gap-3 flex-wrap">
-          <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight min-w-0 max-w-full truncate sm:shrink-0">{title}</h1>
-          {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
-            <Segmented<TabKey>
-              items={groupTabs}
-              value={resolveNavGroupTabKey(activeTab)}
-              onChange={onNavigateTab}
-            />
-          )}
-          <PageHeaderNavSlot />
-        </div>
+        <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight min-w-0 truncate">{title}</h1>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 min-w-0 max-w-full">
+      {/* Khối 2: Cụm thao tác trang & Đăng xuất (Mobile: cạnh tiêu đề; Desktop: phía cuối thanh) */}
+      <div className="order-2 sm:order-3 flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
         {activeTab !== 'tiktok-crawler' && (
           currentUser.role === 'BRAND_PARTNER' ? (
             <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20">
@@ -134,6 +126,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             )}
           </button>
         )}
+      </div>
+
+      {/* Khối 3: Tabs nhóm & Điều hướng con (Mobile: dòng riêng cuộn ngang; Desktop: nằm giữa cạnh tiêu đề) */}
+      <div className="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-1 sm:pt-0 border-t border-line/60 sm:border-t-0 empty:hidden">
+        {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
+          <Segmented<TabKey>
+            items={groupTabs}
+            value={resolveNavGroupTabKey(activeTab)}
+            onChange={onNavigateTab}
+          />
+        )}
+        <PageHeaderNavSlot />
       </div>
     </header>
   );

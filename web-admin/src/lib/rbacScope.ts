@@ -1,5 +1,5 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
-import { hasPicList, isStorePic, normEmail } from './storePics';
+import { canReadStoreMonth, hasPicList, isFormerStorePic, isStorePic, personIdentity, type PersonIdentity } from './storePics';
 
 /**
  * Kiểm tra xem người dùng có quyền quản trị toàn cục (Admin / Giám đốc B2C / Toàn quyền mọi nhãn hàng) hay không.
@@ -36,7 +36,7 @@ interface UserScopeBase {
   key: string;
   isGlobal: boolean;
   userNameLower: string;
-  emailLower: string;
+  identity: PersonIdentity;
   assignedBrands: string[];
   assignedBrandsLower: Set<string>;
   allowedStoresLower: Set<string>;
@@ -60,7 +60,7 @@ function hasUserInPicField(pic: string | undefined | null, userNameLower: string
 
 function getUserScopeBase(user: UserProfile): UserScopeBase {
   const cached = userScopeCache.get(user);
-  const key = `${user.id}|${user.name || ''}|${user.email || ''}|${user.role}|${user.linkedEntityName || ''}|${(user.assignedBrands || []).join(',')}|${(user.allowedStoreNames || []).join(',')}|${(user.permissions || []).join(',')}`;
+  const key = `${user.id}|${user.name || ''}|${user.email || ''}|${user.staffCode || ''}|${user.role}|${user.linkedEntityName || ''}|${(user.assignedBrands || []).join(',')}|${(user.allowedStoreNames || []).join(',')}|${(user.permissions || []).join(',')}`;
   if (cached && cached.key === key) {
     return cached;
   }
@@ -102,7 +102,7 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
     key,
     isGlobal,
     userNameLower,
-    emailLower: normEmail(user.email),
+    identity: personIdentity(user),
     assignedBrands: Array.from(assignedBrandsSet),
     assignedBrandsLower,
     allowedStoresLower,
@@ -111,7 +111,10 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
   return base;
 }
 
-function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): boolean {
+/**
+ * mode 'work': đang phụ trách (xem + sửa). mode 'view': thêm cả PIC cũ, để gian hiện trong danh sách và mở lại dữ liệu cũ (chỉ đọc).
+ */
+function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase, mode: 'work' | 'view' = 'work'): boolean {
   const { userNameLower, allowedStoresLower } = base;
 
   if (allowedStoresLower.size > 0) {
@@ -124,8 +127,10 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): 
     }
   }
 
-  // Gian đã có danh sách PIC: chỉ danh sách (theo email) quyết định, bỏ qua các trường PIC theo tên.
-  if (hasPicList(store.pics)) return isStorePic(store.pics, base.emailLower);
+  // Gian đã có danh sách PIC: chỉ danh sách (theo mã nhân sự) quyết định, bỏ qua các trường PIC theo tên.
+  if (hasPicList(store.pics)) {
+    return isStorePic(store.pics, base.identity) || (mode === 'view' && isFormerStorePic(store.formerPics, base.identity));
+  }
 
   if (!userNameLower) return false;
 
@@ -259,7 +264,8 @@ export function isBrandManagedByUser(
 }
 
 /**
- * Kiểm tra xem một gian hàng cụ thể có thuộc quyền quản lý của người dùng hay không.
+ * Kiểm tra xem người dùng có được XEM gian hàng hay không (gồm cả PIC cũ, để mở lại dữ liệu đã phụ trách).
+ * Để kiểm tra quyền sửa, dùng canWorkOnStore.
  */
 export function isStoreManagedByUser(
   store: StorePortfolioItem,
@@ -270,7 +276,7 @@ export function isStoreManagedByUser(
   const base = getUserScopeBase(user);
   if (base.isGlobal) return true;
 
-  if (checkStoreDirectMatch(store, base)) {
+  if (checkStoreDirectMatch(store, base, 'view')) {
     return true;
   }
 
@@ -282,6 +288,26 @@ export function isStoreManagedByUser(
   }
 
   return false;
+}
+
+/**
+ * Người dùng có được LÀM VIỆC (sửa dữ liệu, lập / sửa kế hoạch) trên gian hay không. PIC cũ chỉ còn quyền xem.
+ */
+export function canWorkOnStore(
+  store: StorePortfolioItem,
+  user: UserProfile | null | undefined
+): boolean {
+  if (!user) return false;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
+
+  if (checkStoreDirectMatch(store, base, 'work')) {
+    return true;
+  }
+
+  // Nhãn hàng do Admin cấp cố định là quyền hệ thống, không phụ thuộc danh sách PIC.
+  const storeBrand = (store.brandName || store.storeName.split('_')[0] || '').trim().toLowerCase();
+  return !!storeBrand && base.assignedBrandsLower.has(storeBrand);
 }
 
 /**
@@ -298,8 +324,14 @@ export function isPlanManagedByUser(
 
   const { userNameLower } = base;
 
+  // 0. PIC cũ của gian: xem lại kế hoạch các tháng mình phụ trách (chỉ đọc — quyền sửa xét bằng canWorkOnStore)
+  const planStore = allStores?.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
+  if (planStore && hasPicList(planStore.pics) && canReadStoreMonth(planStore.pics, planStore.formerPics, base.identity, plan.month)) {
+    return true;
+  }
+
   // 1. Trực tiếp là PIC phụ trách lập/giao/thẩm định kế hoạch
-  //    (PIC đã rời gian vẫn xem lại được các kế hoạch tháng có tên mình; quyền ghi vẫn đòi phải thuộc danh sách PIC gian).
+  //    (người có tên trong kế hoạch xem được kế hoạch đó; quyền ghi vẫn đòi phải đang thuộc danh sách PIC gian).
   if (
     userNameLower &&
     (hasUserInPicField(plan.pic, userNameLower) ||

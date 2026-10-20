@@ -2878,7 +2878,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </span>
                   <span className="text-xs font-mono text-ink-3">8 gian hàng</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
                   <div>
                     <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                     <strong className="text-xs text-ink">91,4%</strong>
@@ -2901,7 +2901,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </span>
                   <span className="text-xs font-mono text-ink-3">61 gian hàng</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-line text-center font-mono">
                   <div>
                     <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
                     <strong className="text-xs text-ink">86,8%</strong>

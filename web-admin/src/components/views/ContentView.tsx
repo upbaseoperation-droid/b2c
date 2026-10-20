@@ -367,9 +367,9 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       {/* View 1: Scripts Review Queue */}
       {activeSubTab === 'SCRIPTS' && (
         <div className="card-enterprise overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
-            <h3 className="text-sm font-semibold text-slate-900">Hàng chờ thẩm định kịch bản KOC</h3>
-            <div className="flex items-center gap-2">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface">
+            <h3 className="text-sm font-semibold text-ink">Hàng chờ thẩm định kịch bản KOC</h3>
+            <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" icon={FileText} onClick={() => setIsScriptReportOpen(true)}>
                 Rà soát từ cấm hàng loạt
               </Button>
@@ -496,9 +496,9 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
       {activeSubTab === 'PUBLICATIONS' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
                   <Share2 className="w-4 h-4 text-emerald-600" />
                   <span>Bài đăng thực tế & bàn giao mã Spark Ads</span>
                 </h3>
@@ -508,7 +508,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   setInspectInitialUrl('');
                   setIsVideoInspectorOpen(true);
                 }}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto"
               >
                 <Video className="w-3.5 h-3.5" />
                 <span>Kiểm tra & Nghiệm thu link video mới</span>

@@ -1758,7 +1758,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       </div>
 
                       <div className="pt-2 border-t border-slate-200/60 space-y-2 text-2xs">
-                        <div className="grid grid-cols-3 gap-1 text-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-center">
                           <div className="p-1.5 rounded bg-amber-50/80 border border-amber-200/60">
                             <div className="font-mono font-semibold text-amber-800">{waitingCtvCount}</div>
                             <div className="text-amber-700 text-2xs">Chờ CTV</div>

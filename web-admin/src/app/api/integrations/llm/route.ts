@@ -7,6 +7,8 @@ import {
   calculateExecutionCost,
 } from '@/lib/apiKeyConfig';
 import { synthesizeMarketingKnowledgeAnswer } from '@/lib/marketingKnowledgeBase';
+import { generateBrandMarketResearchDossier } from '@/lib/brandMarketResearchEngine';
+import { formatVnd, formatVndShort } from '@/lib/format';
 
 interface LlmApiRequestBody {
   action: 'TEST_CONNECTION' | 'EXECUTE_PURPOSE';
@@ -653,6 +655,202 @@ async function dispatchProviderCall(params: {
     return { text: res.text, providerLabel: 'Anthropic (Claude API)', modelUsed: res.modelUsed, usage: res.usage };
   }
   throw new Error('Nhà cung cấp không yêu cầu gọi API ngoài.');
+}
+
+function buildBrandMarketResearchInternalReport(cleanInput: string, cleanPrompt: string): string {
+  const brandMatch =
+    cleanInput.match(/Thương hiệu:\s*([^\n(·]+)/i) ||
+    cleanInput.match(/\[DỮ LIỆU PHÂN HỆ:[^—\]]*—\s*([^\]]+)\]/i) ||
+    cleanInput.match(/Nhãn hàng:\s*([^\n(·]+)/i);
+  const rawBrandName = (brandMatch?.[1] || 'Kutieskin').trim();
+  const focusCompetitorMatch = cleanInput.match(/\[ĐỐI THỦ TRỌNG TÂM:\s*([^\]]+)\]/i);
+  const focusCompetitorName = focusCompetitorMatch?.[1]?.trim() || '';
+  const modeMatch = cleanInput.match(/\[CHUYÊN ĐỀ NGHIÊN CỨU:\s*([^\]]+)\]/i);
+  const researchMode = modeMatch?.[1]?.trim() || 'COMPREHENSIVE';
+  const customQuestionMatch = cleanInput.match(/\[YÊU CẦU NGHIÊN CỨU CỤ THỂ\]:\s*([\s\S]+?)(?:\n\[|$)/i);
+  const customQuestion = customQuestionMatch?.[1]?.trim() || '';
+
+  const dossier = generateBrandMarketResearchDossier({
+    brandNameOrQuery: rawBrandName,
+    customCompetitorInputs: focusCompetitorName ? [focusCompetitorName] : undefined,
+  });
+
+  const heroSku =
+    dossier.skuPortfolio.find(s => s.role === 'HERO_CORE') || dossier.skuPortfolio[0];
+  const trafficSku =
+    dossier.skuPortfolio.find(s => s.role === 'TRAFFIC_DRIVER') || dossier.skuPortfolio[1] || heroSku;
+  const bundleSku =
+    dossier.skuPortfolio.find(s => s.role === 'VIP_BUNDLE') ||
+    dossier.skuPortfolio[dossier.skuPortfolio.length - 1] ||
+    heroSku;
+
+  const targetCompetitors = focusCompetitorName
+    ? dossier.competitors.filter(
+        c =>
+          c.competitorName.toLowerCase().includes(focusCompetitorName.toLowerCase()) ||
+          c.tiktokHandle.toLowerCase().includes(focusCompetitorName.toLowerCase())
+      )
+    : dossier.competitors;
+  const compList = targetCompetitors.length > 0 ? targetCompetitors : dossier.competitors;
+
+  if (researchMode === 'COMPETITOR_DEEP_DIVE' || focusCompetitorName) {
+    const primaryComp = compList[0];
+    return [
+      `PHÂN TÍCH ĐỐI ĐẦU TRỰC DIỆN: ${dossier.brandName.toUpperCase()} vs. ${
+        focusCompetitorName
+          ? focusCompetitorName.toUpperCase()
+          : compList.map(c => c.competitorName).join(', ')
+      }`,
+      '════════════════════════════════════════════════════════════════════',
+      ...(customQuestion ? [`• Trọng tâm câu hỏi: "${customQuestion}"`, ''] : []),
+      '1. SO SÁNH VỊ THẾ THƯƠNG MẠI & ĐỊNH GIÁ TRÊN ĐƠN VỊ (UNIT ECONOMICS):',
+      `  • ${dossier.brandName} (${dossier.originCountry} · ${dossier.category}):`,
+      `    - SKU chủ lực: ${heroSku ? `${heroSku.productName} (${heroSku.packSize})` : dossier.fourP.heroSkuHighlight}`,
+      `    - Giá chốt đơn thực tế: ${heroSku ? formatVnd(heroSku.dealPriceVnd) : dossier.fourP.priceRangeText} (Chiết khấu ~${dossier.fourP.avgDealDiscountPct}% · Hoa hồng KOC: ${dossier.fourP.affiliateCommissionRange})`,
+      `    - Tỷ trọng kênh: TikTok Shop ${dossier.fourP.channelMixRatio.tiktokShopPct}% · Shopee Mall ${dossier.fourP.channelMixRatio.shopeeMallPct}%`,
+      ...compList.slice(0, 4).flatMap((c, idx) => [
+        `  • Đối thủ #${idx + 1}: ${c.competitorName} (${c.tiktokHandle} · ${c.originCountry}):`,
+        `    - SKU đối đầu: ${c.heroSkuName} — Giá bán: ${formatVnd(c.dealPriceVnd)} (Niêm yết: ${formatVnd(c.listPriceVnd)} · Hoa hồng KOC: ${c.affiliateCommissionPct}%)`,
+        ...(c.pricePerUnitComparison ? [`    - Chênh lệch đơn giá/đơn vị: ${c.pricePerUnitComparison}`] : []),
+        `    - Điểm mạnh của ${c.competitorName}: ${c.keyUsps.join('; ')}`,
+        `    - Điểm yếu bị khách hàng phàn nàn (Khe hở thị trường): ${c.customerComplaints.join('; ')}`,
+        `    - Đòn phản công cho ${dossier.brandName}: ${c.upbaseCounterPlay}`,
+      ]),
+      '',
+      '2. KỊCH BẢN PHẢN CÔNG TRỰC DIỆN TRÊN VIDEO KOC (COUNTER-SCRIPT):',
+      `  • Mở đầu 3 giây (Đánh vào điểm nghẽn của ${primaryComp?.competitorName || 'đối thủ'}):`,
+      `    "${primaryComp?.customerComplaints?.[0] ? `Ai từng dùng dòng ngoại nhập mà gặp cảnh '${primaryComp.customerComplaints[0].toLowerCase()}' hoặc xót ví vì giá cao thì xem ngay bài test đối chứng này!` : `Đừng vội xuống tiền mua các dòng giá cao khi chưa xem bài test độ thấm và bảng thành phần của ${dossier.brandName}!`}"`,
+      '  • Cảnh quay đối chứng bắt buộc (Visual Proof):',
+      `    - Quay split-screen hoặc test trên mu bàn tay: So sánh tốc độ thấm, độ rít trên da và tính nhẩm chi phí sử dụng mỗi ngày của ${heroSku?.productName || dossier.brandName}.`,
+      `    - Đưa cận cảnh bảo chứng: ${(dossier.positioning.rtbs || []).slice(0, 2).join(' + ')}.`,
+      '  • Cơ chế Deal & Hoa hồng hút KOC từ đối thủ:',
+      `    - Thiết lập gói Combo (Hero SKU ${heroSku?.productName || ''} + Quà thử) giữ mức giá dưới ngưỡng tâm lý ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)}, nâng hoa hồng Affiliate của SKU phễu lên ${(heroSku?.affiliateCommissionPct || 12) + 3}% trong 14 ngày cao điểm để kéo tệp KOC đang gắn giỏ hàng cho ${primaryComp?.competitorName || 'đối thủ'}.`,
+    ].join('\n');
+  }
+
+  if (researchMode === 'CONTENT_HOOKS_5') {
+    return [
+      `5 KHUNG KỊCH BẢN & HOOK 3 GIÂY CHUYỂN ĐỔI CAO — ${dossier.brandName.toUpperCase()}`,
+      '════════════════════════════════════════════════════════════════════',
+      ...(customQuestion ? [`• Yêu cầu cụ thể: "${customQuestion}"`, ''] : []),
+      '1. NGUYÊN TẮC BẮT BUỘC TRƯỚC KHI QUAY (THEO HỒ SƠ THƯƠNG HIỆU):',
+      `  • Giọng điệu chủ đạo (Tone of Voice): ${dossier.positioning.toneOfVoice}`,
+      `  • Bảo chứng bắt buộc lên hình (RTB): ${(dossier.positioning.rtbs || []).slice(0, 3).join(' | ')}`,
+      `  • Từ ngữ cấm tuyệt đối trên sàn: ${dossier.swotAndCompliance.platformComplianceRules.flatMap(r => r.forbiddenPhrases).slice(0, 6).map(p => `"${p}"`).join(', ')}`,
+      '',
+      '2. CHI TIẾT 5 GÓC KỊCH BẢN KOC THỰC CHIẾN:',
+      ...dossier.contentAngleBlueprints.map((angle, idx) => [
+        `  [Góc #${idx + 1}] ${angle.pillarName.toUpperCase()} (Dành cho: ${angle.targetPersona} · Phân tầng: ${angle.bestKocTier})`,
+        `    • Hook 3 giây đầu: "${angle.hook3s}"`,
+        `    • Cảnh quay chứng minh (Visual Proof): ${angle.visualProof}`,
+        `    • Thông điệp thuyết phục (RTB): ${angle.keyMessageRtb}`,
+        `    • Kêu gọi mua hàng (CTA): "${angle.recommendedCta}"`,
+      ].join('\n')),
+      ...(dossier.reviewClusters.slice(0, 2).map((cluster, idx) => [
+        `  [Góc bổ sung #${dossier.contentAngleBlueprints.length + idx + 1} - Giải đáp bình luận (${cluster.sharePct}% lượt hỏi)] ${cluster.topicTitle.toUpperCase()}`,
+        `    • Câu hỏi thực tế của khách: "${cluster.sampleQuotes[0] || cluster.suggestedFaqQuestion}"`,
+        `    • Hook 3 giây trả lời video (Reply-to-comment): "${cluster.recommendedScriptHook}"`,
+        `    • Lời thoại giải đáp chuẩn: "${cluster.suggestedFaqAnswer}"`,
+      ].join('\n'))),
+    ].join('\n');
+  }
+
+  if (researchMode === 'KOC_BUDGET_ALLOCATION') {
+    const budget =
+      dossier.internalExecutionAudit.totalBudgetNetVnd > 0
+        ? dossier.internalExecutionAudit.totalBudgetNetVnd
+        : dossier.monthlyPlanBudgetVnd > 0
+        ? dossier.monthlyPlanBudgetVnd
+        : 60_000_000;
+    return [
+      `PHƯƠNG ÁN PHÂN BỔ NGÂN SÁCH NET & CƠ CẤU KOC (KL1–KL4 + FOC) — ${dossier.brandName.toUpperCase()}`,
+      '════════════════════════════════════════════════════════════════════',
+      `• Ngân sách Order Net tham chiếu: ${formatVnd(budget)} | Hiện trạng thực thi: ${dossier.internalExecutionAudit.totalBookedOrders} đơn book / ${dossier.internalExecutionAudit.totalAiredVideos} video đã Air (Tỷ lệ đúng hạn: ${dossier.internalExecutionAudit.onTimeAirRatePct}%)`,
+      '',
+      '1. PHÂN BỔ NGÂN SÁCH THEO PHÂN TẦNG KOC (TỐI ƯU CIR & GMV):',
+      ...dossier.kocTierStrategy.map(t => {
+        const tierBudget = Math.round((budget * t.budgetWeightPct) / 100);
+        return [
+          `  • ${t.tierCode} — ${t.tierLabel} (${t.followerRange}):`,
+          `    - Tỷ trọng Ngân sách Net: ${t.budgetWeightPct}% (~${formatVnd(tierBudget)}) | Tỷ trọng số lượng video: ${t.videoVolumeWeightPct}%`,
+          `    - Đơn giá tham chiếu File 3.2: ${t.avgBookingCostRangeVnd}`,
+          `    - Vai trò chuyển đổi: ${t.funnelRole} | Định dạng: ${t.primaryFormats.join(', ')}`,
+          `    - KPI mục tiêu: ROAS ${t.targetRoas} · Hook 2s ${t.targetHookRate2sPct} · CTR ${t.targetCtrPct} · CVR ${t.targetCvrPct}`,
+        ].join('\n');
+      }),
+      '',
+      '2. CƠ CẤU SẢN PHẨM ĐẨY BOOKING THEO VAI TRÒ PHỄU:',
+      ...(trafficSku
+        ? [`  • SKU Phễu kéo khách (40% số lượng video — Ưu tiên KL1/KL2 & FOC): ${trafficSku.productName} (${formatVnd(trafficSku.dealPriceVnd)} · Hoa hồng ${trafficSku.affiliateCommissionPct}%)`]
+        : []),
+      ...(heroSku
+        ? [`  • SKU Chủ lực gánh GMV (45% số lượng video — Ưu tiên KL2/KL3 chạy Spark Ads): ${heroSku.productName} (${formatVnd(heroSku.dealPriceVnd)} · Đóng góp ~${heroSku.estimatedGmvSharePct}% GMV)`]
+        : []),
+      ...(bundleSku && bundleSku.id !== heroSku?.id
+        ? [`  • Combo nâng AOV (15% số lượng video — Ưu tiên KL3/KL4 & Ghim đầu Livestream): ${bundleSku.productName} (${formatVnd(bundleSku.dealPriceVnd)})`]
+        : []),
+      '',
+      '3. KỶ LUẬT VẬN HÀNH & KIỂM SOÁT RỦI RO BOOKING B2C:',
+      '  • Tách biệt rõ ngân sách Paid KOC và chỉ tiêu gửi mẫu miễn phí 0đ (FOC) để kéo giảm chi phí trung bình trên mỗi video lên sóng (CPO).',
+      '  • Ràng buộc KOC nộp video nháp trong 5 ngày kể từ khi nhận mẫu và cấp mã Spark Ads tối thiểu 30–60 ngày cho các video có CTR > 2.5%.',
+    ].join('\n');
+  }
+
+  if (researchMode === 'CUSTOMER_PAIN_FAQ') {
+    return [
+      `GIẢI MÃ TÂM LÝ KHÁCH HÀNG, RÀO CẢN MUA HÀNG & BỘ Q&A CHỐT ĐƠN — ${dossier.brandName.toUpperCase()}`,
+      '════════════════════════════════════════════════════════════════════',
+      '1. BA TRỤ CỘT TÂM LÝ NGƯỜI MUA (PAIN · BARRIER · RTB):',
+      '  • Nỗi đau thúc đẩy tìm kiếm (Pain Points):',
+      ...(dossier.positioning.painPoints || []).map(p => `    - ${p}`),
+      '  • Rào cản khiến khách chần chừ chưa chốt đơn (Barriers to Trial):',
+      ...(dossier.positioning.barriersToTrial || []).map(b => `    - ${b}`),
+      '  • Bằng chứng đập tan nghi ngại (Reasons to Believe - RTB):',
+      ...(dossier.positioning.rtbs || []).map(r => `    - ${r}`),
+      '',
+      '2. PHÂN TÍCH CỤM BÌNH LUẬN THỰC TẾ & KỊCH BẢN GIẢI ĐÁP (FAQ):',
+      ...dossier.reviewClusters.map((c, idx) => [
+        `  [Cụm #${idx + 1} - ${c.categoryLabel} · Chiếm ${c.sharePct}% thảo luận (${c.mentionCount} lượt nhắc)] ${c.topicTitle}`,
+        `    • Trích dẫn bình luận thật: ${c.sampleQuotes.map(q => `"${q}"`).join(' | ')}`,
+        `    • Hook làm video giải đáp: "${c.recommendedScriptHook}"`,
+        `    • Câu trả lời chuẩn cho CSKH / Host Livestream: "${c.suggestedFaqAnswer}"`,
+      ].join('\n')),
+    ].join('\n');
+  }
+
+  // Mặc định: Báo cáo Chiến lược Tổng thể 4P, SKU, Đối thủ & Kế hoạch Hành động
+  return [
+    `BÁO CÁO NGHIÊN CỨU CHIẾN LƯỢC THƯƠNG HIỆU & ĐỐI THỦ — ${dossier.brandName.toUpperCase()} (${dossier.category.toUpperCase()})`,
+    '════════════════════════════════════════════════════════════════════',
+    ...(customQuestion ? [`• Trả lời trọng tâm yêu cầu: "${customQuestion}"`, ''] : []),
+    ...(cleanPrompt ? [`• Định hướng phân tích: "${cleanPrompt.slice(0, 160)}${cleanPrompt.length > 160 ? '...' : ''}"`, ''] : []),
+    '1. TÓM TẮT ĐỊNH VỊ & LỢI THẾ CỐT LÕI (EXECUTIVE SUMMARY):',
+    `  • ${dossier.executiveSummary}`,
+    `  • Chân dung khách hàng mục tiêu: ${dossier.positioning.targetAudience}`,
+    `  • Khoảng giá chủ đạo: ${dossier.fourP.priceRangeText} | AOV trung bình: ${formatVnd(dossier.marketLandscape.avgOrderValueVnd)} | Tỷ lệ mua lặp lại: ${dossier.marketLandscape.repeatPurchaseRatePct}% (Chu kỳ ${dossier.marketLandscape.replenishmentCycleDays} ngày).`,
+    '',
+    '2. CHIẾN LƯỢC SẢN PHẨM (SKU PHỄU vs. SKU CHỦ LỰC) & CẤU TRÚC 4P:',
+    ...dossier.skuPortfolio.slice(0, 4).map(
+      s =>
+        `  • [${s.roleLabel}] ${s.productName} (${s.packSize}): Giá bán ${formatVnd(s.dealPriceVnd)} (-${s.discountPct}% so với ${formatVnd(s.listPriceVnd)}) · Hoa hồng KOC ${s.affiliateCommissionPct}% · Đóng góp ~${s.estimatedGmvSharePct}% GMV.\n    → Điểm nhấn thành phần/công năng: ${s.coreIngredientsOrSpecs}`
+    ),
+    `  • Cơ chế Combo/Promotion thắng đơn: ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
+    '',
+    '3. BỨC TRANH ĐỐI THỦ CẠNH TRANH & ĐÒN PHẢN CÔNG TRỰC DIỆN:',
+    ...compList.slice(0, 3).map(
+      c =>
+        `  • vs. ${c.competitorName} (${c.tiktokHandle} · Giá SKU đối đầu: ${formatVnd(c.dealPriceVnd)} · HH ${c.affiliateCommissionPct}%):\n    - Điểm yếu đối thủ bị khách phàn nàn: ${c.customerComplaints[0]}\n    - Đòn phản công cho ${dossier.brandName}: ${c.upbaseCounterPlay}`
+    ),
+    '',
+    '4. ĐỀ XUẤT HÀNH ĐỘNG NGAY CHO ĐỘI BOOKING & CONTENT B2C:',
+    `  • Về Kịch bản Content: Tập trung khai thác ${dossier.contentAngleBlueprints.length} trụ cột (${dossier.contentAngleBlueprints.map(a => a.pillarName).join(', ')}), đưa bảo chứng "${(dossier.positioning.rtbs || [])[0] || 'kiểm nghiệm an toàn'}" lên 3 giây đầu tiên để vượt qua rào cản "${(dossier.positioning.barriersToTrial || [])[0] || 'ngần ngại chất lượng'}".`,
+    `  • Về Điều phối KOC: Dồn ${dossier.kocTierStrategy.slice(0, 2).reduce((s, t) => s + t.budgetWeightPct, 0)}% ngân sách Net vào nhóm ${dossier.kocTierStrategy.slice(0, 2).map(t => `${t.tierCode} (${t.avgBookingCostRangeVnd})`).join(' & ')} kết hợp tối thiểu 30% suất gửi mẫu FOC 0đ để tối ưu CIR.`,
+    ...(dossier.internalExecutionAudit.totalBudgetNetVnd > 0
+      ? [
+          `  • Về Tiến độ Thực thi Nội bộ: Đang giải ngân ${formatVndShort(dossier.internalExecutionAudit.totalActualSpentNetVnd)} / ${formatVndShort(dossier.internalExecutionAudit.totalBudgetNetVnd)} (${dossier.internalExecutionAudit.budgetUtilizationPct}% hạn mức Net), đã lên sóng ${dossier.internalExecutionAudit.totalAiredVideos}/${dossier.internalExecutionAudit.totalBookedOrders} đơn book.`,
+        ]
+      : []),
+  ].join('\n');
 }
 
 function buildInternalPurposeOutput(

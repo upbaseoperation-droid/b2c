@@ -131,8 +131,10 @@ Mở trình duyệt tại `http://localhost:3000`.
 - **Bàn làm việc nhân sự (`CockpitView`):** Thêm biểu tượng trực quan cho các ô chỉ số (Khẩn cấp, Trong ngày, Hoàn tất, Tổng đầu việc), tích hợp bộ điều khiển phân đoạn `Segmented` để lọc nhanh danh sách nhiệm vụ.
 - **Tinh giản phân hệ Phân quyền (`CentralizedRbacHubView`):** Loại bỏ các thanh thông báo, card KPI thừa thãi và đoạn giải thích dài dòng; loại bỏ hoàn toàn các nút đóng vai (impersonate) nội bộ và đối tác; danh sách màn hình phân quyền theo Role hiển thị 2 cột tinh gọn, trực quan hóa trạng thái cấu hình.
 - **Chuẩn hóa Mobile & Tablet Responsive toàn diện (`360px–1023px`):**
+  - Trang bị thanh điều hướng dưới đáy chuyên dụng (`MobileBottomNav`) cho thiết bị di động (`lg:hidden`), cho phép chuyển đổi 1-chạm giữa 4 màn hình trọng tâm (theo từng vai trò người dùng) và nút mở toàn bộ danh mục màn hình (`Sidebar Drawer`) kèm số lượng công việc khẩn cấp thời gian thực.
+  - Tái cấu trúc thanh tiêu đề đầu trang (`TopHeader`) với cơ chế phân tầng linh hoạt (`order-1` cho tiêu đề, `order-2` cho nút hành động trên mobile, `order-3` cho dải tab nhóm cuộn ngang tự nhiên), ngăn hiện tượng xếp chồng 3–4 dòng gây mất diện tích hiển thị trên điện thoại.
   - Trang bị `Viewport` (`viewportFit: 'cover'`), `min-h-dvh` và `env(safe-area-inset-bottom)` cho toàn bộ khung ứng dụng, ngăn kéo điều hướng, hộp thoại (`Modal`, `Drawer`) và thông báo (`ToastStack`); ngăn trình duyệt di động tự động phóng to khi nhập liệu.
-  - Tối ưu hóa `TopHeader`, `Sidebar` (khóa cuộn nền, đóng bằng `Escape`), `StatRow` / `Stat`, `Tabs`, `Segmented`, `Chips`, `FilterBar` và `DataTable` (vuốt ngang mượt trên mobile cho bảng nhiều cột, tự co giãn vừa khít trên màn hình máy tính).
+  - Tối ưu hóa `TopHeader`, `Sidebar` (khóa cuộn nền, đóng bằng `Escape`), `StatRow` / `Stat`, `Tabs`, `Segmented`, `Chips`, `FilterBar` và `DataTable` (cuộn cảm ứng gia tốc `-webkit-overflow-scrolling: touch` trên mobile cho bảng nhiều cột, tự co giãn vừa khít trên màn hình máy tính).
   - Chuẩn hóa toàn bộ lưới biểu mẫu, bảng ma trận kế hoạch tháng, hồ sơ KOC / Thương hiệu / Gian hàng / Hợp đồng hiển thị 1 cột trên điện thoại (`grid-cols-1 sm:grid-cols-*`) và không tràn ngang ở khung nhìn `360px`.
 
 ---

@@ -5,7 +5,6 @@ import {
   Flame,
   Hash,
   MessageSquare,
-  Radio,
   Search,
   Square,
 } from 'lucide-react';
@@ -28,12 +27,48 @@ interface TikTokCrawlCreativeLoaderProps {
   onStop?: () => void;
 }
 
-const RADAR_SIGNAL_BLIPS = [
-  { top: '18%', left: '22%', label: '@koc.beauty', delay: '0s' },
-  { top: '26%', left: '72%', label: 'ER 6.8%', delay: '0.6s' },
-  { top: '70%', left: '18%', label: '098***', delay: '1.2s' },
-  { top: '74%', left: '68%', label: '@review', delay: '1.8s' },
-];
+const MODE_CONFIG = {
+  COMPETITOR: {
+    icon: Search,
+    title: 'Đang phân tích kênh đối thủ',
+    unit: 'KOC',
+    stages: [
+      'Kết nối dữ liệu kênh TikTok đối thủ...',
+      'Trích xuất danh sách video gần nhất...',
+      'Tổng hợp chỉ số tương tác & lọc thông tin...',
+    ],
+  },
+  HASHTAG: {
+    icon: Hash,
+    title: 'Đang quét KOC theo hashtag',
+    unit: 'KOC',
+    stages: [
+      'Tìm kiếm video có gắn hashtag...',
+      'Đọc danh sách tác giả & lượng tương tác...',
+      'Lọc thông tin liên hệ & kênh KOC...',
+    ],
+  },
+  TRENDING: {
+    icon: Flame,
+    title: 'Đang cập nhật xu hướng thịnh hành',
+    unit: 'KOC',
+    stages: [
+      'Đồng bộ bảng xếp hạng nhà sáng tạo...',
+      'Phân loại theo ngành hàng & chỉ số tăng trưởng...',
+      'Chuẩn hóa danh sách đề xuất...',
+    ],
+  },
+  COMMENTS: {
+    icon: MessageSquare,
+    title: 'Đang thu thập bình luận video',
+    unit: 'bình luận',
+    stages: [
+      'Kết nối liên kết video TikTok...',
+      'Tải luồng bình luận & phản hồi...',
+      'Phân tích nội dung & mức độ quan tâm...',
+    ],
+  },
+};
 
 export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps> = ({
   mode,
@@ -53,44 +88,53 @@ export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps>
     return () => window.clearInterval(timer);
   }, []);
 
+  const config = MODE_CONFIG[mode] || MODE_CONFIG.HASHTAG;
+  const ModeIcon = config.icon;
+  const unitText = config.unit;
+
   const currentCollected = batchProgress?.collectedCount ?? collectedSoFar;
   const effectiveTarget = Math.max(1, batchProgress?.targetCount ?? targetCount);
   const rawPct = Math.round((currentCollected / effectiveTarget) * 100);
-  const timeSimulatedPct = Math.min(88, Math.round(12 + elapsedSec * 5.5));
+  const timeSimulatedPct = Math.min(88, Math.round(12 + elapsedSec * 4.5));
   const progressPct =
-    currentCollected > 0 ? Math.min(96, Math.max(15, rawPct)) : timeSimulatedPct;
+    currentCollected > 0 ? Math.min(98, Math.max(10, rawPct)) : timeSimulatedPct;
 
-  const unitText = mode === 'COMMENTS' ? 'bình luận' : 'KOC';
-  const ModeIcon =
-    mode === 'COMPETITOR'
-      ? Search
-      : mode === 'HASHTAG'
-        ? Hash
-        : mode === 'TRENDING'
-          ? Flame
-          : MessageSquare;
+  // Determine stage based on batch progress or elapsed time
+  let currentStageText = '';
+  if (batchProgress && batchProgress.totalBatches > 1) {
+    currentStageText = `Đang xử lý đợt ${batchProgress.currentBatch}/${batchProgress.totalBatches} (${currentCollected}/${effectiveTarget} ${unitText})`;
+  } else {
+    const stageIndex = Math.min(
+      config.stages.length - 1,
+      Math.floor(elapsedSec / 3)
+    );
+    currentStageText = config.stages[stageIndex];
+  }
 
+  // Compact inline bar when results already exist
   if (compact) {
     return (
-      <div className="px-4 py-2 border-b border-accent/25 bg-accent-soft/35 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="relative w-7 h-7 rounded-full bg-surface border border-accent/40 flex items-center justify-center shrink-0">
-            <span className="absolute inset-0 rounded-full border border-accent/40 animate-ping opacity-40" />
-            <Radio className="w-3.5 h-3.5 text-accent animate-pulse" />
+      <div className="px-4 py-2.5 border-b border-accent/20 bg-accent-soft/30 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="relative w-7 h-7 rounded-lg bg-surface border border-accent/30 flex items-center justify-center shrink-0">
+            <span className="absolute inset-0 rounded-lg border border-accent/30 animate-ping opacity-35" />
+            <ModeIcon className="w-3.5 h-3.5 text-accent animate-pulse" />
           </div>
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="text-xs font-semibold text-ink truncate max-w-[220px]">
+            <span className="text-xs font-semibold text-ink truncate max-w-[200px]">
               {queryLabel}
             </span>
             <Status tone="info">
               {batchProgress
                 ? `Đợt ${batchProgress.currentBatch}/${batchProgress.totalBatches}`
-                : 'Đang quét'}
+                : 'Đang tải thêm'}
             </Status>
             <span className="text-2xs font-code font-semibold text-accent tabular-nums">
               {currentCollected}/{effectiveTarget} {unitText} ({progressPct}%)
             </span>
-            <span className="text-2xs font-code text-ink-3 tabular-nums">· {elapsedSec}s</span>
+            <span className="text-2xs font-code text-ink-3 tabular-nums">
+              · {elapsedSec}s
+            </span>
           </div>
         </div>
 
@@ -103,98 +147,121 @@ export const TikTokCrawlCreativeLoader: React.FC<TikTokCrawlCreativeLoaderProps>
     );
   }
 
+  // Full in-place scanning state (NO full-screen modal, NO murky gray veil)
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (circumference * progressPct) / 100;
+
   return (
-    <>
-      <div className="py-16 text-center text-xs text-ink-3">
-        Đang quét dữ liệu TikTok...
-      </div>
+    <div className="py-10 px-4 md:py-14 flex flex-col items-center justify-center text-center animate-in fade-in duration-200">
+      <div className="w-full max-w-md mx-auto rounded-xl border border-line bg-surface p-6 shadow-xs flex flex-col items-center">
+        {/* Crisp circular progress with central icon and percentage */}
+        <div className="relative w-32 h-32 flex items-center justify-center select-none my-2">
+          {/* Subtle outer breathing ring */}
+          <div className="absolute inset-0 rounded-full border border-accent/15 bg-accent-soft/20 animate-pulse" />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-[2px] p-4">
-        <div className="w-full max-w-[300px] rounded-2xl bg-surface border border-line shadow-xl p-6 flex flex-col items-center text-center animate-in fade-in zoom-in-95 duration-200">
-          {/* Radar Animation */}
-          <div className="relative w-48 h-48 flex items-center justify-center select-none">
-            <span
-              className="absolute inset-0 rounded-full border border-accent/25 animate-ping opacity-20"
-              style={{ animationDuration: '2.8s' }}
+          {/* SVG Progress Circle */}
+          <svg className="w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r={radius}
+              stroke="currentColor"
+              className="text-line"
+              strokeWidth="6"
+              fill="transparent"
             />
-            <div className="absolute inset-0 rounded-full border border-accent/25 bg-accent-soft/10" />
-            <div className="absolute inset-5 rounded-full border border-dashed border-accent/25" />
-            <div className="absolute inset-10 rounded-full border border-accent/30" />
-            <div className="absolute inset-16 rounded-full border border-accent/40 bg-accent-soft/20" />
-
-            <div className="absolute inset-x-3 top-1/2 h-px bg-accent/15 -translate-y-1/2" />
-            <div className="absolute inset-y-3 left-1/2 w-px bg-accent/15 -translate-x-1/2" />
-
-            <div
-              className="absolute inset-1 rounded-full animate-spin"
+            <circle
+              cx="50"
+              cy="50"
+              r={radius}
+              stroke="currentColor"
+              className="text-accent"
+              strokeWidth="6"
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
               style={{
-                animationDuration: '2.6s',
-                background:
-                  'conic-gradient(from 0deg, transparent 0deg, transparent 260deg, rgba(37, 99, 235, 0.22) 340deg, rgba(37, 99, 235, 0.5) 360deg)',
+                transition: 'stroke-dashoffset 400ms ease-out',
               }}
             />
+          </svg>
 
-            {RADAR_SIGNAL_BLIPS.map((blip, idx) => (
-              <div
-                key={idx}
-                className="absolute flex items-center gap-1 pointer-events-none"
-                style={{
-                  top: blip.top,
-                  left: blip.left,
-                }}
-              >
-                <span className="relative flex h-2.5 w-2.5">
-                  <span
-                    className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"
-                    style={{ animationDuration: '2s', animationDelay: blip.delay }}
-                  />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent border border-white" />
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-surface/95 border border-line shadow-2xs text-[10px] font-code font-medium text-ink whitespace-nowrap">
-                  {blip.label}
-                </span>
-              </div>
-            ))}
-
-            <div className="relative z-10 w-[72px] h-[72px] rounded-full bg-surface border-2 border-accent shadow-sm flex flex-col items-center justify-center">
-              <ModeIcon className="w-4 h-4 text-accent mb-0.5 animate-pulse" />
-              <span className="text-sm font-bold font-code text-ink tabular-nums leading-none">
-                {progressPct}%
-              </span>
-              <span className="text-[10px] font-code text-ink-3 tabular-nums mt-0.5">
-                {elapsedSec}s
-              </span>
-            </div>
-          </div>
-
-          {/* Target & Progress */}
-          <div className="mt-4 w-full space-y-2.5">
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="px-2 py-0.5 rounded-md bg-surface-2 border border-line text-xs font-code font-semibold text-ink truncate max-w-[180px]">
-                {queryLabel}
-              </span>
-              <span className="text-xs font-code font-semibold text-accent tabular-nums">
-                {currentCollected}/{effectiveTarget} {unitText}
-              </span>
-            </div>
-
-            <div className="h-1.5 w-full rounded-full bg-surface-2 border border-line overflow-hidden">
-              <div
-                className="h-full rounded-full bg-accent transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-
-            {onStop && (
-              <div className="pt-1">
-                <Button size="sm" variant="secondary" icon={Square} onClick={onStop}>
-                  Dừng quét
-                </Button>
-              </div>
-            )}
+          {/* Center Content */}
+          <div className="absolute flex flex-col items-center justify-center">
+            <ModeIcon className="w-5 h-5 text-accent mb-0.5" />
+            <span className="text-base font-bold font-code text-ink tabular-nums leading-tight">
+              {progressPct}%
+            </span>
+            <span className="text-[10px] font-code text-ink-3 tabular-nums">
+              {elapsedSec}s
+            </span>
           </div>
         </div>
+
+        {/* Heading & Target Query */}
+        <div className="mt-3 space-y-1">
+          <div className="text-sm font-semibold text-ink">
+            {config.title}
+          </div>
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sunken border border-line text-xs font-code font-medium text-ink max-w-[280px] truncate">
+            {queryLabel}
+          </div>
+        </div>
+
+        {/* Live Metrics Grid */}
+        <div className="grid grid-cols-3 gap-2 w-full mt-4 p-2.5 rounded-lg bg-canvas border border-line text-left">
+          <div className="px-1.5">
+            <div className="text-[10px] text-ink-3">Đã thu thập</div>
+            <div className="text-xs font-bold font-code text-ink tabular-nums mt-0.5 truncate">
+              {currentCollected}/{effectiveTarget}
+            </div>
+          </div>
+          <div className="px-1.5 border-l border-line">
+            <div className="text-[10px] text-ink-3">Đợt quét</div>
+            <div className="text-xs font-bold font-code text-ink tabular-nums mt-0.5 truncate">
+              {batchProgress
+                ? `${batchProgress.currentBatch}/${batchProgress.totalBatches}`
+                : '1/1'}
+            </div>
+          </div>
+          <div className="px-1.5 border-l border-line">
+            <div className="text-[10px] text-ink-3">Thời gian</div>
+            <div className="text-xs font-bold font-code text-ink tabular-nums mt-0.5 truncate">
+              {elapsedSec}s
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar & Stage Status */}
+        <div className="w-full mt-4 space-y-2">
+          <div className="h-1.5 w-full rounded-full bg-sunken border border-line overflow-hidden">
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="text-2xs text-ink-3 font-medium truncate">
+            {currentStageText}
+          </div>
+        </div>
+
+        {/* Stop Button */}
+        {onStop && (
+          <div className="mt-5 w-full">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Square}
+              onClick={onStop}
+              className="w-full justify-center"
+            >
+              Dừng quét ({currentCollected}/{effectiveTarget})
+            </Button>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };

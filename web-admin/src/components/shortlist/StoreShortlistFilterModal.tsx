@@ -924,7 +924,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 pt-1">
                   {[
                     { id: 'ALL', label: 'Mọi định dạng' },
                     { id: 'VIDEO', label: 'Video ngắn' },
@@ -1112,7 +1112,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           </div>
 
                           {/* Cụm chỉ số thương mại */}
-                          <div className="grid grid-cols-4 gap-2 text-center w-full md:w-auto bg-sunken px-2.5 py-1.5 rounded-lg border border-line">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center w-full md:w-auto bg-sunken px-2.5 py-1.5 rounded-lg border border-line">
                             <div>
                               <span className="text-3xs text-ink-3 block">Follower</span>
                               <span className="text-2xs font-semibold text-ink tabular-nums">

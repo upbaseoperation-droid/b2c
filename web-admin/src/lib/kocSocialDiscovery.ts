@@ -41,6 +41,14 @@ export interface KocSocialDiscoveryResult {
   bioLinkExtracted?: string;
   llmAnalysis?: KocSocialLlmAnalysisSummary;
   candidatesByPlatform: Record<SocialPlatformKey, SocialChannelCandidate[]>;
+  usage?: {
+    provider: 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL';
+    modelUsed: string;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    latencyMs: number;
+  };
 }
 
 const DEFAULT_BROWSER_UA =
@@ -987,7 +995,16 @@ async function discoverSocialChannelsViaLlm(params: {
 }): Promise<{
   candidates: SocialChannelCandidate[];
   analysis?: KocSocialLlmAnalysisSummary;
+  usage?: {
+    provider: 'GOOGLE' | 'OPENAI' | 'CLAUDE' | 'INTERNAL';
+    modelUsed: string;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    latencyMs: number;
+  };
 }> {
+  const startTime = Date.now();
   const cfg = params.llmConfig;
   const googleKey =
     (cfg?.provider === 'GOOGLE' && cfg.apiKey ? cfg.apiKey : '') ||
@@ -1104,6 +1121,16 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
           sourceTag
         );
 
+        const promptTokens =
+          data?.usageMetadata?.promptTokenCount ||
+          Math.max(1, Math.ceil((systemInstruction.length + promptContext.length) / 3.8));
+        const completionTokens =
+          data?.usageMetadata?.candidatesTokenCount ||
+          Math.max(1, Math.ceil(replyText.length / 3.8));
+        const totalTokens =
+          data?.usageMetadata?.totalTokenCount || promptTokens + completionTokens;
+        const latencyMs = Date.now() - startTime;
+
         return {
           candidates: parsed.candidates,
           analysis: {
@@ -1114,6 +1141,14 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
               parsed.summary ||
               `Đã phân tích tiểu sử TikTok, liên kết Bio và đối chiếu chỉ mục tìm kiếm cho @${params.tiktokHandle}.`,
             candidatesFoundCount: parsed.candidates.length,
+          },
+          usage: {
+            provider: 'GOOGLE',
+            modelUsed: modelId,
+            promptTokens,
+            completionTokens,
+            totalTokens,
+            latencyMs,
           },
         };
       } catch {
@@ -1146,6 +1181,16 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
         const data: any = await res.json();
         const replyText = data?.choices?.[0]?.message?.content || '';
         const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
+        const promptTokens =
+          data?.usage?.prompt_tokens ||
+          Math.max(1, Math.ceil((systemInstruction.length + promptContext.length) / 3.8));
+        const completionTokens =
+          data?.usage?.completion_tokens ||
+          Math.max(1, Math.ceil(replyText.length / 3.8));
+        const totalTokens =
+          data?.usage?.total_tokens || promptTokens + completionTokens;
+        const latencyMs = Date.now() - startTime;
+
         return {
           candidates: parsed.candidates,
           analysis: {
@@ -1156,6 +1201,14 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
               parsed.summary ||
               `Đã bóc tách ngữ cảnh tiểu sử, Bio Link và kết quả tìm kiếm cho @${params.tiktokHandle}.`,
             candidatesFoundCount: parsed.candidates.length,
+          },
+          usage: {
+            provider: 'OPENAI',
+            modelUsed: modelId,
+            promptTokens,
+            completionTokens,
+            totalTokens,
+            latencyMs,
           },
         };
       }
@@ -1188,6 +1241,15 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
         const data: any = await res.json();
         const replyText = data?.content?.[0]?.text || '';
         const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
+        const promptTokens =
+          data?.usage?.input_tokens ||
+          Math.max(1, Math.ceil((systemInstruction.length + promptContext.length) / 3.8));
+        const completionTokens =
+          data?.usage?.output_tokens ||
+          Math.max(1, Math.ceil(replyText.length / 3.8));
+        const totalTokens = promptTokens + completionTokens;
+        const latencyMs = Date.now() - startTime;
+
         return {
           candidates: parsed.candidates,
           analysis: {
@@ -1198,6 +1260,14 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
               parsed.summary ||
               `Đã bóc tách ngữ cảnh tiểu sử, Bio Link và kết quả tìm kiếm cho @${params.tiktokHandle}.`,
             candidatesFoundCount: parsed.candidates.length,
+          },
+          usage: {
+            provider: 'CLAUDE',
+            modelUsed: modelId,
+            promptTokens,
+            completionTokens,
+            totalTokens,
+            latencyMs,
           },
         };
       }
@@ -1214,6 +1284,14 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
       groundedSearchUsed: true,
       reasoningSummary: `Đã quét trực tiếp tiểu sử TikTok, giải mã trang Bio Link, đối chiếu kênh YouTube và truy vấn chỉ mục tìm kiếm cho @${params.tiktokHandle} (${params.stageName}).`,
       candidatesFoundCount: 0,
+    },
+    usage: {
+      provider: 'INTERNAL',
+      modelUsed: 'upbase-social-discovery-v2',
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      latencyMs: Date.now() - startTime,
     },
   };
 }
@@ -1501,5 +1579,6 @@ export async function discoverKocSocialChannels(params: {
       INSTAGRAM: instagramVerified,
       THREADS: threadsVerified,
     },
+    usage: llmDiscovery.usage,
   };
 }

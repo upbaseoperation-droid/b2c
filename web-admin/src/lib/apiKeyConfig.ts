@@ -61,7 +61,7 @@ export interface ApiUsageLogItem {
   latencyMs: number;
   status: 'SUCCESS' | 'FALLBACK' | 'ERROR';
   errorMessage?: string;
-  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'MARKET_RESEARCH' | 'TEST';
+  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'MARKET_RESEARCH' | 'TEST' | 'KOC_DISCOVERY' | 'KOC_MATCHING';
 }
 
 export const USD_TO_VND_RATE = 25450; // Tỷ giá quy đổi chuẩn USD -> VNĐ
@@ -570,7 +570,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       defaultModel: 'gemini-3.8-flash',
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
       monthlyBudgetLimitUsd: 50,
-      estimatedUsedUsd: 4.2,
+      estimatedUsedUsd: 0,
       timeoutSeconds: 20,
       lastTestStatus: 'UNTESTED',
       notes: 'Dùng chính cho đọc ảnh CCCD/ĐKKD tạo hợp đồng và sàng lọc danh bạ KOC.',
@@ -586,7 +586,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       baseUrl: 'https://api.openai.com/v1',
       organizationId: '',
       monthlyBudgetLimitUsd: 100,
-      estimatedUsedUsd: 12.8,
+      estimatedUsedUsd: 0,
       timeoutSeconds: 25,
       lastTestStatus: 'UNTESTED',
       notes: 'Dùng chính cho đối soát kế hoạch tháng (Gross/Net), báo cáo Ads tuần và đánh giá nhân sự 4P.',
@@ -601,7 +601,7 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       defaultModel: 'claude-sonnet-5-5',
       baseUrl: 'https://api.anthropic.com/v1',
       monthlyBudgetLimitUsd: 80,
-      estimatedUsedUsd: 9.5,
+      estimatedUsedUsd: 0,
       timeoutSeconds: 25,
       lastTestStatus: 'UNTESTED',
       notes: 'Dùng chính cho rà soát từ cấm, biên tập kịch bản video KOC và soạn điều khoản hợp đồng.',
@@ -858,6 +858,11 @@ export function loadApiWorkspaceConfig(): ApiWorkspaceConfigState {
       ...INITIAL_API_WORKSPACE_CONFIG.providers.CLAUDE,
       ...(parsed.providers?.CLAUDE || {}),
     };
+
+    // Xóa sạch các giá trị chi phí mẫu (seed mock) nếu trình duyệt còn lưu trong bộ nhớ
+    if (googleCfg.estimatedUsedUsd === 4.2) googleCfg.estimatedUsedUsd = 0;
+    if (openaiCfg.estimatedUsedUsd === 12.8) openaiCfg.estimatedUsedUsd = 0;
+    if (claudeCfg.estimatedUsedUsd === 9.5) claudeCfg.estimatedUsedUsd = 0;
 
     if (isMigratingFromV1) {
       googleCfg.defaultModel = upgradeLegacyModelId(googleCfg.defaultModel, 'gemini-3.8-flash');
@@ -1153,118 +1158,24 @@ export function calculateExecutionCost(modelId: string, usage: TokenUsageMetrics
   };
 }
 
-const SEED_USAGE_LOGS: ApiUsageLogItem[] = [
-  {
-    id: 'log-seed-01',
-    timestamp: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    purposeId: 'LEGAL_OCR',
-    purposeTitle: 'Đọc ảnh giấy tờ & CCCD / ĐKKD',
-    provider: 'GOOGLE',
-    modelUsed: 'gemini-3.8-flash',
-    promptTokens: 1420,
-    completionTokens: 380,
-    totalTokens: 1800,
-    costUsd: 0.00249,
-    costVnd: 63,
-    latencyMs: 740,
-    status: 'SUCCESS',
-    source: 'LEGAL_OCR',
-  },
-  {
-    id: 'log-seed-02',
-    timestamp: new Date(Date.now() - 1000 * 60 * 85).toISOString(),
-    purposeId: 'SCRIPT_REVIEW',
-    purposeTitle: 'Rà soát từ cấm & Biên tập kịch bản',
-    provider: 'CLAUDE',
-    modelUsed: 'claude-sonnet-5-5',
-    promptTokens: 2150,
-    completionTokens: 680,
-    totalTokens: 2830,
-    costUsd: 0.0111,
-    costVnd: 283,
-    latencyMs: 1180,
-    status: 'SUCCESS',
-    source: 'SCRIPT_REVIEW',
-  },
-  {
-    id: 'log-seed-03',
-    timestamp: new Date(Date.now() - 1000 * 60 * 140).toISOString(),
-    purposeId: 'STAFF_REVIEW',
-    purposeTitle: 'Nhận xét tiến độ, SLA & Đánh giá 4P',
-    provider: 'OPENAI',
-    modelUsed: 'gpt-5-mini',
-    promptTokens: 1840,
-    completionTokens: 520,
-    totalTokens: 2360,
-    costUsd: 0.0015,
-    costVnd: 38,
-    latencyMs: 680,
-    status: 'SUCCESS',
-    source: 'STAFF_REVIEW',
-  },
-  {
-    id: 'log-seed-04',
-    timestamp: new Date(Date.now() - 1000 * 60 * 220).toISOString(),
-    purposeId: 'PLAN_ADS_ANALYSIS',
-    purposeTitle: 'Đối soát kế hoạch tháng & Báo cáo Ads',
-    provider: 'OPENAI',
-    modelUsed: 'gpt-5',
-    promptTokens: 3450,
-    completionTokens: 980,
-    totalTokens: 4430,
-    costUsd: 0.014113,
-    costVnd: 359,
-    latencyMs: 1560,
-    status: 'SUCCESS',
-    source: 'PLAN',
-  },
-  {
-    id: 'log-seed-05',
-    timestamp: new Date(Date.now() - 1000 * 60 * 310).toISOString(),
-    purposeId: 'CONTRACT_DRAFTING',
-    purposeTitle: 'Soạn thảo & Kiểm tra điều khoản hợp đồng',
-    provider: 'CLAUDE',
-    modelUsed: 'claude-opus-5-5',
-    promptTokens: 2900,
-    completionTokens: 1100,
-    totalTokens: 4000,
-    costUsd: 0.0336,
-    costVnd: 855,
-    latencyMs: 1920,
-    status: 'SUCCESS',
-    source: 'CONTRACT',
-  },
-  {
-    id: 'log-seed-06',
-    timestamp: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
-    purposeId: 'KOC_MATCHING',
-    purposeTitle: 'Phân loại & Đề xuất KOC theo khung lương',
-    provider: 'GOOGLE',
-    modelUsed: 'gemini-4-argon',
-    promptTokens: 1650,
-    completionTokens: 420,
-    totalTokens: 2070,
-    costUsd: 0.0075,
-    costVnd: 191,
-    latencyMs: 910,
-    status: 'SUCCESS',
-    source: 'PLAYGROUND',
-  },
-];
+const SEED_USAGE_LOGS: ApiUsageLogItem[] = [];
 
 export function loadApiUsageLogs(): ApiUsageLogItem[] {
-  if (typeof window === 'undefined') return SEED_USAGE_LOGS;
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(API_USAGE_LOGS_KEY);
-    if (!raw) {
-      localStorage.setItem(API_USAGE_LOGS_KEY, JSON.stringify(SEED_USAGE_LOGS));
-      return SEED_USAGE_LOGS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : SEED_USAGE_LOGS;
+    if (!Array.isArray(parsed)) return [];
+    // Lọc bỏ toàn bộ các bản ghi gọi nháp / dữ liệu mẫu (id bắt đầu bằng log-seed-)
+    const cleanLogs = parsed.filter(item => item && !String(item.id || '').startsWith('log-seed-'));
+    if (cleanLogs.length !== parsed.length) {
+      localStorage.setItem(API_USAGE_LOGS_KEY, JSON.stringify(cleanLogs));
+    }
+    return cleanLogs;
   } catch (err) {
     console.warn('Could not load API usage logs:', err);
-    return SEED_USAGE_LOGS;
+    return [];
   }
 }
 

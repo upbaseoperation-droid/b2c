@@ -247,7 +247,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 ::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 9999px; border: 2px solid var(--color-canvas); }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-3); }
 
-/* Ngăn xuất hiện thanh cuộn dọc 1px ngoài ý muốn trên các vùng chỉ cuộn ngang (tab bar, chip bar, bảng) */
+/* Cuộn cảm ứng mượt trên thiết bị di động & ngăn cuộn dọc ngoài ý muốn */
+.overflow-x-auto, .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
 .overflow-x-auto:not(.overflow-y-auto):not(.overflow-y-scroll) {
   overflow-y: hidden;
 }

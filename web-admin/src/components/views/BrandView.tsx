@@ -568,7 +568,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 value={searchCampaign}
                 onChange={setSearchCampaign}
                 placeholder="Tìm mã, chiến dịch, thương hiệu..."
-                className="w-56 sm:w-64"
+                className="w-full sm:w-64"
               />
 
               <div className="flex items-center gap-1.5 text-xs">

@@ -6,6 +6,7 @@ import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
 import { TAB_LABELS, getNavGroupForTab, DASHBOARD_EXEC_TAB_KEYS } from '../lib/navGroups';
 import { TopHeader } from '../components/TopHeader';
+import { MobileBottomNav } from '../components/MobileBottomNav';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -1192,7 +1193,7 @@ export default function App() {
           </div>
         )}
 
-        <main id="workspace" className={`px-3 sm:px-4 lg:px-6 py-4 sm:py-5 w-full mx-auto space-y-5 ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
+        <main id="workspace" className={`px-3 sm:px-4 lg:px-6 py-4 sm:py-5 w-full mx-auto space-y-5 pb-20 lg:pb-5 min-w-0 max-w-full ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
               <div className="w-14 h-14 rounded-2xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
@@ -1849,6 +1850,15 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Dành riêng cho màn hình di động) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabSelect={handleSelectTab}
+        currentUser={currentUser}
+        onOpenMenu={() => setIsMobileSidebarOpen(true)}
+        pendingTasksCount={pendingTasksCount}
+      />
 
       {/* Quick Book Modal */}
       <QuickBookModal

@@ -156,7 +156,13 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
               return NextResponse.json({
                 ...parsed,
                 evaluatedAt: new Date().toISOString(),
-                providerUsed: 'Google Gemini (API)'
+                providerUsed: 'Google Gemini (API)',
+                modelUsed: candidateModel,
+                usage: {
+                  promptTokens: data?.usageMetadata?.promptTokenCount || 1200,
+                  completionTokens: data?.usageMetadata?.candidatesTokenCount || 600,
+                  totalTokens: data?.usageMetadata?.totalTokenCount || 1800,
+                },
               });
             }
           }
@@ -194,7 +200,13 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
             return NextResponse.json({
               ...parsed,
               evaluatedAt: new Date().toISOString(),
-              providerUsed: 'OpenAI ChatGPT-4o-mini (API)'
+              providerUsed: 'OpenAI ChatGPT-4o-mini (API)',
+              modelUsed: 'gpt-4o-mini',
+              usage: {
+                promptTokens: data?.usage?.prompt_tokens || 1200,
+                completionTokens: data?.usage?.completion_tokens || 600,
+                totalTokens: data?.usage?.total_tokens || 1800,
+              },
             });
           }
         }
@@ -236,6 +248,12 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
               ...parsed,
               evaluatedAt: new Date().toISOString(),
               providerUsed: 'Anthropic Claude 3.7 Sonnet (API)',
+              modelUsed: 'claude-3-7-sonnet-20250219',
+              usage: {
+                promptTokens: data?.usage?.input_tokens || 1200,
+                completionTokens: data?.usage?.output_tokens || 600,
+                totalTokens: (data?.usage?.input_tokens || 1200) + (data?.usage?.output_tokens || 600),
+              },
             });
           }
         }

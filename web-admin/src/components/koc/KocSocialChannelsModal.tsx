@@ -17,6 +17,8 @@ import {
   PROVIDER_MODELS_CATALOG,
   getEffectiveConfigForPurpose,
   loadApiWorkspaceConfig,
+  recordApiUsageLog,
+  calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
 import {
   Avatar,
@@ -197,6 +199,29 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
 
       const data: KocSocialDiscoveryResult = json.data;
       setDiscoveryResult(data);
+
+      if (data.usage && data.usage.provider !== 'INTERNAL') {
+        const costReport = calculateExecutionCost(data.usage.modelUsed, {
+          promptTokens: data.usage.promptTokens,
+          completionTokens: data.usage.completionTokens,
+          totalTokens: data.usage.totalTokens,
+        });
+
+        recordApiUsageLog({
+          purposeId: 'KOC_MATCHING',
+          purposeTitle: `Dò tìm kênh KOC (@${target.channelId || target.stageName})`,
+          provider: data.usage.provider,
+          modelUsed: data.usage.modelUsed,
+          promptTokens: costReport.promptTokens,
+          completionTokens: costReport.completionTokens,
+          totalTokens: costReport.totalTokens,
+          costUsd: costReport.costUsd,
+          costVnd: costReport.costVnd,
+          latencyMs: data.usage.latencyMs,
+          status: 'SUCCESS',
+          source: 'KOC_DISCOVERY',
+        });
+      }
 
       const nextValues: Record<SocialPlatformKey, string> = {
         SHOPEE: target.shopeeChannel || data.candidatesByPlatform.SHOPEE[0]?.handle || '',

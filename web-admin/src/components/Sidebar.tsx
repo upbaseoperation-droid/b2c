@@ -184,7 +184,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Hợp đồng & Hiệu suất',
-      items: [contractsNav, NAV.samples, NAV.pushProducts, NAV.performance],
+      items: [contractsNav, NAV.pushProducts, NAV.performance],
     },
     {
       title: 'Hệ thống',

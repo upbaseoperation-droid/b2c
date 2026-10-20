@@ -15,7 +15,9 @@ import {
   Send,
   ArrowRight,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Truck,
+  Copy
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -31,7 +33,8 @@ import {
   INITIAL_KOCS, 
   INITIAL_KOC_CANDIDATES,
   INITIAL_DETAILED_STAFF_PLANS,
-  INITIAL_STAFF_ALLOCATIONS_26
+  INITIAL_STAFF_ALLOCATIONS_26,
+  MOCK_SAMPLE_SHIPMENTS
 } from '../../lib/mockData';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import { KocProfileModal } from '../KocProfileModal';
@@ -39,6 +42,7 @@ import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
+import SampleTrackerView from './SampleTrackerView';
 import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
@@ -186,11 +190,13 @@ interface BookingViewProps {
   onOpenQuickBook?: () => void;
   onOpenImport?: () => void;
   selectedBrand?: string;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   bookingDrilldownIntent?: {
     storeName?: string;
     brandName?: string;
     dealCode?: string;
     month?: string;
+    subTab?: 'BOOKING_DEALS' | 'SAMPLE_ADS' | 'MY_PLAN' | 'CANDIDATES' | 'KOC_DIRECTORY';
     nonce: number;
   } | null;
 }
@@ -215,9 +221,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
   onOpenQuickBook,
   onOpenImport,
   selectedBrand = 'ALL',
+  onNotify,
   bookingDrilldownIntent,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('BOOKING_DEALS');
+  const [activeSubTab, setActiveSubTab] = useState<'BOOKING_DEALS' | 'SAMPLE_ADS' | 'MY_PLAN' | 'CANDIDATES' | 'KOC_DIRECTORY'>('BOOKING_DEALS');
   const [visitedSubTabs, setVisitedSubTabs] = useState<Record<string, boolean>>({ BOOKING_DEALS: true });
   if (!visitedSubTabs[activeSubTab]) {
     setVisitedSubTabs(prev => ({ ...prev, [activeSubTab]: true }));
@@ -343,7 +350,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [kocsPageSize, setKocsPageSize] = useState(20);
 
   // Filters for Booking Deals
-  const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
+  const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'SAMPLE_PENDING' | 'ADS_CODE_PENDING'>('ALL');
   const [dealPeriodScope, setDealPeriodScope] = useState<'CURRENT_PAID' | 'ALL_PAID' | 'FOC_ONLY' | 'ALL_ARCHIVE'>('CURRENT_PAID');
   const [selectedDealPicFilter, setSelectedDealPicFilter] = useState<string>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
@@ -362,7 +369,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [handledBookingDrilldownNonce, setHandledBookingDrilldownNonce] = useState<number>(0);
   if (bookingDrilldownIntent && bookingDrilldownIntent.nonce !== handledBookingDrilldownNonce) {
     setHandledBookingDrilldownNonce(bookingDrilldownIntent.nonce);
-    setActiveSubTab('BOOKING_DEALS');
+    setActiveSubTab(bookingDrilldownIntent.subTab || 'BOOKING_DEALS');
     setDealsFilter('ALL');
     setSelectedDealPicFilter('ALL');
     if (bookingDrilldownIntent.brandName) {
@@ -385,7 +392,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
     brandRejectReason: string;
     pipelineText: string;
     sampleStatus: 'CHƯA_GỬI' | 'ĐANG_GIAO' | 'ĐÃ_NHẬN';
+    sampleCarrier: 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress';
+    sampleTrackingCode: string;
+    sampleDeliveredDate: string;
     adsCodeStatus: 'CHƯA_CẤP' | 'ĐÃ_NGHIỆM_THU' | 'KHÔNG_DÙNG';
+    sparkAdsCode: string;
+    sparkAdsExpiryDays: number;
     tiktokVideoUrl: string;
     viewsCount: number;
     gmv30: number;
@@ -397,7 +409,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
     brandRejectReason: '',
     pipelineText: 'Kịch bản',
     sampleStatus: 'ĐÃ_NHẬN',
+    sampleCarrier: 'GHN',
+    sampleTrackingCode: '',
+    sampleDeliveredDate: '',
     adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+    sparkAdsCode: '',
+    sparkAdsExpiryDays: 60,
     tiktokVideoUrl: '',
     viewsCount: 0,
     gmv30: 0,
@@ -405,6 +422,81 @@ export const BookingView: React.FC<BookingViewProps> = ({
     statusLabel: 'Video Đã Lên Sóng',
     deliverables: []
   });
+
+  // State cho Hộp thoại Cập nhật Vận đơn Hàng mẫu (Bước 3)
+  const [sampleModalDeal, setSampleModalDeal] = useState<BookingDealItem | null>(null);
+  const [sampleForm, setSampleForm] = useState<{
+    sampleStatus: 'CHƯA_GỬI' | 'ĐANG_GIAO' | 'ĐÃ_NHẬN';
+    carrier: 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress';
+    trackingCode: string;
+    sentDate: string;
+    deliveredDate: string;
+    recipientPhone: string;
+    shippingAddress: string;
+  }>({
+    sampleStatus: 'ĐANG_GIAO',
+    carrier: 'GHN',
+    trackingCode: '',
+    sentDate: '18/10/2026',
+    deliveredDate: '',
+    recipientPhone: '0981.234.567',
+    shippingAddress: 'Địa chỉ nhận mẫu KOC trên hệ thống',
+  });
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+
+  const handleOpenSampleModal = (deal: BookingDealItem) => {
+    setSampleModalDeal(deal);
+    setSampleForm({
+      sampleStatus: deal.sampleStatus || 'ĐANG_GIAO',
+      carrier: deal.sampleCarrier || 'GHN',
+      trackingCode:
+        deal.sampleTrackingCode ||
+        `GHN-${deal.dealCode.replace(/[^0-9]/g, '').slice(-8) || Date.now().toString().slice(-8)}`,
+      sentDate: deal.sampleSentDate || '18/10/2026',
+      deliveredDate:
+        deal.sampleDeliveredDate || (deal.sampleStatus === 'ĐÃ_NHẬN' ? '20/10/2026' : ''),
+      recipientPhone: deal.sampleRecipientPhone || '0981.234.567',
+      shippingAddress:
+        deal.sampleShippingAddress || 'Địa chỉ nhận mẫu KOC đã xác nhận trên hệ thống',
+    });
+  };
+
+  const handleConfirmSampleUpdate = () => {
+    if (!sampleModalDeal) return;
+    const isReceived = sampleForm.sampleStatus === 'ĐÃ_NHẬN';
+    const currentSt = resolveDealPipelineStage(sampleModalDeal);
+    const shouldMoveToStep3 =
+      (sampleForm.sampleStatus === 'ĐANG_GIAO' || isReceived) &&
+      (currentSt === '1_PLAN_SOURCING' || currentSt === '2_DEAL_CONTRACT');
+
+    const updated: BookingDealItem = {
+      ...sampleModalDeal,
+      sampleStatus: sampleForm.sampleStatus,
+      sampleCarrier: sampleForm.carrier,
+      sampleTrackingCode: sampleForm.trackingCode.trim(),
+      sampleSentDate: sampleForm.sentDate,
+      sampleDeliveredDate: isReceived
+        ? sampleForm.deliveredDate || '20/10/2026'
+        : sampleForm.deliveredDate || undefined,
+      sampleRecipientPhone: sampleForm.recipientPhone,
+      sampleShippingAddress: sampleForm.shippingAddress,
+      ...(shouldMoveToStep3
+        ? {
+            currentStage: '3_CONTENT_SCRIPT' as const,
+            status: isReceived ? ('SAMPLE_RECEIVED' as const) : ('SAMPLE_SHIPPED' as const),
+            pipelineText: isReceived ? 'Kịch bản' : 'Gửi hàng',
+            holdingTeam: 'CONTENT' as const,
+          }
+        : {}),
+    };
+
+    applyDealUpdate(updated);
+    onNotify?.(
+      `Đã cập nhật vận đơn hàng mẫu [${sampleForm.carrier} · ${sampleForm.trackingCode}] cho ${sampleModalDeal.dealCode}`,
+      'success'
+    );
+    setSampleModalDeal(null);
+  };
 
   // State for Growth Handoff Modal (Bàn giao quét mã Spark Ads & setup Ads)
   const [handoffDeal, setHandoffDeal] = useState<BookingDealItem | null>(null);
@@ -429,7 +521,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     setHandoffForm({
       sparkAdsCode: deal.sparkAdsCode || `SPARK-TT-${deal.dealCode.slice(-6)}-${Date.now().toString().slice(-4)}`,
       tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || 'https://www.tiktok.com/@creator/video/7418920192',
-      authDuration: '60 ngày',
+      authDuration: deal.sparkAdsExpiryDays ? `${deal.sparkAdsExpiryDays} ngày` : '60 ngày',
       clientCommitmentStatus: 'ĐÃ_CHỐT_NGÂN_SÁCH_ADS',
       growthNote: `Video đã được Brand duyệt đạt chuẩn. Đề xuất team Growth triển khai quét mã Ads và gắn sản phẩm giỏ hàng TikTok Shop.`
     });
@@ -437,6 +529,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   const handleConfirmGrowthHandoff = () => {
     if (!handoffDeal) return;
+    const expiryDays = parseInt(handoffForm.authDuration, 10) || 60;
     const updated: BookingDealItem = {
       ...handoffDeal,
       growthHandoffStatus: 'ĐÃ_GIAO_MÃ_ADS',
@@ -445,11 +538,16 @@ export const BookingView: React.FC<BookingViewProps> = ({
       holdingReason: 'Team Growth đang quét mã Ads & setup campaign',
       adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
       sparkAdsCode: handoffForm.sparkAdsCode,
+      sparkAdsExpiryDays: expiryDays,
       tiktokVideoUrl: handoffForm.tiktokVideoUrl,
       pipelineText: 'Bàn giao Growth Ads'
     };
 
     applyDealUpdate(updated);
+    onNotify?.(
+      `Đã lưu mã Spark Ads [${handoffForm.sparkAdsCode}] và bàn giao sang team Growth (${handoffDeal.dealCode})`,
+      'success'
+    );
     setHandoffDeal(null);
   };
 
@@ -459,13 +557,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if (e.key === 'Escape') {
         setHandoffDeal(null);
         setEditingDeal(null);
+        setSampleModalDeal(null);
       }
     };
-    if (handoffDeal || editingDeal) {
+    if (handoffDeal || editingDeal || sampleModalDeal) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handoffDeal, editingDeal]);
+  }, [handoffDeal, editingDeal, sampleModalDeal]);
 
   // 1. Khung Lương (KL) - Chuẩn hóa Sheet 3.1 & 5.6
   const salaryGrades = [
@@ -591,12 +690,27 @@ export const BookingView: React.FC<BookingViewProps> = ({
   }, [localKocs, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, searchTerm]);
 
   const dealsByPeriodBucket = useMemo(() => {
+    const sampleByCode = new Map(MOCK_SAMPLE_SHIPMENTS.map(s => [s.dealCode, s]));
     const currentPaid: BookingDealItem[] = [];
     const allPaid: BookingDealItem[] = [];
     const focOnly: BookingDealItem[] = [];
     const allMerged: BookingDealItem[] = [];
     for (const rawDeal of deals) {
-      const deal = localDealOverrides[rawDeal.id] || rawDeal;
+      const baseDeal = localDealOverrides[rawDeal.id] || rawDeal;
+      const matchedSample = sampleByCode.get(baseDeal.dealCode);
+      const deal: BookingDealItem = matchedSample
+        ? {
+            ...baseDeal,
+            sampleCarrier: baseDeal.sampleCarrier || matchedSample.carrier,
+            sampleTrackingCode: baseDeal.sampleTrackingCode || matchedSample.trackingCode,
+            sampleSentDate: baseDeal.sampleSentDate || matchedSample.sentDate,
+            sampleDeliveredDate: baseDeal.sampleDeliveredDate || matchedSample.deliveredDate,
+            sampleRecipientPhone: baseDeal.sampleRecipientPhone || matchedSample.kocPhone,
+            sampleShippingAddress: baseDeal.sampleShippingAddress || matchedSample.shippingAddress,
+            sparkAdsCode: baseDeal.sparkAdsCode || matchedSample.sparkAdsCode,
+            sparkAdsExpiryDays: baseDeal.sparkAdsExpiryDays || matchedSample.sparkAdsExpiryDays,
+          }
+        : baseDeal;
       allMerged.push(deal);
       const isPaid = (deal.totalValue || 0) > 0;
       if (isPaid) {
@@ -641,6 +755,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     let brandApproved = 0;
     let brandRejected = 0;
     let winnerTop20 = 0;
+    let samplePending = 0;
     let adsCodePending = 0;
     let hasGmv = 0;
     let breakEven = 0;
@@ -664,6 +779,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         winnerTop20++;
         top20Gmv += d.gmv30 || 0;
       }
+      if (d.sampleStatus !== 'ĐÃ_NHẬN') samplePending++;
       if (d.adsCodeStatus === 'CHƯA_CẤP') adsCodePending++;
       if ((d.gmv30 || 0) > 0) hasGmv++;
       if ((d.roi || 0) >= 1) breakEven++;
@@ -695,6 +811,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       brandApproved,
       brandRejected,
       winnerTop20,
+      samplePending,
       adsCodePending,
       hasGmv,
       breakEven,
@@ -713,6 +830,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if (dealsFilter === 'HAS_GMV' && (deal.gmv30 || 0) <= 0) return false;
       if (dealsFilter === 'BREAK_EVEN' && (deal.roi || 0) < 1.0) return false;
       if (dealsFilter === 'OVERDUE_SLA' && !deal.isSlaWarning) return false;
+      if (dealsFilter === 'SAMPLE_PENDING' && deal.sampleStatus === 'ĐÃ_NHẬN') return false;
       if (dealsFilter === 'ADS_CODE_PENDING' && deal.adsCodeStatus !== 'CHƯA_CẤP') return false;
       if (!q) return true;
       return (
@@ -721,7 +839,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
         deal.campaignTitle.toLowerCase().includes(q) ||
         (deal.storeName ? deal.storeName.toLowerCase().includes(q) : false) ||
         (deal.productName ? deal.productName.toLowerCase().includes(q) : false) ||
-        (deal.brandName ? deal.brandName.toLowerCase().includes(q) : false)
+        (deal.brandName ? deal.brandName.toLowerCase().includes(q) : false) ||
+        (deal.sampleTrackingCode ? deal.sampleTrackingCode.toLowerCase().includes(q) : false) ||
+        (deal.sparkAdsCode ? deal.sparkAdsCode.toLowerCase().includes(q) : false)
       );
     });
   }, [baseScopedDeals, dealsSearch, dealsFilter, selectedPipelineStage]);
@@ -962,7 +1082,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
       brandRejectReason: deal.brandRejectReason || '',
       pipelineText: deal.pipelineText || 'Kịch bản',
       sampleStatus: deal.sampleStatus || 'ĐÃ_NHẬN',
+      sampleCarrier: deal.sampleCarrier || 'GHN',
+      sampleTrackingCode: deal.sampleTrackingCode || '',
+      sampleDeliveredDate: deal.sampleDeliveredDate || '',
       adsCodeStatus: deal.adsCodeStatus || 'ĐÃ_NGHIỆM_THU',
+      sparkAdsCode: deal.sparkAdsCode || '',
+      sparkAdsExpiryDays: deal.sparkAdsExpiryDays || 30,
       tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || '',
       viewsCount: deal.viewsCount || 0,
       gmv30: deal.gmv30 || 0,
@@ -996,13 +1121,23 @@ export const BookingView: React.FC<BookingViewProps> = ({
       updatedStatusLabel = 'Video Đã Lên Sóng (Chờ Nghiệm Thu)';
     }
 
+    const cleanSpark = editForm.sparkAdsCode.trim();
+    const resolvedAdsStatus = cleanSpark && editForm.adsCodeStatus === 'CHƯA_CẤP'
+      ? 'ĐÃ_NGHIỆM_THU'
+      : editForm.adsCodeStatus;
+
     const updatedDeal: BookingDealItem = {
       ...editingDeal,
       brandApprovalStatus: editForm.brandApprovalStatus,
       brandRejectReason: editForm.brandApprovalStatus === 'TỪ_CHỐI' ? editForm.brandRejectReason : undefined,
       pipelineText: editForm.pipelineText,
       sampleStatus: editForm.sampleStatus,
-      adsCodeStatus: editForm.adsCodeStatus,
+      sampleCarrier: editForm.sampleCarrier,
+      sampleTrackingCode: editForm.sampleTrackingCode.trim() || editingDeal.sampleTrackingCode,
+      sampleDeliveredDate: editForm.sampleDeliveredDate.trim() || editingDeal.sampleDeliveredDate,
+      adsCodeStatus: resolvedAdsStatus,
+      sparkAdsCode: cleanSpark || editingDeal.sparkAdsCode,
+      sparkAdsExpiryDays: editForm.sparkAdsExpiryDays,
       tiktokVideoUrl: editForm.tiktokVideoUrl,
       videoUrl: editForm.tiktokVideoUrl,
       viewsCount: Number(editForm.viewsCount) || 0,
@@ -1097,21 +1232,80 @@ export const BookingView: React.FC<BookingViewProps> = ({
         },
       },
       {
-        key: 'delivery', header: 'Mẫu · Video · Mã Ads', width: 150, render: (d: BookingDealItem) => (
-          <div className="grid gap-0.5 text-2xs leading-tight">
-            <div className="flex items-center gap-1.5">
-              {d.tiktokVideoUrl || d.videoUrl ? (
-                <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:underline font-medium">
-                  Xem video<ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              ) : (
-                <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive font-medium' : 'text-ink-3'}>
-                  {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
+        key: 'delivery', header: 'Mẫu (B3) · Video & Mã Ads (B4)', width: 175, render: (d: BookingDealItem) => (
+          <div className="grid gap-1 text-2xs leading-tight">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleOpenSampleModal(d)}
+                className={`inline-flex items-center gap-1 font-medium hover:underline ${
+                  d.sampleStatus === 'ĐÃ_NHẬN'
+                    ? 'text-positive'
+                    : d.sampleStatus === 'ĐANG_GIAO'
+                    ? 'text-accent'
+                    : 'text-warning'
+                }`}
+                title="Cập nhật vận đơn gửi mẫu (Bước 3)"
+              >
+                <Truck className="w-3 h-3 shrink-0" />
+                <span>
+                  {d.sampleStatus === 'ĐÃ_NHẬN'
+                    ? 'Đã nhận mẫu'
+                    : d.sampleStatus === 'ĐANG_GIAO'
+                    ? `Đang giao${d.sampleTrackingCode ? ` · ${d.sampleTrackingCode.slice(-6)}` : ''}`
+                    : '+ Gửi mẫu'}
                 </span>
+              </button>
+              {(d.tiktokVideoUrl || d.videoUrl) && (
+                <a
+                  href={d.tiktokVideoUrl || d.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-0.5 text-accent hover:underline font-medium"
+                >
+                  · Video<ExternalLink className="w-2.5 h-2.5" />
+                </a>
               )}
             </div>
-            <div className="text-ink-2 truncate max-w-[140px]">
-              {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3">Chưa mã Ads</span>}
+            <div className="flex items-center gap-1 min-w-0">
+              {d.sparkAdsCode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenGrowthHandoff(d)}
+                    className="font-code text-2xs text-ink-2 hover:text-accent truncate max-w-[125px]"
+                    title="Cập nhật hoặc bàn giao lại mã Spark Ads"
+                  >
+                    {d.sparkAdsCode}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(d.sparkAdsCode!);
+                      setCopiedCodeId(d.id);
+                      setTimeout(() => setCopiedCodeId(null), 1500);
+                      onNotify?.(`Đã sao chép mã Spark Ads: ${d.sparkAdsCode}`, 'info');
+                    }}
+                    className="text-ink-3 hover:text-ink p-0.5 shrink-0"
+                    title="Sao chép mã Spark Ads"
+                  >
+                    {copiedCodeId === d.id ? (
+                      <Check className="w-2.5 h-2.5 text-positive" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5" />
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleOpenGrowthHandoff(d)}
+                  className="text-ink-3 hover:text-accent font-medium"
+                  title="Nhập mã Spark Ads & bàn giao Growth (Bước 4)"
+                >
+                  + Cấp mã Ads
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -1137,7 +1331,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         ),
       },
       {
-        key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right' as const, width: 195, render: (d: BookingDealItem) => {
+        key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right' as const, width: 215, render: (d: BookingDealItem) => {
           const stKey = resolveDealPipelineStage(d);
           const nextStage = PIPELINE_STAGE_MAP[stKey].nextStage;
           return (
@@ -1156,7 +1350,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
               {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
                 <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Air</Button>
               ) : null}
-              <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth" />
+              <Button size="sm" variant="ghost" icon={Truck} onClick={() => handleOpenSampleModal(d)} title="Vận đơn hàng mẫu (Bước 3)" />
+              <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads (Bước 4)" />
               <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
               <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
               {(d.totalValue || 0) > 0 && (
@@ -1252,7 +1447,15 @@ export const BookingView: React.FC<BookingViewProps> = ({
               Top 20% video đóng góp <strong className="font-semibold text-ink">{top20SharePct}% GMV</strong> ({formatVndShort(dealFilterCounts.top20Gmv)} / {formatVndShort(dealFilterCounts.totalGmv)})
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={Truck}
+              onClick={() => setActiveSubTab('SAMPLE_ADS')}
+            >
+              Vận đơn mẫu &amp; Mã Ads ({dealFilterCounts.samplePending + dealFilterCounts.adsCodePending})
+            </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -1275,7 +1478,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         </div>
 
         {/* 2. THANH PHỄU PIPELINE 5 BƯỚC (INTERACTIVE 5-STAGE FUNNEL BAR) */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {PIPELINE_STAGES.map((st) => {
             const stat = dealFilterCounts.byStage[st.key];
             const isSelected = selectedPipelineStage === st.key;
@@ -1396,7 +1599,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       setDealsPage(1);
                       setStoreGroupPage(1);
                     }}
-                    className="w-auto min-w-[210px]"
+                    className="w-full sm:w-auto sm:min-w-[210px]"
                     aria-label="Phạm vi kỳ & loại deal"
                   >
                     <option value="CURRENT_PAID">Kỳ hiện tại · Có phí (2026/10)</option>
@@ -1411,7 +1614,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       setDealsPage(1);
                       setStoreGroupPage(1);
                     }}
-                    className="w-auto min-w-[170px]"
+                    className="w-full sm:w-auto sm:min-w-[170px]"
                     aria-label="Lọc theo PIC phụ trách"
                   >
                     <option value="ALL">Mọi chuyên viên PIC</option>
@@ -1424,7 +1627,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       setDealsPage(1);
                       setStoreGroupPage(1);
                     }}
-                    className="w-auto min-w-[180px]"
+                    className="w-full sm:w-auto sm:min-w-[180px]"
                     aria-label="Lọc theo gian hàng"
                   >
                     {brandsList.map(b => (
@@ -1449,8 +1652,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: dealFilterCounts.brandPending },
                     { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: dealFilterCounts.brandApproved },
                     { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
-                    { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
+                    { key: 'SAMPLE_PENDING', label: 'Chờ gửi/nhận mẫu', count: dealFilterCounts.samplePending },
                     { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
+                    { key: 'WINNER_TOP20', label: 'Top GMV', count: dealFilterCounts.winnerTop20 },
                     { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
                     { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
                   ]}
@@ -1562,7 +1766,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                             })}
                           </div>
 
-                          <div className="text-right text-xs leading-tight tabular-nums border-l border-line pl-3">
+                          <div className="text-left sm:text-right text-xs leading-tight tabular-nums border-t sm:border-t-0 sm:border-l border-line pt-2 sm:pt-0 pl-0 sm:pl-3 w-full sm:w-auto">
                             <div>
                               <span className="text-ink-3">Video: </span>
                               <strong className="text-ink">
@@ -1639,8 +1843,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
           {/* CHẾ ĐỘ 2: BẢNG CỘT KANBAN 5 BƯỚC PIPELINE */}
           {pipelineViewMode === 'KANBAN' && (
-            <div className="p-4 overflow-x-auto">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 min-w-[1050px]">
+            <div className="p-3 sm:p-4 overflow-x-auto">
+              <div className="flex md:grid md:grid-cols-5 gap-3 min-w-[1050px]">
                 {PIPELINE_STAGES.map((st) => {
                   const stageDeals = filteredDeals.filter(d => resolveDealPipelineStage(d) === st.key);
                   const visibleCards = stageDeals.slice(0, kanbanCardLimit);
@@ -1649,7 +1853,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   return (
                     <div
                       key={st.key}
-                      className="rounded-xl border border-line bg-sunken/30 flex flex-col max-h-[680px]"
+                      className="rounded-xl border border-line bg-sunken/30 flex flex-col max-h-[680px] w-[260px] shrink-0 md:w-auto md:shrink"
                     >
                       <div className="p-3 border-b border-line bg-surface rounded-t-xl flex items-center justify-between gap-2">
                         <div className="min-w-0">
@@ -1693,6 +1897,40 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                 <span className="font-semibold font-mono text-ink">{formatVndShort(d.totalValue)}</span>
                               </div>
 
+                              <div className="flex items-center justify-between gap-1 text-2xs px-2 py-1 rounded bg-sunken/60">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenSampleModal(d)}
+                                  className={`inline-flex items-center gap-1 font-medium hover:underline ${
+                                    d.sampleStatus === 'ĐÃ_NHẬN'
+                                      ? 'text-positive'
+                                      : d.sampleStatus === 'ĐANG_GIAO'
+                                      ? 'text-accent'
+                                      : 'text-warning'
+                                  }`}
+                                  title="Cập nhật vận đơn hàng mẫu (Bước 3)"
+                                >
+                                  <Truck className="w-2.5 h-2.5" />
+                                  <span>
+                                    {d.sampleStatus === 'ĐÃ_NHẬN'
+                                      ? 'Đã nhận mẫu'
+                                      : d.sampleStatus === 'ĐANG_GIAO'
+                                      ? 'Đang giao mẫu'
+                                      : '+ Gửi mẫu'}
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenGrowthHandoff(d)}
+                                  className={`font-code hover:underline truncate max-w-[100px] ${
+                                    d.sparkAdsCode ? 'text-ink-2 font-medium' : 'text-ink-3'
+                                  }`}
+                                  title="Cập nhật & bàn giao mã Spark Ads (Bước 4)"
+                                >
+                                  {d.sparkAdsCode || '+ Mã Ads'}
+                                </button>
+                              </div>
+
                               {(d.gmv30 || 0) > 0 && (
                                 <div className="flex items-center justify-between text-2xs px-2 py-1 rounded bg-sunken">
                                   <span className="text-ink-2 font-mono">GMV: {formatVndShort(d.gmv30)}</span>
@@ -1722,7 +1960,16 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                 )}
 
                                 <div className="flex items-center gap-1">
-                                  {st.key === '4_AIR_GROWTH' && (
+                                  {(st.key === '2_DEAL_CONTRACT' || st.key === '3_CONTENT_SCRIPT') && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      icon={Truck}
+                                      onClick={() => handleOpenSampleModal(d)}
+                                      title="Cập nhật vận đơn mẫu"
+                                    />
+                                  )}
+                                  {(st.key === '3_CONTENT_SCRIPT' || st.key === '4_AIR_GROWTH') && (
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -1989,6 +2236,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         onChange={setActiveSubTab}
         items={[
           { key: 'BOOKING_DEALS', label: 'Pipeline Booking', count: dealFilterCounts.all },
+          { key: 'SAMPLE_ADS', label: 'Hàng mẫu & Mã Ads', count: dealFilterCounts.samplePending + dealFilterCounts.adsCodePending },
           { key: 'MY_PLAN', label: 'Kế hoạch cá nhân' },
           { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
           { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
@@ -2179,11 +2427,39 @@ export const BookingView: React.FC<BookingViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB: HỢP ĐỒNG & TẠM ỨNG (TỪNG JOB BOOKING)                                 */}
+      {/* TAB: PIPELINE BOOKING                                                      */}
       {/* ========================================================================= */}
       {visitedSubTabs.BOOKING_DEALS && (
         <div className={activeSubTab === 'BOOKING_DEALS' ? 'block' : 'hidden'}>
           {bookingDealsSubTabNode}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB: HÀNG MẪU (BƯỚC 3) & MÃ SPARK ADS (BƯỚC 4)                             */}
+      {/* ========================================================================= */}
+      {visitedSubTabs.SAMPLE_ADS && (
+        <div className={activeSubTab === 'SAMPLE_ADS' ? 'block' : 'hidden'}>
+          <SampleTrackerView
+            embedded
+            deals={baseScopedDeals}
+            currentUser={currentUser}
+            onNotify={onNotify}
+            onUpdateDeal={applyDealUpdate}
+            onUpdateDealWithSparkAds={(dealCode, sparkCode) => {
+              const found = deals.find(d => d.dealCode === dealCode);
+              if (found) {
+                applyDealUpdate({
+                  ...found,
+                  currentStage: '4_AIR_GROWTH',
+                  adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+                  sparkAdsCode: sparkCode,
+                  growthHandoffStatus: 'ĐÃ_GIAO_MÃ_ADS',
+                  pipelineText: 'Bàn giao Growth Ads',
+                });
+              }
+            }}
+          />
         </div>
       )}
 
@@ -2195,6 +2471,116 @@ export const BookingView: React.FC<BookingViewProps> = ({
           {kocDirectorySubTabNode}
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CẬP NHẬT VẬN ĐƠN HÀNG MẪU (BƯỚC 3 PIPELINE)                         */}
+      {/* ========================================================================= */}
+      <Modal
+        open={!!sampleModalDeal}
+        onClose={() => setSampleModalDeal(null)}
+        title={sampleModalDeal ? `Vận đơn hàng mẫu (Bước 3) · ${sampleModalDeal.dealCode}` : ''}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setSampleModalDeal(null)}>Hủy</Button>
+            <Button variant="primary" icon={Check} onClick={handleConfirmSampleUpdate}>Lưu vận đơn</Button>
+          </>
+        }
+      >
+        {sampleModalDeal && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-sunken border border-line text-xs">
+              <div>
+                <strong className="text-ink">{sampleModalDeal.kocStageName}</strong>
+                <span className="text-ink-3"> · {sampleModalDeal.storeName || sampleModalDeal.brandName}</span>
+              </div>
+              <span className="text-ink-2 font-medium">{sampleModalDeal.productName || 'Sản phẩm mẫu'}</span>
+            </div>
+
+            <Field label="Trạng thái gửi & nhận mẫu">
+              <Segmented
+                value={sampleForm.sampleStatus}
+                onChange={(v) =>
+                  setSampleForm(prev => ({
+                    ...prev,
+                    sampleStatus: v,
+                    deliveredDate: v === 'ĐÃ_NHẬN' && !prev.deliveredDate ? '20/10/2026' : prev.deliveredDate,
+                  }))
+                }
+                items={[
+                  { key: 'CHƯA_GỬI', label: 'Chưa gửi mẫu' },
+                  { key: 'ĐANG_GIAO', label: 'Đang vận chuyển' },
+                  { key: 'ĐÃ_NHẬN', label: 'KOC đã nhận mẫu' },
+                ]}
+              />
+            </Field>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Đơn vị vận chuyển" htmlFor="sample-carrier">
+                <Select
+                  id="sample-carrier"
+                  value={sampleForm.carrier}
+                  onChange={e =>
+                    setSampleForm(prev => ({
+                      ...prev,
+                      carrier: e.target.value as 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress',
+                    }))
+                  }
+                >
+                  <option value="GHN">Giao Hàng Nhanh (GHN)</option>
+                  <option value="ViettelPost">Viettel Post</option>
+                  <option value="J&T">J&amp;T Express</option>
+                  <option value="ShopeeExpress">SPX Express</option>
+                </Select>
+              </Field>
+              <Field label="Mã vận đơn" htmlFor="sample-tracking">
+                <Input
+                  id="sample-tracking"
+                  className="font-code"
+                  value={sampleForm.trackingCode}
+                  onChange={e => setSampleForm(prev => ({ ...prev, trackingCode: e.target.value }))}
+                  placeholder="GHN-..."
+                />
+              </Field>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Ngày gửi mẫu" htmlFor="sample-sent">
+                <Input
+                  id="sample-sent"
+                  value={sampleForm.sentDate}
+                  onChange={e => setSampleForm(prev => ({ ...prev, sentDate: e.target.value }))}
+                  placeholder="DD/MM/YYYY"
+                />
+              </Field>
+              <Field label="Ngày KOC nhận mẫu (Tính SLA 5 ngày)" htmlFor="sample-delivered">
+                <Input
+                  id="sample-delivered"
+                  value={sampleForm.deliveredDate}
+                  onChange={e => setSampleForm(prev => ({ ...prev, deliveredDate: e.target.value }))}
+                  placeholder="DD/MM/YYYY"
+                />
+              </Field>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="SĐT người nhận" htmlFor="sample-phone">
+                <Input
+                  id="sample-phone"
+                  value={sampleForm.recipientPhone}
+                  onChange={e => setSampleForm(prev => ({ ...prev, recipientPhone: e.target.value }))}
+                />
+              </Field>
+              <Field label="Địa chỉ nhận mẫu" htmlFor="sample-address">
+                <Input
+                  id="sample-address"
+                  value={sampleForm.shippingAddress}
+                  onChange={e => setSampleForm(prev => ({ ...prev, shippingAddress: e.target.value }))}
+                />
+              </Field>
+            </div>
+          </>
+        )}
+      </Modal>
 
       {/* ========================================================================= */}
       {/* MODAL: BÀN GIAO SANG TEAM GROWTH                                            */}
@@ -2437,18 +2823,51 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Hàng mẫu">
+              <Field label="Hàng mẫu (Bước 3)">
                 <Segmented
                   value={editForm.sampleStatus}
                   onChange={(v) => setEditForm(prev => ({ ...prev, sampleStatus: v }))}
                   items={[{ key: 'CHƯA_GỬI', label: 'Chưa gửi' }, { key: 'ĐANG_GIAO', label: 'Đang giao' }, { key: 'ĐÃ_NHẬN', label: 'Đã nhận' }]}
                 />
               </Field>
-              <Field label="Mã Spark Ads">
+              <Field label="Mã Spark Ads (Bước 4)">
                 <Segmented
                   value={editForm.adsCodeStatus}
                   onChange={(v) => setEditForm(prev => ({ ...prev, adsCodeStatus: v }))}
                   items={[{ key: 'CHƯA_CẤP', label: 'Chưa cấp' }, { key: 'ĐÃ_NGHIỆM_THU', label: 'Đã duyệt' }, { key: 'KHÔNG_DÙNG', label: 'Không dùng' }]}
+                />
+              </Field>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="Đơn vị vận chuyển" htmlFor="edit-sample-carrier">
+                <Select
+                  id="edit-sample-carrier"
+                  value={editForm.sampleCarrier}
+                  onChange={e => setEditForm(prev => ({ ...prev, sampleCarrier: e.target.value as 'GHN' | 'ViettelPost' | 'J&T' | 'ShopeeExpress' }))}
+                >
+                  <option value="GHN">GHN</option>
+                  <option value="ViettelPost">Viettel Post</option>
+                  <option value="J&T">J&amp;T Express</option>
+                  <option value="ShopeeExpress">SPX Express</option>
+                </Select>
+              </Field>
+              <Field label="Mã vận đơn mẫu" htmlFor="edit-sample-tracking">
+                <Input
+                  id="edit-sample-tracking"
+                  className="font-code"
+                  value={editForm.sampleTrackingCode}
+                  onChange={e => setEditForm(prev => ({ ...prev, sampleTrackingCode: e.target.value }))}
+                  placeholder="GHN-..."
+                />
+              </Field>
+              <Field label="Mã TikTok Spark Ads" htmlFor="edit-spark-code">
+                <Input
+                  id="edit-spark-code"
+                  className="font-code"
+                  value={editForm.sparkAdsCode}
+                  onChange={e => setEditForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
+                  placeholder="SPARK-TT-..."
                 />
               </Field>
             </div>

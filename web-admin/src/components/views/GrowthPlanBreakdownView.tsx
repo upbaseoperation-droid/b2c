@@ -653,8 +653,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
           {/* Interactive Tier Breakdown Table (Tab 1: KOC Affiliate) */}
           {channelTab === 'AFFILIATE' && (
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs overflow-x-auto">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+          <div className="card-enterprise p-3.5 sm:p-5 bg-white border border-slate-200 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200">
               <div>
                 <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-blue-600" />
@@ -667,6 +667,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </span>
             </div>
 
+            <div className="overflow-x-auto -mx-3.5 sm:mx-0">
             <table className="w-full min-w-[640px] text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
@@ -803,13 +804,14 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </tr>
               </tfoot>
             </table>
+            </div>
           </div>
           )}
 
           {/* Tab 2: Video Self-Channel (Inhouse & Reup Đa Kênh) */}
           {channelTab === 'SELF_CHANNEL' && (
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="card-enterprise p-3.5 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
                 <div>
                   <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <Video className="w-4 h-4 text-slate-600" />
@@ -842,9 +844,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
 
               {/* Reup Matrix Table */}
-              <div className="pt-2 overflow-x-auto">
+              <div className="pt-2">
                 <h5 className="text-xs font-semibold text-slate-800 mb-2">Ma trận phân phối Reup đa kênh (theo cột 211-215 Sheet 4.1):</h5>
-                <table className="w-full min-w-[640px] text-left text-xs border-collapse">
+                <div className="overflow-x-auto -mx-3.5 sm:mx-0">
+                  <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                       <th className="py-2 px-3">Kênh phân phối</th>
@@ -885,14 +888,15 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     </tr>
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
 
           {/* Tab 3: Livestream Gian Hàng (Inhouse & CTV) */}
           {channelTab === 'LIVESTREAM' && (
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="card-enterprise p-3.5 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
                 <div>
                   <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <Tv className="w-4 h-4 text-amber-600" />
@@ -906,7 +910,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
 
               {/* KPI Live */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="text-2xs text-slate-500">Inhouse Studio HCM (3h)</div>
                   <div className="text-base font-semibold text-slate-900 mt-1">16 Phiên</div>
@@ -933,8 +937,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
           {/* Tab 4: Đối Soát 4 Cột & NMV Gap (Chuẩn Sheet 4.1) */}
           {channelTab === 'FOUR_STAGE' && (
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4 overflow-x-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="card-enterprise p-3.5 sm:p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
                 <div>
                   <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-emerald-600" />
@@ -947,7 +951,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </span>
               </div>
 
-              <table className="w-full min-w-[640px] text-left text-xs border-collapse">
+              <div className="overflow-x-auto -mx-3.5 sm:mx-0">
+                <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                     <th className="py-2.5 px-3">Hạng mục</th>
@@ -1016,6 +1021,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

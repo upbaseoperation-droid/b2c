@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest) {
     try { parsed = JSON.parse(raw); } catch { throw new RecordError('Dữ liệu JSON không hợp lệ.'); }
     const { revision } = parsed;
     // Danh sách PIC gian do kho store-pics quản lý; không lưu bản sao (có thể đã cũ) vào danh mục gốc.
-    const data: MasterCatalog = { ...parsed.data, stores: (parsed.data?.stores || []).map(({ pics: _pics, ...store }) => store) };
+    const data: MasterCatalog = { ...parsed.data, stores: (parsed.data?.stores || []).map(({ pics: _pics, formerPics: _formerPics, ...store }) => store) };
     const result = await updateRecord('master-catalog', DEFAULT_MASTER_CATALOG, revision, async previous => { await validateCatalog(data, previous); return data; });
     return NextResponse.json({ ...result, canEdit: true }, { headers });
   } catch (e) { return failure(e); }

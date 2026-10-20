@@ -709,7 +709,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center pt-1 border-t border-line">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center pt-1 border-t border-line">
               <div className="p-2 rounded-lg bg-sunken/60">
                 <span className="text-2xs text-ink-3 block">18–24 tuổi</span>
                 <span className="text-sm font-semibold text-ink">{pct(koc.age18_24 || 38)}</span>
