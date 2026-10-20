@@ -679,7 +679,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     }}
                     className="w-full text-xs h-9 px-3 rounded-lg border border-line bg-surface text-ink font-semibold focus:outline-none focus:border-accent"
                   >
-                    {kocs.map(k => (
+                    {kocs.slice(0, 200).map(k => (
                       <option key={k.id} value={k.id}>
                         {k.stageName} ({k.channelId}) — {k.salaryGrade} ({k.niche})
                       </option>

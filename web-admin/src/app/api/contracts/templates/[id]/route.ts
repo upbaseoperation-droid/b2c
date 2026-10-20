@@ -37,14 +37,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   try {
     checkOrigin(req);
     const actor = actorFromRequest(req);
-    requireCondition(
-      actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)),
-      'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật danh mục mẫu hợp đồng.',
-      403,
-    );
     const { id } = await context.params;
     const body = (await req.json()) as Record<string, unknown>;
     const action = body.action as string;
+    const isKocCustomUpload = action === 'UPLOAD_DOCX' && body.scope === 'KOC_CUSTOM';
+    requireCondition(
+      actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)) || (isKocCustomUpload && actor.roles.includes('CREATOR')),
+      'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật danh mục mẫu hợp đồng.',
+      403,
+    );
 
     if (action === 'SAVE_META') {
       const template = await saveTemplateMeta(id, actor.name, {

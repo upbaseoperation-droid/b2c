@@ -84,7 +84,18 @@ export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'
 export interface SigningPerson { name: string; email: string; action: number; status: string; at?: string }
 export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string; provider?: 'MISA' | 'DEMO' }
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
-export interface ContractRevision { version: number; values: Record<string, string>; at: string; actorId: string }
+export interface ContractRevision {
+  version: number;
+  values: Record<string, string>;
+  at: string;
+  actorId: string;
+  customFile?: {
+    filename: string;
+    hash: string;
+    blocks?: DocBlock[];
+    paragraphs?: string[];
+  };
+}
 export interface ContractRecord {
   id: string; title: string; brand: string; partner: string; ownerId: string; ownerName: string;
   templateId: string; templateHash: string; version: number; revision: number; values: Record<string, string>;
@@ -99,4 +110,15 @@ export interface ContractRecord {
   customTermsSummary?: string;
   /** Ghi chú đàm phán & lưu vết thỏa thuận nội bộ. */
   internalNotes?: string;
+  /** Hồ sơ sử dụng file hợp đồng riêng của KOC / Agency tải lên. */
+  isKocOwnForm?: boolean;
+  /** Thông tin tệp hợp đồng riêng của KOC đã tải lên. */
+  customFile?: {
+    filename: string;
+    hash: string;
+    uploadedAt: string;
+    uploadedBy: string;
+    blocks?: DocBlock[];
+    paragraphs?: string[];
+  };
 }

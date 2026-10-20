@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Check,
+  Clock,
   Download,
   ExternalLink,
   FileText,
@@ -20,8 +21,13 @@ import {
   UserPlus,
   Users,
   Video,
+  X,
 } from 'lucide-react';
-import type { KocItem } from '../../lib/types';
+import type { KocItem, UserProfile } from '../../lib/types';
+import type {
+  CrawlerHistoryTabKey,
+  TikTokCrawlerDailyHistoryItem,
+} from '../../app/api/integrations/tiktok-koc/history/route';
 import {
   buildCompetitorKocsCsv,
   buildScrapedKocsCsv,
@@ -57,7 +63,6 @@ import {
   Chips,
   DataTable,
   PageActions,
-  PageActiveContext,
   PageHeaderNav,
   Panel,
   SearchInput,
@@ -68,6 +73,7 @@ import {
 import type { Column } from '../ui';
 
 interface TikTokCrawlerHubViewProps {
+  currentUser?: UserProfile;
   kocs: KocItem[];
   onSaveScrapedKocs: (payload: { created: KocItem[]; updated: KocItem[] }) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
@@ -136,6 +142,7 @@ const TRENDING_CATEGORY_OPTIONS: Array<{ key: TrendingKocCategoryKey; label: str
 ];
 
 export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
+  currentUser,
   kocs,
   onSaveScrapedKocs,
   onNotify,
@@ -143,6 +150,87 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<CrawlerTabKey>('COMPETITOR_KOCS');
   const period: PeriodKey = '30d';
+
+  // --- Lịch sử quét chung trong ngày giữa các nhân viên ---
+  const [dailyHistory, setDailyHistory] = useState<TikTokCrawlerDailyHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+
+  const fetchDailyHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/integrations/tiktok-koc/history');
+      const json = await res.json();
+      if (res.ok && json.success && Array.isArray(json.items)) {
+        setDailyHistory(json.items);
+      }
+    } catch {
+      // ignore background history fetch error
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchDailyHistory();
+  }, [fetchDailyHistory, activeTab]);
+
+  const saveDailyHistorySession = useCallback(
+    async (payload: {
+      tab: CrawlerHistoryTabKey;
+      rawInput: string;
+      queryKey?: string;
+      queryLabel: string;
+      compProfile?: TikTokCompetitorProfileSummary | null;
+      compResults?: TikTokCompetitorKocResult[];
+      tagResults?: TikTokHashtagKocResult[];
+      commentData?: TikTokVideoCommentsScrapeResult | null;
+      trendingCategory?: TrendingKocCategoryKey;
+      trendingCreators?: TikTokTrendingCreatorItem[];
+    }) => {
+      try {
+        const res = await fetch('/api/integrations/tiktok-koc/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            staffName: currentUser?.name || 'Nhân sự B2C',
+          }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success && Array.isArray(json.items)) {
+          setDailyHistory(json.items);
+          const first = json.items[0] as TikTokCrawlerDailyHistoryItem | undefined;
+          if (first && first.tab === payload.tab) {
+            setActiveHistoryId(first.id);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    },
+    [currentUser?.name]
+  );
+
+  const deleteHistoryEntry = useCallback(
+    async (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setDailyHistory((prev) => prev.filter((it) => it.id !== id));
+      if (activeHistoryId === id) setActiveHistoryId(null);
+      try {
+        const res = await fetch(`/api/integrations/tiktok-koc/history?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+        const json = await res.json();
+        if (res.ok && json.success && Array.isArray(json.items)) {
+          setDailyHistory(json.items);
+        }
+      } catch {
+        // ignore
+      }
+    },
+    [activeHistoryId]
+  );
 
   // --- State Tab 1: Quét KOC của Đối thủ ---
   const [competitorInput, setCompetitorInput] = useState('');
@@ -263,50 +351,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     if (brandHint) setBriefMatcherBrand(brandHint);
     setBriefMatcherOpen(true);
   };
-
-  // Làm mới toàn bộ kết quả từ lần trước mỗi khi người dùng nhấn vào màn hình Crawler
-  const isPageActive = useContext(PageActiveContext);
-  const [prevPageActive, setPrevPageActive] = useState(isPageActive);
-  if (prevPageActive !== isPageActive) {
-    setPrevPageActive(isPageActive);
-    setActiveTab('COMPETITOR_KOCS');
-    setCompetitorInput('');
-    setCompRequestedCount(null);
-    setCompLoading(false);
-    setCompBatchProgress(null);
-    setCompError(null);
-    setCompProfile(null);
-    setCompResults([]);
-    setCompSearchQuery('');
-    setHashtagInput('');
-    setTagRequestedCount(null);
-    setTagLoading(false);
-    setTagBatchProgress(null);
-    setTagError(null);
-    setTagResults([]);
-    setTagSearchQuery('');
-    setVideoCommentUrl('');
-    setCommentRequestedCount(null);
-    setCommentLoading(false);
-    setCommentBatchProgress(null);
-    setCommentError(null);
-    setCommentData(null);
-    setCommentSearch('');
-    setTrendingRequestedCount(null);
-    setTrendingLoading(false);
-    setTrendingBatchProgress(null);
-    setTrendingCreators([]);
-    setTrendingSearch('');
-  }
-
-  useEffect(() => {
-    if (!isPageActive) {
-      compAbortRef.current = true;
-      tagAbortRef.current = true;
-      commentAbortRef.current = true;
-      trendingAbortRef.current = true;
-    }
-  }, [isPageActive]);
 
   const existingByHandle = useMemo(() => {
     const map = new Map<string, KocItem>();
@@ -459,6 +503,36 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       } else if (appendMode && accumulatedMap.size === baseList.length && !compAbortRef.current) {
         onNotify?.('Đã lấy hết các KOC khớp với đối thủ này trên chỉ mục hiện tại.', 'info');
       }
+
+      if (accumulatedMap.size > 0) {
+        const finalMerged = Array.from(accumulatedMap.values()).sort((a, b) =>
+          compareVideoAirDateDesc(
+            {
+              publishedAt: a.competitorCollaboration.latestCollabPublishedAt,
+              videoId: a.competitorCollaboration.latestCollabVideoId,
+              views: a.competitorCollaboration.latestCollabViews,
+            },
+            {
+              publishedAt: b.competitorCollaboration.latestCollabPublishedAt,
+              videoId: b.competitorCollaboration.latestCollabVideoId,
+              views: b.competitorCollaboration.latestCollabViews,
+            }
+          )
+        );
+        const displayLabel = latestProfile?.handle
+          ? `@${latestProfile.handle}`
+          : trimmed.startsWith('@')
+            ? trimmed
+            : `@${trimmed}`;
+        void saveDailyHistorySession({
+          tab: 'COMPETITOR_KOCS',
+          rawInput: trimmed,
+          queryKey: (latestProfile?.handle || trimmed).toLowerCase().replace(/^@+/, ''),
+          queryLabel: displayLabel,
+          compProfile: latestProfile,
+          compResults: finalMerged,
+        });
+      }
     } catch {
       if (accumulatedMap.size === 0) {
         const msg = 'Không kết nối được dịch vụ thu thập dữ liệu TikTok. Vui lòng thử lại.';
@@ -604,6 +678,32 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       } else if (appendMode && accumulatedMap.size === baseList.length && !tagAbortRef.current) {
         onNotify?.('Đã lấy hết các KOC khớp với hashtag này trên chỉ mục hiện tại.', 'info');
       }
+
+      if (accumulatedMap.size > 0) {
+        const finalMerged = Array.from(accumulatedMap.values()).sort(
+          (a, b) =>
+            compareVideoAirDateDesc(
+              {
+                publishedAt: a.matchedHashtagVideo.publishedAt,
+                videoId: a.matchedHashtagVideo.videoId,
+                views: a.matchedHashtagVideo.views,
+              },
+              {
+                publishedAt: b.matchedHashtagVideo.publishedAt,
+                videoId: b.matchedHashtagVideo.videoId,
+                views: b.matchedHashtagVideo.views,
+              }
+            ) || b.matchedHashtagVideo.breakoutRatio - a.matchedHashtagVideo.breakoutRatio
+        );
+        const displayTag = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+        void saveDailyHistorySession({
+          tab: 'HASHTAG_DISCOVERY',
+          rawInput: trimmed,
+          queryKey: trimmed.toLowerCase().replace(/^#+/, ''),
+          queryLabel: displayTag,
+          tagResults: finalMerged,
+        });
+      }
     } catch {
       if (accumulatedMap.size === 0) {
         const netMsg = 'Không kết nối được dịch vụ quét hashtag TikTok. Vui lòng thử lại.';
@@ -652,6 +752,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     let resolvedVideoId = appendMode ? commentData?.videoInfo.videoId : undefined;
     let latestVideoInfo = appendMode ? commentData?.videoInfo : undefined;
     let latestEngine = appendMode ? commentData?.engineUsed : undefined;
+    let latestCommentPayload: TikTokVideoCommentsScrapeResult | null = null;
 
     try {
       for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
@@ -721,7 +822,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             ? Number(((buyingIntentCount / allComments.length) * 100).toFixed(1))
             : 0;
 
-        setCommentData({
+        latestCommentPayload = {
           engineUsed: latestEngine || 'TikTok Comment API + SSR WAF Solver (100% Real Data)',
           nextCursor: currentCursor,
           hasMore: Boolean(json.hasMore),
@@ -740,7 +841,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             totalLikesOnComments,
           },
           comments: allComments,
-        });
+        };
+        setCommentData(latestCommentPayload);
 
         setCommentBatchProgress({
           currentBatch: batchIdx + 1,
@@ -761,6 +863,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           `Chỉ lấy được ${commentMap.size}/${requestedTotal} bình luận công khai (ít hơn yêu cầu ${requestedTotal - commentMap.size} bình luận).`,
           'warning'
         );
+      }
+
+      if (latestCommentPayload && latestCommentPayload.comments.length > 0) {
+        const vid = latestCommentPayload.videoInfo.videoId || trimmed;
+        const author = latestCommentPayload.videoInfo.authorHandle
+          ? `@${latestCommentPayload.videoInfo.authorHandle}`
+          : 'Video TikTok';
+        void saveDailyHistorySession({
+          tab: 'COMMENTS_AND_TRENDING',
+          rawInput: trimmed,
+          queryKey: String(vid).toLowerCase(),
+          queryLabel: `${author} · #${String(vid).slice(-6)}`,
+          commentData: latestCommentPayload,
+        });
       }
     } catch {
       if (commentMap.size === 0) {
@@ -908,6 +1024,18 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           'Chưa lấy được danh sách KOC xu hướng. Vui lòng bấm Quét lại sau ít giây.',
           'warning'
         );
+      }
+
+      if (finalCount > 0) {
+        const finalTrendingList = Array.from(accumulated.values());
+        void saveDailyHistorySession({
+          tab: 'CHANNEL_AND_VIDEO_TOOLS',
+          rawInput: cat,
+          queryKey: cat.toLowerCase(),
+          queryLabel: catLabel,
+          trendingCategory: cat,
+          trendingCreators: finalTrendingList,
+        });
       }
     } catch {
       if (accumulated.size === 0) {
@@ -1289,56 +1417,77 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     onNotify?.(`Đã xuất CSV ${filteredTrendingCreators.length} KOC xu hướng`, 'success');
   };
 
+  const renderKocStatusBadge = (matchedKoc: KocItem | undefined, isExisting: boolean) => {
+    if (matchedKoc && onNavigateToKocMaster) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigateToKocMaster(matchedKoc.id);
+          }}
+          title="Mở hồ sơ KOC trong Danh bạ KOC"
+          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-soft text-accent border border-accent/25 hover:bg-accent hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+          <span>Đã có · Danh bạ</span>
+        </button>
+      );
+    }
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 ${
+          isExisting
+            ? 'bg-sunken text-ink-2 border border-line'
+            : 'bg-positive-soft text-positive'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+        <span>{isExisting ? 'Đã có' : 'KOC Mới'}</span>
+      </span>
+    );
+  };
+
   const competitorColumns: Column<TikTokCompetitorKocResult>[] = [
     {
       key: 'koc',
       header: 'Kênh KOC & Liên hệ',
-      width: 230,
+      width: 265,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
         const isExisting =
           Boolean(matchedKoc) || r.competitorCollaboration.isAlreadyInUpbase;
         return (
-          <div className="flex items-start gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="grid gap-0.5 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <a
                   href={p.channelUrl}
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
                 >
-                  <span>@{p.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3" />
+                  <span className="truncate">@{p.handle}</span>
+                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
                 </a>
-                {matchedKoc && onNavigateToKocMaster ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigateToKocMaster(matchedKoc.id);
-                    }}
-                    title="Mở hồ sơ KOC trong Danh bạ KOC"
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
-                  >
-                    <span>Đã có · Danh bạ</span>
-                  </button>
-                ) : (
-                  <Status tone={isExisting ? 'neutral' : 'positive'}>
-                    {isExisting ? 'Đã có' : 'KOC Mới'}
-                  </Status>
+                {renderKocStatusBadge(matchedKoc, isExisting)}
+              </div>
+              <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
+                <span className="truncate">{p.nickname}</span>
+                {p.extractedPhone && (
+                  <>
+                    <span className="text-ink-3 shrink-0">·</span>
+                    <span className="text-ink font-code inline-flex items-center gap-0.5 tabular-nums shrink-0">
+                      <Phone className="w-2.5 h-2.5 text-ink-3 shrink-0" />
+                      <span>{p.extractedPhone}</span>
+                    </span>
+                  </>
                 )}
               </div>
-              <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
-              {p.extractedPhone && (
-                <span className="text-2xs text-ink font-code inline-flex items-center gap-1 tabular-nums">
-                  <Phone className="w-3 h-3 text-ink-3 shrink-0" />
-                  <span>{p.extractedPhone}</span>
-                </span>
-              )}
             </div>
           </div>
         );
@@ -1347,7 +1496,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'collab',
       header: 'Hình thức & Sản phẩm',
-      width: 230,
+      width: 220,
       render: (r) => {
         const c = r.competitorCollaboration;
         return (
@@ -1458,7 +1607,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelAction',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 245,
+      width: 200,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
@@ -1470,18 +1619,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </div>
             <div className="flex items-center gap-1.5">
-              {matchedKoc && onNavigateToKocMaster && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigateToKocMaster(matchedKoc.id);
-                  }}
-                >
-                  Danh bạ
-                </Button>
-              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -1515,49 +1652,39 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'koc',
       header: 'Kênh KOC & Liên hệ',
-      width: 230,
+      width: 265,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
         const isExisting = Boolean(matchedKoc);
         return (
-          <div className="flex items-start gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Avatar name={p.nickname} src={p.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="grid gap-0.5 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <a
                   href={p.channelUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
                 >
-                  <span>@{p.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3" />
+                  <span className="truncate">@{p.handle}</span>
+                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
                 </a>
-                {matchedKoc && onNavigateToKocMaster ? (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNavigateToKocMaster(matchedKoc.id);
-                    }}
-                    title="Mở hồ sơ KOC trong Danh bạ KOC"
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
-                  >
-                    <span>Đã có · Danh bạ</span>
-                  </button>
-                ) : (
-                  <Status tone={isExisting ? 'neutral' : 'positive'}>
-                    {isExisting ? 'Đã có' : 'KOC Mới'}
-                  </Status>
+                {renderKocStatusBadge(matchedKoc, isExisting)}
+              </div>
+              <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
+                <span className="truncate">{p.nickname}</span>
+                {p.extractedPhone && (
+                  <>
+                    <span className="text-ink-3 shrink-0">·</span>
+                    <span className="text-ink font-code inline-flex items-center gap-0.5 tabular-nums shrink-0">
+                      <Phone className="w-2.5 h-2.5 text-ink-3 shrink-0" />
+                      <span>{p.extractedPhone}</span>
+                    </span>
+                  </>
                 )}
               </div>
-              <span className="text-2xs text-ink-2 truncate">{p.nickname}</span>
-              {p.extractedPhone && (
-                <span className="text-2xs text-ink font-code tabular-nums">
-                  SĐT: {p.extractedPhone}
-                </span>
-              )}
             </div>
           </div>
         );
@@ -1640,7 +1767,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'channelStats',
       header: 'Quy mô kênh & Thao tác',
       align: 'right',
-      width: 260,
+      width: 205,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
@@ -1652,15 +1779,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               <span className="text-ink-2">{formatNumber(p.videoCount)} video</span>
             </span>
             <div className="flex items-center gap-1.5">
-              {matchedKoc && onNavigateToKocMaster && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onNavigateToKocMaster(matchedKoc.id)}
-                >
-                  Danh bạ
-                </Button>
-              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -1762,47 +1880,35 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'creator',
       header: 'Kênh KOC & Ngành hàng',
-      width: 240,
+      width: 265,
       render: (c) => {
         const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
         return (
-          <div className="flex items-start gap-2.5 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <Avatar name={c.nickname} src={c.avatarUrl} size={36} />
-            <div className="grid gap-0.5 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="grid gap-0.5 min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <a
                   href={c.channelUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
                 >
-                  <span>@{c.handle}</span>
-                  <ExternalLink className="w-3 h-3 text-ink-3" />
+                  <span className="truncate">@{c.handle}</span>
+                  <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
                 </a>
+                {renderKocStatusBadge(matchedKoc, Boolean(matchedKoc))}
                 {c.verified && <Status tone="positive">Tick xanh</Status>}
-                {matchedKoc &&
-                  (onNavigateToKocMaster ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onNavigateToKocMaster(matchedKoc.id);
-                      }}
-                      title="Mở hồ sơ KOC trong Danh bạ KOC"
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
-                    >
-                      <span>Đã có · Danh bạ</span>
-                    </button>
-                  ) : (
-                    <Status tone="neutral">Đã có</Status>
-                  ))}
               </div>
-              <span className="text-2xs text-ink-2 truncate">{c.nickname}</span>
-              {c.categoryLabel && (
-                <span className="text-2xs font-medium text-accent truncate">
-                  {c.categoryLabel}
-                </span>
-              )}
+              <div className="flex items-center gap-1.5 min-w-0 text-2xs">
+                <span className="text-ink-2 truncate">{c.nickname}</span>
+                {c.categoryLabel && (
+                  <>
+                    <span className="text-ink-3 shrink-0">·</span>
+                    <span className="font-medium text-accent truncate">{c.categoryLabel}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -1888,20 +1994,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       key: 'action',
       header: 'Thao tác',
       align: 'right',
-      width: 245,
+      width: 185,
       render: (c) => {
-        const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
         return (
           <div className="flex items-center justify-end gap-1.5">
-            {matchedKoc && onNavigateToKocMaster && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onNavigateToKocMaster(matchedKoc.id)}
-              >
-                Danh bạ
-              </Button>
-            )}
             <Button
               size="sm"
               variant="secondary"
@@ -1918,6 +2014,151 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       },
     },
   ];
+
+  const applyHistoryEntry = useCallback(
+    (item: TikTokCrawlerDailyHistoryItem) => {
+      setActiveHistoryId(item.id);
+      if (activeTab !== item.tab) {
+        setActiveTab(item.tab);
+      }
+
+      if (item.tab === 'COMPETITOR_KOCS') {
+        setCompetitorInput(item.rawInput);
+        setCompError(null);
+        setCompProfile(item.compProfile ?? null);
+        const list = Array.isArray(item.compResults) ? item.compResults : [];
+        setCompResults(list);
+        setCompRequestedCount(list.length || item.resultCount);
+        setCompFilter('ALL');
+        setCompSearchQuery('');
+      } else if (item.tab === 'HASHTAG_DISCOVERY') {
+        setHashtagInput(item.rawInput);
+        setTagError(null);
+        const list = Array.isArray(item.tagResults) ? item.tagResults : [];
+        setTagResults(list);
+        setTagRequestedCount(list.length || item.resultCount);
+        setTagFilter('ALL');
+        setTagSearchQuery('');
+      } else if (item.tab === 'COMMENTS_AND_TRENDING') {
+        setVideoCommentUrl(item.rawInput);
+        setCommentError(null);
+        setCommentData(item.commentData ?? null);
+        setCommentRequestedCount(item.commentData?.comments?.length || item.resultCount);
+        setCommentFilter('ALL');
+        setCommentSearch('');
+      } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
+        const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
+        setTrendingCategory(cat);
+        const list = Array.isArray(item.trendingCreators) ? item.trendingCreators : [];
+        setTrendingCreators(list);
+        setTrendingRequestedCount(list.length || item.resultCount);
+        setTrendingFilter('ALL');
+        setTrendingSearch('');
+      }
+    },
+    [activeTab]
+  );
+
+  const renderDailyHistoryBar = (currentTab: CrawlerHistoryTabKey, hasContentBelow: boolean) => {
+    if (dailyHistory.length === 0) return null;
+
+    const sortedItems = [
+      ...dailyHistory.filter((it) => it.tab === currentTab),
+      ...dailyHistory.filter((it) => it.tab !== currentTab),
+    ];
+
+    const tabShortLabel: Record<CrawlerHistoryTabKey, string> = {
+      COMPETITOR_KOCS: 'Đối thủ',
+      HASHTAG_DISCOVERY: 'Hashtag',
+      COMMENTS_AND_TRENDING: 'Bình luận',
+      CHANNEL_AND_VIDEO_TOOLS: 'Xu hướng',
+    };
+
+    const unitLabel: Record<CrawlerHistoryTabKey, string> = {
+      COMPETITOR_KOCS: 'KOC',
+      HASHTAG_DISCOVERY: 'KOC',
+      COMMENTS_AND_TRENDING: 'BL',
+      CHANNEL_AND_VIDEO_TOOLS: 'KOC',
+    };
+
+    return (
+      <div
+        className={`px-3.5 py-1.5 bg-surface-2/60 flex flex-wrap items-center justify-between gap-2 ${
+          hasContentBelow ? 'border-b border-line' : ''
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-ink-2 whitespace-nowrap mr-0.5">
+            <Clock className="w-3 h-3 text-accent shrink-0" />
+            <span>Lịch sử quét hôm nay ({dailyHistory.length}):</span>
+          </span>
+
+          {sortedItems.map((item) => {
+            const isSelected = activeHistoryId === item.id;
+            const isOtherTab = item.tab !== currentTab;
+            const shortStaff = (item.staffName || 'Nhân sự')
+              .trim()
+              .split(/\s+/)
+              .slice(-2)
+              .join(' ');
+
+            return (
+              <div
+                key={item.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => applyHistoryEntry(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    applyHistoryEntry(item);
+                  }
+                }}
+                title={`${tabShortLabel[item.tab]}: ${item.queryLabel} (${item.resultCount} kết quả) · Quét bởi ${item.staffName} lúc ${item.timeLabel} · Bấm để xem ngay`}
+                className={`group inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-full border text-2xs transition cursor-pointer select-none ${
+                  isSelected
+                    ? 'border-accent bg-accent-soft/60 text-accent font-semibold'
+                    : 'border-line bg-surface hover:border-accent/50 text-ink'
+                }`}
+              >
+                {isOtherTab && (
+                  <span className="text-ink-3 font-normal">{tabShortLabel[item.tab]}:</span>
+                )}
+                <span className="font-code font-semibold truncate max-w-[160px]">
+                  {item.queryLabel}
+                </span>
+                <span className="px-1 py-0.2 rounded-full bg-surface-2 text-ink-2 font-code tabular-nums">
+                  {item.resultCount} {unitLabel[item.tab]}
+                </span>
+                <span className="text-ink-3 whitespace-nowrap">
+                  · {shortStaff} · {item.timeLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => void deleteHistoryEntry(item.id, e)}
+                  title="Xóa khỏi lịch sử hôm nay"
+                  className="w-4 h-4 rounded-full inline-flex items-center justify-center text-ink-3 hover:text-critical hover:bg-critical-soft/60 transition"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void fetchDailyHistory()}
+          disabled={historyLoading}
+          title="Đồng bộ lịch sử quét mới nhất từ các nhân viên khác"
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-md border border-line bg-surface hover:bg-surface-2 text-2xs text-ink-2 hover:text-ink transition shrink-0 cursor-pointer"
+        >
+          <RefreshCw className={`w-3 h-3 ${historyLoading ? 'animate-spin text-accent' : ''}`} />
+          <span>Làm mới</span>
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3">
@@ -2050,7 +2291,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           {/* Dòng 1: Thanh nhập đối thủ + chọn số lượng + nút quét (bên trái) & Thao tác kết quả (bên phải) */}
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              compError || compLoading || compResults.length > 0 || compProfile ? 'border-b border-line' : ''
+              compError || compLoading || compResults.length > 0 || compProfile || dailyHistory.length > 0
+                ? 'border-b border-line'
+                : ''
             }`}
           >
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -2208,6 +2451,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             )}
           </div>
+
+          {renderDailyHistoryBar(
+            'COMPETITOR_KOCS',
+            Boolean(compError || compLoading || compResults.length > 0)
+          )}
 
           {compError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
@@ -2392,7 +2640,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              tagError || tagLoading || tagResults.length > 0 ? 'border-b border-line' : ''
+              tagError || tagLoading || tagResults.length > 0 || dailyHistory.length > 0
+                ? 'border-b border-line'
+                : ''
             }`}
           >
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -2550,6 +2800,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             )}
           </div>
 
+          {renderDailyHistoryBar(
+            'HASHTAG_DISCOVERY',
+            Boolean(tagError || tagLoading || tagResults.length > 0)
+          )}
+
           {tagError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -2704,7 +2959,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              commentError || commentLoading || commentData ? 'border-b border-line' : ''
+              commentError || commentLoading || commentData || dailyHistory.length > 0
+                ? 'border-b border-line'
+                : ''
             }`}
           >
             <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
@@ -2846,6 +3103,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             )}
           </div>
 
+          {renderDailyHistoryBar(
+            'COMMENTS_AND_TRENDING',
+            Boolean(commentError || commentLoading || commentData)
+          )}
+
           {commentError && (
             <div className="mx-3.5 my-2 flex items-start gap-2 px-3 py-2 rounded-lg border border-critical-line bg-critical-soft text-xs text-critical">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -2960,7 +3222,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <Panel flush>
           <div
             className={`px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 bg-surface ${
-              trendingLoading || trendingHandleSearching || trendingCreators.length > 0
+              trendingLoading || trendingHandleSearching || trendingCreators.length > 0 || dailyHistory.length > 0
                 ? 'border-b border-line'
                 : ''
             }`}
@@ -3106,6 +3368,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               </div>
             )}
           </div>
+
+          {renderDailyHistoryBar(
+            'CHANNEL_AND_VIDEO_TOOLS',
+            Boolean(trendingLoading || trendingHandleSearching || trendingCreators.length > 0)
+          )}
 
           {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
             <>

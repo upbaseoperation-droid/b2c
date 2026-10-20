@@ -136,7 +136,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
   }, [proposedFeeInput]);
 
   const evaluation = useMemo(() => {
-    if (!koc) return null;
+    if (!open || !koc) return null;
     return evaluateKocCollaborationHistory({
       koc,
       deals,
@@ -144,7 +144,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
       targetBrandName: targetBrandName.trim() || undefined,
       proposedFeeNet: parsedProposedFee,
     });
-  }, [koc, deals, duplicates, targetBrandName, parsedProposedFee]);
+  }, [open, koc, deals, duplicates, targetBrandName, parsedProposedFee]);
 
   const availableModels = useMemo(() => {
     return PROVIDER_MODELS_CATALOG[selectedProvider] || [];

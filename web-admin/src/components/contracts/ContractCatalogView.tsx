@@ -198,7 +198,7 @@ export function ContractCatalogView({
     setEditModalOpen(true);
   };
 
-  const openUploadModal = (mode: 'NEW' | 'UPDATE', tpl?: LegalTemplate) => {
+  const openUploadModal = (mode: 'NEW' | 'UPDATE', tpl?: LegalTemplate, presetScope?: 'GLOBAL' | 'KOC_CUSTOM') => {
     setUploadModalMode(mode);
     setUploadFile(null);
     if (mode === 'UPDATE' && tpl) {
@@ -217,6 +217,22 @@ export function ContractCatalogView({
       setUploadCustomType(tpl.customType || 'UPBASE_AMENDED');
       setUploadLegalNotes(tpl.legalNotes || '');
       setUploadNote('Cập nhật biểu mẫu theo quy định pháp chế mới');
+    } else if (presetScope === 'KOC_CUSTOM') {
+      setNewCode('KOC-');
+      setUploadName('Mẫu hợp đồng riêng · ');
+      setUploadSubject('Cá nhân');
+      setUploadKind('CONTRACT');
+      setUploadCategory('BOOKING_VIDEO');
+      setUploadVersion('Ver102026-KOC');
+      setUploadDescription('Mẫu hợp đồng theo form riêng của KOC / Agency đã được Pháp chế rà soát.');
+      setUploadRoles(['LEGAL', 'FINANCE']);
+      setUploadExemptLegalReview(true);
+      setUploadScope('KOC_CUSTOM');
+      setUploadKocId('');
+      setUploadKocName('');
+      setUploadCustomType('KOC_FORM');
+      setUploadLegalNotes('');
+      setUploadNote('Tải lên mẫu hợp đồng riêng của KOC');
     } else {
       setNewCode('LIV-HD');
       setUploadName('Hợp đồng dịch vụ Livestream · Cá nhân');
@@ -403,10 +419,17 @@ export function ContractCatalogView({
               chips={<Chips items={categoryChips.filter(c => c.key === 'ALL' || c.count > 0)} value={categoryFilter} onChange={setCategoryFilter} />}
             />
           </div>
-          {canManageCatalog && (
-            <Button size="sm" variant="secondary" icon={Plus} onClick={() => openUploadModal('NEW')}>
-              Thêm mẫu mới
-            </Button>
+          {(canManageCatalog || canCreateContract) && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="secondary" icon={Upload} onClick={() => openUploadModal('NEW', undefined, 'KOC_CUSTOM')}>
+                Tải mẫu KOC (.docx)
+              </Button>
+              {canManageCatalog && (
+                <Button size="sm" variant="secondary" icon={Plus} onClick={() => openUploadModal('NEW')}>
+                  Thêm mẫu mới
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -793,7 +816,7 @@ export function ContractCatalogView({
                   <option value="KOC_FORM">Sử dụng form mẫu riêng của KOC / Agency</option>
                 </Select>
               </Field>
-              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này" hint="Lưu ý hiển thị cho chuyên viên khi làm hợp đồng cho KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)">
+              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này">
                 <Textarea
                   rows={2}
                   value={editLegalNotes}
@@ -816,11 +839,6 @@ export function ContractCatalogView({
                 <span className="font-medium text-[13px] text-ink block">
                   {editScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
-                <span className="text-2xs text-ink-3 block">
-                  {editScope === 'KOC_CUSTOM'
-                    ? 'Hồ sơ áp dụng đúng mẫu đã duyệt của KOC này sẽ được chuyển thẳng Kế toán duyệt ngân sách.'
-                    : 'Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.'}
-                </span>
               </div>
             </label>
           </div>
@@ -831,12 +849,12 @@ export function ContractCatalogView({
       <Modal
         open={Boolean(uploadModalMode)}
         onClose={() => setUploadModalMode(null)}
-        title={uploadModalMode === 'NEW' ? 'Thêm mẫu hợp đồng mới' : `Cập nhật file .docx · ${loadedTemplate?.name || ''}`}
+        title={uploadModalMode === 'NEW' ? (uploadScope === 'KOC_CUSTOM' ? 'Tải lên mẫu hợp đồng riêng của KOC (.docx)' : 'Thêm mẫu hợp đồng mới') : `Cập nhật file .docx · ${loadedTemplate?.name || ''}`}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setUploadModalMode(null)}>Hủy</Button>
             <Button variant="primary" disabled={busy || !uploadFile || !uploadName.trim()} onClick={handleUploadSubmit}>
-              {uploadModalMode === 'NEW' ? 'Ban hành mẫu mới' : 'Lưu phiên bản mới'}
+              {uploadModalMode === 'NEW' ? 'Lưu vào danh mục mẫu' : 'Lưu phiên bản mới'}
             </Button>
           </div>
         }
@@ -844,8 +862,8 @@ export function ContractCatalogView({
         <div className="grid gap-4">
           {uploadModalMode === 'NEW' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Field label="Mã mẫu (duy nhất)" htmlFor="up-code" hint="VD: LIV-HD, PL-IND, KOC-BBNT">
-                <Input id="up-code" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="LIV-HD" />
+              <Field label="Mã mẫu (duy nhất)" htmlFor="up-code">
+                <Input id="up-code" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="VD: KOC-CHANH, LIV-HD" />
               </Field>
               <Field label="Phiên bản" htmlFor="up-ver">
                 <Input id="up-ver" value={uploadVersion} onChange={e => setUploadVersion(e.target.value)} placeholder="Ver102026" />
@@ -854,7 +872,7 @@ export function ContractCatalogView({
           )}
 
           {uploadModalMode === 'UPDATE' && (
-            <Field label="Phiên bản mới" htmlFor="up-ver-update" hint="Các hợp đồng đã tạo bằng phiên bản cũ vẫn giữ nguyên bản mẫu cũ.">
+            <Field label="Phiên bản mới" htmlFor="up-ver-update">
               <Input id="up-ver-update" value={uploadVersion} onChange={e => setUploadVersion(e.target.value)} placeholder="Ver102026" />
             </Field>
           )}
@@ -902,9 +920,6 @@ export function ContractCatalogView({
                   <Button size="sm" variant="secondary" icon={Upload} onClick={() => fileInputRef.current?.click()}>
                     Chọn file .docx từ máy tính
                   </Button>
-                  <p className="text-2xs text-ink-3 mt-1.5">
-                    Hỗ trợ định dạng Word (.docx). Các vị trí bỏ trống (...) hoặc trong ngoặc vuông [...] sẽ tự động nhận diện làm trường điền.
-                  </p>
                 </div>
               )}
             </div>
@@ -925,19 +940,42 @@ export function ContractCatalogView({
             <div className="rounded-lg border border-accent/30 bg-accent-soft/30 p-3 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Mã KOC / ID kênh *">
-                  <Input value={uploadKocId} onChange={e => setUploadKocId(e.target.value)} placeholder="VD: koc-1 hoặc tên kênh" required />
+                  <Input
+                    value={uploadKocId}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setUploadKocId(val);
+                      if (newCode === 'KOC-' || newCode.startsWith('KOC-')) {
+                        const slug = val.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 18);
+                        if (slug) setNewCode(`KOC-${slug}`);
+                      }
+                    }}
+                    placeholder="VD: koc-1 hoặc tên kênh"
+                    required
+                  />
                 </Field>
                 <Field label="Tên KOC / Đối tác *">
-                  <Input value={uploadKocName} onChange={e => setUploadKocName(e.target.value)} placeholder="VD: Phạm Ngọc Hiếu An (Uri)" required />
+                  <Input
+                    value={uploadKocName}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setUploadKocName(val);
+                      if (uploadName.startsWith('Mẫu hợp đồng riêng ·')) {
+                        setUploadName(`Mẫu hợp đồng riêng · ${val}`);
+                      }
+                    }}
+                    placeholder="VD: Phạm Ngọc Hiếu An (Uri)"
+                    required
+                  />
                 </Field>
               </div>
               <Field label="Loại điều khoản chỉnh sửa">
                 <Select value={uploadCustomType} onChange={e => setUploadCustomType(e.target.value as 'UPBASE_AMENDED' | 'KOC_FORM')}>
-                  <option value="UPBASE_AMENDED">Chỉnh sửa điều khoản trên mẫu Upbase</option>
                   <option value="KOC_FORM">Sử dụng form mẫu riêng của KOC / Agency</option>
+                  <option value="UPBASE_AMENDED">Chỉnh sửa điều khoản trên mẫu Upbase</option>
                 </Select>
               </Field>
-              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này" hint="Lưu ý hiển thị cho chuyên viên khi làm hợp đồng cho KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)">
+              <Field label="Lưu ý & Thỏa thuận của Pháp chế cho KOC này">
                 <Textarea
                   rows={2}
                   value={uploadLegalNotes}
@@ -960,11 +998,6 @@ export function ContractCatalogView({
                 <span className="font-medium text-[13px] text-ink block">
                   {uploadScope === 'KOC_CUSTOM' ? 'Mẫu KOC đã duyệt: Miễn bước thẩm định lại của Pháp chế' : 'Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế'}
                 </span>
-                <span className="text-2xs text-ink-3 block">
-                  {uploadScope === 'KOC_CUSTOM'
-                    ? 'Hồ sơ áp dụng đúng mẫu đã duyệt của KOC này sẽ được chuyển thẳng Kế toán duyệt ngân sách.'
-                    : 'Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.'}
-                </span>
               </div>
             </label>
           </div>
@@ -980,7 +1013,6 @@ export function ContractCatalogView({
         open={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         title="Xác nhận xóa biểu mẫu"
-        description={`Bạn có chắc chắn muốn xóa biểu mẫu "${loadedTemplate?.name || ''}" khỏi danh mục không?`}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>Hủy</Button>

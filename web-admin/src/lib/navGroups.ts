@@ -78,6 +78,7 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
     tabs: [
       { key: 'market-research', label: TAB_LABELS['market-research'] },
       { key: 'tiktok-crawler', label: TAB_LABELS['tiktok-crawler'] },
+      { key: 'koc-master', label: TAB_LABELS['koc-master'] },
     ],
   },
 ];

@@ -208,7 +208,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
       return [
         { items: [NAV.cockpit, dashboard([DASH.store, DASH.sla, DASH.video, DASH.staff])] },
         { title: 'Kế hoạch', items: [NAV.inputPlan, NAV.delegation, NAV.brand] },
-        { title: 'Vận hành Booking & KOC', items: [NAV.booking, NAV.research, NAV.content, NAV.kocMaster, NAV.ctvMaster] },
+        { title: 'Vận hành Booking & KOC', items: [NAV.booking, NAV.research, NAV.content, NAV.ctvMaster] },
         { title: 'Hợp đồng & Hiệu suất', items: [NAV.contracts, NAV.samples, NAV.performance] },
       ];
 
@@ -306,6 +306,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return new Set(getAllowedTabsForRole(currentUser.role));
   }, [currentUser.role, rbacTick]);
 
+  const lastGroupTabRef = useRef<Record<string, TabKey>>({});
+  for (const [groupId, tabs] of Object.entries(GROUP_TABS)) {
+    if (tabs.includes(activeTab) && allowedSet.has(activeTab)) {
+      lastGroupTabRef.current[groupId] = activeTab;
+    }
+  }
+
   const navSections = React.useMemo(() => {
     const baseSections = getNavSectionsForUserRole(currentUser.role);
     const badgeOf = (key: TabKey, fallback?: string) =>
@@ -326,9 +333,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             });
           }
         } else if (item.group) {
-          // Mục nhóm: hiện khi vai trò mở được ít nhất một màn trong nhóm, bấm vào mở màn đầu tiên được phép.
-          const firstAllowed = (GROUP_TABS[item.group] ?? []).find(k => allowedSet.has(k));
-          if (firstAllowed) items.push({ ...item, key: firstAllowed, badge: badgeOf(firstAllowed, item.badge) });
+          // Mục nhóm: hiện khi vai trò mở được ít nhất một màn trong nhóm, bấm vào mở lại màn gần nhất trong nhóm.
+          const allowedInGroup = (GROUP_TABS[item.group] ?? []).filter(k => allowedSet.has(k));
+          const remembered = lastGroupTabRef.current[item.group];
+          const targetTab = (remembered && allowedInGroup.includes(remembered)) ? remembered : allowedInGroup[0];
+          if (targetTab) items.push({ ...item, key: targetTab, badge: badgeOf(targetTab, item.badge) });
         } else if (allowedSet.has(item.key)) {
           items.push({ ...item, badge: badgeOf(item.key, item.badge) });
         }
@@ -339,7 +348,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     return filtered;
-  }, [currentUser.role, allowedSet, badgeCounts]);
+  }, [currentUser.role, allowedSet, badgeCounts, activeTab]);
 
   const footerItems = FOOTER_ITEMS.filter(f => allowedSet.has(f.key));
 

@@ -132,6 +132,7 @@ const EXTRA_RESEARCH_SUGGESTIONS: Array<[string, string]> = [
   ["D-nee", "Giặt xả & Tắm gội Mẹ Bé"],
   ["Femfresh", "Dung dịch vệ sinh Anh Quốc"],
   ["Lactacyd", "Dung dịch vệ sinh Pháp"],
+  ["Rhys Man", "Chăm sóc cá nhân Nam giới"],
   ["Nerman", "Chăm sóc cá nhân Nam giới"],
   ["Romano", "Chăm sóc cá nhân Nam giới"],
 ];

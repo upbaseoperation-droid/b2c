@@ -41,6 +41,7 @@ import {
   DataTable,
   EmptyState,
   Modal,
+  Pagination,
   Panel,
   Person,
   Select,
@@ -132,6 +133,8 @@ export function StoreProfile({
 
   const [detailTab, setDetailTab] = useState<MonthlyDetailTab>('PLAN_BREAKDOWN');
   const [inspectedBooking, setInspectedBooking] = useState<StoreMonthlyBookingRecord | null>(null);
+  const [bookingPage, setBookingPage] = useState<number>(1);
+  const BOOKING_PAGE_SIZE = 25;
 
   // Lịch sử Hồ sơ Plan & Report qua các kỳ tháng (2026/11, 2026/10, 2026/09, 2026/08)
   const monthlyLedger = useMemo(() => {
@@ -1159,12 +1162,20 @@ export function StoreProfile({
                   description="Chưa có deal KOC nào được ghi nhận cho gian hàng này trong kỳ tháng đang chọn."
                 />
               ) : (
+                <>
                 <DataTable
                   columns={bookingColumns}
-                  rows={currentMonthReport.bookings}
+                  rows={currentMonthReport.bookings.slice((bookingPage - 1) * BOOKING_PAGE_SIZE, bookingPage * BOOKING_PAGE_SIZE)}
                   rowKey={b => b.id}
                   onRowClick={b => setInspectedBooking(b)}
                 />
+                <Pagination
+                  page={bookingPage}
+                  pageSize={BOOKING_PAGE_SIZE}
+                  total={currentMonthReport.bookings.length}
+                  onPageChange={setBookingPage}
+                />
+                </>
               )}
             </Panel>
           )}

@@ -54,6 +54,7 @@ import {
   EmptyState,
   FilterBar,
   Modal,
+  Pagination,
   Panel,
   Person,
   SectionHeader,
@@ -329,6 +330,9 @@ export function BrandProfileDetail({
       })
     );
   }, [monthlyBrandLedger, activeMonth, row.name, brandStores, monthlyPlans, deals]);
+
+  const [bookingPage, setBookingPage] = useState<number>(1);
+  const BOOKING_PAGE_SIZE = 25;
 
   const isOverbudget = currentBrandReport.overbudgetStoresCount > 0 || (currentBrandReport.planBudgetNet > 0 && currentBrandReport.reportSpentNet > currentBrandReport.planBudgetNet);
   const isUnbudgetedSpend = currentBrandReport.unbudgetedStoresCount > 0 || (currentBrandReport.planBudgetNet === 0 && currentBrandReport.reportSpentNet > 0);
@@ -2049,12 +2053,20 @@ export function BrandProfileDetail({
                 description="Chưa có booking KOC nào được ghi nhận cho thương hiệu này trong kỳ đang chọn."
               />
             ) : (
+              <>
               <DataTable
                 columns={brandBookingColumns}
-                rows={currentBrandReport.bookings}
+                rows={currentBrandReport.bookings.slice((bookingPage - 1) * BOOKING_PAGE_SIZE, bookingPage * BOOKING_PAGE_SIZE)}
                 rowKey={b => b.id}
                 onRowClick={b => setInspectingBooking(b)}
               />
+              <Pagination
+                page={bookingPage}
+                pageSize={BOOKING_PAGE_SIZE}
+                total={currentBrandReport.bookings.length}
+                onPageChange={setBookingPage}
+              />
+              </>
             )}
           </Panel>
         </div>

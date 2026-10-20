@@ -184,7 +184,6 @@ export default function App() {
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabKey>(() => resolveInitialTab(USERS[0]));
   const hasUserNavigatedRef = useRef<boolean>(false);
-  const [crawlerResetKey, setCrawlerResetKey] = useState<number>(0);
   const [brandInitialDetailTab, setBrandInitialDetailTab] = useState<'PRODUCTS' | undefined>(undefined);
   const handleSelectTab = useCallback((tab: TabKey) => {
     hasUserNavigatedRef.current = true;
@@ -196,9 +195,6 @@ export default function App() {
     }
     if (typeof window !== 'undefined') {
       sessionStorage.setItem(ACTIVE_TAB_SESSION_KEY, resolvedTab);
-    }
-    if (resolvedTab === 'tiktok-crawler') {
-      setCrawlerResetKey((prev) => prev + 1);
     }
     setActiveTab(resolvedTab);
   }, []);
@@ -1592,38 +1588,32 @@ export default function App() {
             />
           </KeepAliveTab>
 
-          {activeTab === 'tiktok-crawler' && (
-            <div className="workspace-view space-y-6">
-              <PageActiveContext.Provider value={true}>
-                <ErrorBoundary fallbackTitle="Lỗi tải màn hình (tiktok-crawler)">
-                  <TikTokCrawlerHubView
-                    key={crawlerResetKey}
-                    kocs={kocs}
-                    onSaveScrapedKocs={({ created, updated }) => {
-                      if (created.length > 0 || updated.length > 0) {
-                        setKocs((prev) => {
-                          const updatedMap = new Map(updated.map((u) => [u.id, u]));
-                          const next = prev.map((item) => updatedMap.get(item.id) || item);
-                          return [...created, ...next];
-                        });
-                        showToast(
-                          `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
-                          'success'
-                        );
-                      }
-                    }}
-                    onNotify={showToast}
-                    onNavigateToKocMaster={(kocId?: string) => {
-                      if (kocId) {
-                        setSelectedKocContext(kocId);
-                      }
-                      handleSelectTab('koc-master');
-                    }}
-                  />
-                </ErrorBoundary>
-              </PageActiveContext.Provider>
-            </div>
-          )}
+          <KeepAliveTab tabKey="tiktok-crawler" currentTab={activeTab}>
+            <TikTokCrawlerHubView
+              currentUser={currentUser}
+              kocs={kocs}
+              onSaveScrapedKocs={({ created, updated }) => {
+                if (created.length > 0 || updated.length > 0) {
+                  setKocs((prev) => {
+                    const updatedMap = new Map(updated.map((u) => [u.id, u]));
+                    const next = prev.map((item) => updatedMap.get(item.id) || item);
+                    return [...created, ...next];
+                  });
+                  showToast(
+                    `Đã lưu vào Danh bạ KOC: ${created.length} kênh mới, ${updated.length} kênh cập nhật`,
+                    'success'
+                  );
+                }
+              }}
+              onNotify={showToast}
+              onNavigateToKocMaster={(kocId?: string) => {
+                if (kocId) {
+                  setSelectedKocContext(kocId);
+                }
+                handleSelectTab('koc-master');
+              }}
+            />
+          </KeepAliveTab>
 
           <KeepAliveTab tabKey="market-research" currentTab={activeTab}>
             <BrandMarketResearchHubView

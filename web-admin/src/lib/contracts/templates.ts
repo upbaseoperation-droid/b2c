@@ -766,3 +766,76 @@ export async function renderTemplate(id: string, expectedHash: string, values: R
   }
   return { buffer: await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }), paragraphs: texts, template };
 }
+
+export async function parseAndStoreCustomDocx(
+  base64Docx: string,
+  filename: string,
+  subject = 'Cá nhân',
+): Promise<{
+  hash: string;
+  filename: string;
+  blocks: DocBlock[];
+  paragraphs: string[];
+  fields: ContractField[];
+}> {
+  const cleanBase64 = base64Docx.includes(',') ? base64Docx.split(',')[1] : base64Docx;
+  const buffer = Buffer.from(cleanBase64, 'base64');
+  requireCondition(buffer.byteLength > 200 && buffer.byteLength <= 15 * 1024 * 1024, 'File .docx không hợp lệ hoặc vượt quá 15MB.');
+
+  let zip: JSZip;
+  try {
+    zip = await JSZip.loadAsync(buffer);
+  } catch {
+    requireCondition(false, 'Tệp tải lên không phải định dạng Word (.docx) hợp lệ.');
+    throw new Error('Invalid docx');
+  }
+  requireCondition(Boolean(zip.file('word/document.xml')), 'File .docx thiếu nội dung word/document.xml.');
+
+  const hash = createHash('sha256').update(buffer).digest('hex');
+  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+    await mkdir(archiveDirectory(), { recursive: true });
+    await writeFile(path.join(archiveDirectory(), `${hash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    });
+  } else {
+    await prisma.$executeRaw`INSERT INTO "ContractTemplateSnapshot" (hash, "templateId", file) VALUES (${hash}, ${'KOC_CUSTOM_UPLOAD'}, ${buffer}) ON CONFLICT (hash) DO NOTHING`;
+  }
+
+  const fields: ContractField[] = [];
+  const texts: string[] = [];
+  const blocksByPart = new Map<string, DocBlock[]>();
+  const parts = Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort();
+  for (const part of parts) {
+    const xml = await zip.file(part)!.async('string');
+    fields.push(...describeFields(extractFields(xml, part), subject));
+    texts.push(...paragraphs(xml).map(p => paragraphText(p[0])));
+    blocksByPart.set(part, extractBlocks(xml, part));
+  }
+  const orderedParts = [
+    ...parts.filter(p => p.startsWith('word/header')),
+    ...parts.filter(p => p === 'word/document.xml'),
+    ...parts.filter(p => p.startsWith('word/footer')),
+  ];
+  const blocks = orderedParts.flatMap(p => blocksByPart.get(p) || []);
+
+  return {
+    hash,
+    filename: filename.trim() || 'hop-dong-koc.docx',
+    blocks,
+    paragraphs: texts,
+    fields,
+  };
+}
+
+export async function readArchivedDocxBuffer(hash: string): Promise<Buffer | null> {
+  if (!/^[a-f0-9]{64}$/.test(hash)) return null;
+  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
+    try {
+      return await readFile(path.join(archiveDirectory(), `${hash}.docx`));
+    } catch {
+      return null;
+    }
+  }
+  const rows = await prisma.$queryRaw<Array<{ file: Buffer }>>`SELECT file FROM "ContractTemplateSnapshot" WHERE hash=${hash}`;
+  return rows[0]?.file || null;
+}

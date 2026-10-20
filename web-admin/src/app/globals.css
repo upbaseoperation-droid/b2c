@@ -247,6 +247,20 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 ::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 9999px; border: 2px solid var(--color-canvas); }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-ink-3); }
 
+/* Ngăn xuất hiện thanh cuộn dọc 1px ngoài ý muốn trên các vùng chỉ cuộn ngang (tab bar, chip bar, bảng) */
+.overflow-x-auto:not(.overflow-y-auto):not(.overflow-y-scroll) {
+  overflow-y: hidden;
+}
+
+[role="tablist"],
+[role="radiogroup"] {
+  scrollbar-width: none;
+}
+[role="tablist"]::-webkit-scrollbar,
+[role="radiogroup"]::-webkit-scrollbar {
+  display: none;
+}
+
 .sidebar-scrollbar { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
 .sidebar-scrollbar::-webkit-scrollbar { width: 4px; }
 .sidebar-scrollbar::-webkit-scrollbar-thumb { background: var(--color-line); border: 0; }

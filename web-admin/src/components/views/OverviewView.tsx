@@ -264,7 +264,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       >
         <DataTable
           columns={columns}
-          rows={deals}
+          rows={deals.slice(0, 50)}
           rowKey={(deal) => deal.id}
           stickyLast
         />

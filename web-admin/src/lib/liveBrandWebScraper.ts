@@ -86,7 +86,11 @@ function decodeHtmlEntities(raw: string): string {
 }
 
 function stripTags(html: string): string {
-  return decodeHtmlEntities(html.replace(/<[^>]+>/g, ' '));
+  return decodeHtmlEntities(
+    html
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+  );
 }
 
 function normalizeToken(str: string): string {
@@ -385,7 +389,12 @@ async function scrapeOfficialWebsiteCatalog(
 
       for (const m of html.matchAll(/<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi)) {
         const hText = stripTags(m[1]);
-        if (hText.length >= 5 && hText.length <= 130 && !headings.includes(hText)) {
+        if (
+          hText.length >= 5 &&
+          hText.length <= 130 &&
+          /[\p{L}]/u.test(hText) &&
+          !headings.includes(hText)
+        ) {
           headings.push(hText);
           if (headings.length >= 16) break;
         }
@@ -494,8 +503,12 @@ async function scrapeEcommerceMarketplaceCatalog(
       // Kiểm tra nghiêm ngặt sản phẩm thực sự thuộc về thương hiệu đang tra cứu
       const isDirectBrandMatch =
         (brandFieldNorm.length >= 2 &&
-          (brandFieldNorm.includes(brandNorm) || brandNorm.includes(brandFieldNorm))) ||
-        nameNorm.includes(brandNorm);
+          (brandFieldNorm === brandNorm ||
+            (brandNorm.length >= 3 && brandFieldNorm.includes(brandNorm)) ||
+            (brandFieldNorm.length >= 4 &&
+              brandFieldNorm.length >= brandNorm.length - 3 &&
+              brandNorm.includes(brandFieldNorm)))) ||
+        (brandNorm.length >= 3 && nameNorm.includes(brandNorm));
 
       if (!isDirectBrandMatch) continue;
 
@@ -592,62 +605,168 @@ async function scrapeBingVideoSnippetsForBrand(
   return snippets;
 }
 
+function hasVnKeywords(text: string, alternation: string): boolean {
+  const re = new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${alternation})(?=$|[^\\p{L}\\p{N}])`, 'iu');
+  return re.test(text);
+}
+
 function inferBrandOriginAndCategoryFromText(
   brandName: string,
-  combinedText: string
+  combinedText: string,
+  officialDomain?: string
 ): { originCountry: string; categoryLabel: string } {
+  const lowerBrand = brandName.toLowerCase();
   const lower = `${brandName} ${combinedText}`.toLowerCase();
 
   let originCountry = 'Việt Nam / Quốc tế';
   if (
-    /\b(nous|bu baby|bubaby|dokma|lullaby|chaang|cocoon|cỏ mềm|nerman|kutieskin|nguyên xuân|dạ hương)\b/i.test(
-      brandName.toLowerCase()
+    hasVnKeywords(
+      lowerBrand,
+      'nous|bu baby|bubaby|dokma|lullaby|chaang|cocoon|cỏ mềm|comem|nerman|rhys man|rhysman|cm24|coolmate|oniiz|kutieskin|nguyên xuân|dạ hương|miss saigon|cindy bloom|orgalife|meracine'
     ) ||
-    /\b(thương hiệu việt nam|thuần chay việt nam|sản xuất tại việt nam)\b/i.test(lower)
+    hasVnKeywords(
+      lower,
+      'thương hiệu việt nam|thuần chay việt nam|sản xuất tại việt nam|thương hiệu chăm sóc nam giới việt nam'
+    )
   ) {
     originCountry = 'Việt Nam';
-  } else if (/\b(hàn quốc|korea|seoul|k-beauty|klairs|skin1004|rom&nd|romand|torriden|clubclio)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'hàn quốc|korea|seoul|k-beauty|klairs|skin1004|rom&nd|romand|torriden|clubclio|nabizam|momo rabbit|momorabbit|rejuran|baegayul|face republic'
+    )
+  ) {
     originCountry = 'Hàn Quốc';
-  } else if (/\b(pháp|france|paris|la roche-posay|bioderma|svr|mustela|l'oréal|loreal)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      "pháp|france|paris|la roche-posay|larocheposay|bioderma|svr|mustela|l'oréal|loreal|l'occitane|loccitane|royal canin"
+    )
+  ) {
     originCountry = 'Pháp';
-  } else if (/\b(nhật bản|nhật|japan|tokyo|anessa|moony|merries|dhc|pigeon)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'nhật bản|nhật|japan|tokyo|anessa|moony|merries|dhc|pigeon|nucos|phcare|chulala'
+    )
+  ) {
     originCountry = 'Nhật Bản';
-  } else if (/\b(mỹ|usa|hoa kỳ|cerave|cetaphil|obagi|maybelline|ensure)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'mỹ|usa|hoa kỳ|cerave|cetaphil|obagi|maybelline|ensure|revision|bye bye blemish|byebyeblemish'
+    )
+  ) {
     originCountry = 'Mỹ';
-  } else if (/\b(đức|germany|bepanthen|sebamed)\b/i.test(lower)) {
+  } else if (hasVnKeywords(lower, 'đức|germany|bepanthen|sebamed|eucerin')) {
     originCountry = 'Đức';
-  } else if (/\b(anh quốc|anh|uk|femfresh|simple)\b/i.test(lower)) {
+  } else if (hasVnKeywords(lower, 'anh quốc|uk|femfresh|simple')) {
     originCountry = 'Anh Quốc';
-  } else if (/\b(tây ban nha|spain|babé|babe)\b/i.test(lower)) {
+  } else if (hasVnKeywords(lower, 'tây ban nha|spain|babé|babe|ekseption')) {
     originCountry = 'Tây Ban Nha';
-  } else if (/\b(thái lan|thailand|d-nee|dnee|cathy doll)\b/i.test(lower)) {
+  } else if (hasVnKeywords(lower, 'thái lan|thailand|d-nee|dnee|cathy doll|cathydoll|karmart|kodomo')) {
     originCountry = 'Thái Lan';
+  } else if (hasVnKeywords(lower, 'ba lan|poland|ziaja|herbal care|farmona')) {
+    originCountry = 'Ba Lan';
+  } else if (officialDomain && officialDomain.endsWith('.vn')) {
+    originCountry = 'Việt Nam';
   }
 
   let categoryLabel = 'Chăm sóc Cá nhân & Tiêu dùng';
   if (
-    /\b(sơ sinh|quần áo bé|bodysuit|nous|bu baby|bubaby|lullaby|dokma|uala rogo|chaang|bộ dài tay|áo khoác|bamboo cotton|petit)\b/i.test(
-      lower
+    hasVnKeywords(
+      lowerBrand,
+      'rhys man|rhysman|nerman|romano|x-men|xmen|cm24|badlab|oniiz|iron & stone|old spice|gatsby|nivea men'
+    ) ||
+    hasVnKeywords(
+      lower,
+      'nam giới|đàn ông|phái mạnh|dành cho nam|bộ quà tặng cho nam|sữa tắm nam|sữa tắm gội nam|dầu gội nam|vệ sinh nam|bọt vệ sinh nam|dung dịch vệ sinh nam|nước hoa nam|khử mùi nam|sáp vuốt tóc|gôm xịt tóc|xịt phồng tóc|máy tỉa lông mũi|cạo râu|rhys man|rhysman|nerman|romano|x-men|cm24|badlab'
+    )
+  ) {
+    categoryLabel = 'Chăm sóc Cá nhân & Nước hoa Nam giới';
+  } else if (
+    hasVnKeywords(
+      lower,
+      'quần áo sơ sinh|đồ sơ sinh|thời trang sơ sinh|giỏ đồ đi sinh|bodysuit sơ sinh|nous|bu baby|bubaby|lullaby|dokma|uala rogo|chaang|nu petit|nu doux|nu air'
     )
   ) {
     categoryLabel = 'Thời trang & Phụ kiện Sơ sinh Mẹ & Bé';
-  } else if (/\b(tã|bỉm|quần bỉm|miếng lót sơ sinh|momo rabbit|moony|merries|huggies|bobby)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'tã dán|tã quần|bỉm quần|bỉm dán|miếng lót sơ sinh|momo rabbit|momorabbit|nabizam|moony|merries|huggies|bobby'
+    )
+  ) {
     categoryLabel = 'Tã Bỉm & Chăm sóc Em bé';
-  } else if (/\b(hăm tã|chàm sữa|kem bôi cho bé|tắm gội cho bé|rôm sảy|kutieskin|mustela|bepanthen)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'hăm tã|chống hăm|chàm sữa|kem bôi cho bé|tắm gội cho bé|nước tắm thảo dược cho bé|rôm sảy|kutieskin|mustela|bepanthen|skinbibi'
+    )
+  ) {
     categoryLabel = 'Chăm sóc da Mẹ & Bé';
-  } else if (/\b(nam giới|sữa tắm nam|dầu gội nam|vệ sinh nam|nerman|romano|x-men)\b/i.test(lower)) {
-    categoryLabel = 'Chăm sóc Cá nhân & Nước hoa Nam giới';
-  } else if (/\b(dung dịch vệ sinh|phụ khoa|vùng kín|femfresh|lactacyd)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'nước giặt cho bé|nước giặt em bé|giặt xả cho bé|d-nee|dnee|docilee|kodomo|arau baby'
+    )
+  ) {
+    categoryLabel = 'Chăm sóc Đồ dùng & Giặt xả cho Bé';
+  } else if (
+    hasVnKeywords(
+      lower,
+      'dung dịch vệ sinh phụ nữ|vệ sinh phụ nữ|phụ khoa|vùng kín|femfresh|lactacyd|phcare|ziaja intimate|dạ hương'
+    )
+  ) {
     categoryLabel = 'Chăm sóc Vệ sinh Phụ nữ & Cá nhân';
-  } else if (/\b(son|phấn nước|cushion|mascara|kẻ mắt|má hồng|trang điểm|makeup|rom&nd|judydoll|colorkey|maybelline)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'son môi|son kem|son tint|phấn nước|cushion|mascara|kẻ mắt|má hồng|trang điểm|makeup|rom&nd|romand|judydoll|colorkey|maybelline|clubclio|peripera'
+    )
+  ) {
     categoryLabel = 'Trang điểm & Mỹ phẩm Xu hướng';
-  } else if (/\b(kem chống nắng|serum|toner|nước hoa hồng|dưỡng ẩm|sữa rửa mặt|mụn|thâm|nám|retinol|b5|aha|bha|peel)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'kem chống nắng|serum|toner|nước hoa hồng|dưỡng ẩm|sữa rửa mặt|mụn|thâm mụn|nám|retinol|niacinamide|hyaluronic|aha|bha|peel da|dược mỹ phẩm|rejuran|la roche-posay|cerave|cetaphil|bioderma|svr|obagi|skin1004|torriden|babé'
+    )
+  ) {
     categoryLabel = 'Dược mỹ phẩm & Chăm sóc Da (Skincare)';
-  } else if (/\b(dầu gội|dầu xả|ủ tóc|xịt bưởi|rụng tóc|sữa tắm)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      "nước hoa|body mist|xịt thơm toàn thân|xịt thơm cơ thể|khuếch tán hương|cindy bloom|miss saigon|l'occitane|loccitane"
+    )
+  ) {
+    categoryLabel = 'Nước hoa & Chăm sóc Hương thơm';
+  } else if (
+    hasVnKeywords(
+      lower,
+      'dầu gội|dầu xả|ủ tóc|xịt bưởi|tinh dầu bưởi|rụng tóc|sữa tắm|tẩy da chết cơ thể|herbal care|chulala|nguyên xuân|cocoon|cỏ mềm'
+    )
+  ) {
     categoryLabel = 'Chăm sóc Tóc & Cơ thể (Hair & Body Care)';
-  } else if (/\b(nước giặt|nước xả|lau sàn|rửa chén|giặt xả)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'nước giặt|nước xả|lau sàn|rửa chén|giặt xả|omo|maxkleen|ariel|tm clean|feelcleans'
+    )
+  ) {
     categoryLabel = 'Chăm sóc Nhà cửa & Giặt xả (Home Care)';
-  } else if (/\b(sữa bột|sữa công thức|tiêu hóa|tăng cân|dinh dưỡng|vitamin|collagen)\b/i.test(lower)) {
+  } else if (
+    hasVnKeywords(
+      lower,
+      'thức ăn cho mèo|thức ăn cho chó|hạt cho mèo|hạt cho chó|thú cưng|royal canin|whiskas|me-o'
+    )
+  ) {
+    categoryLabel = 'Dinh dưỡng Khoa học cho Thú cưng';
+  } else if (
+    hasVnKeywords(
+      lower,
+      'sữa bột|sữa công thức|sữa dinh dưỡng|bữa ăn thay thế|dinh dưỡng y học|vitamin|collagen|omega-3|thực phẩm bảo vệ sức khỏe|nucos|meracine|orgalife|ensure|dhc'
+    )
+  ) {
     categoryLabel = 'Dinh dưỡng & Thực phẩm Bảo vệ Sức khỏe';
   }
 
@@ -731,7 +850,8 @@ export async function scrapeLiveBrandWebIntelligence(
 
   const { originCountry, categoryLabel } = inferBrandOriginAndCategoryFromText(
     cleanName,
-    combinedCorpus
+    combinedCorpus,
+    officialCatalog?.domain
   );
 
   const extractedUsps: string[] = [];

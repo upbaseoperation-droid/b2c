@@ -3,14 +3,15 @@ import { createHash } from 'node:crypto';
 import { actorFromRequest, configuredActors, checkOrigin, DEMO_ACTORS } from '@/lib/contracts/access';
 import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope, signingChanged } from '@/lib/contracts/domain';
 import { listContracts, getContract, saveContract, storageMode } from '@/lib/contracts/store';
-import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate, saveTemplateMeta } from '@/lib/contracts/templates';
+import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate, saveTemplateMeta, parseAndStoreCustomDocx, readArchivedDocxBuffer, uploadTemplateDocx } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
-import type { ContractRecord, ReviewStep } from '@/lib/contracts/types';
+import type { ContractActor, ContractRecord, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-function failure(error: unknown) { return NextResponse.json({ error: error instanceof ContractError ? error.message : 'Không thể xử lý hồ sơ. Kiểm tra cấu hình và thử lại.' }, { status: error instanceof ContractError ? error.status : 503, headers: { 'Cache-Control': 'no-store' } }); }
+function failure(error: unknown) { return NextResponse.json({ error: error instanceof ContractError ? error.message : 'Không thể xử lý hồ sơ. Kiểm tra cấu hình và thử lại.' }, { status: error instanceof ContractError ? eStatus(error) : 503, headers: { 'Cache-Control': 'no-store' } }); }
+function eStatus(error: unknown) { return error instanceof ContractError ? error.status : 503; }
 export async function GET(req: NextRequest) {
   try {
     const actor = actorFromRequest(req);
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))), demoActors: process.env.NODE_ENV !== 'production' ? DEMO_ACTORS : [], templates: await templateCatalog(), records: (await listContracts()).filter(r => canRead(r, actor)), config: { storage: storageMode(), ai: aiConfigured(), wesign: wesignConfigured() } }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return failure(error); }
 }
-async function parseInput(body: Record<string, unknown>, existing?: ContractRecord) {
+async function parseInput(body: Record<string, unknown>, actor: ContractActor, existing?: ContractRecord) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''; const brand = typeof body.brand === 'string' ? body.brand.trim() : ''; const partner = typeof body.partner === 'string' ? body.partner.trim() : '';
   requireCondition(title && title.length <= 180 && brand && brand.length <= 120 && partner && partner.length <= 180, 'Cần nhập tiêu đề, nhãn hàng và đối tác hợp lệ.');
   requireCondition(typeof body.templateId === 'string', 'Cần chọn mẫu pháp chế.');
@@ -26,25 +27,50 @@ async function parseInput(body: Record<string, unknown>, existing?: ContractReco
   const { template } = await loadTemplate(body.templateId, existing?.templateHash);
   requireCondition(typeof body.values === 'object' && body.values && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
   const fields = new Set(template.fields.map(f => f.key)); const values: Record<string, string> = {};
-  for (const [key, value] of Object.entries(body.values)) { requireCondition(fields.has(key) && typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.'); values[key] = value; }
+  for (const [key, value] of Object.entries(body.values)) {
+    if (!fields.has(key) && !key.startsWith('token:')) continue;
+    requireCondition(typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.');
+    values[key] = value;
+  }
   const ref = (v: unknown) => { if (v === undefined || v === null || v === '') return undefined; requireCondition(typeof v === 'string' && /^[\w.@-]{1,80}$/.test(v), 'Mã booking hoặc KOC không hợp lệ.'); return v; };
+
+  const isKocOwnForm = Boolean(body.isKocOwnForm);
+  let customFile = existing?.customFile;
+  if (typeof body.customFileBase64 === 'string' && body.customFileBase64.trim()) {
+    const filename = typeof body.customFilename === 'string' && body.customFilename.trim() ? body.customFilename.trim() : 'hop-dong-koc.docx';
+    const parsed = await parseAndStoreCustomDocx(body.customFileBase64, filename, template.subject);
+    customFile = {
+      filename: parsed.filename,
+      hash: parsed.hash,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: actor.name,
+      blocks: parsed.blocks,
+      paragraphs: parsed.paragraphs,
+    };
+  }
+  if (isKocOwnForm) {
+    requireCondition(Boolean(customFile), 'Vui lòng tải lên file hợp đồng (.docx) của KOC.');
+  }
+
   return {
     title, brand, partner, templateId: template.id, templateHash: template.hash, values,
     parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined,
     dealId: ref(body.dealId), dealCode: ref(body.dealCode), kocId: ref(body.kocId),
-    hasCustomTerms: Boolean(body.hasCustomTerms),
+    hasCustomTerms: isKocOwnForm ? true : Boolean(body.hasCustomTerms),
     customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim().slice(0, 2000) : undefined,
     internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim().slice(0, 4000) : undefined,
+    isKocOwnForm,
+    customFile: isKocOwnForm ? customFile : undefined,
   };
 }
 export async function POST(req: NextRequest) {
   try {
     checkOrigin(req); const actor = actorFromRequest(req);
-    const raw = await req.text(); requireCondition(Buffer.byteLength(raw) < 300000, 'Hồ sơ vượt giới hạn dung lượng.', 413);
+    const raw = await req.text(); requireCondition(Buffer.byteLength(raw) < 20 * 1024 * 1024, 'Hồ sơ vượt giới hạn dung lượng.', 413);
     let body: Record<string, unknown>; try { body = JSON.parse(raw); } catch { throw new ContractError('Dữ liệu yêu cầu không hợp lệ.'); }
     requireCondition(body && typeof body === 'object' && !Array.isArray(body), 'Yêu cầu không hợp lệ.');
     if (body.action === 'CREATE') {
-      const input = await parseInput(body);
+      const input = await parseInput(body, actor);
       if (input.parentId) { const parent = await getContract(input.parentId); requireCondition(canRead(parent, actor), 'Không có quyền truy cập hồ sơ gốc.', 403); }
       const draft = createContract(input, actor); await archiveTemplate(input.templateId, input.templateHash);
       const saved = await saveContract(draft); return NextResponse.json({ record: saved });
@@ -53,15 +79,17 @@ export async function POST(req: NextRequest) {
     const record = await getContract(body.id); requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ.', 403);
     requireCondition(body.revision === record.revision, 'Hồ sơ đã thay đổi. Vui lòng tải lại.', 409);
     let next: ContractRecord = structuredClone(record);
-    if (body.action === 'EDIT') next = editContract(record, actor, await parseInput(body, record));
+    if (body.action === 'EDIT') next = editContract(record, actor, await parseInput(body, actor, record));
     else if (body.action === 'SUBMIT') {
       const { template } = await loadTemplate(record.templateId, record.templateHash);
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
-      requireCondition(template.fields.filter(f => f.required).every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
+      if (!record.isKocOwnForm) {
+        requireCondition(template.fields.filter(f => f.required).every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
+      }
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');
       const reviewers = configuredActors().filter(a => (body.reviewers as string[]).includes(a.id));
       requireCondition(reviewers.length === body.reviewers.length, 'Người duyệt chưa được cấp quyền.');
-      next = submitContract(record, actor, reviewers, { requireLegal: typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined });
+      next = submitContract(record, actor, reviewers, { requireLegal: record.isKocOwnForm ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) });
     } else if (body.action === 'ADD_NOTE') {
       requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
       event(next, actor, 'NOTE', (body.note as string).trim());
@@ -76,23 +104,47 @@ export async function POST(req: NextRequest) {
           const customTplId = `KOC-${kocId.toUpperCase().replace(/[^A-Z0-9_-]/g, '')}`;
           try {
             const currentTpl = await loadTemplate(record.templateId, record.templateHash);
-            await saveTemplateMeta(customTplId, actor.name, {
-              name: `Mẫu duyệt riêng · ${record.partner || kocId}`,
-              subject: currentTpl.template.subject,
-              kind: currentTpl.template.kind,
-              category: currentTpl.template.category,
-              version: `${currentTpl.template.version}-KOC`,
-              description: `Mẫu hợp đồng đã được Pháp chế (${actor.name}) phê duyệt riêng cho KOC ${record.partner}.`,
-              exemptLegalReview: true,
-              scope: 'KOC_CUSTOM',
-              kocId,
-              kocName: record.partner,
-              approvedByLegal: actor.name,
-              approvedAt: new Date().toISOString(),
-              originalContractId: record.id,
-              customType: record.hasCustomTerms ? 'UPBASE_AMENDED' : 'KOC_FORM',
-              legalNotes: kocLegalNotes || body.note,
-            });
+            const customBuf = record.customFile?.hash ? await readArchivedDocxBuffer(record.customFile.hash) : null;
+            if (customBuf) {
+              await uploadTemplateDocx(customTplId, actor.name, {
+                base64Docx: customBuf.toString('base64'),
+                filename: record.customFile?.filename || `${customTplId}.docx`,
+                name: `Mẫu duyệt riêng · ${record.partner || kocId}`,
+                subject: currentTpl.template.subject,
+                kind: currentTpl.template.kind,
+                category: currentTpl.template.category,
+                version: `${currentTpl.template.version}-KOC`,
+                description: `Mẫu hợp đồng đã được Pháp chế (${actor.name}) phê duyệt riêng cho KOC ${record.partner}.`,
+                exemptLegalReview: true,
+                scope: 'KOC_CUSTOM',
+                kocId,
+                kocName: record.partner,
+                approvedByLegal: actor.name,
+                approvedAt: new Date().toISOString(),
+                originalContractId: record.id,
+                customType: record.isKocOwnForm ? 'KOC_FORM' : 'UPBASE_AMENDED',
+                legalNotes: kocLegalNotes || body.note,
+                note: `Ban hành mẫu riêng của KOC ${record.partner} từ hồ sơ ${record.id}`,
+              });
+            } else {
+              await saveTemplateMeta(customTplId, actor.name, {
+                name: `Mẫu duyệt riêng · ${record.partner || kocId}`,
+                subject: currentTpl.template.subject,
+                kind: currentTpl.template.kind,
+                category: currentTpl.template.category,
+                version: `${currentTpl.template.version}-KOC`,
+                description: `Mẫu hợp đồng đã được Pháp chế (${actor.name}) phê duyệt riêng cho KOC ${record.partner}.`,
+                exemptLegalReview: true,
+                scope: 'KOC_CUSTOM',
+                kocId,
+                kocName: record.partner,
+                approvedByLegal: actor.name,
+                approvedAt: new Date().toISOString(),
+                originalContractId: record.id,
+                customType: record.isKocOwnForm ? 'KOC_FORM' : (record.hasCustomTerms ? 'UPBASE_AMENDED' : 'KOC_FORM'),
+                legalNotes: kocLegalNotes || body.note,
+              });
+            }
             event(next, actor, 'NOTE', `Pháp chế đã lưu mẫu này thành Mẫu đã duyệt cho KOC ${record.partner || kocId}. Các booking sau sẽ được miễn duyệt lại điều khoản.`);
           } catch {
             // Không làm gián đoạn luồng duyệt chính nếu việc lưu mẫu bổ sung gặp lỗi

@@ -18,7 +18,7 @@ interface KocProfileModalProps {
 
 /** Xem nhanh hồ sơ KOC từ màn khác (Booking). Cùng nội dung với trang chi tiết trong Danh bạ KOC. */
 export const KocProfileModal: React.FC<KocProfileModalProps> = ({ isOpen, onClose, koc, onOpenQuickBook, deals, currentUser, duplicates }) => {
-  if (!koc) return null;
+  if (!isOpen || !koc) return null;
   return (
     <Modal open={isOpen} onClose={onClose} title={koc.stageName} size="xl">
       <KocProfile

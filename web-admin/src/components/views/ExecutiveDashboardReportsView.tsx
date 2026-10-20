@@ -530,6 +530,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   // Bóc tách toàn diện Hiệu suất (Sản lượng Video Air, % Spend) & Hiệu quả (GMV, ROAS, CIR, Đơn giá/Video, Điểm KPI) từng nhân viên
   const enrichedStaffList = useMemo(() => {
+    const byPic = new Map<string, typeof B2C_BOOKED_VIDEOS_OCT_2026>();
+    const byStore = new Map<string, typeof B2C_BOOKED_VIDEOS_OCT_2026>();
+    for (const v of B2C_BOOKED_VIDEOS_OCT_2026) {
+      const pKey = v.pic.toLowerCase();
+      let pList = byPic.get(pKey);
+      if (!pList) { pList = []; byPic.set(pKey, pList); }
+      pList.push(v);
+
+      const sKey = v.storeName.toLowerCase();
+      let sList = byStore.get(sKey);
+      if (!sList) { sList = []; byStore.set(sKey, sList); }
+      sList.push(v);
+    }
+
     return B2C_STAFF_ANALYTICS_LIST.map((st) => {
       const staffStores =
         st.roleLevel === 'HEAD'
@@ -538,16 +552,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           ? stores.filter((s) => s.hasBookingLeader)
           : stores.filter((s) => st.storesList.includes(s.storeName));
 
-      const staffVideos =
-        st.roleLevel === 'HEAD'
-          ? B2C_BOOKED_VIDEOS_OCT_2026
-          : st.roleLevel === 'LEADER'
-          ? B2C_BOOKED_VIDEOS_OCT_2026.filter(
-              (v) =>
-                v.pic.toLowerCase() === st.name.toLowerCase() ||
-                st.storesList.some((sn) => sn.toLowerCase() === v.storeName.toLowerCase())
-            )
-          : B2C_BOOKED_VIDEOS_OCT_2026.filter((v) => v.pic.toLowerCase() === st.name.toLowerCase());
+      const picVideos = byPic.get(st.name.toLowerCase()) || [];
+      let staffVideos = picVideos;
+      if (st.roleLevel === 'HEAD') {
+        staffVideos = B2C_BOOKED_VIDEOS_OCT_2026;
+      } else if (st.roleLevel === 'LEADER') {
+        const seen = new Set(picVideos);
+        const combined = [...picVideos];
+        for (const sn of st.storesList) {
+          const sVids = byStore.get(sn.toLowerCase());
+          if (!sVids) continue;
+          for (const v of sVids) {
+            if (!seen.has(v)) {
+              seen.add(v);
+              combined.push(v);
+            }
+          }
+        }
+        staffVideos = combined;
+      }
 
       const burnGrossPct =
         st.orderBudgetGross > 0 ? Math.round((st.actualSpentNet / st.orderBudgetGross) * 1000) / 10 : 0;
@@ -2860,10 +2883,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </span>
                   <button
                     type="button"
-                    onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : filteredBookedVideos.length)}
+                    onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : Math.min(filteredBookedVideos.length, bookedVideosVisibleLimit + 100))}
                     className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
                   >
-                    {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem toàn bộ ${filteredBookedVideos.length} video`}
+                    {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem thêm 100 video (${Math.min(bookedVideosVisibleLimit, filteredBookedVideos.length)}/${filteredBookedVideos.length})`}
                   </button>
                 </div>
               )}
@@ -3463,7 +3486,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-line">
-                        {storeVids.map((v) => (
+                        {storeVids.slice(0, 100).map((v) => (
                           <tr key={v.code}>
                             <td className="py-2 px-3 font-mono font-semibold text-accent">{v.code}</td>
                             <td className="py-2 px-3 font-semibold">@{v.channelId}</td>

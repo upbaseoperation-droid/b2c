@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Modal, Button, Chips } from '../ui';
+import { Modal, Button, Chips, Status } from '../ui';
 import {
   Filter,
   AlertTriangle,
@@ -198,7 +198,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
   // Chấm điểm toàn bộ (trước khi lọc theo bucketFilter để đếm số lượng từng tab nhóm đề xuất)
   const allEvaluatedKocs = useMemo(() => {
-    if (!selectedStore) return [];
+    if (!isOpen || !selectedStore) return [];
     return evaluateAndRankKocs({
       store: selectedStore,
       kocs,
@@ -222,6 +222,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       enforceCooldownFilter,
     });
   }, [
+    isOpen,
     selectedStore,
     kocs,
     deals,
@@ -260,10 +261,17 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     return counts;
   }, [allEvaluatedKocs]);
 
+  const [visibleLimit, setVisibleLimit] = useState<number>(50);
+
   const rankedKocs = useMemo(() => {
     if (bucketFilter === 'ALL') return allEvaluatedKocs;
     return allEvaluatedKocs.filter((item) => item.buckets.includes(bucketFilter));
   }, [allEvaluatedKocs, bucketFilter]);
+
+  const displayedRankedKocs = useMemo(
+    () => rankedKocs.slice(0, visibleLimit),
+    [rankedKocs, visibleLimit]
+  );
 
   const toggleSelectKoc = (id: string) => {
     setSelectedKocIds((prev) =>
@@ -290,7 +298,12 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     setSelectedKocIds(pickedIds);
     if (onNotify) {
       const summaryParts = Object.entries(pickedByGrade).map(([g, c]) => `${g}: ${c}`);
-      if (pickedIds.length > 0) {
+      if (pickedIds.length > 0 && totalMissingSlots > 0 && pickedIds.length < totalMissingSlots) {
+        onNotify(
+          `Chỉ tìm thấy ${pickedIds.length}/${totalMissingSlots} KOC thỏa điều kiện (${summaryParts.join(', ')}) — thiếu ${totalMissingSlots - pickedIds.length} KOC so với định mức.`,
+          'warning'
+        );
+      } else if (pickedIds.length > 0) {
         onNotify(
           `Đã chọn ${pickedIds.length} KOC điểm cao nhất (${summaryParts.join(', ')}).`,
           'info'
@@ -484,6 +497,8 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       onNotify(`Đã xuất bảng chấm điểm ${exportItems.length} KOC ra tệp CSV.`, 'success');
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -958,7 +973,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
             {/* Cột phải: Bảng kết quả xếp hạng KOC */}
             <div className="lg:col-span-8 flex flex-col bg-sunken lg:overflow-hidden">
               <div className="px-4 py-2.5 border-b border-line bg-surface flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="secondary" size="sm" onClick={handleSelectAll}>
                     {selectedKocIds.length === rankedKocs.length && rankedKocs.length > 0
                       ? 'Bỏ chọn tất cả'
@@ -967,6 +982,21 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   <span className="text-2xs text-ink-3">
                     Đang hiển thị <strong>{rankedKocs.length}</strong> KOC xếp theo tổng điểm
                   </span>
+                  {totalMissingSlots > 0 && rankedKocs.length < totalMissingSlots && (
+                    <Status tone="warning">
+                      Chỉ có {rankedKocs.length}/{totalMissingSlots} KOC khớp định mức cần bổ sung (thiếu{' '}
+                      {totalMissingSlots - rankedKocs.length} KOC)
+                    </Status>
+                  )}
+                  {totalMissingSlots > 0 &&
+                    rankedKocs.length >= totalMissingSlots &&
+                    selectedKocsSummary.count > 0 &&
+                    selectedKocsSummary.count < totalMissingSlots && (
+                      <Status tone="warning">
+                        Đã chọn {selectedKocsSummary.count}/{totalMissingSlots} KOC theo định mức (thiếu{' '}
+                        {totalMissingSlots - selectedKocsSummary.count} KOC)
+                      </Status>
+                    )}
                 </div>
 
                 <Button
@@ -1005,7 +1035,8 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                     </div>
                   </div>
                 ) : (
-                  rankedKocs.map((item) => {
+                  <>
+                  {displayedRankedKocs.map((item) => {
                     const {
                       koc,
                       matchPercent,
@@ -1232,7 +1263,19 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                         </div>
                       </div>
                     );
-                  })
+                  })}
+                  {rankedKocs.length > visibleLimit && (
+                    <div className="pt-2 text-center">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setVisibleLimit((prev) => prev + 50)}
+                      >
+                        Xem thêm 50 KOC ({visibleLimit}/{rankedKocs.length})
+                      </Button>
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
             </div>

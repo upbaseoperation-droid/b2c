@@ -420,16 +420,21 @@ export function ContractDetail({
             ) : (
               <ContractDocumentViewer
                 title={record.title}
-                templateName={`${template?.name || record.templateId} · Phiên bản ${selectedVersion}`}
-                blocks={previewData?.blocks || template?.blocks || []}
-                paragraphs={previewData?.paragraphs || []}
-                fields={previewData?.fields || template?.fields || []}
+                templateName={
+                  record.isKocOwnForm && record.customFile
+                    ? `Tệp KOC: ${record.customFile.filename} · Phiên bản ${selectedVersion}`
+                    : `${template?.name || record.templateId} · Phiên bản ${selectedVersion}`
+                }
+                blocks={previewData?.blocks || record.customFile?.blocks || template?.blocks || []}
+                paragraphs={previewData?.paragraphs || record.customFile?.paragraphs || []}
+                fields={record.isKocOwnForm ? [] : (previewData?.fields || template?.fields || [])}
                 values={shownValues}
                 compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
                 activeFieldKey={activeFieldKey}
                 onSelectField={key => setActiveFieldKey(key)}
                 downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
                 signingPeople={selectedVersion === signing?.version ? signing.people : undefined}
+                isTemplatePreview={record.isKocOwnForm}
                 versionSelector={
                   record.versions.length > 0 ? (
                     <div className="inline-flex items-center gap-1.5">
@@ -468,7 +473,11 @@ export function ContractDetail({
           <AsideSection title="Thông tin">
             <dl className="grid gap-3">
               <Info label="Người phụ trách"><Person name={record.ownerName} size={20} /></Info>
-              <Info label="Mẫu">{template?.name || record.templateId}</Info>
+              <Info label="Mẫu">
+                {record.isKocOwnForm && record.customFile
+                  ? `Tệp riêng KOC (${record.customFile.filename})`
+                  : (template?.name || record.templateId)}
+              </Info>
               <Info label="Đối tác">{record.partner}</Info>
               <Info label="Nhãn hàng">{record.brand}</Info>
               {record.dealCode && <Info label="Booking"><span className="font-code">{record.dealCode}</span></Info>}
@@ -875,7 +884,7 @@ function LinkDialog({ open, version, busy, onClose, onSubmit }: { open: boolean;
         </>
       }
     >
-      <Field label="Mã tài liệu trên weSign" htmlFor="ws-id" hint="Dạng UUID, lấy trong trang chi tiết tài liệu của weSign.">
+      <Field label="Mã tài liệu trên weSign" htmlFor="ws-id">
         <Input id="ws-id" value={id} onChange={e => setId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="font-code" />
       </Field>
       <label className="flex items-start gap-2 text-[13px] text-ink-2">
@@ -922,7 +931,7 @@ function LegalApproveDialog({
       }
     >
       <div className="space-y-4">
-        <Field label="Nhận xét phê duyệt" htmlFor="legal-note" hint="Nhận xét được lưu vào lịch sử phê duyệt của hồ sơ.">
+        <Field label="Nhận xét phê duyệt" htmlFor="legal-note">
           <Textarea
             id="legal-note"
             rows={2}
@@ -942,9 +951,6 @@ function LegalApproveDialog({
             />
             <div>
               <span>Lưu làm Mẫu hợp đồng đã duyệt cho KOC ({record.partner})</span>
-              <p className="text-2xs font-normal text-ink-3 mt-0.5">
-                Các lần booking tiếp theo của KOC này sẽ được chọn ngay mẫu này và miễn bước thẩm định lại của Pháp chế.
-              </p>
             </div>
           </label>
 
@@ -952,7 +958,6 @@ function LegalApproveDialog({
             <Field
               label="Lưu ý của Pháp chế cho KOC này"
               htmlFor="koc-legal-notes"
-              hint="Hiển thị cho chuyên viên khi tạo các hợp đồng sau này của KOC (hạn thanh toán, trần phạt, bản quyền hình ảnh...)"
             >
               <Textarea
                 id="koc-legal-notes"

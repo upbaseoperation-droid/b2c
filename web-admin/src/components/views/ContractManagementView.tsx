@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, FolderKanban, Plus } from 'lucide-react';
+import { Download, Eye, FileText, FolderKanban, Plus, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
@@ -174,7 +174,7 @@ export function ContractManagementView({
           <div className="min-w-0 max-w-[260px] leading-tight">
             <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
-              {tpl?.name || r.templateId} · v{r.version}{catLabel ? ` · ${catLabel}` : ''}
+              {r.isKocOwnForm && r.customFile ? `Tệp KOC: ${r.customFile.filename}` : (tpl?.name || r.templateId)} · v{r.version}{catLabel ? ` · ${catLabel}` : ''}
             </span>
           </div>
         );
@@ -257,7 +257,16 @@ export function ContractManagementView({
             <Button variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
               Kiểm tra điều khoản & thuế
             </Button>
-            {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+            {canCreate && (
+              <>
+                <Button variant="secondary" icon={Upload} onClick={() => setScreen({ mode: 'form', init: { isKocOwnForm: true } })}>
+                  Tải hợp đồng KOC (.docx)
+                </Button>
+                <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>
+                  Tạo hợp đồng
+                </Button>
+              </>
+            )}
           </PageActions>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -284,7 +293,7 @@ export function ContractManagementView({
         />
       ) : screen.mode === 'form' ? (
         <ContractForm
-          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}`}
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}-${screen.init?.isKocOwnForm ? 'koc' : 'std'}`}
           data={data}
           deals={deals}
           kocs={kocs}

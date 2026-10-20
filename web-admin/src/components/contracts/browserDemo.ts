@@ -219,15 +219,48 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const id = path.pathname.split('/').at(-1) || '';
     const template = templates.find(t => t.id === id);
     if (body && (body.action === 'SAVE_META' || body.action === 'UPLOAD_DOCX')) {
-      if (template) {
-        if (typeof body.name === 'string' && body.name.trim()) template.name = body.name.trim();
-        if (typeof body.subject === 'string' && body.subject.trim()) template.subject = body.subject.trim();
-        if (typeof body.version === 'string' && body.version.trim()) template.version = body.version.trim();
-        if (typeof body.description === 'string') template.description = body.description.trim();
-        if (typeof body.active === 'boolean') template.active = body.active;
-        template.updatedAt = new Date().toISOString();
-        template.updatedBy = actor.name;
-        return { template } as T;
+      const targetId = typeof body.newId === 'string' && body.newId.trim() ? body.newId.trim().toUpperCase() : id;
+      let target = templates.find(t => t.id === targetId) || template;
+      if (!target && body.action === 'UPLOAD_DOCX') {
+        const fallbackBase = templates.find(t => t.kind === (body.kind || 'CONTRACT')) || templates[0];
+        target = {
+          ...structuredClone(fallbackBase),
+          id: targetId,
+          name: typeof body.name === 'string' && body.name.trim() ? body.name.trim() : `Mẫu ${targetId}`,
+          filename: typeof body.filename === 'string' && body.filename.trim() ? body.filename.trim() : `${targetId}.docx`,
+          subject: typeof body.subject === 'string' && body.subject.trim() ? body.subject.trim() : 'Cá nhân',
+          kind: body.kind === 'ACCEPTANCE' ? 'ACCEPTANCE' : 'CONTRACT',
+          category: (body.category as LegalTemplate['category']) || 'BOOKING_VIDEO',
+          version: typeof body.version === 'string' && body.version.trim() ? body.version.trim() : 'Ver102026',
+          description: typeof body.description === 'string' ? body.description.trim() : '',
+          active: true,
+          scope: body.scope === 'KOC_CUSTOM' ? 'KOC_CUSTOM' : 'GLOBAL',
+          kocId: typeof body.kocId === 'string' ? body.kocId.trim() : undefined,
+          kocName: typeof body.kocName === 'string' ? body.kocName.trim() : undefined,
+          customType: body.customType === 'KOC_FORM' || body.customType === 'UPBASE_AMENDED' ? body.customType : undefined,
+          legalNotes: typeof body.legalNotes === 'string' ? body.legalNotes.trim() : undefined,
+          exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : true,
+          updatedAt: new Date().toISOString(),
+          updatedBy: actor.name,
+        };
+        templates.push(target);
+        return { template: target } as T;
+      }
+      if (target) {
+        if (typeof body.name === 'string' && body.name.trim()) target.name = body.name.trim();
+        if (typeof body.subject === 'string' && body.subject.trim()) target.subject = body.subject.trim();
+        if (typeof body.version === 'string' && body.version.trim()) target.version = body.version.trim();
+        if (typeof body.description === 'string') target.description = body.description.trim();
+        if (typeof body.active === 'boolean') target.active = body.active;
+        if (body.scope === 'KOC_CUSTOM' || body.scope === 'GLOBAL') target.scope = body.scope;
+        if (typeof body.kocId === 'string') target.kocId = body.kocId.trim() || undefined;
+        if (typeof body.kocName === 'string') target.kocName = body.kocName.trim() || undefined;
+        if (body.customType === 'KOC_FORM' || body.customType === 'UPBASE_AMENDED') target.customType = body.customType;
+        if (typeof body.legalNotes === 'string') target.legalNotes = body.legalNotes.trim() || undefined;
+        if (typeof body.exemptLegalReview === 'boolean') target.exemptLegalReview = body.exemptLegalReview;
+        target.updatedAt = new Date().toISOString();
+        target.updatedBy = actor.name;
+        return { template: target } as T;
       }
     }
     requireCondition(template, 'Không tìm thấy biểu mẫu.');
@@ -241,6 +274,15 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const version = Number(path.searchParams.get('version') || record.version);
     const snapshot = version === record.version ? record : record.versions.find(v => v.version === version);
     requireCondition(snapshot, 'Không tìm thấy phiên bản.');
+    if (snapshot.customFile) {
+      return {
+        paragraphs: snapshot.customFile.paragraphs || [],
+        blocks: snapshot.customFile.blocks || [],
+        fields: [],
+        values: snapshot.values,
+        version,
+      } as T;
+    }
     const tpl = templates.find(t => t.id === record.templateId);
     return {
       paragraphs: renderParagraphs({ ...record, values: snapshot.values }),
@@ -254,7 +296,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
   requireCondition(body && path.pathname === '/api/contracts', 'Thao tác không được hỗ trợ.');
   const template = templates.find(t => t.id === body.templateId);
 
-  const parse = () => {
+  const parse = (existing?: ContractRecord) => {
     requireCondition(
       template &&
         typeof body.title === 'string' &&
@@ -266,12 +308,30 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       'Cần chọn mẫu và nhập tên hồ sơ, nhãn hàng, đối tác.',
     );
     requireCondition(body.values && typeof body.values === 'object' && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
-    const values = body.values as Record<string, string>;
+    const rawValues = body.values as Record<string, string>;
     const tplFields = new Set(template.fields.map(f => f.key));
-    requireCondition(
-      Object.entries(values).every(([key, value]) => tplFields.has(key) && typeof value === 'string' && value.length <= 4000),
-      'Trường điền không hợp lệ.',
-    );
+    const values: Record<string, string> = {};
+    for (const [key, value] of Object.entries(rawValues)) {
+      if (!tplFields.has(key) && !key.startsWith('token:')) continue;
+      if (typeof value === 'string' && value.length <= 4000) values[key] = value;
+    }
+    const isKocOwnForm = Boolean(body.isKocOwnForm);
+    let customFile = existing?.customFile;
+    if (typeof body.customFilename === 'string' && body.customFilename.trim()) {
+      const blocks = Array.isArray(body.customFileBlocks) ? (body.customFileBlocks as DocBlock[]) : customFile?.blocks || [];
+      const paragraphs = Array.isArray(body.customFileParagraphs) ? (body.customFileParagraphs as string[]) : customFile?.paragraphs || [];
+      customFile = {
+        filename: body.customFilename.trim(),
+        hash: typeof body.customFileHash === 'string' && body.customFileHash ? body.customFileHash : `demo-hash-${Date.now()}`,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: actor.name,
+        blocks,
+        paragraphs,
+      };
+    }
+    if (isKocOwnForm) {
+      requireCondition(Boolean(customFile), 'Vui lòng tải lên file hợp đồng (.docx) của KOC.');
+    }
     return {
       title: body.title,
       brand: body.brand,
@@ -283,9 +343,11 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       dealId: body.dealId as string | undefined,
       dealCode: body.dealCode as string | undefined,
       kocId: body.kocId as string | undefined,
-      hasCustomTerms: Boolean(body.hasCustomTerms),
+      hasCustomTerms: isKocOwnForm ? true : Boolean(body.hasCustomTerms),
       customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim() : undefined,
       internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim() : undefined,
+      isKocOwnForm,
+      customFile: isKocOwnForm ? customFile : undefined,
     };
   };
 
@@ -302,19 +364,21 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
 
   let next = structuredClone(record);
   if (body.action === 'EDIT') {
-    next = editContract(record, actor, parse());
+    next = editContract(record, actor, parse(record));
   } else if (body.action === 'SUBMIT') {
-    const requiredFields = template?.fields.filter(f => f.required) || [];
-    requireCondition(
-      requiredFields.every(f => record.values[f.key]?.trim()),
-      'Còn ô bắt buộc chưa điền.',
-    );
+    if (!record.isKocOwnForm) {
+      const requiredFields = template?.fields.filter(f => f.required) || [];
+      requireCondition(
+        requiredFields.every(f => record.values[f.key]?.trim()),
+        'Còn ô bắt buộc chưa điền.',
+      );
+    }
     requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
     next = submitContract(
       record,
       actor,
       actors.filter(a => (body.reviewers as string[]).includes(a.id)),
-      { requireLegal: typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined },
+      { requireLegal: record.isKocOwnForm ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
     );
   } else if (body.action === 'DECIDE') {
     next = decideContract(record, actor, body.decision as ReviewStep['status'], String(body.note || ''));

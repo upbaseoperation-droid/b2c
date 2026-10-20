@@ -6,26 +6,33 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Columns2, FileScan, Scale, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Columns2, FileScan, FileUp, Scale, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
-import type { ContractField, ContractRecord, LegalTemplate } from '../../lib/contracts/types';
+import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
+import { parseDocxInBrowser } from './docxClientParser';
 
 export interface ContractFormInit {
   dealId?: string;
   kind?: 'CONTRACT' | 'ACCEPTANCE';
   parentId?: string;
   templateId?: string;
+  isKocOwnForm?: boolean;
 }
 
 export interface ContractFormPayload {
   title: string; brand: string; partner: string; templateId: string; parentId: string;
   values: Record<string, string>; dealId?: string; dealCode?: string; kocId?: string;
   hasCustomTerms?: boolean; customTermsSummary?: string; internalNotes?: string;
+  isKocOwnForm?: boolean;
+  customFilename?: string;
+  customFileBase64?: string;
+  customFileBlocks?: DocBlock[];
+  customFileParagraphs?: string[];
 }
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
@@ -80,8 +87,29 @@ export function ContractForm({
   const [ocrNotice, setOcrNotice] = useState('');
   const ocrInputRef = useRef<HTMLInputElement | null>(null);
 
-  const deal = deals.find(d => d.id === dealId);
-  const koc = findKoc(kocs, deal);
+  const [isKocOwnForm, setIsKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
+  const [customFile, setCustomFile] = useState<{
+    filename: string;
+    base64?: string;
+    blocks: DocBlock[];
+    paragraphs: string[];
+  } | null>(
+    record?.customFile
+      ? {
+          filename: record.customFile.filename,
+          blocks: record.customFile.blocks || [],
+          paragraphs: record.customFile.paragraphs || [],
+        }
+      : null,
+  );
+  const [customContractValue, setCustomContractValue] = useState<string>(
+    record?.values?.['token:[Tổng tiền trước thuế/sau thuế]'] ||
+      (initialDeal?.totalValue ? formatMoneyInput(String(initialDeal.totalValue)) : ''),
+  );
+  const kocDocxInputRef = useRef<HTMLInputElement | null>(null);
+
+  const deal = useMemo(() => deals.find(d => d.id === dealId), [deals, dealId]);
+  const koc = useMemo(() => findKoc(kocs, deal), [kocs, deal]);
   const targetKocId = koc?.id || deal?.kocId || record?.kocId;
   const kocTemplates = data.templates.filter(
     t => (t.scope === 'KOC_CUSTOM' && t.kocId === targetKocId) || (t.kocId && t.kocId === targetKocId),
@@ -124,6 +152,7 @@ export function ContractForm({
     setDealId(id);
     if (!d) return;
     setBrand(d.brandName); setPartner(partnerName(k, d));
+    if (d.totalValue && !customContractValue) setCustomContractValue(formatMoneyInput(String(d.totalValue)));
     if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
     const nextTemplate = templateFor(k, kind, d, data.templates);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
@@ -133,9 +162,51 @@ export function ContractForm({
   const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
     setKind(k);
     if (title === autoTitle(koc, deal, kind)) setTitle(autoTitle(koc, deal, k));
-    const next = deal ? templateFor(koc, k, deal, data.templates) : '';
+    const next = deal ? templateFor(koc, k, deal, data.templates) : (data.templates.find(t => t.kind === k)?.id || '');
     setTemplate(null); setValues({}); setTemplateId(next);
     if (k === 'CONTRACT') setParentId('');
+  };
+
+  const switchSourceMode = (nextOwnForm: boolean) => {
+    setIsKocOwnForm(nextOwnForm);
+    if (nextOwnForm) {
+      setHasCustomTerms(true);
+      if (!templateId) {
+        const fallback = deal ? templateFor(koc, kind, deal, data.templates) : (data.templates.find(t => t.kind === kind)?.id || 'IND-HD');
+        setTemplateId(fallback);
+      }
+    }
+  };
+
+  const handleKocDocxSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      setLoadError('Vui lòng chọn tệp hợp đồng định dạng Word (.docx).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      try {
+        const parsed = await parseDocxInBrowser(base64);
+        setCustomFile({
+          filename: file.name,
+          base64,
+          blocks: parsed.blocks,
+          paragraphs: parsed.paragraphs,
+        });
+        setLoadError('');
+        if (!title.trim()) {
+          const cleanName = file.name.replace(/\.docx$/i, '');
+          setTitle(cleanName);
+        }
+      } catch (err) {
+        setLoadError((err as Error).message || 'Không đọc được nội dung file Word (.docx).');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const setValue = (f: ContractField, raw: string) => {
@@ -240,7 +311,13 @@ export function ContractForm({
 
   const templates = data.templates.filter(t => t.kind === kind && t.active !== false);
   const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (!dealId || !r.dealId || r.dealId === dealId));
-  const dealOptions = [...deals].sort((a, b) => a.dealCode.localeCompare(b.dealCode));
+  const dealOptions = useMemo(() => {
+    const slice = deals.slice(0, 200);
+    if (deal && !slice.some(d => d.id === deal.id)) {
+      return [deal, ...slice];
+    }
+    return slice;
+  }, [deals, deal]);
 
   const docDateVal = values['token:[dd.mm.yy]'] || '';
   const kocIdVal = values['token:[ID KOC]'] || '';
@@ -263,10 +340,15 @@ export function ContractForm({
   };
 
   const numericTotal = useMemo(() => {
-    const raw = values['token:[Tổng tiền trước thuế/sau thuế]'] || values['token:[Thù lao trọn gói]'] || values['token:[Thành tiền (VNĐ)]'] || '';
+    const raw =
+      (isKocOwnForm ? customContractValue : '') ||
+      values['token:[Tổng tiền trước thuế/sau thuế]'] ||
+      values['token:[Thù lao trọn gói]'] ||
+      values['token:[Thành tiền (VNĐ)]'] ||
+      '';
     const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : (deal?.totalValue || (deal as any)?.paymentAmount || (deal as any)?.contractAmount || 0);
-  }, [values, deal]);
+  }, [values, deal, isKocOwnForm, customContractValue]);
 
   const numericAdvance = useMemo(() => {
     const raw = values['token:[Số tiền tạm ứng đợt 1]'] || '';
@@ -281,30 +363,46 @@ export function ContractForm({
       deal,
       totalValue: numericTotal,
       advanceAmount: numericAdvance,
-      hasCustomTerms,
-      isKolForm: selectedTpl?.scope === 'KOC_CUSTOM',
+      hasCustomTerms: isKocOwnForm || hasCustomTerms,
+      isKolForm: isKocOwnForm || selectedTpl?.scope === 'KOC_CUSTOM',
       availableTemplates: data.templates,
     });
-  }, [koc, deal, numericTotal, numericAdvance, hasCustomTerms, templateId, data.templates]);
+  }, [koc, deal, numericTotal, numericAdvance, hasCustomTerms, isKocOwnForm, templateId, data.templates]);
+
+  const canSubmitForm =
+    !busy &&
+    Boolean(template) &&
+    Boolean(title.trim()) &&
+    Boolean(brand.trim()) &&
+    Boolean(partner.trim()) &&
+    (!isKocOwnForm || Boolean(customFile));
 
   return (
     <form
       className="space-y-4"
       onSubmit={e => {
         e.preventDefault();
+        const nextValues = isKocOwnForm && customContractValue.trim()
+          ? { ...values, 'token:[Tổng tiền trước thuế/sau thuế]': customContractValue.trim() }
+          : values;
         onSave({
           title: title.trim(),
           brand: brand.trim(),
           partner: partner.trim(),
           templateId,
           parentId,
-          values,
+          values: nextValues,
           dealId: deal?.id,
           dealCode: deal?.dealCode,
           kocId: koc?.id,
-          hasCustomTerms,
+          hasCustomTerms: isKocOwnForm ? true : hasCustomTerms,
           customTermsSummary: customTermsSummary.trim() || undefined,
           internalNotes: internalNotes.trim() || undefined,
+          isKocOwnForm,
+          customFilename: isKocOwnForm ? customFile?.filename : undefined,
+          customFileBase64: isKocOwnForm ? customFile?.base64 : undefined,
+          customFileBlocks: isKocOwnForm ? customFile?.blocks : undefined,
+          customFileParagraphs: isKocOwnForm ? customFile?.paragraphs : undefined,
         });
       }}
     >
@@ -315,23 +413,31 @@ export function ContractForm({
           <h2 className="text-base font-semibold text-ink truncate">
             {editing ? `Sửa ${record!.title} (v${record!.version + 1})` : 'Tạo hợp đồng'}
           </h2>
-          {template && (
-            <span className="rounded-md bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2 tabular-nums">
-              Đã điền {requiredDone}/{required.length} mục bắt buộc
+          {isKocOwnForm ? (
+            <span className="rounded-md bg-accent/15 px-2 py-0.5 text-2xs font-medium text-accent">
+              {customFile ? `Tệp KOC: ${customFile.filename}` : 'Chưa chọn tệp .docx KOC'}
             </span>
+          ) : (
+            template && (
+              <span className="rounded-md bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2 tabular-nums">
+                Đã điền {requiredDone}/{required.length} mục bắt buộc
+              </span>
+            )
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
-            Đọc ảnh CCCD / ĐKKD
-          </Button>
+          {!isKocOwnForm && (
+            <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
+              Đọc ảnh CCCD / ĐKKD
+            </Button>
+          )}
           {template && (
             <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
               {showSplitPreview ? 'Ẩn bản xem A4' : 'Xem bản A4 song song'}
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
-          <Button size="sm" variant="primary" type="submit" disabled={busy || !template || !title.trim() || !brand.trim() || !partner.trim()}>
+          <Button size="sm" variant="primary" type="submit" disabled={!canSubmitForm}>
             {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
           </Button>
         </div>
@@ -388,6 +494,18 @@ export function ContractForm({
 
           <Panel title="Thông tin chung">
             <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
+                <span className="text-xs font-medium text-ink-2">Nguồn hợp đồng</span>
+                <Segmented
+                  value={isKocOwnForm ? 'KOC_DOCX' : 'UPBASE_TEMPLATE'}
+                  onChange={v => switchSourceMode(v === 'KOC_DOCX')}
+                  items={[
+                    { key: 'UPBASE_TEMPLATE', label: 'Soạn theo mẫu hệ thống' },
+                    { key: 'KOC_DOCX', label: 'Tải lên file hợp đồng riêng của KOC (.docx)' },
+                  ]}
+                />
+              </div>
+
               <div className="grid gap-3.5 md:grid-cols-2">
                 <Field label="Booking" htmlFor="ct-deal">
                   <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
@@ -404,7 +522,7 @@ export function ContractForm({
                     )}
                   </div>
                 </Field>
-                <Field label="Mẫu pháp chế" htmlFor="ct-template">
+                <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế'} htmlFor="ct-template">
                   <Select id="ct-template" required value={templateId} disabled={editing} onChange={e => { setTemplate(null); setValues({}); setTemplateId(e.target.value); }}>
                     <option value="">Chọn mẫu</option>
                     {kocTemplates.length > 0 && (
@@ -433,6 +551,18 @@ export function ContractForm({
                 <Field label="Đối tác (Bên B)" htmlFor="ct-partner">
                   <Input id="ct-partner" required maxLength={180} value={partner} onChange={e => setPartner(e.target.value)} />
                 </Field>
+                {isKocOwnForm && (
+                  <Field label="Tổng giá trị hợp đồng (VNĐ)" htmlFor="ct-koc-total" className="md:col-span-2">
+                    <Input
+                      id="ct-koc-total"
+                      inputMode="numeric"
+                      className="tabular-nums"
+                      value={customContractValue}
+                      onChange={e => setCustomContractValue(formatMoneyInput(e.target.value))}
+                      placeholder="Nhập giá trị ghi trên hợp đồng KOC để đối soát..."
+                    />
+                  </Field>
+                )}
                 {kind === 'ACCEPTANCE' && (
                   <Field label="Hợp đồng gốc" htmlFor="ct-parent" className="md:col-span-2">
                     <Select id="ct-parent" value={parentId} onChange={e => setParentId(e.target.value)}>
@@ -442,6 +572,43 @@ export function ContractForm({
                   </Field>
                 )}
               </div>
+
+              {isKocOwnForm && (
+                <div className="rounded-xl border-2 border-dashed border-accent/40 bg-accent-soft/20 p-4 space-y-2.5">
+                  <input
+                    ref={kocDocxInputRef}
+                    type="file"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleKocDocxSelect}
+                    className="hidden"
+                  />
+                  {customFile ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface border border-line px-3.5 py-2.5 text-xs">
+                      <div className="min-w-0">
+                        <span className="font-semibold text-ink block truncate">{customFile.filename}</span>
+                        <span className="text-2xs text-ink-3">
+                          Đã đọc {customFile.paragraphs.filter(p => p.trim()).length} đoạn văn bản · Xem trực tiếp bên phải
+                        </span>
+                      </div>
+                      <Button size="sm" variant="secondary" icon={FileUp} onClick={() => kocDocxInputRef.current?.click()}>
+                        Đổi file .docx khác
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-xs">
+                        <span className="font-semibold text-ink block">Tải lên hợp đồng theo mẫu riêng của KOC / Agency (.docx)</span>
+                        <span className="text-2xs text-ink-3">
+                          Hệ thống hiển thị nguyên văn trên khung A4 để Pháp chế &amp; Kế toán rà soát và lưu làm mẫu chuẩn của KOC.
+                        </span>
+                      </div>
+                      <Button size="sm" variant="primary" icon={Upload} onClick={() => kocDocxInputRef.current?.click()}>
+                        Chọn file .docx của KOC
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Thanh tóm tắt quy tắc pháp chế & tùy chọn điều khoản riêng */}
               <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-2.5 text-xs">
@@ -459,26 +626,28 @@ export function ContractForm({
                       {ruleEval.isContractMandatory ? 'Bắt buộc ký HĐ' : 'Miễn HĐ giấy'} · {ruleEval.isAcceptanceMandatory ? 'Bắt buộc BBNT' : 'Thanh lý tự động'}
                     </span>
                   </div>
-                  <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-ink">
-                    <input
-                      type="checkbox"
-                      checked={hasCustomTerms}
-                      onChange={e => setHasCustomTerms(e.target.checked)}
-                      className="rounded border-line"
-                    />
-                    <span>Có sửa điều khoản / ngoại lệ</span>
-                  </label>
+                  {!isKocOwnForm && (
+                    <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-ink">
+                      <input
+                        type="checkbox"
+                        checked={hasCustomTerms}
+                        onChange={e => setHasCustomTerms(e.target.checked)}
+                        className="rounded border-line"
+                      />
+                      <span>Có sửa điều khoản / ngoại lệ</span>
+                    </label>
+                  )}
                 </div>
 
-                {hasCustomTerms && (
+                {(hasCustomTerms || isKocOwnForm) && (
                   <div className="grid gap-3 md:grid-cols-2 pt-2 border-t border-line">
-                    <Field label="Nội dung đề xuất sửa / Thỏa thuận riêng" htmlFor="ct-custom-terms">
+                    <Field label={isKocOwnForm ? 'Điểm lưu ý chính trong mẫu riêng của KOC' : 'Nội dung đề xuất sửa / Thỏa thuận riêng'} htmlFor="ct-custom-terms">
                       <Textarea
                         id="ct-custom-terms"
                         rows={2}
                         value={customTermsSummary}
                         onChange={e => setCustomTermsSummary(e.target.value)}
-                        placeholder="Nêu điều khoản thay đổi để Pháp chế duyệt..."
+                        placeholder={isKocOwnForm ? 'Tóm tắt điều khoản thanh toán, phạt, bản quyền trong form của KOC...' : 'Nêu điều khoản thay đổi để Pháp chế duyệt...'}
                       />
                     </Field>
                     <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
@@ -496,7 +665,7 @@ export function ContractForm({
             </div>
           </Panel>
 
-          {template && groups.map(g => (
+          {!isKocOwnForm && template && groups.map(g => (
             <Panel key={g.key} title={g.title}>
               <div className="grid gap-3.5 md:grid-cols-2">
                 {g.fields.map(f => {
@@ -536,18 +705,19 @@ export function ContractForm({
         {template && showSplitPreview && (
           <div className="xl:sticky xl:top-4 min-w-0">
             <ContractDocumentViewer
-              title={title || template.name}
-              templateName={template.name}
-              blocks={template.blocks || []}
-              paragraphs={template.paragraphs}
-              fields={template.fields}
+              title={title || (isKocOwnForm && customFile ? customFile.filename : template.name)}
+              templateName={isKocOwnForm && customFile ? `Tệp KOC: ${customFile.filename}` : template.name}
+              blocks={isKocOwnForm && customFile ? customFile.blocks : (template.blocks || [])}
+              paragraphs={isKocOwnForm && customFile ? customFile.paragraphs : template.paragraphs}
+              fields={isKocOwnForm ? [] : template.fields}
               values={values}
               compareValues={record?.values}
               activeFieldKey={activeFieldKey}
               onSelectField={focusFieldInput}
-              downloadHref={`/api/contracts/templates/${template.id}?download=1`}
+              downloadHref={isKocOwnForm ? undefined : `/api/contracts/templates/${template.id}?download=1`}
               maxHeight="calc(100vh - 140px)"
               compactToolbar
+              isTemplatePreview={isKocOwnForm}
             />
           </div>
         )}
@@ -556,7 +726,7 @@ export function ContractForm({
       {template && (
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>Hủy</Button>
-          <Button variant="primary" type="submit" disabled={busy || !title.trim() || !brand.trim() || !partner.trim()}>
+          <Button variant="primary" type="submit" disabled={!canSubmitForm}>
             {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
           </Button>
         </div>

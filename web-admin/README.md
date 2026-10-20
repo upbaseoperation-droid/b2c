@@ -66,7 +66,7 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 ## 3. Cổng tích hợp API
 
 - **Lark Suite & Larkbase:** Xác thực SSO và đồng bộ kế hoạch tháng từ File 4.1 Plan order tổng (`/api/integrations/larkbase/booking-plans`).
-- **TikTok Shop Open API, Thu th?p d? li?u KOC & Nghi?m thu Video:** ??ng b? doanh thu, GMV v? ??n h?ng t? Seller Center (`/api/tiktok-seller/sync`), thu th?p th?ng tin k?nh, video v? ch? s? b?n h?ng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), ki?m tra v? nghi?m thu link video KOC g?i k?m k?ch b?n (`/api/integrations/tiktok-koc/inspect-video`).
+- **TikTok Shop Open API, Thu thập dữ liệu KOC, Lịch sử quét chung & Nghiệm thu Video:** Đồng bộ doanh thu, GMV và đơn hàng từ Seller Center (`/api/tiktok-seller/sync`), thu thập thông tin kênh, video và chỉ số bán hàng Affiliate KOC (`/api/integrations/tiktok-koc/scrape`), đồng bộ lịch sử quét chung trong ngày giữa các nhân sự (`/api/integrations/tiktok-koc/history`), kiểm tra và nghiệm thu link video KOC gửi kèm kịch bản (`/api/integrations/tiktok-koc/inspect-video`).
 - **Nghiên cứu Thị trường, Thương hiệu & Đối thủ:** Bóc tách hồ sơ 4P, lập ma trận đối thủ, đào bình luận khách hàng và quét trực tiếp trang đích (`/api/integrations/market-research/analyze`).
 - **Kalodata:** Tra cứu creator và khám phá thị trường (`/api/integrations/kalodata/*`).
 - **WeSign:** Đồng bộ trạng thái hợp đồng ký điện tử (`/api/contracts/integrations/wesign/*`).
@@ -100,7 +100,7 @@ Mở trình duyệt tại `http://localhost:3000`.
 
 ## 5. Cập nhật nâng cấp giao diện & Trải nghiệm người dùng (19/10/2026)
 
-- **Kiến trúc Điều hướng & Gộp Nhóm Màn Hình (`src/lib/navGroups.ts` & `Sidebar.tsx`):** Đồng bộ 100% nhãn hiển thị giữa `Sidebar` và `TopHeader` qua `TAB_LABELS`; hợp nhất cấu hình menu theo RBAC (`INTERNAL_NAV_SECTIONS`) và gộp các màn hình cùng cụm nghiệp vụ vào `NAV_GROUPS` (*Phân việc & điều phối*, *Thương hiệu & chiến dịch*, *Nghiên cứu đối thủ*).
+- **Kiến trúc Điều hướng & Gộp Nhóm Màn Hình (`src/lib/navGroups.ts` & `Sidebar.tsx`):** Đồng bộ 100% nhãn hiển thị giữa `Sidebar` và `TopHeader` qua `TAB_LABELS`; gộp các màn hình cùng cụm nghiệp vụ vào `NAV_GROUPS` (*Điều phối & Giao việc*, *Brand & Gian hàng*, *Nghiên cứu & Crawler* gộp `market-research`, `tiktok-crawler` và `koc-master`); bảo toàn trạng thái kết quả quét của `TikTokCrawlerHubView` qua `KeepAliveTab` khi chuyển qua lại với Danh bạ KOC, đồng thời tích hợp thanh **Lịch sử quét hôm nay** dùng chung giữa toàn bộ nhân viên phòng B2C (`/api/integrations/tiktok-koc/history`).
 - **Triệt tiêu dữ liệu trùng lặp & Phụ đề giải thích thừa (Single Source of Truth):** Mỗi thực thể chỉ quản trị tại 1 màn hình duy nhất; gỡ bỏ toàn bộ dòng phụ đề xám (`subtitle`, `description`, `hint`, `moduleSubtitle`) dưới tiêu đề; thay thế số liệu gõ cứng bằng dữ liệu tính toán động và chuẩn hóa hộp thoại sang `<Modal>`.
 
 - **Trang đăng nhập Enterprise SaaS (`/login`):** Nâng cấp bố cục 2 cột cân đối: cột trái giới thiệu hệ sinh thái B2C với 3 khối tính năng then chốt (Quản lý 69 gian hàng, Đối soát kế hoạch Gross/Net, Báo cáo Ads & Đo lường Video); cột phải là card đăng nhập tối giản, hỗ trợ Lark SSO nội bộ, đối tác Gmail và bảng chọn vai trò thử nghiệm nhanh.

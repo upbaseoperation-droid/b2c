@@ -197,6 +197,76 @@ function norm(s?: string): string {
   return (s || '').trim().toLowerCase();
 }
 
+// Chỉ mục tĩnh cho dữ liệu File 3.2 (16.046 bản ghi) và chiến dịch Seller Ads để tra cứu O(1)
+const FILE32_BY_STORE_NAME = (() => {
+  const map = new Map<string, B2cBookedVideoRecord[]>();
+  for (const r of B2C_BOOKED_VIDEOS_OCT_2026) {
+    const key = norm(r.storeName);
+    if (!key) continue;
+    let list = map.get(key);
+    if (!list) {
+      list = [];
+      map.set(key, list);
+    }
+    list.push(r);
+  }
+  return map;
+})();
+
+const ADS_CAMPAIGNS_BY_STORE = (() => {
+  const byStore = new Map<string, B2cAdsCampaignMetric[]>();
+  const byBrand = new Map<string, B2cAdsCampaignMetric[]>();
+  for (const c of TIKTOK_SELLER_CAMPAIGNS) {
+    const sKey = norm(c.storeName);
+    if (sKey) {
+      let list = byStore.get(sKey);
+      if (!list) { list = []; byStore.set(sKey, list); }
+      list.push(c);
+    }
+    const bKey = norm(c.brandName);
+    if (bKey) {
+      let list = byBrand.get(bKey);
+      if (!list) { list = []; byBrand.set(bKey, list); }
+      list.push(c);
+    }
+  }
+  return { byStore, byBrand };
+})();
+
+interface StoreDealsIndex {
+  byStoreName: Map<string, BookingDealItem[]>;
+  byStoreId: Map<string, BookingDealItem[]>;
+}
+
+const storeDealsIndexCache = new WeakMap<BookingDealItem[], StoreDealsIndex>();
+
+function getStoreDealsIndex(deals: BookingDealItem[]): StoreDealsIndex {
+  let cached = storeDealsIndexCache.get(deals);
+  if (cached) return cached;
+
+  const byStoreName = new Map<string, BookingDealItem[]>();
+  const byStoreId = new Map<string, BookingDealItem[]>();
+  for (const d of deals) {
+    if (d.storeName) {
+      const sKey = norm(d.storeName);
+      if (sKey) {
+        let list = byStoreName.get(sKey);
+        if (!list) { list = []; byStoreName.set(sKey, list); }
+        list.push(d);
+      }
+    }
+    if (d.storeId) {
+      let list = byStoreId.get(d.storeId);
+      if (!list) { list = []; byStoreId.set(d.storeId, list); }
+      list.push(d);
+    }
+  }
+
+  cached = { byStoreName, byStoreId };
+  storeDealsIndexCache.set(deals, cached);
+  return cached;
+}
+
 function matchStorePlan(
   store: StorePortfolioItem,
   month: string,
@@ -436,20 +506,35 @@ export function buildStoreMonthlyPlanReport(
         ? Math.round(baseBudgetNet * 4.5)
         : 0;
 
-  // Lấy danh sách Booking Deals & Video thực tế (File 3.2) của gian hàng
-  const matchedFile32 = B2C_BOOKED_VIDEOS_OCT_2026.filter(
-    r => norm(r.storeName) === sNameNorm
-  );
-  const matchedAppDeals = allDeals.filter(
-    d =>
-      (d.storeName && norm(d.storeName) === sNameNorm) ||
-      (d.storeId && (d.storeId === store.id || d.storeId === store.storeOperationId))
-  );
+  // Lấy danh sách Booking Deals & Video thực tế (File 3.2) của gian hàng qua chỉ mục O(1)
+  const matchedFile32 = FILE32_BY_STORE_NAME.get(sNameNorm) || [];
+  const dealsIdx = getStoreDealsIndex(allDeals);
+  const byNameDeals = dealsIdx.byStoreName.get(sNameNorm);
+  const byIdDeals = store.id ? dealsIdx.byStoreId.get(store.id) : undefined;
+  const byOpIdDeals = store.storeOperationId ? dealsIdx.byStoreId.get(store.storeOperationId) : undefined;
+
+  let matchedAppDeals: BookingDealItem[] = [];
+  if (byNameDeals && !byIdDeals && !byOpIdDeals) {
+    matchedAppDeals = byNameDeals;
+  } else if (byNameDeals || byIdDeals || byOpIdDeals) {
+    const seenDeals = new Set<BookingDealItem>();
+    for (const list of [byNameDeals, byIdDeals, byOpIdDeals]) {
+      if (!list) continue;
+      for (const d of list) {
+        if (!seenDeals.has(d)) {
+          seenDeals.add(d);
+          matchedAppDeals.push(d);
+        }
+      }
+    }
+  }
+
+  const appDealCodes = new Set(matchedAppDeals.map(d => d.dealCode));
 
   const octBookings: StoreMonthlyBookingRecord[] = [
     ...matchedAppDeals.map(d => convertDealToMonthlyBooking(d, '2026/10')),
     ...matchedFile32
-      .filter(r => !matchedAppDeals.some(d => d.dealCode === r.code))
+      .filter(r => !appDealCodes.has(r.code))
       .map(r => convertBookedRecordToMonthlyBooking(r, '2026/10')),
   ];
 
@@ -483,9 +568,11 @@ export function buildStoreMonthlyPlanReport(
           });
 
   // Chiến dịch TikTok Seller Ads của gian hàng
-  const adsCampaigns = TIKTOK_SELLER_CAMPAIGNS.filter(
-    c => norm(c.storeName) === sNameNorm || (norm(c.brandName) === bNameNorm && sNameNorm.includes('tiktok'))
-  );
+  const adsByStore = ADS_CAMPAIGNS_BY_STORE.byStore.get(sNameNorm) || [];
+  const adsByBrand = sNameNorm.includes('tiktok') ? (ADS_CAMPAIGNS_BY_STORE.byBrand.get(bNameNorm) || []) : [];
+  const adsCampaigns = adsByBrand.length === 0
+    ? adsByStore
+    : Array.from(new Set([...adsByStore, ...adsByBrand]));
   const adsCost =
     month === '2026/10'
       ? adsCampaigns.reduce((s, c) => s + c.cost, 0)

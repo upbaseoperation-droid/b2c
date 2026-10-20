@@ -82,7 +82,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       const res = await fetch('/api/ads-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, kocs, deals })
+        body: JSON.stringify({ fileName })
       });
       const data = await res.json();
       if (data.success && data.data) {

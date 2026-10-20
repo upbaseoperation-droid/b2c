@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { ConfirmDialog, PageActions, StatRow, Stat, Button, useFlipList } from '../ui';
+import { ConfirmDialog, PageActions, Pagination, StatRow, Stat, Button, useFlipList } from '../ui';
 import { 
   Truck, 
   AlertTriangle, 
@@ -39,6 +39,8 @@ export default function SampleTrackerView({
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sparkCodeInput, setSparkCodeInput] = useState<{ [id: string]: string }>({});
+  const [page, setPage] = useState<number>(1);
+  const PAGE_SIZE = 50;
 
   // Đồng bộ các deal từ Booking sang danh sách vận đơn mẫu nếu chưa có
   const shipments = useMemo(() => {
@@ -69,25 +71,54 @@ export default function SampleTrackerView({
     return [...localShipments, ...dealShipments];
   }, [localShipments, deals]);
 
-  const brands = Array.from(new Set(shipments.map(s => s.brandName)));
+  const brands = useMemo(() => Array.from(new Set(shipments.map(s => s.brandName))), [shipments]);
 
-  const filteredShipments = shipments.filter(s => {
-    const matchSearch = s.kocName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.trackingCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.dealCode.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchStatus = statusFilter === 'ALL' || s.status === statusFilter;
-    const matchBrand = selectedBrand === 'ALL' || s.brandName === selectedBrand;
-    return matchSearch && matchStatus && matchBrand;
-  });
+  const filteredShipments = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return shipments.filter(s => {
+      const matchSearch = !q ||
+        s.kocName.toLowerCase().includes(q) ||
+        s.trackingCode.toLowerCase().includes(q) ||
+        s.productName.toLowerCase().includes(q) ||
+        s.dealCode.toLowerCase().includes(q);
+      const matchStatus = statusFilter === 'ALL' || s.status === statusFilter;
+      const matchBrand = selectedBrand === 'ALL' || s.brandName === selectedBrand;
+      return matchSearch && matchStatus && matchBrand;
+    });
+  }, [shipments, searchQuery, statusFilter, selectedBrand]);
+
+  const filterKey = `${searchQuery}|${statusFilter}|${selectedBrand}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const pagedShipments = useMemo(
+    () => filteredShipments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredShipments, page]
+  );
+
   const shipmentsBodyRef = useRef<HTMLTableSectionElement>(null);
-  useFlipList(shipmentsBodyRef, filteredShipments.map(s => s.id).join('|'));
+  useFlipList(shipmentsBodyRef, pagedShipments.map(s => s.id).join('|'));
 
   // KPI counts
-  const totalSent = shipments.length;
-  const deliveringCount = shipments.filter(s => s.status === 'DELIVERING').length;
-  const ghostAlertCount = shipments.filter(s => s.status === 'GHOST_WARNING').length;
-  const airedCount = shipments.filter(s => s.status === 'AIRED').length;
+  const { totalSent, deliveringCount, ghostAlertCount, airedCount } = useMemo(() => {
+    let delivering = 0;
+    let ghost = 0;
+    let aired = 0;
+    for (const s of shipments) {
+      if (s.status === 'DELIVERING') delivering++;
+      else if (s.status === 'GHOST_WARNING') ghost++;
+      else if (s.status === 'AIRED') aired++;
+    }
+    return {
+      totalSent: shipments.length,
+      deliveringCount: delivering,
+      ghostAlertCount: ghost,
+      airedCount: aired,
+    };
+  }, [shipments]);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -203,7 +234,7 @@ export default function SampleTrackerView({
               </tr>
             </thead>
             <tbody ref={shipmentsBodyRef} className="divide-y divide-slate-100">
-              {filteredShipments.map(item => {
+              {pagedShipments.map(item => {
                 const isOverdue = item.status === 'GHOST_WARNING';
 
                 return (
@@ -407,6 +438,12 @@ export default function SampleTrackerView({
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={filteredShipments.length}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* Confirm Hạn chế hợp tác KOC Dialog */}

@@ -525,6 +525,17 @@ export const KocChannelBriefMatcherModal: React.FC<
                   </div>
                 </div>
               )}
+
+            {activeJob &&
+              activeJob.status === 'COMPLETED' &&
+              activeJob.results.length < activeJob.handles.length && (
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <Status tone="warning">
+                    Chỉ phân tích được {activeJob.results.length}/{activeJob.handles.length} kênh KOC yêu cầu (thiếu{' '}
+                    {activeJob.handles.length - activeJob.results.length} kênh)
+                  </Status>
+                </div>
+              )}
           </div>
         )}
 

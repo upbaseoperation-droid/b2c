@@ -17,6 +17,8 @@ type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' |
   hasCustomTerms?: boolean;
   customTermsSummary?: string;
   internalNotes?: string;
+  isKocOwnForm?: boolean;
+  customFile?: ContractRecord['customFile'];
 };
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
@@ -30,7 +32,13 @@ export function editContract(record: ContractRecord, actor: ContractActor, input
   requireCondition(record.approval !== 'IN_REVIEW', 'Cần nhận yêu cầu bổ sung hoặc thu hồi hồ sơ trước khi sửa.');
   requireCondition(record.templateId === input.templateId && record.templateHash === input.templateHash, 'Không đổi mẫu/phiên bản nguồn trên hồ sơ đã tạo.');
   const next = structuredClone(record);
-  next.versions.push({ version: record.version, values: structuredClone(record.values), at: record.updatedAt, actorId: actor.id });
+  next.versions.push({
+    version: record.version,
+    values: structuredClone(record.values),
+    at: record.updatedAt,
+    actorId: actor.id,
+    customFile: record.customFile ? structuredClone(record.customFile) : undefined,
+  });
   Object.assign(next, input); next.version++; next.steps = []; next.approval = 'DRAFT'; event(next, actor, 'EDIT'); return next;
 }
 export function submitContract(record: ContractRecord, actor: ContractActor, reviewers: ContractActor[], options?: { requireLegal?: boolean }) {

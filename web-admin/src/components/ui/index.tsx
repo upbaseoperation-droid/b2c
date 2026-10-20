@@ -163,7 +163,7 @@ export function Segmented<K extends string>({ items, value, onChange }: { items:
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} className="relative inline-flex max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-0.5 rounded-md bg-sunken">
+    <div ref={ref} className="relative inline-flex max-w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-0.5 rounded-md bg-sunken">
       <SlidingIndicator box={box} ready={ready} className="rounded-[5px] bg-surface shadow-[0_1px_2px_rgb(22_23_26/0.08)]" />
       {items.map((it) => (
         <button

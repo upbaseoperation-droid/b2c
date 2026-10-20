@@ -1305,6 +1305,13 @@ const COMPETITOR_PRESET_CATALOG: Record<
     category: 'Dung dịch Vệ sinh Phụ nữ',
     recommendedUpbaseBrands: ['Ziaja Intimate', 'pHCare', 'Baniphar'],
   },
+  rhysman: {
+    officialHandle: 'rhysman.vn',
+    brandName: 'Rhys Man Vietnam',
+    searchKeyword: 'rhys man',
+    category: 'Chăm sóc Cá nhân Nam giới',
+    recommendedUpbaseBrands: ['CM24', 'Badlab'],
+  },
   nerman_official: {
     officialHandle: 'nerman.official',
     brandName: 'Nerman Vietnam',

@@ -1044,6 +1044,27 @@ const SUB_INDUSTRY_SPECS: Record<SubIndustryCode, SubIndustrySpec> = {
     ],
     competitors: [
       {
+        competitorName: 'Rhys Man Vietnam',
+        tiktokHandle: '@rhysman.vn',
+        shopeeMallUrl: 'https://shopee.vn/rhysman.vn',
+        originCountry: 'Việt Nam',
+        priceSegment: 'MASSTIGE',
+        heroSkuName: 'Sữa tắm gội nam 3in1 Rhys Man & Bọt vệ sinh nam giới Rhys Man',
+        packSizeText: 'Chai 350ml / Box quà tặng',
+        listPriceVnd: 280000,
+        dealPriceVnd: 199000,
+        affiliateCommissionPct: 14,
+        keyUsps: [
+          'Định vị chăm sóc đàn ông thế hệ mới với thiết kế Box quà tặng nam tính và hương nước hoa cuốn hút',
+          'Đẩy mạnh các bộ quà tặng theo dịp lễ (Box Tâm, Box Tình, Box Gu) và collab thương hiệu nam giới',
+        ],
+        customerComplaints: [
+          'Đơn giá các set quà tặng cao hơn mặt bằng sữa tắm nam phổ thông khi mua dùng cá nhân hàng ngày',
+        ],
+        kocStrategySummary: 'Phủ mạnh KOC cặp đôi, lifestyle nam giới và góc kịch bản bạn gái mua quà tặng bạn trai.',
+        upbaseCounterPlay: 'Tập trung so sánh hiệu năng làm sạch — lưu hương thực tế trên mỗi ml và ưu đãi mua lẻ/combo tiết kiệm hàng ngày.',
+      },
+      {
         competitorName: 'Nerman Vietnam',
         tiktokHandle: '@nerman.official',
         shopeeMallUrl: 'https://shopee.vn/nerman.official',
@@ -2569,6 +2590,66 @@ const EXTERNAL_COMPETITOR_BRAND_CONFIG_MAP: Record<string, SpecificBrandConfig> 
     defaultDealPriceVnd: 74000,
     storeBrandAliases: ['lactacyd', 'lactacydvietnam', 'dahuong'],
   },
+  rhysman: {
+    canonicalBrandName: 'Rhys Man Vietnam',
+    subIndustry: 'MENS_GROOMING',
+    originCountry: 'Việt Nam',
+    priceSegment: 'MASSTIGE',
+    slogan: 'Chăm Sóc Đàn Ông Thế Hệ Mới — Tự Tin, Lịch Lãm & Cuốn Hút',
+    story:
+      'Rhys Man là thương hiệu chăm sóc cá nhân và hương thơm dành cho nam giới Việt Nam, nổi bật với các dòng sữa tắm gội 3in1 hương nước hoa, bọt vệ sinh nam giới, xịt thơm cơ thể và các bộ quà tặng (Box Tâm, Box Tình, Box Gu) thiết kế chỉn chu.',
+    officialWebsiteUrl: 'https://rhysman.vn',
+    tiktokHandle: '@rhysman.vn',
+    shopeeMallUrl: 'https://shopee.vn/rhysman.vn',
+    defaultHeroSkuName: 'Sữa tắm gội nam 3in1 hương nước hoa Rhys Man & Bọt vệ sinh nam giới Rhys Man',
+    defaultListPriceVnd: 280000,
+    defaultDealPriceVnd: 199000,
+    storeBrandAliases: ['rhysman', 'rhysmanvn', 'rhysmanofficial'],
+    keySpecs: [
+      'Công thức tắm gội nam 3-trong-1 (Tắm – Gội – Rửa mặt) làm sạch sâu bã nhờn kết hợp nốt hương nước hoa nam tính',
+      'Hệ sinh thái chăm sóc nam giới toàn diện: Sữa tắm gội, Bọt vệ sinh nam, Xịt thơm cơ thể, Nước hoa nam, Sáp & Xịt phồng tóc',
+      'Thế mạnh đóng gói Box quà tặng nam giới theo mùa vụ lễ (19/11, Valentine, Sinh nhật) kèm phụ kiện thiết thực',
+    ],
+    customerComplaints: [
+      'Giá bán các Box quà tặng cao hơn dòng sữa tắm nam phổ thông khi khách chỉ mua dùng cá nhân hàng ngày',
+      'Khách mua online lần đầu cần được mô tả kỹ sự khác biệt giữa các mùi hương để chọn đúng gu',
+    ],
+    realSkus: [
+      {
+        skuCode: 'RHYSMAN-3IN1-350',
+        productName: 'Sữa tắm gội nam 3in1 hương nước hoa Rhys Man 350ml',
+        role: 'HERO_CORE',
+        packSize: 'Chai 350ml',
+        listPriceVnd: 250000,
+        dealPriceVnd: 189000,
+        affiliateCommissionPct: 14,
+        coreIngredientsOrSpecs: 'Làm sạch sâu 3-trong-1, khử mùi mồ hôi và lưu hương nước hoa nam tính',
+        targetNeed: 'Nam giới 18–35 tuổi cần tắm gội nhanh gọn, thơm lịch lãm sau khi đi làm hoặc tập thể thao',
+      },
+      {
+        skuCode: 'RHYSMAN-INTIMATE-100',
+        productName: 'Bọt vệ sinh nam giới Rhys Man khử mùi & làm sạch dịu nhẹ 100ml',
+        role: 'TRAFFIC_DRIVER',
+        packSize: 'Chai tạo bọt 100ml',
+        listPriceVnd: 165000,
+        dealPriceVnd: 129000,
+        affiliateCommissionPct: 14,
+        coreIngredientsOrSpecs: 'Độ pH cân bằng, tạo bọt sẵn tiện lợi giúp khử mùi và giữ vùng nhạy cảm khô thoáng',
+        targetNeed: 'Nam giới vận động nhiều và các cặp đôi chú trọng chăm sóc vệ sinh cá nhân hàng ngày',
+      },
+      {
+        skuCode: 'RHYSMAN-GIFTBOX',
+        productName: 'Bộ Quà Tặng Nam Giới Rhys Man (Sữa tắm gội + Nước hoa / Xịt thơm cơ thể + Hộp quà)',
+        role: 'VIP_BUNDLE',
+        packSize: 'Box Quà Tặng Thiết Kế',
+        listPriceVnd: 550000,
+        dealPriceVnd: 379000,
+        affiliateCommissionPct: 14,
+        coreIngredientsOrSpecs: 'Đóng hộp cứng kèm túi giấy, thiệp và phụ kiện chăm sóc nam giới đồng bộ',
+        targetNeed: 'Bạn gái / vợ hoặc khách hàng mua quà tặng nam giới dịp sinh nhật, kỷ niệm, lễ 19/11',
+      },
+    ],
+  },
   nerman: {
     canonicalBrandName: 'Nerman Vietnam',
     subIndustry: 'MENS_GROOMING',
@@ -2699,50 +2780,122 @@ function matchesBrandAliasSet(targetBrand: string, aliasSet: Set<string>): boole
   return false;
 }
 
+function hasUnicodeKeywords(text: string, alternation: string): boolean {
+  const re = new RegExp(`(?:^|[^\\p{L}\\p{N}])(?:${alternation})(?=$|[^\\p{L}\\p{N}])`, 'iu');
+  return re.test(text);
+}
+
 function detectSubIndustryForAnyBrand(
   brandName: string,
   customCategory?: string,
-  cfg?: SpecificBrandConfig
+  cfg?: SpecificBrandConfig,
+  extraSignalText?: string
 ): SubIndustryCode {
   if (cfg) return cfg.subIndustry;
-  const combined = `${brandName} ${customCategory || ''}`.toLowerCase();
-  if (/nous|bu baby|bubaby|lullaby|chaang|uala rogo|bodysuit|quần áo sơ sinh|đồ sơ sinh|thời trang.*bé/i.test(combined)) {
-    return 'MOM_BABY_APPAREL';
-  }
-  if (/bỉm|tã|momo rabbit|moony|merries|huggies|bobby/i.test(combined)) {
-    return 'MOM_BABY_DIAPER';
-  }
-  if (/d-nee|dnee|kodomo|arau|giặt.*bé/i.test(combined)) {
-    return 'MOM_BABY_LAUNDRY';
-  }
-  if (/mẹ|bé|baby|sơ sinh|chàm sữa|hăm|mustela|bepanthen/i.test(combined)) {
-    return 'MOM_BABY_SKINCARE';
-  }
-  if (/vệ sinh phụ nữ|ddvs|intimate|phcare|femfresh|lactacyd|dạ hương/i.test(combined)) {
-    return 'INTIMATE_PERSONAL_CARE';
-  }
-  if (/nước giặt|giặt xả|lau sàn|rửa chén|nhà cửa|omo|ariel|maxkleen|clean/i.test(combined)) {
-    return 'HOME_LAUNDRY_CARE';
-  }
-  if (/chó|mèo|thú cưng|pet|royal canin|whiskas|me-o/i.test(combined)) {
-    return 'PET_NUTRITION';
-  }
-  if (/nam giới|men|nerman|romano|x-men|cm24|badlab/i.test(combined)) {
+  const combined = `${brandName} ${customCategory || ''} ${extraSignalText || ''}`.toLowerCase();
+
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'nam giới|đàn ông|phái mạnh|dành cho nam|bộ quà tặng cho nam|sữa tắm nam|sữa tắm gội nam|dầu gội nam|vệ sinh nam|bọt vệ sinh nam|dung dịch vệ sinh nam|nước hoa nam|khử mùi nam|sáp vuốt tóc|gôm xịt tóc|xịt phồng tóc|máy tỉa lông mũi|cạo râu|rhys man|rhysman|nerman|romano|x-men|xmen|cm24|badlab|oniiz|iron & stone|old spice|gatsby|nivea men'
+    )
+  ) {
     return 'MENS_GROOMING';
   }
-  if (/nước hoa|perfume|body mist|fragrance|cindy bloom|miss saigon|l'occitane/i.test(combined)) {
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'nous|bu baby|bubaby|lullaby|chaang|uala rogo|dokma|bodysuit sơ sinh|quần áo sơ sinh|đồ sơ sinh|thời trang sơ sinh|giỏ đồ đi sinh|thời trang & phụ kiện sơ sinh mẹ & bé'
+    )
+  ) {
+    return 'MOM_BABY_APPAREL';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'tã dán|tã quần|bỉm quần|bỉm dán|tã bỉm|miếng lót sơ sinh|momo rabbit|momorabbit|nabizam|moony|merries|huggies|bobby'
+    )
+  ) {
+    return 'MOM_BABY_DIAPER';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'd-nee|dnee|docilee|kodomo|arau baby|nước giặt cho bé|nước giặt em bé|giặt xả cho bé|giặt xả mẹ bé'
+    )
+  ) {
+    return 'MOM_BABY_LAUNDRY';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'mẹ & bé|mẹ và bé|mẹ bầu|trẻ sơ sinh|chàm sữa|hăm tã|kem chống hăm|rôm sảy|kem bôi cho bé|tắm gội cho bé|kutieskin|mustela|bepanthen|skinbibi'
+    )
+  ) {
+    return 'MOM_BABY_SKINCARE';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'vệ sinh phụ nữ|dung dịch vệ sinh|ddvs|phụ khoa|vùng kín|intimate|phcare|femfresh|lactacyd|dạ hương|ziaja intimate'
+    )
+  ) {
+    return 'INTIMATE_PERSONAL_CARE';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'nước giặt|giặt xả|lau sàn|rửa chén|chăm sóc nhà cửa|omo|ariel|maxkleen|tm clean|feelcleans'
+    )
+  ) {
+    return 'HOME_LAUNDRY_CARE';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'thức ăn cho mèo|thức ăn cho chó|hạt cho mèo|hạt cho chó|thú cưng|pet care|royal canin|whiskas|me-o'
+    )
+  ) {
+    return 'PET_NUTRITION';
+  }
+  if (
+    hasUnicodeKeywords(
+      combined,
+      "nước hoa|perfume|body mist|xịt thơm toàn thân|xịt thơm cơ thể|fragrance|cindy bloom|miss saigon|l'occitane|loccitane"
+    )
+  ) {
     return 'FRAGRANCE_PERFUME';
   }
-  if (/dầu gội|tóc|gội xả|sữa tắm|herbal care|chulala|nguyên xuân|tsubaki|cocoon|cỏ mềm|comem/i.test(combined)) {
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'dầu gội|dầu xả|ủ tóc|xịt bưởi|tinh dầu bưởi|rụng tóc|sữa tắm|tẩy da chết cơ thể|herbal care|chulala|nguyên xuân|tsubaki|cocoon|cỏ mềm|comem'
+    )
+  ) {
     return 'HAIR_BODY_CARE';
   }
-  if (/dinh dưỡng y học|sữa.*dinh dưỡng|meal|detox|orgalife|ensure|glucerna/i.test(combined)) {
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'dinh dưỡng y học|sữa dinh dưỡng|bữa ăn thay thế|detox|orgalife|ensure|glucerna'
+    )
+  ) {
     return 'MEDICAL_NUTRITION';
   }
-  if (/collagen|vitamin|dầu cá|omega|thực phẩm chức năng|sức khỏe|nucos|82x|dhc|blackmores|meracine|nature's way/i.test(combined)) {
+  if (
+    hasUnicodeKeywords(
+      combined,
+      "collagen|vitamin|dầu cá|omega-3|thực phẩm chức năng|thực phẩm bảo vệ sức khỏe|nucos|82x|dhc|blackmores|meracine|nature's way"
+    )
+  ) {
     return 'HEALTH_COLLAGEN_SUPPLEMENT';
   }
-  if (/cushion|son|kẻ mắt|má hồng|trang điểm|makeup|kem chống nắng|clio|romand|rom&nd|judydoll|colorkey|3ce|maybelline|cathy doll|anessa/i.test(combined)) {
+  if (
+    hasUnicodeKeywords(
+      combined,
+      'cushion|phấn nước|son môi|son kem|son tint|kẻ mắt|mascara|má hồng|trang điểm|makeup|kem chống nắng|clio|clubclio|romand|rom&nd|judydoll|colorkey|3ce|maybelline|cathy doll|anessa'
+    )
+  ) {
     return 'KBEAUTY_MAKEUP_SUN';
   }
   return 'DERMOCOSMETICS_ACNE';
@@ -2803,10 +2956,21 @@ export function generateBrandMarketResearchDossier(params: {
     rawQuery;
   aliasSet.add(normalizeKey(brandName));
 
+  const extraSignalCorpus = [
+    params.liveAutoWebIntel?.metaTitle || '',
+    params.liveAutoWebIntel?.metaDescription || '',
+    ...(params.liveAutoWebIntel?.headings || []),
+    ...(params.liveAutoWebIntel?.scrapedProducts || []).map((p) => p.productName),
+    params.liveWebInspection?.pageTitle || '',
+    ...(params.liveWebInspection?.h1Headings || []),
+    params.primaryLiveTikTokSignal?.topPromotedProduct || '',
+  ].join(' ');
+
   const subIndustryCode = detectSubIndustryForAnyBrand(
     brandName,
     params.customCategory || params.liveAutoWebIntel?.detectedCategoryLabel,
-    brandCfg
+    brandCfg,
+    extraSignalCorpus
   );
   const subSpec = SUB_INDUSTRY_SPECS[subIndustryCode];
 
@@ -2815,8 +2979,10 @@ export function generateBrandMarketResearchDossier(params: {
     (brandCfg
       ? subSpec.categoryLabel
       : matchedUpbaseBrand?.category ||
-        params.liveAutoWebIntel?.detectedCategoryLabel ||
-        subSpec.categoryLabel);
+        (params.liveAutoWebIntel?.detectedCategoryLabel &&
+        params.liveAutoWebIntel.detectedCategoryLabel !== 'Chăm sóc Cá nhân & Tiêu dùng'
+          ? params.liveAutoWebIntel.detectedCategoryLabel
+          : subSpec.categoryLabel));
 
   const originCountry =
     params.savedBrandProfile?.entity?.originCountry ||

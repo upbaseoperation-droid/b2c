@@ -73,7 +73,7 @@ export function Chips<K extends string>({ items, value, onChange, label }: { ite
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} className="relative flex items-center gap-1.5 overflow-x-auto max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={label}>
+    <div ref={ref} className="relative flex items-center gap-1.5 overflow-x-auto overflow-y-hidden max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label={label}>
       <SlidingIndicator box={box} ready={ready} className="rounded-full bg-ink" />
       {label && <span className="text-2xs text-ink-3 shrink-0 mr-1">{label}</span>}
       {items.map((it) => {

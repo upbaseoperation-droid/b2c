@@ -118,15 +118,80 @@ export function findDuplicates(kocs: KocItem[]): Map<string, DuplicateMatch[]> {
 /* ------------------------------------------------------------- Booking */
 
 const normHandle = (s?: string) => (s || '').trim().toLowerCase().replace(/^@/, '');
+const normStage = (s?: string) => (s || '').trim().toLowerCase();
+
+interface KocDealIndex {
+  byId: Map<string, BookingDealItem[]>;
+  byHandle: Map<string, BookingDealItem[]>;
+  byStage: Map<string, BookingDealItem[]>;
+}
+
+const kocDealIndexCache = new WeakMap<BookingDealItem[], KocDealIndex>();
+
+function getKocDealIndex(deals: BookingDealItem[]): KocDealIndex {
+  let cached = kocDealIndexCache.get(deals);
+  if (cached) return cached;
+
+  const byId = new Map<string, BookingDealItem[]>();
+  const byHandle = new Map<string, BookingDealItem[]>();
+  const byStage = new Map<string, BookingDealItem[]>();
+
+  for (const d of deals) {
+    if (d.kocId) {
+      let arr = byId.get(d.kocId);
+      if (!arr) { arr = []; byId.set(d.kocId, arr); }
+      arr.push(d);
+    }
+    if (d.kocChannelId) {
+      const h = normHandle(d.kocChannelId);
+      if (h) {
+        let arr = byHandle.get(h);
+        if (!arr) { arr = []; byHandle.set(h, arr); }
+        arr.push(d);
+      }
+    }
+    if (d.kocStageName) {
+      const s = normStage(d.kocStageName);
+      if (s) {
+        let arr = byStage.get(s);
+        if (!arr) { arr = []; byStage.set(s, arr); }
+        arr.push(d);
+      }
+    }
+  }
+
+  cached = { byId, byHandle, byStage };
+  kocDealIndexCache.set(deals, cached);
+  return cached;
+}
 
 /** Các booking của một KOC, khớp theo id, rồi tới tên kênh / handle. */
 export function dealsOfKoc(deals: BookingDealItem[] | undefined, k: KocItem): BookingDealItem[] {
-  return (deals || []).filter(
-    (d) =>
-      d.kocId === k.id ||
-      (!!d.kocChannelId && normHandle(d.kocChannelId) === normHandle(k.channelId)) ||
-      (!!d.kocStageName && d.kocStageName.trim().toLowerCase() === k.stageName.trim().toLowerCase()),
-  );
+  if (!deals || deals.length === 0) return [];
+  const idx = getKocDealIndex(deals);
+  const byIdList = idx.byId.get(k.id);
+  const h = normHandle(k.channelId);
+  const byHandleList = h ? idx.byHandle.get(h) : undefined;
+  const s = normStage(k.stageName);
+  const byStageList = s ? idx.byStage.get(s) : undefined;
+
+  if (!byIdList && !byHandleList && !byStageList) return [];
+
+  const seen = new Set<BookingDealItem>();
+  const out: BookingDealItem[] = [];
+  const addAll = (list?: BookingDealItem[]) => {
+    if (!list) return;
+    for (const d of list) {
+      if (!seen.has(d)) {
+        seen.add(d);
+        out.push(d);
+      }
+    }
+  };
+  addAll(byIdList);
+  addAll(byHandleList);
+  addAll(byStageList);
+  return out;
 }
 
 export const isDealOpen = (d: BookingDealItem) => d.status !== 'COMPLETED' && d.status !== 'CANCELLED' && d.status !== 'FINAL_PAID';
