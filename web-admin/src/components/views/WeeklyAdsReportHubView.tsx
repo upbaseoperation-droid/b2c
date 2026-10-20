@@ -368,7 +368,9 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                     <tr key={idx} className="hover:bg-canvas transition">
                       <td className="py-3 px-4">
                         <div className="font-semibold text-ink text-xs">{camp.campaignName}</div>
-                        <div className="text-2xs text-ink-3 font-mono mt-0.5">Mã: {camp.campaignId || 'PGM-CAMPAIGN'}</div>
+                        {camp.campaignId && camp.campaignId !== 'PGM-CAMPAIGN' && (
+                          <div className="text-2xs text-ink-3 font-mono mt-0.5">{camp.campaignId}</div>
+                        )}
                       </td>
                       <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
                         {formatVnd(camp.cost)}
@@ -652,7 +654,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                       <tr key={idx} className={`hover:bg-canvas transition ${isAlertAuth ? 'bg-warning-soft/40' : ''}`}>
                         <td className="py-3 px-4">
                           <div className="font-mono text-2xs text-ink-3">
-                            Mã: {cr.videoId}
+                            {cr.videoId}
                           </div>
                           <div className="font-medium text-ink text-xs mt-0.5 max-w-sm truncate" title={cr.videoTitle}>
                             {cr.videoTitle}

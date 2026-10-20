@@ -911,19 +911,16 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                       {/* 2. PIC & Luồng duyệt */}
                       <td className="py-3 px-3">
                         <Person name={st.pic} size={20} />
-                        <div className="text-2xs text-ink-3 mt-0.5">
-                          {st.hasLeader
-                            ? `Qua Leader ${st.leaderName}`
-                            : 'Trình trực tiếp TP Yến Nhi'}
-                        </div>
+                        {st.hasLeader && (
+                          <div className="text-2xs text-accent font-medium mt-0.5">
+                            TN: {st.leaderName}
+                          </div>
+                        )}
                       </td>
 
                       {/* 3. Chẩn đoán Air đồng loạt */}
-                      <td className="py-3 px-3 max-w-[260px]">
+                      <td className="py-3 px-3 max-w-[260px]" title={st.syncDiagnosis}>
                         <Status tone={meta.tone}>{meta.label}</Status>
-                        <p className="text-2xs text-ink-3 mt-0.5 line-clamp-2">
-                          {st.syncDiagnosis}
-                        </p>
                       </td>
 
                       {/* 4. Ma trận 5 cột tuần */}
@@ -970,7 +967,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                         {st.totalAired > 0 ? (
                           <>
                             <div className="font-semibold text-ink">
-                              {st.burstConcentrationPct}% gom 3 ngày
+                              {st.burstConcentrationPct}%
                             </div>
                             <div className="text-2xs text-ink-3 font-sans">
                               Đỉnh {st.peakActualDate.slice(8, 10)}/10 ({st.peakActualCount} video)

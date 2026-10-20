@@ -1693,13 +1693,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             <span className="font-semibold text-ink">{b.brandName}</span>
                             {b.hasLeader && (
                               <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent text-2xs font-semibold">
-                                Leader: Ngọc Tâm
+                                TN: Ngọc Tâm
                               </span>
                             )}
                           </div>
                           <div className="text-2xs text-ink-3">
                             {b.storeCount} gian ({b.tiktokStores} TT · {b.shopeeStores} SP)
-                            {b.pics.size > 0 ? ` · PIC: ${Array.from(b.pics).slice(0, 2).join(', ')}` : ''}
+                            {b.pics.size > 0 ? ` · ${Array.from(b.pics).slice(0, 2).join(', ')}` : ''}
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-ink-2">
@@ -1712,11 +1712,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           {formatVndShort(b.budgetNet)}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono text-2xs text-ink-2">
-                          <div>Aff: <strong className="text-ink">{formatVndShort(b.affNet)}</strong></div>
-                          <div className="text-ink-3">
-                            Brand: {formatVndShort(b.selfNet)}
-                            {b.liveBudget > 0 ? ` · Live: ${formatVndShort(b.liveBudget)}` : ''}
+                          <div>
+                            <strong className="text-ink">{formatVndShort(b.affNet)}</strong>{' '}
+                            <span className="text-ink-3">/ {formatVndShort(b.selfNet)}</span>
                           </div>
+                          {b.liveBudget > 0 && (
+                            <div className="text-ink-3">Live: {formatVndShort(b.liveBudget)}</div>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono bg-accent-soft/30">
                           <div className="flex items-center justify-end gap-1.5">
@@ -1768,17 +1770,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               ? `+${formatVndShort(varianceNet)}`
                               : '0đ'}
                           </span>
-                          <span className="block text-2xs text-ink-3">
-                            {varianceNet < 0 ? 'Vượt trần Net' : 'Còn dư địa'}
-                          </span>
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           <div className="flex items-center justify-center gap-1">
-                            <span className="font-semibold text-positive">{b.airedVideos} air</span>
+                            <span className="font-semibold text-positive">{b.airedVideos}</span>
                             <span className="text-2xs text-ink-3">({airPct}%)</span>
                           </div>
-                          <div className="text-2xs text-ink-3">
-                            Paid {b.paidVideos} · FOC {b.focVideos} · Brand {b.selfVideos}
+                          <div className="text-2xs text-ink-3" title="Paid / FOC / Kênh Brand">
+                            {b.paidVideos} / {b.focVideos} / {b.selfVideos}
                           </div>
                         </td>
                         <td className="py-2.5 px-3">{renderRiskBadge(b.riskStatus)}</td>
@@ -1900,11 +1899,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           </td>
                           <td className="py-2 px-3">
                             <span className="font-medium text-ink">{st.primaryPic || st.assignedStaff}</span>
-                            <span className="block text-2xs text-ink-3">
-                              {st.hasBookingLeader && st.bookingLeader
-                                ? `Leader: ${st.bookingLeader}`
-                                : 'Trình trực tiếp TP Yến Nhi'}
-                            </span>
+                            {st.hasBookingLeader && st.bookingLeader && (
+                              <span className="block text-2xs text-accent font-medium">
+                                TN: {st.bookingLeader}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2 px-3 text-right font-mono font-semibold text-ink">
                             {formatVndShort(net)}
@@ -1916,7 +1915,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             +{formatVndShort(overAmount)}
                           </td>
                           <td className="py-2 px-3 text-center font-mono text-positive font-semibold">
-                            {st.actualAiredVideos || 0} video
+                            {st.actualAiredVideos || 0}
                           </td>
                           <td className="py-2 px-3">{renderRiskBadge(st.financialRiskStatus)}</td>
                         </tr>
@@ -2308,8 +2307,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <td className="py-2.5 px-4">
                           <div className="font-semibold text-ink">{st.storeName}</div>
                           <div className="text-2xs text-ink-3">
-                            Brand: <strong className="text-ink-2">{st.brandName}</strong> · NMV:{' '}
-                            <strong className="font-mono">{formatVndShort(st.monthlyTargetGmv || 0)}</strong>
+                            <strong className="text-ink-2">{st.brandName}</strong> ·{' '}
+                            <span className="font-mono">{formatVndShort(st.monthlyTargetGmv || 0)}</span>
                           </div>
                         </td>
                         <td className="py-2.5 px-3">
@@ -2325,15 +2324,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </td>
                         <td className="py-2.5 px-3">
                           <div className="font-semibold text-ink">
-                            PIC: {st.primaryPic || st.assignedStaff}
+                            {st.primaryPic || st.assignedStaff}
                           </div>
-                          {st.hasBookingLeader && st.bookingLeader ? (
+                          {st.hasBookingLeader && st.bookingLeader && (
                             <span className="text-2xs text-accent font-medium">
-                              Leader: {st.bookingLeader}
-                            </span>
-                          ) : (
-                            <span className="text-2xs text-ink-3">
-                              Không có leader (Trực tiếp Yến Nhi)
+                              TN: {st.bookingLeader}
                             </span>
                           )}
                         </td>
@@ -2803,7 +2798,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     >
                       <td className="py-2.5 px-4 font-mono">
                         <span className="font-semibold text-accent">{v.code}</span>
-                        <span className="block text-2xs text-ink-3">Air: {v.airDate}</span>
+                        <span className="block text-2xs text-ink-3">{v.airDate}</span>
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1.5">
@@ -2813,12 +2808,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           </span>
                         </div>
                         <div className="text-2xs text-ink-3 truncate max-w-[160px]">
-                          SP: {v.productName}
+                          {v.productName}
                         </div>
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="font-semibold text-ink">{v.storeName}</div>
-                        <div className="text-2xs text-ink-3">{v.brandName} · PIC: {v.pic}</div>
+                        <div className="text-2xs text-ink-3">{v.brandName} · {v.pic}</div>
                       </td>
                       <td className="py-2.5 px-3">
                         <span className="font-medium text-ink block">{v.format}</span>
@@ -3018,8 +3013,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       name={st.name}
                       sub={
                         st.storesWithLeaderCount > 0
-                          ? `${st.storesWithLeaderCount} gian qua Leader · ${st.storesDirectCount} gian trực tiếp`
-                          : 'Báo cáo trực tiếp GĐ Yến Nhi'
+                          ? `TN Ngọc Tâm (${st.storesWithLeaderCount} gian)`
+                          : undefined
                       }
                     />
                   ),
@@ -3028,27 +3023,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   key: 'booked',
                   header: 'Tổng đơn book',
                   align: 'right',
-                  render: (st) => `${st.actualBookedVideos} đơn`,
+                  render: (st) => st.actualBookedVideos,
                 },
                 {
                   key: 'aired',
                   header: 'Đã đăng lên sóng',
                   align: 'right',
-                  render: (st) => `${st.actualAiredVideos} video (${st.airVsBookPct}%)`,
+                  render: (st) => `${st.actualAiredVideos} (${st.airVsBookPct}%)`,
                 },
                 {
                   key: 'pending',
                   header: 'Đơn chờ đăng',
                   align: 'right',
-                  render: (st) =>
-                    st.pendingAirVideos > 0 ? `${st.pendingAirVideos} đơn` : '0',
+                  render: (st) => st.pendingAirVideos,
                 },
                 {
                   key: 'late',
                   header: 'Đơn trễ SLA',
                   align: 'right',
-                  render: (st) =>
-                    st.lateSlaVideosCount > 0 ? `${st.lateSlaVideosCount} đơn` : '0',
+                  render: (st) => st.lateSlaVideosCount,
                 },
                 {
                   key: 'sla',
@@ -3220,16 +3213,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   header: 'Nhân sự',
                   width: 220,
                   render: (st) => {
-                    const roleText =
+                    const subText =
                       st.roleLevel === 'HEAD'
                         ? 'GĐ Marketing B2C'
                         : st.roleLevel === 'LEADER'
                         ? 'Trưởng nhóm'
-                        : 'Chuyên viên';
-                    const supervisorShort = st.directSupervisor
-                      .replace('Báo cáo trực tiếp ', '')
-                      .replace('Trưởng nhóm ', 'TN ');
-                    return <Person name={st.name} sub={`${roleText} · ${supervisorShort}`} />;
+                        : st.storesWithLeaderCount > 0
+                        ? `TN Ngọc Tâm (${st.storesWithLeaderCount} gian)`
+                        : undefined;
+                    return <Person name={st.name} sub={subText} />;
                   },
                 },
                 {

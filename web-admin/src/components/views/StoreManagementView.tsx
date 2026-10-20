@@ -420,8 +420,9 @@ export function StoreManagementView({
             </span>
             <ChannelTag channel={s.platform} />
           </div>
-          <span className="block truncate text-2xs text-ink-3 mt-0.5">
-            {s.storeOperationId || s.id} · Gói {s.servicePackage || 'E2E-S'}
+          <span className="block truncate text-2xs text-ink-3 font-mono mt-0.5">
+            {s.storeOperationId || s.id}
+            {s.servicePackage && s.servicePackage !== 'E2E-S' ? ` · ${s.servicePackage}` : ''}
           </span>
         </div>
       ),
@@ -447,11 +448,11 @@ export function StoreManagementView({
         return (
           <div className="leading-tight">
             <Person name={pic} size={18} />
-            <span className="block text-2xs text-ink-3 mt-0.5 truncate max-w-[120px]">
-              {s.hasBookingLeader && s.bookingLeader
-                ? `TN: ${s.bookingLeader}`
-                : 'Trực tiếp Lead'}
-            </span>
+            {s.hasBookingLeader && s.bookingLeader && (
+              <span className="block text-2xs text-accent font-medium mt-0.5 truncate max-w-[120px]">
+                TN: {s.bookingLeader}
+              </span>
+            )}
           </div>
         );
       },
@@ -476,29 +477,24 @@ export function StoreManagementView({
               <span>{norm.tier}</span>
               <span className="font-mono font-semibold text-ink-2">· {norm.label}</span>
             </span>
-            <span className="text-2xs text-ink-3">
-              {s.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
-                ? 'Chờ duyệt'
-                : 'Đã duyệt'}
-            </span>
           </div>
         );
       },
     },
     {
       key: 'nmvMonthly',
-      header: `NMV (${selectedMonth})`,
-      width: 120,
+      header: `NMV Thực / KH (${selectedMonth})`,
+      width: 130,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
         return (
-          <div className="leading-tight tabular-nums text-right">
+          <div className="leading-tight tabular-nums text-right font-mono">
             <span className="block font-medium text-ink text-xs">
-              Rep: {rep.reportNmv > 0 ? formatVndShort(rep.reportNmv) : '0 đ'}
+              {rep.reportNmv > 0 ? formatVndShort(rep.reportNmv) : '0 đ'}
             </span>
             <span className="block text-2xs text-ink-3">
-              Plan: {rep.planNmv > 0 ? formatVndShort(rep.planNmv) : '0 đ'}
+              / {rep.planNmv > 0 ? formatVndShort(rep.planNmv) : '0 đ'}
               {rep.planNmv > 0 && ` (${Math.round(rep.nmvAchievementPct)}%)`}
             </span>
           </div>
@@ -507,22 +503,22 @@ export function StoreManagementView({
     },
     {
       key: 'budgetMonthly',
-      header: `Ngân sách Net (${selectedMonth})`,
-      width: 125,
+      header: `Chi / Trần Net (${selectedMonth})`,
+      width: 130,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
         return (
-          <div className="leading-tight tabular-nums text-right">
+          <div className="leading-tight tabular-nums text-right font-mono">
             <span
               className={`block font-medium text-xs ${
                 rep.isOverbudget || rep.isUnbudgetedSpend ? 'text-critical' : 'text-ink'
               }`}
             >
-              Chi: {rep.reportSpentNet > 0 ? formatVndShort(rep.reportSpentNet) : '0 đ'}
+              {rep.reportSpentNet > 0 ? formatVndShort(rep.reportSpentNet) : '0 đ'}
             </span>
             <span className="block text-2xs text-ink-3">
-              Plan: {rep.planBudgetNet > 0 ? formatVndShort(rep.planBudgetNet) : '0 đ'}
+              / {rep.planBudgetNet > 0 ? formatVndShort(rep.planBudgetNet) : '0 đ'}
               {rep.planBudgetNet > 0 && ` (${Math.round(rep.budgetBurnPct)}%)`}
             </span>
           </div>
@@ -531,18 +527,18 @@ export function StoreManagementView({
     },
     {
       key: 'videosMonthly',
-      header: `Video (${selectedMonth})`,
-      width: 115,
+      header: `Video Air / KH (${selectedMonth})`,
+      width: 120,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
         return (
-          <div className="leading-tight text-right tabular-nums">
+          <div className="leading-tight text-right tabular-nums font-mono">
             <span className="block font-medium text-ink text-xs">
-              Air {formatNumber(rep.reportAiredVideos)} / Plan {formatNumber(rep.planTotalVideos)}
+              {formatNumber(rep.reportAiredVideos)} / {formatNumber(rep.planTotalVideos)}
             </span>
-            <span className="block text-2xs text-ink-3 truncate max-w-[110px]">
-              Aff {rep.planAffVideos} · Kênh {rep.planSelfVideos}
+            <span className="block text-2xs text-ink-3 truncate max-w-[110px]" title="Affiliate / Kênh Brand">
+              {rep.planAffVideos} Aff · {rep.planSelfVideos} Brand
             </span>
           </div>
         );
@@ -626,7 +622,7 @@ export function StoreManagementView({
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Setup Hệ số Gian hàng theo Tháng (Bảng 2 — Setup hàng loạt)</span>
+            <span>Hệ số Gian hàng (Bảng 2)</span>
           </button>
         </div>
       </div>
