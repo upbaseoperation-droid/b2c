@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
 import { GET as meRoute } from '../src/app/api/auth/me/route';
 import { POST as sandboxPost } from '../src/app/api/auth/lark/sandbox/route';
-import { POST as logoutPost } from '../src/app/api/auth/logout/route';
+import { POST as logoutPost, GET as logoutGet } from '../src/app/api/auth/logout/route';
 import { GET as accessPolicyGet, PUT as accessPolicyPut } from '../src/app/api/admin/access-policy/route';
 import { GET as masterDataGet } from '../src/app/api/master-data/route';
 import { GET as monthlyPlansGet, POST as monthlyPlansPost } from '../src/app/api/monthly-plans/route';
@@ -59,10 +59,15 @@ test('E2E Auth Flow: Xác thực phiên, đăng nhập Sandbox và Đăng xuất
   assert.equal(dataAuth.authenticated, true);
   assert.equal(dataAuth.user.id, specialist.id);
 
-  // 4. Logout
+  // 4. Logout (POST API & GET Redirect)
   const reqLogout = createReq('http://localhost:3000/api/auth/logout', 'POST', specialist);
   const resLogout = await logoutPost(reqLogout);
   assert.equal(resLogout.status, 200);
+
+  const reqLogoutGet = createReq('http://localhost:3000/api/auth/logout', 'GET', specialist);
+  const resLogoutGet = await logoutGet(reqLogoutGet);
+  assert.equal(resLogoutGet.status, 307);
+  assert.match(resLogoutGet.headers.get('location') || '', /\/login$/);
 });
 
 test('E2E RBAC & Access Policy: Chuyên viên bị chặn vào cấu hình quyền, Quản trị viên truy cập hợp lệ', async () => {

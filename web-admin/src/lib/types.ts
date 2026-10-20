@@ -2313,6 +2313,8 @@ export interface StorePortfolioItem {
   // Quản trị vai trò dự phòng (Backup PIC) theo BRD
   backupOwnerId?: string; // ID nhân sự dự phòng khi PIC chính vắng mặt/nghỉ phép/quá tải
   backupOwnerName?: string; // Tên nhân sự dự phòng
+  /** Phân công có hiệu lực của gian (server gắn khi đọc). Có dòng thì thay thế toàn bộ các trường PIC ở trên khi xét quyền. */
+  assignments?: import('./storeAssignments').StoreAssignment[];
   isBackupActive?: boolean; // Trạng thái kích hoạt chuyển quyền backup
   backupReason?: string; // Lý do chuyển giao: Nghỉ phép, Đi công tác, Quá tải
 

@@ -896,7 +896,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
     },
     {
       key: 'hardRatio',
-      header: 'Tỷ lệ việc khó (Bảng 4)',
+      header: 'Tỷ lệ việc khó',
       width: 195,
       render: row => (
         <div>
@@ -997,135 +997,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           icon={BarChart3}
         />
       </StatRow>
-
-      {/* 1B. MANAGER QUICK BALANCING & EXCEPTION RADAR */}
-      {canManageSetup && (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Card 1: Nhân sự thiếu tỷ lệ Việc khó Bảng 4 */}
-        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-ink">
-              Chưa đạt tỷ lệ Việc khó Bảng 4 (×0,70)
-            </span>
-            <Status
-              tone={
-                managerRadarStats.hardRatioShortageStaff.length > 0 ? 'warning' : 'positive'
-              }
-            >
-              {managerRadarStats.hardRatioShortageStaff.length} nhân sự
-            </Status>
-          </div>
-          {managerRadarStats.hardRatioShortageStaff.length === 0 ? (
-            <div className="text-xs text-positive font-medium py-1">
-              100% nhân sự đã đạt chuẩn cơ cấu hoặc được duyệt ngoại lệ ×1,00.
-            </div>
-          ) : (
-            <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
-              {managerRadarStats.hardRatioShortageStaff.map(row => (
-                <div
-                  key={row.staffCode}
-                  className="flex items-center justify-between gap-2 p-1.5 rounded bg-warning-soft/50 border border-warning/25 text-xs"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setInspectingStaffMember(row.name)}
-                    className="text-left min-w-0 hover:underline cursor-pointer"
-                  >
-                    <span className="font-semibold text-ink">{row.name}</span>{' '}
-                    <span className="text-2xs font-mono text-warning">
-                      ({row.level}: {row.hardRatioPct}%/{row.minHardRatioReqPct}%)
-                    </span>
-                  </button>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => openQuickAssignForStaff(row.name, true)}
-                      className="px-2 py-0.5 rounded bg-surface border border-line hover:border-accent text-2xs font-semibold text-accent cursor-pointer"
-                    >
-                      + Việc Khó
-                    </button>
-                    {canManageSetup && (
-                      <button
-                        type="button"
-                        onClick={() => toggleManagerException(row.staffCode, row.name)}
-                        className="px-2 py-0.5 rounded bg-surface border border-line hover:border-positive text-2xs font-semibold text-positive cursor-pointer"
-                      >
-                        Duyệt ×1,00
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Card 2: Nhân sự quá tải cần san sẻ */}
-        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-ink">
-              Quá tải định mức (≥115%) cần san việc
-            </span>
-            <Status
-              tone={managerRadarStats.overloadedStaff.length > 0 ? 'critical' : 'positive'}
-            >
-              {managerRadarStats.overloadedStaff.length} nhân sự
-            </Status>
-          </div>
-          {managerRadarStats.overloadedStaff.length === 0 ? (
-            <div className="text-xs text-positive font-medium py-1">
-              Không có nhân sự nào vượt ngưỡng quá tải 115%.
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-              {managerRadarStats.overloadedStaff.map(row => (
-                <button
-                  key={row.staffCode}
-                  type="button"
-                  onClick={() => {
-                    setActiveSubTab('ASSIGNMENTS');
-                    setStaffFilter(row.name);
-                  }}
-                  className="px-2 py-1 rounded bg-critical-soft/60 border border-critical/30 hover:border-critical text-2xs font-medium text-ink inline-flex items-center gap-1.5 cursor-pointer"
-                  title="Bấm để lọc danh sách việc của nhân sự này và chuyển giao bớt"
-                >
-                  <span className="font-semibold">{row.name}</span>
-                  <span className="font-mono font-semibold text-critical">
-                    {row.loadPct}% ({row.liveAssignedStoresCount} gian)
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Card 3: Nhân sự dư công suất sẵn sàng nhận việc */}
-        <div className="bg-surface border border-line rounded-lg p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-ink">
-              Dư công suất (&lt;96%) ưu tiên nhận việc
-            </span>
-            <Status tone="info">{managerRadarStats.underloadedStaff.length} nhân sự</Status>
-          </div>
-          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-            {managerRadarStats.underloadedStaff.slice(0, 8).map(row => (
-              <button
-                key={row.staffCode}
-                type="button"
-                onClick={() => openQuickAssignForStaff(row.name, false)}
-                className="px-2 py-1 rounded bg-accent-soft/50 border border-accent/30 hover:border-accent text-2xs font-medium text-ink inline-flex items-center gap-1 cursor-pointer"
-                title="Bấm để giao việc mới cho nhân sự này"
-              >
-                <span>+ {row.name}</span>
-                <span className="font-mono font-semibold text-accent">
-                  ({row.loadPct}%)
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-      )}
 
       {/* 2. TOP NAVIGATION & ACTION BAR */}
       <div className="bg-surface border border-line rounded-lg px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
@@ -1406,7 +1277,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   }
                   className="w-52"
                 >
-                  <option value="ALL">Mọi trạng thái Bảng 4</option>
+                  <option value="ALL">Mọi trạng thái tỷ lệ việc khó</option>
                   <option value="PASS">Đạt chuẩn tỷ lệ việc khó (×1,00)</option>
                   <option value="EXCEPTION">Có xác nhận ngoại lệ (×1,00)</option>
                   <option value="FAIL_07">Chưa đạt tỷ lệ việc khó (×0,70)</option>
@@ -1533,7 +1404,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             {/* Formula Breakdown Grid */}
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">
-                Chi tiết cấu thành điểm công việc (Bảng 1 → Bảng 6)
+                Chi tiết cấu thành điểm công việc
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
@@ -1544,19 +1415,19 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
-                  <div className="text-xs text-ink-3">Hệ số phạm vi (Bảng 2/2b)</div>
+                  <div className="text-xs text-ink-3">Hệ số phạm vi</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     ×{(selectedTaskDetail.scopeCoef ?? selectedTaskDetail.difficultyMultiplier ?? 1.0).toFixed(2).replace('.', ',')}
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
-                  <div className="text-xs text-ink-3">Hệ số độ khó (Bảng 3)</div>
+                  <div className="text-xs text-ink-3">Hệ số độ khó</div>
                   <div className="text-sm font-mono tabular-nums font-semibold text-ink mt-0.5">
                     ×{(selectedTaskDetail.taskDifficultyCoef ?? 1.0).toFixed(2).replace('.', ',')}
                   </div>
                 </div>
                 <div className="p-2.5 rounded-lg border border-line bg-surface">
-                  <div className="text-xs text-ink-3">Hệ số SLA (Bảng 5)</div>
+                  <div className="text-xs text-ink-3">Hệ số tiến độ (SLA)</div>
                   <div className="mt-0.5">
                     {canManageSetup && onUpdateTask ? (
                       <select
@@ -1582,7 +1453,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           setSelectedTaskDetail(updatedTask);
                           onUpdateTask(updatedTask);
                           onNotify?.(
-                            `Đã cập nhật hệ số SLA (Bảng 5) ×${nextCoef.toFixed(2).replace('.', ',')} → ${updatedPts.toFixed(2).replace('.', ',')} điểm`,
+                            `Đã cập nhật hệ số tiến độ ×${nextCoef.toFixed(2).replace('.', ',')} → ${updatedPts.toFixed(2).replace('.', ',')} điểm`,
                             'info'
                           );
                         }}
@@ -1627,7 +1498,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           return (
                             <option key={s.name} value={s.name}>
                               {s.name}
-                              {w ? ` (${w.level} · Tải ${w.loadPct}% · ${w.liveAssignedStoresCount} gian)` : ''}
+                              {w ? ` (${w.level} · Tải ${w.loadPct}%)` : ''}
                             </option>
                           );
                         })}
@@ -1654,12 +1525,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </div>
             </div>
 
-            {/* Bảng 7 Governance Metadata if present */}
+            {/* Governance Metadata if present */}
             {(selectedTaskDetail.platformScope ||
               selectedTaskDetail.originalAssetRef ||
               selectedTaskDetail.difficultyOverrideReason) && (
               <div className="p-3 rounded-lg border border-line bg-surface space-y-1.5 text-xs">
-                <div className="font-semibold text-ink">Thông tin đối soát Bảng 7</div>
+                <div className="font-semibold text-ink">Thông tin bổ sung</div>
                 {selectedTaskDetail.platformScope && (
                   <div className="text-ink-2">
                     Phạm vi sàn / kênh: <strong className="text-ink">{selectedTaskDetail.platformScope}</strong>
@@ -1760,8 +1631,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   }
                 >
                   {inspectedStaffRow.hasException
-                    ? 'Gỡ xác nhận ngoại lệ Bảng 4'
-                    : 'Xác nhận ngoại lệ Bảng 4 (Giữ hệ số ×1,00)'}
+                    ? 'Gỡ xác nhận ngoại lệ'
+                    : 'Duyệt ngoại lệ (Giữ hệ số ×1,00)'}
                 </Button>
               )}
               {inspectedStaffRow && (
@@ -1831,7 +1702,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </div>
               </div>
               <div className="p-3 rounded-lg border border-line bg-sunken">
-                <div className="text-xs text-ink-3">Tỷ lệ việc khó (Bảng 4)</div>
+                <div className="text-xs text-ink-3">Tỷ lệ việc khó</div>
                 <div className="text-base font-mono tabular-nums font-semibold text-ink mt-0.5">
                   {inspectedStaffRow.actualHardRatioPct.toFixed(1).replace('.', ',')}%{' '}
                   <span className="text-xs font-normal text-ink-3">
@@ -2059,7 +1930,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           {/* SOW Policy & Scope Level */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div className="md:col-span-6">
-              <Field label="Hạng mục công việc SOW (Bảng 1)">
+              <Field label="Hạng mục công việc">
                 <Select
                   value={formSowStt}
                   onChange={e => {
@@ -2078,7 +1949,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
             <div className="md:col-span-4">
               {selectedSowPolicy.usesResearchTable2b ? (
-                <Field label="Cấp độ phạm vi (Bảng 2b)">
+                <Field label="Cấp độ phạm vi">
                   <Select
                     value={activeLevelConfig?.id || ''}
                     onChange={e => {
@@ -2096,7 +1967,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </Select>
                 </Field>
               ) : (
-                <Field label="Hệ số gian hàng (Bảng 2)">
+                <Field label="Hệ số gian hàng">
                   <Select
                     value={formStoreScopeCoef}
                     onChange={e =>
@@ -2130,7 +2001,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="Độ khó thực tế (Bảng 3)">
+            <Field label="Độ khó thực tế">
               <Select
                 value={formTaskDiffTier}
                 onChange={e =>
@@ -2160,7 +2031,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             </Field>
           </div>
 
-          {/* PROGRESSIVE DISCLOSURE: CONDITIONAL BẢNG 7 FIELDS */}
+          {/* PROGRESSIVE DISCLOSURE: CONDITIONAL FIELDS */}
           {(selectedSowPolicy.requiresOriginalAsset ||
             selectedSowPolicy.requiresKocStatus ||
             selectedSowPolicy.supportsMultiPlatform ||
@@ -2195,7 +2066,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               )}
 
               {selectedSowPolicy.supportsMultiPlatform && (
-                <Field label="Số gian hàng nhân bản (Bảng 6)">
+                <Field label="Số gian hàng nhân bản">
                   <Select
                     value={formMultiStoreCount}
                     onChange={e => setFormMultiStoreCount(Number(e.target.value))}
@@ -2210,7 +2081,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               )}
 
               {formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier && (
-                <Field label="Lý do điều chỉnh độ khó khác mặc định Bảng 1 *">
+                <Field label="Lý do điều chỉnh độ khó *">
                   <Input
                     value={formDiffOverrideReason}
                     onChange={e => setFormDiffOverrideReason(e.target.value)}
@@ -2227,124 +2098,40 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-ink">
-                  Phân bổ nhân sự nhận việc
+                  Nhân sự nhận việc
                 </span>
-                <span
-                  className={`text-xs font-mono tabular-nums font-semibold ${
-                    isWeightValid ? 'text-positive' : 'text-critical'
-                  }`}
-                >
-                  (Tổng tỷ trọng: {totalContributionWeight}%)
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {ROLE_SPLIT_PRESETS.map(preset => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => applySplitPreset(preset.id)}
-                    className="px-2 py-0.5 rounded text-xs bg-surface border border-line hover:border-accent hover:text-accent transition"
+                {assignees.length > 1 && (
+                  <span
+                    className={`text-xs font-mono tabular-nums font-semibold ${
+                      isWeightValid ? 'text-positive' : 'text-critical'
+                    }`}
                   >
-                    {preset.label}
-                  </button>
-                ))}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={UserPlus}
-                  onClick={() =>
-                    setAssignees([
-                      ...assignees,
-                      {
-                        staffName:
-                          managerRadarStats.underloadedStaff[0]?.name ||
-                          allAssignableStaff[assignees.length]?.name ||
-                          'Lê Phương Thảo',
-                        role: 'SUPPORT',
-                        weightPct: 0,
-                      },
-                    ])
-                  }
-                >
-                  Thêm người
-                </Button>
+                    (Tổng tỷ trọng: {totalContributionWeight}%)
+                  </span>
+                )}
               </div>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={UserPlus}
+                onClick={() =>
+                  setAssignees([
+                    ...assignees,
+                    {
+                      staffName:
+                        managerRadarStats.underloadedStaff[0]?.name ||
+                        allAssignableStaff[assignees.length]?.name ||
+                        'Lê Phương Thảo',
+                      role: 'SUPPORT',
+                      weightPct: 0,
+                    },
+                  ])
+                }
+              >
+                Thêm người phối hợp
+              </Button>
             </div>
-
-            {/* Quick-fill PICs of current Brand / Store */}
-            {(() => {
-              const matchedBrand = brands.find(
-                b => b.name.toLowerCase() === formBrand.toLowerCase()
-              );
-              const matchedStore = formStore
-                ? brandStores.find(s => s.storeName === formStore)
-                : brandStores[0];
-              const storeOwner =
-                matchedStore?.b2cOwners?.[0] ||
-                matchedStore?.b2cOwnerName?.split(',')[0]?.trim();
-              const planPic =
-                matchedBrand?.planStrategyPic || matchedBrand?.brandPicName;
-              const contentPic =
-                matchedBrand?.contentBrandMainPic || matchedBrand?.contentPic;
-              const kvPic = matchedBrand?.keyVisualSisPic;
-              const spareStaff = managerRadarStats.underloadedStaff[0];
-
-              const quickCandidates = [
-                storeOwner ? { label: 'PIC Gian hàng', name: storeOwner } : null,
-                planPic ? { label: 'Plan/Strategy', name: planPic } : null,
-                contentPic ? { label: 'Content Main', name: contentPic } : null,
-                kvPic ? { label: 'KV/SIS', name: kvPic } : null,
-                spareStaff ? { label: 'Dư công suất nhất', name: spareStaff.name } : null,
-              ].filter((x): x is { label: string; name: string } => Boolean(x));
-
-              if (quickCandidates.length === 0) return null;
-
-              return (
-                <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-line/60 text-2xs">
-                  <span className="text-ink-3 font-medium">Gán nhanh PIC thực tế:</span>
-                  {quickCandidates.map((cand, i) => {
-                    const w = staffWorkloadByName.get(cand.name);
-                    return (
-                      <button
-                        key={`${cand.label}-${cand.name}-${i}`}
-                        type="button"
-                        onClick={() =>
-                          setAssignees([
-                            {
-                              staffName: cand.name,
-                              role: 'PIC_OWNER',
-                              weightPct: 100,
-                            },
-                          ])
-                        }
-                        className="px-2 py-0.5 rounded bg-surface border border-line hover:border-accent text-ink inline-flex items-center gap-1 cursor-pointer transition"
-                      >
-                        <span className="text-ink-3">{cand.label}:</span>
-                        <span className="font-semibold text-ink">{cand.name}</span>
-                        {w && (
-                          <span className="font-mono text-accent">({w.loadPct}%)</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                  {planPic && storeOwner && planPic !== storeOwner && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAssignees([
-                          { staffName: planPic, role: 'PIC_OWNER', weightPct: 70 },
-                          { staffName: storeOwner, role: 'EXECUTION', weightPct: 30 },
-                        ])
-                      }
-                      className="px-2 py-0.5 rounded bg-accent-soft/60 border border-accent/30 hover:border-accent text-accent font-semibold cursor-pointer transition"
-                    >
-                      Cặp Plan + Gian hàng (70/30)
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
 
             <div className="space-y-2">
               {assignees.map((slot, idx) => {
@@ -2371,11 +2158,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             <option key={s.name} value={s.name}>
                               {s.name}
                               {w
-                                ? ` (${w.level} · ${w.liveAssignedStoresCount} gian · Tải ${w.loadPct}%${
-                                    !w.meetsHardRatio && !w.hasException
-                                      ? ' · Thiếu việc khó'
-                                      : ''
-                                  })`
+                                ? ` (${w.level} · Tải ${w.loadPct}%)`
                                 : s.level
                                 ? ` (${s.level})`
                                 : ''}

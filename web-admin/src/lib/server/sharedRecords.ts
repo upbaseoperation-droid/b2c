@@ -16,6 +16,9 @@ function file(key: string) {
 }
 
 const localRecordCache = new Map<string, { mtimeMs: number; size: number; record: SharedRecord<unknown> }>();
+const PG_CACHE_TTL_MS = 20_000;
+const pgRecordCache = new Map<string, { expiresAt: number; record: SharedRecord<unknown> }>();
+const pgInflightReads = new Map<string, Promise<SharedRecord<unknown>>>();
 
 export async function readRecord<T>(key: string, fallback: T): Promise<SharedRecord<T>> {
   if (local()) {
@@ -37,8 +40,29 @@ export async function readRecord<T>(key: string, fallback: T): Promise<SharedRec
       throw e;
     }
   }
-  const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
-  return rows[0] || { revision: 0, data: fallback };
+  const now = Date.now();
+  const cachedPg = pgRecordCache.get(key);
+  if (cachedPg && now < cachedPg.expiresAt) {
+    return structuredClone(cachedPg.record) as SharedRecord<T>;
+  }
+  let inflight = pgInflightReads.get(key);
+  if (!inflight) {
+    inflight = prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`
+      .then((rows) => {
+        const record = rows[0] || { revision: 0, data: fallback };
+        pgRecordCache.set(key, {
+          expiresAt: Date.now() + PG_CACHE_TTL_MS,
+          record: structuredClone(record),
+        });
+        return record as SharedRecord<unknown>;
+      })
+      .finally(() => {
+        pgInflightReads.delete(key);
+      });
+    pgInflightReads.set(key, inflight);
+  }
+  const resolved = await inflight;
+  return structuredClone(resolved) as SharedRecord<T>;
 }
 export async function updateRecord<T>(key: string, fallback: T, expected: number, transform: (data: T) => T | Promise<T>): Promise<SharedRecord<T>> {
   if (!Number.isInteger(expected) || expected < 0) throw new RecordError('Thiếu phiên bản dữ liệu.');
@@ -65,7 +89,7 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
       return next;
     } finally { await lock.close(); await unlink(lockPath); }
   }
-  return prisma.$transaction(async tx => {
+  const updated = await prisma.$transaction(async tx => {
     await tx.$executeRaw`INSERT INTO "AppSharedRecord" (key, revision, data) VALUES (${key}, 0, ${JSON.stringify(fallback)}::jsonb) ON CONFLICT (key) DO NOTHING`;
     const rows = await tx.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key} FOR UPDATE`;
     const current = rows[0];
@@ -74,4 +98,9 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
     await tx.$executeRaw`UPDATE "AppSharedRecord" SET revision = ${next.revision}, data = ${JSON.stringify(next.data)}::jsonb WHERE key = ${key}`;
     return next;
   });
+  pgRecordCache.set(key, {
+    expiresAt: Date.now() + PG_CACHE_TTL_MS,
+    record: structuredClone(updated),
+  });
+  return updated;
 }

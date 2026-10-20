@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
-import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
+import { readCatalogWithAssignments } from '@/lib/server/storeAssignmentStore';
 import { filterScopedBrands } from '@/lib/rbacScope';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { brandStorageMode, listProfiles, saveProfile } from '@/lib/brands/store';
@@ -27,10 +27,15 @@ export async function GET(req: NextRequest) {
     const user = await requestActor(req);
     requireReader(user);
     const base = permissionsFor(user);
-    const catalog = await readMasterCatalog();
+    const [catalog, allProfiles] = await Promise.all([
+      readCatalogWithAssignments(),
+      listProfiles(),
+    ]);
     const allowedBrands = filterScopedBrands(catalog.data.brands, user, catalog.data.stores);
-    const keys = new Set(allowedBrands.map(b => brandKey(b.name)));
-    const profiles = (await listProfiles()).filter(p => keys.has(p.key)).map(p => readableProfile(p, user, allowedBrands.find(b => brandKey(b.name) === p.key)));
+    const brandByKey = new Map(allowedBrands.map(b => [brandKey(b.name), b]));
+    const profiles = allProfiles
+      .filter(p => brandByKey.has(p.key))
+      .map(p => readableProfile(p, user, brandByKey.get(p.key)));
     return NextResponse.json(
       {
         profiles,

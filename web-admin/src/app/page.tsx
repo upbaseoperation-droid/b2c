@@ -96,6 +96,7 @@ import {
   INITIAL_CAMPAIGNS
 } from '../lib/mockData';
 import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../lib/selfChannelData';
+import { INITIAL_THIRD_PARTY_ACCOUNTS, convertPartnerAccountToUserProfile } from '../lib/thirdPartyAccessData';
 import { INITIAL_MONTHLY_PLANS } from '../lib/monthlyPlanData';
 import { 
   UserProfile, 
@@ -122,7 +123,6 @@ import {
 
 const FrozenTabBody = React.memo(
   function FrozenTabBody({
-    isActive,
     tabKey,
     children,
   }: {
@@ -131,14 +131,12 @@ const FrozenTabBody = React.memo(
     children: React.ReactNode;
   }) {
     return (
-      <PageActiveContext.Provider value={isActive}>
-        <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
-          {children}
-        </ErrorBoundary>
-      </PageActiveContext.Provider>
+      <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
+        {children}
+      </ErrorBoundary>
     );
   },
-  (prev, next) => !prev.isActive && !next.isActive
+  (_prev, next) => !next.isActive
 );
 
 function KeepAliveTab({
@@ -162,28 +160,66 @@ function KeepAliveTab({
       style={{ display: isActive ? 'block' : 'none' }}
       className="workspace-view space-y-6"
     >
-      <FrozenTabBody isActive={isActive} tabKey={tabKey}>
-        {children}
-      </FrozenTabBody>
+      <PageActiveContext.Provider value={isActive}>
+        <FrozenTabBody isActive={isActive} tabKey={tabKey}>
+          {children}
+        </FrozenTabBody>
+      </PageActiveContext.Provider>
     </div>
   );
 }
 
 const ACTIVE_TAB_SESSION_KEY = 'upbase_active_tab';
 
+function resolveUserById(id: string): UserProfile | null {
+  const inUsers = USERS.find(u => u.id === id);
+  if (inUsers) return inUsers;
+  const inPartners = INITIAL_THIRD_PARTY_ACCOUNTS.find(p => p.id === id);
+  if (inPartners) return convertPartnerAccountToUserProfile(inPartners);
+  return null;
+}
+
 function resolveInitialTab(user: UserProfile | null): TabKey {
-  const targetUser = user || USERS[0];
-  if (targetUser.id.startsWith('contract-demo-')) {
+  if (!user) return 'dashboard-bi';
+  if (user.id.startsWith('contract-demo-')) {
     return 'contracts';
   }
-  return getDefaultLandingTabForRole(targetUser.role);
+  return getDefaultLandingTabForRole(user.role);
+}
+
+function getInitialAuthState(): {
+  user: UserProfile | null;
+  isLoading: boolean;
+  tab: TabKey;
+} {
+  if (typeof window === 'undefined') {
+    return { user: null, isLoading: true, tab: 'dashboard-bi' };
+  }
+  try {
+    const savedUserId = localStorage.getItem('upbase_selected_user_id');
+    if (savedUserId) {
+      const matched = resolveUserById(savedUserId);
+      if (matched) {
+        const savedTab = sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY) as TabKey | null;
+        const targetTab = (savedTab && isTabAllowedForRole(matched.role, savedTab))
+          ? savedTab
+          : resolveInitialTab(matched);
+        return { user: matched, isLoading: false, tab: targetTab };
+      }
+    }
+  } catch {
+    // bỏ qua lỗi storage
+  }
+  // Giữ trạng thái chờ tải để nạp chuẩn vai trò từ máy chủ (/api/auth/me), tuyệt đối không tự gán USERS[0] gây giật màn hình Giám đốc
+  return { user: null, isLoading: true, tab: 'dashboard-bi' };
 }
 
 export default function App() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(USERS[0]);
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<TabKey>(() => resolveInitialTab(USERS[0]));
+  const [initialAuthState] = useState(getInitialAuthState);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(initialAuthState.user);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(initialAuthState.isLoading);
+  const [activeTab, setActiveTab] = useState<TabKey>(initialAuthState.tab);
   const hasUserNavigatedRef = useRef<boolean>(false);
   const [brandInitialDetailTab, setBrandInitialDetailTab] = useState<'PRODUCTS' | undefined>(undefined);
   const [kocMasterReturnTab, setKocMasterReturnTab] = useState<'tiktok-crawler' | 'koc-hub' | null>(null);
@@ -266,20 +302,38 @@ export default function App() {
     }
   }, [activeTab, currentUser, isLoadingAuth]);
 
-  // Nạp sẵn các gói giao diện trọng yếu khi trình duyệt rảnh để chuyển tab 0ms
+  // Nạp sẵn các gói giao diện trọng yếu cho cả Quản lý và Chuyên viên khi trình duyệt rảnh để chuyển tab 0ms
   useEffect(() => {
     if (isLoadingAuth) return;
-    const timer = window.setTimeout(() => {
+    const timerWave1 = window.setTimeout(() => {
       void import('../components/views/InputPlanBreakdownView');
       void import('../components/views/BookingView');
+      void import('../components/views/KocListingBatchHubView');
+      void import('../components/views/TaskDelegationView');
       void import('../components/views/ContractManagementView');
       void import('../components/views/BrandProfilesView');
       void import('../components/views/StoreManagementView');
       void import('../components/views/TikTokCrawlerHubView');
+      void import('../components/views/BrandMarketResearchHubView');
+      void import('../components/views/KocMasterDataView');
+    }, 350);
+    const timerWave2 = window.setTimeout(() => {
+      void import('../components/views/ContentView');
+      void import('../components/views/SelfChannelCtvHubView');
+      void import('../components/views/CtvManagementView');
+      void import('../components/views/SampleTrackerView');
+      void import('../components/views/PushProductsView');
+      void import('../components/views/PerformanceP3View');
+      void import('../components/views/BrandView');
+      void import('../components/views/WeeklyAdsReportHubView');
+      void import('../components/views/MarketingKnowledgeQaView');
       void import('../components/views/MasterDataHubView');
       void import('../components/views/CentralizedRbacHubView');
-    }, 600);
-    return () => window.clearTimeout(timer);
+    }, 1000);
+    return () => {
+      window.clearTimeout(timerWave1);
+      window.clearTimeout(timerWave2);
+    };
   }, [isLoadingAuth]);
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
@@ -292,34 +346,7 @@ export default function App() {
   }
 
   const handleUserChange = useCallback(async (newUser: UserProfile, isSilent: boolean = false) => {
-    if (!isSilent) {
-      setIsLoadingAuth(true);
-      try {
-        const isLocalPreview =
-          newUser.id.startsWith('contract-demo-') ||
-          newUser.id.startsWith('preview-role-') ||
-          newUser.id.startsWith('tpa-') ||
-          newUser.id.startsWith('staff-');
-        if (newUser.id.startsWith('contract-demo-')) {
-          await fetch('/api/contracts/demo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: newUser.id }),
-          }).catch(() => undefined);
-        } else if (!isLocalPreview) {
-          const partner = !!newUser.partnerType || newUser.role.endsWith('_PARTNER');
-          const known = USERS.some(u => u.id === newUser.id);
-          const res = await fetch(partner ? '/api/auth/partner/login' : '/api/auth/lark/sandbox', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(partner ? { email: newUser.email } : known ? { userId: newUser.id } : { staffIdentifier: newUser.email || newUser.staffCode }),
-          });
-          const body = await res.json(); if (!res.ok) throw new Error(body.error || 'Không chuyển được tài khoản.');
-          const policy = await loadAccessPolicy();
-          newUser = policy.user;
-        }
-      } catch (error) { showToast((error as Error).message, 'error'); setIsLoadingAuth(false); return; }
-      setIsLoadingAuth(false);
-    }
+    // 1. Cập nhật ngay lập tức trạng thái giao diện (optimistic) để chuyển vai trò / tab 0ms không hiện màn chờ
     setCurrentUser(prev => (prev && JSON.stringify(prev) === JSON.stringify(newUser) ? prev : newUser));
     if (typeof window !== 'undefined') localStorage.setItem('upbase_selected_user_id', newUser.id);
 
@@ -348,6 +375,38 @@ export default function App() {
     if (!isSilent) {
       showToast(`Đang xem với vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
     }
+
+    // 2. Đồng bộ phiên máy chủ ở nền (không chặn thao tác chuyển tab)
+    if (!isSilent) {
+      try {
+        const isLocalPreview =
+          newUser.id.startsWith('contract-demo-') ||
+          newUser.id.startsWith('preview-role-') ||
+          newUser.id.startsWith('tpa-');
+        if (newUser.id.startsWith('contract-demo-')) {
+          await fetch('/api/contracts/demo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: newUser.id }),
+          }).catch(() => undefined);
+        } else if (!isLocalPreview) {
+          const partner = !!newUser.partnerType || newUser.role.endsWith('_PARTNER');
+          const known = USERS.some(u => u.id === newUser.id);
+          const res = await fetch(partner ? '/api/auth/partner/login' : '/api/auth/lark/sandbox', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(partner ? { email: newUser.email } : known ? { userId: newUser.id } : { staffIdentifier: newUser.email || newUser.staffCode || newUser.name }),
+          });
+          const body = await res.json();
+          if (!res.ok) throw new Error(body.error || 'Không chuyển được tài khoản.');
+          const policy = await loadAccessPolicy();
+          if (policy?.user) {
+            setCurrentUser(prev => (prev && JSON.stringify(prev) === JSON.stringify(policy.user) ? prev : policy.user));
+          }
+        }
+      } catch (error) {
+        showToast((error as Error).message, 'error');
+      }
+    }
   }, [showToast]);
 
   // Tải phiên đăng nhập từ cookie hoặc vai trò đã chọn ở trang /login (song song hóa auth + access-policy)
@@ -370,7 +429,7 @@ export default function App() {
               data.isAutoLogin || (!data.user.larkOpenId && data.user.loginProvider !== 'GMAIL')
             );
             if (isAutoFallbackSession && savedUserId && savedUserId !== data.user.id) {
-              const matched = USERS.find(u => u.id === savedUserId);
+              const matched = resolveUserById(savedUserId);
               if (matched) {
                 resolvedUser = matched;
                 await fetch('/api/auth/lark/sandbox', {
@@ -387,28 +446,34 @@ export default function App() {
             }
             await handleUserChange(resolvedUser, true);
             if (!hasUserNavigatedRef.current) {
-              const nextDefaultTab = getDefaultLandingTabForRole(resolvedUser.role);
-              setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
+              const targetLandingTab = (savedTab && isTabAllowedForRole(resolvedUser.role, savedTab))
+                ? savedTab
+                : getDefaultLandingTabForRole(resolvedUser.role);
+              setActiveTab(prev => (prev === targetLandingTab ? prev : targetLandingTab));
             }
             setIsLoadingAuth(false);
             return;
           }
         }
 
-        const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
+        const fallbackUser = (savedUserId && resolveUserById(savedUserId)) || USERS[0];
         await handleUserChange(fallbackUser, true);
         if (!hasUserNavigatedRef.current) {
-          const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
+          const nextDefaultTab = (savedTab && isTabAllowedForRole(fallbackUser.role, savedTab))
+            ? savedTab
+            : (fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
           setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
         }
         setIsLoadingAuth(false);
       } catch (err) {
         console.warn('Could not fetch user session, using fallback user:', err);
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
-        const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
+        const fallbackUser = (savedUserId && resolveUserById(savedUserId)) || USERS[0];
         await handleUserChange(fallbackUser, true);
         if (!hasUserNavigatedRef.current) {
-          const nextDefaultTab = fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role);
+          const nextDefaultTab = (savedTab && isTabAllowedForRole(fallbackUser.role, savedTab))
+            ? savedTab
+            : (fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
           setActiveTab(prev => (prev === nextDefaultTab ? prev : nextDefaultTab));
         }
         setIsLoadingAuth(false);
@@ -425,17 +490,24 @@ export default function App() {
     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
   }, [currentUser?.id, isLoadingAuth, showToast]);
 
-  const handleLogout = async () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = useCallback(() => {
+    setIsLoggingOut(true);
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('upbase_selected_user_id');
         sessionStorage.removeItem(ACTIVE_TAB_SESSION_KEY);
       }
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } finally {
+    } catch {
+      // bỏ qua lỗi storage
+    }
+    if (typeof window !== 'undefined') {
+      window.location.replace('/api/auth/logout');
+    } else {
       router.push('/login');
     }
-  };
+  }, [router]);
 
   const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
@@ -650,15 +722,6 @@ export default function App() {
   useLayoutEffect(() => {
     if (localStorage.getItem('upbase_sidebar_collapsed') === 'true') {
       setIsSidebarCollapsed(true);
-    }
-    const savedUserId = localStorage.getItem('upbase_selected_user_id');
-    const savedUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
-    if (savedUser.id !== USERS[0].id) {
-      setCurrentUser(savedUser);
-    }
-    const initialTab = resolveInitialTab(savedUser);
-    if (initialTab !== getDefaultLandingTabForRole(USERS[0].role)) {
-      setActiveTab(initialTab);
     }
   }, []);
 
@@ -1074,6 +1137,7 @@ export default function App() {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleSidebarCollapse}
         onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
         badgeCounts={pendingTasksCount > 0 ? { cockpit: pendingTasksCount } : undefined}
       />
 
@@ -1097,6 +1161,7 @@ export default function App() {
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebarCollapse={handleToggleSidebarCollapse}
           onLogout={handleLogout}
+          isLoggingOut={isLoggingOut}
           userScopeSummary={userScopeSummary}
         />
 

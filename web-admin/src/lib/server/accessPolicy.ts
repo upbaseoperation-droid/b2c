@@ -169,11 +169,21 @@ export function reconcileAccessPolicy(saved: Partial<AccessPolicy> | null | unde
   };
 }
 
+let cachedReconciledPolicy: { revision: number; data: AccessPolicy } | null = null;
+
 export async function readPolicy() {
   const record = await readRecord('access-policy', defaultPolicy);
+  if (cachedReconciledPolicy && cachedReconciledPolicy.revision === record.revision && record.revision > 0) {
+    return {
+      revision: record.revision,
+      data: cachedReconciledPolicy.data,
+    };
+  }
+  const reconciled = reconcileAccessPolicy(record.data);
+  cachedReconciledPolicy = { revision: record.revision, data: reconciled };
   return {
     ...record,
-    data: reconcileAccessPolicy(record.data),
+    data: reconciled,
   };
 }
 

@@ -1,4 +1,5 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
+import { decideStoreAccess, normEmail } from './storeAssignments';
 
 /**
  * Kiểm tra xem người dùng có quyền quản trị toàn cục (Admin / Giám đốc B2C / Toàn quyền mọi nhãn hàng) hay không.
@@ -31,18 +32,50 @@ export function isStaffGlobalAdminOrManager(user: UserProfile | null | undefined
   return false;
 }
 
-/**
- * Trích xuất danh sách tên nhãn hàng được phân công tường minh cho người dùng.
- */
-export function getUserAssignedBrandNames(user: UserProfile | null | undefined): string[] {
-  if (!user) return [];
-  const set = new Set<string>();
+interface UserScopeBase {
+  key: string;
+  isGlobal: boolean;
+  userNameLower: string;
+  emailLower: string;
+  assignedBrands: string[];
+  assignedBrandsLower: Set<string>;
+  allowedStoresLower: Set<string>;
+}
+
+interface StoreScopeIndex {
+  managedStoreIds: Set<string>;
+  managedStoreNamesLower: Set<string>;
+  managedBrandNamesLower: Set<string>;
+}
+
+const userScopeCache = new WeakMap<UserProfile, UserScopeBase>();
+const storeScopeCache = new WeakMap<StorePortfolioItem[], Map<string, StoreScopeIndex>>();
+
+function hasUserInPicField(pic: string | undefined | null, userNameLower: string): boolean {
+  if (!pic || !userNameLower) return false;
+  const lower = pic.toLowerCase();
+  if (!lower.includes(userNameLower)) return false;
+  return lower.split(/[,;|]/).some(name => name.trim() === userNameLower);
+}
+
+function getUserScopeBase(user: UserProfile): UserScopeBase {
+  const cached = userScopeCache.get(user);
+  const key = `${user.id}|${user.name || ''}|${user.email || ''}|${user.role}|${user.linkedEntityName || ''}|${(user.assignedBrands || []).join(',')}|${(user.allowedStoreNames || []).join(',')}|${(user.permissions || []).join(',')}`;
+  if (cached && cached.key === key) {
+    return cached;
+  }
+
+  const isGlobal = isStaffGlobalAdminOrManager(user);
+  const userNameLower = (user.name || '').trim().toLowerCase();
+  const assignedBrandsSet = new Set<string>();
+  const assignedBrandsLower = new Set<string>();
 
   if (Array.isArray(user.assignedBrands)) {
     for (const b of user.assignedBrands) {
       const norm = b.trim();
       if (norm && !['ALL_BRANDS', 'Tất cả nhãn hàng', 'TẤT CẢ NHÃN HÀNG', 'ALL', '*'].includes(norm)) {
-        set.add(norm);
+        assignedBrandsSet.add(norm);
+        assignedBrandsLower.add(norm.toLowerCase());
       }
     }
   }
@@ -51,12 +84,117 @@ export function getUserAssignedBrandNames(user: UserProfile | null | undefined):
     const parts = user.linkedEntityName.split(',').map(s => s.trim()).filter(Boolean);
     for (const p of parts) {
       if (!['ALL_BRANDS', 'Tất cả nhãn hàng'].includes(p)) {
-        set.add(p);
+        assignedBrandsSet.add(p);
+        assignedBrandsLower.add(p.toLowerCase());
       }
     }
   }
 
-  return Array.from(set);
+  const allowedStoresLower = new Set<string>();
+  if (Array.isArray(user.allowedStoreNames)) {
+    for (const s of user.allowedStoreNames) {
+      const norm = s.trim().toLowerCase();
+      if (norm) allowedStoresLower.add(norm);
+    }
+  }
+
+  const base: UserScopeBase = {
+    key,
+    isGlobal,
+    userNameLower,
+    emailLower: normEmail(user.email),
+    assignedBrands: Array.from(assignedBrandsSet),
+    assignedBrandsLower,
+    allowedStoresLower,
+  };
+  userScopeCache.set(user, base);
+  return base;
+}
+
+function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): boolean {
+  const { userNameLower, allowedStoresLower } = base;
+
+  if (allowedStoresLower.size > 0) {
+    if (
+      allowedStoresLower.has(store.storeName.toLowerCase()) ||
+      allowedStoresLower.has(store.id.toLowerCase()) ||
+      (store.storeOperationId && allowedStoresLower.has(store.storeOperationId.toLowerCase()))
+    ) {
+      return true;
+    }
+  }
+
+  // Gian đã có phân công hiệu lực: chỉ phân công (theo email) quyết định, bỏ qua các trường PIC theo tên.
+  const decision = decideStoreAccess(store.assignments, base.emailLower);
+  if (decision.managed) return decision.read;
+
+  if (!userNameLower) return false;
+
+  if (
+    hasUserInPicField(store.b2cOwnerName, userNameLower) ||
+    hasUserInPicField(store.primaryPic, userNameLower) ||
+    hasUserInPicField(store.assignedStaff, userNameLower) ||
+    hasUserInPicField(store.growthPic, userNameLower) ||
+    hasUserInPicField(store.accountOwnerName, userNameLower) ||
+    hasUserInPicField(store.bookingLeader, userNameLower) ||
+    hasUserInPicField(store.contentPic, userNameLower) ||
+    hasUserInPicField(store.mediaPic, userNameLower) ||
+    hasUserInPicField(store.backupOwnerName, userNameLower)
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(store.b2cOwners)) {
+    for (const owner of store.b2cOwners) {
+      if (hasUserInPicField(owner, userNameLower)) return true;
+    }
+  }
+
+  return false;
+}
+
+function getStoreScopeIndex(user: UserProfile, allStores: StorePortfolioItem[]): StoreScopeIndex {
+  const base = getUserScopeBase(user);
+  let byUser = storeScopeCache.get(allStores);
+  if (!byUser) {
+    byUser = new Map<string, StoreScopeIndex>();
+    storeScopeCache.set(allStores, byUser);
+  }
+  const existing = byUser.get(base.key);
+  if (existing) return existing;
+
+  const managedStoreIds = new Set<string>();
+  const managedStoreNamesLower = new Set<string>();
+  const managedBrandNamesLower = new Set<string>(base.assignedBrandsLower);
+
+  for (const s of allStores) {
+    const sBrandLower = (s.brandName || s.storeName.split('_')[0] || '').trim().toLowerCase();
+    const directMatch = checkStoreDirectMatch(s, base);
+    const brandMatch = sBrandLower ? base.assignedBrandsLower.has(sBrandLower) : false;
+    if (directMatch || brandMatch) {
+      managedStoreIds.add(s.id);
+      managedStoreNamesLower.add(s.storeName.toLowerCase());
+      if (sBrandLower) {
+        managedBrandNamesLower.add(sBrandLower);
+      }
+    }
+  }
+
+  const index: StoreScopeIndex = {
+    managedStoreIds,
+    managedStoreNamesLower,
+    managedBrandNamesLower,
+  };
+  byUser.set(base.key, index);
+  return index;
+}
+
+/**
+ * Trích xuất danh sách tên nhãn hàng được phân công tường minh cho người dùng.
+ */
+export function getUserAssignedBrandNames(user: UserProfile | null | undefined): string[] {
+  if (!user) return [];
+  return getUserScopeBase(user).assignedBrands;
 }
 
 /**
@@ -68,57 +206,54 @@ export function isBrandManagedByUser(
   allStores?: StorePortfolioItem[]
 ): boolean {
   if (!user) return false;
-  if (isStaffGlobalAdminOrManager(user)) return true;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
 
   const brandName = typeof brand === 'string' ? brand.trim() : brand.name.trim();
   if (!brandName) return false;
 
   const bNameLower = brandName.toLowerCase();
-  const userNameLower = (user.name || '').trim().toLowerCase();
 
   // 1. Khớp với danh sách nhãn hàng được gán trực tiếp cho nhân viên
-  const assigned = getUserAssignedBrandNames(user);
-  if (assigned.some(a => {
-    const aLower = a.toLowerCase();
-    return aLower === bNameLower;
-  })) {
+  if (base.assignedBrandsLower.has(bNameLower)) {
     return true;
   }
 
   // 2. Nếu là đối tượng BrandDetail, kiểm tra các chức danh PIC gắn trực tiếp trên Brand
   if (typeof brand !== 'string') {
-    const picFields = [
-      brand.brandPicName,
-      brand.accountPic,
-      brand.growthPic,
-      brand.bookingPicLead,
-      brand.contentBrandMainPic,
-      brand.planStrategyPic,
-      brand.keyVisualSisPic,
-    ];
-    if (picFields.some(pic => pic && userNameLower && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === userNameLower))) {
+    const { userNameLower, allowedStoresLower } = base;
+    if (
+      userNameLower &&
+      (hasUserInPicField(brand.brandPicName, userNameLower) ||
+        hasUserInPicField(brand.accountPic, userNameLower) ||
+        hasUserInPicField(brand.growthPic, userNameLower) ||
+        hasUserInPicField(brand.bookingPicLead, userNameLower) ||
+        hasUserInPicField(brand.contentBrandMainPic, userNameLower) ||
+        hasUserInPicField(brand.planStrategyPic, userNameLower) ||
+        hasUserInPicField(brand.keyVisualSisPic, userNameLower))
+    ) {
       return true;
     }
 
-    if (Array.isArray(brand.stores) && brand.stores.length > 0) {
-      if (user.allowedStoreNames && user.allowedStoreNames.some(s => 
-        brand.stores.some(bs => bs.storeName.toLowerCase() === s.toLowerCase() || bs.storeId?.toLowerCase() === s.toLowerCase())
-      )) {
+    if (allowedStoresLower.size > 0 && Array.isArray(brand.stores) && brand.stores.length > 0) {
+      if (
+        brand.stores.some(
+          bs =>
+            allowedStoresLower.has(bs.storeName.toLowerCase()) ||
+            (bs.storeId && allowedStoresLower.has(bs.storeId.toLowerCase()))
+        )
+      ) {
         return true;
       }
     }
   }
 
-  // 3. Nếu danh sách gian hàng (stores) được cung cấp, kiểm tra xem nhân viên có phụ trách gian hàng nào của nhãn này không
+  // 3. Tra cứu O(1) trên chỉ mục gian hàng của nhân sự
   if (allStores && allStores.length > 0) {
-    const hasManagedStore = allStores.some(s => {
-      const sBrand = (s.brandName || s.storeName.split('_')[0] || '').trim().toLowerCase();
-      if (sBrand !== bNameLower) {
-        return false;
-      }
-      return isStoreManagedByUser(s, user, false); // Tránh đệ quy vô hạn
-    });
-    if (hasManagedStore) return true;
+    const storeIndex = getStoreScopeIndex(user, allStores);
+    if (storeIndex.managedBrandNamesLower.has(bNameLower)) {
+      return true;
+    }
   }
 
   return false;
@@ -133,47 +268,43 @@ export function isStoreManagedByUser(
   checkBrandAssigned: boolean = true
 ): boolean {
   if (!user) return false;
-  if (isStaffGlobalAdminOrManager(user)) return true;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
 
-  const uName = (user.name || '').trim().toLowerCase();
-  if (!uName) return false;
-
-  // 1. Khớp theo phân quyền tài khoản đối tác ngoài hoặc gian hàng được chỉ định cứng
-  if (user.allowedStoreNames && user.allowedStoreNames.length > 0) {
-    const matchExplicit = user.allowedStoreNames.some(s => {
-      const norm = s.trim().toLowerCase();
-      return norm === store.storeName.toLowerCase() || norm === store.id.toLowerCase() || (store.storeOperationId && norm === store.storeOperationId.toLowerCase());
-    });
-    if (matchExplicit) return true;
-  }
-
-  // 2. Khớp trực tiếp nhân sự phụ trách tại gian hàng (PIC Growth, B2C, Account, Leader...)
-  const storePics = [
-    store.b2cOwnerName,
-    store.primaryPic,
-    store.assignedStaff,
-    store.growthPic,
-    store.accountOwnerName,
-    store.bookingLeader,
-    store.contentPic,
-    store.mediaPic,
-    store.backupOwnerName,
-    ...(store.b2cOwners || [])
-  ];
-
-  if (storePics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
+  if (checkStoreDirectMatch(store, base)) {
     return true;
   }
 
-  // 3. Kiểm tra nhãn hàng của gian hàng có thuộc danh sách nhãn nhân sự được phân công hay không
   if (checkBrandAssigned) {
-    const storeBrand = store.brandName || store.storeName.split('_')[0] || '';
-    if (storeBrand && isBrandManagedByUser(storeBrand, user)) {
+    const storeBrand = (store.brandName || store.storeName.split('_')[0] || '').trim().toLowerCase();
+    if (storeBrand && base.assignedBrandsLower.has(storeBrand)) {
       return true;
     }
   }
 
   return false;
+}
+
+/**
+ * Quyền GHI dữ liệu của gian (tùy chọn theo tháng). Gian đã có phân công hiệu lực: chỉ PIC chưa bàn giao được ghi;
+ * PIC cũ chỉ còn quyền xem. Gian chưa chuyển đổi giữ nguyên cách xét cũ.
+ */
+export function canWriteStoreData(
+  store: StorePortfolioItem,
+  user: UserProfile | null | undefined,
+  month?: string | null
+): boolean {
+  if (!user) return false;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
+  if (store.assignments?.length) {
+    if (base.allowedStoresLower.has(store.storeName.toLowerCase()) || base.allowedStoresLower.has(store.id.toLowerCase())) return true;
+    // Nhãn hàng được Admin cấp cố định (picBrands) là quyền hệ thống, không phụ thuộc phân công tháng.
+    const storeBrand = (store.brandName || store.storeName.split('_')[0] || '').trim().toLowerCase();
+    if (storeBrand && base.assignedBrandsLower.has(storeBrand)) return true;
+    return decideStoreAccess(store.assignments, base.emailLower, { month }).write;
+  }
+  return isStoreManagedByUser(store, user);
 }
 
 /**
@@ -185,28 +316,39 @@ export function isPlanManagedByUser(
   allStores?: StorePortfolioItem[]
 ): boolean {
   if (!user) return false;
-  if (isStaffGlobalAdminOrManager(user)) return true;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
 
-  const uName = (user.name || '').trim().toLowerCase();
+  const { userNameLower } = base;
+
+  // 0. Gian của kế hoạch đã có phân công hiệu lực: quyết định theo tháng của kế hoạch
+  //    (PIC cũ chỉ xem lại các tháng mình từng phụ trách; tên ghi trong plan.pic không cấp thêm quyền).
+  const planStore = allStores?.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
+  if (planStore?.assignments?.length) {
+    if (base.allowedStoresLower.has(planStore.storeName.toLowerCase()) || base.allowedStoresLower.has(planStore.id.toLowerCase())) return true;
+    const storeBrand = (planStore.brandName || '').trim().toLowerCase();
+    if (storeBrand && base.assignedBrandsLower.has(storeBrand)) return true;
+    return decideStoreAccess(planStore.assignments, base.emailLower, { month: plan.month }).read;
+  }
 
   // 1. Trực tiếp là PIC phụ trách lập/giao/thẩm định kế hoạch
-  const planPics = [
-    plan.pic,
-    plan.growthPic,
-    plan.mediaPic,
-    plan.submittedBy
-  ];
-  if (planPics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
+  if (
+    userNameLower &&
+    (hasUserInPicField(plan.pic, userNameLower) ||
+      hasUserInPicField(plan.growthPic, userNameLower) ||
+      hasUserInPicField(plan.mediaPic, userNameLower) ||
+      hasUserInPicField(plan.submittedBy, userNameLower))
+  ) {
     return true;
   }
 
-  // 2. Khớp theo gian hàng gắn với kế hoạch
-  if (allStores && plan.storeName) {
-    const matchedStore = allStores.find(s => 
-      (plan.storeId && s.id === plan.storeId) || 
-      s.storeName.toLowerCase() === plan.storeName?.toLowerCase()
-    );
-    if (matchedStore && isStoreManagedByUser(matchedStore, user)) {
+  // 2. Tra cứu O(1) theo gian hàng gắn với kế hoạch
+  if (allStores && allStores.length > 0) {
+    const storeIndex = getStoreScopeIndex(user, allStores);
+    if (plan.storeId && storeIndex.managedStoreIds.has(plan.storeId)) {
+      return true;
+    }
+    if (plan.storeName && storeIndex.managedStoreNamesLower.has(plan.storeName.toLowerCase())) {
       return true;
     }
   }
@@ -231,19 +373,20 @@ export function isDealManagedByUser(
   allStores?: StorePortfolioItem[]
 ): boolean {
   if (!user) return false;
-  if (isStaffGlobalAdminOrManager(user)) return true;
+  const base = getUserScopeBase(user);
+  if (base.isGlobal) return true;
 
-  const uName = (user.name || '').trim().toLowerCase();
+  const { userNameLower } = base;
 
   // 1. Trực tiếp là PIC của deal
-  const dealPics = [
-    deal.assignedStaff,
-    deal.bookingPic,
-    deal.growthPic,
-    deal.accountPic,
-    deal.leadBooking
-  ];
-  if (dealPics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
+  if (
+    userNameLower &&
+    (hasUserInPicField(deal.assignedStaff, userNameLower) ||
+      hasUserInPicField(deal.bookingPic, userNameLower) ||
+      hasUserInPicField(deal.growthPic, userNameLower) ||
+      hasUserInPicField(deal.accountPic, userNameLower) ||
+      hasUserInPicField(deal.leadBooking, userNameLower))
+  ) {
     return true;
   }
 
@@ -252,10 +395,10 @@ export function isDealManagedByUser(
     return true;
   }
 
-  // 3. Khớp theo gian hàng của deal
-  if (deal.storeName && allStores) {
-    const matchedStore = allStores.find(s => s.storeName.toLowerCase() === deal.storeName?.toLowerCase());
-    if (matchedStore && isStoreManagedByUser(matchedStore, user)) {
+  // 3. Tra cứu O(1) theo gian hàng của deal
+  if (deal.storeName && allStores && allStores.length > 0) {
+    const storeIndex = getStoreScopeIndex(user, allStores);
+    if (storeIndex.managedStoreNamesLower.has(deal.storeName.toLowerCase())) {
       return true;
     }
   }

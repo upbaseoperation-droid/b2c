@@ -202,6 +202,58 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Cập nhật trực tiếp bản ghi `access-policy` trong `AppSharedRecord` trên Supabase PostgreSQL lên `revision: 4` với đầy đủ quyền `tiktok-crawler` và `market-research` cho toàn bộ các vai trò nội bộ.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo mọi màn hình nghiệp vụ mới thêm vào `ROLE_ALLOWED_TABS` đều tự động đồng bộ xuống cả các bản ghi `access-policy` cũ đã lưu trong cơ sở dữ liệu.
 
+---
+
+### BUG-013 — Chuyển Tab Và Tải Dữ Liệu Ở Cấp Nhân Viên Bị Chậm So Với Cấp Quản Trị (Admin/Manager)
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/rbacScope.ts`, `web-admin/src/app/page.tsx`, `web-admin/src/lib/server/sharedRecords.ts`, `web-admin/src/lib/server/accessPolicy.ts`, `web-admin/src/lib/server/monthlyPlanStore.ts`, `web-admin/src/lib/policyClient.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Lọc phạm vi dữ liệu `O(N × M)` không có chỉ mục ở cấp nhân viên (`rbacScope.ts`):** Ở cấp Admin/Manager, `isStaffGlobalAdminOrManager(user)` trả về `true` ngay lập tức (`O(1)`). Ở cấp nhân viên, mỗi lần gọi `isDealManagedByUser` (trên 400+ deal), `isPlanManagedByUser`, `isBrandManagedByUser` đều khởi tạo lại `Set` nhãn hàng, tách chuỗi regex `.split(/[,;|]/)` và quét lặp qua toàn bộ 69 gian hàng `allStores`.
+  2. **Tab cũ bị re-render đồng bộ khi chuyển sang tab mới (`page.tsx`):** `FrozenTabBody` dùng điều kiện memo `(prev, next) => !prev.isActive && !next.isActive`, khiến khi chuyển từ Tab A (`isActive: true -> false`) sang Tab B (`isActive: false -> true`), toàn bộ cây giao diện của Tab A bị re-render lại cùng lúc với Tab B.
+  3. **Thiếu nạp trước (preload) gói giao diện của các tab nhân viên (`page.tsx`):** Nhiều màn hình thường dùng của chuyên viên (`KocListingBatchHubView`, `TaskDelegationView`, `KocMasterDataView`, `BrandMarketResearchHubView`, `ContentView`, `SelfChannelCtvHubView`, `SampleTrackerView`...) chưa được nạp sẵn khi trình duyệt rảnh, gây hiện tượng chờ tải gói mạng ở lần bấm đầu tiên.
+  4. **Truy vấn PostgreSQL lặp lại tuần tự trên mỗi API ở cấp nhân viên (`sharedRecords.ts`, `accessPolicy.ts`, `monthlyPlanStore.ts`):** Khi `SHARED_STORAGE=postgres`, `readRecord` không có bộ nhớ đệm RAM (khác với chế độ file cục bộ) và `actionAllowed` ở cấp nhân viên (`role !== 'ADMIN'`) phải đọc lại `access-policy` từ Supabase PostgreSQL nhiều lần trong cùng một yêu cầu API.
+- **Cách khắc phục:**
+  1. Xây dựng bộ nhớ đệm chỉ mục phạm vi (`WeakMap` `userScopeCache` & `storeScopeCache`) trong `web-admin/src/lib/rbacScope.ts`, đưa mọi phép kiểm tra `isStoreManagedByUser`, `isBrandManagedByUser`, `isPlanManagedByUser`, `isDealManagedByUser` về `O(1)`.
+  2. Tách `<PageActiveContext.Provider value={isActive}>` ra ngoài `FrozenTabBody` và đổi điều kiện memo thành `(_prev, next) => !next.isActive` để tab vừa ẩn không bao giờ bị re-render lại cây component.
+  3. Nạp trước toàn bộ các màn hình nghiệp vụ của nhân viên theo 2 đợt nền (`350ms` và `1000ms`), cập nhật tức thời trạng thái khi chuyển tài khoản (`handleUserChange`) và chống hủy cache hồ sơ thương hiệu lần đầu trong `policyClient.ts`.
+  4. Trang bị bộ nhớ đệm RAM có TTL (`20s`) kèm gộp truy vấn đồng thời (`pgInflightReads`) trong `sharedRecords.ts`, memo hóa `reconcileAccessPolicy` theo `revision` trong `accessPolicy.ts`, và chạy song song `Promise.all` trong `monthlyPlanStore.ts`, `master-data/route.ts`, `brands/profiles/route.ts`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các hàm lọc dữ liệu theo phạm vi nhân sự (`filterScoped*`) và các API đọc dữ liệu dùng chung trên PostgreSQL.
+
+---
+
+### BUG-014 — Nút Đăng Xuất (Logout) Không Phản Hồi Ngay Lập Tức Khi Bấm
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/app/page.tsx`, `web-admin/src/components/Sidebar.tsx`, `web-admin/src/components/TopHeader.tsx`, `web-admin/src/app/api/auth/logout/route.ts`.
+- **Triệu chứng:** Khi người dùng bấm nút Đăng xuất (Logout) ở góc dưới Sidebar, giao diện không có phản hồi thị giác ngay lập tức (không loading/disable) và mất một khoảng thời gian chờ đợi trước khi chuyển về trang đăng nhập `/login`. Nếu thanh Sidebar đang bị thu gọn (`isSidebarCollapsed`), người dùng không tìm thấy nút đăng xuất trên đầu trang (`TopHeader`).
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Chờ kép 2 vòng mạng liên tiếp (`fetch` POST + `router.push` client transition):** Hàm `handleLogout` trong `page.tsx` thực hiện `await fetch('/api/auth/logout', { method: 'POST' })` trước, sau đó mới gọi `router.push('/login')`. Trong Next.js App Router, `router.push` chạy chuyển tiếp mềm (soft navigation) và phải đợi máy chủ chuẩn bị xong payload RSC của trang `/login` mới unmount trang cũ. Trong suốt thời gian này trang làm việc nặng với hàng chục view/timer vẫn hiển thị nguyên vẹn, khiến người dùng tưởng nút bấm không hoạt động.
+  2. **Thiếu phản hồi trạng thái bấm (No Visual Feedback):** Nút Logout trong `Sidebar` không có biến cờ `isLoggingOut` để hiển thị spinner xoay và vô hiệu hóa (`disabled`) ngay khi click.
+  3. **Thiếu nút Đăng xuất trên `TopHeader`:** Prop `onLogout` được truyền vào `TopHeader` nhưng chưa được render, dẫn đến khi thanh Sidebar bị thu gọn hoặc trên màn hình hẹp, người dùng không thể thực hiện đăng xuất thuận tiện.
+  4. **Cơ chế xóa Cookie chưa triệt để trên tất cả trình duyệt:** Endpoint `/api/auth/logout` chỉ gọi `response.cookies.delete(name)` mà không ghi đè tường minh `maxAge: 0`, `expires: new Date(0)`, `path: '/'`.
+- **Cách khắc phục:**
+  1. Cập nhật `handleLogout` trong `page.tsx`: kích hoạt trạng thái `isLoggingOut: true` ngay lập tức, xóa sạch khóa `localStorage`/`sessionStorage`, và thực hiện chuyển hướng trình duyệt trực tiếp (`window.location.replace('/api/auth/logout')`) để làm sạch toàn bộ bộ nhớ cache client và bộ đếm thời gian.
+  2. Nâng cấp endpoint `GET /api/auth/logout` và `POST /api/auth/logout` trong `route.ts`: xóa sạch cookie `b2c_ops_session` với `path: '/'`, `maxAge: 0`, `expires: new Date(0)` và trả về HTTP 307 Redirect về `/login`.
+  3. Bổ sung trạng thái `isLoggingOut` kèm biểu tượng tải (`Loader2 animate-spin`) và thuộc tính `disabled` cho cả nút đăng xuất tại `Sidebar.tsx` và `TopHeader.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Mọi thao tác kết thúc phiên làm việc, chuyển đổi tài khoản hoặc chuyển hướng bảo mật đều cần phản hồi thị giác tức thì và dọn dẹp sạch cache trình duyệt.
+
+---
+
+### BUG-015 — Đăng Nhập Bị Giật / Nháy Giao Diện Giám Đốc (CEO) Trước Khi Vào Đúng Vai Trò
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/app/page.tsx`.
+- **Triệu chứng:** Khi người dùng vừa đăng nhập từ trang `/login` (hoặc refresh trang) với tài khoản Chuyên viên (Booking, Content, Brand, Legal...), trong khoảng ~300ms đầu tiên màn hình bị giật/nháy hiển thị toàn bộ giao diện Báo cáo Điều hành của Tổng Giám Đốc Đỗ Văn Giang (`USERS[0]`), sau đó mới đột ngột chuyển sang giao diện của đúng vai trò được giao.
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Khởi tạo trạng thái ban đầu bị gán cứng vào `USERS[0]` (`page.tsx`):** `useState<UserProfile | null>(USERS[0])` và `useState<boolean>(false)` (cho `isLoadingAuth`) cùng `useState<TabKey>(() => resolveInitialTab(USERS[0]))` đã khiến React dựng ngay lập tức toàn bộ cây component của Tổng Giám Đốc (`dashboard-bi`, 69 gian hàng, widget tài chính BOD) ở khung hình (frame) đầu tiên.
+  2. **Cơ chế tải phiên bất đồng bộ (`loadUser`):** Sau khi frame đầu tiên vẽ xong với vai trò Giám đốc, hook `useEffect` mới hoàn thành lệnh gọi `/api/auth/me` và `loadAccessPolicy()`. Khi kết quả trả về đúng nhân sự đã đăng nhập, React gọi `setCurrentUser` và `setActiveTab` làm thay đổi toàn bộ cây UI lần thứ hai, gây ra hiện tượng giật màn hình rõ rệt.
+  3. **Đoạn mã vá lỗi muộn trong `useLayoutEffect`:** Trước đó có đoạn mã đọc `localStorage` trong `useLayoutEffect` để gán lại user, nhưng hook này chạy sau render ban đầu nên không ngăn được frame đầu tiên hiển thị Giám đốc.
+- **Cách khắc phục:**
+  1. Xây dựng hàm `getInitialAuthState()` chạy đồng bộ ngay trong hàm khởi tạo của `useState`:
+     - Đọc trực tiếp `localStorage.getItem('upbase_selected_user_id')` và ánh xạ ngay lập tức sang hồ sơ nhân viên (`resolveUserById`) cùng tab ban đầu tương ứng (`resolveInitialTab`). Nếu đã có tài khoản, React khởi tạo và vẽ ngay giao diện của nhân sự đó từ khung hình đầu tiên.
+     - Nếu chưa có tài khoản lưu sẵn (phiên mới chưa định danh), khởi tạo `currentUser = null` và `isLoadingAuth = true`. Khung giữ chỗ bộ khung (`Skeleton App Shell`) sẽ được hiển thị trung tính trong lúc chờ `/api/auth/me` phản hồi, tuyệt đối không bao giờ hiển thị `USERS[0]` (Giám đốc) cho người dùng khác.
+  2. Xóa bỏ logic gán đè dư thừa trong `useLayoutEffect` để tránh re-render lặp.
+  3. Cập nhật `loadUser` để nếu danh tính trả về trùng khớp với `initialAuthState`, không kích hoạt thêm bất kỳ render thừa nào.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo tất cả các phân hệ và component con không gán cứng tài khoản mặc định `USERS[0]` mà luôn dùng fallback trung tính hoặc kiểm tra `currentUser` hợp lệ.
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

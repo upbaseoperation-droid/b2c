@@ -1,7 +1,7 @@
-import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
+import { isPlanManagedByUser, isBrandManagedByUser, canWriteStoreData, isStaffGlobalAdminOrManager } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
-import { readMasterCatalog } from './masterCatalogStore';
+import { readCatalogWithAssignments } from './storeAssignmentStore';
 // Chỉ dùng phía server (API routes) — không import từ component giao diện.
 import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
@@ -151,14 +151,14 @@ function sameValue(a: unknown, b: unknown) {
 }
 
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
-  const { data } = await readMasterCatalog();
+  const { data } = await readCatalogWithAssignments();
   if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
   // A client cannot grant itself another brand by putting its own name into plan.pic.
   if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
     const targetStore = plan.storeId || plan.storeName;
     if (targetStore) {
       const store = data.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
-      if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
+      if (!store || !canWriteStoreData(store, actor, plan.month)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
     }
     const targetBrand = plan.brandName || plan.parentBrand;
     if (targetBrand) {
@@ -174,17 +174,28 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
 }
 /** Lấy danh sách kế hoạch. Lần đầu khi bảng trống sẽ nạp bộ kế hoạch mẫu ban đầu. */
 export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthlyPlan[]> {
-  const count = await prisma.monthlyPlan.count();
-  if (count === 0 && actor.role === 'ADMIN') {
-    await seedInitialPlans(actor);
+  const [initialRows, { data }, allowed] = await Promise.all([
+    prisma.monthlyPlan.findMany({
+      where: { deletedAt: null },
+      include: planInclude,
+      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+    }),
+    readCatalogWithAssignments(),
+    actionAllowed(actor, 'plan_target_month', 'read')
+  ]);
+  if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');
+  let rows = initialRows;
+  if (rows.length === 0 && actor.role === 'ADMIN') {
+    const totalCount = await prisma.monthlyPlan.count();
+    if (totalCount === 0) {
+      await seedInitialPlans(actor);
+      rows = await prisma.monthlyPlan.findMany({
+        where: { deletedAt: null },
+        include: planInclude,
+        orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+      });
+    }
   }
-  const rows = await prisma.monthlyPlan.findMany({
-    where: { deletedAt: null },
-    include: planInclude,
-    orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
-  });
-  const { data } = await readMasterCatalog();
-  if (!await actionAllowed(actor, 'plan_target_month', 'read')) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');
   return rows.map(toStored).filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
 }
 

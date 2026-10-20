@@ -19,6 +19,7 @@ import {
   Video,
   X,
   LogOut,
+  Loader2,
   KeyRound,
   Film,
   Store,
@@ -67,6 +68,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onLogout?: () => void;
+  isLoggingOut?: boolean;
   badgeCounts?: Partial<Record<TabKey, number | string>>;
 }
 
@@ -88,7 +90,7 @@ const NAV = {
   cockpit: { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
   dashboard: { key: 'dashboard-bi', label: groupLabel('dashboard'), icon: LayoutDashboard, group: 'dashboard' },
   inputPlan: { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-  delegation: { key: 'task-delegation', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
+  delegation: { key: 'manager', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
   brand: { key: 'brand-knowledge', label: groupLabel('brand'), icon: BookOpen, group: 'brand' },
   research: { key: 'market-research', label: groupLabel('research'), icon: Search, group: 'research' },
   campaigns: { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
@@ -213,6 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
   onLogout,
+  isLoggingOut,
   badgeCounts,
 }) => {
   const [rbacTick, setRbacTick] = React.useState(0);
@@ -521,11 +524,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                  disabled={isLoggingOut}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   title="Đăng xuất"
                   aria-label="Đăng xuất"
                 >
-                  <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                  {isLoggingOut ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  ) : (
+                    <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                  )}
                 </button>
               )}
             </div>

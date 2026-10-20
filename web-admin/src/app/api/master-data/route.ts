@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
-import { readMasterCatalog, validateCatalog } from '@/lib/server/masterCatalogStore';
+import { validateCatalog } from '@/lib/server/masterCatalogStore';
+import { readCatalogWithAssignments } from '@/lib/server/storeAssignmentStore';
 import { DEFAULT_MASTER_CATALOG, type MasterCatalog } from '@/lib/masterCatalog';
 import { RecordError, updateRecord } from '@/lib/server/sharedRecords';
 import { filterScopedBrands, filterScopedStores } from '@/lib/rbacScope';
@@ -13,12 +14,17 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requestActor(req);
     if (!user) throw new RecordError('Phiên không còn quyền truy cập.', 401);
-    const record = await readMasterCatalog();
+    const partner = !!user.partnerType || user.role.endsWith('_PARTNER');
+    const [record, canEdit] = await Promise.all([
+      readCatalogWithAssignments(),
+      !partner && ['ADMIN', 'MANAGER'].includes(user.role)
+        ? actionAllowed(user, 'master_data_brand_stores', 'write')
+        : Promise.resolve(false),
+    ]);
     const brands = filterScopedBrands(record.data.brands, user, record.data.stores);
     const stores = filterScopedStores(record.data.stores, user);
-    const partner = !!user.partnerType || user.role.endsWith('_PARTNER');
-    const canEdit = !partner && ['ADMIN', 'MANAGER'].includes(user.role) && await actionAllowed(user, 'master_data_brand_stores', 'write');
-    return NextResponse.json({ ...record, canEdit, data: { ...record.data, brands, stores, products: record.data.products.filter(p => brands.some(b => b.name === p.brandName)), castTiers: partner ? [] : record.data.castTiers } }, { headers });
+    const brandNameSet = new Set(brands.map(b => b.name));
+    return NextResponse.json({ ...record, canEdit, data: { ...record.data, brands, stores, products: record.data.products.filter(p => brandNameSet.has(p.brandName)), castTiers: partner ? [] : record.data.castTiers } }, { headers });
   } catch (e) { return failure(e); }
 }
 export async function PUT(req: NextRequest) {
@@ -30,7 +36,9 @@ export async function PUT(req: NextRequest) {
     if (Buffer.byteLength(raw) > 15_000_000) throw new RecordError('Danh mục quá lớn.', 413);
     let parsed: { data: MasterCatalog; revision: number };
     try { parsed = JSON.parse(raw); } catch { throw new RecordError('Dữ liệu JSON không hợp lệ.'); }
-    const { data, revision } = parsed;
+    const { revision } = parsed;
+    // Phân công gian do kho phân công quản lý; không lưu bản sao (có thể đã cũ) vào danh mục gốc.
+    const data: MasterCatalog = { ...parsed.data, stores: (parsed.data?.stores || []).map(({ assignments: _assignments, ...store }) => store) };
     const result = await updateRecord('master-catalog', DEFAULT_MASTER_CATALOG, revision, async previous => { await validateCatalog(data, previous); return data; });
     return NextResponse.json({ ...result, canEdit: true }, { headers });
   } catch (e) { return failure(e); }

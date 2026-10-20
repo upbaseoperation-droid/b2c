@@ -800,7 +800,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       );
       ctx.fillStyle = '#1e293b';
       ctx.fillText(
-        'TẦNG 1 · SÀN 28 NHÂN SỰ (4 BẬC × 7 CỘT ĐỐI XỨNG · CLICK ĐỂ XEM NHÁNH)',
+        'TẦNG 1 · NHÂN SỰ B2C (28)',
         14,
         band2Bottom + Math.round(18 * yScale)
       );
@@ -1441,7 +1441,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <span className="text-xl font-semibold text-warning tabular-nums">
               {summaryStats.lowHardRatioCount}
             </span>
-            <span className="text-2xs text-ink-3">theo chuẩn Bảng 4</span>
+            <span className="text-2xs text-ink-3">nhân sự</span>
           </div>
         </button>
       </div>
@@ -1648,35 +1648,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             onWheel={handleWheel}
             className="w-full flex-1 min-h-0 block select-none"
           />
-
-          <div className="bg-sunken/50 border-t border-line px-3 py-2 shrink-0">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-              {filteredStaff.map(st => {
-                const isActive = selectedNodeId === st.id;
-                const toneClass =
-                  st.loadStatus === 'OVERLOAD'
-                    ? 'bg-critical-soft text-critical border-critical/30'
-                    : st.loadStatus === 'UNDERLOAD'
-                      ? 'bg-accent-soft text-accent border-accent/30'
-                      : 'bg-positive-soft text-positive border-positive/30';
-                return (
-                  <button
-                    key={st.id}
-                    type="button"
-                    onClick={() => handleSelectAndFly(st.id)}
-                    className={`shrink-0 px-2.5 py-1 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
-                      isActive
-                        ? 'ring-2 ring-accent bg-surface text-ink border-accent font-semibold'
-                        : `${toneClass} hover:opacity-90`
-                    }`}
-                  >
-                    <span>{st.shortName}</span>
-                    <span className="text-2xs font-semibold tabular-nums">({st.loadPct}%)</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
 
         {/* Right: Detailed Workload & Assignment Inspector Panel (4 cols, matched 720px height) */}
@@ -1832,7 +1803,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     {isQuickTaskOpen && (
                       <div className="p-3 rounded-xl bg-surface border border-accent/40 space-y-2.5">
                         <div className="text-xs font-semibold text-ink">
-                          Giao việc chuẩn Bảng 1 cho {st.name}
+                          Giao việc nhanh cho {st.name}
                         </div>
                         <select
                           value={quickTaskSowStt}
@@ -1856,7 +1827,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                           type="text"
                           value={quickTaskTitle}
                           onChange={e => setQuickTaskTitle(e.target.value)}
-                          placeholder="Tiêu đề đầu việc (để trống sẽ tự lấy theo Bảng 1)..."
+                          placeholder="Tiêu đề đầu việc (để trống sẽ tự lấy theo hạng mục)..."
                           className="w-full h-8 px-2.5 rounded-lg bg-sunken border border-line text-xs text-ink"
                         />
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
