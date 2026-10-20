@@ -2,11 +2,11 @@ import type { UserProfile, BrandDetail } from '../types';
 import type { BrandProfile } from '../brands/types';
 import { isBrandManagedByUser } from '../rbacScope';
 import { permissionsFor, isBrandPartnerForBrand, requireBrand } from '../brands/domain';
-import { readCatalogWithAssignments } from './storeAssignmentStore';
+import { readCatalogWithPics } from './storePicStore';
 import { brandKey } from '../brands/types';
 
 export async function requireBrandScope(user: UserProfile, name: string): Promise<BrandDetail | undefined> {
-  const { data } = await readCatalogWithAssignments();
+  const { data } = await readCatalogWithPics();
   const master = data.brands.find(b => brandKey(b.name) === brandKey(name));
   const partner = !!user.partnerType || user.role.endsWith('_PARTNER');
   const allowed = partner ? isBrandPartnerForBrand(user, master?.name || name) : isBrandManagedByUser(master || name, user, data.stores);

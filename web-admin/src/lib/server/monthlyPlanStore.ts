@@ -1,7 +1,7 @@
-import { isPlanManagedByUser, isBrandManagedByUser, canWriteStoreData, isStaffGlobalAdminOrManager } from '../rbacScope';
+import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
-import { readCatalogWithAssignments } from './storeAssignmentStore';
+import { readCatalogWithPics } from './storePicStore';
 // Chỉ dùng phía server (API routes) — không import từ component giao diện.
 import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
@@ -151,14 +151,14 @@ function sameValue(a: unknown, b: unknown) {
 }
 
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
-  const { data } = await readCatalogWithAssignments();
+  const { data } = await readCatalogWithPics();
   if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
   // A client cannot grant itself another brand by putting its own name into plan.pic.
   if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
     const targetStore = plan.storeId || plan.storeName;
     if (targetStore) {
       const store = data.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
-      if (!store || !canWriteStoreData(store, actor, plan.month)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
+      if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
     }
     const targetBrand = plan.brandName || plan.parentBrand;
     if (targetBrand) {
@@ -180,7 +180,7 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
       include: planInclude,
       orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
     }),
-    readCatalogWithAssignments(),
+    readCatalogWithPics(),
     actionAllowed(actor, 'plan_target_month', 'read')
   ]);
   if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');

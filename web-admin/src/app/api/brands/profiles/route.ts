@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
 import { requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
-import { readCatalogWithAssignments } from '@/lib/server/storeAssignmentStore';
+import { readCatalogWithPics } from '@/lib/server/storePicStore';
 import { filterScopedBrands } from '@/lib/rbacScope';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { brandStorageMode, listProfiles, saveProfile } from '@/lib/brands/store';
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     requireReader(user);
     const base = permissionsFor(user);
     const [catalog, allProfiles] = await Promise.all([
-      readCatalogWithAssignments(),
+      readCatalogWithPics(),
       listProfiles(),
     ]);
     const allowedBrands = filterScopedBrands(catalog.data.brands, user, catalog.data.stores);

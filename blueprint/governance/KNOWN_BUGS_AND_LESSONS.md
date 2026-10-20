@@ -254,6 +254,20 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Cập nhật `loadUser` để nếu danh tính trả về trùng khớp với `initialAuthState`, không kích hoạt thêm bất kỳ render thừa nào.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đảm bảo tất cả các phân hệ và component con không gán cứng tài khoản mặc định `USERS[0]` mà luôn dùng fallback trung tính hoặc kiểm tra `currentUser` hợp lệ.
 
+---
+
+### BUG-016 — Màn Hình Dữ Liệu Gốc Báo "Có Thay Đổi Chưa Lưu — Không Truy Cập Được Kho Master Data" Trên Vercel
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/MasterDataHubView.tsx`, `web-admin/src/lib/server/sharedRecords.ts`.
+- **Triệu chứng:** Khi mở màn hình **Dữ liệu gốc** trên Vercel (`b2c-theta.vercel.app`), thanh cảnh báo luôn hiển thị `Có thay đổi chưa lưu` ngay cả khi chưa chỉnh sửa gì; khi bấm **Lưu danh mục**, hệ thống mất ~9.5 giây rồi báo đỏ `Không truy cập được kho master data. Thử lại sau.`.
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Thứ tự khóa JSONB từ PostgreSQL khác thứ tự khóa của `draftCatalog` (`MasterDataHubView.tsx`):** Cột `data` kiểu `jsonb` trong bảng `AppSharedRecord` trên PostgreSQL trả về thứ tự khóa (`brands, niches, stores, formats, pillars, products, castTiers`) khác với đối tượng `draftCatalog` (`brands, stores, products, pillars, castTiers, niches, formats`), đồng thời `GET /api/master-data` gắn thêm trường `pics` vào `stores`. Phép so sánh `JSON.stringify(draftCatalog) !== savedCatalog` vì thế luôn bằng `true` ngay khi vừa tải trang.
+  2. **Quá hạn 5.000ms của Interactive Transaction Prisma (`sharedRecords.ts`):** Hàm `updateRecord` mở `prisma.$transaction(async tx => ...)` và thực hiện liên tiếp 3 truy vấn nặng (~250KB JSON mỗi chiều) kèm gọi `validateCatalog` (chứa các truy vấn ngoài `tx`) trong khi giữ khóa `FOR UPDATE`. Từ Vercel sang Supabase, tổng thời gian vượt ngưỡng 5.000ms của Prisma Interactive Transaction, ném lỗi `P2028` và bị `failure(e)` chuyển thành `503 Không truy cập được kho master data. Thử lại sau.`.
+- **Cách khắc phục:**
+  1. Chuẩn hóa hàm `serializeCatalog` trong `MasterDataHubView.tsx` với thứ tự khóa cố định và loại bỏ trường tạm `pics` trên `stores` trước khi so sánh `catalogDirty`.
+  2. Thay thế `prisma.$transaction` tương tác trong `sharedRecords.ts` bằng cơ chế đọc kiểm tra `revision`, chạy `transform` ngoài transaction và thực thi 1 câu lệnh SQL `UPDATE ... WHERE key = ... AND revision = ...` (hoặc `INSERT ... ON CONFLICT DO UPDATE WHERE revision = 0`) nguyên tử duy nhất.
+- **Phạm vi rà soát mở rộng sang phần khác:** Mọi bản ghi dùng chung trong `AppSharedRecord` (`master-catalog`, `access-policy`, `store-pics`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

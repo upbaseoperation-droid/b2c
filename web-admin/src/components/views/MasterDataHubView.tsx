@@ -721,12 +721,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [canEditCatalog, setCanEditCatalog] = useState(false);
   const [savedCatalog, setSavedCatalog] = useState('');
   const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
-  const catalogDirty = savedCatalog !== '' && JSON.stringify(draftCatalog) !== savedCatalog;
+  const serializeCatalog = (c: MasterCatalog): string => JSON.stringify({ brands: c.brands, stores: (c.stores || []).map(({ pics: _pics, ...store }) => store), products: c.products, pillars: c.pillars, castTiers: c.castTiers, niches: c.niches, formats: c.formats });
+  const catalogDirty = savedCatalog !== '' && serializeCatalog(draftCatalog) !== savedCatalog;
   const acceptCatalog = (body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
     const data = body.data;
     setBrandList(data.brands); setStoreList(data.stores); setProductList(data.products); setPillarList(data.pillars);
     setExtraCatalog({ castTiers: data.castTiers, niches: data.niches, formats: data.formats });
-    setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(JSON.stringify(data));
+    setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(serializeCatalog(data));
   };
   const reloadCatalog = async () => {
     const res = await fetch('/api/master-data', { cache: 'no-store' });

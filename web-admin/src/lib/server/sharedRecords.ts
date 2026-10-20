@@ -89,15 +89,30 @@ export async function updateRecord<T>(key: string, fallback: T, expected: number
       return next;
     } finally { await lock.close(); await unlink(lockPath); }
   }
-  const updated = await prisma.$transaction(async tx => {
-    await tx.$executeRaw`INSERT INTO "AppSharedRecord" (key, revision, data) VALUES (${key}, 0, ${JSON.stringify(fallback)}::jsonb) ON CONFLICT (key) DO NOTHING`;
-    const rows = await tx.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key} FOR UPDATE`;
-    const current = rows[0];
-    if (current.revision !== expected) throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409);
-    const next = { revision: expected + 1, data: await transform(current.data) };
-    await tx.$executeRaw`UPDATE "AppSharedRecord" SET revision = ${next.revision}, data = ${JSON.stringify(next.data)}::jsonb WHERE key = ${key}`;
-    return next;
-  });
+  const rows = await prisma.$queryRaw<Array<SharedRecord<T>>>`SELECT revision, data FROM "AppSharedRecord" WHERE key = ${key}`;
+  const current = rows[0] || { revision: 0, data: fallback };
+  if (current.revision !== expected) throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409);
+  const nextData = await transform(current.data);
+  const nextRevision = expected + 1;
+  const serializedNext = JSON.stringify(nextData);
+  const affected = expected === 0
+    ? await prisma.$executeRaw`
+        INSERT INTO "AppSharedRecord" (key, revision, data)
+        VALUES (${key}, ${nextRevision}, ${serializedNext}::jsonb)
+        ON CONFLICT (key) DO UPDATE
+        SET revision = ${nextRevision}, data = EXCLUDED.data
+        WHERE "AppSharedRecord".revision = 0
+      `
+    : await prisma.$executeRaw`
+        UPDATE "AppSharedRecord"
+        SET revision = ${nextRevision}, data = ${serializedNext}::jsonb
+        WHERE key = ${key} AND revision = ${expected}
+      `;
+  if (Number(affected) === 0) {
+    pgRecordCache.delete(key);
+    throw new RecordError('Dữ liệu đã thay đổi. Tải lại trước khi lưu.', 409);
+  }
+  const updated: SharedRecord<T> = { revision: nextRevision, data: nextData };
   pgRecordCache.set(key, {
     expiresAt: Date.now() + PG_CACHE_TTL_MS,
     record: structuredClone(updated),

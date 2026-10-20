@@ -1,5 +1,5 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
-import { decideStoreAccess, normEmail } from './storeAssignments';
+import { hasPicList, isStorePic, normEmail } from './storePics';
 
 /**
  * Kiểm tra xem người dùng có quyền quản trị toàn cục (Admin / Giám đốc B2C / Toàn quyền mọi nhãn hàng) hay không.
@@ -124,9 +124,8 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): 
     }
   }
 
-  // Gian đã có phân công hiệu lực: chỉ phân công (theo email) quyết định, bỏ qua các trường PIC theo tên.
-  const decision = decideStoreAccess(store.assignments, base.emailLower);
-  if (decision.managed) return decision.read;
+  // Gian đã có danh sách PIC: chỉ danh sách (theo email) quyết định, bỏ qua các trường PIC theo tên.
+  if (hasPicList(store.pics)) return isStorePic(store.pics, base.emailLower);
 
   if (!userNameLower) return false;
 
@@ -286,28 +285,6 @@ export function isStoreManagedByUser(
 }
 
 /**
- * Quyền GHI dữ liệu của gian (tùy chọn theo tháng). Gian đã có phân công hiệu lực: chỉ PIC chưa bàn giao được ghi;
- * PIC cũ chỉ còn quyền xem. Gian chưa chuyển đổi giữ nguyên cách xét cũ.
- */
-export function canWriteStoreData(
-  store: StorePortfolioItem,
-  user: UserProfile | null | undefined,
-  month?: string | null
-): boolean {
-  if (!user) return false;
-  const base = getUserScopeBase(user);
-  if (base.isGlobal) return true;
-  if (store.assignments?.length) {
-    if (base.allowedStoresLower.has(store.storeName.toLowerCase()) || base.allowedStoresLower.has(store.id.toLowerCase())) return true;
-    // Nhãn hàng được Admin cấp cố định (picBrands) là quyền hệ thống, không phụ thuộc phân công tháng.
-    const storeBrand = (store.brandName || store.storeName.split('_')[0] || '').trim().toLowerCase();
-    if (storeBrand && base.assignedBrandsLower.has(storeBrand)) return true;
-    return decideStoreAccess(store.assignments, base.emailLower, { month }).write;
-  }
-  return isStoreManagedByUser(store, user);
-}
-
-/**
  * Kiểm tra xem một Kế hoạch tháng (Input Plan) có thuộc quyền quản lý của người dùng hay không.
  */
 export function isPlanManagedByUser(
@@ -321,17 +298,8 @@ export function isPlanManagedByUser(
 
   const { userNameLower } = base;
 
-  // 0. Gian của kế hoạch đã có phân công hiệu lực: quyết định theo tháng của kế hoạch
-  //    (PIC cũ chỉ xem lại các tháng mình từng phụ trách; tên ghi trong plan.pic không cấp thêm quyền).
-  const planStore = allStores?.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
-  if (planStore?.assignments?.length) {
-    if (base.allowedStoresLower.has(planStore.storeName.toLowerCase()) || base.allowedStoresLower.has(planStore.id.toLowerCase())) return true;
-    const storeBrand = (planStore.brandName || '').trim().toLowerCase();
-    if (storeBrand && base.assignedBrandsLower.has(storeBrand)) return true;
-    return decideStoreAccess(planStore.assignments, base.emailLower, { month: plan.month }).read;
-  }
-
   // 1. Trực tiếp là PIC phụ trách lập/giao/thẩm định kế hoạch
+  //    (PIC đã rời gian vẫn xem lại được các kế hoạch tháng có tên mình; quyền ghi vẫn đòi phải thuộc danh sách PIC gian).
   if (
     userNameLower &&
     (hasUserInPicField(plan.pic, userNameLower) ||
