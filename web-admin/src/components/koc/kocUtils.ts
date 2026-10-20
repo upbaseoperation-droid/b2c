@@ -308,30 +308,30 @@ export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocI
 
   // Tỷ lệ CTR / CVR trung bình
   const dealsWithCtr = validDeals.filter((d) => typeof d.ctr === 'number');
-  const avgCtr = dealsWithCtr.length > 0 ? dealsWithCtr.reduce((s, d) => s + (d.ctr || 0), 0) / dealsWithCtr.length : (koc.tiktokAvgCtr || 4.5);
+  const avgCtr = dealsWithCtr.length > 0 ? dealsWithCtr.reduce((s, d) => s + (d.ctr || 0), 0) / dealsWithCtr.length : (koc.tiktokAvgCtr || 0);
 
   const dealsWithCvr = validDeals.filter((d) => typeof d.cvr === 'number');
-  const avgCvr = dealsWithCvr.length > 0 ? dealsWithCvr.reduce((s, d) => s + (d.cvr || 0), 0) / dealsWithCvr.length : (koc.tiktokAvgCvr || 2.2);
+  const avgCvr = dealsWithCvr.length > 0 ? dealsWithCvr.reduce((s, d) => s + (d.cvr || 0), 0) / dealsWithCvr.length : (koc.tiktokAvgCvr || 0);
 
-  // Tiến độ & Tuân thủ
+  // Tiến độ & Tuân thủ (RULE-DATA-01: Không sinh chỉ số giả khi chưa có deal thực tế)
   const dealsWithScriptStatus = validDeals.filter((d) => typeof d.isScriptOnTime === 'boolean');
   const onTimeScriptRate = dealsWithScriptStatus.length > 0
     ? Math.round((dealsWithScriptStatus.filter((d) => d.isScriptOnTime).length / dealsWithScriptStatus.length) * 100)
-    : 95;
+    : 0;
 
   const dealsWithPostStatus = validDeals.filter((d) => typeof d.isPostOnTime === 'boolean');
   const onTimePostRate = dealsWithPostStatus.length > 0
     ? Math.round((dealsWithPostStatus.filter((d) => d.isPostOnTime).length / dealsWithPostStatus.length) * 100)
-    : 92;
+    : 0;
 
   const sparkComplianceRate = validDeals.length > 0
     ? Math.round((validDeals.filter((d) => d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU').length / validDeals.length) * 100)
-    : 100;
+    : 0;
 
   const dealsWithRating = validDeals.filter((d) => typeof d.ratingScore === 'number' && d.ratingScore > 0);
   const avgRatingScore = dealsWithRating.length > 0
     ? Number((dealsWithRating.reduce((s, d) => s + (d.ratingScore || 0), 0) / dealsWithRating.length).toFixed(1))
-    : 4.8;
+    : 0;
 
   const uniqueBrands = Array.from(new Set([...validDeals.map((d) => d.brandName), koc.brandName].filter((x): x is string => Boolean(x))));
   const uniqueStores = Array.from(new Set(validDeals.map((d) => d.storeName).filter(Boolean) as string[]));

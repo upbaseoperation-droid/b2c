@@ -240,8 +240,16 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
         });
       }
 
+      const isTrustedCandidate = (c: SocialChannelCandidate) =>
+        (c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH') &&
+        Boolean(
+          c.isVerifiedLive ||
+            c.sourceLabel.toLowerCase().includes('danh bạ') ||
+            c.sourceLabel.toLowerCase().includes('tiểu sử')
+        );
+
       const pickHighOrMediumHandle = (list: SocialChannelCandidate[] = []) =>
-        list.find((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')?.handle || '';
+        list.find(isTrustedCandidate)?.handle || '';
 
       const nextValues: Record<SocialPlatformKey, string> = {
         SHOPEE: target.shopeeChannel || pickHighOrMediumHandle(data.candidatesByPlatform.SHOPEE),
@@ -253,20 +261,16 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
 
       setConfirmedFlags({
         SHOPEE: Boolean(
-          target.shopeeChannel ||
-            data.candidatesByPlatform.SHOPEE.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+          target.shopeeChannel || data.candidatesByPlatform.SHOPEE.some(isTrustedCandidate)
         ),
         FACEBOOK: Boolean(
-          target.facebookChannel ||
-            data.candidatesByPlatform.FACEBOOK.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+          target.facebookChannel || data.candidatesByPlatform.FACEBOOK.some(isTrustedCandidate)
         ),
         INSTAGRAM: Boolean(
-          target.instagramChannel ||
-            data.candidatesByPlatform.INSTAGRAM.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+          target.instagramChannel || data.candidatesByPlatform.INSTAGRAM.some(isTrustedCandidate)
         ),
         THREADS: Boolean(
-          target.threadsChannel ||
-            data.candidatesByPlatform.THREADS.some((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')
+          target.threadsChannel || data.candidatesByPlatform.THREADS.some(isTrustedCandidate)
         ),
       });
     } catch (err: unknown) {

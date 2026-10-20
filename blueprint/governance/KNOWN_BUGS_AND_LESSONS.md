@@ -358,6 +358,52 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Trong `LinkAirDetailModal` (`LinkAirCheckerPanel.tsx`): tự động gọi làm giàu dữ liệu ngầm nếu mở lại bản ghi lịch sử cũ có `hasProductLink === true` mà chưa có `cartProducts`, và hiển thị đầy đủ ảnh sản phẩm, tên sản phẩm, nhãn nút giỏ hàng, danh mục, mã SP/SKU/Shop và link giỏ hàng trực tiếp.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ luồng Nghiệm thu Link Air (`LinkAirCheckerPanel`, `/api/integrations/link-air-check`, `crawler-worker`) và Nghiệm thu Video KOC (`TikTokVideoInspectorModal`, `tiktokVideoInspector.ts`).
 
+---
+
+### BUG-022 — Rà Soát Toàn Diện UI, Logic & UX Phân Hệ Danh Bạ KOC (`KocMasterDataView`, `KocProfile`, `CreateKocModal`, `KocSocialChannelsModal`, `kocUtils`)
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/KocMasterDataView.tsx`, `web-admin/src/components/koc/KocProfile.tsx`, `web-admin/src/components/CreateKocModal.tsx`, `web-admin/src/components/koc/KocSocialChannelsModal.tsx`, `web-admin/src/components/koc/KocChannelReviewModal.tsx`, `web-admin/src/components/koc/kocUtils.ts`, `web-admin/src/lib/staffBrandListingSheet.ts`, `web-admin/src/components/shortlist/StaffBrandListingSheetWorkspace.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Không sửa được CCCD / MST / Tài khoản ngân hàng thủ công trên Hồ sơ KOC (`KocProfile.tsx`):** Khối `LegalPaymentPanel` chỉ cho phép cập nhật qua nút `Đọc ảnh giấy tờ (OCR)` mà không có chế độ sửa trực tiếp (`Sửa pháp lý & TK`), khiến chuyên viên hoặc kế toán không thể tự nhập/sửa `bankName`, `bankAccount`, `cccd`, `taxCode`, `taxAccountType`, `contractDriveUrl`.
+  2. **Mất danh sách video TikTok vừa quét khi chuyển tab hoặc quay lại danh sách (`KocProfile.tsx`):** Trong `TikTokSellerMetricsSection`, khi bấm `Lấy danh sách video` / `Làm mới video`, dữ liệu video chỉ lưu vào biến cục bộ `liveVideos` mà không gọi `onUpdateKoc`, làm mất toàn bộ video vừa tải khi đóng hồ sơ hoặc chuyển tab.
+  3. **Hộp thoại Thêm KOC (`CreateKocModal.tsx`) dùng `div fixed inset-0` tự dựng và giữ nguyên dữ liệu cũ khi mở lại:** Chưa dùng `<Modal>` chuẩn từ `src/components/ui`, không tự reset form khi đóng/mở lại, danh sách chọn PIC/Brand dùng biến cứng 3 lựa chọn thay vì danh sách nhân sự và 42 thương hiệu B2C thực tế, và kiểm tra trùng lặp chưa xét trường `email`.
+  4. **Vi phạm `RULE-UX-01` trong `KocSocialChannelsModal.tsx`:** Hàm `runSearch` tự động điền `candidates[0].handle` vào ô nhập kể cả khi ứng viên đầu tiên chỉ có độ tin cậy `GỢI_Ý`.
+  5. **Phân quyền xem dữ liệu nhạy cảm (`canRevealSensitive` trong `kocUtils.ts`) bỏ sót Kế toán / Pháp chế và PIC ghép dòng:** Chỉ kiểm tra `r === 'ADMIN' || r === 'MANAGER' || r === 'LEADER'` và `k.bookingPic === user.name`, khiến `FINANCE`, `LEGAL`, `SIGN_ADMIN` hoặc chuyên viên có tên trong chuỗi `bookingPic` nhiều dòng / `workedPicsList` không bấm `Hiện số` CCCD/TKNH được.
+  6. **Bảng Danh bạ KOC (`KocMasterDataView.tsx`) ẩn hoàn toàn Email/SĐT ngoài danh sách và còn dùng class `text-[10px]`:** Người dùng phải bấm vào từng hồ sơ mới biết KOC đã có Email/SĐT hay chưa, thiếu chip lọc nhanh `Thiếu Email/SĐT`, và còn sót class `text-[10px]` ở nút đánh giá nhanh.
+- **Cách khắc phục:**
+  1. Bổ sung chế độ **Sửa pháp lý & TK / Nhập CCCD & Tài khoản** trực tiếp ngay trong `LegalPaymentPanel` (`KocProfile.tsx`) cho phép nhập/sửa Họ tên, Công ty, CCCD, MST, Loại hình thuế, Ngân hàng, Số tài khoản, Link thư mục HĐ và đồng bộ 2 chiều sang Sheet Listing (`syncKocContactToStaffSheets` & `syncSheetRowContactToKocMaster`).
+  2. Lưu bền vững `recentVideos`, `bio`, `totalLikes`, `videoCount`, `avgLikes`, `avgComments`, `avgShares`, `engagementRate` và `extractedEmail` vào `koc` qua `onUpdateKoc` ngay khi quét TikTok thành công trong `TikTokSellerMetricsSection`.
+  3. Chuẩn hóa `CreateKocModal.tsx` sang component `<Modal>` chuẩn, tự động reset form mỗi lần mở mới, nạp danh sách chuyên viên B2C và `REAL_B2C_42_BRANDS`, kiểm tra trùng cả `email`.
+  4. Sửa `KocSocialChannelsModal.tsx` (`pickHighOrMediumHandle`) chỉ tự động điền ứng viên có độ tin cậy `CAO` / `TRUNG_BÌNH`.
+  5. Mở rộng `canRevealSensitive` cho `FINANCE`, `LEGAL`, `SIGN_ADMIN` và đối chiếu `bookingPic` tách dòng + `workedPicsList`; mở rộng `findDuplicates` phát hiện trùng `email`.
+  6. Hiển thị trực tiếp dòng `Email · SĐT` (hoặc `Chưa có Email / SĐT`) tại cột `KOC & Liên hệ` trên bảng `KocMasterDataView.tsx`, thêm chip lọc `Thiếu Email/SĐT`, và chuẩn hóa toàn bộ `text-[10px]` thành `text-2xs`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ phân hệ Danh bạ KOC (`koc-master`), Sheet Listing theo Brand (`koc-listing-batch`) và Quản lý Hợp đồng (`contracts`).
+
+---
+
+### BUG-023 — Kiểm Toán & Đồng Bộ Chéo 3 Cụm Phân Hệ: Tìm Kiếm KOC, Sheet Listing & List Duyệt Book, Danh Bạ & Hồ Sơ KOC
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `TikTokCrawlerHubView.tsx`, `KocChannelReviewModal.tsx`, `KocChannelBriefMatcherModal.tsx`, `KocSocialChannelsModal.tsx`, `TikTokKocScraperModal.tsx`, `kocSocialDiscovery.ts`, `tiktokKocScraper.ts`, `StaffBrandListingSheetWorkspace.tsx`, `KocListingBatchHubView.tsx`, `AddToBrandListingSheetModal.tsx`, `KocOutreachEmailModal.tsx`, `StoreShortlistFilterModal.tsx`, `staffBrandListingSheet.ts`, `ApprovedBookingListView.tsx`, `approvedBookingList.ts`, `kocUtils.ts`, `kocHistoryEvaluator.ts`, `KocHistoryEvaluationModal.tsx`, `KocProfile.tsx`, `KocProfileModal.tsx`, `BookingView.tsx`, `CreateKocModal.tsx`, `KocKolHubView.tsx`, `QuickBookModal.tsx`, `web-admin/src/app/api/kocs/route.ts`, `web-admin/src/app/page.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Cụm 1 (Tìm kiếm KOC & Công cụ KOC):**
+     - Nút `Thêm vào Sheet` trên `TikTokCrawlerHubView.tsx` cho KOC chưa lưu danh bạ tạo đối tượng tạm với số liệu giả (`50.000` followers, `1.500.000đ` rate card) thay vì lưu dữ liệu thực tế vừa quét.
+     - `kocSocialDiscovery.ts` tự động đánh dấu `verified: idx === 0` cho ứng viên đầu tiên kể cả khi chưa xác thực thực tế (`RULE-UX-01`).
+     - Gõ vào ô tìm kiếm từ khóa ở tab Đối thủ / Hashtag / Bình luận xóa trắng kết quả đang xem ngay lập tức.
+  2. **Cụm 2 (Sheet Listing, Đợt đề xuất KOC & List Duyệt Book):**
+     - Trong `StaffBrandListingSheetWorkspace.tsx`, sự kiện `onChange` của ô `idKenh` tự tra cứu KOC và ghi đè toàn bộ 48 cột ngay khi đang gõ dở ký tự; đổi `brandChon` sang `Yes` trên Sheet chưa tự động đẩy sang `ApprovedBookingListView.tsx`; nền hover/chọn dòng của các cột `sticky left-*` dùng lớp bán trong suốt làm lộ chữ cuộn bên dưới.
+     - Trong `KocListingBatchHubView.tsx`, duyệt Brand (`handleBrandDecision`) và chốt duyệt (`handleFinalApprove`) chưa đồng bộ ngược về Sheet Brand của nhân sự và `ApprovedBookingList`; hộp thoại cập nhật tiến độ Air dùng `document.getElementById('air-stage-select')` thay vì controlled state.
+     - Trong `approvedBookingList.ts` và `ApprovedBookingListView.tsx`, hàm `autoMapVideoAcceptanceByKocChannel` tự sinh số giả (`22.500` views, `rate * 2.6` GMV, `#SPARK-...`) khi trường nghiệm thu trống (`RULE-DATA-01`); gõ chữ vào ô `linkAir` khi đang bật bộ lọc `Chưa có Link Air` làm dòng biến mất ngay khi gõ ký tự đầu tiên.
+  3. **Cụm 3 (Danh bạ KOC, Hồ sơ KOC, Cổng KOC & Quản lý Booking):**
+     - `kocUtils.ts`, `kocHistoryEvaluator.ts`, `KocProfile.tsx`, `BookingView.tsx` và `KocKolHubView.tsx` còn các giá trị dự phòng giả khi KOC chưa có lịch sử deal (`rate * 3` GMV, `ROI 2.5`, `85.000` views, `SPARK-VERIFIED-30D`, `GHTK-...`, `350.000đ` giá mẫu, địa chỉ mẫu `Số 18 Tam Trinh`, nhân sự mẫu `Khánh Vy`).
+     - `TikTokSellerSyncModal` trong `KocProfile.tsx` chỉ hiển thị tĩnh mà không cho nhập/lưu chỉ số TikTok Seller vào hồ sơ KOC.
+     - Đổi `channelId` của KOC trong `/api/kocs/route.ts` và `page.tsx` để lại bản ghi mồ côi dưới khóa handle cũ.
+     - Sửa thông tin liên hệ KOC từ Sheet Listing / Hộp thoại Email chưa phát sự kiện cập nhật ngay state `kocs` tại `page.tsx`.
+- **Cách khắc phục:**
+  1. **Cụm 1:** Truyền trực tiếp `scrapedKocItem` thực tế vào `renderUnifiedKocActionsCell` và tự động lưu vào CSDL khi bấm `Thêm vào Sheet`; chỉ bật `verified: true` khi có kết quả xác thực thực tế; giữ nguyên kết quả tìm kiếm cũ cho đến khi bấm tìm kiếm mới; đồng bộ màu sắc trạng thái đánh giá kênh (`SUITABLE` / `CAUTION` / `NOT_SUITABLE`).
+  2. **Cụm 2:** Chuyển tra cứu tự động KOC sang `onBlur` (`handleIdKenhBlur`); tự động đồng bộ 2 chiều giữa `StaffBrandListingSheetWorkspace`, `KocListingBatchHubView` và `ApprovedBookingListView`; dùng nền đặc (`bg-sunken`, `bg-accent-soft`) cho toàn bộ ô `sticky left-*`; giữ dòng đang sửa (`editingRowId`) không bị ẩn khỏi bộ lọc cho đến khi `onBlur`; xóa toàn bộ số liệu nghiệm thu giả trong `approvedBookingList.ts`.
+  3. **Cụm 3:** Xóa toàn bộ số liệu giả khi KOC có `0` deal (`kocUtils.ts`, `kocHistoryEvaluator.ts`, `KocProfile.tsx`, `BookingView.tsx`, `KocKolHubView.tsx`); nâng cấp `TikTokSellerSyncModal` cho phép nhập và lưu chỉ số trực tiếp qua `onUpdateKoc`; khử trùng lặp theo `item.id` trong `/api/kocs/route.ts` và `page.tsx` khi đổi handle; lắng nghe sự kiện `upbase:koc-master-contact-synced` tại `page.tsx` để đồng bộ tức thời.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ 3 cụm Tìm kiếm KOC (`tiktok-crawler`), Đợt đề xuất & List duyệt book (`koc-listing`, `approved-booking-list`), Danh bạ KOC & Quản lý Booking (`koc-master`, `koc-hub`, `booking`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

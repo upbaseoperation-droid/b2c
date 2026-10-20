@@ -39,6 +39,7 @@ import {
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import { getVietnamDateTimeShort } from '../../lib/format';
 import { KocProfileModal } from '../KocProfileModal';
+import { calculateKocPerformanceStats } from '../koc/kocUtils';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
@@ -179,6 +180,7 @@ interface BookingViewProps {
   onSelectDealForContract?: (deal: BookingDealItem) => void;
   onUpdateDeal?: (updatedDeal: BookingDealItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
+  onKocUpdated?: (updatedKoc: KocItem, message?: string) => void;
   planItems?: StaffDetailedPlanItem[];
   onAddPlanItem?: (newItem: StaffDetailedPlanItem) => void;
   onUpdatePlanItem?: (item: StaffDetailedPlanItem) => void;
@@ -210,6 +212,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   onSelectDealForContract,
   onUpdateDeal,
   onKocCreated,
+  onKocUpdated,
   planItems: externalPlanItems,
   onAddPlanItem: externalOnAddPlanItem,
   onUpdatePlanItem: externalOnUpdatePlanItem,
@@ -321,8 +324,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
       const exactOrPartial = staffAllocationList.find(a => a.staffName === candidate || a.staffName.includes(candidate));
       if (exactOrPartial) return exactOrPartial.staffName;
     }
-    const kv = staffAllocationList.find(a => a.staffName.includes('Khánh Vy'));
-    return kv?.staffName || staffAllocationList[0]?.staffName || 'Khánh Vy';
+    const defaultStaff = staffAllocationList.find(a => a.staffName.includes('Lê Phương Thảo'));
+    return defaultStaff?.staffName || staffAllocationList[0]?.staffName || 'Lê Phương Thảo';
   };
 
   // Active Booking Staff Context (Cho phép nhân viên chọn danh tính của mình để xem KPI cá nhân)
@@ -2139,18 +2142,29 @@ export const BookingView: React.FC<BookingViewProps> = ({
             ),
           },
           {
-            key: 'rate_history', header: 'Báo giá & Lịch sử hiệu quả', align: 'right', width: 170, render: k => (
-              <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-                <span className="font-semibold text-ink">{formatVnd(k.rateCardVideo)}</span>
-                <span className="text-2xs text-ink-3">GMV: {formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
-                <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
-              </div>
-            ),
+            key: 'rate_history', header: 'Báo giá & Lịch sử hiệu quả', align: 'right', width: 170, render: k => {
+              const perf = calculateKocPerformanceStats(deals, k);
+              return (
+                <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+                  <span className="font-semibold text-ink">{formatVnd(k.rateCardVideo)}</span>
+                  <span className="text-2xs text-ink-3">
+                    GMV: {perf.totalDeals > 0 ? formatVndShort(perf.totalGmv) : '—'}
+                  </span>
+                  <span className={perf.totalDeals === 0 ? 'text-2xs text-ink-3' : perf.overallRoi >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-warning'}>
+                    {perf.totalDeals > 0 ? `ROI ${perf.overallRoi.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}` : 'Chưa có deal'}
+                  </span>
+                </div>
+              );
+            },
           },
           {
             key: 'pic', header: 'Phụ trách', width: 130, render: k => (
               <div className="leading-tight">
-                <Person name={k.bookingPic || 'Khánh Vy'} size={20} />
+                {k.bookingPic ? (
+                  <Person name={k.bookingPic} size={20} />
+                ) : (
+                  <span className="text-xs text-ink-3">Chưa phân bổ</span>
+                )}
                 <div className="text-2xs text-ink-3 mt-0.5">{k.statusKoc || 'Sẵn sàng'}</div>
               </div>
             ),
@@ -2413,7 +2427,33 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       {
                         key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: c =>
                           c.outreachStatus !== 'CONVERTED_TO_BOOKING' && c.outreachStatus !== 'REJECTED' ? (
-                            <Button size="sm" onClick={() => setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: `BO26_${Date.now().toString().slice(-6)}` } : x))}>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                const code = `BO26_${Date.now().toString().slice(-6)}`;
+                                setCandidates(prev =>
+                                  prev.map(x =>
+                                    x.id === c.id
+                                      ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: code }
+                                      : x
+                                  )
+                                );
+                                const matchedKoc = localKocs.find(
+                                  k =>
+                                    k.channelId.toLowerCase().replace('@', '') ===
+                                      c.channelId.toLowerCase().replace('@', '') ||
+                                    k.stageName.toLowerCase() === c.stageName.toLowerCase()
+                                );
+                                if (matchedKoc) {
+                                  onOpenQuickBookWithKoc(matchedKoc);
+                                } else {
+                                  onNotify?.(
+                                    `Đã chốt ứng viên ${c.stageName} (${code})`,
+                                    'success'
+                                  );
+                                }
+                              }}
+                            >
                               Chốt booking
                             </Button>
                           ) : null,
@@ -2963,6 +3003,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
         koc={inspectedKoc}
         deals={deals}
         currentUser={currentUser}
+        selectedBrand={selectedBrand}
+        onNotify={onNotify}
+        onUpdateKoc={(updated, msg) => {
+          setLocalKocs(prev => prev.map(k => (k.id === updated.id ? updated : k)));
+          setInspectedKoc(updated);
+          onKocUpdated?.(updated, msg);
+        }}
         onOpenQuickBook={onOpenQuickBookWithKoc}
       />
 

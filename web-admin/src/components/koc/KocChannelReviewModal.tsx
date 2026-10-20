@@ -182,7 +182,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
   ]);
   const [note, setNote] = useState<string>('');
   const [brandScope, setBrandScope] = useState<string>(
-    resolveInitialBrand(target?.defaultBrandScope)
+    resolveInitialBrand(target?.defaultBrandScope || target?.initialBrandName)
   );
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -194,7 +194,8 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
   >('ALL');
   const [historyBrandFilter, setHistoryBrandFilter] = useState<string>('ALL');
 
-  const syncKey = `${open}-${target?.handle || ''}-${initialMode}-${target?.initialVerdict || ''}-${target?.defaultBrandScope || ''}`;
+  const preferredTargetBrand = target?.defaultBrandScope || target?.initialBrandName || '';
+  const syncKey = `${open}-${target?.handle || ''}-${initialMode}-${target?.initialVerdict || ''}-${preferredTargetBrand}`;
   const [prevSyncKey, setPrevSyncKey] = useState<string>(syncKey);
   if (syncKey !== prevSyncKey) {
     setPrevSyncKey(syncKey);
@@ -203,7 +204,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       const initVerdict = target?.initialVerdict || 'NOT_SUITABLE';
       setChannelHandleInput(clean ? `@${clean}` : '');
       setChannelNameInput(target?.channelName || '');
-      setBrandScope(resolveInitialBrand(target?.defaultBrandScope));
+      setBrandScope(resolveInitialBrand(preferredTargetBrand));
       setVerdict(initVerdict);
       setSelectedReasons([getReasonPresetsByVerdict(initVerdict)[0]]);
       setNote('');

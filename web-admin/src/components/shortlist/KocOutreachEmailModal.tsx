@@ -1630,7 +1630,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 {/* Thanh chèn nhanh biến động vào mẫu */}
                 <div className="p-2.5 rounded-lg bg-sunken/70 border border-line space-y-1.5">
                   <div className="text-2xs font-semibold text-ink-2">
-                    Bấm vào biến bên dưới để chèn tự động vào Nội dung mẫu (Hệ thống tự lấy từ 48 cột Sheet Listing):
+                    Chèn trường dữ liệu vào nội dung:
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {KOC_EMAIL_MERGE_VARIABLES.map((v) => (
@@ -1805,21 +1805,6 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                         }
                       />
                     </Field>
-                  </div>
-
-                  <div className="p-2 rounded bg-surface border border-line text-2xs text-ink-2 space-y-1 leading-relaxed">
-                    <div className="font-semibold text-ink">
-                      Cách lấy Mật khẩu ứng dụng trên Lark Mail (30 giây):
-                    </div>
-                    <div>
-                      1. Mở ứng dụng <strong>Lark</strong> → Vào mục <strong>Mail</strong> → Bấm biểu tượng <strong>Cài đặt (Settings)</strong> góc phải.
-                    </div>
-                    <div>
-                      2. Chọn <strong>Third-party email client login</strong> (Đăng nhập ứng dụng mail bên thứ 3) → Bấm <strong>Generate new password</strong>.
-                    </div>
-                    <div>
-                      3. Dán mã 16 ký tự vào ô trên → Bấm <strong>Lưu cấu hình máy chủ</strong> và <strong>Kiểm tra kết nối</strong>.
-                    </div>
                   </div>
                 </div>
               )}

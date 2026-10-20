@@ -11,8 +11,6 @@ import {
   FileText,
   AlertTriangle,
   Sliders,
-  RotateCcw,
-  Save,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -24,8 +22,6 @@ import type {
 import {
   loadApiWorkspaceConfig,
   getEffectiveConfigForPurpose,
-  updatePurposeSystemInstruction,
-  resetPurposeSystemInstruction,
   recordApiUsageLog,
   calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
@@ -74,7 +70,6 @@ export const KocChannelBriefMatcherModal: React.FC<
     const cfg = loadApiWorkspaceConfig();
     return getEffectiveConfigForPurpose('KOC_MATCHING', cfg).purpose.systemInstruction;
   });
-  const [promptToast, setPromptToast] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -84,14 +79,14 @@ export const KocChannelBriefMatcherModal: React.FC<
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const loggedReportsRef = React.useRef<Set<string>>(new Set());
 
-  const initSyncKey = `${isOpen}:${initialHandles.join(',')}:${initialBrandName}`;
+  const initSyncKey = `${isModalOpen}:${initialHandles.join(',')}:${initialBrandName}`;
   const [prevSyncKey, setPrevSyncKey] = useState<string>(initSyncKey);
   if (initSyncKey !== prevSyncKey) {
     setPrevSyncKey(initSyncKey);
-    if (isOpen && initialHandles.length > 0) {
+    if (isModalOpen && initialHandles.length > 0) {
       setHandlesInput(initialHandles.map((h) => `@${h.replace(/^@+/, '')}`).join(', '));
     }
-    if (isOpen && initialBrandName) {
+    if (isModalOpen && initialBrandName) {
       setBrandName(initialBrandName);
     }
   }
@@ -147,9 +142,9 @@ export const KocChannelBriefMatcherModal: React.FC<
   }, [fetchAllJobs]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isModalOpen) return;
     void fetchAllJobs();
-  }, [isOpen, fetchAllJobs]);
+  }, [isModalOpen, fetchAllJobs]);
 
   const hasRunningJobs = useMemo(
     () => jobs.some((j) => j.status === 'QUEUED' || j.status === 'RUNNING'),
@@ -158,12 +153,12 @@ export const KocChannelBriefMatcherModal: React.FC<
 
   // Tự động cập nhật tiến trình chạy ngầm mỗi 2.5 giây
   useEffect(() => {
-    if (!hasRunningJobs && !isOpen) return;
+    if (!hasRunningJobs && !isModalOpen) return;
     const interval = setInterval(() => {
       void fetchAllJobs();
     }, 2500);
     return () => clearInterval(interval);
-  }, [hasRunningJobs, isOpen, fetchAllJobs]);
+  }, [hasRunningJobs, isModalOpen, fetchAllJobs]);
 
   const activeJob = useMemo(
     () => jobs.find((j) => j.jobId === selectedJobId) || jobs[0] || null,
@@ -207,7 +202,14 @@ export const KocChannelBriefMatcherModal: React.FC<
             videoScanLimit,
             background: true,
             llmConfig: {
-              provider: effective.primaryProvider === 'OPENAI' ? 'OPENAI' : 'GEMINI',
+              provider:
+                effective.primaryProvider === 'OPENAI'
+                  ? 'OPENAI'
+                  : effective.primaryProvider === 'CLAUDE'
+                  ? 'CLAUDE'
+                  : effective.primaryProvider === 'INTERNAL'
+                  ? 'INTERNAL'
+                  : 'GEMINI',
               apiKey: effective.primaryApiKey || undefined,
               model: effective.primaryModel || undefined,
               systemInstruction: customPrompt.trim() || effective.purpose.systemInstruction,
@@ -418,12 +420,6 @@ export const KocChannelBriefMatcherModal: React.FC<
                 {showPromptEditor ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 Cấu hình kết nối API & Câu lệnh (Prompt) đánh giá kênh KOC
               </button>
-              {promptToast && (
-                <span className="text-2xs font-semibold text-success flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  {promptToast}
-                </span>
-              )}
             </div>
 
             {showPromptEditor && (

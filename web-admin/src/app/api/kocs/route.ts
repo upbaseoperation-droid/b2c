@@ -162,7 +162,16 @@ export async function POST(req: NextRequest) {
         for (const item of incoming) {
           const key = normalizeHandleKey(item);
           if (!key) continue;
-          const existing = nextMap[key];
+          let existingById: KocItem | undefined;
+          if (item.id) {
+            for (const [k, v] of Object.entries(nextMap)) {
+              if (v?.id === item.id && k !== key) {
+                existingById = v;
+                delete nextMap[k];
+              }
+            }
+          }
+          const existing = nextMap[key] || existingById;
           nextMap[key] = existing ? { ...existing, ...item } : item;
         }
         return {

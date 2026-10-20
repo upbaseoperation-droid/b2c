@@ -98,7 +98,7 @@ export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
   { index: 4, excelCol: 'E', key: 'nhanSuDien', header: 'nhan_su_dien', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 145 },
   { index: 5, excelCol: 'F', key: 'store', header: 'Store', group: 'Listing điền', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 165 },
   { index: 6, excelCol: 'G', key: 'contentTag', header: 'Content tag', group: 'Listing điền', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 165 },
-  { index: 7, excelCol: 'H', key: 'idKenh', header: '🎃id kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
+  { index: 7, excelCol: 'H', key: 'idKenh', header: '🎃id kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
   { index: 8, excelCol: 'I', key: 'linkKenh', header: '🎃Link kênh', group: 'Kênh KOC', fillMode: 'FORMULA', inLarkBase: true, inBrandWorkingFile: true, width: 220 },
   { index: 9, excelCol: 'J', key: 'tepKenh', header: '🎃 Tệp kênh', group: 'Kênh KOC', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 150 },
   { index: 10, excelCol: 'K', key: 'sanPham', header: 'Sản phẩm', group: 'Đề xuất & Báo giá', fillMode: 'MANUAL_STAFF', inLarkBase: true, inBrandWorkingFile: true, width: 185 },
@@ -131,7 +131,7 @@ export const STAFF_LISTING_COLUMNS: StaffListingColumnMeta[] = [
   { index: 37, excelCol: 'AL', key: 'tuoiOtherPct', header: 'Other', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 85 },
   { index: 38, excelCol: 'AM', key: 'location', header: 'Location', group: 'Độ tuổi người theo dõi', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: true, width: 120 },
   { index: 39, excelCol: 'AN', key: 'ngayAirPlan', header: 'Ngày air plan', group: 'Lịch Air & Hậu cần', fillMode: 'MANUAL_STAFF', inLarkBase: false, inBrandWorkingFile: false, width: 125 },
-  { index: 40, excelCol: 'AO', key: 'email', header: 'Email', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 170 },
+  { index: 40, excelCol: 'AO', key: 'email', header: 'Email', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 220 },
   { index: 41, excelCol: 'AP', key: 'zalo', header: 'Zalo', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 120 },
   { index: 42, excelCol: 'AQ', key: 'nguoiNhanHang', header: 'Người nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 150 },
   { index: 43, excelCol: 'AR', key: 'sdtNhanHang', header: 'SĐT nhận hàng', group: 'Thông tin liên hệ & Thanh toán', fillMode: 'AUTO_SYSTEM', inLarkBase: true, inBrandWorkingFile: false, width: 125 },
@@ -448,7 +448,10 @@ export function buildStaffListingRowFromKoc(params: {
 /**
  * Tự động tính toán lại các cột công thức khi nhân viên sửa dòng
  */
-export function recalculateStaffListingRow(row: StaffListingSheetRow): StaffListingSheetRow {
+export function recalculateStaffListingRow(
+  row: StaffListingSheetRow,
+  options?: { preserveIdKenhInput?: boolean }
+): StaffListingSheetRow {
   const cleanId = normalizeTikTokId(row.idKenh);
   const linkKenh = cleanId ? buildTikTokChannelUrl(cleanId) : row.linkKenh;
   const netFee = Math.max(0, Number(row.giaNetVideo) || 0);
@@ -469,7 +472,7 @@ export function recalculateStaffListingRow(row: StaffListingSheetRow): StaffList
 
   return {
     ...row,
-    idKenh: cleanId,
+    idKenh: options?.preserveIdKenhInput ? row.idKenh : cleanId,
     linkKenh,
     giaNetVideo: netFee,
     tepBooking,
@@ -717,6 +720,13 @@ export function syncSheetRowContactToKocMaster(params: {
   idKenh?: string;
   email?: string;
   zalo?: string;
+  phone?: string;
+  shippingRecipientName?: string;
+  shippingPhone?: string;
+  shippingAddress?: string;
+  bankName?: string;
+  bankAccount?: string;
+  cccd?: string;
   allKocs?: KocItem[];
 }): void {
   if (typeof window === 'undefined') return;
@@ -747,6 +757,19 @@ export function syncSheetRowContactToKocMaster(params: {
       ...baseKoc,
       ...(params.email !== undefined ? { email: params.email.trim() } : {}),
       ...(params.zalo !== undefined ? { zalo: params.zalo.trim() } : {}),
+      ...(params.phone !== undefined ? { phone: params.phone.trim() } : {}),
+      ...(params.shippingRecipientName !== undefined
+        ? { shippingRecipientName: params.shippingRecipientName.trim() }
+        : {}),
+      ...(params.shippingPhone !== undefined
+        ? { shippingPhone: params.shippingPhone.trim() }
+        : {}),
+      ...(params.shippingAddress !== undefined
+        ? { shippingAddress: params.shippingAddress.trim() }
+        : {}),
+      ...(params.bankName !== undefined ? { bankName: params.bankName.trim() } : {}),
+      ...(params.bankAccount !== undefined ? { bankAccount: params.bankAccount.trim() } : {}),
+      ...(params.cccd !== undefined ? { cccd: params.cccd.trim() } : {}),
     };
 
     const targetKey =

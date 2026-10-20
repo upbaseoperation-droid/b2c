@@ -248,13 +248,30 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     );
   };
 
-  const applyColumnPreset = (preset: 'ALL_48' | 'BRAND_WORKING_FILE' | 'LARK_BASE') => {
+  const applyColumnPreset = (
+    preset: 'ALL_48' | 'BRAND_WORKING_FILE' | 'LARK_BASE' | 'ACCEPTANCE_FILE_32'
+  ) => {
     if (preset === 'ALL_48') {
       setVisibleColumnKeys(STAFF_LISTING_COLUMNS.map((c) => c.key));
     } else if (preset === 'BRAND_WORKING_FILE') {
       setVisibleColumnKeys(
         STAFF_LISTING_COLUMNS.filter((c) => c.inBrandWorkingFile).map((c) => c.key)
       );
+    } else if (preset === 'ACCEPTANCE_FILE_32') {
+      const coreKeys: StaffListingColumnKey[] = [
+        'thang',
+        'dot',
+        'store',
+        'idKenh',
+        'tenKenh',
+        'sanPham',
+        'giaNetVideo',
+        'brandChon',
+      ];
+      const acceptanceKeys = STAFF_LISTING_COLUMNS.filter(
+        (c) => c.group === 'Chốt Book & Nghiệm thu (File 3.2)'
+      ).map((c) => c.key);
+      setVisibleColumnKeys([...coreKeys, ...acceptanceKeys]);
     } else {
       setVisibleColumnKeys(
         STAFF_LISTING_COLUMNS.filter((c) => c.inLarkBase).map((c) => c.key)
@@ -419,51 +436,99 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     key: StaffListingColumnKey,
     value: string | number
   ) => {
-    if (key === 'email' || key === 'zalo') {
+    const contactKeys: StaffListingColumnKey[] = [
+      'email',
+      'zalo',
+      'nguoiNhanHang',
+      'sdtNhanHang',
+      'diaChiNhanHang',
+      'soTaiKhoan',
+      'nganHang',
+      'soCccd',
+    ];
+    if (contactKeys.includes(key)) {
       const targetRow = rows.find((r) => r.id === rowId);
       if (targetRow) {
+        const strVal = String(value);
         syncSheetRowContactToKocMaster({
           kocId: targetRow.kocId,
           idKenh: targetRow.idKenh,
-          ...(key === 'email' ? { email: String(value) } : {}),
-          ...(key === 'zalo' ? { zalo: String(value) } : {}),
+          ...(key === 'email' ? { email: strVal } : {}),
+          ...(key === 'zalo' ? { zalo: strVal, phone: strVal } : {}),
+          ...(key === 'nguoiNhanHang' ? { shippingRecipientName: strVal } : {}),
+          ...(key === 'sdtNhanHang' ? { shippingPhone: strVal } : {}),
+          ...(key === 'diaChiNhanHang' ? { shippingAddress: strVal } : {}),
+          ...(key === 'soTaiKhoan' ? { bankAccount: strVal } : {}),
+          ...(key === 'nganHang' ? { bankName: strVal } : {}),
+          ...(key === 'soCccd' ? { cccd: strVal } : {}),
           allKocs: kocs,
         });
       }
     }
+
+    let approvedRowToSync: StaffListingSheetRow | null = null;
+
     updateActiveSheetRows((prev) =>
       prev.map((r) => {
         if (r.id !== rowId) return r;
-        const updated = { ...r, [key]: value };
-        // Nếu người dùng nhập ID kênh khớp với 1 KOC trong Danh bạ, tự động điền các trường hệ thống
-        if (key === 'idKenh') {
-          const clean = normalizeTikTokId(String(value)).toLowerCase();
-          const matchedKoc = kocs.find(
-            (k) => normalizeTikTokId(k.channelId).toLowerCase() === clean
-          );
-          if (matchedKoc) {
-            const autoRow = buildStaffListingRowFromKoc({
-              koc: matchedKoc,
-              monthKey: activeMonth,
-              storeName: activeStoreName,
-              staffName: currentUserName,
-              deals,
-              dot: r.dot,
-              sanPham: r.sanPham,
-              contentTag: r.contentTag,
-              deXuatUpBase: r.deXuatUpBase,
-              trangThai: r.trangThai,
-              contentNote: r.contentNote,
-              ngayAirPlan: r.ngayAirPlan,
-            });
-            return {
-              ...autoRow,
-              id: r.id,
-              createdAt: r.createdAt,
-            };
-          }
+        const updated = recalculateStaffListingRow(
+          { ...r, [key]: value },
+          { preserveIdKenhInput: key === 'idKenh' }
+        );
+        if (key === 'brandChon' && String(value) === 'Yes') {
+          approvedRowToSync = updated;
         }
-        return recalculateStaffListingRow(updated);
+        return updated;
+      })
+    );
+
+    if (approvedRowToSync) {
+      const rowForTransfer = approvedRowToSync as StaffListingSheetRow;
+      setTimeout(() => {
+        transferBrandApprovedRowsToBookingList({
+          rowsToTransfer: [rowForTransfer],
+          sheetKey: activeSheetKey,
+          store: activeStoreObj,
+          allKocs: kocs,
+          allStores: stores,
+          allDeals: deals,
+        });
+        setCollection(loadStaffSheetCollection(kocs, stores, deals, currentUserName));
+      }, 0);
+    }
+  };
+
+  // Chuẩn hóa ID kênh và tự động điền thông tin từ Danh bạ KOC khi rời ô nhập
+  const handleIdKenhBlur = (rowId: string) => {
+    updateActiveSheetRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== rowId) return r;
+        const clean = normalizeTikTokId(String(r.idKenh || '')).toLowerCase();
+        const matchedKoc = clean
+          ? kocs.find((k) => normalizeTikTokId(k.channelId).toLowerCase() === clean)
+          : undefined;
+        if (matchedKoc && (!r.kocId || r.kocId !== matchedKoc.id)) {
+          const autoRow = buildStaffListingRowFromKoc({
+            koc: matchedKoc,
+            monthKey: activeMonth,
+            storeName: activeStoreName,
+            staffName: currentUserName,
+            deals,
+            dot: r.dot,
+            sanPham: r.sanPham,
+            contentTag: r.contentTag,
+            deXuatUpBase: r.deXuatUpBase,
+            trangThai: r.trangThai,
+            contentNote: r.contentNote,
+            ngayAirPlan: r.ngayAirPlan,
+          });
+          return {
+            ...autoRow,
+            id: r.id,
+            createdAt: r.createdAt,
+          };
+        }
+        return recalculateStaffListingRow(r);
       })
     );
   };
@@ -650,32 +715,43 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       return;
     }
 
-    const mappedItems: Partial<KocListingItem>[] = targetRows.map((r) => ({
-      kocId: r.kocId || `koc-${r.idKenh}`,
-      kocName: r.tenKenh || r.idKenh,
-      kocHandle: `@${normalizeTikTokId(r.idKenh)}`,
-      channel: 'TikTok Shop',
-      followersCount: Number(r.follower) || 0,
-      salaryGrade: (r.tepBooking === 'Freecast' ? 'TAP UpAffiliate' : r.tepBooking) as SalaryGrade,
-      pillarName: r.sanPham || r.contentTag || 'Sản phẩm chiến dịch',
-      videoFormat: r.contentTag || 'Review trực tiếp',
-      proposedFee: Number(r.giaNetVideo) || 0,
-      finalFee: Number(r.giaNetVideo) || 0,
-      expectedAirDate: r.ngayAirPlan || '2026-10-25',
-      brandStatus:
+    const mappedItems: Partial<KocListingItem>[] = targetRows.map((r) => {
+      const brandApprovalStatus: KocListingItem['brandApprovalStatus'] =
         r.brandChon === 'Yes'
-          ? 'APPROVED'
+          ? 'BRAND_APPROVED'
           : r.brandChon === 'No'
-            ? 'REJECTED'
-            : 'SENT_TO_BRAND',
-      brandFeedback: r.lyDoTuChoi || r.contentNote || '',
-      kocStatus:
+            ? 'BRAND_REJECTED'
+            : 'BRAND_PENDING';
+      const kocNegotiationStatus: KocListingItem['kocNegotiationStatus'] =
         r.trangThai === 'Nhận sản phẩm' || r.trangThai === 'Trải nghiệm sản phẩm'
-          ? 'ACCEPTED'
+          ? 'TERMS_AGREED'
           : r.trangThai === 'Từ chối'
-            ? 'DECLINED'
-            : 'CONTACTING',
-    }));
+            ? 'NEGOTIATION_FAILED'
+            : 'CONTACTING';
+      const overallStatus: KocListingItem['overallStatus'] =
+        brandApprovalStatus === 'BRAND_APPROVED' && kocNegotiationStatus === 'TERMS_AGREED'
+          ? 'FINAL_APPROVED'
+          : brandApprovalStatus === 'BRAND_REJECTED' || kocNegotiationStatus === 'NEGOTIATION_FAILED'
+            ? 'DROPPED'
+            : 'SUBMITTED';
+      return {
+        kocId: r.kocId || `koc-${r.idKenh}`,
+        kocName: r.tenKenh || r.idKenh,
+        kocHandle: `@${normalizeTikTokId(r.idKenh)}`,
+        channel: 'TikTok Shop',
+        salaryGrade: (r.tepBooking === 'Freecast' ? 'TAP UpAffiliate' : r.tepBooking) as SalaryGrade,
+        followersCount: Number(r.follower) || 0,
+        pillarName: r.sanPham || r.contentTag || 'Sản phẩm chiến dịch',
+        proposedFee: Number(r.giaNetVideo) || 0,
+        finalFee: Number(r.giaNetVideo) || 0,
+        expectedAirDate: r.ngayAirPlan || '2026-10-25',
+        brandApprovalStatus,
+        brandFeedbackNote: r.lyDoTuChoi || r.contentNote || '',
+        kocNegotiationStatus,
+        negotiationNote: r.trangThai,
+        overallStatus,
+      };
+    });
 
     onSyncRowsToSystemListings(mappedItems, activeStoreObj, 'BATCH_10');
   };
@@ -1162,6 +1238,13 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 <Button
                   variant="secondary"
                   size="sm"
+                  onClick={() => applyColumnPreset('ACCEPTANCE_FILE_32')}
+                >
+                  Chốt Book &amp; Nghiệm thu (AX–BJ)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => applyColumnPreset('LARK_BASE')}
                 >
                   Lark Base (46 cột)
@@ -1234,7 +1317,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                   return (
                     <th
                       key={col.key}
-                      style={{ minWidth: col.width }}
+                      style={
+                        isStickyId
+                          ? { width: col.width, minWidth: col.width, maxWidth: col.width }
+                          : { minWidth: col.width }
+                      }
                       title={`Cột ${col.excelCol}: ${col.header}`}
                       className={`px-2 py-1.5 border-r border-line text-left align-top ${
                         isStickyId
@@ -1297,14 +1384,19 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               ) : (
                 displayedRows.map((row, rIdx) => {
                   const isSelected = selectedRowIds.includes(row.id);
+                  const stickyCellBg = isSelected
+                    ? 'bg-accent-soft'
+                    : 'bg-surface group-hover:bg-sunken';
                   return (
                     <tr
                       key={row.id}
-                      className={`${
+                      className={`group ${
                         isSelected ? 'bg-accent-soft/30' : 'hover:bg-sunken/50'
                       } transition-colors`}
                     >
-                      <td className="sticky left-0 z-10 bg-surface px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center">
+                      <td
+                        className={`sticky left-0 z-10 ${stickyCellBg} px-2 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center`}
+                      >
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1312,7 +1404,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           className="rounded border-line"
                         />
                       </td>
-                      <td className="sticky left-[38px] z-10 bg-surface px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3 tabular-nums">
+                      <td
+                        className={`sticky left-[38px] z-10 ${stickyCellBg} px-1.5 py-1.5 border-r border-line w-[38px] min-w-[38px] max-w-[38px] text-center font-mono text-2xs text-ink-3 tabular-nums`}
+                      >
                         {rIdx + 1}
                       </td>
 
@@ -1320,7 +1414,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         const isStickyId = col.key === 'idKenh';
                         const cellBaseClass = `px-2 py-1.5 border-r border-line align-middle ${
                           isStickyId
-                            ? 'sticky left-[76px] z-10 bg-surface shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]'
+                            ? `sticky left-[76px] z-10 ${stickyCellBg} shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]`
                             : ''
                         }`;
 
@@ -1508,6 +1602,45 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           );
                         }
 
+                        if (col.key === 'trangThaiSlaAir') {
+                          const slaVal = row.trangThaiSlaAir || 'Chưa lên sóng';
+                          return (
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                              <span
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${
+                                  slaVal.startsWith('Trễ')
+                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                    : slaVal === 'Đúng hạn' || slaVal.startsWith('Sớm')
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-surface text-ink-3 border-line'
+                                }`}
+                              >
+                                {slaVal}
+                              </span>
+                            </td>
+                          );
+                        }
+
+                        if (col.key === 'trangThaiThanhToan') {
+                          const payVal = row.trangThaiThanhToan || 'Chờ nghiệm thu';
+                          return (
+                            <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
+                              <span
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${
+                                  payVal === 'Đã thanh toán'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : payVal === 'Đủ điều kiện ĐNTT' ||
+                                      payVal === 'Đã lập ĐNTT'
+                                    ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                    : 'bg-surface text-ink-3 border-line'
+                                }`}
+                              >
+                                {payVal}
+                              </span>
+                            </td>
+                          );
+                        }
+
                         if (
                           col.key === 'giaChotCuoi' ||
                           col.key === 'viewsNghiemThu' ||
@@ -1649,7 +1782,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           const cleanH = normalizeTikTokId(row.idKenh).toLowerCase();
                           const isSent = cleanH && sentEmailHandleSet.has(cleanH);
                           return (
-                            <td key={col.key} className={cellBaseClass}>
+                            <td
+                              key={col.key}
+                              style={{ width: col.width, minWidth: col.width, maxWidth: col.width }}
+                              className={cellBaseClass}
+                            >
                               <div className="flex items-center gap-1">
                                 <input
                                   type="text"
@@ -1657,8 +1794,9 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   onChange={(e) =>
                                     handleCellChange(row.id, 'idKenh', e.target.value)
                                   }
+                                  onBlur={() => handleIdKenhBlur(row.id)}
                                   placeholder={col.header}
-                                  className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink font-semibold focus:outline-none focus:border-ink"
+                                  className="w-full min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink font-semibold focus:outline-none focus:border-ink"
                                 />
                                 <button
                                   type="button"

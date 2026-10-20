@@ -590,7 +590,15 @@ export default function App() {
         const map: Record<string, KocItem> = raw ? JSON.parse(raw) : {};
         for (const item of customItems) {
           const key = (item.channelId || item.id || '').trim().toLowerCase().replace(/^@+/, '') || item.id;
-          if (key) map[key] = item;
+          if (!key) continue;
+          if (item.id) {
+            for (const [k, v] of Object.entries(map)) {
+              if (v?.id === item.id && k !== key) {
+                delete map[k];
+              }
+            }
+          }
+          map[key] = item;
         }
         localStorage.setItem('upbase_saved_kocs_v1', JSON.stringify(map));
       }
@@ -663,10 +671,43 @@ export default function App() {
         }
       })
       .catch(() => undefined);
+
+    const handleMasterContactSynced = (evt: Event) => {
+      try {
+        const customEvt = evt as CustomEvent<{
+          handleKey?: string;
+          email?: string;
+          phone?: string;
+          shippingRecipientName?: string;
+          shippingPhone?: string;
+          shippingAddress?: string;
+          bankName?: string;
+          bankAccount?: string;
+          cccd?: string;
+        }>;
+        const raw = localStorage.getItem('upbase_saved_kocs_v1');
+        if (raw) {
+          const savedMap = JSON.parse(raw) as Record<string, KocItem>;
+          const handleKey = customEvt.detail?.handleKey;
+          if (handleKey && savedMap[handleKey]) {
+            void persistKocsToDatabase({ updated: [savedMap[handleKey]] });
+            return;
+          }
+          const items = Object.values(savedMap || {});
+          if (items.length > 0) {
+            syncCustomKocsIntoState(items);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener('upbase:koc-master-contact-synced', handleMasterContactSynced);
     return () => {
       cancelled = true;
+      window.removeEventListener('upbase:koc-master-contact-synced', handleMasterContactSynced);
     };
-  }, [syncCustomKocsIntoState]);
+  }, [syncCustomKocsIntoState, persistKocsToDatabase]);
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
   const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
@@ -1733,6 +1774,7 @@ export default function App() {
               onSelectDealForContract={openContractForDeal}
               onUpdateDeal={handleUpdateDeal}
               onKocCreated={handleKocCreated}
+              onKocUpdated={handleKocUpdated}
               planItems={detailedPlans}
               onAddPlanItem={handleAddPlanItem}
               onUpdatePlanItem={handleUpdatePlanItem}
@@ -1980,7 +2022,10 @@ export default function App() {
               kocs={kocs}
               deals={scopedDeals}
               onNotify={showToast}
-              onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
+              onUpdateKocsWithAdsData={(updated) => {
+                setKocs(updated);
+                void persistKocsToDatabase({ updated });
+              }}
               onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
             />
           </KeepAliveTab>
@@ -2109,6 +2154,7 @@ export default function App() {
           setPreselectedBrand(null);
         }}
         onDealCreated={handleDealCreated}
+        kocs={kocs}
         preselectedKoc={preselectedKoc}
         preselectedBrand={preselectedBrand}
       />

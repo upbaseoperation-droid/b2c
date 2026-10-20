@@ -1513,7 +1513,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const handleSaveSingleKoc = (item: TikTokScrapedKocResult) => {
     const clean = item.handle.toLowerCase().replace(/^@+/, '');
     const matched = existingByHandle.get(clean);
-    const mapped = mapScrapedResultToKocItem(item, matched);
+    const mapped = mapScrapedResultToKocItem(item, matched, {
+      bookingPic: currentUser?.name,
+    });
     if (matched) {
       onSaveScrapedKocs({ created: [], updated: [mapped] });
     } else {
@@ -1529,7 +1531,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     for (const item of items) {
       const clean = item.handle.toLowerCase().replace(/^@+/, '');
       const matched = existingByHandle.get(clean);
-      const mapped = mapScrapedResultToKocItem(item, matched);
+      const mapped = mapScrapedResultToKocItem(item, matched, {
+        bookingPic: currentUser?.name,
+      });
       if (matched) {
         updated.push(mapped);
       } else {
@@ -1589,6 +1593,27 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               ? 2_000_000
               : 1_000_000;
 
+    const categoryMapping: {
+      tepKenh: KocItem['tepKenh'];
+      kocCategory: KocItem['kocCategory'];
+    } = (() => {
+      switch (c.categoryKey) {
+        case 'MOM_BABY':
+          return { tepKenh: 'Mẹ bé (bé)', kocCategory: 'Mom and baby' };
+        case 'MEN_CARE':
+          return { tepKenh: 'Review Nam', kocCategory: 'Personal care' };
+        case 'FASHION_LIFESTYLE':
+          return { tepKenh: 'Thời trang (review)', kocCategory: 'Fashion' };
+        case 'HEALTH_WELLNESS':
+          return { tepKenh: 'Health', kocCategory: 'Lifestyle' };
+        case 'MAKEUP':
+        case 'SKINCARE':
+        case 'BODY_HAIR':
+        default:
+          return { tepKenh: 'Beauty', kocCategory: 'Personal care' };
+      }
+    })();
+
     if (existing) {
       return {
         ...existing,
@@ -1598,7 +1623,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         avatarUrl: c.avatarUrl || existing.avatarUrl,
         bio: c.bio || existing.bio,
         phone: existing.phone || c.extractedPhone || '',
+        zalo: existing.zalo || c.extractedPhone || existing.phone || '',
         email: existing.email || c.extractedEmail,
+        bookingPic: existing.bookingPic || currentUser?.name,
         followers: c.followers || existing.followers,
         totalLikes: c.totalLikes || existing.totalLikes,
         videoCount: c.videoCount || existing.videoCount,
@@ -1619,14 +1646,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       tierLabel,
       salaryGrade,
       segment: getSegmentFromSalaryGrade(salaryGrade),
-      tepKenh: 'Beauty',
-      creatorCategory: 'Beauty',
-      kocCategory: 'Personal care',
+      tepKenh: categoryMapping.tepKenh,
+      creatorCategory: categoryMapping.tepKenh,
+      kocCategory: categoryMapping.kocCategory,
       niche: c.categoryLabel || 'KOC Xu hướng',
       followers: c.followers,
       avgViews: c.latestVideoViews || Math.round(c.followers * 0.25),
       rateCardVideo,
       bookingFormat: 'Booking Video KOC',
+      bookingPic: currentUser?.name,
       platforms: ['TIKTOK'],
       tiktokChannel: c.channelUrl,
       phone: c.extractedPhone || '',
@@ -1863,7 +1891,13 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   sourceScreen: tabShortLabel[activeTab] || 'Crawler KOC',
                 });
               }}
-              className="text-left text-[11px] text-critical hover:underline grid gap-0.5 cursor-pointer"
+              className={`text-left text-[11px] hover:underline grid gap-0.5 cursor-pointer ${
+                reviewSummary.latestReview.verdict === 'NOT_SUITABLE'
+                  ? 'text-critical'
+                  : reviewSummary.latestReview.verdict === 'SUITABLE'
+                    ? 'text-positive'
+                    : 'text-warning'
+              }`}
               title={`Ý kiến: ${reviewSummary.latestReview.note || reviewSummary.latestReview.reasonTags.join(', ')}`}
             >
               <span className="truncate font-medium">
@@ -2115,6 +2149,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     channelUrl: string;
     isExisting: boolean;
     onSave: () => void;
+    scrapedKocItem?: KocItem;
     videoUrl?: string;
     scriptContext?: ScriptExtractFallbackContext;
   }) => {
@@ -2124,6 +2159,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       const matched = existingByHandle.get(clean);
       if (matched) {
         setSheetTargetKocs([matched]);
+      } else if (params.scrapedKocItem) {
+        onSaveScrapedKocs({ created: [params.scrapedKocItem], updated: [] });
+        setSheetTargetKocs([params.scrapedKocItem]);
       } else {
         setSheetTargetKocs([
           {
@@ -2131,8 +2169,8 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             channelId: clean,
             channelLink: params.channelUrl,
             avatarUrl: params.avatarUrl,
-            rateCardVideo: 1500000,
-            followers: 50000,
+            rateCardVideo: 0,
+            followers: 0,
             tepKenh: 'Beauty',
           },
         ]);
@@ -2375,6 +2413,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           channelUrl: r.channelProfile.channelUrl,
           isExisting: Boolean(matchedKoc),
           onSave: () => handleSaveSingleKoc(r),
+          scrapedKocItem: mapScrapedResultToKocItem(r, matchedKoc, {
+            bookingPic: currentUser?.name,
+          }),
           videoUrl: c.latestCollabVideoUrl,
           scriptContext: {
             handle: r.handle,
@@ -2488,6 +2529,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           channelUrl: r.channelProfile.channelUrl,
           isExisting: Boolean(matchedKoc),
           onSave: () => handleSaveSingleKoc(r),
+          scrapedKocItem: mapScrapedResultToKocItem(r, matchedKoc, {
+            bookingPic: currentUser?.name,
+          }),
           videoUrl: v.videoUrl,
           scriptContext: {
             handle: r.handle,
@@ -2660,6 +2704,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           channelUrl: c.channelUrl,
           isExisting: Boolean(matchedKoc),
           onSave: () => handleSaveSingleTrendingKoc(c),
+          scrapedKocItem: mapTrendingItemToKoc(c, matchedKoc),
           videoUrl: c.latestVideoUrl,
           scriptContext: {
             handle: c.handle,
@@ -3395,7 +3440,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           label="Tiện ích crawler"
           items={[
             {
-              label: 'Lịch sử đánh giá KOC (Không phù hợp)',
+              label: 'Lịch sử đánh giá kênh KOC',
               icon: History,
               onSelect: () => openChannelReviewModal(null, 'ALL_HISTORY'),
             },
@@ -3489,11 +3534,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   const val = e.target.value;
                   setCompetitorInput(val);
                   if (compError) setCompError(null);
-                  if (!val.trim() || compResults.length > 0 || compProfile) {
-                    setCompResults([]);
-                    setCompProfile(null);
-                    setCompRequestedCount(null);
-                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !compLoading) {
@@ -3891,10 +3931,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   const val = e.target.value;
                   setHashtagInput(val);
                   if (tagError) setTagError(null);
-                  if (!val.trim() || tagResults.length > 0) {
-                    setTagResults([]);
-                    setTagRequestedCount(null);
-                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !tagLoading) {
@@ -4264,10 +4300,6 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   const val = e.target.value;
                   setVideoCommentUrl(val);
                   if (commentError) setCommentError(null);
-                  if (!val.trim() || commentData) {
-                    setCommentData(null);
-                    setCommentRequestedCount(null);
-                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !commentLoading) {
@@ -4915,6 +4947,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       <TikTokVideoInspectorModal
         isOpen={videoInspectorOpen}
         onClose={() => setVideoInspectorOpen(false)}
+        deals={deals}
       />
 
       <CompetitorVideoScriptModal
@@ -4931,6 +4964,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         initialHandles={briefMatcherHandles}
         initialBrandName={briefMatcherBrand}
         onJobsChange={handleBriefJobsChange}
+        onNotify={onNotify}
       />
 
       <KocChannelReviewModal

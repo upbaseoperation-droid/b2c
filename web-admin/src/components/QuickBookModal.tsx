@@ -30,6 +30,7 @@ interface QuickBookModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDealCreated: (deal: BookingDealItem) => void;
+  kocs?: KocItem[];
   preselectedKoc?: KocItem | null;
   preselectedBrand?: string | null;
 }
@@ -38,12 +39,15 @@ const SALARY_GRADES: SalaryGrade[] = ['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 
 const MEDIA_CHANNELS: MediaChannelPlatform[] = ['TikTok', 'Facebook', 'Instagram', 'Shopee Video', 'YouTube', 'Threads'];
 const AFFILIATE_CHANNELS: AffiliateChannelPlatform[] = ['TikTok Shop', 'Shopee', 'Lazada', 'Không gắn giỏ'];
 const CHANNEL_PICS = [
-  'Khánh Vy',
   'Lê Phương Thảo',
   'Phạm Thị Thu Hằng',
   'Lương Thị Như Quỳnh',
   'Hoàng Hải Long',
-  'Trần Minh Đức',
+  'Lê Thanh Hải',
+  'Trần Hải Phượng',
+  'Phan Diệu Ánh',
+  'Vũ Hoài Lâm',
+  'Nguyễn Thị Mai Anh',
 ];
 
 function createDealIdentifiers(stageName: string) {
@@ -113,18 +117,20 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   isOpen,
   onClose,
   onDealCreated,
+  kocs,
   preselectedKoc,
   preselectedBrand,
 }) => {
   const { profiles } = useBrandProfiles();
+  const kocsSource = kocs && kocs.length > 0 ? kocs : INITIAL_KOCS;
 
-  const [selectedKocId, setSelectedKocId] = useState<string>(preselectedKoc?.id || INITIAL_KOCS[0].id);
+  const [selectedKocId, setSelectedKocId] = useState<string>(preselectedKoc?.id || kocsSource[0].id);
   const [campaign, setCampaign] = useState<string>('CAMP-1010');
   const [brandName, setBrandName] = useState<string>(preselectedBrand || 'Kutieskin');
   const [productName, setProductName] = useState<string>('Kem bôi dịu da & Nước tắm thảo dược');
   const [bookingBatch, setBookingBatch] = useState<string>('Đợt 1');
-  const [salaryGrade, setSalaryGrade] = useState<SalaryGrade>(preselectedKoc?.salaryGrade || INITIAL_KOCS[0].salaryGrade || 'KL4');
-  const [rate, setRate] = useState<number>(preselectedKoc?.rateCardVideo || INITIAL_KOCS[0].rateCardVideo || 5000000);
+  const [salaryGrade, setSalaryGrade] = useState<SalaryGrade>(preselectedKoc?.salaryGrade || kocsSource[0].salaryGrade || 'KL4');
+  const [rate, setRate] = useState<number>(preselectedKoc?.rateCardVideo || kocsSource[0].rateCardVideo || 5000000);
   const [deadline, setDeadline] = useState<string>('2026-10-20');
   const [advanceType, setAdvanceType] = useState<'FIXED_2M' | 'PERCENT_20'>('FIXED_2M');
   const [overCeilingReason, setOverCeilingReason] = useState<string>('');
@@ -135,13 +141,13 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   const [sourceDealCode, setSourceDealCode] = useState<string>('BO260611204');
   const [pricingDisplayMode, setPricingDisplayMode] = useState<KocPricingDisplayMode>('ITEMIZED_SOW');
   const [deliverables, setDeliverables] = useState<DealDeliverableItem[]>(() =>
-    buildDefaultDeliverables(preselectedKoc?.rateCardVideo || INITIAL_KOCS[0].rateCardVideo || 5000000, 'Khánh Vy'),
+    buildDefaultDeliverables(preselectedKoc?.rateCardVideo || kocsSource[0].rateCardVideo || 5000000, 'Lê Phương Thảo'),
   );
 
   // Đồng bộ khi mở modal với KOC hoặc Brand chọn sẵn
   useEffect(() => {
     if (!isOpen) return;
-    const initKoc = preselectedKoc || INITIAL_KOCS.find(k => k.id === selectedKocId) || INITIAL_KOCS[0];
+    const initKoc = preselectedKoc || kocsSource.find(k => k.id === selectedKocId) || kocsSource[0];
     if (preselectedKoc) {
       setSelectedKocId(preselectedKoc.id);
       setRate(preselectedKoc.rateCardVideo);
@@ -150,7 +156,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
         const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(preselectedKoc.salaryGrade);
         setPricingDisplayMode(isSmallKoc ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW');
       }
-      setDeliverables(buildDefaultDeliverables(preselectedKoc.rateCardVideo, preselectedKoc.bookingPic || 'Khánh Vy'));
+      setDeliverables(buildDefaultDeliverables(preselectedKoc.rateCardVideo, preselectedKoc.bookingPic || 'Lê Phương Thảo'));
     } else if (initKoc) {
       const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(initKoc.salaryGrade || 'KL4');
       setPricingDisplayMode(isSmallKoc ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW');
@@ -160,7 +166,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     }
     setOverCeilingReason('');
     setValidationError(null);
-  }, [isOpen, preselectedKoc, preselectedBrand, selectedKocId]);
+  }, [isOpen, preselectedKoc, preselectedBrand, selectedKocId, kocsSource]);
 
   // Danh sách toàn bộ thương hiệu B2C từ Hồ sơ thương hiệu & Master
   const brandOptions = useMemo(() => {
@@ -253,17 +259,17 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   }, [deliverables, dealType]);
 
   const currentKoc = useMemo(
-    () => (isOpen ? INITIAL_KOCS.find(k => k.id === selectedKocId) : undefined) || preselectedKoc || INITIAL_KOCS[0],
-    [isOpen, selectedKocId, preselectedKoc],
+    () => (isOpen ? kocsSource.find(k => k.id === selectedKocId) : undefined) || preselectedKoc || kocsSource[0],
+    [isOpen, selectedKocId, preselectedKoc, kocsSource],
   );
   const selectableKocs = useMemo(() => {
     if (!isOpen) return [];
-    const slice = INITIAL_KOCS.slice(0, 200);
+    const slice = kocsSource.slice(0, 200);
     if (currentKoc && !slice.some(k => k.id === currentKoc.id)) {
       return [currentKoc, ...slice];
     }
     return slice;
-  }, [isOpen, currentKoc]);
+  }, [isOpen, currentKoc, kocsSource]);
   const advanceAmount = dealType === 'SERVICE_ONLY' ? 0 : advanceType === 'FIXED_2M' ? Math.min(2000000, rate) : Math.round(rate * 0.2);
   const finalAmount = Math.max(0, rate - advanceAmount);
 
@@ -659,7 +665,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
               value={selectedKocId}
               onChange={(e) => {
                 setSelectedKocId(e.target.value);
-                const k = INITIAL_KOCS.find(item => item.id === e.target.value);
+                const k = kocsSource.find(item => item.id === e.target.value);
                 if (k) {
                   handleRateChange(k.rateCardVideo);
                   if (k.salaryGrade) {

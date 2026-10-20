@@ -309,33 +309,23 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
   const [editingAddress, setEditingAddress] = useState(false);
   const [addressForm, setAddressForm] = useState({
-    recipient: activeKoc.realName || activeKoc.stageName,
-    phone: activeKoc.phone || '0987654321',
-    address: activeKoc.shippingAddress || activeKoc.permanentAddress || 'Số 18 Tam Trinh, Hoàng Mai, Hà Nội'
+    recipient: activeKoc.shippingRecipientName || activeKoc.realName || activeKoc.stageName,
+    phone: activeKoc.shippingPhone || activeKoc.phone || '',
+    address: activeKoc.shippingAddress || activeKoc.permanentAddress || ''
   });
 
-  const [syncedAddrKocId, setSyncedAddrKocId] = useState(activeKoc.id);
-  if (activeKoc.id !== syncedAddrKocId) {
-    setSyncedAddrKocId(activeKoc.id);
-    setAddressForm({
-      recipient: activeKoc.realName || activeKoc.stageName,
-      phone: activeKoc.phone || '0987654321',
-      address: activeKoc.shippingAddress || activeKoc.permanentAddress || 'Số 18 Tam Trinh, Hoàng Mai, Hà Nội'
-    });
-  }
-
   const [metricsForm, setMetricsForm] = useState(() => ({
-    followers: activeKoc.followers || 50000,
-    followerGrowth30dPct: activeKoc.tiktokFollowerGrowth30d ?? 12.5,
-    avgViews: activeKoc.avgViews || 35000,
-    tiktokGmv30d: activeKoc.recentRevenue ?? (perfStats.totalGmv || 120000000),
-    gpm: activeKoc.gpm ?? 185000,
-    avgOrderValue: activeKoc.aov ?? 265000,
-    ctrPct: activeKoc.tiktokAvgCtr ?? 4.8,
-    cvrPct: activeKoc.tiktokAvgCvr ?? 3.6,
-    avgCommissionPct: activeKoc.tiktokAvgCommissionRate ?? 12,
-    shopRatingScore: activeKoc.tiktokShopRating ?? 4.8,
-    cancellationRatePct: activeKoc.tiktokCancellationRate ?? 2.4,
+    followers: activeKoc.followers || 0,
+    followerGrowth30dPct: activeKoc.tiktokFollowerGrowth30d ?? 0,
+    avgViews: activeKoc.avgViews || 0,
+    tiktokGmv30d: activeKoc.recentRevenue ?? (perfStats.totalGmv || 0),
+    gpm: activeKoc.gpm ?? 0,
+    avgOrderValue: activeKoc.aov ?? 0,
+    ctrPct: activeKoc.tiktokAvgCtr ?? 0,
+    cvrPct: activeKoc.tiktokAvgCvr ?? 0,
+    avgCommissionPct: activeKoc.tiktokAvgCommissionRate ?? 10,
+    shopRatingScore: activeKoc.tiktokShopRating ?? 0,
+    cancellationRatePct: activeKoc.tiktokCancellationRate ?? 0,
     revenueVideoPct: activeKoc.gmvShareVideo ?? 75,
     revenueLivePct: activeKoc.gmvShareLive ?? 20,
     revenueShowcasePct: activeKoc.gmvShareProductCard ?? 5,
@@ -343,6 +333,35 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
     age18_24Pct: activeKoc.age18_24 ?? 40,
     age25_34Pct: activeKoc.age25_34 ?? 48
   }));
+
+  const [syncedAddrKocId, setSyncedAddrKocId] = useState(activeKoc.id);
+  if (activeKoc.id !== syncedAddrKocId) {
+    setSyncedAddrKocId(activeKoc.id);
+    setAddressForm({
+      recipient: activeKoc.shippingRecipientName || activeKoc.realName || activeKoc.stageName,
+      phone: activeKoc.shippingPhone || activeKoc.phone || '',
+      address: activeKoc.shippingAddress || activeKoc.permanentAddress || ''
+    });
+    setMetricsForm({
+      followers: activeKoc.followers || 0,
+      followerGrowth30dPct: activeKoc.tiktokFollowerGrowth30d ?? 0,
+      avgViews: activeKoc.avgViews || 0,
+      tiktokGmv30d: activeKoc.recentRevenue ?? (perfStats.totalGmv || 0),
+      gpm: activeKoc.gpm ?? 0,
+      avgOrderValue: activeKoc.aov ?? 0,
+      ctrPct: activeKoc.tiktokAvgCtr ?? 0,
+      cvrPct: activeKoc.tiktokAvgCvr ?? 0,
+      avgCommissionPct: activeKoc.tiktokAvgCommissionRate ?? 10,
+      shopRatingScore: activeKoc.tiktokShopRating ?? 0,
+      cancellationRatePct: activeKoc.tiktokCancellationRate ?? 0,
+      revenueVideoPct: activeKoc.gmvShareVideo ?? 75,
+      revenueLivePct: activeKoc.gmvShareLive ?? 20,
+      revenueShowcasePct: activeKoc.gmvShareProductCard ?? 5,
+      femalePct: activeKoc.femaleRatio ?? 82,
+      age18_24Pct: activeKoc.age18_24 ?? 40,
+      age25_34Pct: activeKoc.age25_34 ?? 48
+    });
+  }
 
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
     if (onNotify) onNotify(msg, type);
@@ -449,6 +468,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
       tepKenh: (profileForm.tepKenh.trim() || 'Chưa phân loại') as TepKenh,
       kocCategory: profileForm.kocCategory as KocCategory,
       rateCardVideo: rate,
+      rateCardLive: Number(profileForm.rateCardLive) || undefined,
       salaryGrade: computedKl,
       segment: computedSegment,
       cccd: profileForm.cccd.trim(),
@@ -1550,7 +1570,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-slate-600 font-medium mb-1">Đơn giá Cast / Video (VNĐ)</label>
+                      <label className="block text-slate-600 font-medium mb-1">
+                        Đơn giá Cast / Video (VNĐ) · {getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0)}
+                      </label>
                       <input
                         type="number"
                         step={500000}
@@ -1558,9 +1580,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         onChange={(e) => setProfileForm(prev => ({ ...prev, rateCardVideo: Number(e.target.value) }))}
                         className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono font-semibold focus:outline-none focus:border-blue-500 text-emerald-700"
                       />
-                      <span className="text-2xs text-slate-400 mt-0.5 block">
-                        Tự động xếp Khung lương: <strong>{getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0)}</strong>
-                      </span>
                     </div>
                     <div>
                       <label className="block text-slate-600 font-medium mb-1">Đơn giá Phiên Livestream (VNĐ)</label>
@@ -2140,12 +2159,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <tbody className="divide-y divide-slate-100">
                         {currentKocDeals.map(d => {
                           const isReceived = d.sampleStatus === 'ĐÃ_NHẬN';
-                          const trackingCode = `GHTK-${d.id.slice(-6).toUpperCase()}`;
+                          const trackingCode = d.sampleTrackingCode || 'Chưa cập nhật';
 
                           return (
                             <tr key={d.id} className="hover:bg-slate-50/40 transition">
                               <td className="py-3 px-4">
-                                <div className="font-semibold text-slate-900">{d.productName || 'Bộ Kit Trải Nghiệm'}</div>
+                                <div className="font-semibold text-slate-900">{d.productName || 'Sản phẩm mẫu'}</div>
                                 <div className="text-2xs text-slate-400">{d.campaignTitle}</div>
                               </td>
                               <td className="py-3 px-4 font-medium text-slate-800">{d.brandName}</td>
@@ -2153,7 +2172,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 {trackingCode}
                               </td>
                               <td className="py-3 px-4 text-right font-mono text-slate-700">
-                                {formatVndShort(d.focSampleCost || 350000)}
+                                {d.focSampleCost ? formatVndShort(d.focSampleCost) : '—'}
                               </td>
                               <td className="py-3 px-4 text-center">
                                 <Status tone={isReceived ? 'ok' : 'warn'}>
@@ -3055,7 +3074,15 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   size="sm"
                   variant="primary"
                   onClick={() => {
-                    alert('Đã gửi phản hồi chiến dịch đến Account Upbase!');
+                    commitDealUpdate(
+                      {
+                        ...selectedHistoryDeal,
+                        contentNote: kocSelfFeedback.trim()
+                          ? `[Phản hồi KOC]: ${kocSelfFeedback.trim()}`
+                          : selectedHistoryDeal.contentNote,
+                      },
+                      'Đã gửi phản hồi chiến dịch đến Account Upbase!'
+                    );
                     setSelectedHistoryDeal(null);
                   }}
                 >
@@ -3393,25 +3420,25 @@ function buildProfileForm(koc: KocItem) {
     realName: koc.realName || '',
     channelId: koc.channelId || '',
     phone: koc.phone || '',
-    email: koc.email || `${(koc.channelId || 'koc').replace(/^@/, '')}@creator.vn`,
+    email: koc.email || '',
     tepKenh: (koc.tepKenh || koc.creatorCategory || 'Beauty') as TepKenh,
     kocCategory: (koc.kocCategory || 'Personal care') as KocCategory,
     rateCardVideo: koc.rateCardVideo || 3000000,
-    rateCardLive: Math.round((koc.rateCardVideo || 3000000) * 1.5),
+    rateCardLive: koc.rateCardLive || Math.round((koc.rateCardVideo || 3000000) * 1.5),
     cccd: koc.cccd || '',
     dob: koc.dob || '',
     issueDate: koc.issueDate || '',
-    issuePlace: koc.issuePlace || 'Cục Cảnh sát QLHC về TTXH',
+    issuePlace: koc.issuePlace || '',
     permanentAddress: koc.permanentAddress || '',
     taxCode: koc.taxCode || '',
     companyName: koc.companyName || '',
     legalRepresentative: koc.legalRepresentative || '',
-    bankName: koc.bankName || 'MB Bank',
+    bankName: koc.bankName || '',
     bankAccount: koc.bankAccount || '',
-    shippingAddress: koc.shippingAddress || koc.permanentAddress || 'Số 18 Tam Trinh, Hoàng Mai, Hà Nội',
-    skinType: koc.samplePreferences?.skinType || 'Da hỗn hợp thiên dầu',
-    clothingSize: koc.samplePreferences?.clothingSize || 'M',
-    shoeSize: koc.samplePreferences?.shoeSize || '37',
+    shippingAddress: koc.shippingAddress || koc.permanentAddress || '',
+    skinType: koc.samplePreferences?.skinType || '',
+    clothingSize: koc.samplePreferences?.clothingSize || '',
+    shoeSize: koc.samplePreferences?.shoeSize || '',
     babyAgeMonths: koc.samplePreferences?.babyAgeMonths ? String(koc.samplePreferences.babyAgeMonths) : '',
     babyWeightKg: koc.samplePreferences?.babyWeightKg ? String(koc.samplePreferences.babyWeightKg) : '',
     specialNotes: koc.samplePreferences?.specialNotes || ''

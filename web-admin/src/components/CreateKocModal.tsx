@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Presence } from './ui';
+import React, { useState, useRef } from 'react';
+import { Button, Modal } from './ui';
 import {
-  X,
   AlertTriangle,
-  UserPlus,
   DollarSign,
   CreditCard,
   Check,
@@ -17,6 +15,7 @@ import {
   Search,
   ExternalLink,
 } from 'lucide-react';
+import { REAL_B2C_42_BRANDS } from '../lib/realB2cBrandsData';
 import {
   KocItem,
   SalaryGrade,
@@ -57,19 +56,6 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   onKocCreated,
   existingKocs = [],
 }) => {
-  // ESC key listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   const [stageName, setStageName] = useState('');
   const [channelId, setChannelId] = useState('');
   const [realName, setRealName] = useState('');
@@ -106,8 +92,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [email, setEmail] = useState('');
   const [location, setLocation] = useState('Hà Nội');
   const [shippingAddress, setShippingAddress] = useState('');
-  const [bookingPic, setBookingPic] = useState('Khánh Vy');
-  const [brandName, setBrandName] = useState('Kutieskin Mama');
+  const [bookingPic, setBookingPic] = useState('Lê Phương Thảo');
+  const [brandName, setBrandName] = useState('Kutieskin');
 
   // Legal & Banking
   const [legalType, setLegalType] = useState<'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY'>('INDIVIDUAL');
@@ -122,6 +108,47 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [tiktokLookupInput, setTiktokLookupInput] = useState('');
   const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
   const [scrapedCache, setScrapedCache] = useState<TikTokScrapedKocResult | null>(null);
+
+  const wasOpenRef = useRef(false);
+  if (isOpen && !wasOpenRef.current) {
+    wasOpenRef.current = true;
+    setStageName('');
+    setChannelId('');
+    setRealName('');
+    setBookingFormat('Booking Video KOC');
+    setFormError(null);
+    setShopeeChannel('');
+    setFacebookChannel('');
+    setInstagramChannel('');
+    setThreadsChannel('');
+    setSocialCandidates(null);
+    setRateCardVideo(3000000);
+    setSalaryGrade('KL4');
+    setSegment('Mid Creator');
+    setTepKenh('Review Nữ');
+    setKocCategory('Personal care');
+    setTier('TIER_3_MICRO');
+    setFollowers(50000);
+    setGmvBestCase(15000000);
+    setFemaleRatio(85);
+    setAgeGroup('18-24');
+    setPhone('');
+    setZalo('');
+    setEmail('');
+    setLocation('Hà Nội');
+    setShippingAddress('');
+    setLegalType('INDIVIDUAL');
+    setCompanyName('');
+    setTaxCode('');
+    setLegalRepresentative('');
+    setCccd('');
+    setBankName('Techcombank');
+    setBankAccount('');
+    setTiktokLookupInput('');
+    setScrapedCache(null);
+  } else if (!isOpen && wasOpenRef.current) {
+    wasOpenRef.current = false;
+  }
 
   const handleSearchSocialChannels = async () => {
     const targetHandle = (channelId || tiktokLookupInput).trim();
@@ -264,12 +291,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     if (!isOpen || !existingKocs || existingKocs.length === 0) return null;
     const cleanHandle = channelId.trim().toLowerCase().replace('@', '');
     const cleanPhone = phone.trim().replace(/\D/g, '');
+    const cleanEmail = email.trim().toLowerCase();
     const cleanCccd = cccd.trim();
     const cleanTax = taxCode.trim();
 
     for (const k of existingKocs) {
       const kHandle = (k.channelId || '').toLowerCase().replace('@', '');
       const kPhone = (k.phone || '').replace(/\D/g, '');
+      const kEmail = (k.email || '').trim().toLowerCase();
       const kCccd = k.cccd ? k.cccd.trim() : '';
       const kTax = k.taxCode ? k.taxCode.trim() : '';
 
@@ -284,6 +313,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         return {
           type: 'TRÙNG_SĐT' as const,
           reason: `Trùng số điện thoại / Zalo (${k.phone})`,
+          koc: k,
+        };
+      }
+      if (cleanEmail && cleanEmail.includes('@') && cleanEmail.length >= 5 && kEmail === cleanEmail) {
+        return {
+          type: 'TRÙNG_EMAIL' as const,
+          reason: `Trùng địa chỉ Email (${k.email})`,
           koc: k,
         };
       }
@@ -305,7 +341,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     return null;
   })();
 
-  if (!isOpen) return <Presence show={false} />;
+  if (!isOpen) return null;
 
   // Auto detect Salary Grade (Khung lương) & Segment based on Rate card
   const handleRateCardChange = (value: number) => {
@@ -352,7 +388,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     if (cleanThreads) activePlatforms.push('THREADS');
 
     const newKoc: KocItem = {
-      id: createKocId(),
+      ...(duplicateMatch?.koc || {}),
+      id: duplicateMatch?.koc.id || createKocId(),
       channelId: formattedChannel,
       channelLink: `https://www.tiktok.com/@${formattedChannel.replace('@', '')}`,
       stageName: stageName.trim(),
@@ -417,10 +454,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       // Demographics
       femaleRatio: femaleRatio,
       maleRatio: 100 - femaleRatio,
+      age18_24: ageGroup === '18-24' ? 55 : ageGroup === '25-34' ? 25 : 15,
+      age25_34: ageGroup === '25-34' ? 55 : 30,
+      age35Plus: ageGroup === '35+' ? 55 : ageGroup === '25-34' ? 20 : 15,
 
       // Legal & Banking
       cccd: cccd.trim(),
-      taxCode: legalType !== 'INDIVIDUAL' ? taxCode.trim() : cccd.trim() || undefined,
+      taxCode: taxCode.trim() || undefined,
       companyName: legalType !== 'INDIVIDUAL' ? companyName.trim() : undefined,
       legalRepresentative:
         legalType !== 'INDIVIDUAL' ? legalRepresentative.trim() || realName.trim() : undefined,
@@ -450,37 +490,30 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   };
 
   return (
-    <Presence show>
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 animate-in fade-in duration-(--motion-base)"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div data-motion-panel
-        role="dialog"
-        aria-modal="true"
-        aria-label="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
-        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-5 max-h-[90dvh] overflow-y-auto text-ink animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-line">
-          <div>
-            <h3 className="text-lg font-semibold text-ink">
-              Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng modal"
-            className="w-8 h-8 rounded-lg bg-sunken hover:bg-hover text-muted hover:text-ink flex items-center justify-center transition"
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
+      size="xl"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Hủy bỏ
+          </Button>
+          <Button
+            variant="primary"
+            icon={Check}
+            onClick={() => {
+              const fakeEvent = { preventDefault: () => undefined } as React.FormEvent;
+              handleSubmit(fakeEvent);
+            }}
           >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            Lưu KOC & đưa vào danh mục
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {formError && (
             <div className="p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
               <span>{formError}</span>
@@ -968,27 +1001,34 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   onChange={(e) => setBookingPic(e.target.value)}
                   className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
-                  <option value="Khánh Vy">Khánh Vy</option>
-                  <option value="Lê Thị Thùy Linh">Lê Thị Thùy Linh</option>
+                  <option value="Lê Phương Thảo">Lê Phương Thảo</option>
                   <option value="Đinh Thị Bích Liên">Đinh Thị Bích Liên</option>
-                  <option value="Trần Thị Hồng">Trần Thị Hồng</option>
-                  <option value="Nguyễn Văn An">Nguyễn Văn An</option>
+                  <option value="Phạm Thị Thu Hằng">Phạm Thị Thu Hằng</option>
+                  <option value="Trần Hải Phượng">Trần Hải Phượng</option>
+                  <option value="Hoàng Hải Long">Hoàng Hải Long</option>
+                  <option value="Lê Thanh Hải">Lê Thanh Hải</option>
+                  <option value="Lương Thị Như Quỳnh">Lương Thị Như Quỳnh</option>
+                  <option value="Phan Diệu Ánh">Phan Diệu Ánh</option>
+                  <option value="Vũ Hoài Lâm">Vũ Hoài Lâm</option>
+                  <option value="Nguyễn Thị Mai Anh">Nguyễn Thị Mai Anh</option>
+                  <option value="Hà Thị Thủy">Hà Thị Thủy</option>
+                  <option value="Bùi Ngọc Ánh">Bùi Ngọc Ánh</option>
+                  <option value="Nguyễn Thị Hồng Ngát">Nguyễn Thị Hồng Ngát</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-ink-2 font-medium block mb-1">Gian hàng phù hợp đề xuất:</label>
+                <label className="text-ink-2 font-medium block mb-1">Nhãn hàng đề xuất:</label>
                 <select
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-primary font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
-                  <option value="Kutieskin Mama">Kutieskin Mama</option>
-                  <option value="Bye Bye Blemish">Bye Bye Blemish</option>
-                  <option value="pHCare">pHCare</option>
-                  <option value="EUPC">EUPC</option>
-                  <option value="Natural Care">Natural Care</option>
-                  <option value="Babe">Babe</option>
+                  {REAL_B2C_42_BRANDS.map((b) => (
+                    <option key={b.id} value={b.name}>
+                      {b.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1070,7 +1110,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
             {/* Dynamic fields based on legalType */}
             {legalType === 'INDIVIDUAL' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="text-ink-2 font-medium block mb-1">Họ &amp; tên thật (trên CCCD):</label>
                   <input
@@ -1103,6 +1143,17 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                     placeholder="001203004567"
                     value={cccd}
                     onChange={(e) => setCccd(e.target.value)}
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-ink-2 font-medium block mb-1">Mã số thuế TNCN (nếu có):</label>
+                  <input
+                    type="text"
+                    placeholder="8491238475"
+                    value={taxCode}
+                    onChange={(e) => setTaxCode(e.target.value)}
                     className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -1214,27 +1265,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-line">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink bg-sunken hover:bg-hover transition"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-lg text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition flex items-center gap-1.5"
-            >
-              <Check className="w-3.5 h-3.5" />
-              <span>Lưu KOC &amp; đưa vào danh mục</span>
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
-    </Presence>
+    </Modal>
   );
 };
 

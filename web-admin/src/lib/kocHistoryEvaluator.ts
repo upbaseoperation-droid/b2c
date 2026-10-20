@@ -77,11 +77,7 @@ export function evaluateKocCollaborationHistory(
   const profitableDealRatio =
     paidDeals.length > 0
       ? Math.round((profitableDeals.length / paidDeals.length) * 100)
-      : stats.overallRoi >= 2.5
-      ? 80
-      : stats.overallRoi >= 1.5
-      ? 55
-      : 30;
+      : 0;
 
   const avgHistoricalFeeNet =
     paidDeals.length > 0
@@ -106,7 +102,7 @@ export function evaluateKocCollaborationHistory(
   // ---------------------------------------------------------------------------
   // 1. ĐÁNH GIÁ RỦI RO TIẾN ĐỘ & KỶ LUẬT SLA
   // ---------------------------------------------------------------------------
-  if (stats.onTimePostRate < 80 || overdueDeals.length >= 2) {
+  if (stats.totalDeals > 0 && (stats.onTimePostRate < 80 || overdueDeals.length >= 2)) {
     riskFlags.push({
       id: 'risk-sla-post-delay',
       category: 'SLA',
@@ -117,7 +113,7 @@ export function evaluateKocCollaborationHistory(
       mitigation:
         'Bắt buộc thu kịch bản trong 48h kể từ khi gửi mẫu, nhắc mốc từ ngày thứ 3 và chỉ giải ngân sau khi video lên sóng + cấp mã Spark Ads.',
     });
-  } else {
+  } else if (stats.totalDeals > 0) {
     strengths.push(
       `Kỷ luật tiến độ tốt: Tỷ lệ nộp kịch bản đúng hạn ${stats.onTimeScriptRate}%, đăng bài đúng hạn ${stats.onTimePostRate}%.`
     );
@@ -335,9 +331,11 @@ export function evaluateKocCollaborationHistory(
   } else {
     score -= 6;
   }
-  // Cộng/trừ điểm SLA
-  if (stats.onTimePostRate >= 90) score += 5;
-  else if (stats.onTimePostRate < 75) score -= 12;
+  // Cộng/trừ điểm SLA khi đã có lịch sử deal
+  if (stats.totalDeals > 0) {
+    if (stats.onTimePostRate >= 90) score += 5;
+    else if (stats.onTimePostRate < 75) score -= 12;
+  }
 
   // Trừ điểm theo các cờ rủi ro
   for (const flag of riskFlags) {
@@ -396,7 +394,7 @@ export function evaluateKocCollaborationHistory(
   if (!hasValidLegal) {
     recommendations.push('Thu thập và xác minh ảnh CCCD 12 số / Mã số thuế ngay khi KOC xác nhận nhận job.');
   }
-  if (stats.onTimePostRate < 85 || overdueDeals.length > 0) {
+  if ((stats.totalDeals > 0 && stats.onTimePostRate < 85) || overdueDeals.length > 0) {
     recommendations.push('Thiết lập mốc nộp kịch bản trước 3 ngày và nộp video nháp trong 5 ngày kể từ ngày nhận hàng mẫu.');
   }
   recommendations.push(

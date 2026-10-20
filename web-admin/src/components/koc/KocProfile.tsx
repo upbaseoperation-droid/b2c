@@ -50,6 +50,7 @@ import {
   EmptyState,
   FacebookLogo,
   Field,
+  Input,
   InstagramLogo,
   Modal,
   Panel,
@@ -122,6 +123,8 @@ export interface KocProfileProps {
   onUpdateKoc?: (updatedKoc: KocItem, message?: string) => void;
   onOpenKocPortal?: (kocId: string) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
+  selectedBrand?: string;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export function classificationOf(k: KocItem): string {
@@ -507,7 +510,13 @@ export function KocProfile({
       {vietQrDeal && <VietQrModal koc={vietQrDeal} onClose={() => setVietQrDeal(null)} />}
 
       {/* Modal đồng bộ chỉ số TikTok Seller */}
-      {syncModalOpen && <TikTokSellerSyncModal koc={koc} onClose={() => setSyncModalOpen(false)} />}
+      {syncModalOpen && (
+        <TikTokSellerSyncModal
+          koc={koc}
+          onClose={() => setSyncModalOpen(false)}
+          onUpdateKoc={onUpdateKoc}
+        />
+      )}
 
       {/* Modal báo cáo đánh giá lịch sử hợp tác, mức độ phù hợp & rủi ro KOC */}
       <KocHistoryEvaluationModal
@@ -527,6 +536,7 @@ export function KocProfile({
           channelName: koc.stageName,
           avatarUrl: koc.avatarUrl,
           initialVerdict: channelReviewInitialVerdict,
+          defaultBrandScope: kocDeals[0]?.brandName || 'ALL',
           sourceScreen: 'Hồ sơ KOC (Danh bạ KOC)',
         }}
         initialMode="CHANNEL_DETAIL"
@@ -620,27 +630,22 @@ function TikTokSellerMetricsSection({
   const avgLikesToShow = liveAvgLikes ?? koc.avgLikes;
   const avgCommentsToShow = liveAvgComments ?? koc.avgComments;
   const avgSharesToShow = liveAvgShares ?? koc.avgShares;
-  const erToShow = liveEr ?? koc.engagementRate ?? 4.6;
+  const erToShow = liveEr ?? koc.engagementRate;
 
   const shares = [
-    { label: 'Video ngắn', value: koc.gmvShareVideo || 70, color: CHANNELS.tiktok.color },
-    { label: 'Livestream', value: koc.gmvShareLive || 20, color: CHANNELS.live.color },
-    { label: 'Thẻ sản phẩm / Giỏ hàng', value: koc.gmvShareProductCard || 10, color: CHANNELS.other.color },
+    { label: 'Video ngắn', value: koc.gmvShareVideo || 0, color: CHANNELS.tiktok.color },
+    { label: 'Livestream', value: koc.gmvShareLive || 0, color: CHANNELS.live.color },
+    { label: 'Thẻ sản phẩm / Giỏ hàng', value: koc.gmvShareProductCard || 0, color: CHANNELS.other.color },
   ].filter((s) => s.value > 0);
 
   const shareTotal = shares.reduce((s, x) => s + x.value, 0);
 
-  const topCats = koc.tiktokTopCategories || [
-    koc.tepKenh || 'Dược mỹ phẩm & Skincare',
-    koc.kocCategory || 'Chăm sóc cá nhân',
-    'Mẹ & Bé',
-  ];
+  const topCats =
+    koc.tiktokTopCategories && koc.tiktokTopCategories.length > 0
+      ? koc.tiktokTopCategories
+      : [koc.tepKenh, koc.kocCategory, koc.niche].filter(Boolean) as string[];
 
-  const locations = koc.tiktokAudienceLocations || [
-    { city: 'Hà Nội', ratio: 42 },
-    { city: 'TP.HCM', ratio: 38 },
-    { city: 'Đà Nẵng & Tỉnh khác', ratio: 20 },
-  ];
+  const locations = koc.tiktokAudienceLocations || [];
 
   const videoColumns: Column<TikTokVideoItem>[] = [
     {
@@ -739,13 +744,19 @@ function TikTokSellerMetricsSection({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-ink">Đã kết nối TikTok Seller Center</span>
-              <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive">
-                <CheckCircle2 className="w-3 h-3" /> Tài khoản chuẩn
+              <span className="text-sm font-semibold text-ink">
+                {koc.tiktokSellerSyncedAt ? 'Đã đồng bộ TikTok Seller Center' : 'Chỉ số kênh TikTok & Bán hàng'}
               </span>
+              {koc.tiktokAccountHealth && (
+                <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive">
+                  <CheckCircle2 className="w-3 h-3" /> {koc.tiktokAccountHealth}
+                </span>
+              )}
             </div>
             <p className="text-2xs text-ink-3">
-              Đồng bộ dữ liệu lúc {koc.tiktokSellerSyncedAt || koc.metricsUpdatedAt || '12/10/2026 18:30'}
+              {koc.tiktokSellerSyncedAt || koc.metricsUpdatedAt
+                ? `Cập nhật lúc ${koc.tiktokSellerSyncedAt || koc.metricsUpdatedAt}`
+                : 'Chưa đồng bộ lần đầu'}
             </p>
           </div>
         </div>
@@ -755,16 +766,18 @@ function TikTokSellerMetricsSection({
             <span className="text-2xs text-ink-3 block">Điểm uy tín nhà sáng tạo</span>
             <span className="font-semibold text-warning inline-flex items-center gap-1">
               <Star className="w-3.5 h-3.5 fill-current" />
-              {koc.tiktokShopRating || 4.9} / 5.0
+              {koc.tiktokShopRating ? `${koc.tiktokShopRating} / 5.0` : '—'}
             </span>
           </div>
           <div className="text-right border-l border-line pl-4">
             <span className="text-2xs text-ink-3 block">Tỷ lệ hoàn/hủy đơn liên kết</span>
-            <span className="font-semibold text-positive">{koc.tiktokCancellationRate || 1.4}%</span>
+            <span className="font-semibold text-positive">
+              {koc.tiktokCancellationRate !== undefined ? `${koc.tiktokCancellationRate}%` : '—'}
+            </span>
           </div>
           {onUpdate && (
             <Button size="sm" icon={RefreshCw} onClick={onUpdate} className="ml-2">
-              Đồng bộ lại
+              Cập nhật &amp; Đồng bộ
             </Button>
           )}
         </div>
@@ -826,8 +839,8 @@ function TikTokSellerMetricsSection({
             />
             <Stat
               label="GPM (GMV / 1.000 view)"
-              value={koc.gpm ? formatVndShort(koc.gpm) : '185 tr'}
-              note={`Đơn TB: ${formatVndShort(koc.aov || 320000)}`}
+              value={koc.gpm ? formatVndShort(koc.gpm) : '—'}
+              note={koc.aov ? `Đơn TB: ${formatVndShort(koc.aov)}` : 'Chưa cập nhật AOV'}
             />
           </StatRow>
         </div>
@@ -837,7 +850,9 @@ function TikTokSellerMetricsSection({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">Tỷ lệ tương tác kênh (ER)</span>
-          <span className="text-lg font-semibold text-ink">{erToShow}%</span>
+          <span className="text-lg font-semibold text-ink">
+            {erToShow !== undefined && erToShow > 0 ? `${erToShow}%` : '—'}
+          </span>
           <span className="text-2xs text-ink-3 block mt-0.5">
             {avgLikesToShow
               ? `TB ${formatNumber(avgLikesToShow)} tim · ${formatNumber(avgCommentsToShow || 0)} bình luận · ${formatNumber(avgSharesToShow || 0)} chia sẻ`
@@ -846,17 +861,25 @@ function TikTokSellerMetricsSection({
         </div>
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">CTR nhấp giỏ hàng</span>
-          <span className="text-lg font-semibold text-accent">{koc.tiktokAvgCtr || 5.8}%</span>
+          <span className="text-lg font-semibold text-accent">
+            {koc.tiktokAvgCtr !== undefined && koc.tiktokAvgCtr > 0 ? `${koc.tiktokAvgCtr}%` : '—'}
+          </span>
           <span className="text-2xs text-ink-3 block mt-0.5">Nhấp xem thẻ sản phẩm</span>
         </div>
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">CVR chuyển đổi đơn</span>
-          <span className="text-lg font-semibold text-positive">{koc.tiktokAvgCvr || 2.8}%</span>
+          <span className="text-lg font-semibold text-positive">
+            {koc.tiktokAvgCvr !== undefined && koc.tiktokAvgCvr > 0 ? `${koc.tiktokAvgCvr}%` : '—'}
+          </span>
           <span className="text-2xs text-ink-3 block mt-0.5">Tỷ lệ chốt đơn mua</span>
         </div>
         <div className="p-3.5 rounded-xl border border-line bg-surface">
           <span className="text-2xs text-ink-3 block mb-1">Hoa hồng Affiliate trung bình</span>
-          <span className="text-lg font-semibold text-ink">{koc.tiktokAvgCommissionRate || 12}%</span>
+          <span className="text-lg font-semibold text-ink">
+            {koc.tiktokAvgCommissionRate !== undefined && koc.tiktokAvgCommissionRate > 0
+              ? `${koc.tiktokAvgCommissionRate}%`
+              : '—'}
+          </span>
           <span className="text-2xs text-ink-3 block mt-0.5">Mức nhận từ nhãn hàng</span>
         </div>
       </div>
@@ -867,32 +890,38 @@ function TikTokSellerMetricsSection({
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-ink">Cơ cấu doanh thu theo nguồn</h4>
           <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
-            <div className="flex h-3 gap-1 rounded-full overflow-hidden bg-sunken">
-              {shares.map((s) => (
-                <span
-                  key={s.label}
-                  className="data-bar h-full rounded-sm"
-                  style={{ width: `${(s.value / shareTotal) * 100}%`, background: s.color }}
-                  title={`${s.label}: ${pct(s.value)}`}
-                />
-              ))}
-            </div>
-            <div className="grid gap-2">
-              {shares.map((s) => (
-                <div key={s.label} className="flex items-center justify-between text-xs">
-                  <span className="inline-flex items-center gap-2 text-ink-2">
-                    <span className="w-2.5 h-2.5 rounded-xs" style={{ background: s.color }} />
-                    {s.label}
-                  </span>
-                  <span className="font-semibold text-ink tabular-nums">{pct(s.value)}</span>
+            {shares.length > 0 && shareTotal > 0 ? (
+              <>
+                <div className="flex h-3 gap-1 rounded-full overflow-hidden bg-sunken">
+                  {shares.map((s) => (
+                    <span
+                      key={s.label}
+                      className="data-bar h-full rounded-sm"
+                      style={{ width: `${(s.value / shareTotal) * 100}%`, background: s.color }}
+                      title={`${s.label}: ${pct(s.value)}`}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="grid gap-2">
+                  {shares.map((s) => (
+                    <div key={s.label} className="flex items-center justify-between text-xs">
+                      <span className="inline-flex items-center gap-2 text-ink-2">
+                        <span className="w-2.5 h-2.5 rounded-xs" style={{ background: s.color }} />
+                        {s.label}
+                      </span>
+                      <span className="font-semibold text-ink tabular-nums">{pct(s.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-ink-3">Chưa có dữ liệu phân bổ nguồn doanh thu</p>
+            )}
           </div>
 
-          <h4 className="text-xs font-semibold text-ink pt-2">Ngành hàng bán chạy</h4>
+          <h4 className="text-xs font-semibold text-ink pt-2">Ngành hàng trọng tâm</h4>
           <p className="text-xs text-ink-2">
-            {topCats.join(' · ')}
+            {topCats.length > 0 ? topCats.join(' · ') : 'Chưa cập nhật'}
           </p>
         </div>
 
@@ -900,43 +929,64 @@ function TikTokSellerMetricsSection({
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-ink">Nhân khẩu học khán giả</h4>
           <div className="p-4 rounded-xl border border-line bg-surface space-y-4 text-xs">
-            <div>
-              <div className="flex justify-between text-2xs text-ink-3 mb-1">
-                <span>Giới tính người xem</span>
-                <span>Nữ {koc.femaleRatio || 82}% · Nam {koc.maleRatio || 18}%</span>
+            {koc.femaleRatio !== undefined || koc.maleRatio !== undefined ? (
+              <div>
+                <div className="flex justify-between text-2xs text-ink-3 mb-1">
+                  <span>Giới tính người xem</span>
+                  <span>
+                    Nữ {koc.femaleRatio ?? Math.max(0, 100 - (koc.maleRatio || 0))}% · Nam{' '}
+                    {koc.maleRatio ?? Math.max(0, 100 - (koc.femaleRatio || 0))}%
+                  </span>
+                </div>
+                <div className="flex h-2 rounded-full overflow-hidden bg-sunken">
+                  <div
+                    style={{ width: `${koc.femaleRatio ?? Math.max(0, 100 - (koc.maleRatio || 0))}%` }}
+                    className="data-bar bg-accent"
+                  />
+                  <div
+                    style={{ width: `${koc.maleRatio ?? Math.max(0, 100 - (koc.femaleRatio || 0))}%` }}
+                    className="data-bar bg-ink-3"
+                  />
+                </div>
               </div>
-              <div className="flex h-2 rounded-full overflow-hidden bg-sunken">
-                <div style={{ width: `${koc.femaleRatio || 82}%` }} className="data-bar bg-accent" />
-                <div style={{ width: `${koc.maleRatio || 18}%` }} className="data-bar bg-ink-3" />
-              </div>
-            </div>
+            ) : (
+              <div className="text-2xs text-ink-3">Giới tính người xem: Chưa cập nhật</div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center pt-1 border-t border-line">
               <div className="p-2 rounded-lg bg-sunken/60">
                 <span className="text-2xs text-ink-3 block">18–24 tuổi</span>
-                <span className="text-sm font-semibold text-ink">{pct(koc.age18_24 || 38)}</span>
+                <span className="text-sm font-semibold text-ink">
+                  {koc.age18_24 !== undefined ? pct(koc.age18_24) : '—'}
+                </span>
               </div>
               <div className="p-2 rounded-lg bg-sunken/60">
                 <span className="text-2xs text-ink-3 block">25–34 tuổi</span>
-                <span className="text-sm font-semibold text-accent">{pct(koc.age25_34 || 49)}</span>
+                <span className="text-sm font-semibold text-accent">
+                  {koc.age25_34 !== undefined ? pct(koc.age25_34) : '—'}
+                </span>
               </div>
               <div className="p-2 rounded-lg bg-sunken/60">
                 <span className="text-2xs text-ink-3 block">Trên 35 tuổi</span>
-                <span className="text-sm font-semibold text-ink">{pct(koc.age35Plus || 13)}</span>
+                <span className="text-sm font-semibold text-ink">
+                  {koc.age35Plus !== undefined ? pct(koc.age35Plus) : '—'}
+                </span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-line">
-              <span className="text-2xs text-ink-3 block mb-1.5">Địa bàn tập trung khán giả</span>
-              <div className="grid gap-1.5">
-                {locations.map((loc) => (
-                  <div key={loc.city} className="flex items-center justify-between text-2xs">
-                    <span className="text-ink-2">{loc.city}</span>
-                    <span className="font-medium text-ink tabular-nums">{loc.ratio}%</span>
-                  </div>
-                ))}
+            {locations.length > 0 && (
+              <div className="pt-2 border-t border-line">
+                <span className="text-2xs text-ink-3 block mb-1.5">Địa bàn tập trung khán giả</span>
+                <div className="grid gap-1.5">
+                  {locations.map((loc) => (
+                    <div key={loc.city} className="flex items-center justify-between text-2xs">
+                      <span className="text-ink-2">{loc.city}</span>
+                      <span className="font-medium text-ink tabular-nums">{loc.ratio}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1168,19 +1218,27 @@ function CollaborationHistorySection({
       header: 'Tiến độ & Đánh giá',
       width: 150,
       render: (d) => {
-        const onTime = d.isPostOnTime ?? true;
-        const rating = d.ratingScore || 4.8;
+        const onTime = d.isPostOnTime;
+        const rating = d.ratingScore;
         return (
           <div className="grid gap-1">
             <div className="flex items-center gap-1 text-2xs">
-              <span className="inline-flex items-center gap-0.5 text-warning font-semibold">
-                <Star className="w-3 h-3 fill-current" />
-                {rating}
-              </span>
+              {rating ? (
+                <span className="inline-flex items-center gap-0.5 text-warning font-semibold">
+                  <Star className="w-3 h-3 fill-current" />
+                  {rating}
+                </span>
+              ) : (
+                <span className="text-ink-3">—</span>
+              )}
               <span className="text-ink-3">·</span>
-              <span className={onTime ? 'text-positive font-medium' : 'text-critical font-medium'}>
-                {onTime ? 'Đúng hạn' : 'Trễ hạn'}
-              </span>
+              {onTime !== undefined ? (
+                <span className={onTime ? 'text-positive font-medium' : 'text-critical font-medium'}>
+                  {onTime ? 'Đúng hạn' : 'Trễ hạn'}
+                </span>
+              ) : (
+                <span className="text-ink-3">Chưa xác nhận</span>
+              )}
             </div>
             {d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' && (
               <span className="text-2xs text-accent inline-block w-fit">
@@ -2294,12 +2352,22 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
           <div>
             <span className="text-2xs text-ink-3 block">Điểm uy tín KOC (Reliability)</span>
             <span className="text-base font-semibold text-ink">
-              {koc.reliabilityScore || 9.5} <span className="text-xs font-normal text-ink-3">/ 10</span>
+              {koc.reliabilityScore ? (
+                <>
+                  {koc.reliabilityScore} <span className="text-xs font-normal text-ink-3">/ 10</span>
+                </>
+              ) : (
+                '—'
+              )}
             </span>
           </div>
-          <span className="text-2xs font-medium text-positive">
-            Rất uy tín
-          </span>
+          {koc.reliabilityScore ? (
+            <span className="text-2xs font-medium text-positive">
+              {koc.reliabilityScore >= 8 ? 'Uy tín tốt' : 'Đang theo dõi'}
+            </span>
+          ) : (
+            <span className="text-2xs text-ink-3">Chưa chấm điểm</span>
+          )}
         </div>
 
         <dl className="grid gap-2.5">
@@ -2428,8 +2496,8 @@ function CollaborationDetailModal({
           />
           <Stat
             label="Lượt xem video thực tế"
-            value={formatNumber(deal.viewsCount || 85000)}
-            note={deal.ctr ? `CTR giỏ hàng ${deal.ctr}% · CVR ${deal.cvr || 2.8}%` : 'Chỉ số tương tác'}
+            value={deal.viewsCount > 0 ? formatNumber(deal.viewsCount) : '—'}
+            note={deal.ctr ? `CTR giỏ hàng ${deal.ctr}% · CVR ${deal.cvr || '—'}%` : 'Chỉ số tương tác'}
           />
         </StatRow>
 
@@ -2441,12 +2509,12 @@ function CollaborationDetailModal({
           </div>
           <div className="flex h-3 rounded-full overflow-hidden bg-sunken gap-1">
             <div
-              style={{ width: `${gmv > 0 ? (organicGmv / gmv) * 100 : 55}%` }}
+              style={{ width: `${gmv > 0 ? (organicGmv / gmv) * 100 : 50}%` }}
               className="data-bar bg-positive rounded-sm"
               title={`Tự nhiên: ${formatVndShort(organicGmv)}`}
             />
             <div
-              style={{ width: `${gmv > 0 ? (adsGmv / gmv) * 100 : 45}%` }}
+              style={{ width: `${gmv > 0 ? (adsGmv / gmv) * 100 : 50}%` }}
               className="data-bar bg-accent rounded-sm"
               title={`Spark Ads: ${formatVndShort(adsGmv)}`}
             />
@@ -2473,7 +2541,7 @@ function CollaborationDetailModal({
             </div>
             <div>
               <dt className="text-2xs text-ink-3">Góc tiếp cận (Content Angle)</dt>
-              <dd className="font-medium text-ink mt-0.5">{deal.contentPillar || 'Nỗi đau - Giải pháp'}</dd>
+              <dd className="font-medium text-ink mt-0.5">{deal.contentPillar || '—'}</dd>
             </div>
             {deal.contentHook && (
               <div className="sm:col-span-2">
@@ -2498,25 +2566,53 @@ function CollaborationDetailModal({
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Gửi nhận mẫu FOC:</span>
-                <span className="font-medium text-positive">Đã nhận hàng</span>
+                <span className="font-medium text-ink">
+                  {deal.sampleStatus === 'ĐÃ_NHẬN'
+                    ? 'Đã nhận hàng'
+                    : deal.sampleStatus === 'ĐANG_GIAO'
+                      ? 'Đang vận chuyển'
+                      : deal.sampleStatus === 'CHƯA_GỬI'
+                        ? 'Chờ xuất kho'
+                        : 'Chưa xác nhận'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Nộp kịch bản:</span>
-                <span className="font-medium text-positive">Đúng hạn cam kết</span>
+                <span className="font-medium text-ink">
+                  {deal.isScriptOnTime === true
+                    ? 'Đúng hạn cam kết'
+                    : deal.isScriptOnTime === false
+                      ? 'Trễ hạn'
+                      : 'Chưa xác nhận'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Lên sóng video:</span>
-                <span className="font-medium text-ink">{deal.postedDate ? formatDate(deal.postedDate) : 'Đúng hạn'}</span>
+                <span className="font-medium text-ink">
+                  {deal.postedDate
+                    ? formatDate(deal.postedDate)
+                    : deal.isPostOnTime === true
+                      ? 'Đúng hạn'
+                      : deal.isPostOnTime === false
+                        ? 'Trễ hạn'
+                        : 'Chưa lên sóng'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Mã Spark Ads:</span>
                 <span className="font-medium text-accent font-mono text-2xs">
-                  {deal.sparkAdsCode || 'SPARK-VERIFIED-30D'}
+                  {deal.sparkAdsCode || '—'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Quyết toán tài chính:</span>
-                <span className="font-medium text-positive">Đã hoàn tất</span>
+                <span className="font-medium text-ink">
+                  {deal.status === 'FINAL_PAID' || deal.status === 'COMPLETED'
+                    ? 'Đã hoàn tất'
+                    : deal.status === 'ADVANCE_PAID'
+                      ? 'Đã tạm ứng'
+                      : 'Chờ quyết toán'}
+                </span>
               </div>
             </div>
           </div>
@@ -2528,13 +2624,13 @@ function CollaborationDetailModal({
               <div>
                 <span className="text-2xs font-semibold text-ink-3 block">Chuyên viên Booking (PIC):</span>
                 <p className="text-ink-2 mt-0.5 leading-relaxed text-2xs">
-                  {deal.picCollabReview || 'KOC rất hợp tác, chủ động sửa kịch bản theo góp ý và bàn giao mã đúng giờ.'}
+                  {deal.picCollabReview || 'Chưa có ghi chú đánh giá từ PIC.'}
                 </p>
               </div>
               <div className="pt-2 border-t border-line">
                 <span className="text-2xs font-semibold text-ink-3 block">Phản hồi của Nhãn hàng (Brand):</span>
                 <p className="text-ink-2 mt-0.5 leading-relaxed text-2xs">
-                  {deal.brandFeedback || 'Nhãn hàng rất hài lòng về chất lượng hình ảnh và độ tự nhiên khi giới thiệu sản phẩm.'}
+                  {deal.brandFeedback || 'Chưa có phản hồi từ nhãn hàng.'}
                 </p>
               </div>
             </div>
@@ -2575,47 +2671,178 @@ function VietQrModal({ koc, onClose }: { koc: KocItem; onClose: () => void }) {
 }
 
 /* =========================================================================
-   9. MODAL ĐỒNG BỘ CHỈ SỐ TIKTOK SELLER
+   9. MODAL CẬP NHẬT & ĐỒNG BỘ CHỈ SỐ TIKTOK SELLER
    ========================================================================= */
 
-function TikTokSellerSyncModal({ koc, onClose }: { koc: KocItem; onClose: () => void }) {
+function TikTokSellerSyncModal({
+  koc,
+  onClose,
+  onUpdateKoc,
+}: {
+  koc: KocItem;
+  onClose: () => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
+}) {
   const [loading, setLoading] = useState(false);
-  const [synced, setSynced] = useState(false);
+  const [form, setForm] = useState({
+    rateCardVideo: koc.rateCardVideo || 0,
+    gpm: koc.gpm || 0,
+    aov: koc.aov || 0,
+    engagementRate: koc.engagementRate || 0,
+    tiktokAvgCtr: koc.tiktokAvgCtr || 0,
+    tiktokAvgCvr: koc.tiktokAvgCvr || 0,
+    tiktokShopRating: koc.tiktokShopRating || 0,
+    tiktokCancellationRate: koc.tiktokCancellationRate || 0,
+  });
 
-  const handleSync = () => {
+  const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const nowStr = new Date().toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      let updated: KocItem = {
+        ...koc,
+        rateCardVideo: Number(form.rateCardVideo) || 0,
+        gpm: Number(form.gpm) || undefined,
+        aov: Number(form.aov) || undefined,
+        engagementRate: Number(form.engagementRate) || undefined,
+        tiktokAvgCtr: Number(form.tiktokAvgCtr) || undefined,
+        tiktokAvgCvr: Number(form.tiktokAvgCvr) || undefined,
+        tiktokShopRating: Number(form.tiktokShopRating) || undefined,
+        tiktokCancellationRate: Number(form.tiktokCancellationRate) || undefined,
+        tiktokSellerSyncedAt: nowStr,
+      };
+      try {
+        const res = await fetch(
+          `/api/integrations/tiktok-koc/scrape?handle=${encodeURIComponent(koc.channelId)}&period=30d&videoLimit=12`
+        );
+        const json = await res.json();
+        if (json.success && json.data) {
+          updated = {
+            ...updated,
+            followers: json.data.channelProfile?.followers || updated.followers,
+            totalLikes: json.data.channelProfile?.totalLikes || updated.totalLikes,
+            videoCount: json.data.channelProfile?.videoCount || updated.videoCount,
+            avgViews: json.data.engagementMetrics?.avgViews || updated.avgViews,
+            engagementRate:
+              Number(form.engagementRate) ||
+              json.data.engagementMetrics?.engagementRate ||
+              updated.engagementRate,
+            recentVideos: json.data.recentVideos || updated.recentVideos,
+          };
+        }
+      } catch {
+        // Bỏ qua lỗi mạng khi cào trực tiếp
+      }
+      onUpdateKoc?.(updated, 'Đã cập nhật & đồng bộ chỉ số kênh TikTok');
+      onClose();
+    } finally {
       setLoading(false);
-      setSynced(true);
-      setTimeout(onClose, 1000);
-    }, 1200);
+    }
   };
 
   return (
-    <Modal open onClose={onClose} title="Đồng bộ chỉ số TikTok Seller"  size="sm">
-      <div className="space-y-4 py-2 text-xs">
-        <div className="flex items-center gap-2 text-2xs text-ink-3 pb-2 border-b border-line">
-          <span>Kênh: <strong className="font-code text-ink">@{koc.channelId.replace(/^@/, "")}</strong></span>
+    <Modal open onClose={onClose} title="Cập nhật & Đồng bộ chỉ số TikTok Seller" size="md">
+      <div className="space-y-3.5 text-xs">
+        <div className="p-2.5 rounded-lg bg-sunken border border-line flex items-center justify-between">
+          <span className="text-ink-2">Kênh TikTok</span>
+          <span className="font-code font-semibold text-ink">
+            @{koc.channelId.replace(/^@/, '')}
+          </span>
         </div>
-        <p className="text-ink-2 leading-relaxed">
-          Hệ thống sẽ kết nối với API TikTok Shop Seller Center để tải các chỉ số bán hàng mới nhất: Doanh số GMV 30 ngày, GPM, AOV, đơn hàng, phễu nhấp giỏ hàng CTR và tỷ lệ chuyển đổi CVR.
-        </p>
-        <div className="p-3 rounded-lg bg-sunken text-2xs space-y-1">
-          <div className="flex justify-between">
-            <span className="text-ink-3">Tài khoản kết nối:</span>
-            <span className="font-medium text-ink">TikTok Shop Seller Center</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-ink-3">Kênh sáng tạo:</span>
-            <span className="font-medium text-ink">@{koc.channelId.replace(/^@/, '')}</span>
-          </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Rate Card 1 Video (VNĐ)">
+            <Input
+              type="number"
+              value={form.rateCardVideo}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, rateCardVideo: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
+          <Field label="GPM (GMV / 1.000 view)">
+            <Input
+              type="number"
+              value={form.gpm}
+              onChange={(e) => setForm((p) => ({ ...p, gpm: Number(e.target.value) || 0 }))}
+            />
+          </Field>
+          <Field label="Giá trị đơn TB - AOV (VNĐ)">
+            <Input
+              type="number"
+              value={form.aov}
+              onChange={(e) => setForm((p) => ({ ...p, aov: Number(e.target.value) || 0 }))}
+            />
+          </Field>
+          <Field label="Tỷ lệ tương tác ER (%)">
+            <Input
+              type="number"
+              step="0.1"
+              value={form.engagementRate}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, engagementRate: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
+          <Field label="CTR nhấp giỏ hàng (%)">
+            <Input
+              type="number"
+              step="0.1"
+              value={form.tiktokAvgCtr}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, tiktokAvgCtr: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
+          <Field label="CVR chuyển đổi đơn (%)">
+            <Input
+              type="number"
+              step="0.1"
+              value={form.tiktokAvgCvr}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, tiktokAvgCvr: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
+          <Field label="Điểm uy tín Shop (trên 5.0)">
+            <Input
+              type="number"
+              step="0.1"
+              value={form.tiktokShopRating}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, tiktokShopRating: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
+          <Field label="Tỷ lệ hoàn/hủy đơn (%)">
+            <Input
+              type="number"
+              step="0.1"
+              value={form.tiktokCancellationRate}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, tiktokCancellationRate: Number(e.target.value) || 0 }))
+              }
+            />
+          </Field>
         </div>
-        <div className="pt-2 flex justify-end gap-2">
+
+        <div className="pt-2 flex justify-end gap-2 border-t border-line">
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Hủy
           </Button>
-          <Button variant="primary" icon={synced ? Check : RefreshCw} onClick={handleSync} disabled={loading || synced}>
-            {loading ? 'Đang đồng bộ...' : synced ? 'Đã đồng bộ!' : 'Bắt đầu đồng bộ'}
+          <Button
+            variant="primary"
+            icon={RefreshCw}
+            onClick={() => void handleSave()}
+            disabled={loading}
+          >
+            {loading ? 'Đang đồng bộ...' : 'Lưu & Đồng bộ kênh'}
           </Button>
         </div>
       </div>

@@ -660,7 +660,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                 </span>
                 {missingQuotas.filter((q) => q.planQty > 0).length === 0 ? (
                   <span className="text-ink-3">
-                    Chưa khóa định mức KL chi tiết — Hệ thống ưu tiên Top KOC theo điểm phù hợp
+                    Chưa phân bổ định mức KL
                   </span>
                 ) : (
                   missingQuotas

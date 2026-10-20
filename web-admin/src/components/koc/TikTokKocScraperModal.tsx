@@ -260,7 +260,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     for (const item of results) {
       const clean = item.handle.toLowerCase().replace(/^@+/, '');
       const matched = existingByHandle.get(clean);
-      const mapped = mapScrapedResultToKocItem(item, matched);
+      const mapped = mapScrapedResultToKocItem(item, matched, {
+        bookingPic: currentUser?.name,
+      });
       if (matched) {
         updated.push(mapped);
       } else {
@@ -511,7 +513,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                         className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
                           sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
                             ? 'bg-critical-soft text-critical'
-                            : 'bg-warning-soft text-warning'
+                            : sum.latestReview.verdict === 'SUITABLE'
+                              ? 'bg-positive-soft text-positive'
+                              : 'bg-warning-soft text-warning'
                         }`}
                       >
                         {sum.latestReview.verdictLabel}
@@ -579,12 +583,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                       <Button
                         size="sm"
                         variant="secondary"
-                        icon={activeReviewSummary ? History : XCircle}
+                        icon={History}
                         onClick={() => openChannelReview(activeResult)}
                       >
                         {activeReviewSummary
                           ? `Lịch sử ĐG (${activeReviewSummary.totalReviews})`
-                          : 'Đánh giá không phù hợp'}
+                          : 'Đánh giá kênh'}
                       </Button>
                       <span className="text-2xs text-ink-3">
                         · SĐT:{' '}
@@ -643,12 +647,23 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     activeReviewSummary.latestReview.verdict === 'NOT_SUITABLE' ||
                     activeReviewSummary.notSuitableCount > 0
                       ? 'bg-critical-soft/40 border-critical/30'
-                      : 'bg-warning-soft/40 border-warning/30'
+                      : activeReviewSummary.latestReview.verdict === 'SUITABLE'
+                        ? 'bg-positive-soft/40 border-positive/30'
+                        : 'bg-warning-soft/40 border-warning/30'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <History className="w-4 h-4 text-critical shrink-0" />
+                      <History
+                        className={`w-4 h-4 shrink-0 ${
+                          activeReviewSummary.latestReview.verdict === 'NOT_SUITABLE' ||
+                          activeReviewSummary.notSuitableCount > 0
+                            ? 'text-critical'
+                            : activeReviewSummary.latestReview.verdict === 'SUITABLE'
+                              ? 'text-positive'
+                              : 'text-warning'
+                        }`}
+                      />
                       <span className="font-semibold text-ink">
                         Lịch sử đánh giá kênh @{activeReviewSummary.handle} ({activeReviewSummary.totalReviews} lượt)
                       </span>

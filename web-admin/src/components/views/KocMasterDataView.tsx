@@ -81,7 +81,7 @@ interface KocMasterDataViewProps {
 }
 
 type LegalFilter = 'ALL' | LegalType;
-type IssueFilter = '' | 'MISSING' | 'DUPLICATE' | 'SUITABLE' | 'NOT_SUITABLE';
+type IssueFilter = '' | 'MISSING' | 'NO_CONTACT' | 'DUPLICATE' | 'SUITABLE' | 'NOT_SUITABLE';
 type PlatformFilter = 'ALL' | 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads';
 
 const ALL = 'ALL';
@@ -253,9 +253,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     return Boolean(sum && (sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0));
   };
 
+  const hasContactInfo = (k: KocItem): boolean => Boolean(k.email?.trim() || k.phone?.trim());
+
   const matchesIssue = (k: KocItem, f: IssueFilter) => {
     if (f === '') return true;
     if (f === 'MISSING') return !hasLegalId(k);
+    if (f === 'NO_CONTACT') return !hasContactInfo(k);
     if (f === 'DUPLICATE') return duplicates.has(k.id);
     if (f === 'SUITABLE') return isKocMarkedSuitable(k);
     if (f === 'NOT_SUITABLE') return isKocMarkedNotSuitable(k);
@@ -276,6 +279,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const issueBase = baseFiltered.filter((k) => legal === ALL || typeOf(k) === legal);
   const issueChips = [
     { key: 'MISSING' as const, label: 'Thiếu giấy tờ', count: issueBase.filter((k) => !hasLegalId(k)).length },
+    { key: 'NO_CONTACT' as const, label: 'Thiếu Email/SĐT', count: issueBase.filter((k) => !hasContactInfo(k)).length },
     { key: 'DUPLICATE' as const, label: 'Nghi trùng', count: issueBase.filter((k) => duplicates.has(k.id)).length },
     {
       key: 'SUITABLE' as const,
@@ -439,8 +443,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const columns: Column<KocItem>[] = [
     {
       key: 'koc',
-      header: 'KOC',
-      width: 220,
+      header: 'KOC & Liên hệ',
+      width: 240,
       render: (k) => (
         <div className="flex items-center gap-2.5 min-w-0 max-w-[260px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
@@ -454,6 +458,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               @{k.channelId.replace(/^@/, '')}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
+            {k.email || k.phone ? (
+              <span className="block truncate text-2xs text-ink-2" title={[k.email, k.phone].filter(Boolean).join(' · ')}>
+                {[k.email, k.phone].filter(Boolean).join(' · ')}
+              </span>
+            ) : (
+              <span className="block truncate text-2xs text-ink-3/70">Chưa có Email / SĐT</span>
+            )}
           </div>
         </div>
       ),
@@ -485,7 +496,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 <button
                   type="button"
                   onClick={() => openForVerdict('SUITABLE')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-[11px] font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-2xs font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
                 >
                   <Check className="w-3 h-3 shrink-0" />
                   <span>Phù hợp</span>
@@ -493,7 +504,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 <button
                   type="button"
                   onClick={() => openForVerdict('NOT_SUITABLE')}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-[11px] font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-2xs font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
                 >
                   <XCircle className="w-3 h-3 shrink-0" />
                   <span>Không phù hợp</span>
@@ -512,7 +523,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             <button
               type="button"
               onClick={() => openForVerdict()}
-              className="text-left text-[11px] leading-snug grid gap-0.5 hover:underline cursor-pointer"
+              className="text-left text-2xs leading-snug grid gap-0.5 hover:underline cursor-pointer"
               title={`Ý kiến: ${reviewSummary.latestReview.note || reviewSummary.latestReview.reasonTags.join(', ')}`}
             >
               <span className="truncate font-medium text-ink-2">
@@ -529,7 +540,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <button
                 type="button"
                 onClick={() => openForVerdict('SUITABLE')}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-[10px] font-semibold hover:bg-positive-soft transition cursor-pointer"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-2xs font-semibold hover:bg-positive-soft transition cursor-pointer"
               >
                 <Check className="w-2.5 h-2.5" />
                 <span>+ Phù hợp</span>
@@ -537,7 +548,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <button
                 type="button"
                 onClick={() => openForVerdict('NOT_SUITABLE')}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-[10px] font-semibold hover:bg-critical-soft transition cursor-pointer"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-2xs font-semibold hover:bg-critical-soft transition cursor-pointer"
               >
                 <XCircle className="w-2.5 h-2.5" />
                 <span>+ K.Phù hợp</span>

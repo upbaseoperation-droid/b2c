@@ -953,13 +953,13 @@ function parseJsonCandidatesFromLlmReply(
           ) {
             continue;
           }
-          const confRaw = String(item?.confidence || 'CAO').toUpperCase();
+          const confRaw = String(item?.confidence || 'TRUNG_BÌNH').toUpperCase();
           const confidence: SocialConfidenceLevel =
             confRaw === 'CAO' || confRaw === 'HIGH'
               ? 'CAO'
               : confRaw === 'TRUNG_BÌNH' || confRaw === 'MEDIUM'
               ? 'TRUNG_BÌNH'
-              : 'CAO';
+              : 'GỢI_Ý';
 
           candidates.push({
             platform: p,

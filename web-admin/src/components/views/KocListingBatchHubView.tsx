@@ -20,7 +20,14 @@ import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Prese
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
-import { appendKocsToStaffBrandSheet } from '@/lib/staffBrandListingSheet';
+import {
+  appendKocsToStaffBrandSheet,
+  loadStaffSheetCollection,
+  makeSheetKey,
+  normalizeTikTokId,
+  saveStaffSheetCollection,
+} from '@/lib/staffBrandListingSheet';
+import { transferBrandApprovedRowsToBookingList } from '@/lib/approvedBookingList';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
@@ -134,6 +141,31 @@ export function KocListingBatchHubView({
   const [showShortlistModal, setShowShortlistModal] = useState<boolean>(false);
   const [showAirUpdateModal, setShowAirUpdateModal] = useState<boolean>(false);
   const [selectedListingForAir, setSelectedListingForAir] = useState<KocListingItem | null>(null);
+  const [airUpdateForm, setAirUpdateForm] = useState<{
+    stage: AirVideoStage;
+    videoUrl: string;
+    actualDate: string;
+    sparkCode: string;
+    isAnchored: boolean;
+  }>({
+    stage: 'SAMPLE_DISPATCHED',
+    videoUrl: '',
+    actualDate: '2026-10-09',
+    sparkCode: '',
+    isAnchored: false,
+  });
+
+  useEffect(() => {
+    if (selectedListingForAir) {
+      setAirUpdateForm({
+        stage: selectedListingForAir.airVideoStage || 'SAMPLE_DISPATCHED',
+        videoUrl: selectedListingForAir.publishedVideoUrl || '',
+        actualDate: selectedListingForAir.actualAirDate || '2026-10-09',
+        sparkCode: selectedListingForAir.sparkAdsCode || '',
+        isAnchored: selectedListingForAir.isCartAnchored ?? false,
+      });
+    }
+  }, [selectedListingForAir]);
   const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
   const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
   const [isKocReportOpen, setIsKocReportOpen] = useState<boolean>(false);
@@ -515,11 +547,55 @@ export function KocListingBatchHubView({
     if (!targetIds) setSelectedIds([]);
   };
 
+  const syncListingApprovalToSheetAndBookingList = (
+    targetItem: KocListingItem,
+    brandChonVal: 'Yes' | 'No',
+    feedback?: string
+  ) => {
+    if (typeof window === 'undefined') return;
+    const sheetKey = makeSheetKey(
+      targetItem.monthKey || (selectedMonth === 'ALL' ? '2026/10' : selectedMonth),
+      targetItem.storeName
+    );
+    const collection = loadStaffSheetCollection(kocs, stores, deals, currentUserName);
+    const sheetRows = collection.sheets[sheetKey] || [];
+    const cleanHandle = normalizeTikTokId(targetItem.kocHandle || '').toLowerCase();
+    const matchedRows = sheetRows
+      .filter((r) => normalizeTikTokId(r.idKenh).toLowerCase() === cleanHandle)
+      .map((r) => ({
+        ...r,
+        brandChon: brandChonVal,
+        ...(feedback ? { lyDoTuChoi: feedback } : {}),
+      }));
+
+    if (matchedRows.length > 0) {
+      const updatedMap = new Map(matchedRows.map((r) => [r.id, r]));
+      collection.sheets[sheetKey] = sheetRows.map((r) => updatedMap.get(r.id) || r);
+      saveStaffSheetCollection(collection, true);
+
+      if (brandChonVal === 'Yes') {
+        const storeObj = stores.find(
+          (s) => s.storeName.trim().toLowerCase() === targetItem.storeName.trim().toLowerCase()
+        );
+        transferBrandApprovedRowsToBookingList({
+          rowsToTransfer: matchedRows,
+          sheetKey,
+          store: storeObj,
+          allKocs: kocs,
+          allStores: stores,
+          allDeals: deals,
+        });
+      }
+    }
+  };
+
   // Brand Approval Action
   const handleBrandDecision = (id: string, decision: 'APPROVE' | 'REJECT', feedback?: string) => {
     const nowIso = new Date().toISOString();
+    let targetListing: KocListingItem | null = null;
     const updated = listings.map((item) => {
       if (item.id === id) {
+        targetListing = item;
         const nextBrandStatus: BrandListingStatus = decision === 'APPROVE' ? 'BRAND_APPROVED' : 'BRAND_REJECTED';
         let nextOverall = item.overallStatus === 'DRAFT' ? 'SUBMITTED' : item.overallStatus;
         let dropReason = item.dropReason;
@@ -558,6 +634,13 @@ export function KocListingBatchHubView({
       return item;
     });
     onUpdateListings(updated);
+    if (targetListing) {
+      syncListingApprovalToSheetAndBookingList(
+        targetListing,
+        decision === 'APPROVE' ? 'Yes' : 'No',
+        feedback
+      );
+    }
   };
 
   // KOC Negotiation Status Update
@@ -664,6 +747,7 @@ export function KocListingBatchHubView({
       return l;
     });
     onUpdateListings(updated);
+    syncListingApprovalToSheetAndBookingList(item, 'Yes');
 
     if (onGenerateDeal) {
       onGenerateDeal({
@@ -743,6 +827,28 @@ export function KocListingBatchHubView({
     };
 
     onUpdateListings([newItem, ...listings]);
+    appendKocsToStaffBrandSheet({
+      kocsToAdd: [
+        {
+          id: newItem.kocId,
+          stageName: newItem.kocName,
+          channelId: normalizeTikTokId(newItem.kocHandle || ''),
+          rateCardVideo: newItem.proposedFee || 0,
+          followers: newItem.followersCount || 0,
+          tepKenh: 'Beauty',
+        },
+      ],
+      monthKey: newItem.monthKey || '2026/10',
+      storeName: newItem.storeName,
+      staffName: currentUserName,
+      allKocs: kocs,
+      allStores: stores,
+      allDeals: deals,
+      dot: 'Đợt 1',
+      sanPham: newItem.pillarName || '',
+      contentTag: newItem.videoFormat || 'Review trực tiếp',
+      deXuatUpBase: 'Recommend',
+    });
     setShowAddModal(false);
   };
 
@@ -793,7 +899,9 @@ export function KocListingBatchHubView({
     });
 
     const fullListings: KocListingItem[] = newListings.map((item, idx) => {
-      const grade = inferSalaryGradeFromFee(item.proposedFee || 0, item.salaryGrade);
+      const feeToUse = item.proposedFee ?? 0;
+      const grade = inferSalaryGradeFromFee(feeToUse, item.salaryGrade);
+      const handleVal = item.kocHandle || '@koc';
       return {
         id: item.id || `LIST-SL-${Date.now()}-${idx}`,
         batchId: item.batchId || 'BATCH-202610-B10',
@@ -808,18 +916,20 @@ export function KocListingBatchHubView({
         salaryGrade: grade,
         kocId: item.kocId || `KOC-SL-${idx}`,
         kocName: item.kocName || 'KOC Đề Xuất',
-        kocHandle: item.kocHandle || '@koc',
+        kocHandle: handleVal,
         channel: item.channel || 'TikTok Shop',
-        followersCount: item.followersCount || 100000,
+        followersCount: item.followersCount ?? 100000,
         tier: item.tier || 'MICRO',
         niche: item.niche || 'Chăm sóc cá nhân',
         videoFormat: item.videoFormat || 'Review trải nghiệm',
         pillarName: item.pillarName || 'Chiến dịch tháng',
-        proposedFee: item.proposedFee || 0,
+        proposedFee: feeToUse,
         finalFee: item.finalFee,
         brandApprovalStatus: item.brandApprovalStatus || 'BRAND_PENDING',
+        brandFeedbackNote: item.brandFeedbackNote,
         kocNegotiationStatus: item.kocNegotiationStatus || 'NOT_CONTACTED',
-        overallStatus: 'DRAFT',
+        negotiationNote: item.negotiationNote,
+        overallStatus: item.overallStatus || 'DRAFT',
         discussions: [
           {
             id: `disc-sl-${Date.now()}-${idx}`,
@@ -836,7 +946,31 @@ export function KocListingBatchHubView({
         updatedAt: item.updatedAt || nowIso,
       };
     });
-    onUpdateListings([...fullListings, ...listings]);
+
+    const updatedExistingIds = new Set<string>();
+    const mergedListings = listings.map((existing) => {
+      const exHandle = normalizeTikTokId(existing.kocHandle || '').toLowerCase();
+      const matchedIncoming = fullListings.find((inc) => {
+        const incHandle = normalizeTikTokId(inc.kocHandle || '').toLowerCase();
+        return (
+          inc.storeName.trim().toLowerCase() === existing.storeName.trim().toLowerCase() &&
+          (inc.monthKey || '2026/10') === (existing.monthKey || '2026/10') &&
+          incHandle &&
+          incHandle === exHandle
+        );
+      });
+      if (!matchedIncoming) return existing;
+      updatedExistingIds.add(matchedIncoming.id);
+      return {
+        ...existing,
+        ...matchedIncoming,
+        id: existing.id,
+        discussions: existing.discussions || matchedIncoming.discussions,
+        updatedAt: nowIso,
+      };
+    });
+    const brandNewItems = fullListings.filter((inc) => !updatedExistingIds.has(inc.id));
+    onUpdateListings([...brandNewItems, ...mergedListings]);
     setShowShortlistModal(false);
     onNotify?.(`Đã đưa ${fullListings.length} KOC vào Sheet "${targetStoreName}" và danh sách đề xuất.`, 'success');
   };
@@ -969,14 +1103,10 @@ export function KocListingBatchHubView({
                 <h3 className="text-xs font-semibold text-slate-900">
                   Đối soát Plan Final &amp; Tiến độ Listing KOC theo Khung lương (KL1–KL7 &amp; FOC)
                 </h3>
-                {matchedPlanFinal ? (
+                {matchedPlanFinal && (
                   <span className="inline-flex items-center gap-1 text-2xs font-semibold text-emerald-700">
                     <ShieldCheck className="w-3 h-3" />
                     · Gắn với {matchedPlanFinal.id} ({matchedPlanFinal.currentVersionCode || 'v1.0'}) · PIC: {matchedPlanFinal.pic}
-                  </span>
-                ) : (
-                  <span className="text-2xs font-medium text-slate-500">
-                    · Tổng hợp toàn bộ kế hoạch tháng {selectedMonth}
                   </span>
                 )}
               </div>
@@ -2037,12 +2167,12 @@ export function KocListingBatchHubView({
       >
         {inspectingListing && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+            <div className="flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-md bg-sunken border border-line text-2xs">
               <span className="font-semibold text-ink">Gian hàng: {inspectingListing.storeName}</span>
-              <span>·</span>
-              <span>Plan: {inspectingListing.sourcePlanId || matchedPlanFinal?.id || 'Tháng 10/2026'} ({inspectingListing.sourcePlanVersion || 'v1.0'})</span>
-              <span>·</span>
-              <span className="font-mono text-accent">{inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}</span>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-2">Plan: {inspectingListing.sourcePlanId || matchedPlanFinal?.id || 'Tháng 10/2026'} ({inspectingListing.sourcePlanVersion || 'v1.0'})</span>
+              <span className="text-ink-3">·</span>
+              <span className="font-mono font-semibold text-accent">{inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}</span>
             </div>
               {/* Thanh tiến trình 3 bước của Listing */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
@@ -2249,21 +2379,27 @@ export function KocListingBatchHubView({
           setShowAirUpdateModal(false);
           setSelectedListingForAir(null);
         }}
-        title="Cập nhật tiến độ video lên sóng"
+        title={
+          selectedListingForAir
+            ? `Cập nhật tiến độ video lên sóng — ${selectedListingForAir.kocName} (${selectedListingForAir.kocHandle})`
+            : 'Cập nhật tiến độ video lên sóng'
+        }
         size="md"
       >
         {selectedListingForAir && (
           <div className="space-y-3.5 text-xs">
-            <div className="text-2xs text-ink-3 pb-2 border-b border-line">
-              KOC: <strong className="text-ink">{selectedListingForAir.kocName}</strong> · <span className="font-mono">{selectedListingForAir.kocHandle}</span>
-            </div>
               <div>
                 <label className="block text-2xs font-semibold text-slate-700 mb-1">
                   Giai đoạn hiện tại *
                 </label>
                 <select
-                  defaultValue={selectedListingForAir.airVideoStage || 'SAMPLE_DISPATCHED'}
-                  id="air-stage-select"
+                  value={airUpdateForm.stage}
+                  onChange={(e) =>
+                    setAirUpdateForm((prev) => ({
+                      ...prev,
+                      stage: e.target.value as AirVideoStage,
+                    }))
+                  }
                   className="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-medium"
                 >
                   <option value="SAMPLE_DISPATCHED">Đã xuất hàng mẫu</option>
@@ -2283,8 +2419,10 @@ export function KocListingBatchHubView({
                 </label>
                 <input
                   type="url"
-                  id="air-video-url"
-                  defaultValue={selectedListingForAir.publishedVideoUrl || ''}
+                  value={airUpdateForm.videoUrl}
+                  onChange={(e) =>
+                    setAirUpdateForm((prev) => ({ ...prev, videoUrl: e.target.value }))
+                  }
                   placeholder="https://tiktok.com/@koc/video/..."
                   className="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800"
                 />
@@ -2297,8 +2435,10 @@ export function KocListingBatchHubView({
                   </label>
                   <input
                     type="date"
-                    id="air-actual-date"
-                    defaultValue={selectedListingForAir.actualAirDate || '2026-10-09'}
+                    value={airUpdateForm.actualDate}
+                    onChange={(e) =>
+                      setAirUpdateForm((prev) => ({ ...prev, actualDate: e.target.value }))
+                    }
                     className="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800"
                   />
                 </div>
@@ -2309,8 +2449,10 @@ export function KocListingBatchHubView({
                   </label>
                   <input
                     type="text"
-                    id="air-spark-code"
-                    defaultValue={selectedListingForAir.sparkAdsCode || ''}
+                    value={airUpdateForm.sparkCode}
+                    onChange={(e) =>
+                      setAirUpdateForm((prev) => ({ ...prev, sparkCode: e.target.value }))
+                    }
                     placeholder="VD: SPARK-TK-9821"
                     className="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-mono text-2xs"
                   />
@@ -2321,8 +2463,13 @@ export function KocListingBatchHubView({
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    id="air-cart-anchored"
-                    defaultChecked={selectedListingForAir.isCartAnchored ?? false}
+                    checked={airUpdateForm.isAnchored}
+                    onChange={(e) =>
+                      setAirUpdateForm((prev) => ({
+                        ...prev,
+                        isAnchored: e.target.checked,
+                      }))
+                    }
                     className="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                   />
                   <span className="text-2xs font-medium text-slate-700">
@@ -2345,13 +2492,13 @@ export function KocListingBatchHubView({
                 <button
                   type="button"
                   onClick={() => {
-                    const stage = (document.getElementById('air-stage-select') as HTMLSelectElement).value as AirVideoStage;
-                    const url = (document.getElementById('air-video-url') as HTMLInputElement).value;
-                    const actualDate = (document.getElementById('air-actual-date') as HTMLInputElement).value;
-                    const sparkCode = (document.getElementById('air-spark-code') as HTMLInputElement).value;
-                    const isAnchored = (document.getElementById('air-cart-anchored') as HTMLInputElement).checked;
-
-                    handleSaveAirUpdate(stage, url, isAnchored, sparkCode, actualDate);
+                    handleSaveAirUpdate(
+                      airUpdateForm.stage,
+                      airUpdateForm.videoUrl,
+                      airUpdateForm.isAnchored,
+                      airUpdateForm.sparkCode,
+                      airUpdateForm.actualDate
+                    );
                   }}
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm cursor-pointer"
                 >

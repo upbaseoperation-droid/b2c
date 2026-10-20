@@ -850,7 +850,8 @@ export async function scrapeTikTokCreatorData(
  */
 export function mapScrapedResultToKocItem(
   scraped: TikTokScrapedKocResult,
-  existing?: KocItem
+  existing?: KocItem,
+  options?: { bookingPic?: string }
 ): KocItem {
   const { channelProfile, engagementMetrics, recentVideos, affiliateMetrics } = scraped;
   const cls = affiliateMetrics.suggestedClassification;
@@ -873,6 +874,7 @@ export function mapScrapedResultToKocItem(
       phone: existing.phone || channelProfile.extractedPhone || '',
       zalo: existing.zalo || channelProfile.extractedZalo || existing.phone || '',
       email: existing.email || channelProfile.extractedEmail,
+      bookingPic: existing.bookingPic || options?.bookingPic,
       followers: channelProfile.followers,
       totalLikes: channelProfile.totalLikes,
       videoCount: channelProfile.videoCount,
@@ -906,10 +908,11 @@ export function mapScrapedResultToKocItem(
     avgViews: engagementMetrics.avgViews,
     rateCardVideo: cls.rateCardVideo,
     bookingFormat: 'Booking Video KOC',
+    bookingPic: options?.bookingPic,
     platforms: ['TIKTOK'],
     tiktokChannel: channelProfile.channelUrl,
     phone: channelProfile.extractedPhone || '',
-    zalo: channelProfile.extractedZalo || '',
+    zalo: channelProfile.extractedZalo || channelProfile.extractedPhone || '',
     email: channelProfile.extractedEmail,
     location: channelProfile.location || '',
     cccd: '',

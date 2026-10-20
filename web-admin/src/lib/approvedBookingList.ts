@@ -255,6 +255,8 @@ export function recalculateApprovedBookingItem(
 
   const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
   const acceptanceStatus = hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU';
+  const extractedVideoMatch = (item.linkAir || '').match(/\/video\/(\d+)/i);
+  const videoId = extractedVideoMatch ? extractedVideoMatch[1] : item.videoId || '';
   const tuanReal = item.actualAirDate
     ? computeWeekLabelFromDate(item.actualAirDate)
     : item.tuanReal || '';
@@ -300,6 +302,7 @@ export function recalculateApprovedBookingItem(
     soTienTamUngTruoc: tamUng,
     soTienCanThanhToan: canThanhToan,
     acceptanceStatus,
+    videoId,
     tuanReal,
     thangAirReal,
     trangThaiSlaAir: slaInfo.statusText,
@@ -355,8 +358,8 @@ export function buildApprovedBookingItemFromSheetRow(params: {
     storeName: row.store,
     brandName,
     nguoiPhuTrach: row.nhanSuDien || store?.assignedPic || 'Chuyên viên Booking',
-    growthPic: store?.accountOwnerName || 'Phạm Thương Thảo',
-    leaderName: store?.bookingLeader || 'Đặng Thị Yến Nhi',
+    growthPic: store?.accountOwnerName || 'Phạm Thị Thu Hằng',
+    leaderName: store?.bookingLeader || '',
     kocId: row.kocId,
     idKenh: normalizeTikTokId(row.idKenh),
     tenKenh: row.tenKenh || row.idKenh,
@@ -871,23 +874,23 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
       target.maBooking || generateBookingOrderCode(target.thangPlan, targetIdx + 501);
     const actualAirDate = acc.actualAirDate || target.actualAirDate || todayStr;
     const views30 =
-      acc.views30d !== undefined && acc.views30d > 0
+      acc.views30d !== undefined && acc.views30d >= 0
         ? acc.views30d
         : target.views30d > 0
         ? target.views30d
-        : 22500;
+        : 0;
     const gmv30 =
       acc.gmv30d !== undefined && acc.gmv30d >= 0
         ? acc.gmv30d
         : target.gmv30d > 0
         ? target.gmv30d
-        : Math.round((target.chiPhiBookingNetCuoi || 1500000) * 2.6);
+        : 0;
     const orders30 =
       acc.orders30d !== undefined && acc.orders30d >= 0
         ? acc.orders30d
         : target.orders30d > 0
         ? target.orders30d
-        : Math.max(15, Math.round(gmv30 / 260000));
+        : 0;
 
     const updated = recalculateApprovedBookingItem({
       ...target,
@@ -898,10 +901,7 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
       videoId: acc.videoId || target.videoId,
       actualAirDate,
       ngayDienLinkAir: todayStr,
-      sparkAdsCode:
-        acc.sparkAdsCode ||
-        target.sparkAdsCode ||
-        `#SPARK-${target.idKenh.slice(0, 6).toUpperCase()}-${actualAirDate.replace(/-/g, '').slice(4)}`,
+      sparkAdsCode: acc.sparkAdsCode || target.sparkAdsCode || '',
       views30d: views30,
       gmv30d: gmv30,
       orders30d: orders30,

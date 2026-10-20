@@ -420,8 +420,12 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           />
           <Stat
             label="ROI trung bình / Tỷ lệ lãi"
-            value={`${evaluation.stats.overallRoi.toFixed(2)}x`}
-            note={`${evaluation.profitableDealRatio}% deal ??t ROI >= 2.0x`}
+            value={evaluation.stats.totalDeals > 0 ? `${evaluation.stats.overallRoi.toFixed(2)}x` : '—'}
+            note={
+              evaluation.stats.paidDealsCount > 0
+                ? `${evaluation.profitableDealRatio}% deal đạt ROI >= 2.0x`
+                : 'Chưa có deal trả phí'
+            }
             tone={
               evaluation.stats.overallRoi >= 2.5
                 ? 'positive'
@@ -432,9 +436,19 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           />
           <Stat
             label="Đúng hạn SLA / Spark Ads"
-            value={`${evaluation.stats.onTimePostRate}%`}
-            note={`Kịch bản: ${evaluation.stats.onTimeScriptRate}% · Mã Ads: ${evaluation.stats.sparkComplianceRate}%`}
-            tone={evaluation.stats.onTimePostRate >= 85 ? 'positive' : 'warning'}
+            value={evaluation.stats.totalDeals > 0 ? `${evaluation.stats.onTimePostRate}%` : '—'}
+            note={
+              evaluation.stats.totalDeals > 0
+                ? `Kịch bản: ${evaluation.stats.onTimeScriptRate}% · Mã Ads: ${evaluation.stats.sparkComplianceRate}%`
+                : 'Chưa có dữ liệu SLA'
+            }
+            tone={
+              evaluation.stats.totalDeals === 0
+                ? undefined
+                : evaluation.stats.onTimePostRate >= 85
+                ? 'positive'
+                : 'warning'
+            }
           />
         </StatRow>
 

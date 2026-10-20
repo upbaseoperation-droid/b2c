@@ -20,7 +20,7 @@ import { Avatar, Button, Field, Input, Modal, Select, Status } from '../ui';
 const BRAND_PRODUCT_CATALOG: Record<string, string[]> = {
   '4pm': [
     'Áo thun Polo 4PM Form Regular',
-    'Quần âu ống đứng 4PM Smart Casual',
+    'Quần âu ống đứng 4PM Casual',
     'Áo sơ mi Oxford 4PM chống nhăn',
     'Quần Short Kaki 4PM Basic',
     'Set đồ nam 4PM Thu Đông',
