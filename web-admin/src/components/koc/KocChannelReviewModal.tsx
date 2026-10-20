@@ -21,6 +21,7 @@ import {
   KOC_REVIEW_VERDICT_OPTIONS,
   normalizeKocChannelHandle,
   submitKocChannelReview,
+  useKocChannelReviews,
   type KocChannelReviewItem,
   type KocChannelReviewSummary,
   type KocChannelReviewVerdict,
@@ -186,6 +187,22 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
   );
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [justSavedId, setJustSavedId] = useState<string | null>(null);
+  const { reviews: liveHookReviews } = useKocChannelReviews();
+  const [localReviews, setLocalReviews] = useState<KocChannelReviewItem[]>(reviews);
+
+  const effectiveReviews = useMemo(() => {
+    const byId = new Map<string, KocChannelReviewItem>();
+    for (const item of [...localReviews, ...liveHookReviews, ...reviews]) {
+      if (!item || !item.id) continue;
+      if (!byId.has(item.id)) {
+        byId.set(item.id, item);
+      }
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [localReviews, liveHookReviews, reviews]);
 
   // Bộ lọc tab Tất cả lịch sử đánh giá
   const [historySearch, setHistorySearch] = useState<string>('');
@@ -209,6 +226,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       setSelectedReasons([getReasonPresetsByVerdict(initVerdict)[0]]);
       setNote('');
       setErrorMsg(null);
+      setJustSavedId(null);
       setActiveTab(clean ? initialMode : 'ALL_HISTORY');
     }
   }
@@ -226,12 +244,12 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
 
   const channelReviews = useMemo(() => {
     if (!activeCleanHandle) return [];
-    return reviews
+    return effectiveReviews
       .filter((r) => normalizeKocChannelHandle(r.handle) === activeCleanHandle)
       .sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-  }, [reviews, activeCleanHandle]);
+  }, [effectiveReviews, activeCleanHandle]);
 
   const channelBrandSummaryRows = useMemo(() => {
     const map = new Map<
@@ -253,7 +271,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
 
   const filteredAllReviews = useMemo(() => {
     const q = historySearch.trim().toLowerCase().replace(/^@+/, '');
-    return reviews.filter((r) => {
+    return effectiveReviews.filter((r) => {
       if (historyVerdictFilter !== 'ALL' && r.verdict !== historyVerdictFilter) {
         return false;
       }
@@ -283,7 +301,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       }
       return true;
     });
-  }, [reviews, historySearch, historyVerdictFilter, historyBrandFilter]);
+  }, [effectiveReviews, historySearch, historyVerdictFilter, historyBrandFilter]);
 
   const brandOptions = defaultBrandList;
 
@@ -378,8 +396,9 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       setErrorMsg('Vui lòng nhập @handle hoặc đường dẫn kênh KOC cần đánh giá.');
       return;
     }
-    if (!note.trim()) {
-      setErrorMsg('Vui lòng ghi rõ ý kiến đánh giá của nhân viên về kênh KOC này trước khi lưu.');
+    const cleanNote = note.trim() || selectedReasons.join(', ');
+    if (!cleanNote) {
+      setErrorMsg('Vui lòng ghi rõ ý kiến đánh giá hoặc chọn ít nhất một lý do trước khi lưu.');
       return;
     }
 
@@ -400,7 +419,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
         avatarUrl: target?.avatarUrl,
         verdict,
         reasonTags: selectedReasons,
-        note: note.trim(),
+        note: cleanNote,
         brandScope,
         sourceScreen: target?.sourceScreen || 'Tìm kiếm KOC',
         reviewerName: currentUserName,
@@ -413,6 +432,10 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
         return;
       }
 
+      setLocalReviews(result.items);
+      if (result.item?.id) {
+        setJustSavedId(result.item.id);
+      }
       setNote('');
       onNotify?.(
         `Đã lưu lịch sử đánh giá (${
@@ -430,7 +453,9 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
   };
 
   const handleDeleteReview = async (item: KocChannelReviewItem) => {
-    await deleteKocChannelReview(item.id);
+    setLocalReviews((prev) => prev.filter((it) => it.id !== item.id));
+    const res = await deleteKocChannelReview(item.id);
+    setLocalReviews(res.items);
     onNotify?.(`Đã xóa lượt đánh giá của ${item.reviewerName} trên kênh @${item.handle}`, 'info');
   };
 
@@ -504,7 +529,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
             {
               key: 'ALL_HISTORY',
               label: 'Tất cả lịch sử đánh giá KOC',
-              count: reviews.length > 0 ? reviews.length : undefined,
+              count: effectiveReviews.length > 0 ? effectiveReviews.length : undefined,
             },
           ]}
           value={activeTab}
@@ -677,113 +702,139 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-sunken/60 border-b border-line text-2xs font-semibold text-ink-2">
-                            <th className="px-2.5 py-1.5">Brand (Nhãn hàng)</th>
-                            <th className="px-2.5 py-1.5">Đánh giá</th>
+                            <th className="px-2.5 py-1.5">Brand</th>
+                            <th className="px-2.5 py-1.5">Kết luận</th>
+                            <th className="px-2.5 py-1.5">Ý kiến &amp; Lý do</th>
                             <th className="px-2.5 py-1.5">Người ĐG &amp; Thời gian</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
-                          {channelBrandSummaryRows.map((row) => (
-                            <tr key={row.brandScope} className="hover:bg-sunken/30">
-                              <td className="px-2.5 py-1.5 font-semibold text-ink">
-                                {row.brandScope}
-                              </td>
-                              <td className="px-2.5 py-1.5">
-                                <Status tone={getVerdictTone(row.latest.verdict)}>
-                                  {row.latest.verdictLabel}
-                                </Status>
-                              </td>
-                              <td className="px-2.5 py-1.5 text-2xs text-ink-2 tabular-nums">
-                                <span className="font-medium text-ink">{row.latest.reviewerName}</span>{' '}
-                                <span className="text-ink-3">
-                                  ({row.latest.timeLabel} · {row.latest.dateLabel})
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                          {channelBrandSummaryRows.map((row) => {
+                            const isJustSaved = row.latest.id === justSavedId;
+                            return (
+                              <tr
+                                key={row.brandScope}
+                                className={
+                                  isJustSaved
+                                    ? 'bg-accent-soft/25 transition-colors'
+                                    : 'hover:bg-sunken/30'
+                                }
+                              >
+                                <td className="px-2.5 py-1.5 font-semibold text-ink whitespace-nowrap">
+                                  {row.brandScope}
+                                </td>
+                                <td className="px-2.5 py-1.5 whitespace-nowrap">
+                                  <Status tone={getVerdictTone(row.latest.verdict)}>
+                                    {row.latest.verdictLabel}
+                                  </Status>
+                                </td>
+                                <td className="px-2.5 py-1.5 text-2xs text-ink max-w-[180px]">
+                                  <div className="line-clamp-2 leading-snug">
+                                    {row.latest.note || row.latest.reasonTags.join(', ')}
+                                  </div>
+                                </td>
+                                <td className="px-2.5 py-1.5 text-2xs text-ink-2 tabular-nums whitespace-nowrap">
+                                  <div className="font-medium text-ink">
+                                    {row.latest.reviewerName}
+                                  </div>
+                                  <div className="text-ink-3">
+                                    {row.latest.timeLabel} · {row.latest.dateLabel}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
 
                     <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
-                      {channelReviews.map((rev) => (
-                        <div
-                          key={rev.id}
-                          className={`p-3 rounded-xl border space-y-2 ${
-                            rev.verdict === 'NOT_SUITABLE'
-                              ? 'bg-critical-soft/35 border-critical/30'
-                              : rev.verdict === 'CAUTION'
-                                ? 'bg-warning-soft/35 border-warning/30'
-                                : 'bg-positive-soft/35 border-positive/30'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Avatar name={rev.reviewerName} size={28} />
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="text-xs font-semibold text-ink">
-                                    {rev.reviewerName}
-                                  </span>
-                                  {rev.reviewerRole && (
-                                    <span className="text-2xs text-ink-3">
-                                      · {rev.reviewerRole}
+                      {channelReviews.map((rev) => {
+                        const isJustSaved = rev.id === justSavedId;
+                        return (
+                          <div
+                            key={rev.id}
+                            className={`p-3 rounded-xl border space-y-2 ${
+                              rev.verdict === 'NOT_SUITABLE'
+                                ? 'bg-critical-soft/35 border-critical/30'
+                                : rev.verdict === 'CAUTION'
+                                  ? 'bg-warning-soft/35 border-warning/30'
+                                  : 'bg-positive-soft/35 border-positive/30'
+                            } ${isJustSaved ? 'ring-2 ring-accent/50' : ''}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Avatar name={rev.reviewerName} size={28} />
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className="text-xs font-semibold text-ink">
+                                      {rev.reviewerName}
                                     </span>
-                                  )}
+                                    {rev.reviewerRole && (
+                                      <span className="text-2xs text-ink-3">
+                                        · {rev.reviewerRole}
+                                      </span>
+                                    )}
+                                    {isJustSaved && (
+                                      <span className="px-1.5 py-0.5 rounded bg-accent text-white text-[10px] font-semibold">
+                                        Mới lưu
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 tabular-nums">
+                                    <Clock className="w-3 h-3 text-ink-3 shrink-0" />
+                                    <span>
+                                      {rev.timeLabel} · {rev.dateLabel}
+                                    </span>
+                                    <span>·</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-semibold text-ink">
+                                      Brand: {rev.brandScope}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 tabular-nums">
-                                  <Clock className="w-3 h-3 text-ink-3 shrink-0" />
-                                  <span>
-                                    {rev.timeLabel} · {rev.dateLabel}
-                                  </span>
-                                  <span>·</span>
-                                  <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-semibold text-ink">
-                                    Brand: {rev.brandScope}
-                                  </span>
-                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Status tone={getVerdictTone(rev.verdict)}>
+                                  {rev.verdictLabel}
+                                </Status>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteReview(rev)}
+                                  title="Xóa lượt đánh giá này"
+                                  className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-critical transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <Status tone={getVerdictTone(rev.verdict)}>
-                                {rev.verdictLabel}
-                              </Status>
-                              <button
-                                type="button"
-                                onClick={() => void handleDeleteReview(rev)}
-                                title="Xóa lượt đánh giá này"
-                                className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-critical transition cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                            {rev.reasonTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {rev.reasonTags.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 rounded bg-surface border border-line text-2xs font-medium text-ink"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {rev.note && (
+                              <div className="text-xs text-ink leading-relaxed bg-surface/90 px-2.5 py-2 rounded-lg border border-line/70">
+                                <span className="font-semibold text-ink-2">Ý kiến đánh giá: </span>
+                                <span>{rev.note}</span>
+                              </div>
+                            )}
+
+                            <div className="text-[11px] text-ink-3 flex items-center justify-between">
+                              <span>Nguồn ghi nhận: {rev.sourceScreen}</span>
                             </div>
                           </div>
-
-                          {rev.reasonTags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {rev.reasonTags.map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 rounded bg-surface border border-line text-2xs font-medium text-ink"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-
-                          {rev.note && (
-                            <div className="text-xs text-ink leading-relaxed bg-surface/90 px-2.5 py-2 rounded-lg border border-line/70">
-                              <span className="font-semibold text-ink-2">Ý kiến đánh giá: </span>
-                              <span>{rev.note}</span>
-                            </div>
-                          )}
-
-                          <div className="text-[11px] text-ink-3 flex items-center justify-between">
-                            <span>Nguồn ghi nhận: {rev.sourceScreen}</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -796,21 +847,21 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 bg-sunken/40 p-2.5 rounded-xl border border-line">
               <Chips<'ALL' | KocChannelReviewVerdict>
                 items={[
-                  { key: 'ALL', label: 'Tất cả đánh giá', count: reviews.length },
+                  { key: 'ALL', label: 'Tất cả đánh giá', count: effectiveReviews.length },
                   {
                     key: 'SUITABLE',
                     label: 'Phù hợp',
-                    count: reviews.filter((r) => r.verdict === 'SUITABLE').length,
+                    count: effectiveReviews.filter((r) => r.verdict === 'SUITABLE').length,
                   },
                   {
                     key: 'CAUTION',
                     label: 'Cân nhắc / Lưu ý',
-                    count: reviews.filter((r) => r.verdict === 'CAUTION').length,
+                    count: effectiveReviews.filter((r) => r.verdict === 'CAUTION').length,
                   },
                   {
                     key: 'NOT_SUITABLE',
                     label: 'Không phù hợp',
-                    count: reviews.filter((r) => r.verdict === 'NOT_SUITABLE').length,
+                    count: effectiveReviews.filter((r) => r.verdict === 'NOT_SUITABLE').length,
                   },
                 ]}
                 value={historyVerdictFilter}

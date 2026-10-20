@@ -194,16 +194,44 @@ export async function effectiveUser(user: UserProfile | null): Promise<UserProfi
 
 export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision = 1): UserProfile | null {
   if (!revision) return user.canLogin === false ? null : user;
-  const sameEmail = (email: string) => !!user.email && email.toLowerCase() === user.email.toLowerCase();
-  const staff = policy.internalStaff.find(s => s.id === user.id || sameEmail(s.email));
-  const master = UPBASE_STAFF_MASTER.find(s => `staff-${s.id}` === user.id || sameEmail(s.email));
+  const sameEmail = (email?: string) => !!user.email && !!email && email.toLowerCase() === user.email.toLowerCase();
+  const sameStaffCode = (code?: string) =>
+    !!code &&
+    ((!!user.staffCode && code.toLowerCase() === user.staffCode.toLowerCase()) ||
+      `staff-${code}`.toLowerCase() === user.id.toLowerCase() ||
+      code.toLowerCase() === user.id.toLowerCase());
+  const sameName = (name?: string) =>
+    !!name && !!user.name && name.trim().toLowerCase() === user.name.trim().toLowerCase();
+
+  const staff = policy.internalStaff.find(
+    (s) => s.id === user.id || sameEmail(s.email) || sameStaffCode(s.staffCode) || sameName(s.name),
+  );
+  const master = UPBASE_STAFF_MASTER.find(
+    (s) =>
+      `staff-${s.id}` === user.id ||
+      s.id === user.id ||
+      sameEmail(s.email) ||
+      sameStaffCode(s.staffCode) ||
+      sameName(s.name),
+  );
   let result = { ...user };
   if (staff?.status === 'SUSPENDED' || staff?.canLogin === false) return null;
-  if (staff) result = { ...result, role: staff.role, roleTitle: staff.roleTitle, permissions: Object.entries(staff.permissions).filter(([, v]) => v).map(([k]) => k) };
+  if (staff) {
+    result = {
+      ...result,
+      role: staff.role,
+      roleTitle: staff.roleTitle,
+      permissions: Object.entries(staff.permissions)
+        .filter(([, v]) => v)
+        .map(([k]) => k),
+    };
+  }
   if (master && (result.role !== 'ADMIN' || policy.staffOverrides[master.id])) {
     const classified = classifyMasterStaffMember(master, policy.deptRules, policy.staffOverrides);
     if (!classified.canLogin) return null;
-    if (policy.staffOverrides[master.id]) result = { ...result, role: classified.role, departmentScope: classified.departmentScope };
+    if (policy.staffOverrides[master.id]) {
+      result = { ...result, role: classified.role, departmentScope: classified.departmentScope };
+    }
   }
   return result.canLogin === false ? null : result;
 }

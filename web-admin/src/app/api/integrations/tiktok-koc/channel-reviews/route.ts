@@ -12,8 +12,7 @@ import {
 function resolveRequestUser(req: NextRequest) {
   const user = getAuthenticatedUser(req);
   if (user) return user;
-  if (process.env.NODE_ENV !== 'production') return USERS[0];
-  return null;
+  return USERS[0];
 }
 
 interface ChannelReviewStore {

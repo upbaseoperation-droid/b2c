@@ -436,6 +436,21 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Cách khắc phục:** Xóa bỏ toàn bộ `useEffect` tự động gọi API khi mở hộp thoại trên cả 5 component; chỉ thực thi API khi người dùng chủ động bấm nút (`Đánh giá` / `Chạy đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động` / `Quét qua mô hình & Google`, `Lấy dữ liệu kênh`, `Tải chi tiết giỏ hàng`). Ban hành quy tắc bắt buộc **`RULE-API-02`**.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các hộp thoại và ngăn kéo có tích hợp LLM hoặc crawler trong toàn hệ thống.
 
+---
+
+### BUG-026 — Lưu Đánh Giá Kênh KOC Không Hiện Ngay Ở Bảng Bên Cạnh Trong Hộp Thoại & Bảng Danh Sách
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/koc/KocChannelReviewModal.tsx`, `web-admin/src/lib/kocChannelReviewService.ts`, `web-admin/src/app/api/integrations/tiktok-koc/channel-reviews/route.ts`, `web-admin/src/lib/server/accessPolicy.ts`.
+- **Triệu chứng:** Khi bấm `Lưu đánh giá vào lịch sử` trong hộp thoại `Đánh giá Kênh & Lịch sử đánh giá`, kết quả đánh giá mới không hiển thị ngay ở bảng bên phải (`Lịch sử đánh giá kênh @...`) và cột `Đánh giá & Brand` trên bảng danh sách phía sau.
+- **Nguyên nhân gốc (Root Cause):**
+  1. `KocChannelReviewModal.tsx` chỉ đọc dữ liệu từ prop `reviews` của màn hình cha mà không có state đồng bộ cục bộ tức thời (`localReviews` + `useKocChannelReviews()`).
+  2. `submitKocChannelReview` trong `kocChannelReviewService.ts` chờ phản hồi mạng xong mới cập nhật bộ nhớ đệm; nếu API trả về mã lỗi xác thực (`!res.ok` do `userWithPolicy` trong `accessPolicy.ts` chỉ khớp `s.id === user.id || sameEmail(s.email)` mà chưa khớp `staffCode` / `name` cho phiên Lark SSO không trả email), hàm trả về `success: false` mà không rơi vào nhánh lưu cục bộ (`catch`), làm lượt đánh giá không được ghi nhận vào bảng bên cạnh.
+- **Cách khắc phục:**
+  1. Cập nhật `submitKocChannelReview` (`kocChannelReviewService.ts`) thực hiện **lưu và phát sự kiện cập nhật tức thì (0ms)** vào bộ nhớ đệm + `localStorage` + `KOC_CHANNEL_REVIEWS_UPDATED_EVENT` ngay khi bấm nút, sau đó đồng bộ ngầm với máy chủ (`/api/integrations/tiktok-koc/channel-reviews`) và giữ nguyên bản ghi nếu máy chủ phản hồi lỗi.
+  2. Tích hợp `localReviews` + `useKocChannelReviews()` trực tiếp trong `KocChannelReviewModal.tsx`, bổ sung cột `Ý kiến & Lý do` vào bảng tổng hợp bên phải và đánh dấu nổi bật (`Mới lưu`) cho lượt đánh giá vừa lưu.
+  3. Mở rộng `userWithPolicy` (`accessPolicy.ts`) khớp đầy đủ theo `id`, `email`, `staffCode` (`staff-${code}`) và `name`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các màn hình sử dụng `KocChannelReviewModal` (`KocMasterDataView`, `KocProfile`, `TikTokCrawlerHubView`, `TikTokKocScraperModal`, `StoreShortlistFilterModal`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

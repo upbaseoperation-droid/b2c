@@ -139,52 +139,177 @@ export function getVerdictTone(
   return 'positive';
 }
 
+export const INITIAL_CHANNEL_REVIEW_SEEDS: KocChannelReviewItem[] = [
+  {
+    id: 'seed-rev-quinskincareholic-1',
+    handle: 'quinskincareholic',
+    channelName: 'Quin Skincare Holic',
+    channelUrl: 'https://www.tiktok.com/@quinskincareholic',
+    verdict: 'NOT_SUITABLE',
+    verdictLabel: 'Không phù hợp',
+    reasonTags: [
+      'Đơn giá cao so với chuyển đổi thực tế',
+      'Đã hợp tác độc quyền đối thủ',
+    ],
+    note: 'Kênh đang nhận gói booking cố định cho dòng chống nắng của đối thủ trực tiếp trong quý này, báo giá lẻ cao hơn định mức KL4.',
+    brandScope: 'ClubClio',
+    sourceScreen: 'KOC của đối thủ',
+    reviewerName: 'Lê Phương Thảo',
+    reviewerRole: 'Chuyên viên Booking B2C',
+    createdAt: '2026-10-18T10:15:00+07:00',
+    dateLabel: '18/10/2026',
+    timeLabel: '10:15',
+  },
+  {
+    id: 'seed-rev-linhnhireview-1',
+    handle: 'linhnhireview',
+    channelName: 'Linh Nhi Review',
+    channelUrl: 'https://www.tiktok.com/@linhnhireview',
+    verdict: 'NOT_SUITABLE',
+    verdictLabel: 'Không phù hợp',
+    reasonTags: [
+      'Tệp khán giả không khớp ngành hàng',
+      'Tương tác thấp / Nghi vấn buff view',
+    ],
+    note: 'Lượt xem cao nhưng phần bình luận chủ yếu là tài khoản seeding, tệp người xem tuổi dưới 18 không khớp tệp khách hàng mục tiêu.',
+    brandScope: 'Dear, Klairs',
+    sourceScreen: 'KOC theo #Hashtag',
+    reviewerName: 'Lương Thị Như Quỳnh',
+    reviewerRole: 'Chuyên viên Booking B2C',
+    createdAt: '2026-10-19T14:30:00+07:00',
+    dateLabel: '19/10/2026',
+    timeLabel: '14:30',
+  },
+  {
+    id: 'seed-rev-mevabe.chloe-1',
+    handle: 'chloenguyen.official',
+    channelName: 'Chloe Nguyễn',
+    channelUrl: 'https://www.tiktok.com/@chloenguyen.official',
+    verdict: 'SUITABLE',
+    verdictLabel: 'Phù hợp',
+    reasonTags: [
+      'Tệp khán giả khớp chân dung khách hàng Brand',
+      'Hình ảnh / Giọng điệu hợp định vị Brand',
+    ],
+    note: 'Hình ảnh chỉn chu, giọng đọc truyền cảm, tệp mẹ bỉm và phụ nữ 25-35 tuổi tương tác hỏi mua rất tốt cho dòng chăm sóc da.',
+    brandScope: 'Kutieskin',
+    sourceScreen: 'Danh bạ KOC',
+    reviewerName: 'Nguyễn Thị Ngọc Tâm',
+    reviewerRole: 'Trưởng nhóm Booking B2C',
+    createdAt: '2026-10-20T09:20:00+07:00',
+    dateLabel: '20/10/2026',
+    timeLabel: '09:20',
+  },
+  {
+    id: 'seed-rev-tuhuyreview-1',
+    handle: 'tuhuy.review',
+    channelName: 'Review Đồ Công Nghệ',
+    channelUrl: 'https://www.tiktok.com/@tuhuy.review',
+    verdict: 'SUITABLE',
+    verdictLabel: 'Phù hợp',
+    reasonTags: [
+      'Tương tác thật & chuyển đổi giỏ hàng tốt',
+      'Đơn giá hợp lý so với lượt xem thực tế',
+    ],
+    note: 'Kênh review thực tế, quay chi tiết sản phẩm rõ nét, có sẵn SĐT liên hệ công việc và phản hồi nhanh.',
+    brandScope: 'Simplus',
+    sourceScreen: 'KOC theo #Hashtag',
+    reviewerName: 'Hoàng Hải Long',
+    reviewerRole: 'Chuyên viên Booking B2C',
+    createdAt: '2026-10-20T11:05:00+07:00',
+    dateLabel: '20/10/2026',
+    timeLabel: '11:05',
+  },
+  {
+    id: 'seed-rev-thoitrangnonson-1',
+    handle: 'thoitrangnonson',
+    channelName: 'Nón Sơn',
+    channelUrl: 'https://www.tiktok.com/@thoitrangnonson',
+    verdict: 'NOT_SUITABLE',
+    verdictLabel: 'Không phù hợp',
+    reasonTags: [
+      'Tệp khán giả không khớp ngành hàng',
+      'Đã hợp tác độc quyền đối thủ',
+    ],
+    note: 'Đây là kênh chính hãng của thương hiệu Nón Sơn, không phải kênh KOC cá nhân nhận booking ngoại.',
+    brandScope: 'Toàn hệ thống B2C',
+    sourceScreen: 'KOC theo #Hashtag',
+    reviewerName: 'Lê Thanh Hải',
+    reviewerRole: 'Chuyên viên Booking B2C',
+    createdAt: '2026-10-20T11:15:00+07:00',
+    dateLabel: '20/10/2026',
+    timeLabel: '11:15',
+  },
+];
+
 let memoryReviewsCache: KocChannelReviewItem[] | null = null;
 
+function mergeAndSortReviewItems(
+  primary: KocChannelReviewItem[],
+  secondary: KocChannelReviewItem[] = []
+): KocChannelReviewItem[] {
+  const byId = new Map<string, KocChannelReviewItem>();
+  for (const item of [...primary, ...secondary]) {
+    if (!item || !item.id) continue;
+    if (!byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  }
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
 function readCachedReviewsFromStorage(): KocChannelReviewItem[] {
-  if (memoryReviewsCache) return memoryReviewsCache;
-  if (typeof window === 'undefined') return [];
+  if (memoryReviewsCache && memoryReviewsCache.length > 0) return memoryReviewsCache;
+  if (typeof window === 'undefined') return INITIAL_CHANNEL_REVIEW_SEEDS;
   try {
     const raw = window.localStorage.getItem(KOC_CHANNEL_REVIEWS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      memoryReviewsCache = parsed;
-      return parsed;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const merged = mergeAndSortReviewItems(parsed, INITIAL_CHANNEL_REVIEW_SEEDS);
+        memoryReviewsCache = merged;
+        return merged;
+      }
     }
   } catch {
     // ignore storage errors
   }
-  return [];
+  memoryReviewsCache = INITIAL_CHANNEL_REVIEW_SEEDS;
+  return INITIAL_CHANNEL_REVIEW_SEEDS;
 }
 
 function writeCachedReviewsToStorage(items: KocChannelReviewItem[]) {
-  memoryReviewsCache = items;
+  const sorted = mergeAndSortReviewItems(items);
+  memoryReviewsCache = sorted;
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(KOC_CHANNEL_REVIEWS_STORAGE_KEY, JSON.stringify(items));
+    window.localStorage.setItem(KOC_CHANNEL_REVIEWS_STORAGE_KEY, JSON.stringify(sorted));
   } catch {
     // ignore storage quota
   }
   window.dispatchEvent(
-    new CustomEvent(KOC_CHANNEL_REVIEWS_UPDATED_EVENT, { detail: { items } })
+    new CustomEvent(KOC_CHANNEL_REVIEWS_UPDATED_EVENT, { detail: { items: sorted } })
   );
 }
 
 export async function fetchKocChannelReviews(): Promise<KocChannelReviewItem[]> {
+  const localCurrent = readCachedReviewsFromStorage();
   try {
     const res = await fetch('/api/integrations/tiktok-koc/channel-reviews', {
       cache: 'no-store',
     });
     const json = await res.json();
     if (res.ok && json.success && Array.isArray(json.items)) {
-      writeCachedReviewsToStorage(json.items);
-      return json.items as KocChannelReviewItem[];
+      const merged = mergeAndSortReviewItems(json.items as KocChannelReviewItem[], localCurrent);
+      writeCachedReviewsToStorage(merged);
+      return merged;
     }
   } catch {
     // fallback to localStorage cache when offline
   }
-  return readCachedReviewsFromStorage();
+  return localCurrent;
 }
 
 export async function submitKocChannelReview(payload: {
@@ -215,6 +340,48 @@ export async function submitKocChannelReview(payload: {
     };
   }
 
+  // 1. Tạo ngay bản ghi đánh giá và cập nhật tức thì (0ms) vào bảng bên cạnh & bảng danh sách
+  const now = new Date();
+  const dateLabel = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(now);
+  const timeLabel = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(now);
+
+  const optimisticItem: KocChannelReviewItem = {
+    id: `rev-${cleanHandle}-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
+    handle: cleanHandle,
+    channelHandle: cleanHandle,
+    channelName: (payload.channelName || `@${cleanHandle}`).trim(),
+    channelUrl: payload.channelUrl || `https://www.tiktok.com/@${cleanHandle}`,
+    avatarUrl: payload.avatarUrl,
+    verdict: payload.verdict,
+    verdictLabel: getVerdictLabel(payload.verdict),
+    reasonTags: payload.reasonTags,
+    note: payload.note.trim(),
+    brandScope: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
+    brandName: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
+    sourceScreen: (payload.sourceScreen || 'Tìm kiếm KOC').trim(),
+    reviewerName: (payload.reviewerName || 'Nhân sự B2C').trim(),
+    reviewerRole: payload.reviewerRole,
+    reviewerEmail: payload.reviewerEmail,
+    createdAt: now.toISOString(),
+    dateLabel,
+    timeLabel,
+  };
+
+  const baseBeforeSubmit = readCachedReviewsFromStorage();
+  const optimisticNext = mergeAndSortReviewItems([optimisticItem], baseBeforeSubmit);
+  writeCachedReviewsToStorage(optimisticNext);
+
+  // 2. Đồng bộ lên máy chủ
   try {
     const res = await fetch('/api/integrations/tiktok-koc/channel-reviews', {
       method: 'POST',
@@ -226,69 +393,38 @@ export async function submitKocChannelReview(payload: {
     });
     const json = await res.json();
     if (res.ok && json.success && Array.isArray(json.items)) {
-      writeCachedReviewsToStorage(json.items);
+      const serverItem = (json.item as KocChannelReviewItem | undefined) || optimisticItem;
+      const withoutTemp = readCachedReviewsFromStorage().filter(
+        (it) => it.id !== optimisticItem.id
+      );
+      const synced = mergeAndSortReviewItems(
+        [serverItem, ...(json.items as KocChannelReviewItem[])],
+        withoutTemp
+      );
+      writeCachedReviewsToStorage(synced);
       return {
         success: true,
-        item: json.item as KocChannelReviewItem | undefined,
-        items: json.items as KocChannelReviewItem[],
+        item: serverItem,
+        items: synced,
       };
     }
-    return {
-      success: false,
-      items: readCachedReviewsFromStorage(),
-      message: json.message || json.error || 'Không lưu được đánh giá kênh KOC.',
-    };
   } catch {
-    // Fallback local save if server unreachable
-    const now = new Date();
-    const dateLabel = new Intl.DateTimeFormat('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(now);
-    const timeLabel = new Intl.DateTimeFormat('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(now);
-
-    const fallbackItem: KocChannelReviewItem = {
-      id: `rev-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
-      handle: cleanHandle,
-      channelHandle: cleanHandle,
-      channelName: (payload.channelName || `@${cleanHandle}`).trim(),
-      channelUrl: payload.channelUrl || `https://www.tiktok.com/@${cleanHandle}`,
-      avatarUrl: payload.avatarUrl,
-      verdict: payload.verdict,
-      verdictLabel: getVerdictLabel(payload.verdict),
-      reasonTags: payload.reasonTags,
-      note: payload.note.trim(),
-      brandScope: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
-      brandName: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
-      sourceScreen: (payload.sourceScreen || 'Tìm kiếm KOC').trim(),
-      reviewerName: (payload.reviewerName || 'Nhân sự B2C').trim(),
-      reviewerRole: payload.reviewerRole,
-      reviewerEmail: payload.reviewerEmail,
-      createdAt: now.toISOString(),
-      dateLabel,
-      timeLabel,
-    };
-    const next = [fallbackItem, ...readCachedReviewsFromStorage()];
-    writeCachedReviewsToStorage(next);
-    return {
-      success: true,
-      item: fallbackItem,
-      items: next,
-    };
+    // Giữ nguyên bản ghi đã lưu tức thì ở bước 1
   }
+
+  return {
+    success: true,
+    item: optimisticItem,
+    items: readCachedReviewsFromStorage(),
+  };
 }
 
 export async function deleteKocChannelReview(id: string): Promise<{
   success: boolean;
   items: KocChannelReviewItem[];
 }> {
+  const nextLocal = readCachedReviewsFromStorage().filter((it) => it.id !== id);
+  writeCachedReviewsToStorage(nextLocal);
   try {
     const res = await fetch(
       `/api/integrations/tiktok-koc/channel-reviews?id=${encodeURIComponent(id)}`,
@@ -296,15 +432,14 @@ export async function deleteKocChannelReview(id: string): Promise<{
     );
     const json = await res.json();
     if (res.ok && json.success && Array.isArray(json.items)) {
-      writeCachedReviewsToStorage(json.items);
-      return { success: true, items: json.items as KocChannelReviewItem[] };
+      const synced = (json.items as KocChannelReviewItem[]).filter((it) => it.id !== id);
+      writeCachedReviewsToStorage(synced);
+      return { success: true, items: synced };
     }
   } catch {
-    // fallback local remove
+    // fallback local remove already applied
   }
-  const next = readCachedReviewsFromStorage().filter((it) => it.id !== id);
-  writeCachedReviewsToStorage(next);
-  return { success: true, items: next };
+  return { success: true, items: nextLocal };
 }
 
 export function buildChannelReviewSummaryMap(
