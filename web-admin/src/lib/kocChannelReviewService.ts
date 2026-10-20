@@ -7,6 +7,7 @@ export type KocChannelReviewVerdict = 'NOT_SUITABLE' | 'CAUTION' | 'SUITABLE';
 export interface KocChannelReviewItem {
   id: string;
   handle: string;
+  channelHandle?: string;
   channelName: string;
   channelUrl?: string;
   avatarUrl?: string;
@@ -15,6 +16,7 @@ export interface KocChannelReviewItem {
   reasonTags: string[];
   note: string;
   brandScope: string;
+  brandName?: string;
   sourceScreen: string;
   reviewerName: string;
   reviewerRole?: string;
@@ -23,6 +25,8 @@ export interface KocChannelReviewItem {
   dateLabel: string;
   timeLabel: string;
 }
+
+export type KocChannelReviewEntry = KocChannelReviewItem;
 
 export interface KocChannelBrandVerdictItem {
   brandScope: string;
@@ -34,6 +38,7 @@ export interface KocChannelBrandVerdictItem {
 
 export interface KocChannelReviewSummary {
   handle: string;
+  channelHandle?: string;
   channelName: string;
   totalReviews: number;
   notSuitableCount: number;
@@ -43,6 +48,15 @@ export interface KocChannelReviewSummary {
   reviews: KocChannelReviewItem[];
   byBrand: KocChannelBrandVerdictItem[];
 }
+
+export const VERDICT_META: Record<
+  KocChannelReviewVerdict,
+  { label: string; shortLabel: string; tone: 'critical' | 'warning' | 'positive' }
+> = {
+  SUITABLE: { label: 'Phù hợp', shortLabel: 'Phù hợp', tone: 'positive' },
+  CAUTION: { label: 'Cân nhắc / Lưu ý', shortLabel: 'Cân nhắc', tone: 'warning' },
+  NOT_SUITABLE: { label: 'Không phù hợp', shortLabel: 'K.Phù hợp', tone: 'critical' },
+};
 
 export const KOC_REVIEW_VERDICT_OPTIONS: Array<{
   key: KocChannelReviewVerdict;
@@ -108,6 +122,8 @@ export function normalizeKocChannelHandle(rawInput?: string | null): string {
     .trim()
     .toLowerCase();
 }
+
+export const normalizeChannelHandle = normalizeKocChannelHandle;
 
 export function getVerdictLabel(verdict: KocChannelReviewVerdict): string {
   if (verdict === 'NOT_SUITABLE') return 'Không phù hợp';
@@ -241,6 +257,7 @@ export async function submitKocChannelReview(payload: {
     const fallbackItem: KocChannelReviewItem = {
       id: `rev-${now.getTime()}-${Math.random().toString(36).slice(2, 6)}`,
       handle: cleanHandle,
+      channelHandle: cleanHandle,
       channelName: (payload.channelName || `@${cleanHandle}`).trim(),
       channelUrl: payload.channelUrl || `https://www.tiktok.com/@${cleanHandle}`,
       avatarUrl: payload.avatarUrl,
@@ -249,6 +266,7 @@ export async function submitKocChannelReview(payload: {
       reasonTags: payload.reasonTags,
       note: payload.note.trim(),
       brandScope: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
+      brandName: (payload.brandScope || 'Toàn hệ thống B2C').trim(),
       sourceScreen: (payload.sourceScreen || 'Tìm kiếm KOC').trim(),
       reviewerName: (payload.reviewerName || 'Nhân sự B2C').trim(),
       reviewerRole: payload.reviewerRole,
@@ -305,6 +323,7 @@ export function buildChannelReviewSummaryMap(
     if (!existing) {
       map.set(clean, {
         handle: clean,
+        channelHandle: clean,
         channelName: r.channelName || `@${clean}`,
         totalReviews: 1,
         notSuitableCount: r.verdict === 'NOT_SUITABLE' ? 1 : 0,

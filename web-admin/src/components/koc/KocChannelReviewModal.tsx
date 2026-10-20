@@ -48,6 +48,7 @@ export interface KocChannelReviewTarget {
   channelUrl?: string;
   avatarUrl?: string;
   defaultBrandScope?: string;
+  initialBrandName?: string;
   initialVerdict?: KocChannelReviewVerdict;
   sourceScreen?: string;
 }
