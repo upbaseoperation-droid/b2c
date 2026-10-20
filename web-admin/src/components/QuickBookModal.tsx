@@ -252,7 +252,18 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     return Array.from(map.entries());
   }, [deliverables, dealType]);
 
-  const currentKoc = INITIAL_KOCS.find(k => k.id === selectedKocId) || preselectedKoc || INITIAL_KOCS[0];
+  const currentKoc = useMemo(
+    () => (isOpen ? INITIAL_KOCS.find(k => k.id === selectedKocId) : undefined) || preselectedKoc || INITIAL_KOCS[0],
+    [isOpen, selectedKocId, preselectedKoc],
+  );
+  const selectableKocs = useMemo(() => {
+    if (!isOpen) return [];
+    const slice = INITIAL_KOCS.slice(0, 200);
+    if (currentKoc && !slice.some(k => k.id === currentKoc.id)) {
+      return [currentKoc, ...slice];
+    }
+    return slice;
+  }, [isOpen, currentKoc]);
   const advanceAmount = dealType === 'SERVICE_ONLY' ? 0 : advanceType === 'FIXED_2M' ? Math.min(2000000, rate) : Math.round(rate * 0.2);
   const finalAmount = Math.max(0, rate - advanceAmount);
 
@@ -420,6 +431,8 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     onDealCreated(newDeal);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <Modal
@@ -658,7 +671,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
               }}
               className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none transition"
             >
-              {INITIAL_KOCS.map(koc => (
+              {selectableKocs.map(koc => (
                 <option key={koc.id} value={koc.id}>
                   {koc.stageName} ({koc.salaryGrade || koc.tierLabel}) — Rate: {formatVnd(koc.rateCardVideo)} • Follow: {formatNumber(koc.followers)}
                 </option>

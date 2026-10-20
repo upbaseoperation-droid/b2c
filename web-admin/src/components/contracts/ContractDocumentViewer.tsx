@@ -38,6 +38,7 @@ export interface ContractDocumentViewerProps {
   signingPeople?: SigningPerson[];
   maxHeight?: string;
   compactToolbar?: boolean;
+  isTemplatePreview?: boolean;
 }
 
 export function ContractDocumentViewer({
@@ -55,6 +56,7 @@ export function ContractDocumentViewer({
   signingPeople,
   maxHeight = '760px',
   compactToolbar = false,
+  isTemplatePreview = false,
 }: ContractDocumentViewerProps) {
   const [highlight, setHighlight] = useState(true);
   const [zoom, setZoom] = useState<number>(100);
@@ -500,28 +502,34 @@ export function ContractDocumentViewer({
           </span>
 
           {uniqueFields.length > 0 && (
-            <span
-              className={`inline-flex items-center gap-1 text-2xs ${
-                missingRequired.length === 0
-                  ? 'text-ink-2'
-                  : 'text-amber-800 font-medium'
-              }`}
-            >
-              {missingRequired.length === 0 ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Đủ {requiredFields.length}/{requiredFields.length} mục bắt buộc · Đã điền {filledCount}/{uniqueFields.length} ô
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                  Còn {missingRequired.length} mục bắt buộc chưa điền ({requiredFields.length - missingRequired.length}/{requiredFields.length})
-                </>
-              )}
-            </span>
+            isTemplatePreview ? (
+              <span className="text-2xs text-ink-3 tabular-nums">
+                · {uniqueFields.length} vị trí điền ({requiredFields.length} bắt buộc)
+              </span>
+            ) : (
+              <span
+                className={`inline-flex items-center gap-1 text-2xs ${
+                  missingRequired.length === 0
+                    ? 'text-ink-2'
+                    : 'text-amber-800 font-medium'
+                }`}
+              >
+                {missingRequired.length === 0 ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Đủ {requiredFields.length}/{requiredFields.length} mục bắt buộc · Đã điền {filledCount}/{uniqueFields.length} ô
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                    Còn {missingRequired.length} mục bắt buộc chưa điền ({requiredFields.length - missingRequired.length}/{requiredFields.length})
+                  </>
+                )}
+              </span>
+            )
           )}
 
-          {missingRequired.length > 0 && (
+          {!isTemplatePreview && missingRequired.length > 0 && (
             <button
               type="button"
               onClick={jumpToNextMissing}
@@ -602,31 +610,6 @@ export function ContractDocumentViewer({
           </button>
         </div>
       </div>
-
-      {/* Chú thích màu đánh dấu để nhân viên mới nhìn hiểu ngay */}
-      {highlight && uniqueFields.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-sunken/50 border-b border-line text-2xs text-ink-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-xs bg-emerald-100 border-b-2 border-emerald-600 inline-block" />
-              Thông tin đã điền
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-xs bg-amber-50 border border-dashed border-amber-500 inline-block" />
-              Mục bắt buộc còn trống
-            </span>
-            {compareValues && (
-              <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-blue-100 border-b-2 border-blue-600 inline-block" />
-                Nội dung mới thay đổi
-              </span>
-            )}
-          </div>
-          {onSelectField && (
-            <span>Bấm trực tiếp vào vị trí đánh dấu trên hợp đồng để chuyển tới ô nhập</span>
-          )}
-        </div>
-      )}
 
       {renderSheet(false)}
 

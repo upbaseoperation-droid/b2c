@@ -336,6 +336,16 @@ function LoginContent() {
                 </div>
               )}
 
+              <Button
+                variant="primary"
+                onClick={handleLarkLogin}
+                disabled={isLoading}
+                className="w-full h-10"
+              >
+                <LarkMark className="w-4 h-4" />
+                <span>Đăng nhập bằng Lark (UpBase SSO)</span>
+              </Button>
+
               <section className="space-y-2.5" aria-labelledby="sandbox-title">
                 <div className="flex items-center justify-between">
                   <div>
@@ -428,6 +438,26 @@ function LoginContent() {
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser('user-hai-long');
+                      handleSandboxLogin('user-hai-long');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN220 · Hoàng Hải Long (Nhân viên B2C)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser('user-thanh-hai');
+                      handleSandboxLogin('user-thanh-hai');
+                    }}
+                    className="text-2xs px-2.5 py-1.5 rounded bg-accent-soft text-accent border border-accent/25 font-medium"
+                  >
+                    HN241 · Lê Thanh Hải (Nhân viên B2C)
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

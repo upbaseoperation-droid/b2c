@@ -254,8 +254,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   useEffect(() => {
     if (!onPlansChange) return;
-    const merged = monthlyPlans.map(p => (p.id === planState.id ? planState : p));
-    onPlansChange(merged);
+    const timer = window.setTimeout(() => {
+      const merged = monthlyPlans.map(p => (p.id === planState.id ? planState : p));
+      onPlansChange(merged);
+    }, 180);
+    return () => window.clearTimeout(timer);
   }, [monthlyPlans, planState, onPlansChange]);
 
   // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
@@ -3134,7 +3137,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           )}
 
           <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[760px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
+            <table className="w-full min-w-[760px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
                   <th className="py-2.5 px-3 w-[23%]">Đầu việc / Khung lương KOC</th>
@@ -3392,7 +3395,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           {/* Ma Trận Phân Rã Chi Tiết 5 Tuần Table (Gọn gàng không cuộn ngang) */}
           <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
             <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[900px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
+              <table className="w-full min-w-[900px] text-left text-xs border-collapse">
                 <thead>
                   {/* Hàng Header Nhóm (Group Headers) */}
                   <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">

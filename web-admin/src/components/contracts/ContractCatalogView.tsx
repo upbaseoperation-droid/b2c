@@ -2,23 +2,21 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CheckCircle2,
   Download,
   Edit3,
   FilePlus2,
   FileSpreadsheet,
-  FileText,
-  FolderKanban,
   History,
   Layers,
   Plus,
-  ShieldCheck,
   Star,
+  Trash2,
   Upload,
 } from 'lucide-react';
 import type { ContractCategory, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
 import {
+  ActionMenu,
   Button,
   Chips,
   EmptyState,
@@ -78,7 +76,7 @@ export function ContractCatalogView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }) {
   const canManageCatalog = data.actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r));
-  const canCreateContract = data.actor.roles.includes('CREATOR');
+  const canCreateContract = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | ContractCategory>('ALL');
   const [scopeFilter, setScopeFilter] = useState<'ALL' | 'GLOBAL' | 'KOC_CUSTOM'>('ALL');
@@ -373,75 +371,48 @@ export function ContractCatalogView({
   };
 
   const dedupedFields = useMemo(() => uniqueFields(loadedTemplate), [loadedTemplate]);
-  const activeCount = data.templates.filter(t => t.active !== false).length;
-  const contractCount = data.templates.filter(t => t.kind === 'CONTRACT').length;
-  const acceptanceCount = data.templates.filter(t => t.kind === 'ACCEPTANCE').length;
+  const kocCustomCount = data.templates.filter(t => t.scope === 'KOC_CUSTOM').length;
 
   return (
-    <div className="space-y-5">
-      {/* Thống kê tổng quan Danh mục Hợp đồng */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-surface border border-line rounded-xl px-4 py-3">
-          <div className="flex items-center justify-between text-2xs text-ink-3">
-            <span>Tổng biểu mẫu chuẩn</span>
-            <FolderKanban className="w-4 h-4 text-accent" />
-          </div>
-          <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{data.templates.length} mẫu</p>
-        </div>
-
-        <div className="bg-surface border border-line rounded-xl px-4 py-3">
-          <div className="flex items-center justify-between text-2xs text-ink-3">
-            <span>Đang có hiệu lực</span>
-            <CheckCircle2 className="w-4 h-4 text-positive" />
-          </div>
-          <p className="text-xl font-semibold text-positive mt-1 tabular-nums">{activeCount}/{data.templates.length}</p>
-        </div>
-
-        <div className="bg-surface border border-line rounded-xl px-4 py-3">
-          <div className="flex items-center justify-between text-2xs text-ink-3">
-            <span>Mẫu Hợp đồng dịch vụ / CTV</span>
-            <FileText className="w-4 h-4 text-info" />
-          </div>
-          <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{contractCount} mẫu</p>
-        </div>
-
-        <div className="bg-surface border border-line rounded-xl px-4 py-3">
-          <div className="flex items-center justify-between text-2xs text-ink-3">
-            <span>Mẫu Biên bản nghiệm thu</span>
-            <ShieldCheck className="w-4 h-4 text-warning" />
-          </div>
-          <p className="text-xl font-semibold text-ink mt-1 tabular-nums">{acceptanceCount} mẫu</p>
-        </div>
-      </div>
-
-      {/* Thanh công cụ lọc danh mục & thêm mẫu mới */}
+    <div className="space-y-4">
       <Panel flush>
-        <div className="p-4 border-b border-line flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3.5 border-b border-line flex flex-wrap items-center justify-between gap-3">
           <div className="flex-1 min-w-0 w-full sm:min-w-[240px]">
             <FilterBar
               search={{
                 value: search,
                 onChange: setSearch,
-                placeholder: 'Tìm theo tên mẫu, mã mẫu (IND-HD, COM-HD...), đối tượng, phiên bản...',
+                placeholder: 'Tìm tên mẫu, mã (IND-HD, COM-HD...), đối tượng...',
               }}
-              chips={
-                <div className="flex flex-col gap-2 w-full">
-                  <Chips items={scopeChips} value={scopeFilter} onChange={setScopeFilter} />
-                  <Chips items={categoryChips} value={categoryFilter} onChange={setCategoryFilter} />
-                </div>
+              filters={
+                kocCustomCount > 0 ? (
+                  <Select
+                    value={scopeFilter}
+                    onChange={e => setScopeFilter(e.target.value as 'ALL' | 'GLOBAL' | 'KOC_CUSTOM')}
+                    className="w-auto min-w-[160px]"
+                    aria-label="Nguồn biểu mẫu"
+                  >
+                    {scopeChips.map(s => (
+                      <option key={s.key} value={s.key}>
+                        {s.label} ({s.count})
+                      </option>
+                    ))}
+                  </Select>
+                ) : undefined
               }
+              chips={<Chips items={categoryChips.filter(c => c.key === 'ALL' || c.count > 0)} value={categoryFilter} onChange={setCategoryFilter} />}
             />
           </div>
           {canManageCatalog && (
-            <Button variant="primary" icon={Plus} onClick={() => openUploadModal('NEW')}>
-              Thêm mẫu hợp đồng mới
+            <Button size="sm" variant="secondary" icon={Plus} onClick={() => openUploadModal('NEW')}>
+              Thêm mẫu mới
             </Button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-line">
-          {/* Cột trái: Danh sách mẫu hợp đồng theo danh mục */}
-          <div className="max-h-[78vh] overflow-y-auto divide-y divide-line bg-canvas/40">
+        <div className="grid grid-cols-1 lg:grid-cols-[290px_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-line">
+          {/* Cột trái: Danh sách mẫu hợp đồng thu gọn */}
+          <div className="max-h-[78vh] overflow-y-auto divide-y divide-line bg-canvas/30">
             {filteredTemplates.length === 0 ? (
               <div className="p-6">
                 <EmptyState
@@ -452,76 +423,36 @@ export function ContractCatalogView({
             ) : (
               filteredTemplates.map(t => {
                 const isSelected = t.id === selectedId;
-                const cat: ContractCategory =
-                  t.category ||
-                  (t.id.startsWith('CTV-') ? 'CTV_FRAMEWORK' : t.kind === 'ACCEPTANCE' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO');
                 const isActive = t.active !== false;
-                const roles = t.defaultReviewRoles?.length
-                  ? t.defaultReviewRoles
-                  : t.kind === 'ACCEPTANCE'
-                    ? (['FINANCE', 'LEAD'] as const)
-                    : (['LEGAL', 'FINANCE'] as const);
-                const usedCount = data.records.filter(r => r.templateId === t.id).length;
 
                 return (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedId(t.id)}
-                    className={`w-full text-left p-3.5 transition-colors block space-y-2 ${
-                      isSelected ? 'bg-accent/10 border-l-4 border-l-accent' : 'hover:bg-surface'
+                    className={`w-full text-left px-3.5 py-2.5 transition-colors block space-y-1 ${
+                      isSelected ? 'bg-accent/10 border-l-3 border-l-accent' : 'hover:bg-surface'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="font-semibold text-[13.5px] text-ink block truncate">{t.name}</span>
-                        <span className="text-2xs text-ink-3 font-code">
-                          Mã: {t.id} · {t.version} · {t.subject}
-                        </span>
-                      </div>
-                      <Status tone={isActive ? 'positive' : 'neutral'}>
-                        {isActive ? 'Đang áp dụng' : 'Ngừng áp dụng'}
-                      </Status>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-[13px] text-ink truncate">{t.name}</span>
+                      <span className="shrink-0 rounded bg-sunken px-1.5 py-0.5 text-2xs font-code text-ink-2">
+                        {t.id}
+                      </span>
                     </div>
 
-                    {t.scope === 'KOC_CUSTOM' ? (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="inline-flex items-center gap-1 rounded bg-accent-soft px-1.5 py-0.5 text-2xs font-semibold text-accent">
-                          <Star className="w-3 h-3 text-accent shrink-0" /> Mẫu riêng KOC: {t.kocName || t.kocId}
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-2xs text-ink-3">
+                      <span>
+                        {t.subject}
+                        {typeof t.fieldCount === 'number' && t.fieldCount > 0 ? ` · ${t.fieldCount} ô điền` : ''}
+                      </span>
+                      {t.scope === 'KOC_CUSTOM' ? (
+                        <span className="inline-flex items-center gap-0.5 font-medium text-accent">
+                          <Star className="w-2.5 h-2.5 shrink-0" /> {t.kocName || t.kocId}
                         </span>
-                        <span className="text-2xs text-ink-3">
-                          ({t.customType === 'KOC_FORM' ? 'Form KOC' : 'Sửa Upbase'})
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="text-2xs text-ink-3">
-                        <span className="inline-flex items-center rounded bg-sunken px-1.5 py-0.5 font-medium">
-                          Mẫu chuẩn Upbase
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-2">
-                      <span className="font-medium text-ink">{CATEGORY_LABELS[cat]}</span>
-                      {typeof t.fieldCount === 'number' && t.fieldCount > 0 && (
-                        <span className="text-ink-3 tabular-nums">
-                          · {t.fieldCount} vị trí điền
-                        </span>
-                      )}
-                      {usedCount > 0 && (
-                        <span className="text-ink-3 tabular-nums">
-                          · {usedCount} hồ sơ đã tạo
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-2xs text-ink-3 flex flex-wrap items-center gap-1">
-                      <span>Cấp duyệt mặc định:</span>
-                      {roles.map(r => (
-                        <span key={r} className="font-medium text-ink-2">
-                          {ROLE_LABEL[r]}
-                        </span>
-                      ))}
+                      ) : !isActive ? (
+                        <span className="text-ink-3">Ngừng áp dụng</span>
+                      ) : null}
                     </div>
                   </button>
                 );
@@ -530,96 +461,44 @@ export function ContractCatalogView({
           </div>
 
           {/* Cột phải: Chi tiết mẫu hợp đồng */}
-          <div className="p-5 space-y-4 min-w-0 bg-surface">
+          <div className="p-4 space-y-3.5 min-w-0 bg-surface">
             {loadingDetail && !loadedTemplate ? (
               <div className="py-16 text-center text-[13px] text-ink-3">
-                Đang đọc cấu trúc file Word (.docx) và bóc tách các trường điền…
+                Đang tải biểu mẫu…
               </div>
             ) : !loadedTemplate ? (
-              <EmptyState
-                title="Chọn một mẫu hợp đồng bên trái"
-                description="Xem bố cục trang A4, danh sách trường điền tự động và lịch sử phiên bản."
-              />
+              <EmptyState title="Chọn một mẫu hợp đồng bên trái" />
             ) : (
               <>
-                {/* Header của mẫu đang chọn */}
-                <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-line">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-ink">{loadedTemplate.name}</h3>
-                      <Status tone={loadedTemplate.active !== false ? 'positive' : 'neutral'}>
-                        {loadedTemplate.active !== false ? 'Đang áp dụng' : 'Ngừng áp dụng'}
-                      </Status>
-                      <Status tone={loadedTemplate.exemptLegalReview !== false ? 'positive' : 'warning'}>
-                        {loadedTemplate.exemptLegalReview !== false ? 'Mẫu chuẩn: Miễn duyệt Pháp chế' : 'Bắt buộc Pháp chế duyệt'}
-                      </Status>
-                      <span className="text-xs font-code text-ink-3">
-                        · {loadedTemplate.id} · {loadedTemplate.version}
-                      </span>
-                    </div>
-
-                    {loadedTemplate.scope === 'KOC_CUSTOM' && (
-                      <div className="rounded-lg border border-accent/40 bg-accent-soft/40 p-3 space-y-1.5 mt-2">
-                        <div className="font-semibold text-accent text-xs flex items-center justify-between">
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3.5 h-3.5 text-accent shrink-0" />
-                            Mẫu hợp đồng duyệt riêng cho KOC: {loadedTemplate.kocName || loadedTemplate.kocId}
-                          </span>
-                          <span className="text-2xs font-normal bg-surface border border-accent/20 px-1.5 py-0.5 rounded text-ink-2">
-                            {loadedTemplate.customType === 'KOC_FORM' ? 'Form riêng của KOC / Agency' : 'Chỉnh sửa từ mẫu Upbase'}
-                          </span>
-                        </div>
-                        {loadedTemplate.legalNotes && (
-                          <div className="text-xs text-ink bg-surface/90 p-2.5 rounded border border-accent/20 whitespace-pre-wrap leading-relaxed">
-                            <span className="font-medium text-accent block mb-0.5">Lưu ý & Thỏa thuận của Pháp chế:</span>
-                            {loadedTemplate.legalNotes}
-                          </div>
-                        )}
-                        <div className="text-2xs text-ink-3 flex flex-wrap items-center gap-2 pt-0.5">
-                          <span>Duyệt bởi: <strong>{loadedTemplate.approvedByLegal || 'Pháp chế'}</strong></span>
-                          {loadedTemplate.approvedAt && <span>· Ngày duyệt: {formatDate(loadedTemplate.approvedAt)}</span>}
-                          {loadedTemplate.originalContractId && <span>· Căn cứ HĐ gốc: <span className="font-code">{loadedTemplate.originalContractId}</span></span>}
-                        </div>
-                      </div>
-                    )}
+                {/* Thanh tiêu đề & thao tác trên 1 hàng gọn */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <h3 className="text-[15px] font-semibold text-ink">{loadedTemplate.name}</h3>
+                    <span className="text-2xs font-code text-ink-3">
+                      {loadedTemplate.id} · {loadedTemplate.version}
+                    </span>
+                    <Status tone={loadedTemplate.exemptLegalReview !== false ? 'positive' : 'warning'}>
+                      {loadedTemplate.exemptLegalReview !== false ? 'Miễn duyệt Pháp chế' : 'Cần Pháp chế duyệt'}
+                    </Status>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <Segmented
+                      value={subTab}
+                      onChange={setSubTab}
+                      items={[
+                        { key: 'PREVIEW', label: 'Văn bản A4' },
+                        { key: 'FIELDS', label: `Trường điền (${dedupedFields.length})` },
+                        { key: 'META', label: 'Cấu hình' },
+                      ]}
+                    />
                     <a
                       href={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
-                      className="inline-flex items-center gap-1.5 h-[32px] px-3 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
+                      className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-line-strong bg-surface text-xs font-medium text-ink hover:bg-sunken"
                     >
                       <Download className="w-3.5 h-3.5 text-ink-3" />
-                      Tải mẫu .docx
+                      Tải .docx
                     </a>
-                    {canManageCatalog && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={Upload}
-                          onClick={() => openUploadModal('UPDATE', loadedTemplate)}
-                        >
-                          Cập nhật file .docx
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={Edit3}
-                          onClick={() => openEditMeta(loadedTemplate)}
-                        >
-                          Sửa danh mục
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-critical hover:bg-critical-soft"
-                          onClick={() => setDeleteConfirmOpen(true)}
-                        >
-                          Xóa mẫu
-                        </Button>
-                      </>
-                    )}
                     {canCreateContract && loadedTemplate.active !== false && (
                       <Button
                         size="sm"
@@ -627,27 +506,40 @@ export function ContractCatalogView({
                         icon={FilePlus2}
                         onClick={() => onUseTemplate(loadedTemplate)}
                       >
-                        Soạn theo mẫu này
+                        Soạn hợp đồng
                       </Button>
+                    )}
+                    {canManageCatalog && (
+                      <ActionMenu
+                        items={[
+                          {
+                            label: 'Cập nhật file Word (.docx)',
+                            icon: Upload,
+                            onSelect: () => openUploadModal('UPDATE', loadedTemplate),
+                          },
+                          {
+                            label: 'Sửa cấu hình biểu mẫu',
+                            icon: Edit3,
+                            onSelect: () => openEditMeta(loadedTemplate),
+                          },
+                          {
+                            label: 'Xóa biểu mẫu',
+                            icon: Trash2,
+                            danger: true,
+                            onSelect: () => setDeleteConfirmOpen(true),
+                          },
+                        ]}
+                      />
                     )}
                   </div>
                 </div>
 
-                {/* Chuyển đổi giữa 3 chế độ xem chi tiết mẫu */}
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <Segmented
-                    value={subTab}
-                    onChange={setSubTab}
-                    items={[
-                      { key: 'PREVIEW', label: 'Xem văn bản mẫu (A4)' },
-                      { key: 'FIELDS', label: `Cấu trúc trường điền (${dedupedFields.length})` },
-                      { key: 'META', label: 'Cấu hình & Lịch sử phiên bản' },
-                    ]}
-                  />
-                  <span className="text-2xs text-ink-3">
-                    File gốc: <span className="font-code text-ink-2">{loadedTemplate.filename}</span>
-                  </span>
-                </div>
+                {loadedTemplate.scope === 'KOC_CUSTOM' && loadedTemplate.legalNotes && (
+                  <div className="rounded-lg border border-accent/30 bg-accent-soft/30 px-3 py-2 text-xs text-ink">
+                    <span className="font-semibold text-accent">Lưu ý Pháp chế ({loadedTemplate.kocName || loadedTemplate.kocId}): </span>
+                    {loadedTemplate.legalNotes}
+                  </div>
+                )}
 
                 {subTab === 'PREVIEW' && (
                   <ContractDocumentViewer
@@ -657,8 +549,8 @@ export function ContractCatalogView({
                     paragraphs={loadedTemplate.paragraphs}
                     fields={loadedTemplate.fields}
                     values={{}}
-                    downloadHref={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
-                    maxHeight="66vh"
+                    maxHeight="70vh"
+                    isTemplatePreview
                   />
                 )}
 

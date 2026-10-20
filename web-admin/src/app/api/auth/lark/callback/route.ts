@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE_NAME,
   sanitizeReturnTo
 } from '@/lib/larkAuth';
+import { effectiveUser } from '@/lib/server/accessPolicy';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,8 @@ export async function GET(request: NextRequest) {
     
     // 2. Map sang UserProfile của hệ thống B2C Ops Hub
     if (process.env.LARK_TENANT_KEY && rawLarkUser.tenant_key !== process.env.LARK_TENANT_KEY) return NextResponse.redirect(new URL('/login?error=tenant_not_allowed', appBaseUrl));
-    const userProfile = { ...resolveUserProfile(rawLarkUser), loginProvider: 'LARK' as const, larkTenantKey: rawLarkUser.tenant_key };
+    const baseProfile = { ...resolveUserProfile(rawLarkUser), loginProvider: 'LARK' as const, larkTenantKey: rawLarkUser.tenant_key };
+    const userProfile = (await effectiveUser(baseProfile)) || baseProfile;
 
     // 3. Mã hóa token phiên làm việc
     const sessionToken = encodeSessionToken(userProfile);
@@ -54,10 +56,12 @@ export async function GET(request: NextRequest) {
     const destinationUrl = new URL(sanitizeReturnTo(returnTo), appBaseUrl);
     const response = NextResponse.redirect(destinationUrl);
 
+    const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+
     // Set cookie bảo mật cho phiên đăng nhập
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' && isHttps,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 ngày

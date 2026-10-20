@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Columns2, Download, FileScan, Scale, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Columns2, FileScan, Scale, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
 import type { ContractField, ContractRecord, LegalTemplate } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
@@ -289,7 +289,7 @@ export function ContractForm({
 
   return (
     <form
-      className="space-y-6"
+      className="space-y-4"
       onSubmit={e => {
         e.preventDefault();
         onSave({
@@ -309,313 +309,257 @@ export function ContractForm({
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onCancel} className="-ml-2.5">Hợp đồng</Button>
           <span className="text-ink-3">/</span>
-          <h2 className="text-base font-semibold text-ink truncate">{editing ? `Sửa ${record!.title} · tạo phiên bản ${record!.version + 1}` : 'Tạo hợp đồng'}</h2>
+          <h2 className="text-base font-semibold text-ink truncate">
+            {editing ? `Sửa ${record!.title} (v${record!.version + 1})` : 'Tạo hợp đồng'}
+          </h2>
+          {template && (
+            <span className="rounded-md bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2 tabular-nums">
+              Đã điền {requiredDone}/{required.length} mục bắt buộc
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
             Đọc ảnh CCCD / ĐKKD
           </Button>
-          <Button variant="ghost" onClick={onCancel}>Hủy</Button>
-          <Button variant="primary" type="submit" disabled={busy || !template || !title.trim() || !brand.trim() || !partner.trim()}>
+          {template && (
+            <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
+              {showSplitPreview ? 'Ẩn bản xem A4' : 'Xem bản A4 song song'}
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={onCancel}>Hủy</Button>
+          <Button size="sm" variant="primary" type="submit" disabled={busy || !template || !title.trim() || !brand.trim() || !partner.trim()}>
             {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
           </Button>
         </div>
       </div>
 
       {ocrNotice && (
-        <div role="status" className="rounded-xl bg-positive-soft border border-line px-4 py-2.5 text-xs text-positive font-medium flex items-center justify-between gap-2">
+        <div role="status" className="rounded-xl bg-positive-soft border border-line px-4 py-2 text-xs text-positive font-medium flex items-center justify-between gap-2">
           <span>{ocrNotice}</span>
           <button type="button" onClick={() => setOcrNotice('')} className="text-ink-3 hover:text-ink">Đóng</button>
         </div>
       )}
 
-      {(kocLegalNotes || primaryKocTemplate) && (
-        <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3.5 space-y-2 text-xs">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-semibold text-warning-strong flex items-center gap-1.5">
-              <Scale className="w-3.5 h-3.5 shrink-0" />
-              Lưu ý của Pháp chế cho KOC {koc?.stageName || partner || 'này'}:
-            </span>
-            {primaryKocTemplate && templateId !== primaryKocTemplate.id && !editing && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setTemplate(null);
-                  setValues({});
-                  setTemplateId(primaryKocTemplate.id);
-                  setHasCustomTerms(false);
-                }}
-              >
-                Dùng mẫu đã duyệt của KOC ({primaryKocTemplate.name})
-              </Button>
-            )}
-          </div>
-          {kocLegalNotes && (
-            <div className="bg-surface/90 rounded-lg p-2.5 text-ink border border-warning/30 whitespace-pre-wrap leading-relaxed">
-              {kocLegalNotes}
-            </div>
-          )}
-          {primaryKocTemplate && (
-            <div className="text-2xs text-ink-2 flex flex-wrap items-center gap-2">
-              <span>Mẫu riêng: <strong>{primaryKocTemplate.name}</strong></span>
-              <span>· Duyệt bởi: {primaryKocTemplate.approvedByLegal || 'Pháp chế'}</span>
-              {templateId === primaryKocTemplate.id ? (
-                <span className="text-positive font-semibold">✓ Đang áp dụng mẫu này (Miễn duyệt Pháp chế)</span>
-              ) : (
-                <span className="text-ink-3">· Áp dụng mẫu này để hưởng luồng duyệt nhanh</span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      <Panel title="Thông tin chung">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Booking" htmlFor="ct-deal" hint={koc ? `KOC: ${koc.stageName}` : 'Không bắt buộc. Hồ sơ không gắn booking thì tự nhập đối tác.'}>
-            <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
-              <option value="">Không gắn booking</option>
-              {dealOptions.map(d => <option key={d.id} value={d.id}>{d.dealCode} · {d.kocStageName} · {d.brandName}</option>)}
-            </Select>
-          </Field>
-          <Field label="Loại hồ sơ">
-            <div>
-              {editing ? (
-                <span className="text-[13.5px] text-ink">{kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'}</span>
-              ) : (
-                <Segmented items={[{ key: 'CONTRACT', label: 'Hợp đồng' }, { key: 'ACCEPTANCE', label: 'Biên bản nghiệm thu' }]} value={kind} onChange={chooseKind} />
-              )}
-            </div>
-          </Field>
-          <Field label="Mẫu pháp chế" htmlFor="ct-template" hint={koc && !editing ? 'Chọn theo loại hồ sơ pháp lý của KOC. Đổi nếu cần.' : undefined}>
-            <Select id="ct-template" required value={templateId} disabled={editing} onChange={e => { setTemplate(null); setValues({}); setTemplateId(e.target.value); }}>
-              <option value="">Chọn mẫu</option>
-              {kocTemplates.length > 0 && (
-                <optgroup label={`Mẫu đã duyệt riêng cho KOC (${kocTemplates.length})`}>
-                  {kocTemplates.map(t => (
-                    <option key={t.id} value={t.id}>
-                      [Mẫu riêng] {t.name} ({t.version})
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              <optgroup label="Mẫu chuẩn Upbase">
-                {(editing ? data.templates : templates)
-                  .filter(t => !kocTemplates.some(kt => kt.id === t.id))
-                  .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </optgroup>
-            </Select>
-          </Field>
-          <Field label="Tên hồ sơ" htmlFor="ct-title">
-            <Input id="ct-title" required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="Hợp đồng video · Tên KOC · Nhãn hàng" />
-          </Field>
-          <Field label="Nhãn hàng" htmlFor="ct-brand">
-            <Input id="ct-brand" required maxLength={120} list="ct-brands" value={brand} onChange={e => setBrand(e.target.value)} />
-            <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
-          </Field>
-          <Field label="Đối tác (Bên B)" htmlFor="ct-partner">
-            <Input id="ct-partner" required maxLength={180} value={partner} onChange={e => setPartner(e.target.value)} />
-          </Field>
-          {kind === 'ACCEPTANCE' && (
-            <Field label="Hợp đồng gốc" htmlFor="ct-parent" hint="Biên bản nghiệm thu đi kèm hợp đồng nào.">
-              <Select id="ct-parent" value={parentId} onChange={e => setParentId(e.target.value)}>
-                <option value="">Chọn hợp đồng</option>
-                {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
-              </Select>
-            </Field>
-          )}
-        </div>
-      </Panel>
-
       {duplicateRecord && (
-        <div className="rounded-xl border border-warning/40 bg-warning-soft p-3.5 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
+        <div className="rounded-xl border border-warning/40 bg-warning-soft px-3.5 py-2.5 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-warning-strong shrink-0" />
-            <span><strong className="text-warning-strong font-semibold">Cảnh báo trùng số hợp đồng:</strong> Đã tồn tại một hồ sơ hợp đồng khác cùng KOC và ngày lập này ({docDateVal}/{kocIdVal} · "{duplicateRecord.title}").</span>
+            <span><strong className="text-warning-strong font-semibold">Trùng số hợp đồng:</strong> Đã tồn tại hồ sơ {docDateVal}/{kocIdVal} (&ldquo;{duplicateRecord.title}&rdquo;).</span>
           </div>
           <Button size="sm" variant="secondary" onClick={resolveDuplicateNumber}>
-            Thêm hậu tố chống trùng (-{deal?.dealCode || '02'})
+            Thêm hậu tố (-{deal?.dealCode || '02'})
           </Button>
         </div>
       )}
 
-      <Panel title="Đối soát quy định pháp chế & Điều khoản thỏa thuận">
-        <div className="space-y-4 text-xs">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 p-3.5 rounded-lg border border-line bg-surface">
-            <div className="space-y-1">
-              <span className="text-2xs text-ink-3 block">Quy chuẩn biểu mẫu (BR-01)</span>
-              <span className={`text-xs font-semibold block ${ruleEval.isHighValueKoc ? 'text-accent' : 'text-positive'}`}>
-                {ruleEval.isHighValueKoc ? 'Hạn mức ≥ 50 triệu (Được dùng mẫu KOC)' : 'Dưới 50 triệu (100% mẫu UpBase)'}
-              </span>
-              <span className="text-2xs text-ink-3 block">{ruleEval.templateCompliance.note}</span>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-2xs text-ink-3 block">Nghĩa vụ ký hợp đồng (BR-03)</span>
-              <span className={`text-xs font-semibold block ${ruleEval.isContractMandatory ? 'text-ink' : 'text-positive'}`}>
-                {ruleEval.isContractMandatory ? 'Bắt buộc ký hợp đồng' : 'Miễn HĐ giấy (Thủ tục rút gọn)'}
-              </span>
-              <span className="text-2xs text-ink-3 block">{ruleEval.contractMandatoryReason}</span>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-2xs text-ink-3 block">Biên bản nghiệm thu (BR-04)</span>
-              <span className={`text-xs font-semibold block ${ruleEval.isAcceptanceMandatory ? 'text-ink' : 'text-positive'}`}>
-                {ruleEval.isAcceptanceMandatory ? 'Bắt buộc lập BBNT' : 'Thanh lý tự động không cần BBNT'}
-              </span>
-              <span className="text-2xs text-ink-3 block">{ruleEval.acceptanceMandatoryReason}</span>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-2xs text-ink-3 block">Luồng duyệt & SLA (BR-05)</span>
-              <span className="text-xs font-semibold text-accent block">{ruleEval.reviewStream.streamName}</span>
-              <span className="text-2xs text-ink-3 block">SLA: TCKT {ruleEval.reviewStream.slaHoursTckt}h · Pháp chế {ruleEval.reviewStream.slaHoursLegal}h</span>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-line bg-sunken/40 p-3.5 space-y-2">
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hasCustomTerms}
-                onChange={e => setHasCustomTerms(e.target.checked)}
-                className="mt-0.5 rounded border-line"
-              />
-              <div>
-                <span className="font-medium text-[13px] text-ink block">
-                  Hồ sơ có điều khoản chỉnh sửa riêng hoặc KOC yêu cầu ngoại lệ
-                </span>
-                <span className="text-2xs text-ink-3 block mt-0.5">
-                  {hasCustomTerms
-                    ? 'Bắt buộc Pháp chế (chị Liên) duyệt trước khi chuyển sang bước Kế toán và trình ký.'
-                    : 'Hồ sơ dùng mẫu chuẩn của Upbase sẽ được áp dụng luồng Miễn duyệt Pháp chế, chuyển thẳng Kế toán soát xét ngân sách.'}
-                </span>
-              </div>
-            </label>
-          </div>
-
-          {hasCustomTerms && (
-            <Field
-              label="Nội dung KOC đề xuất sửa / Thỏa thuận riêng"
-              htmlFor="ct-custom-terms"
-              hint="Nêu rõ điều khoản thay đổi (bản quyền hình ảnh, tiến độ tạm ứng, số ngày đăng video...) để Pháp chế nắm nhanh bối cảnh."
-            >
-              <Textarea
-                id="ct-custom-terms"
-                rows={3}
-                value={customTermsSummary}
-                onChange={e => setCustomTermsSummary(e.target.value)}
-                placeholder="Ví dụ: KOC yêu cầu cọc 30% trước khi quay video; Thời hạn cấp quyền hình ảnh giảm còn 45 ngày..."
-              />
-            </Field>
-          )}
-
-          <Field
-            label="Ghi chú thương thảo & Lưu vết thỏa thuận (Lưu nội bộ)"
-            htmlFor="ct-notes"
-            hint="Ghi lại các trao đổi quan trọng giữa nhân sự booking với KOC để các bên duyệt cùng nắm rõ và lưu vết vĩnh viễn."
-          >
-            <Textarea
-              id="ct-notes"
-              rows={2}
-              value={internalNotes}
-              onChange={e => setInternalNotes(e.target.value)}
-              placeholder="Ví dụ: Đã thống nhất với Lead Marketing về mức tạm ứng qua tin nhắn Lark ngày 14/10..."
-            />
-          </Field>
-        </div>
-      </Panel>
-
       {loadError && <p role="alert" className="text-[13px] text-critical">{loadError}</p>}
 
-      {template && (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[13px] text-ink-2">
-              Đã điền <span className="font-semibold text-ink tabular-nums">{requiredDone}/{required.length}</span> ô bắt buộc. Lưu nháp được khi chưa điền hết; đủ ô bắt buộc mới gửi duyệt được.
-            </p>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
-                Đọc ảnh CCCD / ĐKKD
-              </Button>
-              <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
-                {showSplitPreview ? 'Ẩn khung xem hợp đồng' : 'Xem hợp đồng song song'}
-              </Button>
-              <a href={`/api/contracts/templates/${template.id}?download=1`} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[13px] text-ink-2 hover:bg-sunken">
-                <Download className="w-4 h-4 text-ink-3" strokeWidth={1.75} />Tải mẫu gốc
-              </a>
-            </div>
-          </div>
-
-          <div className={`grid grid-cols-1 gap-6 items-start ${showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
-            <div className="grid gap-6 min-w-0">
-              {groups.map(g => (
-                <Panel key={g.key} title={g.title}>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {g.fields.map(f => {
-                      const id = `ct-f-${f.key}`;
-                      const hint = prefilled.has(f.key) ? 'Lấy từ hồ sơ KOC / booking. Kiểm tra lại.' : f.title !== f.context && f.context.length < 160 ? f.context : undefined;
-                      const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
-                      return (
-                        <Field key={f.key} label={label} htmlFor={id} hint={hint} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
-                          {f.kind === 'long' ? (
-                            <Textarea
-                              id={id}
-                              rows={2}
-                              maxLength={4000}
-                              value={values[f.key] || ''}
-                              onFocus={() => setActiveFieldKey(f.key)}
-                              onChange={e => setValue(f, e.target.value)}
-                            />
-                          ) : (
-                            <Input
-                              id={id}
-                              maxLength={4000}
-                              inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
-                              placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
-                              className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
-                              value={values[f.key] || ''}
-                              onFocus={() => setActiveFieldKey(f.key)}
-                              onChange={e => setValue(f, e.target.value)}
-                            />
-                          )}
-                        </Field>
-                      );
-                    })}
-                  </div>
-                </Panel>
-              ))}
-            </div>
-
-            {showSplitPreview && (
-              <div className="xl:sticky xl:top-4 min-w-0">
-                <ContractDocumentViewer
-                  title={title || template.name}
-                  templateName={`${template.name} · Xem trực tiếp khi nhập`}
-                  blocks={template.blocks || []}
-                  paragraphs={template.paragraphs}
-                  fields={template.fields}
-                  values={values}
-                  compareValues={record?.values}
-                  activeFieldKey={activeFieldKey}
-                  onSelectField={focusFieldInput}
-                  maxHeight="calc(100vh - 150px)"
-                  compactToolbar
-                />
+      <div className={`grid grid-cols-1 gap-5 items-start ${template && showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
+        <div className="grid gap-4 min-w-0">
+          {(kocLegalNotes || primaryKocTemplate) && (
+            <div className="rounded-xl border border-warning/40 bg-warning-soft/75 p-3 space-y-1.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-warning-strong flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 shrink-0" />
+                  Lưu ý Pháp chế ({koc?.stageName || partner || 'KOC'}):
+                </span>
+                {primaryKocTemplate && templateId !== primaryKocTemplate.id && !editing && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setTemplate(null);
+                      setValues({});
+                      setTemplateId(primaryKocTemplate.id);
+                      setHasCustomTerms(false);
+                    }}
+                  >
+                    Áp dụng mẫu riêng ({primaryKocTemplate.name})
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
+              {kocLegalNotes && <p className="text-ink whitespace-pre-wrap">{kocLegalNotes}</p>}
+            </div>
+          )}
 
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onCancel}>Hủy</Button>
-            <Button variant="primary" type="submit" disabled={busy || !title.trim() || !brand.trim() || !partner.trim()}>
-              {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
-            </Button>
+          <Panel title="Thông tin chung">
+            <div className="space-y-4">
+              <div className="grid gap-3.5 md:grid-cols-2">
+                <Field label="Booking" htmlFor="ct-deal">
+                  <Select id="ct-deal" value={dealId} onChange={e => chooseDeal(e.target.value)} disabled={editing && !!record?.dealId}>
+                    <option value="">Không gắn booking</option>
+                    {dealOptions.map(d => <option key={d.id} value={d.id}>{d.dealCode} · {d.kocStageName} · {d.brandName}</option>)}
+                  </Select>
+                </Field>
+                <Field label="Loại hồ sơ">
+                  <div>
+                    {editing ? (
+                      <span className="text-[13.5px] text-ink">{kind === 'CONTRACT' ? 'Hợp đồng' : 'Biên bản nghiệm thu'}</span>
+                    ) : (
+                      <Segmented items={[{ key: 'CONTRACT', label: 'Hợp đồng' }, { key: 'ACCEPTANCE', label: 'Biên bản nghiệm thu' }]} value={kind} onChange={chooseKind} />
+                    )}
+                  </div>
+                </Field>
+                <Field label="Mẫu pháp chế" htmlFor="ct-template">
+                  <Select id="ct-template" required value={templateId} disabled={editing} onChange={e => { setTemplate(null); setValues({}); setTemplateId(e.target.value); }}>
+                    <option value="">Chọn mẫu</option>
+                    {kocTemplates.length > 0 && (
+                      <optgroup label={`Mẫu duyệt riêng KOC (${kocTemplates.length})`}>
+                        {kocTemplates.map(t => (
+                          <option key={t.id} value={t.id}>
+                            [Mẫu riêng] {t.name} ({t.version})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label="Mẫu chuẩn Upbase">
+                      {(editing ? data.templates : templates)
+                        .filter(t => !kocTemplates.some(kt => kt.id === t.id))
+                        .map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </optgroup>
+                  </Select>
+                </Field>
+                <Field label="Tên hồ sơ" htmlFor="ct-title">
+                  <Input id="ct-title" required maxLength={180} value={title} onChange={e => setTitle(e.target.value)} placeholder="Hợp đồng video · Tên KOC · Nhãn hàng" />
+                </Field>
+                <Field label="Nhãn hàng" htmlFor="ct-brand">
+                  <Input id="ct-brand" required maxLength={120} list="ct-brands" value={brand} onChange={e => setBrand(e.target.value)} />
+                  <datalist id="ct-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist>
+                </Field>
+                <Field label="Đối tác (Bên B)" htmlFor="ct-partner">
+                  <Input id="ct-partner" required maxLength={180} value={partner} onChange={e => setPartner(e.target.value)} />
+                </Field>
+                {kind === 'ACCEPTANCE' && (
+                  <Field label="Hợp đồng gốc" htmlFor="ct-parent" className="md:col-span-2">
+                    <Select id="ct-parent" value={parentId} onChange={e => setParentId(e.target.value)}>
+                      <option value="">Chọn hợp đồng</option>
+                      {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
+                    </Select>
+                  </Field>
+                )}
+              </div>
+
+              {/* Thanh tóm tắt quy tắc pháp chế & tùy chọn điều khoản riêng */}
+              <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-2.5 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-2">
+                    <span>
+                      Luồng duyệt: <strong className="text-accent font-semibold">{ruleEval.reviewStream.streamName}</strong>
+                    </span>
+                    <span>·</span>
+                    <span>
+                      SLA: <strong className="text-ink">TCKT {ruleEval.reviewStream.slaHoursTckt}h · Pháp chế {ruleEval.reviewStream.slaHoursLegal}h</strong>
+                    </span>
+                    <span>·</span>
+                    <span>
+                      {ruleEval.isContractMandatory ? 'Bắt buộc ký HĐ' : 'Miễn HĐ giấy'} · {ruleEval.isAcceptanceMandatory ? 'Bắt buộc BBNT' : 'Thanh lý tự động'}
+                    </span>
+                  </div>
+                  <label className="inline-flex items-center gap-2 cursor-pointer font-medium text-ink">
+                    <input
+                      type="checkbox"
+                      checked={hasCustomTerms}
+                      onChange={e => setHasCustomTerms(e.target.checked)}
+                      className="rounded border-line"
+                    />
+                    <span>Có sửa điều khoản / ngoại lệ</span>
+                  </label>
+                </div>
+
+                {hasCustomTerms && (
+                  <div className="grid gap-3 md:grid-cols-2 pt-2 border-t border-line">
+                    <Field label="Nội dung đề xuất sửa / Thỏa thuận riêng" htmlFor="ct-custom-terms">
+                      <Textarea
+                        id="ct-custom-terms"
+                        rows={2}
+                        value={customTermsSummary}
+                        onChange={e => setCustomTermsSummary(e.target.value)}
+                        placeholder="Nêu điều khoản thay đổi để Pháp chế duyệt..."
+                      />
+                    </Field>
+                    <Field label="Ghi chú nội bộ" htmlFor="ct-notes">
+                      <Textarea
+                        id="ct-notes"
+                        rows={2}
+                        value={internalNotes}
+                        onChange={e => setInternalNotes(e.target.value)}
+                        placeholder="Ghi chú trao đổi với KOC / Quản lý..."
+                      />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Panel>
+
+          {template && groups.map(g => (
+            <Panel key={g.key} title={g.title}>
+              <div className="grid gap-3.5 md:grid-cols-2">
+                {g.fields.map(f => {
+                  const id = `ct-f-${f.key}`;
+                  const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
+                  return (
+                    <Field key={f.key} label={label} htmlFor={id} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
+                      {f.kind === 'long' ? (
+                        <Textarea
+                          id={id}
+                          rows={2}
+                          maxLength={4000}
+                          value={values[f.key] || ''}
+                          onFocus={() => setActiveFieldKey(f.key)}
+                          onChange={e => setValue(f, e.target.value)}
+                        />
+                      ) : (
+                        <Input
+                          id={id}
+                          maxLength={4000}
+                          inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
+                          placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
+                          className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
+                          value={values[f.key] || ''}
+                          onFocus={() => setActiveFieldKey(f.key)}
+                          onChange={e => setValue(f, e.target.value)}
+                        />
+                      )}
+                    </Field>
+                  );
+                })}
+              </div>
+            </Panel>
+          ))}
+        </div>
+
+        {template && showSplitPreview && (
+          <div className="xl:sticky xl:top-4 min-w-0">
+            <ContractDocumentViewer
+              title={title || template.name}
+              templateName={template.name}
+              blocks={template.blocks || []}
+              paragraphs={template.paragraphs}
+              fields={template.fields}
+              values={values}
+              compareValues={record?.values}
+              activeFieldKey={activeFieldKey}
+              onSelectField={focusFieldInput}
+              downloadHref={`/api/contracts/templates/${template.id}?download=1`}
+              maxHeight="calc(100vh - 140px)"
+              compactToolbar
+            />
           </div>
-        </>
+        )}
+      </div>
+
+      {template && (
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onCancel}>Hủy</Button>
+          <Button variant="primary" type="submit" disabled={busy || !title.trim() || !brand.trim() || !partner.trim()}>
+            {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
+          </Button>
+        </div>
       )}
 
       <Modal

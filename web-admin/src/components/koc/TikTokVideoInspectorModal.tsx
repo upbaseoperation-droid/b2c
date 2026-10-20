@@ -104,9 +104,18 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   }
 
   const selectedDealObj = useMemo(
-    () => deals.find((d) => d.dealCode === selectedDealCode) || initialDeal || undefined,
-    [deals, selectedDealCode, initialDeal]
+    () => (isOpen && selectedDealCode ? deals.find((d) => d.dealCode === selectedDealCode) : undefined) || initialDeal || undefined,
+    [isOpen, deals, selectedDealCode, initialDeal]
   );
+
+  const selectableDeals = useMemo(() => {
+    if (!isOpen) return [];
+    const slice = deals.slice(0, 150);
+    if (selectedDealObj && !slice.some((d) => d.id === selectedDealObj.id)) {
+      return [selectedDealObj, ...slice];
+    }
+    return slice;
+  }, [isOpen, deals, selectedDealObj]);
 
   const activeInspection = useMemo(
     () => results.find((r) => r.id === selectedVideoId) || results[0] || null,
@@ -428,6 +437,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       .join('\n');
   }, [activeInspection]);
 
+  if (!isOpen) return null;
+
   return (
     <Modal
       open={isOpen}
@@ -475,7 +486,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
           </div>
 
           <div className="pt-2.5 border-t border-line grid sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-            {deals.length > 0 ? (
+            {selectableDeals.length > 0 ? (
               <label className="grid gap-1 text-2xs font-medium text-ink-2">
                 <span>Deal Booking đối chiếu</span>
                 <select
@@ -484,7 +495,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                   className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink"
                 >
                   <option value="">-- Không chọn Deal --</option>
-                  {deals.map((d) => (
+                  {selectableDeals.map((d) => (
                     <option key={d.id} value={d.dealCode}>
                       {d.dealCode} · @{d.kocChannelId} ({d.brandName})
                     </option>

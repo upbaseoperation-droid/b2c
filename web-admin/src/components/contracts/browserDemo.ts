@@ -11,7 +11,7 @@ const actors: ContractActor[] = [
   { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: ['Kutieskin', 'Royal Ausnz', 'Bye Bye Blemish'], allBrands: true },
   { id: 'demo-legal', name: 'Pháp chế (kiểm thử)', roles: ['LEGAL'], brands: [], allBrands: true },
   { id: 'demo-finance', name: 'Kế toán (kiểm thử)', roles: ['FINANCE'], brands: [], allBrands: true },
-  { id: 'demo-lead', name: 'Trưởng nhóm (kiểm thử)', roles: ['LEAD'], brands: [], allBrands: true },
+  { id: 'demo-lead', name: 'Trưởng nhóm (kiểm thử)', roles: ['LEAD', 'CREATOR'], brands: [], allBrands: true },
   { id: 'demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },
 ];
 
@@ -130,7 +130,15 @@ function resolveLoginActor(): ContractActor | undefined {
     if (savedId === 'contract-demo-legal') return actors.find(a => a.id === 'demo-legal');
     if (savedId === 'contract-demo-finance') return actors.find(a => a.id === 'demo-finance');
     if (savedId === 'contract-demo-sign') return actors.find(a => a.id === 'demo-sign');
-    if (savedId === 'user-ngoc-tam' || savedId === 'user-yen-nhi' || savedId === 'user-admin-giang') return actors.find(a => a.id === 'demo-lead');
+    if (
+      savedId === 'user-ngoc-tam' ||
+      savedId === 'user-yen-nhi' ||
+      savedId === 'user-admin-giang' ||
+      savedId === 'user-growth-manager-quyen' ||
+      savedId === 'user-media-manager-quang'
+    ) {
+      return actors.find(a => a.id === 'demo-lead');
+    }
     return actors[0];
   } catch {
     return undefined;

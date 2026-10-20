@@ -147,6 +147,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   // --- State Tab 1: Quét KOC của Đối thủ ---
   const [competitorInput, setCompetitorInput] = useState('');
   const [compTargetCount, setCompTargetCount] = useState<number>(12);
+  const [compRequestedCount, setCompRequestedCount] = useState<number | null>(null);
   const [compLoading, setCompLoading] = useState(false);
   const [compBatchProgress, setCompBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [compError, setCompError] = useState<string | null>(null);
@@ -163,6 +164,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   // --- State Tab 2: Tìm KOC theo Hashtag ---
   const [hashtagInput, setHashtagInput] = useState('');
   const [tagTargetCount, setTagTargetCount] = useState<number>(12);
+  const [tagRequestedCount, setTagRequestedCount] = useState<number | null>(null);
   const [tagLoading, setTagLoading] = useState(false);
   const [tagBatchProgress, setTagBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
@@ -178,6 +180,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   // --- State Tab 3: Cào Bình luận Video ---
   const [videoCommentUrl, setVideoCommentUrl] = useState('');
   const [commentTargetCount, setCommentTargetCount] = useState<number>(40);
+  const [commentRequestedCount, setCommentRequestedCount] = useState<number | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentBatchProgress, setCommentBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
@@ -190,6 +193,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   // --- State Tab 4: KOC Xu hướng theo Ngành hàng ---
   const [trendingCategory, setTrendingCategory] = useState<TrendingKocCategoryKey>('ALL');
   const [trendingTargetCount, setTrendingTargetCount] = useState<number>(12);
+  const [trendingRequestedCount, setTrendingRequestedCount] = useState<number | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingBatchProgress, setTrendingBatchProgress] = useState<BatchCrawlProgress | null>(null);
   const [trendingCreators, setTrendingCreators] = useState<TikTokTrendingCreatorItem[]>([]);
@@ -267,6 +271,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     setPrevPageActive(isPageActive);
     setActiveTab('COMPETITOR_KOCS');
     setCompetitorInput('');
+    setCompRequestedCount(null);
     setCompLoading(false);
     setCompBatchProgress(null);
     setCompError(null);
@@ -274,17 +279,20 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     setCompResults([]);
     setCompSearchQuery('');
     setHashtagInput('');
+    setTagRequestedCount(null);
     setTagLoading(false);
     setTagBatchProgress(null);
     setTagError(null);
     setTagResults([]);
     setTagSearchQuery('');
     setVideoCommentUrl('');
+    setCommentRequestedCount(null);
     setCommentLoading(false);
     setCommentBatchProgress(null);
     setCommentError(null);
     setCommentData(null);
     setCommentSearch('');
+    setTrendingRequestedCount(null);
     setTrendingLoading(false);
     setTrendingBatchProgress(null);
     setTrendingCreators([]);
@@ -333,6 +341,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
       : Math.min(Math.max(Number(options?.targetCount ?? compTargetCount) || 12, 1), 1000);
+    setCompRequestedCount(requestedTotal);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
     const initialEstimateBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
@@ -442,6 +451,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const msg = `Không tìm thấy video KOC hợp tác nào khớp với "${trimmed}". Kiểm tra lại @handle hoặc nhập tên thương hiệu (VD: Coolmate, La Roche-Posay).`;
         setCompError(msg);
         onNotify?.(msg, 'warning');
+      } else if (!compAbortRef.current && accumulatedMap.size < requestedTotal) {
+        onNotify?.(
+          `Chỉ tìm thấy ${accumulatedMap.size}/${requestedTotal} KOC hợp tác với "${trimmed}" (ít hơn yêu cầu ${requestedTotal - accumulatedMap.size} KOC).`,
+          'warning'
+        );
       } else if (appendMode && accumulatedMap.size === baseList.length && !compAbortRef.current) {
         onNotify?.('Đã lấy hết các KOC khớp với đối thủ này trên chỉ mục hiện tại.', 'info');
       }
@@ -477,6 +491,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const requestedTotal = appendMode
       ? baseList.length + (options?.targetCount || KOC_BATCH_SIZE)
       : Math.min(Math.max(Number(options?.targetCount ?? tagTargetCount) || 12, 1), 1000);
+    setTagRequestedCount(requestedTotal);
 
     const totalNeeded = Math.max(1, requestedTotal - baseList.length);
     const initialEstimateBatches = Math.max(1, Math.ceil(totalNeeded / KOC_BATCH_SIZE));
@@ -581,6 +596,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const emptyMsg = `Không tìm thấy KOC nào đăng video với hashtag "${trimmed}" trong ${periodText}. Vui lòng kiểm tra lại từ khóa hoặc mở rộng khung thời gian.`;
         setTagError(emptyMsg);
         onNotify?.(emptyMsg, 'warning');
+      } else if (!tagAbortRef.current && accumulatedMap.size < requestedTotal) {
+        onNotify?.(
+          `Chỉ tìm thấy ${accumulatedMap.size}/${requestedTotal} KOC cho từ khóa "${trimmed}" (ít hơn yêu cầu ${requestedTotal - accumulatedMap.size} KOC).`,
+          'warning'
+        );
       } else if (appendMode && accumulatedMap.size === baseList.length && !tagAbortRef.current) {
         onNotify?.('Đã lấy hết các KOC khớp với hashtag này trên chỉ mục hiện tại.', 'info');
       }
@@ -614,6 +634,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const requestedTotal = appendMode
       ? existingComments.length + (options?.targetCount || COMMENT_BATCH_SIZE)
       : Math.min(Math.max(Number(options?.targetCount ?? commentTargetCount) || 40, 5), 1000);
+    setCommentRequestedCount(requestedTotal);
 
     const totalNeeded = Math.max(5, requestedTotal - existingComments.length);
     const totalBatches = Math.max(1, Math.ceil(totalNeeded / COMMENT_BATCH_SIZE));
@@ -735,6 +756,11 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         const emptyCommentMsg = 'Video này chưa có bình luận công khai hoặc đã tắt bình luận trên TikTok.';
         setCommentError(emptyCommentMsg);
         onNotify?.(emptyCommentMsg, 'warning');
+      } else if (!commentAbortRef.current && commentMap.size < requestedTotal) {
+        onNotify?.(
+          `Chỉ lấy được ${commentMap.size}/${requestedTotal} bình luận công khai (ít hơn yêu cầu ${requestedTotal - commentMap.size} bình luận).`,
+          'warning'
+        );
       }
     } catch {
       if (commentMap.size === 0) {
@@ -784,8 +810,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
     const initialCount = accumulated.size;
     const targetFinalCount = appendMode ? initialCount + desiredTotal : desiredTotal;
+    setTrendingRequestedCount(targetFinalCount);
     const remainingNeeded = Math.max(1, targetFinalCount - initialCount);
-    const estimatedBatches = Math.max(1, Math.ceil(remainingNeeded / KOC_BATCH_SIZE));
+    const estimatedBatches = Math.max(1, Math.ceil(remainingNeeded / 20));
     const maxBatches = Math.min(45, Math.max(estimatedBatches + 4, estimatedBatches * 2));
     let consecutiveZeroYield = 0;
 
@@ -808,7 +835,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           targetCount: targetFinalCount,
         });
 
-        const batchLimit = Math.min(KOC_BATCH_SIZE, Math.max(8, currentNeed));
+        const batchLimit = Math.min(25, Math.max(KOC_BATCH_SIZE, currentNeed));
         const res = await fetch('/api/integrations/tiktok-koc/scrape', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -864,7 +891,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
       const finalCount = accumulated.size;
       const newlyAdded = finalCount - initialCount;
-      if (finalCount > 0) {
+      if (finalCount > 0 && finalCount < targetFinalCount && !trendingAbortRef.current) {
+        onNotify?.(
+          `Chỉ tìm thấy ${finalCount}/${targetFinalCount} KOC xu hướng ngành "${catLabel}" (ít hơn yêu cầu ${targetFinalCount - finalCount} KOC).`,
+          'warning'
+        );
+      } else if (finalCount > 0) {
         onNotify?.(
           appendMode
             ? `Đã quét thêm ${newlyAdded} KOC xu hướng ngành "${catLabel}" (tổng ${finalCount} KOC)`
@@ -2034,6 +2066,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   if (!val.trim() || compResults.length > 0 || compProfile) {
                     setCompResults([]);
                     setCompProfile(null);
+                    setCompRequestedCount(null);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -2120,6 +2153,22 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   Dừng
                 </Button>
               )}
+
+              {!compLoading &&
+                compResults.length > 0 &&
+                compResults.length < (compRequestedCount ?? compTargetCount) && (
+                  <Status tone="warning">
+                    Chỉ tìm thấy {compResults.length}/{compRequestedCount ?? compTargetCount} KOC yêu cầu (thiếu{' '}
+                    {(compRequestedCount ?? compTargetCount) - compResults.length} KOC)
+                  </Status>
+                )}
+              {!compLoading &&
+                compResults.length >= (compRequestedCount ?? compTargetCount) &&
+                filteredCompResults.length < (compRequestedCount ?? compTargetCount) && (
+                  <Status tone="warning">
+                    Bộ lọc chỉ còn {filteredCompResults.length}/{compRequestedCount ?? compTargetCount} KOC yêu cầu
+                  </Status>
+                )}
             </div>
 
             {(compLoading || compResults.length > 0) && (
@@ -2209,29 +2258,38 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     onChange={setCompFilter}
                   />
 
-                  {compProfile && (
-                    <div className="flex flex-wrap items-center gap-2.5 text-2xs tabular-nums">
-                      <span className="font-semibold text-ink">{compProfile.brandName}</span>
-                      <a
-                        href={compProfile.channelUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-code text-accent hover:underline inline-flex items-center gap-0.5"
-                      >
-                        <span>@{compProfile.handle}</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                      <span className="text-ink-3">
-                        Flw: <strong className="text-ink">{formatNumber(compProfile.followers)}</strong>
-                      </span>
-                      <span className="text-ink-3">
-                        Video: <strong className="text-ink">{formatNumber(compProfile.videoCount)}</strong>
-                      </span>
-                      <span className="text-ink-3">
-                        Tổng view KOC: <strong className="text-positive">{formatNumber(compStats.totalCompViews)}</strong>
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2.5 text-2xs tabular-nums">
+                    {!compLoading &&
+                      compResults.length > 0 &&
+                      compResults.length < (compRequestedCount ?? compTargetCount) && (
+                        <Status tone="warning">
+                          Đạt {compResults.length}/{compRequestedCount ?? compTargetCount} KOC yêu cầu
+                        </Status>
+                      )}
+                    {compProfile && (
+                      <>
+                        <span className="font-semibold text-ink">{compProfile.brandName}</span>
+                        <a
+                          href={compProfile.channelUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-code text-accent hover:underline inline-flex items-center gap-0.5"
+                        >
+                          <span>@{compProfile.handle}</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                        <span className="text-ink-3">
+                          Flw: <strong className="text-ink">{formatNumber(compProfile.followers)}</strong>
+                        </span>
+                        <span className="text-ink-3">
+                          Video: <strong className="text-ink">{formatNumber(compProfile.videoCount)}</strong>
+                        </span>
+                        <span className="text-ink-3">
+                          Tổng view KOC: <strong className="text-positive">{formatNumber(compStats.totalCompViews)}</strong>
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -2349,6 +2407,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   if (tagError) setTagError(null);
                   if (!val.trim() || tagResults.length > 0) {
                     setTagResults([]);
+                    setTagRequestedCount(null);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -2435,6 +2494,22 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   Dừng
                 </Button>
               )}
+
+              {!tagLoading &&
+                tagResults.length > 0 &&
+                tagResults.length < (tagRequestedCount ?? tagTargetCount) && (
+                  <Status tone="warning">
+                    Chỉ tìm thấy {tagResults.length}/{tagRequestedCount ?? tagTargetCount} KOC yêu cầu (thiếu{' '}
+                    {(tagRequestedCount ?? tagTargetCount) - tagResults.length} KOC)
+                  </Status>
+                )}
+              {!tagLoading &&
+                tagResults.length >= (tagRequestedCount ?? tagTargetCount) &&
+                filteredTagResults.length < (tagRequestedCount ?? tagTargetCount) && (
+                  <Status tone="warning">
+                    Bộ lọc chỉ còn {filteredTagResults.length}/{tagRequestedCount ?? tagTargetCount} KOC yêu cầu
+                  </Status>
+                )}
             </div>
 
             {(tagLoading || tagResults.length > 0) && (
@@ -2514,10 +2589,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     onChange={setTagFilter}
                   />
 
-                  <span className="text-2xs text-ink-3 tabular-nums">
-                    Từ khóa: <strong className="text-ink">{hashtagInput}</strong> · Hiển thị{' '}
-                    <strong className="text-ink">{filteredTagResults.length}</strong>/{tagResults.length} KOC
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
+                    {!tagLoading &&
+                      tagResults.length > 0 &&
+                      tagResults.length < (tagRequestedCount ?? tagTargetCount) && (
+                        <Status tone="warning">
+                          Đạt {tagResults.length}/{tagRequestedCount ?? tagTargetCount} KOC yêu cầu
+                        </Status>
+                      )}
+                    <span>
+                      Từ khóa: <strong className="text-ink">{hashtagInput}</strong> · Hiển thị{' '}
+                      <strong className="text-ink">{filteredTagResults.length}</strong>/{tagResults.length} KOC
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -2635,6 +2719,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   if (commentError) setCommentError(null);
                   if (!val.trim() || commentData) {
                     setCommentData(null);
+                    setCommentRequestedCount(null);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -2721,6 +2806,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   Dừng
                 </Button>
               )}
+
+              {!commentLoading &&
+                commentData &&
+                commentData.comments.length < (commentRequestedCount ?? commentTargetCount) && (
+                  <Status tone="warning">
+                    Chỉ lấy được {commentData.comments.length}/{commentRequestedCount ?? commentTargetCount} bình luận yêu cầu (thiếu{' '}
+                    {(commentRequestedCount ?? commentTargetCount) - commentData.comments.length})
+                  </Status>
+                )}
             </div>
 
             {commentData && (
@@ -2800,6 +2894,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   />
 
                   <div className="flex flex-wrap items-center gap-2.5 text-2xs tabular-nums">
+                    {!commentLoading &&
+                      commentData.comments.length < (commentRequestedCount ?? commentTargetCount) && (
+                        <Status tone="warning">
+                          Đạt {commentData.comments.length}/{commentRequestedCount ?? commentTargetCount} bình luận yêu cầu
+                        </Status>
+                      )}
                     <span className="font-semibold text-ink">
                       @{commentData.videoInfo.authorHandle}
                     </span>
@@ -2874,6 +2974,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   setTrendingCategory(nextCat);
                   if (trendingCreators.length > 0) {
                     setTrendingCreators([]);
+                    setTrendingRequestedCount(null);
                   }
                 }}
                 className="w-full sm:w-64 h-8 text-xs py-0"
@@ -2944,6 +3045,22 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   Dừng
                 </Button>
               )}
+
+              {!trendingLoading &&
+                trendingCreators.length > 0 &&
+                trendingCreators.length < (trendingRequestedCount ?? trendingTargetCount) && (
+                  <Status tone="warning">
+                    Chỉ tìm thấy {trendingCreators.length}/{trendingRequestedCount ?? trendingTargetCount} KOC yêu cầu (thiếu{' '}
+                    {(trendingRequestedCount ?? trendingTargetCount) - trendingCreators.length} KOC)
+                  </Status>
+                )}
+              {!trendingLoading &&
+                trendingCreators.length >= (trendingRequestedCount ?? trendingTargetCount) &&
+                filteredTrendingCreators.length < (trendingRequestedCount ?? trendingTargetCount) && (
+                  <Status tone="warning">
+                    Bộ lọc chỉ còn {filteredTrendingCreators.length}/{trendingRequestedCount ?? trendingTargetCount} KOC yêu cầu
+                  </Status>
+                )}
             </div>
 
             {(trendingLoading || trendingHandleSearching || trendingCreators.length > 0) && (
@@ -3028,15 +3145,24 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                     onChange={setTrendingFilter}
                   />
 
-                  <span className="text-2xs text-ink-3 tabular-nums">
-                    Ngành:{' '}
-                    <strong className="text-ink">
-                      {TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
-                        'Tất cả ngành hàng'}
-                    </strong>{' '}
-                    · Hiển thị <strong className="text-ink">{filteredTrendingCreators.length}</strong>/
-                    {trendingCreators.length} KOC
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 tabular-nums">
+                    {!trendingLoading &&
+                      trendingCreators.length > 0 &&
+                      trendingCreators.length < (trendingRequestedCount ?? trendingTargetCount) && (
+                        <Status tone="warning">
+                          Đạt {trendingCreators.length}/{trendingRequestedCount ?? trendingTargetCount} KOC yêu cầu
+                        </Status>
+                      )}
+                    <span>
+                      Ngành:{' '}
+                      <strong className="text-ink">
+                        {TRENDING_CATEGORY_OPTIONS.find((o) => o.key === trendingCategory)?.label ||
+                          'Tất cả ngành hàng'}
+                      </strong>{' '}
+                      · Hiển thị <strong className="text-ink">{filteredTrendingCreators.length}</strong>/
+                      {trendingCreators.length} KOC
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">

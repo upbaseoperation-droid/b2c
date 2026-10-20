@@ -24,13 +24,22 @@ export async function GET(request: NextRequest) {
   };
   const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
 
-  const authUrl = buildLarkAuthUrl(state);
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const requestOrigin =
+    forwardedProto && forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : request.nextUrl.origin;
+
+  const authUrl = buildLarkAuthUrl(state, requestOrigin);
   const response = NextResponse.redirect(authUrl);
+
+  const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
 
   // Lưu state vào cookie tạm (thời hạn 10 phút) để chống tấn công CSRF
   response.cookies.set('lark_oauth_state', statePayload.csrf, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production' && isHttps,
     sameSite: 'lax',
     path: '/',
     maxAge: 600

@@ -129,7 +129,7 @@ function TabList<K extends string>({ items, value, onChange, className }: { item
   const ref = useRef<HTMLDivElement>(null);
   const { box, ready } = useActiveBox(ref, value);
   return (
-    <div ref={ref} role="tablist" className={cx('relative flex gap-4 sm:gap-6 min-w-0 max-w-full overflow-x-auto [scrollbar-width:thin]', className)}>
+    <div ref={ref} role="tablist" className={cx('relative flex gap-4 sm:gap-6 min-w-0 max-w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', className)}>
       <SlidingIndicator box={box} ready={ready} fit="underline" className="bg-ink z-[1]" />
       {items.map((t) => {
         const on = t.key === value;
@@ -142,7 +142,7 @@ function TabList<K extends string>({ items, value, onChange, className }: { item
             data-active={on}
             onClick={() => onChange(t.key)}
             className={cx(
-              'relative -mb-px pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13px] sm:text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors shrink-0',
+              'relative pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13px] sm:text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors shrink-0',
               on ? 'text-ink' : 'text-ink-3 hover:text-ink',
             )}
           >

@@ -22,59 +22,90 @@ export async function POST(request: NextRequest) {
 
     if (staffIdentifier && typeof staffIdentifier === 'string') {
       const q = staffIdentifier.trim().toLowerCase();
-      const masterStaff = UPBASE_STAFF_MASTER.find(
-        s =>
-          s.id.toLowerCase() === q ||
-          (s.staffCode && s.staffCode.toLowerCase() === q) ||
-          s.email.toLowerCase() === q ||
-          s.name.toLowerCase() === q
+
+      // Ưu tiên khớp với tài khoản nhân sự cốt lõi đã cấu hình đầy đủ phạm vi Brand/Store trong USERS
+      const existingCoreUser = USERS.find(
+        u =>
+          u.id.toLowerCase() === q ||
+          (u.staffCode && u.staffCode.toLowerCase() === q) ||
+          u.email.toLowerCase() === q ||
+          u.name.toLowerCase() === q
       );
 
-      if (!masterStaff) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Không tìm thấy nhân sự "${staffIdentifier}" trong danh bạ 1.011 nhân viên UpBase.`
-          },
-          { status: 404 }
+      if (existingCoreUser) {
+        if (existingCoreUser.canLogin === false) {
+          return NextResponse.json(
+            {
+              success: false,
+              blockedByGatekeeper: true,
+              error: `Tài khoản ${existingCoreUser.name} không có quyền đăng nhập vào hệ thống B2C.`
+            },
+            { status: 403 }
+          );
+        }
+
+        sessionUser = {
+          ...existingCoreUser,
+          loginProvider: 'SANDBOX',
+          larkOpenId: `ou_sandbox_${existingCoreUser.id}`,
+          larkAvatarUrl: undefined
+        };
+      } else {
+        const masterStaff = UPBASE_STAFF_MASTER.find(
+          s =>
+            s.id.toLowerCase() === q ||
+            (s.staffCode && s.staffCode.toLowerCase() === q) ||
+            s.email.toLowerCase() === q ||
+            s.name.toLowerCase() === q
         );
-      }
 
-      const classified = classifyMasterStaffMember(
-        masterStaff,
-        INITIAL_DEPARTMENT_ACCESS_RULES,
-        staffOverrides || {}
-      );
+        if (!masterStaff) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Không tìm thấy nhân sự "${staffIdentifier}" trong danh bạ 1.011 nhân viên UpBase.`
+            },
+            { status: 404 }
+          );
+        }
 
-      if (!classified.canLogin) {
-        return NextResponse.json(
-          {
-            success: false,
-            blockedByGatekeeper: true,
-            staffName: masterStaff.name,
-            staffCode: masterStaff.staffCode || masterStaff.id,
-            department: masterStaff.department || masterStaff.team || 'Phòng ban khác',
-            error: `Chặn đăng nhập (403): Nhân sự ${masterStaff.name} (${masterStaff.staffCode}) thuộc phòng "${masterStaff.department || masterStaff.team || 'Khác'}" không thuộc 3 khối được phép vào hệ thống (Marketing B2C, Growth, Media). Chỉ Admin mới có quyền mở khóa ngoại lệ.`
-          },
-          { status: 403 }
+        const classified = classifyMasterStaffMember(
+          masterStaff,
+          INITIAL_DEPARTMENT_ACCESS_RULES,
+          staffOverrides || {}
         );
-      }
 
-      sessionUser = {
-        id: `staff-${masterStaff.id}`,
-        name: masterStaff.name,
-        email: masterStaff.email,
-        role: classified.role,
-        roleTitle: `${masterStaff.position || masterStaff.roleTitle} (${masterStaff.department || 'UpBase'})`,
-        avatar: masterStaff.avatar || masterStaff.name.slice(0, 2).toUpperCase(),
-        departmentScope: classified.departmentScope,
-        departmentName: masterStaff.department,
-        teamName: masterStaff.team,
-        managerName: classified.managerName,
-        canLogin: true,
-        loginProvider: 'SANDBOX',
-        larkOpenId: `ou_staff_${masterStaff.id}`
-      };
+        if (!classified.canLogin) {
+          return NextResponse.json(
+            {
+              success: false,
+              blockedByGatekeeper: true,
+              staffName: masterStaff.name,
+              staffCode: masterStaff.staffCode || masterStaff.id,
+              department: masterStaff.department || masterStaff.team || 'Phòng ban khác',
+              error: `Chặn đăng nhập (403): Nhân sự ${masterStaff.name} (${masterStaff.staffCode}) thuộc phòng "${masterStaff.department || masterStaff.team || 'Khác'}" không thuộc 3 khối được phép vào hệ thống (Marketing B2C, Growth, Media). Chỉ Admin mới có quyền mở khóa ngoại lệ.`
+            },
+            { status: 403 }
+          );
+        }
+
+        sessionUser = {
+          id: `staff-${masterStaff.id}`,
+          name: masterStaff.name,
+          email: masterStaff.email,
+          role: classified.role,
+          roleTitle: `${masterStaff.position || masterStaff.roleTitle} (${masterStaff.department || 'UpBase'})`,
+          avatar: masterStaff.avatar || masterStaff.name.slice(0, 2).toUpperCase(),
+          staffCode: masterStaff.staffCode || masterStaff.id,
+          departmentScope: classified.departmentScope,
+          departmentName: masterStaff.department,
+          teamName: masterStaff.team,
+          managerName: classified.managerName,
+          canLogin: true,
+          loginProvider: 'SANDBOX',
+          larkOpenId: `ou_staff_${masterStaff.id}`
+        };
+      }
     } else {
       if (!userId || typeof userId !== 'string') {
         return NextResponse.json(

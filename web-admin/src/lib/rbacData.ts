@@ -852,7 +852,7 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
   },
   {
     id: 'user-thanh-hai',
-    staffCode: 'HN112',
+    staffCode: 'HN241',
     name: 'Lê Thanh Hải',
     email: 'thanhhai@upbase.vn',
     avatar: 'TH',
@@ -879,6 +879,37 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     },
     status: 'ACTIVE',
     lastActive: '30 phút trước',
+    authMethod: 'LARK_SSO'
+  },
+  {
+    id: 'user-hai-long',
+    staffCode: 'HN220',
+    name: 'Hoàng Hải Long',
+    email: 'hailong@upbase.vn',
+    avatar: 'HL',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
+    department: 'Phòng Marketing B2C',
+    team: 'Booking',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'DEPT_RULE',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    position: 'Chuyên Viên Booking',
+    picBrands: ['Dynik', 'Badlab', 'Natural Care'],
+    permissions: {
+      canApproveBudget: false,
+      canApproveP3: false,
+      canApprovePayment: false,
+      canViewAllBrands: false,
+      canExportRawData: false,
+      canManageMasterData: false
+    },
+    status: 'ACTIVE',
+    lastActive: '15 phút trước',
     authMethod: 'LARK_SSO'
   },
   {
@@ -1758,6 +1789,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'stores',
     'campaigns',
+    'contracts',
     'brand-knowledge',
     'push-products',
     'ads-report',
@@ -1789,6 +1821,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'stores',
     'campaigns',
+    'contracts',
     'brand-knowledge',
     'performance-p3',
     'master-data',
@@ -1920,6 +1953,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ctv-master',
     'stores',
     'content',
+    'contracts',
     'input-plan',
     'sample-tracker',
     'push-products',
@@ -2024,7 +2058,8 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
     (tab === 'task-delegation' ||
       tab === 'workload-3d' ||
       tab === 'tiktok-crawler' ||
-      tab === 'market-research') &&
+      tab === 'market-research' ||
+      tab === 'contracts') &&
     ROLE_ALLOWED_TABS[role]?.includes(tab)
   ) {
     return true;
@@ -2046,6 +2081,9 @@ export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   }
   if (ROLE_ALLOWED_TABS[role]?.includes('market-research') && !list.includes('market-research')) {
     list.push('market-research');
+  }
+  if (ROLE_ALLOWED_TABS[role]?.includes('contracts') && !list.includes('contracts')) {
+    list.push('contracts');
   }
   return list;
 }

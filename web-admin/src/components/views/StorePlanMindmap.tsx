@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, startTransition } from 'react';
 import { formatVndShort } from '../../lib/format';
 import {
   InputPlanBreakdownState,
@@ -50,6 +50,7 @@ interface BranchMetadata {
   activeBgClass: string;
   badgeClass: string;
   sliderAccent: string;
+  sliderColor: string;
   isFreeCast?: boolean;
 }
 
@@ -65,6 +66,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-accent-soft border-blue-500 ring-2 ring-blue-500/20',
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
     sliderAccent: 'accent-blue-600',
+    sliderColor: 'var(--color-accent)',
   },
   {
     id: 'SELF_CHANNEL',
@@ -77,6 +79,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20',
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     sliderAccent: 'accent-emerald-600',
+    sliderColor: 'var(--color-positive)',
   },
   {
     id: 'FOC',
@@ -88,6 +91,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20',
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     sliderAccent: 'accent-emerald-600',
+    sliderColor: 'var(--color-positive)',
     isFreeCast: true,
   },
   {
@@ -101,6 +105,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20',
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
     sliderAccent: 'accent-blue-600',
+    sliderColor: 'var(--color-accent)',
   },
   {
     id: 'THREADS',
@@ -113,6 +118,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-slate-100 border-slate-700 ring-2 ring-slate-500/20',
     badgeClass: 'bg-slate-200 text-slate-800 border-slate-300',
     sliderAccent: 'accent-slate-800',
+    sliderColor: 'var(--color-ink)',
   },
   {
     id: 'INSTA',
@@ -125,6 +131,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-rose-50/90 border-rose-500 ring-2 ring-rose-500/20',
     badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
     sliderAccent: 'accent-rose-600',
+    sliderColor: 'var(--color-critical)',
   },
   {
     id: 'SHOPEE',
@@ -137,6 +144,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     activeBgClass: 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/20',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
     sliderAccent: 'accent-amber-600',
+    sliderColor: 'var(--color-warning)',
   },
 ];
 
@@ -239,6 +247,89 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
   onUpdateItems,
   onNotify,
 }) => {
+  // Danh sách hạng mục cục bộ để kéo thanh trượt phản hồi 0ms (120fps) không chờ parent 4600 dòng render xong
+  const [localItems, setLocalItems] = useState<InputPlanRowItem[]>(() => planState.items);
+  const lastPropagatedItemsRef = useRef<InputPlanRowItem[]>(planState.items);
+  const pendingItemsRef = useRef<InputPlanRowItem[] | null>(null);
+  const rafUpdateRef = useRef<number | null>(null);
+  const onUpdateItemsRef = useRef(onUpdateItems);
+  useEffect(() => {
+    onUpdateItemsRef.current = onUpdateItems;
+  }, [onUpdateItems]);
+
+  // Lưu tỷ trọng gốc của các dòng trong nhánh khi bắt đầu kéo thanh trượt tổng nhánh
+  // (Tránh lỗi làm tròn số nguyên tích lũy khiến thanh trượt bị giật lùi hoặc dồn hết vào dòng cuối KL7)
+  const branchDragBaselineRef = useRef<{
+    branchId: MindmapBranchId;
+    weights: Record<string, number>;
+    lockedMax?: number;
+  } | null>(null);
+  const itemLockedMaxRef = useRef<Record<string, number>>({});
+
+  // Đồng bộ khi planState.items thay đổi từ bên ngoài (chuyển gian hàng, đổi phiên bản, bấm "Khớp theo chỉ tiêu")
+  if (planState.items !== lastPropagatedItemsRef.current) {
+    lastPropagatedItemsRef.current = planState.items;
+    setLocalItems(planState.items);
+    branchDragBaselineRef.current = null;
+    itemLockedMaxRef.current = {};
+  }
+
+  const flushPendingItems = useCallback(() => {
+    if (rafUpdateRef.current !== null) {
+      cancelAnimationFrame(rafUpdateRef.current);
+      rafUpdateRef.current = null;
+    }
+    if (pendingItemsRef.current) {
+      const toFlush = pendingItemsRef.current;
+      pendingItemsRef.current = null;
+      lastPropagatedItemsRef.current = toFlush;
+      onUpdateItemsRef.current(toFlush);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafUpdateRef.current !== null) {
+        cancelAnimationFrame(rafUpdateRef.current);
+        rafUpdateRef.current = null;
+      }
+      if (pendingItemsRef.current) {
+        const toFlush = pendingItemsRef.current;
+        pendingItemsRef.current = null;
+        onUpdateItemsRef.current(toFlush);
+      }
+    };
+  }, []);
+
+  const commitItems = useCallback((nextItems: InputPlanRowItem[], immediate = false) => {
+    setLocalItems(nextItems);
+    lastPropagatedItemsRef.current = nextItems;
+
+    if (immediate) {
+      if (rafUpdateRef.current !== null) {
+        cancelAnimationFrame(rafUpdateRef.current);
+        rafUpdateRef.current = null;
+      }
+      pendingItemsRef.current = null;
+      onUpdateItemsRef.current(nextItems);
+      return;
+    }
+
+    pendingItemsRef.current = nextItems;
+    if (rafUpdateRef.current === null) {
+      rafUpdateRef.current = requestAnimationFrame(() => {
+        rafUpdateRef.current = null;
+        if (pendingItemsRef.current) {
+          const toCommit = pendingItemsRef.current;
+          pendingItemsRef.current = null;
+          startTransition(() => {
+            onUpdateItemsRef.current(toCommit);
+          });
+        }
+      });
+    }
+  }, []);
+
   const computeInitialBranches = (state: InputPlanBreakdownState) => {
     const nextEnabled = new Set<MindmapBranchId>();
     MINDMAP_BRANCHES.forEach(b => {
@@ -276,6 +367,8 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     setManuallyEnabledBranches(nextEnabled);
     const firstActive = Array.from(nextEnabled)[0] || 'VIDEO_AFFILIATE';
     setSelectedBranchId(firstActive);
+    branchDragBaselineRef.current = null;
+    itemLockedMaxRef.current = {};
   }
 
   // Trạng thái kéo-thả nhánh từ kho nhánh hoặc kéo-thả định dạng/nhân sự vào mục con
@@ -297,7 +390,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  // Tính toán thống kê cho từng nhánh trong 7 nhánh
+  // Tính toán thống kê cho từng nhánh trong 7 nhánh (dựa trên localItems để nhảy số tức thì khi kéo)
   const branchStatsMap = useMemo(() => {
     const map = {} as Record<
       MindmapBranchId,
@@ -310,7 +403,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     >;
 
     MINDMAP_BRANCHES.forEach(b => {
-      const items = planState.items.filter(it => matchItemToBranch(it, b.id));
+      const items = localItems.filter(it => matchItemToBranch(it, b.id));
       const totalQty = items.reduce((s, it) => s + (it.qty || 0), 0);
       const totalBudget = items.reduce((s, it) => s + (it.totalBudget || 0), 0);
       const isEnabled = manuallyEnabledBranches.has(b.id) || totalQty > 0 || totalBudget > 0;
@@ -318,7 +411,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     });
 
     return map;
-  }, [planState.items, manuallyEnabledBranches]);
+  }, [localItems, manuallyEnabledBranches]);
 
   const activeBranches = useMemo(
     () => MINDMAP_BRANCHES.filter(b => branchStatsMap[b.id]?.isEnabled),
@@ -332,7 +425,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
   // Tổng ngân sách & số lượng video toàn gian hàng (không tính Livestream của Growth)
   const storeTotals = useMemo(() => {
-    const b2cItems = planState.items.filter(it => it.channel !== 'LIVESTREAM');
+    const b2cItems = localItems.filter(it => it.channel !== 'LIVESTREAM');
     const allocatedBudget = b2cItems.reduce((s, it) => s + (it.totalBudget || 0), 0);
     const allocatedVideos = b2cItems.reduce((s, it) => s + (it.qty || 0), 0);
     const adsBudget = planState.budgetAdsTotal || 0;
@@ -350,11 +443,12 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       budgetHeadroom,
       videoHeadroom,
     };
-  }, [planState.items, planState.totalTargetBudget, planState.budgetAdsTotal, planState.totalTargetContents]);
+  }, [localItems, planState.totalTargetBudget, planState.budgetAdsTotal, planState.totalTargetContents]);
 
   // Bật 1 nhánh vào sơ đồ Mindmap của gian hàng
   const handleEnableBranch = (branchId: MindmapBranchId) => {
     if (disabled) return;
+    branchDragBaselineRef.current = null;
     setManuallyEnabledBranches(prev => {
       const next = new Set(prev);
       next.add(branchId);
@@ -363,12 +457,12 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     setSelectedBranchId(branchId);
 
     // Nếu gian hàng chưa có dòng con nào của nhánh này hoặc tất cả đang = 0, khởi tạo số lượng gợi ý
-    const existing = planState.items.filter(it => matchItemToBranch(it, branchId));
+    const existing = localItems.filter(it => matchItemToBranch(it, branchId));
     if (existing.length === 0) {
       const created = createDefaultItemsForBranch(branchId, planState.pic);
-      onUpdateItems([...planState.items, ...created]);
+      commitItems([...localItems, ...created], true);
     } else if (existing.every(it => it.qty === 0)) {
-      const updated = planState.items.map(it => {
+      const updated = localItems.map(it => {
         if (!matchItemToBranch(it, branchId)) return it;
         const defaultQty = branchId === 'FOC' ? 20 : it.tierCode === 'KL1' || it.tierCode === 'KL2' ? 5 : 2;
         const newBudget = defaultQty * it.unitCost;
@@ -379,7 +473,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           targetGmv: newBudget * it.expectedRoiMultiplier,
         };
       });
-      onUpdateItems(updated);
+      commitItems(updated, true);
     }
 
     const meta = MINDMAP_BRANCHES.find(b => b.id === branchId);
@@ -392,6 +486,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
   const handleDisableBranch = (branchId: MindmapBranchId, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (disabled) return;
+    branchDragBaselineRef.current = null;
 
     setManuallyEnabledBranches(prev => {
       const next = new Set(prev);
@@ -399,7 +494,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       return next;
     });
 
-    const updated = planState.items.map(it => {
+    const updated = localItems.map(it => {
       if (!matchItemToBranch(it, branchId)) return it;
       return {
         ...it,
@@ -408,7 +503,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         targetGmv: 0,
       };
     });
-    onUpdateItems(updated);
+    commitItems(updated, true);
 
     if (selectedBranchId === branchId) {
       const remaining = activeBranches.filter(b => b.id !== branchId);
@@ -423,45 +518,109 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     }
   };
 
+  // Ghi nhận tỷ trọng gốc của nhánh khi bắt đầu nhấn chuột vào thanh trượt tổng nhánh
+  const beginBranchSliderDrag = (branchId: MindmapBranchId, lockedMax: number) => {
+    const branchItems = localItems.filter(it => matchItemToBranch(it, branchId));
+    const sumQty = branchItems.reduce((s, it) => s + (it.qty || 0), 0);
+    if (sumQty > 0) {
+      const weights: Record<string, number> = {};
+      branchItems.forEach(it => {
+        weights[it.id] = it.qty || 0;
+      });
+      branchDragBaselineRef.current = { branchId, weights, lockedMax };
+    } else if (branchDragBaselineRef.current?.branchId === branchId) {
+      branchDragBaselineRef.current.lockedMax = lockedMax;
+    }
+  };
+
   // Kéo thanh trượt tổng số lượng video của cả 1 Nhánh ngay trên thẻ Mindmap
+  // Sử dụng phương pháp Largest Remainder (Hamilton) + lưu tỷ trọng gốc để tổng số lượng luôn khớp 100% targetBranchQty, không bao giờ giật lùi
   const handleScaleBranchQty = (branchId: MindmapBranchId, targetBranchQty: number) => {
     if (disabled) return;
     const validTarget = Math.max(0, Math.round(targetBranchQty));
-    const currentBranchItems = planState.items.filter(it => matchItemToBranch(it, branchId));
+    const currentBranchItems = localItems.filter(it => matchItemToBranch(it, branchId));
 
     // Nếu nhánh chưa có item trong danh sách, tạo mới trước
-    let workingList = [...planState.items];
+    let workingList = [...localItems];
     if (currentBranchItems.length === 0) {
       const created = createDefaultItemsForBranch(branchId, planState.pic);
       workingList = [...workingList, ...created];
     }
 
     const branchItems = workingList.filter(it => matchItemToBranch(it, branchId));
-    const currentSumQty = branchItems.reduce((s, it) => s + (it.qty || 0), 0);
+    if (branchItems.length === 0) return;
 
-    let rem = validTarget;
-    const updated = workingList.map(it => {
-      if (!matchItemToBranch(it, branchId)) return it;
-
-      const idxInBranch = branchItems.findIndex(b => b.id === it.id);
-      const isLast = idxInBranch === branchItems.length - 1;
-
-      let nextQty = 0;
-      if (validTarget === 0) {
-        nextQty = 0;
-      } else if (currentSumQty > 0) {
-        const share = (it.qty || 0) / currentSumQty;
-        nextQty = isLast ? Math.max(0, rem) : Math.round(validTarget * share);
-        rem -= nextQty;
+    // Khởi tạo hoặc lấy lại tỷ trọng gốc của nhánh trong phiên kéo hiện tại
+    let baseline = branchDragBaselineRef.current;
+    if (!baseline || baseline.branchId !== branchId) {
+      const currentSumQty = branchItems.reduce((s, it) => s + (it.qty || 0), 0);
+      const weights: Record<string, number> = {};
+      if (currentSumQty > 0) {
+        branchItems.forEach(it => {
+          weights[it.id] = it.qty || 0;
+        });
       } else {
-        // Nếu trước đó toàn bộ = 0, ưu tiên phân bổ vào các dòng đầu (KL1-KL3 hoặc dòng đầu tiên)
-        const activeCount = Math.min(branchItems.length, 3);
-        if (idxInBranch < activeCount) {
-          nextQty = idxInBranch === activeCount - 1 ? Math.max(0, rem) : Math.round(validTarget / activeCount);
-          rem -= nextQty;
+        // Nếu trước đó toàn bộ = 0, gán trọng số mặc định ưu tiên KL1-KL3 hoặc các dòng đầu
+        branchItems.forEach((it, idx) => {
+          if (it.tierCode === 'KL1') weights[it.id] = 5;
+          else if (it.tierCode === 'KL2') weights[it.id] = 4;
+          else if (it.tierCode === 'KL3') weights[it.id] = 2;
+          else if (idx < 3) weights[it.id] = 3 - idx;
+          else weights[it.id] = 0;
+        });
+        const fallbackSum = Object.values(weights).reduce((a, b) => a + b, 0);
+        if (fallbackSum <= 0) {
+          branchItems.forEach(it => {
+            weights[it.id] = 1;
+          });
         }
       }
+      baseline = { branchId, weights };
+      branchDragBaselineRef.current = baseline;
+    }
 
+    const totalWeight = branchItems.reduce((s, it) => s + (baseline!.weights[it.id] ?? 0), 0);
+    const allocatedMap: Record<string, number> = {};
+
+    if (validTarget === 0) {
+      branchItems.forEach(it => {
+        allocatedMap[it.id] = 0;
+      });
+    } else {
+      const quotas = branchItems.map((it, index) => {
+        const w = totalWeight > 0 ? (baseline!.weights[it.id] ?? 0) : 1;
+        const denom = totalWeight > 0 ? totalWeight : branchItems.length;
+        const exact = (validTarget * w) / denom;
+        const floor = Math.floor(exact);
+        return {
+          id: it.id,
+          index,
+          weight: w,
+          floor,
+          remainder: exact - floor,
+        };
+      });
+
+      const sumFloor = quotas.reduce((s, q) => s + q.floor, 0);
+      const leftover = Math.max(0, validTarget - sumFloor);
+
+      const sortedByRemainder = [...quotas].sort((a, b) => {
+        if (Math.abs(b.remainder - a.remainder) > 1e-9) return b.remainder - a.remainder;
+        if (b.weight !== a.weight) return b.weight - a.weight;
+        return a.index - b.index;
+      });
+
+      quotas.forEach(q => {
+        allocatedMap[q.id] = q.floor;
+      });
+      for (let i = 0; i < leftover && i < sortedByRemainder.length; i++) {
+        allocatedMap[sortedByRemainder[i].id] += 1;
+      }
+    }
+
+    const updated = workingList.map(it => {
+      if (!matchItemToBranch(it, branchId)) return it;
+      const nextQty = allocatedMap[it.id] ?? 0;
       const nextBudget = nextQty * it.unitCost;
       return {
         ...it,
@@ -471,14 +630,15 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       };
     });
 
-    onUpdateItems(updated);
+    commitItems(updated, false);
   };
 
   // Cập nhật từng dòng con trong nhánh đang chọn
-  const handleUpdateSubItemQty = (itemId: string, nextQtyRaw: number) => {
+  const handleUpdateSubItemQty = (itemId: string, nextQtyRaw: number, immediate = false) => {
     if (disabled) return;
+    branchDragBaselineRef.current = null;
     const nextQty = Math.max(0, Math.round(nextQtyRaw || 0));
-    const updated = planState.items.map(it => {
+    const updated = localItems.map(it => {
       if (it.id !== itemId) return it;
       const nextBudget = nextQty * it.unitCost;
       return {
@@ -488,13 +648,13 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         targetGmv: nextBudget * it.expectedRoiMultiplier,
       };
     });
-    onUpdateItems(updated);
+    commitItems(updated, immediate);
   };
 
   const handleUpdateSubItemCost = (itemId: string, nextCostRaw: number) => {
     if (disabled) return;
     const nextCost = Math.max(0, Math.round(nextCostRaw || 0));
-    const updated = planState.items.map(it => {
+    const updated = localItems.map(it => {
       if (it.id !== itemId) return it;
       const nextBudget = it.qty * nextCost;
       return {
@@ -504,18 +664,19 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         targetGmv: nextBudget * it.expectedRoiMultiplier,
       };
     });
-    onUpdateItems(updated);
+    commitItems(updated, true);
   };
 
   const handleUpdateSubItemField = (itemId: string, field: 'contentFormat' | 'assignedStaff', value: string) => {
     if (disabled) return;
-    const updated = planState.items.map(it => (it.id === itemId ? { ...it, [field]: value } : it));
-    onUpdateItems(updated);
+    const updated = localItems.map(it => (it.id === itemId ? { ...it, [field]: value } : it));
+    commitItems(updated, true);
   };
 
   // Thêm 1 dòng phân rã mới vào nhánh đang mở (ví dụ thêm định dạng mới cho Facebook / Self-channel)
   const handleAddSubItemToSelectedBranch = () => {
     if (disabled) return;
+    branchDragBaselineRef.current = null;
     const channelMap: Record<MindmapBranchId, InputPlanChannelType> = {
       VIDEO_AFFILIATE: 'TIKTOK',
       FOC: 'TIKTOK',
@@ -543,7 +704,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       targetGmv: 5 * defaultCost * 5.5,
       assignedStaff: planState.pic,
     };
-    onUpdateItems([...planState.items, newItem]);
+    commitItems([...localItems, newItem], true);
     if (onNotify) onNotify(`Đã thêm 1 hạng mục phân rã mới vào nhánh ${meta.label}.`);
   };
 
@@ -551,14 +712,14 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
   const handleFillHeadroomToSubItem = (item: InputPlanRowItem) => {
     if (disabled) return;
     if (item.unitCost === 0 && storeTotals.videoHeadroom > 0) {
-      handleUpdateSubItemQty(item.id, item.qty + storeTotals.videoHeadroom);
+      handleUpdateSubItemQty(item.id, item.qty + storeTotals.videoHeadroom, true);
       if (onNotify) onNotify(`Đã bù ${storeTotals.videoHeadroom} video còn thiếu vào "${item.tierLabel}".`);
     } else if (item.unitCost > 0 && storeTotals.budgetHeadroom >= item.unitCost) {
       const addQty = Math.floor(storeTotals.budgetHeadroom / item.unitCost);
-      handleUpdateSubItemQty(item.id, item.qty + addQty);
+      handleUpdateSubItemQty(item.id, item.qty + addQty, true);
       if (onNotify) onNotify(`Đã quy đổi ngân sách còn dư thành +${addQty} video cho "${item.tierLabel}".`);
     } else if (storeTotals.videoHeadroom > 0) {
-      handleUpdateSubItemQty(item.id, item.qty + storeTotals.videoHeadroom);
+      handleUpdateSubItemQty(item.id, item.qty + storeTotals.videoHeadroom, true);
     }
   };
 
@@ -690,7 +851,13 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                 storeTotals.allocatedBudget > 0
                   ? Math.round((stat.totalBudget / storeTotals.allocatedBudget) * 100)
                   : 0;
-              const maxBranchQty = branch.id === 'FOC' ? 250 : Math.max(120, planState.totalTargetContents || 100);
+              const baseMaxBranch = branch.id === 'FOC' ? 250 : Math.max(120, planState.totalTargetContents || 100);
+              const maxBranchQty =
+                branchDragBaselineRef.current?.branchId === branch.id && branchDragBaselineRef.current.lockedMax
+                  ? branchDragBaselineRef.current.lockedMax
+                  : Math.max(baseMaxBranch, stat.totalQty);
+              const branchSliderVal = Math.min(stat.totalQty, maxBranchQty);
+              const branchSliderPct = maxBranchQty > 0 ? Math.min(100, Math.max(0, (branchSliderVal / maxBranchQty) * 100)) : 0;
 
               return (
                 <div
@@ -745,16 +912,39 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
                   {/* THANH KÉO TRỰC QUAN NGAY TRÊN NHÁNH */}
                   <div
-                    className="mt-2 pt-1.5 border-t border-line flex items-center gap-2"
+                    className="mt-2 pt-1.5 border-t border-line flex items-center gap-2 select-none"
                     onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onDragStart={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                   >
                     <input
                       type="range"
                       min={0}
                       max={maxBranchQty}
-                      value={Math.min(stat.totalQty, maxBranchQty)}
+                      step={1}
+                      disabled={disabled}
+                      draggable={false}
+                      value={branchSliderVal}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        beginBranchSliderDrag(branch.id, maxBranchQty);
+                      }}
+                      onPointerUp={flushPendingItems}
+                      onMouseUp={flushPendingItems}
+                      onTouchEnd={flushPendingItems}
+                      onKeyUp={flushPendingItems}
+                      onBlur={flushPendingItems}
                       onChange={(e) => handleScaleBranchQty(branch.id, Number(e.target.value))}
-                      className={`w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer ${branch.sliderAccent}`}
+                      style={
+                        {
+                          '--slider-color': branch.sliderColor,
+                          '--slider-pct': `${branchSliderPct}%`,
+                        } as React.CSSProperties
+                      }
+                      className={`plan-range-slider ${branch.sliderAccent}`}
                       title={`Kéo để tăng/giảm nhanh tổng số lượng video của nhánh ${branch.label}`}
                     />
                     <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-accent' : 'text-ink-3'}`} />
@@ -842,7 +1032,10 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
               <div className="relative pl-4 space-y-2.5 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-4 before:w-0.5 before:bg-slate-200">
                 {selectedBranchStats.items.map(item => {
                   const isDragOver = dragOverItemId === item.id;
-                  const maxItemSlider = selectedBranchId === 'FOC' ? 200 : 80;
+                  const baseMaxItem = selectedBranchId === 'FOC' ? 200 : 80;
+                  const maxItemSlider = itemLockedMaxRef.current[item.id] ?? Math.max(baseMaxItem, item.qty);
+                  const itemSliderVal = Math.min(item.qty, maxItemSlider);
+                  const itemSliderPct = maxItemSlider > 0 ? Math.min(100, Math.max(0, (itemSliderVal / maxItemSlider) * 100)) : 0;
                   const shareOfBranchPct =
                     selectedBranchStats.totalBudget > 0
                       ? Math.round((item.totalBudget / selectedBranchStats.totalBudget) * 100)
@@ -923,13 +1116,20 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                         </div>
 
                         {/* Cột 2 (4/12): Thanh kéo số lượng trực tiếp + nút +/- */}
-                        <div className="md:col-span-4 space-y-1">
+                        <div
+                          className="md:col-span-4 space-y-1.5 select-none"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onDragStart={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-2xs text-ink-3 font-medium">Số lượng video:</span>
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
-                                onClick={() => handleUpdateSubItemQty(item.id, item.qty - 1)}
+                                onClick={() => handleUpdateSubItemQty(item.id, item.qty - 1, true)}
                                 className="w-5 h-5 rounded border border-line bg-surface hover:bg-sunken flex items-center justify-center text-ink-2"
                               >
                                 <Minus className="w-3 h-3" />
@@ -938,12 +1138,12 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                                 type="number"
                                 min={0}
                                 value={item.qty}
-                                onChange={(e) => handleUpdateSubItemQty(item.id, Number(e.target.value))}
+                                onChange={(e) => handleUpdateSubItemQty(item.id, Number(e.target.value), true)}
                                 className="w-12 text-center font-mono font-semibold text-xs py-0.5 border border-line rounded bg-surface text-ink"
                               />
                               <button
                                 type="button"
-                                onClick={() => handleUpdateSubItemQty(item.id, item.qty + 1)}
+                                onClick={() => handleUpdateSubItemQty(item.id, item.qty + 1, true)}
                                 className="w-5 h-5 rounded border border-line bg-surface hover:bg-sunken flex items-center justify-center text-ink-2"
                               >
                                 <Plus className="w-3 h-3" />
@@ -955,9 +1155,27 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                             type="range"
                             min={0}
                             max={maxItemSlider}
-                            value={Math.min(item.qty, maxItemSlider)}
-                            onChange={(e) => handleUpdateSubItemQty(item.id, Number(e.target.value))}
-                            className={`w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer ${selectedBranchMeta.sliderAccent}`}
+                            step={1}
+                            disabled={disabled}
+                            draggable={false}
+                            value={itemSliderVal}
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              itemLockedMaxRef.current[item.id] = maxItemSlider;
+                            }}
+                            onPointerUp={flushPendingItems}
+                            onMouseUp={flushPendingItems}
+                            onTouchEnd={flushPendingItems}
+                            onKeyUp={flushPendingItems}
+                            onBlur={flushPendingItems}
+                            onChange={(e) => handleUpdateSubItemQty(item.id, Number(e.target.value), false)}
+                            style={
+                              {
+                                '--slider-color': selectedBranchMeta.sliderColor,
+                                '--slider-pct': `${itemSliderPct}%`,
+                              } as React.CSSProperties
+                            }
+                            className={`plan-range-slider ${selectedBranchMeta.sliderAccent}`}
                           />
                         </div>
 

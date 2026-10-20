@@ -15,7 +15,7 @@ import { formatDate } from '../../lib/format';
 import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Status } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
-import { browserDemoEnabled, disableBrowserDemo, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
+import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { contractStatus, isAcceptance } from '../contracts/contractUi';
 import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
@@ -243,7 +243,7 @@ export function ContractManagementView({
   }
   if (!data) return <p className="text-[13px] text-ink-3 px-1">Đang tải hồ sơ hợp đồng…</p>;
 
-  const canCreate = data.actor.roles.includes('CREATOR');
+  const canCreate = data.actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r));
 
   return (
     <div className="space-y-6" onClickCapture={e => {
@@ -251,30 +251,11 @@ export function ContractManagementView({
       const link = (e.target as HTMLElement).closest('a');
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
-      {data.config.storage === 'BROWSER_DEMO' && (
-        <div role="status" className="rounded-xl bg-warning-soft px-4 py-3 text-[13px] text-ink flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="font-semibold text-warning-strong">Chế độ kiểm thử trình duyệt:</span>
-            <span className="ml-1.5">Đang áp dụng 8 biểu mẫu chuẩn Ver052026 với dữ liệu thử nghiệm nội bộ.</span>
-          </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={async () => {
-              disableBrowserDemo();
-              await refresh();
-            }}
-          >
-            Chuyển sang dữ liệu máy chủ
-          </Button>
-        </div>
-      )}
-
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
           <PageActions>
             <Button variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
-              Báo cáo kiểm tra điều khoản & thuế
+              Kiểm tra điều khoản & thuế
             </Button>
             {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
           </PageActions>
@@ -285,7 +266,7 @@ export function ContractManagementView({
               onChange={v => setScreen(v === 'CATALOG' ? { mode: 'catalog' } : { mode: 'list' })}
               items={[
                 { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
-                { key: 'CATALOG', label: `Danh mục & Mẫu hợp đồng (${data.templates.length})` },
+                { key: 'CATALOG', label: `Biểu mẫu chuẩn (${data.templates.length})` },
               ]}
             />
           </div>

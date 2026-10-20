@@ -40,7 +40,14 @@ export function getLarkConfig(): LarkConfig {
   const appId = process.env.LARK_APP_ID || '';
   const appSecret = process.env.LARK_APP_SECRET || '';
   const domain = process.env.LARK_DOMAIN || 'open.larksuite.com'; // Default cho Lark Suite quốc tế & UpBase
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const vercelProdUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : '';
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    vercelProdUrl ||
+    (process.env.NODE_ENV === 'production' ? 'https://b2c-theta.vercel.app' : 'http://localhost:3000')
+  ).replace(/\/$/, '');
   const redirectUri = process.env.LARK_REDIRECT_URI || `${appUrl}/api/auth/lark/callback`;
 
   // Kiểm tra cấu hình có hợp lệ không (loại trừ các chuỗi placeholder)
@@ -63,9 +70,19 @@ export function getLarkConfig(): LarkConfig {
 /**
  * Tạo URL ủy quyền đăng nhập Lark (OAuth 2.0 Authorization URL)
  */
-export function buildLarkAuthUrl(state: string = 'upbase_b2c_sso'): string {
+export function buildLarkAuthUrl(state: string = 'upbase_b2c_sso', requestOrigin?: string): string {
   const config = getLarkConfig();
-  const encodedRedirect = encodeURIComponent(config.redirectUri);
+  let redirectUri = config.redirectUri;
+  // Tự động đồng bộ redirect_uri theo origin thực tế (hỗ trợ song song cả https://b2c-theta.vercel.app và http://localhost:3000)
+  if (requestOrigin) {
+    const cleanOrigin = requestOrigin.replace(/\/$/, '');
+    const isLocalRequest = cleanOrigin.includes('localhost') || cleanOrigin.includes('127.0.0.1');
+    const isLocalRedirect = redirectUri.includes('localhost') || redirectUri.includes('127.0.0.1');
+    if (isLocalRequest !== isLocalRedirect) {
+      redirectUri = `${cleanOrigin}/api/auth/lark/callback`;
+    }
+  }
+  const encodedRedirect = encodeURIComponent(redirectUri);
   return `https://${config.domain}/open-apis/authen/v1/index?app_id=${config.appId}&redirect_uri=${encodedRedirect}&state=${encodeURIComponent(state)}`;
 }
 
@@ -122,19 +139,48 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
     throw new Error(`Lỗi xác thực mã code Lark [code ${resJson.code}]: ${resJson.msg}`);
   }
 
-  const userData = resJson.data;
+  const userData = resJson.data || {};
+  let userInfo = userData;
+
+  // Nếu có user access_token, gọi thêm /open-apis/authen/v1/user_info để lấy đầy đủ email/avatar mới nhất
+  if (userData.access_token && (!userData.email && !userData.enterprise_email)) {
+    try {
+      const infoRes = await fetch(`https://${config.domain}/open-apis/authen/v1/user_info`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${userData.access_token}`
+        },
+        cache: 'no-store'
+      });
+      const infoJson = await infoRes.json();
+      if (infoJson.code === 0 && infoJson.data) {
+        userInfo = { ...userData, ...infoJson.data };
+      }
+    } catch {
+      // Giữ nguyên dữ liệu từ bước access_token nếu gọi user_info thất bại
+    }
+  }
+
   return {
-    open_id: userData.open_id,
-    union_id: userData.union_id,
-    user_id: userData.user_id,
-    name: userData.name || userData.en_name || 'Lark User',
-    en_name: userData.en_name,
-    email: userData.enterprise_email || userData.email,
-    enterprise_email: userData.enterprise_email,
-    avatar_url: userData.avatar_url || userData.avatar_big || userData.avatar_thumb,
-    mobile: userData.mobile,
-    tenant_key: userData.tenant_key
+    open_id: userInfo.open_id,
+    union_id: userInfo.union_id,
+    user_id: userInfo.user_id,
+    name: userInfo.name || userInfo.en_name || 'Lark User',
+    en_name: userInfo.en_name,
+    email: userInfo.enterprise_email || userInfo.email,
+    enterprise_email: userInfo.enterprise_email,
+    avatar_url: userInfo.avatar_url || userInfo.avatar_big || userInfo.avatar_thumb,
+    mobile: userInfo.mobile,
+    tenant_key: userInfo.tenant_key
   };
+}
+
+function normalizePersonName(value?: string): string {
+  return (value || '')
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 }
 
 /**
@@ -145,11 +191,14 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
 export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   const email = (larkUser.enterprise_email || larkUser.email || '').toLowerCase().trim();
   const name = larkUser.name || 'Thành viên UpBase';
+  const normalizedName = normalizePersonName(larkUser.name);
 
-  // 1. Đối soát với danh sách thành viên cốt lõi đã có trong USERS
-  const existingUser = USERS.find(u => 
-    email && u.email.toLowerCase() === email
-  );
+  // 1. Đối soát với danh sách thành viên cốt lõi đã có trong USERS (theo email hoặc họ tên chuẩn B2C)
+  const existingUser =
+    USERS.find(u => email && u.email.toLowerCase() === email) ||
+    (normalizedName
+      ? USERS.find(u => normalizePersonName(u.name) === normalizedName)
+      : undefined);
 
   if (existingUser) {
     if (existingUser.canLogin === false) {
@@ -166,11 +215,12 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     };
   }
 
-  // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER
-  const masterMember = UPBASE_STAFF_MASTER.find(
-    m =>
-      email && m.email.toLowerCase() === email
-  );
+  // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER (theo email hoặc họ tên khi Lark chưa trả email)
+  const masterMember =
+    UPBASE_STAFF_MASTER.find(m => email && m.email.toLowerCase() === email) ||
+    (!email && normalizedName
+      ? UPBASE_STAFF_MASTER.find(m => normalizePersonName(m.name) === normalizedName)
+      : undefined);
 
   if (masterMember) {
     const classified = classifyMasterStaffMember(masterMember, INITIAL_DEPARTMENT_ACCESS_RULES, {});

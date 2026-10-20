@@ -211,7 +211,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
   // Kiểm tra trùng lặp KOC thời gian thực
   const duplicateMatch = (() => {
-    if (!existingKocs || existingKocs.length === 0) return null;
+    if (!isOpen || !existingKocs || existingKocs.length === 0) return null;
     const cleanHandle = channelId.trim().toLowerCase().replace('@', '');
     const cleanPhone = phone.trim().replace(/\D/g, '');
     const cleanCccd = cccd.trim();

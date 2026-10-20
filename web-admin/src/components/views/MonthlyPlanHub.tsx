@@ -1173,17 +1173,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             {/* Nội dung bảng gọn gàng, hiển thị cả người phụ trách từng mảng con */}
             <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[780px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
+              <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-3 w-[21%]">Gian hàng &amp; Phiên bản</th>
-                    <th className="py-2.5 px-2.5 w-[15%]">Đầu mối &amp; Tổ đội</th>
-                    <th className="py-2.5 px-2 text-right w-[10%] bg-sunken">Hạn mức Net</th>
+                    <th className="py-2.5 px-3 w-[20%]">Gian hàng &amp; Phiên bản</th>
+                    <th className="py-2.5 px-2.5 w-[14%]">Đầu mối &amp; Tổ đội</th>
+                    <th className="py-2.5 px-2 text-right w-[9%] bg-sunken">Hạn mức Net</th>
                     <th className="py-2.5 px-2 text-right w-[13%]">1. KOC trả phí</th>
                     <th className="py-2.5 px-2 text-center w-[9%]">2. FOC (0đ)</th>
                     <th className="py-2.5 px-2 text-right w-[12%]">3. Kênh Brand</th>
-                    <th className="py-2.5 px-2 text-right w-[9%]">4. Đa sàn</th>
-                    <th className="py-2.5 px-3 text-right w-[11%]">Trạng thái</th>
+                    <th className="py-2.5 px-2 text-right w-[10%]">4. Đa sàn</th>
+                    <th className="py-2.5 px-3 text-right w-[14%]">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody ref={governanceBodyRef} className="divide-y divide-line">
@@ -1480,7 +1480,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => onOpenListingForPlan(plan)}
-                                      className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 transition cursor-pointer"
+                                      className="h-6 px-2 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
                                       title="Triển khai Listing KOC theo Plan Final (KL1–KL7)"
                                     >
                                       Listing KOC
@@ -1500,7 +1500,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => onSelectPlan(plan)}
-                                      className="h-6 px-2 text-2xs font-medium shrink-0 opacity-0 group-hover:opacity-100"
+                                      className="hidden"
                                     >
                                       Mở
                                     </Button>
@@ -2620,7 +2620,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             /* DẠNG BẢNG GỌN GÀNG KHÔNG CUỘN NGANG */
             <Panel flush>
               <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[780px] lg:min-w-0 lg:table-fixed text-left text-xs border-collapse">
+                <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
                       <th className="py-2.5 px-2.5 w-[21%]">Kế hoạch &amp; Phiên bản</th>

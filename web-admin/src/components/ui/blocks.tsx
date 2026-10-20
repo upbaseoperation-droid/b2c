@@ -467,6 +467,7 @@ export interface ActionMenuItem {
   onSelect: () => void;
   icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   disabled?: boolean;
+  danger?: boolean;
 }
 
 /**

@@ -32,7 +32,7 @@ import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
-import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import { ActionMenu, Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Pagination, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 
@@ -115,22 +115,28 @@ export const BookingView: React.FC<BookingViewProps> = ({
     }
   };
 
+  const staffAllocationList = externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26;
+  const resolveValidStaffName = (candidate?: string) => {
+    if (candidate) {
+      const exactOrPartial = staffAllocationList.find(a => a.staffName === candidate || a.staffName.includes(candidate));
+      if (exactOrPartial) return exactOrPartial.staffName;
+    }
+    const kv = staffAllocationList.find(a => a.staffName.includes('Khánh Vy'));
+    return kv?.staffName || staffAllocationList[0]?.staffName || 'Khánh Vy';
+  };
+
   // Active Booking Staff Context (Cho phép nhân viên chọn danh tính của mình để xem KPI cá nhân)
-  const [selectedStaffName, setSelectedStaffName] = useState<string>(
-    currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : (currentUserName || 'Khánh Vy')
+  const [selectedStaffName, setSelectedStaffName] = useState<string>(() =>
+    resolveValidStaffName(currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : currentUserName)
   );
   const userKey = `${currentUser?.role ?? ''}:${currentUser?.name ?? ''}:${currentUserName ?? ''}`;
   const [prevUserKey, setPrevUserKey] = useState(userKey);
   if (userKey !== prevUserKey) {
     setPrevUserKey(userKey);
-    if (currentUser) {
-      if (currentUser.role === 'BOOKING_MEMBER') {
-        setSelectedStaffName(currentUser.name);
-      } else if (currentUser.role === 'MANAGER' && !selectedStaffName) {
-        setSelectedStaffName('Khánh Vy');
-      }
-    } else if (currentUserName) {
-      setSelectedStaffName(currentUserName);
+    if (currentUser?.role === 'BOOKING_MEMBER') {
+      setSelectedStaffName(resolveValidStaffName(currentUser.name));
+    } else if (!staffAllocationList.some(a => a.staffName === selectedStaffName)) {
+      setSelectedStaffName(resolveValidStaffName(currentUserName));
     }
   }
 
@@ -141,11 +147,15 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [selectedKocCategory, setSelectedKocCategory] = useState<string>('ALL'); // 3. KOC Category
   const [selectedTepKenh, setSelectedTepKenh] = useState<string>('ALL'); // 4. Tệp kênh
   const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
+  const [kocsPage, setKocsPage] = useState(1);
+  const [kocsPageSize, setKocsPageSize] = useState(50);
 
   // Filters for Booking Deals
   const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>(selectedBrand || 'ALL');
+  const [dealsPage, setDealsPage] = useState(1);
+  const [dealsPageSize, setDealsPageSize] = useState(50);
   const [prevSelectedBrand, setPrevSelectedBrand] = useState(selectedBrand);
   if (selectedBrand !== prevSelectedBrand) {
     setPrevSelectedBrand(selectedBrand);
@@ -364,44 +374,89 @@ export const BookingView: React.FC<BookingViewProps> = ({
     return [{ key: 'ALL', label: 'Tất cả gian hàng' }, ...items];
   }, [currentUser, deals]);
 
-  const filteredKocs = localKocs.filter((koc) => {
-    const matchKL = selectedKL === 'ALL' || koc.salaryGrade === selectedKL;
-    const matchSegment = selectedSegment === 'ALL' || koc.segment === selectedSegment;
-    const matchKocCat = selectedKocCategory === 'ALL' || koc.kocCategory === selectedKocCategory;
-    const matchTep = selectedTepKenh === 'ALL' || koc.tepKenh === selectedTepKenh || koc.creatorCategory === selectedTepKenh;
-    const matchSearch =
-      koc.stageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      koc.channelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      koc.niche.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (koc.tepKenh && koc.tepKenh.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (koc.kocCategory && koc.kocCategory.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (koc.segment && koc.segment.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (koc.phone || '').includes(searchTerm);
-    return matchKL && matchSegment && matchKocCat && matchTep && matchSearch;
-  });
+  const filteredKocs = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return localKocs.filter((koc) => {
+      if (selectedKL !== 'ALL' && koc.salaryGrade !== selectedKL) return false;
+      if (selectedSegment !== 'ALL' && koc.segment !== selectedSegment) return false;
+      if (selectedKocCategory !== 'ALL' && koc.kocCategory !== selectedKocCategory) return false;
+      if (selectedTepKenh !== 'ALL' && koc.tepKenh !== selectedTepKenh && koc.creatorCategory !== selectedTepKenh) return false;
+      if (!q) return true;
+      return (
+        koc.stageName.toLowerCase().includes(q) ||
+        koc.channelId.toLowerCase().includes(q) ||
+        koc.niche.toLowerCase().includes(q) ||
+        (koc.tepKenh ? koc.tepKenh.toLowerCase().includes(q) : false) ||
+        (koc.kocCategory ? koc.kocCategory.toLowerCase().includes(q) : false) ||
+        (koc.segment ? koc.segment.toLowerCase().includes(q) : false) ||
+        (koc.phone || '').includes(searchTerm.trim())
+      );
+    });
+  }, [localKocs, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, searchTerm]);
 
-  const filteredDeals = deals.filter((deal) => {
-    const matchSearch = 
-      deal.dealCode.toLowerCase().includes(dealsSearch.toLowerCase()) ||
-      deal.kocStageName.toLowerCase().includes(dealsSearch.toLowerCase()) ||
-      deal.campaignTitle.toLowerCase().includes(dealsSearch.toLowerCase()) ||
-      (deal.productName && deal.productName.toLowerCase().includes(dealsSearch.toLowerCase())) ||
-      (deal.brandName && deal.brandName.toLowerCase().includes(dealsSearch.toLowerCase()));
-    
-    if (!matchSearch) return false;
+  const dealFilterCounts = useMemo(() => {
+    let brandPending = 0;
+    let brandApproved = 0;
+    let brandRejected = 0;
+    let winnerTop20 = 0;
+    let adsCodePending = 0;
+    let hasGmv = 0;
+    let breakEven = 0;
+    for (const d of deals) {
+      if (d.brandApprovalStatus === 'CHỜ_DUYỆT') brandPending++;
+      else if (d.brandApprovalStatus === 'ĐÃ_DUYỆT') brandApproved++;
+      else if (d.brandApprovalStatus === 'TỪ_CHỐI') brandRejected++;
+      if (d.isWinnerTop20) winnerTop20++;
+      if (d.adsCodeStatus === 'CHƯA_CẤP') adsCodePending++;
+      if ((d.gmv30 || 0) > 0) hasGmv++;
+      if ((d.roi || 0) >= 1) breakEven++;
+    }
+    return {
+      all: deals.length,
+      brandPending,
+      brandApproved,
+      brandRejected,
+      winnerTop20,
+      adsCodePending,
+      hasGmv,
+      breakEven,
+    };
+  }, [deals]);
 
-    if (selectedBrandFilter !== 'ALL' && deal.brandName !== selectedBrandFilter) return false;
+  const filteredDeals = useMemo(() => {
+    const q = dealsSearch.trim().toLowerCase();
+    return deals.filter((deal) => {
+      if (selectedBrandFilter !== 'ALL' && deal.brandName !== selectedBrandFilter) return false;
+      if (dealsFilter === 'BRAND_PENDING' && deal.brandApprovalStatus !== 'CHỜ_DUYỆT') return false;
+      if (dealsFilter === 'BRAND_APPROVED' && deal.brandApprovalStatus !== 'ĐÃ_DUYỆT') return false;
+      if (dealsFilter === 'BRAND_REJECTED' && deal.brandApprovalStatus !== 'TỪ_CHỐI') return false;
+      if (dealsFilter === 'WINNER_TOP20' && !deal.isWinnerTop20) return false;
+      if (dealsFilter === 'HAS_GMV' && (deal.gmv30 || 0) <= 0) return false;
+      if (dealsFilter === 'BREAK_EVEN' && (deal.roi || 0) < 1.0) return false;
+      if (dealsFilter === 'OVERDUE_SLA' && !deal.isSlaWarning) return false;
+      if (dealsFilter === 'ADS_CODE_PENDING' && deal.adsCodeStatus !== 'CHƯA_CẤP') return false;
+      if (!q) return true;
+      return (
+        deal.dealCode.toLowerCase().includes(q) ||
+        deal.kocStageName.toLowerCase().includes(q) ||
+        deal.campaignTitle.toLowerCase().includes(q) ||
+        (deal.productName ? deal.productName.toLowerCase().includes(q) : false) ||
+        (deal.brandName ? deal.brandName.toLowerCase().includes(q) : false)
+      );
+    });
+  }, [deals, dealsSearch, selectedBrandFilter, dealsFilter]);
 
-    if (dealsFilter === 'BRAND_PENDING') return deal.brandApprovalStatus === 'CHỜ_DUYỆT';
-    if (dealsFilter === 'BRAND_APPROVED') return deal.brandApprovalStatus === 'ĐÃ_DUYỆT';
-    if (dealsFilter === 'BRAND_REJECTED') return deal.brandApprovalStatus === 'TỪ_CHỐI';
-    if (dealsFilter === 'WINNER_TOP20') return deal.isWinnerTop20;
-    if (dealsFilter === 'HAS_GMV') return (deal.gmv30 || 0) > 0;
-    if (dealsFilter === 'BREAK_EVEN') return (deal.roi || 0) >= 1.0;
-    if (dealsFilter === 'OVERDUE_SLA') return deal.isSlaWarning;
-    if (dealsFilter === 'ADS_CODE_PENDING') return deal.adsCodeStatus === 'CHƯA_CẤP';
-    return true;
-  });
+  const safeDealsPage = Math.min(dealsPage, Math.max(1, Math.ceil(filteredDeals.length / dealsPageSize)));
+  const pagedDeals = useMemo(
+    () => filteredDeals.slice((safeDealsPage - 1) * dealsPageSize, safeDealsPage * dealsPageSize),
+    [filteredDeals, safeDealsPage, dealsPageSize]
+  );
+
+  const safeKocsPage = Math.min(kocsPage, Math.max(1, Math.ceil(filteredKocs.length / kocsPageSize)));
+  const pagedKocs = useMemo(
+    () => filteredKocs.slice((safeKocsPage - 1) * kocsPageSize, safeKocsPage * kocsPageSize),
+    [filteredKocs, safeKocsPage, kocsPageSize]
+  );
 
   // Tìm thông tin tiến độ cá nhân đồng bộ trực tiếp với allocation và plan items
   const currentStaffAllocation = (externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).find(a => a.staffName.includes(selectedStaffName));
@@ -520,7 +575,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
       {/* Tiến độ cá nhân. Tab "Kế hoạch của tôi" đã có các ô chỉ số này nên chỉ giữ ô chọn người (§7 quy tắc 9) */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-ink-2">
-        {currentUser?.role === 'MANAGER' ? (
+        {currentUser?.role !== 'BOOKING_MEMBER' ? (
           <label className="inline-flex items-center gap-2">
             <span className="text-ink-3">Xem kế hoạch của</span>
             <select
@@ -528,7 +583,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
               onChange={(e) => setSelectedStaffName(e.target.value)}
               className="h-8 px-2 rounded-md border border-line-strong bg-surface text-ink font-medium focus:outline-none"
             >
-              {(externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).map(a => (
+              {staffAllocationList.map(a => (
                 <option key={a.id} value={a.staffName}>{a.staffName}</option>
               ))}
             </select>
@@ -746,7 +801,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
           '5_SETTLEMENT': { label: '5. Quyết toán', tone: 'positive' },
         };
         const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
-        const countBy = (fn: (d: BookingDealItem) => boolean) => deals.filter(fn).length;
         return (
           <div className="space-y-4">
             <StatRow>
@@ -761,15 +815,15 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 <strong className="font-semibold text-ink">Top 20 video đóng góp 55,8% GMV (709 tr).</strong>{' '}
                 5 video đứng đầu đều từ creator đã từng hợp tác. Ưu tiên tái ký các deal có ROI trên 1.
               </p>
-              <Button size="sm" onClick={() => setDealsFilter('WINNER_TOP20')}>Xem top 20</Button>
+              <Button size="sm" onClick={() => { setDealsFilter('WINNER_TOP20'); setDealsPage(1); }}>Xem top 20</Button>
             </div>
 
             <Panel flush title="Job booking">
               <div className="px-4 py-3 border-b border-line">
                 <FilterBar
-                  search={{ value: dealsSearch, onChange: setDealsSearch, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
+                  search={{ value: dealsSearch, onChange: (v) => { setDealsSearch(v); setDealsPage(1); }, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
                   filters={
-                    <Select value={selectedBrandFilter} onChange={e => setSelectedBrandFilter(e.target.value)} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
+                    <Select value={selectedBrandFilter} onChange={e => { setSelectedBrandFilter(e.target.value); setDealsPage(1); }} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
                       {brandsList.map(b => <option key={b.key} value={b.key}>{b.key === 'ALL' ? 'Mọi gian hàng' : b.label}</option>)}
                     </Select>
                   }
@@ -777,23 +831,23 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   chips={
                     <Chips
                       value={dealsFilter}
-                      onChange={setDealsFilter}
+                      onChange={(v) => { setDealsFilter(v); setDealsPage(1); }}
                       items={[
-                        { key: 'ALL', label: 'Tất cả', count: deals.length },
-                        { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: countBy(d => d.brandApprovalStatus === 'CHỜ_DUYỆT') },
-                        { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: countBy(d => d.brandApprovalStatus === 'ĐÃ_DUYỆT') },
-                        { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: countBy(d => d.brandApprovalStatus === 'TỪ_CHỐI') },
-                        { key: 'WINNER_TOP20', label: 'Top 20', count: countBy(d => !!d.isWinnerTop20) },
-                        { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: countBy(d => d.adsCodeStatus === 'CHƯA_CẤP') },
-                        { key: 'HAS_GMV', label: 'Có GMV', count: countBy(d => (d.gmv30 || 0) > 0) },
-                        { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: countBy(d => (d.roi || 0) >= 1) },
+                        { key: 'ALL', label: 'Tất cả', count: dealFilterCounts.all },
+                        { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: dealFilterCounts.brandPending },
+                        { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: dealFilterCounts.brandApproved },
+                        { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: dealFilterCounts.brandRejected },
+                        { key: 'WINNER_TOP20', label: 'Top 20', count: dealFilterCounts.winnerTop20 },
+                        { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: dealFilterCounts.adsCodePending },
+                        { key: 'HAS_GMV', label: 'Có GMV', count: dealFilterCounts.hasGmv },
+                        { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: dealFilterCounts.breakEven },
                       ]}
                     />
                   }
                 />
               </div>
               <DataTable
-                rows={filteredDeals}
+                rows={pagedDeals}
                 rowKey={d => d.id}
                 stickyLast
                 empty={<EmptyState title="Không có job phù hợp" />}
@@ -949,6 +1003,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   },
                 ]}
               />
+              <Pagination
+                page={safeDealsPage}
+                pageSize={dealsPageSize}
+                total={filteredDeals.length}
+                onPageChange={setDealsPage}
+                onPageSizeChange={(n) => { setDealsPageSize(n); setDealsPage(1); }}
+              />
             </Panel>
           </div>
         );
@@ -961,20 +1022,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
         <Panel flush title="Danh bạ KOC">
           <div className="px-4 py-3 border-b border-line">
             <FilterBar
-              search={{ value: searchTerm, onChange: setSearchTerm, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}
+              search={{ value: searchTerm, onChange: (v) => { setSearchTerm(v); setKocsPage(1); }, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}
               resultCount={filteredKocs.length}
               filters={
                 <>
-                  <Select value={selectedKL} onChange={e => setSelectedKL(e.target.value)} className="w-auto" aria-label="Khung lương">
+                  <Select value={selectedKL} onChange={e => { setSelectedKL(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Khung lương">
                     {salaryGrades.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi khung lương' : o.label}</option>)}
                   </Select>
-                  <Select value={selectedSegment} onChange={e => setSelectedSegment(e.target.value)} className="w-auto" aria-label="Phân nhóm creator">
+                  <Select value={selectedSegment} onChange={e => { setSelectedSegment(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Phân nhóm creator">
                     {creatorSegments.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi phân nhóm' : o.label}</option>)}
                   </Select>
-                  <Select value={selectedKocCategory} onChange={e => setSelectedKocCategory(e.target.value)} className="w-auto" aria-label="Ngành hàng">
+                  <Select value={selectedKocCategory} onChange={e => { setSelectedKocCategory(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Ngành hàng">
                     {kocCategories.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi ngành hàng' : o.label}</option>)}
                   </Select>
-                  <Select value={selectedTepKenh} onChange={e => setSelectedTepKenh(e.target.value)} className="w-auto" aria-label="Tệp kênh">
+                  <Select value={selectedTepKenh} onChange={e => { setSelectedTepKenh(e.target.value); setKocsPage(1); }} className="w-auto" aria-label="Tệp kênh">
                     {tepKenhList.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi tệp kênh' : o.label}</option>)}
                   </Select>
                 </>
@@ -982,7 +1043,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             />
           </div>
           <DataTable
-            rows={filteredKocs}
+            rows={pagedKocs}
             rowKey={k => k.id}
             stickyLast
             onRowClick={k => setInspectedKoc(k)}
@@ -1038,6 +1099,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 ),
               },
             ]}
+          />
+          <Pagination
+            page={safeKocsPage}
+            pageSize={kocsPageSize}
+            total={filteredKocs.length}
+            onPageChange={setKocsPage}
+            onPageSizeChange={(n) => { setKocsPageSize(n); setKocsPage(1); }}
           />
         </Panel>
       )}

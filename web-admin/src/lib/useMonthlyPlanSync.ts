@@ -35,7 +35,15 @@ interface UseMonthlyPlanSyncOptions {
   debounceMs?: number;
 }
 
-const serialize = (plan: InputPlanBreakdownState) => JSON.stringify(plan);
+const serializedPlanCache = new WeakMap<InputPlanBreakdownState, string>();
+
+const serialize = (plan: InputPlanBreakdownState): string => {
+  const cached = serializedPlanCache.get(plan);
+  if (cached !== undefined) return cached;
+  const json = JSON.stringify(plan);
+  serializedPlanCache.set(plan, json);
+  return json;
+};
 
 export function useMonthlyPlanSync({
   effectivePlans,

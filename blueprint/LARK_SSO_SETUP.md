@@ -36,46 +36,38 @@ sequenceDiagram
 
 ---
 
-## 2. Các Bước Cấu hình App trên Lark Developer Console
+## 2. Trạng thái Kết nối & Cấu hình App trên Lark Developer Console
 
-Để kích hoạt đăng nhập thật từ tổ chức UpBase, quản trị viên thực hiện các bước sau:
+Thông tin App hiện tại trong `.env` / `.env.local`:
+- **App ID:** `cli_aa45bfd4edf85f05` (Đã xác thực kết nối thành công lấy `app_access_token` với `open.larksuite.com`)
+- **Production URL:** `https://b2c-theta.vercel.app`
+- **Redirect URI Production:** `https://b2c-theta.vercel.app/api/auth/lark/callback`
 
-1. **Truy cập Lark Developer Console:**
-   - Đăng nhập: [https://open.larksuite.com/](https://open.larksuite.com/) bằng tài khoản admin công ty UpBase.
-2. **Tạo Custom App mới:**
-   - Nhấn **Create Custom App** -> Đặt tên: `UpBase B2C Ops Hub`.
-   - Mô tả: *Hệ thống quản trị và điều hành phòng Marketing B2C*.
-3. **Cấu hình Redirect URL (Bảo mật callback):**
-   - Vào menu bên trái: **Security Settings** -> **Redirect URLs**.
-   - Thêm URL:
-     - Môi trường Local: `http://localhost:3000/api/auth/lark/callback`
-     - Môi trường Staging/Prod: `https://[DOMAIN_CỦA_BẠN]/api/auth/lark/callback`
-4. **Cấp quyền truy cập thông tin nhân sự (Scopes):**
-   - Vào **Permissions & Scopes** -> Chọn các quyền:
-     - `contact:user.base:readonly` (Lấy thông tin cơ bản: tên, open_id, avatar).
-     - `contact:user.email:readonly` (Lấy email doanh nghiệp @upbase.vn).
-5. **Lấy App ID và App Secret:**
-   - Vào mục **Credentials & Basic Info**.
-   - Copy `App ID` (dạng `cli_xxxxxxxxxxxxx`) và `App Secret`.
-6. **Điền vào file `.env.local` của dự án:**
-   ```env
-   LARK_APP_ID=cli_xxxxxxxxxxxxxx
-   LARK_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   LARK_DOMAIN=open.larksuite.com
-   LARK_REDIRECT_URI=http://localhost:3000/api/auth/lark/callback
-   ```
-7. **Phát hành phiên bản (App Version):**
-   - Vào **Version Management & Release** -> Tạo version (vd `1.0.0`) và nhấn Submit for Approval để Lark Admin duyệt cho toàn bộ nhân sự UpBase sử dụng.
+Để hoàn tất đăng nhập OAuth cho nhân sự UpBase trên Lark Developer Console:
+
+1. **Truy cập trực tiếp trang quản trị App `cli_aa45bfd4edf85f05`:**
+   - Mở: `https://open.larksuite.com/app/cli_aa45bfd4edf85f05`
+2. **Cấu hình Redirect URL (Bắt buộc để tránh lỗi khi chuyển hướng):**
+   - Vào menu bên trái: **Security Settings** (Cài đặt bảo mật) -> mục **Redirect URLs**.
+   - Thêm chính xác URL:
+     - Production (Vercel): `https://b2c-theta.vercel.app/api/auth/lark/callback`
+     - Local: `http://localhost:3000/api/auth/lark/callback`
+3. **Bổ sung Scopes quyền truy cập thông tin nhân sự:**
+   - Hiện tại App `cli_aa45bfd4edf85f05` đang có `scopes: []` (chưa bật quyền đọc email).
+   - Vào **Permissions & Scopes** -> tìm và bật các quyền User Info:
+     - `contact:user.base:readonly` (Lấy họ tên, `open_id`, ảnh đại diện).
+     - `contact:user.email:readonly` (Lấy địa chỉ email doanh nghiệp `@upbase.vn` để đối chiếu chính xác với danh bạ 1.011 nhân sự).
+   - *(Lưu ý: Trong trường hợp `contact:user.email:readonly` chưa được duyệt, hệ thống tự động đối chiếu dự phòng theo Họ tên tiếng Việt trên Lark với danh bạ nhân sự UpBase).*
+4. **Phát hành phiên bản (App Version & Release):**
+   - Vào **Version Management & Release** -> nhấn **Create a version** (ví dụ `1.0.1`) -> lưu và **Submit for release** để áp dụng Redirect URL và Scopes mới.
 
 ---
 
-## 3. Chế độ Thử nghiệm Nhanh (Sandbox / Mock Mode)
+## 3. Chế độ Kiểm thử Nội bộ (Sandbox)
 
-Trong thời gian chờ Lark Admin cấp App ID chính thức hoặc khi phát triển offline:
-* Hệ thống đã tích hợp sẵn **Sandbox Persona Switcher** tại trang `/login`.
-* Bạn có thể chọn nhanh các nhân sự cốt lõi:
-  * **Vân Ngọc** — Trưởng phòng (Manager Role).
-  * **Đặng Mai Hà Linh** — Brand PIC / Senior Campaign Lead.
-  * **Khánh Vy** — Senior Booking Execution Specialist.
-  * **Ngỳnh Như** — Content & Script Lead.
-* Nhấn **"Đăng nhập thử với nhân sự đã chọn"** để vào hệ thống ngay lập tức với token session chuẩn mà không cần nhập mật khẩu.
+Tại trang `/login`, bên dưới nút **Đăng nhập bằng Lark (UpBase SSO)**, hệ thống hỗ trợ chọn nhanh tài khoản nhân sự thực tế để kiểm thử phân quyền:
+- **Đỗ Văn Giang** — Tổng Giám Đốc (CEO - `ADMIN`)
+- **Đặng Thị Yến Nhi** — Giám Đốc Marketing B2C (`MANAGER`)
+- **Nguyễn Thị Ngọc Tâm** — Trưởng nhóm Booking (`LEADER` - phụ trách cụm 8 gian hàng)
+- **Lê Phương Thảo**, **Lương Thị Như Quỳnh**, **Lê Thanh Hải**... — Chuyên viên thực thi (`BOOKING_MEMBER`)
+- Tra cứu trực tiếp theo Mã nhân viên (VD: `HN222`, `HN862`, `HN782`) từ danh bạ 1.011 nhân sự UpBase.

@@ -14,6 +14,7 @@ import type { KocItem, TikTokVideoItem } from '../../lib/types';
 import {
   buildScrapedKocsCsv,
   mapScrapedResultToKocItem,
+  parseTikTokHandles,
   type TikTokScrapedKocResult,
 } from '../../lib/tiktokKocScraper';
 import { formatDate, formatNumber } from '../../lib/format';
@@ -54,6 +55,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const [rawInput, setRawInput] = useState(initialHandle);
   const period: PeriodKey = '30d';
   const [videoLimit, setVideoLimit] = useState<number>(24);
+  const [requestedHandlesCount, setRequestedHandlesCount] = useState<number>(0);
+  const [requestedVideoLimit, setRequestedVideoLimit] = useState<number>(24);
   const [loading, setLoading] = useState(false);
   const [loadingMoreHandle, setLoadingMoreHandle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -67,6 +70,8 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     if (open) {
       setRawInput(initialHandle);
       setVideoLimit(24);
+      setRequestedVideoLimit(24);
+      setRequestedHandlesCount(parseTikTokHandles(initialHandle).length);
       setErrorMsg(null);
       setResults([]);
       setSelectedHandle('');
@@ -84,6 +89,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
       return;
     }
 
+    const parsedHandles = parseTikTokHandles(trimmed);
+    setRequestedHandlesCount(Math.max(1, parsedHandles.length));
+    setRequestedVideoLimit(targetLimit);
     setLoading(true);
     setErrorMsg(null);
 
@@ -106,6 +114,12 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
       setResults(json.results);
       setSelectedHandle(json.results[0].handle);
+      if (parsedHandles.length > json.results.length) {
+        onNotify?.(
+          `Chỉ lấy được ${json.results.length}/${parsedHandles.length} kênh KOC yêu cầu (thiếu ${parsedHandles.length - json.results.length} kênh).`,
+          'warning'
+        );
+      }
     } catch {
       setErrorMsg('Không kết nối được dịch vụ lấy dữ liệu TikTok. Thử lại sau ít phút.');
     } finally {
@@ -115,6 +129,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
 
   const handleLoadMoreVideos = async (handle: string, nextLimit: number) => {
     setLoadingMoreHandle(handle);
+    setRequestedVideoLimit(nextLimit);
     try {
       const res = await fetch('/api/integrations/tiktok-koc/scrape', {
         method: 'POST',
@@ -390,6 +405,14 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
           </div>
 
           {errorMsg && <p className="text-2xs text-critical">{errorMsg}</p>}
+          {!loading && results.length > 0 && requestedHandlesCount > results.length && (
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <Status tone="warning">
+                Chỉ lấy được {results.length}/{requestedHandlesCount} kênh KOC yêu cầu (thiếu{' '}
+                {requestedHandlesCount - results.length} kênh)
+              </Status>
+            </div>
+          )}
         </div>
 
         {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
@@ -518,26 +541,35 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
               flush
               title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
               actions={
-                activeResult.recentVideos.length < 100 &&
-                activeResult.recentVideos.length < activeResult.channelProfile.videoCount ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={RefreshCw}
-                    disabled={loadingMoreHandle === activeResult.handle || loading}
-                    onClick={() => {
-                      const nextPreset =
-                        VIDEO_LIMIT_OPTIONS.find(
-                          (opt) => opt > activeResult.recentVideos.length
-                        ) || 100;
-                      void handleLoadMoreVideos(activeResult.handle, nextPreset);
-                    }}
-                  >
-                    {loadingMoreHandle === activeResult.handle
-                      ? 'Đang tải thêm...'
-                      : 'Tải thêm video'}
-                  </Button>
-                ) : undefined
+                <div className="flex flex-wrap items-center gap-2">
+                  {!loading &&
+                    loadingMoreHandle !== activeResult.handle &&
+                    activeResult.recentVideos.length < requestedVideoLimit && (
+                      <Status tone="warning">
+                        Chỉ lấy được {activeResult.recentVideos.length}/{requestedVideoLimit} video yêu cầu
+                      </Status>
+                    )}
+                  {activeResult.recentVideos.length < 100 &&
+                    activeResult.recentVideos.length < activeResult.channelProfile.videoCount && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={RefreshCw}
+                        disabled={loadingMoreHandle === activeResult.handle || loading}
+                        onClick={() => {
+                          const nextPreset =
+                            VIDEO_LIMIT_OPTIONS.find(
+                              (opt) => opt > activeResult.recentVideos.length
+                            ) || 100;
+                          void handleLoadMoreVideos(activeResult.handle, nextPreset);
+                        }}
+                      >
+                        {loadingMoreHandle === activeResult.handle
+                          ? 'Đang tải thêm...'
+                          : 'Tải thêm video'}
+                      </Button>
+                    )}
+                </div>
               }
             >
               <DataTable
