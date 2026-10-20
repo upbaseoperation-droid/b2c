@@ -133,7 +133,7 @@ export const KocChannelReviewBadge: React.FC<{
         <button
           type="button"
           onClick={onClick}
-          className="inline-flex items-center h-5 px-1.5 rounded-full text-[10px] font-semibold bg-sunken text-ink-2 border border-line hover:bg-ink hover:text-white cursor-pointer"
+          className="inline-flex items-center h-5 px-1.5 rounded-full text-2xs font-semibold bg-sunken text-ink-2 border border-line hover:bg-ink hover:text-white cursor-pointer"
         >
           +{extraCount} Brand
         </button>

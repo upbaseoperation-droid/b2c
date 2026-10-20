@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { splitLinkInput, type LinkAirExpectation, type LinkAirResult } from '../../../../lib/linkAirCheck';
 import { checkSingleLinkServerless } from '../../../../lib/linkAirCheckServer';
+import { resolveExpectedCartInputUrls } from '../../../../lib/tiktokOpenSourceEngines';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const defaultExpect: LinkAirExpectation = { ...(body?.expect || {}) };
+  if (defaultExpect.expectedProductUrl?.trim()) {
+    defaultExpect.expectedProductUrl = await resolveExpectedCartInputUrls(
+      defaultExpect.expectedProductUrl
+    );
+  }
+
   const workerUrl = process.env.CRAWLER_WORKER_URL?.trim().replace(/\/+$/, '');
   if (workerUrl) {
     try {
@@ -37,20 +45,38 @@ export async function POST(req: NextRequest) {
             ? { Authorization: `Bearer ${process.env.CRAWLER_WORKER_TOKEN}` }
             : {}),
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, expect: defaultExpect }),
         cache: 'no-store',
         signal: AbortSignal.timeout(170_000),
       });
       const data = await res.json().catch(() => null);
-      if (res.ok && data) {
-        return NextResponse.json(data, { status: res.status });
+      if (res.ok && data && Array.isArray(data.results)) {
+        const enrichedResults = await Promise.all(
+          (data.results as LinkAirResult[]).map(async (r) => {
+            if (
+              r.platform === 'tiktok' &&
+              r.hasProductLink === true &&
+              (!r.cartProducts || r.cartProducts.length === 0) &&
+              !r.productUrl
+            ) {
+              return await checkSingleLinkServerless(r.inputUrl, defaultExpect);
+            }
+            return r;
+          })
+        );
+        const summary = {
+          total: enrichedResults.length,
+          pass: enrichedResults.filter((r) => r.verdict === 'PASS').length,
+          review: enrichedResults.filter((r) => r.verdict === 'REVIEW').length,
+          fail: enrichedResults.filter((r) => r.verdict === 'FAIL').length,
+        };
+        return NextResponse.json({ ...data, summary, results: enrichedResults }, { status: res.status });
       }
     } catch {
       // Nếu crawler-worker không kết nối được, tự động chuyển sang bộ kiểm tra tích hợp sẵn bên dưới
     }
   }
 
-  const defaultExpect: LinkAirExpectation = body?.expect || {};
   const checkItems: Array<{ url: string; expect: LinkAirExpectation }> = [];
 
   if (Array.isArray(body?.items) && body.items.length > 0) {

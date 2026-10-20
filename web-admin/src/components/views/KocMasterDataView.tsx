@@ -9,10 +9,11 @@
  * - Hiển thị 5 cột kênh mạng xã hội với Logo không chữ (TikTok, Shopee, Facebook, Instagram, Threads) theo dạng tích có hay không.
  */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, CloudDownload, FileScan, FileSpreadsheet, FileText, History, Plus, RefreshCw, Search, UserCheck, XCircle } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, StorePortfolioItem, UserProfile } from '../../lib/types';
 import { INITIAL_DEALS, INITIAL_KOCS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
+import { KOC_MASTER_CONTACT_SYNCED_EVENT } from '../../lib/staffBrandListingSheet';
 import { AddToBrandListingSheetModal } from '../shortlist/AddToBrandListingSheetModal';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
@@ -137,6 +138,26 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     setLocalKocs(kocs);
   }
 
+  useEffect(() => {
+    const onContactSynced = (e: Event) => {
+      const detail = (e as CustomEvent<KocItem>).detail;
+      if (!detail) return;
+      setLocalKocs((prev) =>
+        prev.map((k) => {
+          const cleanH = (k.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+          const targetH = (detail.channelId || '').trim().toLowerCase().replace(/^@+/, '');
+          if (k.id === detail.id || (cleanH && cleanH === targetH)) {
+            return { ...k, ...detail };
+          }
+          return k;
+        }),
+      );
+      onKocUpdated?.(detail);
+    };
+    window.addEventListener(KOC_MASTER_CONTACT_SYNCED_EVENT, onContactSynced);
+    return () => window.removeEventListener(KOC_MASTER_CONTACT_SYNCED_EVENT, onContactSynced);
+  }, [onKocUpdated]);
+
   const [openKocId, setOpenKocId] = useState<string | null>(selectedKocId);
   const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedKocId);
   const [syncedTrigger, setSyncedTrigger] = useState<number>(externalOpenTrigger);
@@ -205,6 +226,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           k.stageName.toLowerCase().includes(q) ||
           (k.realName || '').toLowerCase().includes(q) ||
           k.channelId.toLowerCase().includes(q) ||
+          (k.email || '').toLowerCase().includes(q) ||
           (k.shopeeChannel || '').toLowerCase().includes(q) ||
           (k.facebookChannel || '').toLowerCase().includes(q) ||
           (k.instagramChannel || '').toLowerCase().includes(q) ||
@@ -751,6 +773,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onUpdateMetrics={setMetricsTarget}
           onScanDocs={setOcrTarget}
           onSearchSocialChannels={setSocialTarget}
+          onUpdateKoc={(updated, msg) =>
+            applyUpdate(updated, msg || `Đã cập nhật hồ sơ của ${updated.stageName}`)
+          }
           onOpenKocPortal={onOpenKocPortal}
           onSelectDealForContract={onSelectDealForContract}
         />
@@ -790,7 +815,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 search={{
                   value: search,
                   onChange: setSearch,
-                  placeholder: 'Tên kênh, nick Shopee/FB/IG/Threads, SĐT, CCCD...',
+                  placeholder: 'Tên kênh, nick Shopee/FB/IG/Threads, Email, SĐT, CCCD...',
                 }}
                 filters={
                   <>

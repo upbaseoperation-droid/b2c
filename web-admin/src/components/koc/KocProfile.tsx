@@ -39,6 +39,7 @@ import {
 import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
+import { syncKocContactToStaffSheets } from '../../lib/staffBrandListingSheet';
 import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
 import { KocChannelReviewBadge, KocChannelReviewModal } from './KocChannelReviewModal';
 import {
@@ -118,6 +119,7 @@ export interface KocProfileProps {
   onUpdateMetrics?: (koc: KocItem) => void;
   onScanDocs?: (koc: KocItem) => void;
   onSearchSocialChannels?: (koc: KocItem) => void;
+  onUpdateKoc?: (updatedKoc: KocItem, message?: string) => void;
   onOpenKocPortal?: (kocId: string) => void;
   onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
@@ -142,6 +144,7 @@ export function KocProfile({
   onUpdateMetrics,
   onScanDocs,
   onSearchSocialChannels,
+  onUpdateKoc,
   onOpenKocPortal,
   onSelectDealForContract,
 }: KocProfileProps) {
@@ -258,6 +261,14 @@ export function KocProfile({
                 <span className="font-mono text-ink text-xs">
                   SĐT: {koc.phone}
                 </span>
+              )}
+              {koc.email && (
+                <a
+                  href={`mailto:${koc.email}`}
+                  className="font-mono text-accent hover:underline text-xs"
+                >
+                  {koc.email}
+                </a>
               )}
               {koc.location && (
                 <span className="text-ink-3 text-xs">
@@ -450,6 +461,7 @@ export function KocProfile({
                 <TikTokSellerMetricsSection
                   koc={koc}
                   onUpdate={() => (onUpdateMetrics ? onUpdateMetrics(koc) : setSyncModalOpen(true))}
+                  onUpdateKoc={onUpdateKoc}
                 />
               )}
 
@@ -466,8 +478,18 @@ export function KocProfile({
 
         {/* Cột tra cứu (Phải) */}
         <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0 shadow-xs">
-          <ShippingAndContactPanel koc={koc} onSearchSocialChannels={onSearchSocialChannels} />
-          <LegalPaymentPanel koc={koc} currentUser={currentUser} onScanDocs={onScanDocs} onOpenQr={() => setVietQrDeal(koc)} />
+          <ShippingAndContactPanel
+            koc={koc}
+            onSearchSocialChannels={onSearchSocialChannels}
+            onUpdateKoc={onUpdateKoc}
+          />
+          <LegalPaymentPanel
+            koc={koc}
+            currentUser={currentUser}
+            onScanDocs={onScanDocs}
+            onUpdateKoc={onUpdateKoc}
+            onOpenQr={() => setVietQrDeal(koc)}
+          />
           <OperationalNotesPanel koc={koc} />
         </aside>
       </div>
@@ -521,7 +543,15 @@ export function KocProfile({
    1. BỘ CHỈ SỐ TÍCH HỢP TỪ TIKTOK SELLER
    ========================================================================= */
 
-function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?: () => void }) {
+function TikTokSellerMetricsSection({
+  koc,
+  onUpdate,
+  onUpdateKoc,
+}: {
+  koc: KocItem;
+  onUpdate?: () => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
+}) {
   const [liveVideos, setLiveVideos] = useState<TikTokVideoItem[] | undefined>(koc.recentVideos);
   const [liveBio, setLiveBio] = useState<string | undefined>(koc.bio);
   const [liveTotalLikes, setLiveTotalLikes] = useState<number | undefined>(koc.totalLikes);
@@ -540,14 +570,41 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       );
       const json = await res.json();
       if (json.success && json.data) {
-        setLiveVideos(json.data.recentVideos);
-        setLiveBio(json.data.channelProfile?.bio);
-        setLiveTotalLikes(json.data.channelProfile?.totalLikes);
-        setLiveVideoCount(json.data.channelProfile?.videoCount);
-        setLiveAvgLikes(json.data.engagementMetrics?.avgLikes);
-        setLiveAvgComments(json.data.engagementMetrics?.avgComments);
-        setLiveAvgShares(json.data.engagementMetrics?.avgShares);
-        setLiveEr(json.data.engagementMetrics?.engagementRate);
+        const nextVideos = json.data.recentVideos;
+        const nextBio = json.data.channelProfile?.bio;
+        const nextTotalLikes = json.data.channelProfile?.totalLikes;
+        const nextVideoCount = json.data.channelProfile?.videoCount;
+        const nextAvgLikes = json.data.engagementMetrics?.avgLikes;
+        const nextAvgComments = json.data.engagementMetrics?.avgComments;
+        const nextAvgShares = json.data.engagementMetrics?.avgShares;
+        const nextEr = json.data.engagementMetrics?.engagementRate;
+        const extractedEmail = json.data.channelProfile?.extractedEmail;
+
+        setLiveVideos(nextVideos);
+        setLiveBio(nextBio);
+        setLiveTotalLikes(nextTotalLikes);
+        setLiveVideoCount(nextVideoCount);
+        setLiveAvgLikes(nextAvgLikes);
+        setLiveAvgComments(nextAvgComments);
+        setLiveAvgShares(nextAvgShares);
+        setLiveEr(nextEr);
+
+        if (onUpdateKoc) {
+          const updated: KocItem = {
+            ...koc,
+            recentVideos: nextVideos || koc.recentVideos,
+            bio: nextBio || koc.bio,
+            totalLikes: nextTotalLikes ?? koc.totalLikes,
+            videoCount: nextVideoCount ?? koc.videoCount,
+            avgLikes: nextAvgLikes ?? koc.avgLikes,
+            avgComments: nextAvgComments ?? koc.avgComments,
+            avgShares: nextAvgShares ?? koc.avgShares,
+            engagementRate: nextEr ?? koc.engagementRate,
+            email: koc.email || extractedEmail || undefined,
+          };
+          syncKocContactToStaffSheets(updated);
+          onUpdateKoc(updated, `Đã tải ${nextVideos?.length || 0} video và cập nhật chỉ số kênh @${koc.channelId.replace(/^@/, '')}`);
+        }
       }
     } catch {
       // Bỏ qua lỗi mạng tạm thời
@@ -1302,6 +1359,7 @@ function CollaborationHistorySection({
       {/* Modal hỏi đồng nghiệp */}
       {askDeal && (
         <AskColleagueModal
+          key={askDeal.id}
           deal={askDeal}
           koc={koc}
           currentUser={currentUser}
@@ -1426,22 +1484,96 @@ function ActiveDealsSection({
 function ShippingAndContactPanel({
   koc,
   onSearchSocialChannels,
+  onUpdateKoc,
 }: {
   koc: KocItem;
   onSearchSocialChannels?: (k: KocItem) => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
 }) {
   const prefs = koc.samplePreferences;
   const tiktokHandle = koc.channelId.replace(/^@+/, '');
+
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [quickEmailEditing, setQuickEmailEditing] = useState(false);
+  const [draftEmail, setDraftEmail] = useState(koc.email || '');
+  const [draftPhone, setDraftPhone] = useState(koc.phone || '');
+  const [draftZalo, setDraftZalo] = useState(koc.zalo || '');
+  const [draftLocation, setDraftLocation] = useState(koc.location || 'Hà Nội');
+  const [draftRecipient, setDraftRecipient] = useState(
+    koc.shippingRecipientName || koc.realName || koc.stageName || ''
+  );
+  const [draftShippingPhone, setDraftShippingPhone] = useState(
+    koc.shippingPhone || koc.phone || ''
+  );
+  const [draftShippingAddress, setDraftShippingAddress] = useState(
+    koc.shippingAddress || ''
+  );
+  const [draftShippingNotes, setDraftShippingNotes] = useState(
+    koc.shippingNotes || ''
+  );
+
+  const openFullContactEdit = () => {
+    setDraftEmail(koc.email || '');
+    setDraftPhone(koc.phone || '');
+    setDraftZalo(koc.zalo || '');
+    setDraftLocation(koc.location || 'Hà Nội');
+    setDraftRecipient(koc.shippingRecipientName || koc.realName || koc.stageName || '');
+    setDraftShippingPhone(koc.shippingPhone || koc.phone || '');
+    setDraftShippingAddress(koc.shippingAddress || '');
+    setDraftShippingNotes(koc.shippingNotes || '');
+    setIsEditingContact(true);
+  };
+
+  const handleSaveQuickEmail = () => {
+    const cleanEmail = draftEmail.trim();
+    const updated: KocItem = {
+      ...koc,
+      email: cleanEmail || undefined,
+    };
+    syncKocContactToStaffSheets(updated);
+    onUpdateKoc?.(
+      updated,
+      cleanEmail
+        ? `Đã lưu email ${cleanEmail} cho KOC ${koc.stageName}`
+        : `Đã cập nhật email cho KOC ${koc.stageName}`
+    );
+    setQuickEmailEditing(false);
+  };
+
+  const handleSaveFullContact = () => {
+    const updated: KocItem = {
+      ...koc,
+      email: draftEmail.trim() || undefined,
+      phone: draftPhone.trim(),
+      zalo: draftZalo.trim() || draftPhone.trim(),
+      location: draftLocation.trim() || 'Hà Nội',
+      shippingRecipientName: draftRecipient.trim() || undefined,
+      shippingPhone: draftShippingPhone.trim() || undefined,
+      shippingAddress: draftShippingAddress.trim() || undefined,
+      shippingNotes: draftShippingNotes.trim() || undefined,
+    };
+    syncKocContactToStaffSheets(updated);
+    onUpdateKoc?.(updated, `Đã cập nhật liên hệ & địa chỉ nhận mẫu cho ${koc.stageName}`);
+    setIsEditingContact(false);
+    setQuickEmailEditing(false);
+  };
 
   return (
     <AsideSection
       title="Liên hệ & Hậu cần gửi mẫu (FOC)"
       actions={
-        onSearchSocialChannels && (
-          <Button size="sm" variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
-            Tìm kênh MXH
-          </Button>
-        )
+        <div className="flex items-center gap-1.5">
+          {!isEditingContact && onUpdateKoc && (
+            <Button size="sm" variant="ghost" onClick={openFullContactEdit}>
+              Sửa liên hệ
+            </Button>
+          )}
+          {onSearchSocialChannels && (
+            <Button size="sm" variant="secondary" icon={Search} onClick={() => onSearchSocialChannels(koc)}>
+              Tìm kênh MXH
+            </Button>
+          )}
+        </div>
       }
     >
       <dl className="grid gap-3 text-xs">
@@ -1558,59 +1690,209 @@ function ShippingAndContactPanel({
           </div>
         </div>
 
-        {/* Liên hệ trao đổi */}
-        <InfoRow label="Số điện thoại">{koc.phone}</InfoRow>
-        <InfoRow label="Zalo trao đổi">
-          {koc.zalo ? (
-            <span className="inline-flex items-center gap-1.5">
-              <span>{koc.zalo}</span>
-              <a
-                href={`https://zalo.me/${koc.zalo.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-2xs text-accent hover:underline"
-              >
-                Nhắn Zalo
-              </a>
-            </span>
-          ) : (
-            '—'
-          )}
-        </InfoRow>
-        <InfoRow label="Email làm việc">{koc.email}</InfoRow>
-        <InfoRow label="Khu vực">{koc.location || 'Hà Nội'}</InfoRow>
+        {isEditingContact ? (
+          <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5">
+            <Field label="Email làm việc (nhận lời mời & hợp đồng)">
+              <input
+                type="email"
+                placeholder="VD: creator@gmail.com"
+                value={draftEmail}
+                onChange={(e) => setDraftEmail(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Số điện thoại">
+                <input
+                  type="text"
+                  placeholder="09..."
+                  value={draftPhone}
+                  onChange={(e) => setDraftPhone(e.target.value)}
+                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label="Zalo trao đổi">
+                <input
+                  type="text"
+                  placeholder="09..."
+                  value={draftZalo}
+                  onChange={(e) => setDraftZalo(e.target.value)}
+                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                />
+              </Field>
+            </div>
+            <Field label="Khu vực">
+              <input
+                type="text"
+                placeholder="Hà Nội / TP.HCM..."
+                value={draftLocation}
+                onChange={(e) => setDraftLocation(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <div className="border-t border-line pt-2 grid grid-cols-2 gap-2">
+              <Field label="Người nhận mẫu">
+                <input
+                  type="text"
+                  value={draftRecipient}
+                  onChange={(e) => setDraftRecipient(e.target.value)}
+                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                />
+              </Field>
+              <Field label="SĐT nhận hàng">
+                <input
+                  type="text"
+                  value={draftShippingPhone}
+                  onChange={(e) => setDraftShippingPhone(e.target.value)}
+                  className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+                />
+              </Field>
+            </div>
+            <Field label="Địa chỉ nhận mẫu chi tiết">
+              <input
+                type="text"
+                placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP..."
+                value={draftShippingAddress}
+                onChange={(e) => setDraftShippingAddress(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <Field label="Ghi chú giao hàng">
+              <input
+                type="text"
+                placeholder="Giờ nhận hàng, lưu ý lễ tân..."
+                value={draftShippingNotes}
+                onChange={(e) => setDraftShippingNotes(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <div className="flex items-center justify-end gap-1.5 pt-1">
+              <Button size="sm" variant="ghost" onClick={() => setIsEditingContact(false)}>
+                Hủy
+              </Button>
+              <Button size="sm" variant="primary" icon={Check} onClick={handleSaveFullContact}>
+                Lưu liên hệ
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Liên hệ trao đổi */}
+            <InfoRow label="Số điện thoại">{koc.phone}</InfoRow>
+            <InfoRow label="Zalo trao đổi">
+              {koc.zalo ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span>{koc.zalo}</span>
+                  <a
+                    href={`https://zalo.me/${koc.zalo.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-2xs text-accent hover:underline"
+                  >
+                    Nhắn Zalo
+                  </a>
+                </span>
+              ) : (
+                '—'
+              )}
+            </InfoRow>
+            <InfoRow label="Email làm việc">
+              {quickEmailEditing ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="email"
+                    autoFocus
+                    placeholder="Điền email KOC (vd: ten@gmail.com)..."
+                    value={draftEmail}
+                    onChange={(e) => setDraftEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveQuickEmail();
+                      } else if (e.key === 'Escape') {
+                        setQuickEmailEditing(false);
+                      }
+                    }}
+                    className="flex-1 min-w-0 h-7 px-2 rounded border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+                  />
+                  <Button size="sm" variant="primary" onClick={handleSaveQuickEmail}>
+                    Lưu
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setQuickEmailEditing(false)}>
+                    Hủy
+                  </Button>
+                </div>
+              ) : koc.email ? (
+                <div className="flex items-center justify-between gap-2">
+                  <a
+                    href={`mailto:${koc.email}`}
+                    className="font-mono text-accent hover:underline truncate"
+                  >
+                    {koc.email}
+                  </a>
+                  {onUpdateKoc && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftEmail(koc.email || '');
+                        setQuickEmailEditing(true);
+                      }}
+                      className="text-2xs text-ink-3 hover:text-ink underline shrink-0 cursor-pointer"
+                    >
+                      Sửa
+                    </button>
+                  )}
+                </div>
+              ) : onUpdateKoc ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftEmail('');
+                    setQuickEmailEditing(true);
+                  }}
+                  className="text-2xs font-medium text-accent hover:underline cursor-pointer"
+                >
+                  + Điền email KOC
+                </button>
+              ) : (
+                '—'
+              )}
+            </InfoRow>
+            <InfoRow label="Khu vực">{koc.location || 'Hà Nội'}</InfoRow>
 
-        <div className="my-2 border-t border-line" />
+            <div className="my-2 border-t border-line" />
 
-        {/* Hậu cần nhận mẫu */}
-        <div className="flex items-center gap-1.5 text-ink font-semibold text-[12.5px]">
-          <Truck className="w-3.5 h-3.5 text-accent" />
-          <span>Thông tin giao nhận hàng mẫu</span>
-        </div>
+            {/* Hậu cần nhận mẫu */}
+            <div className="flex items-center gap-1.5 text-ink font-semibold text-[12.5px]">
+              <Truck className="w-3.5 h-3.5 text-accent" />
+              <span>Thông tin giao nhận hàng mẫu</span>
+            </div>
 
-        <InfoRow label="Người nhận hàng">
-          {koc.shippingRecipientName ? (
-            <span className="font-medium text-ink">{koc.shippingRecipientName}</span>
-          ) : (
-            koc.realName || koc.stageName
-          )}
-        </InfoRow>
+            <InfoRow label="Người nhận hàng">
+              {koc.shippingRecipientName ? (
+                <span className="font-medium text-ink">{koc.shippingRecipientName}</span>
+              ) : (
+                koc.realName || koc.stageName
+              )}
+            </InfoRow>
 
-        <InfoRow label="SĐT nhận hàng">{koc.shippingPhone || koc.phone}</InfoRow>
+            <InfoRow label="SĐT nhận hàng">{koc.shippingPhone || koc.phone}</InfoRow>
 
-        <InfoRow label="Địa chỉ nhận mẫu chi tiết">
-          <span className="leading-relaxed">{koc.shippingAddress || 'Chưa cung cấp địa chỉ nhận mẫu'}</span>
-        </InfoRow>
+            <InfoRow label="Địa chỉ nhận mẫu chi tiết">
+              <span className="leading-relaxed">{koc.shippingAddress || 'Chưa cung cấp địa chỉ nhận mẫu'}</span>
+            </InfoRow>
 
-        <InfoRow label="Ghi chú giao hàng quan trọng">
-          {koc.shippingNotes ? (
-            <span className="p-2 rounded bg-warning-soft text-ink font-normal block leading-relaxed text-2xs">
-              {koc.shippingNotes}
-            </span>
-          ) : (
-            <span className="text-ink-3">Chưa có ghi chú riêng</span>
-          )}
-        </InfoRow>
+            <InfoRow label="Ghi chú giao hàng quan trọng">
+              {koc.shippingNotes ? (
+                <span className="p-2 rounded bg-warning-soft text-ink font-normal block leading-relaxed text-2xs">
+                  {koc.shippingNotes}
+                </span>
+              ) : (
+                <span className="text-ink-3">Chưa có ghi chú riêng</span>
+              )}
+            </InfoRow>
+          </>
+        )}
 
         {/* Đặc tính phục vụ chọn mẫu */}
         {prefs && (
@@ -1655,18 +1937,80 @@ function LegalPaymentPanel({
   koc,
   currentUser,
   onScanDocs,
+  onUpdateKoc,
   onOpenQr,
 }: {
   koc: KocItem;
   currentUser?: UserProfile;
   onScanDocs?: (k: KocItem) => void;
+  onUpdateKoc?: (updated: KocItem, message?: string) => void;
   onOpenQr?: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
+  const [isEditingLegal, setIsEditingLegal] = useState(false);
   const allowed = canRevealSensitive(currentUser, koc);
   const type = legalTypeOf(koc);
   const legalId = legalIdOf(koc);
   const show = (v: string) => (revealed ? v : mask(v));
+
+  const [draftLegalType, setDraftLegalType] = useState<'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY'>(type);
+  const [draftRealName, setDraftRealName] = useState(koc.realName || '');
+  const [draftCompanyName, setDraftCompanyName] = useState(koc.companyName || '');
+  const [draftCccd, setDraftCccd] = useState(koc.cccd || '');
+  const [draftTaxCode, setDraftTaxCode] = useState(koc.taxCode || '');
+  const [draftTaxAccountType, setDraftTaxAccountType] = useState(
+    koc.taxAccountType || '(Thuế TNCN 10%) Tài khoản cá nhân'
+  );
+  const [draftBankName, setDraftBankName] = useState(koc.bankName || 'Techcombank');
+  const [draftBankAccount, setDraftBankAccount] = useState(koc.bankAccount || '');
+  const [draftDriveUrl, setDraftDriveUrl] = useState(koc.contractDriveUrl || '');
+
+  const openLegalEdit = () => {
+    setDraftLegalType(type);
+    setDraftRealName(koc.realName || '');
+    setDraftCompanyName(koc.companyName || '');
+    setDraftCccd(koc.cccd || '');
+    setDraftTaxCode(koc.taxCode || '');
+    setDraftTaxAccountType(
+      koc.taxAccountType ||
+        (type === 'COMPANY'
+          ? '(VAT 8%) Tài khoản doanh nghiệp'
+          : type === 'HOUSEHOLD'
+            ? 'Hộ kinh doanh cá thể'
+            : '(Thuế TNCN 10%) Tài khoản cá nhân')
+    );
+    setDraftBankName(koc.bankName || 'Techcombank');
+    setDraftBankAccount(koc.bankAccount || '');
+    setDraftDriveUrl(koc.contractDriveUrl || '');
+    setIsEditingLegal(true);
+  };
+
+  const handleSaveLegal = () => {
+    const updated: KocItem = {
+      ...koc,
+      realName: draftRealName.trim() || koc.realName,
+      companyName:
+        draftLegalType !== 'INDIVIDUAL'
+          ? draftCompanyName.trim() || draftRealName.trim() || undefined
+          : undefined,
+      cccd: draftCccd.trim(),
+      taxCode: draftTaxCode.trim() || undefined,
+      taxAccountType: draftTaxAccountType.trim() || undefined,
+      ocrDocumentType:
+        draftLegalType === 'COMPANY'
+          ? 'BUSINESS_LICENSE'
+          : draftLegalType === 'HOUSEHOLD'
+            ? 'BUSINESS_HOUSEHOLD'
+            : 'CCCD',
+      isOcrVerified: Boolean(draftCccd.trim() || draftTaxCode.trim() || koc.isOcrVerified),
+      bankName: draftBankName.trim() || undefined,
+      bankAccount: draftBankAccount.trim(),
+      contractDriveUrl: draftDriveUrl.trim() || undefined,
+    };
+    syncKocContactToStaffSheets(updated);
+    onUpdateKoc?.(updated, `Đã cập nhật pháp lý & tài khoản thanh toán cho ${koc.stageName}`);
+    setIsEditingLegal(false);
+  };
 
   const scanButton = onScanDocs && (
     <Button size="sm" icon={FileScan} onClick={() => onScanDocs(koc)}>
@@ -1678,20 +2022,144 @@ function LegalPaymentPanel({
     <AsideSection
       title="Pháp lý & Thanh toán"
       actions={
-        allowed &&
-        legalId && (
-          <Button size="sm" variant="ghost" onClick={() => setRevealed((v) => !v)}>
-            {revealed ? 'Ẩn số' : 'Hiện số'}
-          </Button>
-        )
+        <div className="flex items-center gap-1.5">
+          {!isEditingLegal && onUpdateKoc && (
+            <Button size="sm" variant="ghost" onClick={openLegalEdit}>
+              Sửa pháp lý & TK
+            </Button>
+          )}
+          {!isEditingLegal && allowed && legalId && (
+            <Button size="sm" variant="ghost" onClick={() => setRevealed((v) => !v)}>
+              {revealed ? 'Ẩn số' : 'Hiện số'}
+            </Button>
+          )}
+        </div>
       }
     >
-      {!legalId ? (
+      {isEditingLegal ? (
+        <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5 text-xs">
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Loại hồ sơ pháp lý">
+              <select
+                value={draftLegalType}
+                onChange={(e) => {
+                  const next = e.target.value as 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
+                  setDraftLegalType(next);
+                  setDraftTaxAccountType(
+                    next === 'COMPANY'
+                      ? '(VAT 8%) Tài khoản doanh nghiệp'
+                      : next === 'HOUSEHOLD'
+                        ? 'Hộ kinh doanh cá thể'
+                        : '(Thuế TNCN 10%) Tài khoản cá nhân'
+                  );
+                }}
+                className="w-full h-8 px-2 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              >
+                <option value="INDIVIDUAL">Cá nhân (CCCD)</option>
+                <option value="HOUSEHOLD">Hộ kinh doanh</option>
+                <option value="COMPANY">Công ty / MCN</option>
+              </select>
+            </Field>
+            <Field label="Chế độ khấu trừ thuế">
+              <input
+                type="text"
+                value={draftTaxAccountType}
+                onChange={(e) => setDraftTaxAccountType(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+          </div>
+          {draftLegalType !== 'INDIVIDUAL' && (
+            <Field label="Tên công ty / Hộ kinh doanh">
+              <input
+                type="text"
+                placeholder="VD: CÔNG TY TNHH..."
+                value={draftCompanyName}
+                onChange={(e) => setDraftCompanyName(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+          )}
+          <Field label={draftLegalType === 'INDIVIDUAL' ? 'Họ tên thật (chủ TK)' : 'Người đại diện / Chủ TK'}>
+            <input
+              type="text"
+              placeholder="Họ và tên..."
+              value={draftRealName}
+              onChange={(e) => setDraftRealName(e.target.value)}
+              className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Số CCCD (12 số)">
+              <input
+                type="text"
+                placeholder="001..."
+                value={draftCccd}
+                onChange={(e) => setDraftCccd(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <Field label="Mã số thuế (MST)">
+              <input
+                type="text"
+                placeholder="MST cá nhân / công ty..."
+                value={draftTaxCode}
+                onChange={(e) => setDraftTaxCode(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-2 border-t border-line pt-2">
+            <Field label="Ngân hàng">
+              <input
+                type="text"
+                placeholder="Techcombank, MB Bank, VCB..."
+                value={draftBankName}
+                onChange={(e) => setDraftBankName(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+            <Field label="Số tài khoản nhận tiền">
+              <input
+                type="text"
+                placeholder="Nhập số tài khoản..."
+                value={draftBankAccount}
+                onChange={(e) => setDraftBankAccount(e.target.value)}
+                className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-mono text-ink focus:outline-none focus:border-accent"
+              />
+            </Field>
+          </div>
+          <Field label="Link thư mục hợp đồng (Google Drive)">
+            <input
+              type="url"
+              placeholder="https://drive.google.com/..."
+              value={draftDriveUrl}
+              onChange={(e) => setDraftDriveUrl(e.target.value)}
+              className="w-full h-8 px-2.5 rounded-md border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent"
+            />
+          </Field>
+          <div className="flex items-center justify-end gap-1.5 pt-1">
+            <Button size="sm" variant="ghost" onClick={() => setIsEditingLegal(false)}>
+              Hủy
+            </Button>
+            <Button size="sm" variant="primary" icon={Check} onClick={handleSaveLegal}>
+              Lưu pháp lý & TK
+            </Button>
+          </div>
+        </div>
+      ) : !legalId && !koc.bankAccount ? (
         <div className="space-y-3">
           <p className="text-xs text-ink-2 leading-relaxed">
-            Chưa có giấy tờ pháp lý. Cần CCCD (cá nhân) hoặc giấy đăng ký kinh doanh để lập hợp đồng và thanh toán.
+            Chưa có giấy tờ pháp lý và tài khoản ngân hàng. Bấm đọc ảnh giấy tờ hoặc nhập trực tiếp để lập hợp đồng và thanh toán.
           </p>
-          {scanButton}
+          <div className="flex flex-wrap items-center gap-2">
+            {scanButton}
+            {onUpdateKoc && (
+              <Button size="sm" variant="secondary" onClick={openLegalEdit}>
+                Nhập CCCD & Tài khoản
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <dl className="grid gap-3 text-xs">
@@ -1703,7 +2171,11 @@ function LegalPaymentPanel({
             {type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName}
           </InfoRow>
           <InfoRow label={type === 'INDIVIDUAL' ? 'Số CCCD / ĐD' : 'Mã số thuế'}>
-            <SensitiveValue value={show(legalId)} copyValue={revealed ? legalId : undefined} />
+            {legalId ? (
+              <SensitiveValue value={show(legalId)} copyValue={revealed ? legalId : undefined} />
+            ) : (
+              <span className="text-warning font-medium">Chưa bổ sung</span>
+            )}
           </InfoRow>
           {type === 'INDIVIDUAL' && koc.taxCode && koc.taxCode !== 'Chưa có' && koc.taxCode !== legalId && (
             <InfoRow label="Mã số thuế cá nhân">
@@ -1734,6 +2206,14 @@ function LegalPaymentPanel({
                   </button>
                 )}
               </div>
+            ) : onUpdateKoc ? (
+              <button
+                type="button"
+                onClick={openLegalEdit}
+                className="text-2xs font-medium text-accent hover:underline cursor-pointer"
+              >
+                + Bổ sung số tài khoản
+              </button>
             ) : (
               '—'
             )}
@@ -1782,10 +2262,10 @@ function LegalPaymentPanel({
         </dl>
       )}
 
-      {legalId && (
+      {!isEditingLegal && (legalId || koc.bankAccount) && (
         <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-2">
           <span className="text-2xs text-ink-3">
-            {allowed ? 'Số đầy đủ chỉ hiện khi bấm “Hiện số”.' : 'Trưởng phòng & PIC xem được số đầy đủ.'}
+            {allowed ? 'Số đầy đủ chỉ hiện khi bấm “Hiện số”.' : 'Quản lý, Kế toán, Pháp chế & PIC xem được số đầy đủ.'}
           </span>
           {scanButton}
         </div>

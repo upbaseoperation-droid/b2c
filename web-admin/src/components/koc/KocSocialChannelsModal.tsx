@@ -240,11 +240,14 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
         });
       }
 
+      const pickHighOrMediumHandle = (list: SocialChannelCandidate[] = []) =>
+        list.find((c) => c.confidence === 'CAO' || c.confidence === 'TRUNG_BÌNH')?.handle || '';
+
       const nextValues: Record<SocialPlatformKey, string> = {
-        SHOPEE: target.shopeeChannel || data.candidatesByPlatform.SHOPEE[0]?.handle || '',
-        FACEBOOK: target.facebookChannel || data.candidatesByPlatform.FACEBOOK[0]?.handle || '',
-        INSTAGRAM: target.instagramChannel || data.candidatesByPlatform.INSTAGRAM[0]?.handle || '',
-        THREADS: target.threadsChannel || data.candidatesByPlatform.THREADS[0]?.handle || '',
+        SHOPEE: target.shopeeChannel || pickHighOrMediumHandle(data.candidatesByPlatform.SHOPEE),
+        FACEBOOK: target.facebookChannel || pickHighOrMediumHandle(data.candidatesByPlatform.FACEBOOK),
+        INSTAGRAM: target.instagramChannel || pickHighOrMediumHandle(data.candidatesByPlatform.INSTAGRAM),
+        THREADS: target.threadsChannel || pickHighOrMediumHandle(data.candidatesByPlatform.THREADS),
       };
       setSelectedValues(nextValues);
 

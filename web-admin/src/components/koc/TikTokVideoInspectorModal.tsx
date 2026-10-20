@@ -953,31 +953,47 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                {comp?.hasExpectedInput && (
-                                  <span
-                                    className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
-                                      isMatchedWithExpected
-                                        ? 'bg-positive text-white'
-                                        : 'bg-warning-soft text-warning'
-                                    }`}
-                                  >
-                                    {isMatchedWithExpected ? 'Đúng SP mẫu' : 'SP ngoài link mẫu'}
-                                  </span>
-                                )}
-                                <p className="text-xs font-semibold text-ink line-clamp-2">
-                                  {prod.title}
-                                </p>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 font-code mt-0.5">
-                                {prod.anchorKeyword && (
-                                  <span className="px-1.5 py-0.2 rounded bg-accent-soft/50 text-accent font-sans font-medium">
-                                    Nhãn giỏ: &ldquo;{prod.anchorKeyword}&rdquo;
-                                  </span>
-                                )}
-                                {prod.productId && <span>Mã SP: {prod.productId}</span>}
-                                {prod.sellerId && <span>Shop ID: {prod.sellerId}</span>}
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              {prod.coverUrl && (
+                                <img
+                                  src={prod.coverUrl}
+                                  alt={prod.title}
+                                  className="w-11 h-11 rounded-md object-cover border border-line shrink-0 bg-surface-2"
+                                  referrerPolicy="no-referrer"
+                                />
+                              )}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {comp?.hasExpectedInput && (
+                                    <span
+                                      className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
+                                        isMatchedWithExpected
+                                          ? 'bg-positive text-white'
+                                          : 'bg-warning-soft text-warning'
+                                      }`}
+                                    >
+                                      {isMatchedWithExpected ? 'Đúng SP mẫu' : 'SP ngoài link mẫu'}
+                                    </span>
+                                  )}
+                                  <p className="text-xs font-semibold text-ink line-clamp-2">
+                                    {prod.title}
+                                  </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 font-code mt-0.5">
+                                  {prod.anchorKeyword && (
+                                    <span className="px-1.5 py-0.2 rounded bg-accent-soft/50 text-accent font-sans font-medium">
+                                      Nhãn giỏ: &ldquo;{prod.anchorKeyword}&rdquo;
+                                    </span>
+                                  )}
+                                  {prod.categoryName && (
+                                    <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-ink-2 font-sans">
+                                      {prod.categoryName}
+                                    </span>
+                                  )}
+                                  {prod.productId && <span>Mã SP: {prod.productId}</span>}
+                                  {prod.skuId && <span>SKU: {prod.skuId}</span>}
+                                  {prod.sellerId && <span>Shop ID: {prod.sellerId}</span>}
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">

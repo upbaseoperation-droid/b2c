@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Check, Copy, Download, ExternalLink, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { formatDate, formatNumber } from '../../lib/format';
 import {
   buildLinkAirCsv,
@@ -477,13 +477,74 @@ export function LinkAirCheckerPanel({
         ) : null}
       </Panel>
 
-      <LinkAirDetailModal result={opened} onClose={() => setOpenKey(null)} />
+      <LinkAirDetailModal
+        result={opened}
+        onClose={() => setOpenKey(null)}
+        onEnrichedResult={(updated) => {
+          setResults((prev) =>
+            prev.map((item) => (item.inputUrl === updated.inputUrl ? updated : item))
+          );
+        }}
+      />
     </div>
   );
 }
 
-function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null; onClose: () => void }) {
+function LinkAirDetailModal({
+  result,
+  onClose,
+  onEnrichedResult,
+}: {
+  result: LinkAirResult | null;
+  onClose: () => void;
+  onEnrichedResult?: (updated: LinkAirResult) => void;
+}) {
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [enrichingCart, setEnrichingCart] = useState(false);
+
+  const needsCartEnrichment = Boolean(
+    result &&
+      result.platform === 'tiktok' &&
+      result.hasProductLink === true &&
+      (!result.cartProducts || result.cartProducts.length === 0) &&
+      !result.productUrl
+  );
+
+  useEffect(() => {
+    if (!result || !needsCartEnrichment) return;
+    let cancelled = false;
+    setEnrichingCart(true);
+    fetch('/api/integrations/link-air-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ links: [result.inputUrl] }),
+    })
+      .then((res) => res.json())
+      .then((data: LinkAirCheckResponse) => {
+        if (cancelled) return;
+        const fresh = data?.results?.[0];
+        if (fresh && ((fresh.cartProducts && fresh.cartProducts.length > 0) || fresh.productUrl)) {
+          onEnrichedResult?.({
+            ...result,
+            productTitle: fresh.productTitle || result.productTitle,
+            productUrl: fresh.productUrl || result.productUrl,
+            productId: fresh.productId || result.productId,
+            sellerId: fresh.sellerId || result.sellerId,
+            cartProducts: fresh.cartProducts || result.cartProducts,
+          });
+        }
+      })
+      .catch(() => {
+        // ignore background enrichment failure
+      })
+      .finally(() => {
+        if (!cancelled) setEnrichingCart(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.inputUrl, needsCartEnrichment]);
+
   if (!result) return <Modal open={false} onClose={onClose} title="">{null}</Modal>;
   const r = result;
   const platformLabel = r.platform ? LINK_AIR_PLATFORM_LABEL[r.platform] : 'Không rõ nền tảng';
@@ -584,19 +645,35 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
                     key={item.productId || item.productUrl || idx}
                     className="p-2.5 rounded-xl border border-line bg-surface-2/60 grid gap-1.5"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="text-xs font-semibold text-ink leading-snug">
-                          {item.title}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 font-code">
-                          {item.anchorKeyword && (
-                            <span className="px-1.5 py-0.5 rounded bg-accent-soft/50 text-accent font-sans font-medium">
-                              Nhãn giỏ: &ldquo;{item.anchorKeyword}&rdquo;
-                            </span>
-                          )}
-                          {item.productId && <span>Mã SP: {item.productId}</span>}
-                          {item.sellerId && <span>Mã Shop: {item.sellerId}</span>}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        {item.coverUrl && (
+                          <img
+                            src={item.coverUrl}
+                            alt={item.title}
+                            className="w-12 h-12 rounded-lg object-cover border border-line shrink-0 bg-surface"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-xs font-semibold text-ink leading-snug">
+                            {item.title}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 font-code">
+                            {item.anchorKeyword && (
+                              <span className="px-1.5 py-0.5 rounded bg-accent-soft/50 text-accent font-sans font-medium">
+                                Nhãn giỏ: &ldquo;{item.anchorKeyword}&rdquo;
+                              </span>
+                            )}
+                            {item.categoryName && (
+                              <span className="px-1.5 py-0.5 rounded bg-surface border border-line text-ink-2 font-sans">
+                                {item.categoryName}
+                              </span>
+                            )}
+                            {item.productId && <span>Mã SP: {item.productId}</span>}
+                            {item.skuId && <span>SKU: {item.skuId}</span>}
+                            {item.sellerId && <span>Mã Shop: {item.sellerId}</span>}
+                          </div>
                         </div>
                       </div>
                       {item.productUrl && (
@@ -633,6 +710,11 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
                     )}
                   </div>
                 ))}
+              </div>
+            ) : enrichingCart ? (
+              <div className="p-3 rounded-xl border border-line bg-surface-2/40 flex items-center gap-2 text-xs text-ink-2">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-accent shrink-0" />
+                <span>Đang tải chi tiết sản phẩm và đường dẫn giỏ hàng từ TikTok Shop...</span>
               </div>
             ) : r.hasProductLink ? (
               <p className="text-xs text-ink-2">

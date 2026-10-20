@@ -66,7 +66,11 @@ async function scrape(parsed: ParsedLink): Promise<{ parsed: ParsedLink; content
   const resolved = await resolveShortLink(parsed);
   const cacheKey = `${resolved.platform}:${resolved.contentId ?? resolved.url}`;
   const cached = contentCache.get(cacheKey);
-  if (cached) return { ...cached, fromCache: true };
+  const isStaleCartCache =
+    cached?.content?.hasProductLink &&
+    (!cached.content.cartProducts || cached.content.cartProducts.length === 0) &&
+    !cached.content.productUrl;
+  if (cached && !isStaleCartCache) return { ...cached, fromCache: true };
 
   if (!resolved.contentId && resolved.platform !== 'facebook') {
     return {

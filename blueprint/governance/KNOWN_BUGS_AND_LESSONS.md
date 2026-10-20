@@ -323,6 +323,41 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Cập nhật luồng `handleRunModelResearch` và `EXECUTE_PURPOSE` (`BRAND_MARKET_RESEARCH` trong `/api/integrations/llm/route.ts`) luôn chạy bước tìm kiếm trên mạng **trước**, nạp kết quả thực tế vào đầu Prompt (`[KẾT QUẢ TÌM KIẾM TRÊN MẠNG TRƯỚC KHI PHÂN TÍCH]`), và nâng cấp bộ tạo báo cáo thành định dạng Markdown có bảng đối sánh (`| ... |`) kèm bộ hiển thị bảng trực quan trên giao diện.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ luồng `BRAND_MARKET_RESEARCH` và các endpoint thu thập dữ liệu thị trường (`/api/integrations/market-research/analyze`, `/api/integrations/llm`).
 
+---
+
+### BUG-020 — Lỗi Vỡ Bố Cục Hộp Thoại Gửi Email KOC, Tự Động Nhảy Lại Dòng Đầu Khi Gõ Email & Thiếu Chỗ Sửa Email Trực Tiếp Trong Danh Bạ KOC
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/shortlist/KocOutreachEmailModal.tsx`, `web-admin/src/components/shortlist/StaffBrandListingSheetWorkspace.tsx`, `web-admin/src/components/koc/KocProfile.tsx`, `web-admin/src/components/CreateKocModal.tsx`, `web-admin/src/components/views/KocMasterDataView.tsx`, `web-admin/src/lib/staffBrandListingSheet.ts`.
+- **Triệu chứng:**
+  1. Trong `KocOutreachEmailModal.tsx`, ô chọn mẫu (`<Select>`) bị tràn đè lên nút `Khớp mẫu KOC` do thiếu `min-w-0` và `w-full`; thanh tab bị cuộn mất nửa chữ khi kéo nội dung hộp thoại; phần xem trước thư chỉ hiển thị trạng thái tĩnh `Chưa có email ở Cột AO` mà không cho nhập trực tiếp tại dòng `Người nhận (To)`.
+  2. Khi gõ từng ký tự email cho KOC thứ 2 trở đi trong hộp thoại, `onUpdateRowFields` cập nhật `rows` ở `StaffBrandListingSheetWorkspace.tsx` làm mảng `candidateRows` đổi tham chiếu và kích hoạt `useEffect([open, initialTab, candidateRows])` gán lại `activePreviewRowId` về KOC đầu tiên (`candidateRows[0]`).
+  3. Trong **Danh bạ KOC** (`KocProfile.tsx` và `CreateKocModal.tsx`), trường `Email làm việc` chỉ hiển thị tĩnh (`—` khi trống), không có ô nhập hoặc nút sửa trực tiếp, và chưa đồng bộ 2 chiều với Cột AO trên Sheet Listing.
+- **Nguyên nhân gốc (Root Cause):**
+  1. Cột CSS Grid bọc `<Select>` trong `KocOutreachEmailModal.tsx` không đặt `min-w-0` khiến thẻ `<select>` có text dài đẩy tràn sang cột bên cạnh.
+  2. `useEffect` khởi tạo trạng thái mở hộp thoại phụ thuộc vào tham chiếu mảng `candidateRows` và `singleOutreachRow` được giữ bằng bản chụp tĩnh thay vì `singleOutreachRowId`.
+  3. `ShippingAndContactPanel` trong `KocProfile.tsx` và `CreateKocModal.tsx` thiếu chế độ sửa trực tiếp (`inline edit`) cho trường `email` và thông tin liên hệ/nhận mẫu.
+- **Cách khắc phục:**
+  1. Chuẩn hóa bố cục `KocOutreachEmailModal.tsx`: thêm `min-w-0` + `w-full` cho `<Select>`, cố định thanh `<Tabs>` ở đầu hộp thoại (`sticky`), bổ sung ô nhập `Người nhận (To)` trực tiếp ở cả danh sách trái và khung xem trước phải, dùng `wasOpenRef` và `singleOutreachRowId` để giữ nguyên KOC đang chọn khi gõ từng ký tự.
+  2. Bổ sung tính năng **+ Điền email KOC / Sửa liên hệ** trực tiếp ngay tại `ShippingAndContactPanel` (`KocProfile.tsx`) và thêm ô nhập Email trong `CreateKocModal.tsx` cũng như bộ lọc tìm kiếm của `KocMasterDataView.tsx`.
+  3. Xây dựng cơ chế đồng bộ 2 chiều (`syncKocContactToStaffSheets` và `syncSheetRowContactToKocMaster` trong `staffBrandListingSheet.ts`): sửa email ở Danh bạ KOC sẽ tự động cập nhật sang Cột AO của mọi Sheet Listing có KOC đó, và ngược lại điền email khi gửi thư/trên Sheet sẽ tự động lưu về hồ sơ gốc trong Danh bạ KOC (`/api/kocs`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ luồng Quản lý Danh bạ KOC (`KocMasterDataView`, `KocProfile`, `CreateKocModal`) và Sheet Listing / Gửi Email mời KOC (`StaffBrandListingSheetWorkspace`, `KocOutreachEmailModal`).
+
+---
+
+### BUG-021 — Hộp Thoại Kiểm Tra Link Air Báo "Có Gắn Giỏ (Đã Xác Nhận)" Nhưng Thiếu Tên Sản Phẩm & Đường Dẫn Giỏ Hàng Trên Video Có Gắn Nhiều Anchor (CapCut + TikTok Shop)
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokOpenSourceEngines.ts`, `web-admin/src/lib/linkAirCheckServer.ts`, `web-admin/src/app/api/integrations/link-air-check/route.ts`, `web-admin/src/components/crawler/LinkAirCheckerPanel.tsx`, `web-admin/src/components/koc/TikTokVideoInspectorModal.tsx`, `crawler-worker/src/adapters/tiktok.ts`, `crawler-worker/src/check-link.ts`.
+- **Triệu chứng:**
+  1. Khi kiểm tra link video thực tế (ví dụ `https://www.tiktok.com/@nucos.jp/video/7695632166272765205`), hộp thoại chi tiết hiển thị `Có gắn giỏ (Đã xác nhận)` kèm thông báo *"Bài đăng có bật cờ gắn giỏ hàng thương mại điện tử nhưng nền tảng không công khai đường dẫn chi tiết trên bản web"*, không hiện tên sản phẩm và link giỏ hàng.
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Cấu trúc mảng `itemStruct.anchors` gồm nhiều phần tử lồng nhau:** Trên video có dùng mẫu CapCut kèm giỏ hàng (`anchors[0]` là `type: 54` CapCut, `anchors[1]` có `schema: "https://www.capcut.com"` nhưng trường `extra` bên trong lại là mảng JSON chứa phần tử `component_key: "anchor_shop"` với chuỗi JSON lồng cấp 2 chứa `seo_url`, `product_id`, `seller_id`, `sku_id`, `title`, `elastic_title`, `cover_url`). Logic cũ chỉ đọc `anchors[0]` hoặc bỏ qua phần tử có `schema` chứa `capcut` nên chỉ nhận cờ `isECVideo: 1` mà bỏ sót `anchor_shop` ở `anchors[1]`.
+  2. **Bộ nhớ đệm `videoDetailCache` (TTL 30 phút) lưu bản ghi thiếu `cartProducts` từ `/api/creator/item_list/` hoặc phiên cũ:** Khi quét danh sách video kênh qua `/api/creator/item_list/`, TikTok chỉ trả cờ `isECVideo: 1` mà lược bỏ chi tiết `anchors`, dẫn đến `parseTikTokItemStructToDetail` ghi đè bản ghi rỗng `cartProducts: []` vào `videoDetailCache`. Khi gọi `inspectLiveTikTokVideoPage(videoUrl)`, hàm trả thẳng bản ghi từ bộ nhớ đệm mà không tải trang `webapp.video-detail`.
+- **Cách khắc phục:**
+  1. Viết hàm `extractTikTokShopAnchorInfo` (`tiktokOpenSourceEngines.ts`) và `extractTikTokCartAnchors` (`crawler-worker/src/adapters/tiktok.ts`) duyệt toàn bộ mảng `itemStruct.anchors`, giải mã JSON 2 lớp của `anchor.extra` -> `outer.extra`, giữ nguyên chuỗi 19 chữ số của `product_id`, `seller_id`, `sku_id` bằng regex trước `JSON.parse`, và lấy đầy đủ `seo_url`, `title`, `anchorKeyword` (`keyword`/`elastic_title`), `cover_url`, `category_name`.
+  2. Trong `inspectLiveTikTokVideoPage` và `crawler-worker/src/check-link.ts`: tự động bỏ qua bản ghi cache cũ nếu `hasCartAnchor === true` nhưng thiếu `cartProducts`/`cartAnchorUrl`, đồng thời không cho dữ liệu rút gọn từ `/api/creator/item_list/` ghi đè mất `cartProducts` đã có trong cache.
+  3. Trong `LinkAirDetailModal` (`LinkAirCheckerPanel.tsx`): tự động gọi làm giàu dữ liệu ngầm nếu mở lại bản ghi lịch sử cũ có `hasProductLink === true` mà chưa có `cartProducts`, và hiển thị đầy đủ ảnh sản phẩm, tên sản phẩm, nhãn nút giỏ hàng, danh mục, mã SP/SKU/Shop và link giỏ hàng trực tiếp.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ luồng Nghiệm thu Link Air (`LinkAirCheckerPanel`, `/api/integrations/link-air-check`, `crawler-worker`) và Nghiệm thu Video KOC (`TikTokVideoInspectorModal`, `tiktokVideoInspector.ts`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

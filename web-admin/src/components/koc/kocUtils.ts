@@ -48,29 +48,43 @@ export function mask(value?: string): string {
 }
 
 /**
- * Ai được xem số CCCD / MST / tài khoản đầy đủ: quản trị, trưởng phòng, trưởng nhóm
- * và PIC đang phụ trách chính KOC đó.
+ * Ai được xem số CCCD / MST / tài khoản đầy đủ: quản trị, trưởng phòng, trưởng nhóm,
+ * pháp chế, kế toán, quản trị ký số và PIC đang phụ trách hoặc từng làm việc với KOC đó.
  */
 export function canRevealSensitive(user: UserProfile | undefined, k: KocItem): boolean {
   if (!user) return false;
-  if (user.role === 'ADMIN' || user.role === 'MANAGER' || user.role === 'LEADER') return true;
-  return !!k.bookingPic && k.bookingPic.trim().toLowerCase() === user.name.trim().toLowerCase();
+  if (
+    user.role === 'ADMIN' ||
+    user.role === 'MANAGER' ||
+    user.role === 'LEADER' ||
+    user.role === 'FINANCE' ||
+    user.role === 'LEGAL' ||
+    user.role === 'SIGN_ADMIN'
+  ) {
+    return true;
+  }
+  const uName = user.name.trim().toLowerCase();
+  if (!uName) return false;
+  const picRaw = (k.bookingPic || '').toLowerCase();
+  const workedRaw = (k.workedPicsList || '').toLowerCase();
+  return picRaw.includes(uName) || workedRaw.includes(uName);
 }
 
 /* ---------------------------------------------------------- Trùng lặp */
 
-export type DuplicateField = 'kênh' | 'SĐT' | 'CCCD' | 'MST';
+export type DuplicateField = 'kênh' | 'SĐT' | 'Email' | 'CCCD' | 'MST';
 export interface DuplicateMatch {
   kocId: string;
   stageName: string;
   fields: DuplicateField[];
 }
 
-/** Với mỗi KOC: danh sách hồ sơ khác trùng kênh, SĐT, CCCD hoặc MST. */
+/** Với mỗi KOC: danh sách hồ sơ khác trùng kênh, SĐT, Email, CCCD hoặc MST. */
 export function findDuplicates(kocs: KocItem[]): Map<string, DuplicateMatch[]> {
   const keyers: Array<[DuplicateField, (k: KocItem) => string]> = [
     ['kênh', (k) => { const v = (k.channelId || '').trim().toLowerCase().replace(/^@/, ''); return v.length > 2 ? v : ''; }],
     ['SĐT', (k) => { const v = (k.phone || '').replace(/\D/g, ''); return v.length >= 9 ? v : ''; }],
+    ['Email', (k) => { const v = (k.email || '').trim().toLowerCase(); return v.includes('@') && v.length >= 5 ? v : ''; }],
     ['CCCD', (k) => { const v = (k.cccd || '').replace(/\D/g, ''); return v.length >= 9 && !/^0+$/.test(v) ? v : ''; }],
     ['MST', (k) => { const v = (k.taxCode || '').trim(); return v.length >= 7 && !/^chưa/i.test(v) ? v : ''; }],
   ];

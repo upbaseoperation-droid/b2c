@@ -103,6 +103,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   // Contact & Shipping Logistics for Sample
   const [phone, setPhone] = useState('');
   const [zalo, setZalo] = useState('');
+  const [email, setEmail] = useState('');
   const [location, setLocation] = useState('Hà Nội');
   const [shippingAddress, setShippingAddress] = useState('');
   const [bookingPic, setBookingPic] = useState('Khánh Vy');
@@ -245,6 +246,9 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         setPhone(data.channelProfile.extractedPhone);
         setZalo(data.channelProfile.extractedPhone);
       }
+      if (data.channelProfile.extractedEmail) {
+        setEmail(data.channelProfile.extractedEmail);
+      }
       if (data.channelProfile.location) {
         setLocation(data.channelProfile.location);
       }
@@ -383,7 +387,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       // Shipping & Logistics
       phone: phone.trim(),
       zalo: zalo.trim() || phone.trim(),
-      email: scrapedCache?.channelProfile.extractedEmail,
+      email: email.trim() || scrapedCache?.channelProfile.extractedEmail || undefined,
       location: location,
       shippingAddress: shippingAddress.trim() || undefined,
       bookingPic: bookingPic,
@@ -989,17 +993,31 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="text-ink-2 font-medium block mb-1">
-                Thông tin nhận hàng chi tiết (tên người nhận, SĐT, địa chỉ giao mẫu vật lý):
-              </label>
-              <input
-                type="text"
-                placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
-                value={shippingAddress}
-                onChange={(e) => setShippingAddress(e.target.value)}
-                className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">
+                  Email KOC (nhận lời mời hợp tác &amp; hợp đồng):
+                </label>
+                <input
+                  type="email"
+                  placeholder="VD: haiyen.beauty@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="text-ink-2 font-medium block mb-1">
+                  Thông tin nhận hàng chi tiết (tên người nhận, SĐT, địa chỉ giao mẫu):
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
             </div>
           </div>
 

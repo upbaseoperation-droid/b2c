@@ -50,6 +50,7 @@ import {
   normalizeTikTokId,
   recalculateStaffListingRow,
   saveStaffSheetCollection,
+  syncSheetRowContactToKocMaster,
   type StaffBrandSheetCollection,
   type StaffListingColumnKey,
   type StaffListingColumnMeta,
@@ -339,6 +340,15 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     rowId: string,
     patch: Partial<Pick<StaffListingSheetRow, 'email' | 'trangThai'>>
   ) => {
+    const targetRow = rows.find((r) => r.id === rowId);
+    if (targetRow && patch.email !== undefined) {
+      syncSheetRowContactToKocMaster({
+        kocId: targetRow.kocId,
+        idKenh: targetRow.idKenh,
+        email: patch.email,
+        allKocs: kocs,
+      });
+    }
     updateActiveSheetRows((prev) =>
       prev.map((r) => (r.id === rowId ? recalculateStaffListingRow({ ...r, ...patch }) : r))
     );
@@ -409,6 +419,18 @@ export const StaffBrandListingSheetWorkspace: React.FC<
     key: StaffListingColumnKey,
     value: string | number
   ) => {
+    if (key === 'email' || key === 'zalo') {
+      const targetRow = rows.find((r) => r.id === rowId);
+      if (targetRow) {
+        syncSheetRowContactToKocMaster({
+          kocId: targetRow.kocId,
+          idKenh: targetRow.idKenh,
+          ...(key === 'email' ? { email: String(value) } : {}),
+          ...(key === 'zalo' ? { zalo: String(value) } : {}),
+          allKocs: kocs,
+        });
+      }
+    }
     updateActiveSheetRows((prev) =>
       prev.map((r) => {
         if (r.id !== rowId) return r;

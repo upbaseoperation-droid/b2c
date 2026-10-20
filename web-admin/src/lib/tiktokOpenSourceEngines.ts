@@ -1041,9 +1041,24 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
   };
 
   const store = getSharedCrawlerStore();
+  const cacheKey = canonicalUrl.toLowerCase();
+  const prevCached = store.videoDetailCache.get(cacheKey);
+  if (
+    prevCached &&
+    prevCached.data.cartProducts &&
+    prevCached.data.cartProducts.length > 0 &&
+    (!result.cartProducts || result.cartProducts.length === 0)
+  ) {
+    result.hasCartAnchor = true;
+    result.cartAnchorTitle = result.cartAnchorTitle || prevCached.data.cartAnchorTitle;
+    result.cartAnchorUrl = result.cartAnchorUrl || prevCached.data.cartAnchorUrl;
+    result.cartProductId = result.cartProductId || prevCached.data.cartProductId;
+    result.cartSellerId = result.cartSellerId || prevCached.data.cartSellerId;
+    result.cartProducts = prevCached.data.cartProducts;
+  }
   setBoundedCache(
     store.videoDetailCache,
-    canonicalUrl.toLowerCase(),
+    cacheKey,
     result,
     VIDEO_CACHE_TTL_MS,
     2500
@@ -1191,7 +1206,11 @@ export async function inspectLiveTikTokVideoPage(
   const store = getSharedCrawlerStore();
   const now = Date.now();
   const cached = store.videoDetailCache.get(normalizedKey);
-  if (cached && cached.expiresAt > now) {
+  const isStaleCartCache =
+    cached?.data?.hasCartAnchor &&
+    (!cached.data.cartProducts || cached.data.cartProducts.length === 0) &&
+    !cached.data.cartAnchorUrl;
+  if (cached && cached.expiresAt > now && !isStaleCartCache) {
     return cached.data;
   }
 

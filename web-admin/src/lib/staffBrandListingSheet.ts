@@ -690,6 +690,11 @@ export function syncKocContactToStaffSheets(updatedKoc: KocItem): void {
           sdtNhanHang: updatedKoc.shippingPhone || updatedKoc.phone || r.sdtNhanHang,
           diaChiNhanHang:
             updatedKoc.shippingAddress || updatedKoc.permanentAddress || r.diaChiNhanHang,
+          tenTaiKhoanNganHang:
+            updatedKoc.companyName || updatedKoc.realName || r.tenTaiKhoanNganHang,
+          soTaiKhoan: updatedKoc.bankAccount || r.soTaiKhoan,
+          nganHang: updatedKoc.bankName || r.nganHang,
+          soCccd: updatedKoc.cccd || updatedKoc.taxCode || r.soCccd,
         };
       });
     }

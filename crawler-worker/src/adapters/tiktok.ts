@@ -154,6 +154,20 @@ export function extractTikTokCartAnchors(item: TikTokItemStruct): {
                 finalUrl ||
                 (pid ? `https://shop.tiktok.com/view/product/${pid}?region=VN&locale=vi-VN` : '');
 
+              let categoryName: string | undefined;
+              if (Array.isArray(innerObj.categories) && innerObj.categories.length > 0) {
+                const cats = innerObj.categories as Array<Record<string, unknown>>;
+                const leaf = cats.find((c) => c?.is_leaf) || cats[cats.length - 1];
+                if (typeof leaf?.category_name === 'string') {
+                  categoryName = leaf.category_name;
+                }
+              }
+
+              const coverUrl =
+                typeof innerObj.cover_url === 'string' && innerObj.cover_url.trim().startsWith('http')
+                  ? innerObj.cover_url.trim()
+                  : undefined;
+
               if (pid || url || innerObj.source === 'TikTok Shop' || isShopEntry || innerTitle) {
                 hasProductLink = true;
                 if (innerTitle && !productTitle) productTitle = innerTitle;
@@ -164,9 +178,15 @@ export function extractTikTokCartAnchors(item: TikTokItemStruct): {
                     sellerId: rawSellerId,
                     title: innerTitle || 'Sản phẩm TikTok Shop',
                     anchorKeyword:
-                      outerKeyword && outerKeyword !== fullTitle ? outerKeyword : undefined,
+                      outerKeyword && outerKeyword !== fullTitle
+                        ? outerKeyword
+                        : elasticTitle && elasticTitle !== fullTitle
+                          ? elasticTitle
+                          : undefined,
                     productUrl: url,
-                    source: 'TikTok Shop',
+                    coverUrl,
+                    categoryName,
+                    source: typeof innerObj.source === 'string' ? innerObj.source : 'TikTok Shop',
                   });
                 }
               }
