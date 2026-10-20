@@ -301,6 +301,28 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Trong `/api/integrations/llm/route.ts`: ưu tiên gọi ngay model thực tế trên máy chủ chính thức, nâng ngưỡng chờ lên `30000ms` (30s) và bọc `try/catch` cho từng model ứng viên để tự động chuyển sang model nhanh hơn trước khi fallback về `INTERNAL`.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các bảng nhật ký (`ApiKeySetupView`, `AuditTrailView`) và các thao tác ghi nhận thời gian duyệt/giao việc (`BookingView`, `TaskDelegationView`, `Workload3dMapView`).
 
+---
+
+### BUG-019 — Luồng Nghiên Cứu Thương Hiệu & Đối Thủ Trước Đây Dùng Dữ Liệu Nội Bộ (File 3.2 / File 4.1) Thay Vì Tìm Kiếm Trên Mạng Trước Khi Đưa Vào Prompt
+- **Ngày phát hiện:** 20/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/BrandMarketResearchHubView.tsx`, `web-admin/src/lib/brandMarketResearchEngine.ts`, `web-admin/src/lib/liveBrandWebScraper.ts`, `web-admin/src/app/api/integrations/market-research/analyze/route.ts`, `web-admin/src/app/api/integrations/llm/route.ts`.
+- **Triệu chứng:**
+  1. Màn hình **Nghiên cứu thương hiệu & đối thủ** hiển thị dữ liệu từ kho booking nội bộ (`File 3.2`, `File 4.1`, `69 gian hàng B2C`) thay vì dữ liệu thị trường bên ngoài (Website, sàn TMĐT, kết quả tìm kiếm mạng, TikTok).
+  2. Khi người dùng bấm **Phân tích**, hệ thống chỉ gom dữ liệu tĩnh có sẵn trong trình duyệt (`serializeDossierForModelContext`) để nhồi vào Prompt mà không thực hiện bước tìm kiếm thông tin trên mạng trước theo yêu cầu người dùng.
+- **Nguyên nhân gốc (Root Cause):**
+  1. **Nhầm lẫn mục đích nghiệp vụ giữa Đối soát nội bộ và Nghiên cứu thị trường/đối thủ:** `brandMarketResearchEngine.ts` được xây dựng ban đầu bằng cách tổng hợp ngược từ `MOCK_BOOKINGS` (File 3.2) và `MONTHLY_PLANS` (File 4.1) của các gian hàng Upbase đang vận hành, khiến khi tra cứu đối thủ bên ngoài hoặc nghiên cứu thị trường lại kéo số liệu nội bộ vào.
+  2. **Thiếu bước Web Search trước khi gọi LLM (`Pre-Prompt Web Search`):** `handleRunModelResearch` gọi thẳng `/api/integrations/llm` với chuỗi văn bản tĩnh mà không qua bước tìm kiếm web (`scrapeLiveBrandWebIntelligence` + `scrapeWebSearchSnippets`).
+- **Cách khắc phục:**
+  1. Gỡ bỏ toàn bộ dữ liệu và bảng `File 3.2` / `File 4.1` / `File 3.5` / `69 gian hàng B2C` khỏi `BrandMarketResearchHubView.tsx`, `brandMarketResearchEngine.ts` (kể cả `evidenceLedger` và file xuất `.md`) và `llm/route.ts`; xóa thanh chip chọn nhanh thương hiệu nội bộ.
+  2. Nâng cấp `liveBrandWebScraper.ts` sau khi kiểm thử trực tiếp trên các thương hiệu thực tế (`Cocoon`, `Kutieskin`, `La Roche-Posay`, `Skin1004`, `Torriden`, `Obagi`):
+     - Sửa regex `extractVndPricesFromText` từ `\d{1,2}` thành `\d{1,3}` để bắt chính xác các mức giá 6 chữ số (`100.000đ` – `999.000đ`).
+     - Thêm `unwrapSearchRedirectUrl` giải mã link chuyển hướng Bing `/ck/a?...&u=a1<base64>` và DuckDuckGo `uddg=` về URL gốc sạch sẽ (`cocoonvietnam.com`, `shopee.vn`, `hasaki.vn`, `nhathuoclongchau.com.vn`...).
+     - Kết hợp tìm kiếm song song từ Bing Web Search, DuckDuckGo HTML (`kl=vn-vi`) và Bing News Async, đồng thời lọc đối chiếu token thương hiệu để loại bỏ 100% kết quả nhiễu (decoy SERP) khi tra cứu tên thương hiệu nước ngoài nhiều từ.
+     - Sửa regex trích xuất tiêu đề, lượt xem và tên kênh từ Bing Video Search (`class="mc_vtvc_title[^"]*"`).
+     - Bổ sung quét trang `/san-pham` và tự động xác thực domain chính thức từ kết quả tìm kiếm web.
+  3. Cập nhật luồng `handleRunModelResearch` và `EXECUTE_PURPOSE` (`BRAND_MARKET_RESEARCH` trong `/api/integrations/llm/route.ts`) luôn chạy bước tìm kiếm trên mạng **trước**, nạp kết quả thực tế vào đầu Prompt (`[KẾT QUẢ TÌM KIẾM TRÊN MẠNG TRƯỚC KHI PHÂN TÍCH]`), và nâng cấp bộ tạo báo cáo thành định dạng Markdown có bảng đối sánh (`| ... |`) kèm bộ hiển thị bảng trực quan trên giao diện.
+- **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ luồng `BRAND_MARKET_RESEARCH` và các endpoint thu thập dữ liệu thị trường (`/api/integrations/market-research/analyze`, `/api/integrations/llm`).
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

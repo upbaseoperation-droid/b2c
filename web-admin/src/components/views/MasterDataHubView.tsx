@@ -721,7 +721,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [canEditCatalog, setCanEditCatalog] = useState(false);
   const [savedCatalog, setSavedCatalog] = useState('');
   const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
-  const serializeCatalog = (c: MasterCatalog): string => JSON.stringify({ brands: c.brands, stores: (c.stores || []).map(({ pics: _pics, ...store }) => store), products: c.products, pillars: c.pillars, castTiers: c.castTiers, niches: c.niches, formats: c.formats });
+  const serializeCatalog = (c: MasterCatalog): string => JSON.stringify({ brands: c.brands, stores: c.stores, products: c.products, pillars: c.pillars, castTiers: c.castTiers, niches: c.niches, formats: c.formats });
   const catalogDirty = savedCatalog !== '' && serializeCatalog(draftCatalog) !== savedCatalog;
   const acceptCatalog = (body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
     const data = body.data;

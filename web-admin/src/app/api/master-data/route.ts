@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requestActor } from '@/lib/server/requestActor';
-import { validateCatalog } from '@/lib/server/masterCatalogStore';
-import { readCatalogWithPics } from '@/lib/server/storePicStore';
+import { readMasterCatalog, validateCatalog } from '@/lib/server/masterCatalogStore';
 import { DEFAULT_MASTER_CATALOG, type MasterCatalog } from '@/lib/masterCatalog';
 import { RecordError, updateRecord } from '@/lib/server/sharedRecords';
 import { filterScopedBrands, filterScopedStores } from '@/lib/rbacScope';
@@ -16,7 +15,7 @@ export async function GET(req: NextRequest) {
     if (!user) throw new RecordError('Phiên không còn quyền truy cập.', 401);
     const partner = !!user.partnerType || user.role.endsWith('_PARTNER');
     const [record, canEdit] = await Promise.all([
-      readCatalogWithPics(),
+      readMasterCatalog(),
       !partner && ['ADMIN', 'MANAGER'].includes(user.role)
         ? actionAllowed(user, 'master_data_brand_stores', 'write')
         : Promise.resolve(false),
@@ -36,9 +35,7 @@ export async function PUT(req: NextRequest) {
     if (Buffer.byteLength(raw) > 15_000_000) throw new RecordError('Danh mục quá lớn.', 413);
     let parsed: { data: MasterCatalog; revision: number };
     try { parsed = JSON.parse(raw); } catch { throw new RecordError('Dữ liệu JSON không hợp lệ.'); }
-    const { revision } = parsed;
-    // Danh sách PIC gian do kho store-pics quản lý; không lưu bản sao (có thể đã cũ) vào danh mục gốc.
-    const data: MasterCatalog = { ...parsed.data, stores: (parsed.data?.stores || []).map(({ pics: _pics, ...store }) => store) };
+    const { data, revision } = parsed;
     const result = await updateRecord('master-catalog', DEFAULT_MASTER_CATALOG, revision, async previous => { await validateCatalog(data, previous); return data; });
     return NextResponse.json({ ...result, canEdit: true }, { headers });
   } catch (e) { return failure(e); }

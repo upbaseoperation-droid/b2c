@@ -15,7 +15,9 @@ import {
   Star,
   Eye,
   CheckSquare,
+  CheckCircle2,
   SlidersHorizontal,
+  XCircle,
 } from 'lucide-react';
 import {
   StorePortfolioItem,
@@ -27,6 +29,12 @@ import {
   InputPlanBreakdownState,
 } from '@/lib/types';
 import { formatVndShort } from '@/lib/format';
+import { useKocChannelReviews } from '@/lib/kocChannelReviewService';
+import {
+  KocChannelReviewBadge,
+  KocChannelReviewModal,
+  type KocChannelReviewTarget,
+} from '../koc/KocChannelReviewModal';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import {
   KocCooperationHistory,
@@ -142,6 +150,20 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
   const [inspectingKocDetail, setInspectingKocDetail] = useState<RankedKocRecommendation | null>(
     null
   );
+  const [excludeStaffNotSuitable, setExcludeStaffNotSuitable] = useState<boolean>(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
+  const [reviewTarget, setReviewTarget] = useState<KocChannelReviewTarget | null>(null);
+  const [reviewMode, setReviewMode] = useState<'CHANNEL_DETAIL' | 'ALL_HISTORY'>('CHANNEL_DETAIL');
+  const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
+
+  const openChannelReview = (
+    target: KocChannelReviewTarget | null,
+    mode: 'CHANNEL_DETAIL' | 'ALL_HISTORY' = 'CHANNEL_DETAIL',
+  ) => {
+    setReviewTarget(target);
+    setReviewMode(mode);
+    setReviewModalOpen(true);
+  };
 
   const [prevInitialStoreId, setPrevInitialStoreId] = useState(initialStoreId);
   if (prevInitialStoreId !== initialStoreId) {
@@ -264,9 +286,16 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
   const [visibleLimit, setVisibleLimit] = useState<number>(50);
 
   const rankedKocs = useMemo(() => {
-    if (bucketFilter === 'ALL') return allEvaluatedKocs;
-    return allEvaluatedKocs.filter((item) => item.buckets.includes(bucketFilter));
-  }, [allEvaluatedKocs, bucketFilter]);
+    const byBucket =
+      bucketFilter === 'ALL'
+        ? allEvaluatedKocs
+        : allEvaluatedKocs.filter((item) => item.buckets.includes(bucketFilter));
+    if (!excludeStaffNotSuitable) return byBucket;
+    return byBucket.filter(
+      (item) =>
+        getChannelSummary(item.koc.channelId)?.latestReview.verdict !== 'NOT_SUITABLE'
+    );
+  }, [allEvaluatedKocs, bucketFilter, excludeStaffNotSuitable, getChannelSummary]);
 
   const displayedRankedKocs = useMemo(
     () => rankedKocs.slice(0, visibleLimit),
@@ -967,6 +996,16 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   />
                   <span>Loại KOC đang do chuyên viên khác phụ trách</span>
                 </label>
+
+                <label className="flex items-start gap-2 text-2xs text-ink-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={excludeStaffNotSuitable}
+                    onChange={(e) => setExcludeStaffNotSuitable(e.target.checked)}
+                    className="rounded text-primary mt-0.5"
+                  />
+                  <span>Ẩn kênh đã bị nhân viên đánh giá Không phù hợp</span>
+                </label>
               </div>
             </div>
 
@@ -1103,6 +1142,21 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                                     <Star className="w-3 h-3" /> Top 20%
                                   </span>
                                 )}
+                                <KocChannelReviewBadge
+                                  summary={getChannelSummary(koc.channelId)}
+                                  onClick={() =>
+                                    openChannelReview(
+                                      {
+                                        handle: koc.channelId,
+                                        channelName: koc.stageName,
+                                        avatarUrl: koc.avatarUrl,
+                                        defaultBrandScope: selectedStore?.brandName,
+                                        sourceScreen: 'Bộ lọc tìm kiếm KOC cho Gian hàng',
+                                      },
+                                      'CHANNEL_DETAIL'
+                                    )
+                                  }
+                                />
                               </div>
                               <div className="text-2xs text-ink-3 truncate mt-0.5">
                                 @{koc.channelId.replace('@', '')} · {koc.tepKenh} · Nữ{' '}
@@ -1247,19 +1301,90 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                             ))}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInspectingKocDetail(item);
-                            }}
-                            className="text-2xs font-semibold text-primary hover:underline inline-flex items-center gap-1 shrink-0"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>
-                              Chi tiết điểm &amp; {history.allPastDeals.length} deal lịch sử
-                            </span>
-                          </button>
+                          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openChannelReview(
+                                  {
+                                    handle: koc.channelId,
+                                    channelName: koc.stageName,
+                                    avatarUrl: koc.avatarUrl,
+                                    defaultBrandScope: selectedStore?.brandName,
+                                    initialVerdict: 'SUITABLE',
+                                    sourceScreen: 'Bộ lọc tìm kiếm KOC cho Gian hàng',
+                                  },
+                                  'CHANNEL_DETAIL'
+                                );
+                              }}
+                              className="text-2xs font-semibold text-positive hover:underline inline-flex items-center gap-1"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>ĐG Phù hợp</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openChannelReview(
+                                  {
+                                    handle: koc.channelId,
+                                    channelName: koc.stageName,
+                                    avatarUrl: koc.avatarUrl,
+                                    defaultBrandScope: selectedStore?.brandName,
+                                    initialVerdict: 'NOT_SUITABLE',
+                                    sourceScreen: 'Bộ lọc tìm kiếm KOC cho Gian hàng',
+                                  },
+                                  'CHANNEL_DETAIL'
+                                );
+                              }}
+                              className="text-2xs font-semibold text-critical hover:underline inline-flex items-center gap-1"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              <span>Không phù hợp</span>
+                            </button>
+
+                            {getChannelSummary(koc.channelId) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openChannelReview(
+                                    {
+                                      handle: koc.channelId,
+                                      channelName: koc.stageName,
+                                      avatarUrl: koc.avatarUrl,
+                                      defaultBrandScope: selectedStore?.brandName,
+                                      sourceScreen: 'Bộ lọc tìm kiếm KOC cho Gian hàng',
+                                    },
+                                    'CHANNEL_DETAIL'
+                                  );
+                                }}
+                                className="text-2xs font-semibold text-ink-2 hover:underline inline-flex items-center gap-1"
+                              >
+                                <History className="w-3 h-3" />
+                                <span>
+                                  Lịch sử ĐG ({getChannelSummary(koc.channelId)!.totalReviews})
+                                </span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInspectingKocDetail(item);
+                              }}
+                              className="text-2xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span>
+                                Chi tiết điểm &amp; {history.allPastDeals.length} deal lịch sử
+                              </span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1514,6 +1639,17 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           </div>
         )}
       </Modal>
+
+      <KocChannelReviewModal
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        target={reviewTarget}
+        initialMode={reviewMode}
+        currentUserName={currentUserName}
+        currentUserRole="Chuyên viên Booking"
+        reviews={channelReviews}
+        onNotify={onNotify}
+      />
     </>
   );
 };

@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     const expectedDealCode: string | undefined = body.dealCode;
     const expectedHandle: string | undefined = body.expectedHandle;
     const expectedDeadline: string | undefined = body.expectedDeadline;
+    const expectedCartUrl: string | undefined = body.expectedCartUrl;
     const requiredHashtags: string[] | undefined = body.requiredHashtags;
     const requiredUspKeywords: string[] | undefined = body.requiredUspKeywords;
     const brandName: string | undefined = body.brandName;
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
         expectedDeal,
         expectedHandle,
         expectedDeadline,
+        expectedCartUrl,
         requiredHashtags,
         requiredUspKeywords,
         brandName,

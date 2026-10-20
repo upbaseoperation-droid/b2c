@@ -15,6 +15,7 @@ export interface LinkAirExpectation {
   requiredHashtags?: string[];
   requiredKeywords?: string[];
   requireProductLink?: boolean;
+  expectedProductUrl?: string;
   minViews?: number;
 }
 
@@ -23,6 +24,18 @@ export interface LinkAirCheckItem {
   label: string;
   status: LinkAirCheckStatus;
   detail: string;
+}
+
+export interface LinkAirCartProduct {
+  productId: string;
+  skuId?: string;
+  sellerId?: string;
+  title: string;
+  anchorKeyword?: string;
+  productUrl: string;
+  coverUrl?: string;
+  categoryName?: string;
+  source?: string;
 }
 
 export interface LinkAirResult {
@@ -42,6 +55,10 @@ export interface LinkAirResult {
   metrics: { views: number | null; likes: number | null; comments: number | null; shares: number | null; saves: number | null };
   hasProductLink: boolean | null;
   productTitle: string | null;
+  productUrl?: string | null;
+  productId?: string | null;
+  sellerId?: string | null;
+  cartProducts?: LinkAirCartProduct[];
   checks: LinkAirCheckItem[];
   verdict: LinkAirVerdict;
   limitations: string[];
@@ -98,6 +115,9 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     'Bình luận',
     'Chia sẻ',
     'Gắn sản phẩm',
+    'Tên sản phẩm giỏ hàng',
+    'Mã SP (Product ID)',
+    'Link giỏ hàng',
     'Link chuẩn',
     'Ghi chú',
   ];
@@ -117,6 +137,9 @@ export function buildLinkAirCsv(results: LinkAirResult[]): string {
     r.metrics.comments,
     r.metrics.shares,
     r.hasProductLink === null ? '' : r.hasProductLink ? 'Có' : 'Không',
+    r.productTitle ?? '',
+    r.productId ?? '',
+    r.productUrl ?? '',
     r.canonicalUrl ?? '',
     r.checks
       .filter((c) => c.status !== 'PASS')

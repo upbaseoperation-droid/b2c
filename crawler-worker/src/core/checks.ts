@@ -3,8 +3,39 @@ import type { LinkCheckItem, LinkCheckResult, LinkExpectation, Verdict } from '.
 
 type CheckInput = Pick<
   LinkCheckResult,
-  'platform' | 'contentId' | 'status' | 'statusDetail' | 'author' | 'publishedAt' | 'caption' | 'hashtags' | 'metrics' | 'hasProductLink'
+  | 'platform'
+  | 'contentId'
+  | 'status'
+  | 'statusDetail'
+  | 'author'
+  | 'publishedAt'
+  | 'caption'
+  | 'hashtags'
+  | 'metrics'
+  | 'hasProductLink'
+  | 'productTitle'
+  | 'productUrl'
+  | 'productId'
+  | 'cartProducts'
 >;
+
+function extractProductIdFromToken(raw?: string | null): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (/^\d{15,22}$/.test(trimmed)) return trimmed;
+  const m =
+    trimmed.match(/\/(?:view\/)?product\/(\d{15,22})(?:[/?#]|$)/i) ||
+    trimmed.match(/[?&](?:product_id|item_id)=(\d{15,22})(?:[&#]|$)/i) ||
+    trimmed.match(/-i\.\d+\.(\d+)(?:[/?#]|$)/i) ||
+    trimmed.match(/\/product\/\d+\/(\d+)(?:[/?#]|$)/i) ||
+    trimmed.split(/[?#]/)[0].match(/\/(\d{17,21})\/?$/);
+  return m?.[1];
+}
+
+function normalizeCartUrl(raw?: string | null): string {
+  if (!raw) return '';
+  return raw.trim().split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase();
+}
 
 /** Đối chiếu bài đăng với điều kiện nghiệm thu. Không có dữ liệu → WARN (cần người kiểm tra), không tự đánh FAIL. */
 export function buildChecks(input: CheckInput, expect: LinkExpectation = {}): LinkCheckItem[] {
@@ -131,7 +162,62 @@ export function buildChecks(input: CheckInput, expect: LinkExpectation = {}): Li
     );
   }
 
-  if (expect.requireProductLink) {
+  if (expect.expectedProductUrl && expect.expectedProductUrl.trim()) {
+    const tokens = expect.expectedProductUrl
+      .split(/[\r\n,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const actualList =
+      input.cartProducts && input.cartProducts.length > 0
+        ? input.cartProducts
+        : input.hasProductLink && (input.productUrl || input.productId || input.productTitle)
+        ? [
+            {
+              productId: input.productId || extractProductIdFromToken(input.productUrl) || '',
+              title: input.productTitle || 'Sản phẩm trong giỏ hàng',
+              productUrl: input.productUrl || '',
+            },
+          ]
+        : [];
+
+    if (!input.hasProductLink && actualList.length === 0) {
+      checks.push({
+        key: 'cart_link_match',
+        label: 'Đối chiếu link giỏ hàng',
+        status: 'FAIL',
+        detail: `Bài chưa gắn giỏ hàng để đối chiếu với link mẫu (${tokens.join(', ')}).`,
+      });
+    } else {
+      const matched = actualList.filter((act) => {
+        const actPid = act.productId || extractProductIdFromToken(act.productUrl) || '';
+        const actNorm = normalizeCartUrl(act.productUrl);
+        return tokens.some((tok) => {
+          const expPid = extractProductIdFromToken(tok);
+          const expNorm = normalizeCartUrl(tok);
+          return (
+            (expPid && actPid && expPid === actPid) ||
+            (expNorm && actNorm && (actNorm === expNorm || actNorm.includes(expNorm) || expNorm.includes(actNorm)))
+          );
+        });
+      });
+
+      if (matched.length > 0) {
+        checks.push({
+          key: 'cart_link_match',
+          label: 'Đối chiếu link giỏ hàng',
+          status: 'PASS',
+          detail: `Khớp đúng link giỏ hàng mẫu: ${matched.map((m) => `${m.title} (${m.productId || m.productUrl})`).join('; ')}.`,
+        });
+      } else {
+        checks.push({
+          key: 'cart_link_match',
+          label: 'Đối chiếu link giỏ hàng',
+          status: 'FAIL',
+          detail: `Lệch link giỏ hàng: KOC đang gắn ${actualList.map((a) => `"${a.title}" (${a.productId || a.productUrl})`).join(', ')}, không khớp link mẫu.`,
+        });
+      }
+    }
+  } else if (expect.requireProductLink) {
     checks.push(
       input.hasProductLink === true
         ? { key: 'product_link', label: 'Gắn link sản phẩm', status: 'PASS', detail: 'Bài có gắn giỏ hàng / link sản phẩm.' }

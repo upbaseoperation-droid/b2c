@@ -98,6 +98,7 @@ const NAV = {
   booking: { key: 'booking', label: 'Quản lý Booking', icon: Users },
   content: { key: 'content', label: 'Kịch bản & Video', icon: FileText },
   kocListing: { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
+  approvedBookingList: { key: 'approved-booking-list', label: 'List duyệt book', icon: FileSpreadsheet },
   selfChannel: { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Clapperboard },
   kocMaster: { key: 'koc-master', label: 'Danh bạ KOC', icon: Contact },
   ctvMaster: { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
@@ -180,7 +181,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     },
     {
       title: 'Booking & Nội dung',
-      items: [NAV.booking, NAV.content, NAV.kocListing, NAV.selfChannel, NAV.ctvMaster],
+      items: [NAV.kocListing, NAV.approvedBookingList, NAV.booking, NAV.content, NAV.selfChannel, NAV.ctvMaster],
     },
     {
       title: 'Hợp đồng & Pháp lý',

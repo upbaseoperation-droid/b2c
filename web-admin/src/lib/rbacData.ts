@@ -1873,6 +1873,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'input-plan',
     'koc-listing',
+    'approved-booking-list',
     'self-channel-hub',
     'master-data',
     'push-products',
@@ -1914,6 +1915,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-finance',
     'input-plan',
     'koc-listing',
+    'approved-booking-list',
     'self-channel-hub',
     'master-data',
     'push-products',
@@ -2020,6 +2022,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'workload-3d',
     'input-plan',
     'koc-listing',
+    'approved-booking-list',
     'self-channel-hub',
     'push-products',
     'stores',
@@ -2045,6 +2048,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-air-sync',
     'booking',
     'koc-listing',
+    'approved-booking-list',
     'koc-master',
     'ctv-master',
     'input-plan',
@@ -2087,6 +2091,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'push-products',
     'brand-knowledge',
     'koc-listing',
+    'approved-booking-list',
     'content',
     'input-plan',
     'ads-report',
@@ -2105,6 +2110,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-air-sync',
     'booking',
     'koc-listing',
+    'approved-booking-list',
     'koc-master',
     'ctv-master',
     'stores',
@@ -2170,6 +2176,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BRAND_PARTNER: [
     'brand-hub',
     'koc-listing',
+    'approved-booking-list',
     'push-products',
     'content'
   ],
@@ -2253,6 +2260,7 @@ export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
 }
 
 const CORE_SYNCED_ROLE_TABS: TabKey[] = [
+  'approved-booking-list',
   'tiktok-crawler',
   'market-research',
   'task-delegation',
@@ -2329,6 +2337,7 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads (Đối tác / Trực tiếp)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Theo dõi vận đơn gửi mẫu và thu thập mã quảng cáo Spark Ads trong quy trình Booking.' },
   { key: 'tiktok-crawler', label: 'Crawler KOC & Đối thủ TikTok', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Quét KOC đang làm cho đối thủ, tìm KOC theo #Hashtag và nghiệm thu link video KOC gửi.' },
   { key: 'koc-listing', label: 'Listing & Air Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Đề xuất danh sách KOC theo lô và cập nhật link video.' },
+  { key: 'approved-booking-list', label: 'List duyệt book (Chốt ngày air, giá cuối & Tạo BO)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Nhận dòng KOC Brand đã duyệt từ Sheet Listing, điền ngày air dự kiến, chốt giá cuối cùng, tạo Booking Order (BO...) và tự động khớp kênh KOC khi nghiệm thu video.' },
   { key: 'content', label: 'Kịch bản & Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Soạn thảo và duyệt kịch bản video KOC / Self-channel.' },
   { key: 'content-angles', label: 'Góc nội dung (Content Angles)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Ma trận trụ cột nội dung & Hook 3s đầu.' },
   { key: 'koc-master', label: 'Danh bạ KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Hồ sơ KOC/KOL, thông tin pháp lý CCCD/MST và lịch sử hợp tác.' },

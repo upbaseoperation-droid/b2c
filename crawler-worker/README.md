@@ -6,7 +6,7 @@ Với mỗi link, worker trả về:
 - link có đúng là một bài đăng (có ID) không, và bài còn hiển thị công khai không;
 - kênh đăng, ngày air, caption, hashtag;
 - view, like, bình luận, chia sẻ, lưu (trường nào nền tảng có công khai);
-- có gắn giỏ hàng hoặc link sản phẩm không;
+- có gắn giỏ hàng hoặc link sản phẩm không, kèm trích xuất trực tiếp **link giỏ hàng (`productUrl`)**, **mã sản phẩm (`productId`)**, **mã gian hàng (`sellerId`)** và danh sách sản phẩm trong giỏ (`cartProducts`);
 - kết quả đối chiếu với điều kiện của deal: đúng kênh, đúng lịch air, đủ hashtag, có nhắc brand, có gắn sản phẩm, đạt view tối thiểu.
 
 Kết luận gồm 3 mức: `PASS` (đạt), `REVIEW` (cần người xem lại, thường do nền tảng không công khai dữ liệu đó) và `FAIL` (không đạt).
@@ -73,7 +73,7 @@ Tối đa 100 link mỗi lần gọi. Kiểu dữ liệu trả về nằm ở `s
 | View | ✓ | ✓ | ✗ | ✗ |
 | Like / bình luận | ✓ | ✓ (tổng reactions) | ✓ (số làm tròn) | ✓ |
 | Chia sẻ / lưu | ✓ | một phần | ✗ | ✗ |
-| Gắn sản phẩm | ✓ | chỉ khi có tag sản phẩm | ✗ | ✗ |
+| Gắn sản phẩm & Link giỏ hàng | ✓ (`seo_url`, `product_id`, `seller_id` từ `anchors[].extra`) | chỉ khi có tag sản phẩm hoặc link trong caption | chỉ khi có link trong caption | ✗ |
 | Follower kênh | ✓ | ✗ | ✗ | ✗ |
 
 Trường nào nền tảng không công khai sẽ có giá trị `null` và được ghi vào `limitations`. Điều kiện nghiệm thu dựa trên trường đó sẽ ra `REVIEW` thay vì `FAIL`.

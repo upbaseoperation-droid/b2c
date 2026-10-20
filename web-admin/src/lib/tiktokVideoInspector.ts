@@ -1,9 +1,14 @@
 import { BookingDealItem } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
 import {
+  compareCartProductLinks,
   compareTikTokVideoIdDesc,
+  extractTikTokShopAnchorInfo,
   fetchTikTokHtmlWithWafBypass,
+  resolveExpectedCartInputUrls,
   scrapeTikTokVideoComments,
+  type CartLinkComparisonResult,
+  type TikTokCartProductItem,
 } from './tiktokOpenSourceEngines';
 
 export type VideoAcceptanceVerdict = 'ĐẠT_CHUẨN' | 'CẦN_KIỂM_TRA' | 'KHÔNG_ĐẠT';
@@ -31,10 +36,24 @@ export interface TikTokVideoContentCheck {
   }[];
   hasCartAnchor: boolean;
   cartAnchorTitle?: string;
+  cartAnchorUrl?: string;
+  cartProducts?: TikTokCartProductItem[];
+}
+
+export interface TikTokProductMentionMoment {
+  startSec: number;
+  endSec: number;
+  timeLabel: string;
+  matchedTerm: string;
+  quote: string;
 }
 
 export interface TikTokVisualAndAudioCheck {
-  firstProductAppearanceSec: number; // Giây sản phẩm xuất hiện lần đầu (chuẩn Brief <= 3s)
+  firstProductAppearanceSec: number | null; // Giây tên sản phẩm / thương hiệu xuất hiện lần đầu trong lời thoại (WebVTT)
+  firstProductMentionTimeLabel?: string;
+  firstProductMentionTerm?: string;
+  firstProductMentionQuote?: string;
+  productMentionMoments?: TikTokProductMentionMoment[];
   isPackagingTextMirrored: boolean;  // Lỗi lật ngược chữ thương hiệu trên bao bì do camera trước
   hasCompetitorProductInFrame: boolean; // Có để lộ sản phẩm đối thủ trong khung hình không
   hardSubCapCutLines: string[];      // Chữ cứng chèn bằng phần mềm dựng (CapCut) trên khung hình
@@ -48,8 +67,12 @@ export interface TikTokCartAnchorVerification {
   detectedShopName: string;
   detectedProductId: string;
   detectedProductTitle: string;
+  detectedProductUrl?: string;
+  detectedProducts?: TikTokCartProductItem[];
   expectedStoreName: string;
   expectedPlatformStoreId: string;
+  expectedCartUrl?: string;
+  cartLinkComparison?: CartLinkComparisonResult;
   isOfficialBrandStoreMatched: boolean; // Khớp đúng gian hàng chính hãng UpBase vận hành
 }
 
@@ -139,6 +162,7 @@ export interface InspectVideoOptions {
   expectedDeal?: BookingDealItem;
   expectedHandle?: string;
   expectedDeadline?: string; // YYYY-MM-DD
+  expectedCartUrl?: string;  // Link giỏ hàng mẫu hoặc Mã SP nhân viên cung cấp để đối chiếu
   requiredHashtags?: string[];
   requiredUspKeywords?: string[]; // Từ khóa thông điệp / USP bắt buộc phải có trong lời nói hoặc chữ trên video
   sparkAdsCode?: string;          // Mã ủy quyền quảng cáo Spark Ads KOC gửi kèm
@@ -387,6 +411,258 @@ export function parseWebVttToTranscript(vttRaw: string): string {
   return segs.map((s) => `[${s.timeLabel}] ${s.text}`).join(' ');
 }
 
+function foldForMatch(raw: string): string {
+  return (raw || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[-_./,;:!?()[\]{}"'“”‘’]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const PRODUCT_CATEGORY_PHRASES = [
+  'kem chống nắng',
+  'sữa rửa mặt',
+  'nước tẩy trang',
+  'dầu tẩy trang',
+  'sáp tẩy trang',
+  'tẩy da chết',
+  'tẩy tế bào chết',
+  'sữa dưỡng thể',
+  'kem dưỡng',
+  'dưỡng ẩm',
+  'tinh chất',
+  'serum',
+  'ampoule',
+  'toner',
+  'nước cân bằng',
+  'mặt nạ',
+  'xịt khoáng',
+  'son dưỡng',
+  'son kem',
+  'son bóng',
+  'son thỏi',
+  'phấn nước',
+  'cushion',
+  'kem nền',
+  'che khuyết điểm',
+  'phấn phủ',
+  'dầu gội',
+  'dầu xả',
+  'ủ tóc',
+  'xịt dưỡng tóc',
+  'sữa tắm',
+  'dung dịch vệ sinh',
+  'lăn khử mùi',
+  'nước hoa',
+  'viên uống',
+];
+
+const GENERIC_TITLE_STOPWORDS = new Set([
+  'live',
+  'deal',
+  'combo',
+  'chinh',
+  'hang',
+  'shop',
+  'tiktok',
+  'video',
+  'review',
+  'phien',
+  'ban',
+  'nang',
+  'tone',
+  'danh',
+  'cho',
+  'giup',
+  'bao',
+  'toan',
+  'dien',
+  'kiem',
+  'dau',
+  'den',
+  'gio',
+  'nhay',
+  'cam',
+  'diu',
+  'lanh',
+  'sach',
+  'sau',
+  'giam',
+  'mun',
+  'duong',
+  'trang',
+  'sang',
+  'mem',
+  'mai',
+  'rang',
+  'chat',
+  'tinh',
+  'nuoc',
+  'kem',
+  'sua',
+  'gel',
+  'foam',
+  'cleanser',
+  'gentle',
+  'skin',
+  'official',
+  'store',
+  'vietnam',
+  'authentic',
+  'fullsize',
+  'mini',
+  'tach',
+  'set',
+  'hop',
+  'chai',
+  'tuyp',
+]);
+
+/**
+ * Dò mốc giây xuất hiện tên sản phẩm / thương hiệu / dòng sản phẩm trong lời thoại phụ đề (WebVTT).
+ */
+export function detectProductMentionMoments(params: {
+  segments: TikTokSubtitleSegment[];
+  brandName?: string;
+  productName?: string;
+  cartAnchorTitle?: string;
+  cartProducts?: TikTokCartProductItem[];
+  caption?: string;
+  hashtags?: string[];
+  uspKeywords?: string[];
+}): {
+  firstProductAppearanceSec: number | null;
+  firstProductMentionTimeLabel?: string;
+  firstProductMentionTerm?: string;
+  firstProductMentionQuote?: string;
+  productMentionMoments: TikTokProductMentionMoment[];
+} {
+  const {
+    segments,
+    brandName,
+    productName,
+    cartAnchorTitle,
+    cartProducts = [],
+    caption = '',
+    hashtags = [],
+    uspKeywords = [],
+  } = params;
+  if (!segments || segments.length === 0) {
+    return { firstProductAppearanceSec: null, productMentionMoments: [] };
+  }
+
+  const candidateTerms: Array<{ label: string; folded: string; priority: number }> = [];
+  const seenFolded = new Set<string>();
+  const addCandidate = (label: string, priority: number) => {
+    const clean = label.trim();
+    const folded = foldForMatch(clean);
+    if (!folded || folded.length < 3 || seenFolded.has(folded)) return;
+    seenFolded.add(folded);
+    candidateTerms.push({ label: clean, folded, priority });
+  };
+
+  // 1. Tên thương hiệu (ưu tiên cao nhất)
+  if (brandName && brandName.trim()) {
+    addCandidate(brandName.trim(), 1);
+    const hyphenNormalized = brandName.replace(/[-_]+/g, ' ').trim();
+    if (hyphenNormalized !== brandName.trim()) addCandidate(hyphenNormalized, 1);
+  }
+
+  // 2. Các từ riêng (Latin / Tên thương hiệu / Tên dòng SP như Anthelios, Cetaphil, Cocoon, Skin1004, Centella...) trong tên giỏ hàng & caption
+  const allProductTitles = [
+    productName || '',
+    cartAnchorTitle || '',
+    ...cartProducts.map((p) => p.title || ''),
+    caption || '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const rawTokens = allProductTitles
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/#[\p{L}\p{N}_]+/gu, ' ')
+    .split(/[\s,.;:/()[\]\-+]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  for (const tok of rawTokens) {
+    const foldedTok = foldForMatch(tok);
+    if (
+      foldedTok.length >= 4 &&
+      !/^\d+(?:ml|g|gr|kg|l|oz|spf|pa)?$/i.test(foldedTok) &&
+      !GENERIC_TITLE_STOPWORDS.has(foldedTok) &&
+      // Từ không dấu hoặc tên riêng viết hoa toàn bộ (VD: CETAPHIL, SKIN1004, ANTHELIOS, CERAVE, COCOON, POSAY)
+      (/^[A-Z0-9]{4,}$/.test(tok) || (tok.toLowerCase() === foldedTok && /^[A-Z]/.test(tok)))
+    ) {
+      addCandidate(tok, 1);
+    }
+  }
+
+  // Bổ sung hashtag thương hiệu/sản phẩm (VD: #larocheposay -> larocheposay / la roche posay)
+  for (const rawTag of hashtags) {
+    const cleanTag = rawTag.replace(/^#+/, '').trim();
+    if (cleanTag.length >= 4 && !GENERIC_TITLE_STOPWORDS.has(cleanTag.toLowerCase())) {
+      addCandidate(cleanTag, 2);
+    }
+  }
+
+  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "tẩy da chết"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
+  const foldedAllTitles = foldForMatch(allProductTitles);
+  for (const phrase of PRODUCT_CATEGORY_PHRASES) {
+    if (!foldedAllTitles || foldedAllTitles.includes(foldForMatch(phrase))) {
+      addCandidate(phrase, 2);
+    }
+  }
+
+  // 4. Từ khóa USP bắt buộc
+  for (const usp of uspKeywords) {
+    if (usp && usp.trim().length >= 3) {
+      addCandidate(usp.trim(), 3);
+    }
+  }
+
+  // Sắp xếp theo độ ưu tiên (Tên Brand/Dòng SP -> Cụm loại SP -> USP)
+  candidateTerms.sort((a, b) => a.priority - b.priority || b.folded.length - a.folded.length);
+
+  const moments: TikTokProductMentionMoment[] = [];
+  const sortedSegs = [...segments].sort((a, b) => a.startSec - b.startSec);
+
+  for (const seg of sortedSegs) {
+    const foldedSeg = ` ${foldForMatch(seg.text)} `;
+    if (foldedSeg.trim().length === 0) continue;
+
+    let matchedLabel: string | undefined;
+    for (const cand of candidateTerms) {
+      if (foldedSeg.includes(` ${cand.folded} `) || foldedSeg.includes(cand.folded)) {
+        matchedLabel = cand.label;
+        break;
+      }
+    }
+
+    if (matchedLabel) {
+      moments.push({
+        startSec: seg.startSec,
+        endSec: seg.endSec,
+        timeLabel: seg.timeLabel,
+        matchedTerm: matchedLabel,
+        quote: seg.text,
+      });
+    }
+  }
+
+  const first = moments[0];
+  return {
+    firstProductAppearanceSec: first ? first.startSec : null,
+    firstProductMentionTimeLabel: first?.timeLabel,
+    firstProductMentionTerm: first?.matchedTerm,
+    firstProductMentionQuote: first?.quote,
+    productMentionMoments: moments,
+  };
+}
+
 /**
  * Bước 1: Gọi TikTok Official oEmbed API (miễn phí 100%, không cần key) và trang HTML công khai của video
  * để lấy dữ liệu thực tế từ TikTok (bao gồm cả phụ đề tự động WebVTT và chữ chèn trên màn hình).
@@ -416,6 +692,10 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
   onScreenStickers?: string[];
   hasCartAnchor?: boolean;
   cartAnchorTitle?: string;
+  cartAnchorUrl?: string;
+  cartProductId?: string;
+  cartSellerId?: string;
+  cartProducts?: TikTokCartProductItem[];
   isLiveSuccess: boolean;
 }> {
   let resolvedUrl = rawUrl.trim();
@@ -496,7 +776,6 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
           const stats = itemStruct.stats || itemStruct.statsV2 || {};
           const video = itemStruct.video || {};
           const music = itemStruct.music || {};
-          const anchors = Array.isArray(itemStruct.anchors) ? itemStruct.anchors : [];
 
           // A. Bóc chữ chèn trên màn hình video (stickersOnItem)
           const rawStickers = Array.isArray(itemStruct.stickersOnItem)
@@ -591,12 +870,14 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             }
           }
 
-          const hasCartAnchor =
-            anchors.length > 0 ||
-            Boolean(itemStruct.isECVideo) ||
-            Boolean(itemStruct.commerceInfo);
-          const cartAnchorTitle =
-            anchors[0]?.keyword || anchors[0]?.description || undefined;
+          const {
+            hasCartAnchor,
+            cartAnchorTitle,
+            cartAnchorUrl,
+            cartProductId,
+            cartSellerId,
+            cartProducts,
+          } = extractTikTokShopAnchorInfo(itemStruct);
 
           const baseDesc = String(itemStruct.desc || oembedCaption || '').trim();
           const missingExtraTags = extraHashtags.filter(
@@ -634,6 +915,10 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             onScreenStickers,
             hasCartAnchor,
             cartAnchorTitle,
+            cartAnchorUrl,
+            cartProductId,
+            cartSellerId,
+            cartProducts,
             isLiveSuccess: true,
           };
         }
@@ -933,14 +1218,32 @@ export async function inspectTikTokVideoUrl(
 
   const hasCartAnchor = Boolean(liveData.hasCartAnchor);
   const cartAnchorTitle = liveData.cartAnchorTitle || '';
+  const cartAnchorUrl = liveData.cartAnchorUrl || undefined;
+  const cartProducts = liveData.cartProducts || [];
 
   // 1. Tầng kiểm tra Khung hình & Âm thanh gốc (Visual Keyframe & Audio Stream)
-  const firstProductAppearanceSec = isPublicActive ? 2 : 0;
+  const productMentionDetection = detectProductMentionMoments({
+    segments: subtitleSegments,
+    brandName,
+    productName,
+    cartAnchorTitle,
+    cartProducts,
+    caption: defaultCaption,
+    hashtags,
+    uspKeywords: defaultUspList,
+  });
+  const firstProductAppearanceSec = isPublicActive
+    ? productMentionDetection.firstProductAppearanceSec
+    : null;
   const isPackagingTextMirrored = false;
   const hasCompetitorProductInFrame = false;
   const hardSubCapCutLines = onScreenStickers.length > 0 ? onScreenStickers : [];
   const visualAndAudioCheck: TikTokVisualAndAudioCheck = {
     firstProductAppearanceSec,
+    firstProductMentionTimeLabel: productMentionDetection.firstProductMentionTimeLabel,
+    firstProductMentionTerm: productMentionDetection.firstProductMentionTerm,
+    firstProductMentionQuote: productMentionDetection.firstProductMentionQuote,
+    productMentionMoments: productMentionDetection.productMentionMoments,
     isPackagingTextMirrored,
     hasCompetitorProductInFrame,
     hardSubCapCutLines,
@@ -958,18 +1261,36 @@ export async function inspectTikTokVideoUrl(
   const expectedPlatformStoreId = brandName
     ? `TTS-${brandName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}-01`
     : '';
-  const detectedProductId = hasCartAnchor ? `SKU-${videoId.slice(-6)}` : '';
+  const detectedProductId = liveData.cartProductId || '';
+  const detectedShopId = liveData.cartSellerId || (hasCartAnchor ? expectedPlatformStoreId : '');
+  const expectedCartInputRaw = (options.expectedCartUrl || '').trim();
+  const cartLinkComparison = compareCartProductLinks({
+    expectedCartInput: expectedCartInputRaw,
+    hasCartAnchor,
+    actualProducts: cartProducts,
+    fallbackActualUrl: cartAnchorUrl,
+    fallbackActualProductId: detectedProductId,
+    fallbackActualTitle: cartAnchorTitle,
+  });
+  const isOfficialBrandStoreMatched = cartLinkComparison.hasExpectedInput
+    ? cartLinkComparison.status === 'MATCHED'
+    : hasCartAnchor;
+
   const cartAnchorVerification: TikTokCartAnchorVerification = {
     hasCartAnchor,
-    detectedShopId: hasCartAnchor ? expectedPlatformStoreId : '',
+    detectedShopId,
     detectedShopName: hasCartAnchor
       ? expectedStoreName || cartAnchorTitle || 'TikTok Shop Anchor'
       : 'Chưa gắn giỏ hàng',
     detectedProductId,
     detectedProductTitle: cartAnchorTitle,
+    detectedProductUrl: cartAnchorUrl,
+    detectedProducts: cartProducts,
     expectedStoreName,
     expectedPlatformStoreId,
-    isOfficialBrandStoreMatched: hasCartAnchor,
+    expectedCartUrl: expectedCartInputRaw || undefined,
+    cartLinkComparison,
+    isOfficialBrandStoreMatched,
   };
 
   // 3. Tầng kiểm tra hiệu lực Mã quảng cáo Spark Ads
@@ -1087,9 +1408,14 @@ export async function inspectTikTokVideoUrl(
     {
       key: 'VIDEO_SPECS',
       label: 'Thời lượng & Giỏ hàng TikTok Shop',
-      passed: isPublicActive && isDurationOk,
+      passed:
+        isPublicActive &&
+        isDurationOk &&
+        (!cartLinkComparison.hasExpectedInput || cartLinkComparison.status === 'MATCHED'),
       detail: !isPublicActive
         ? 'Không có dữ liệu kỹ thuật'
+        : cartLinkComparison.hasExpectedInput
+        ? `Thời lượng ${durationSeconds}s · ${cartLinkComparison.detailNote}`
         : `Thời lượng ${durationSeconds}s · ${
             hasCartAnchor
               ? `Có gắn giỏ hàng (${cartAnchorTitle || 'TikTok Shop'})`
@@ -1101,16 +1427,21 @@ export async function inspectTikTokVideoUrl(
   let verdict: VideoAcceptanceVerdict = 'ĐẠT_CHUẨN';
   let verdictSummary = 'Đạt đủ tiêu chuẩn nghiệm thu lên sóng';
 
+  const isCartComparisonFailed =
+    cartLinkComparison.hasExpectedInput && cartLinkComparison.status !== 'MATCHED';
+
   if (!isPublicActive) {
     verdict = 'KHÔNG_ĐẠT';
     verdictSummary =
       videoStatus === 'INVALID_LINK'
         ? 'Đường dẫn không hợp lệ hoặc không chứa mã Video ID TikTok'
         : 'Video đã bị xóa, ẩn hoặc chuyển sang chế độ riêng tư trên TikTok';
-  } else if (violatedBlacklistWords.length > 0 || !isChannelMatched) {
+  } else if (violatedBlacklistWords.length > 0 || !isChannelMatched || isCartComparisonFailed) {
     verdict = 'KHÔNG_ĐẠT';
     verdictSummary = !isChannelMatched
       ? `Sai kênh đăng (@${authorHandle} khác với @${expectedKocHandle})`
+      : isCartComparisonFailed
+      ? cartLinkComparison.detailNote
       : `Vi phạm từ cấm sàn (${violatedBlacklistWords.map((w) => w.word).join(', ')})`;
   } else if (
     !isOnTime ||
@@ -1180,6 +1511,8 @@ export async function inspectTikTokVideoUrl(
       violatedBlacklistWords,
       hasCartAnchor,
       cartAnchorTitle,
+      cartAnchorUrl,
+      cartProducts,
     },
     visualAndAudioCheck,
     cartAnchorVerification,
@@ -1206,11 +1539,19 @@ export async function inspectTikTokVideoBatch(
   allDeals: BookingDealItem[] = [],
   concurrency = 5
 ): Promise<TikTokVideoInspectionResult[]> {
+  const resolvedExpectedCartUrl = options.expectedCartUrl
+    ? await resolveExpectedCartInputUrls(options.expectedCartUrl)
+    : undefined;
+  const effectiveOptions: InspectVideoOptions = {
+    ...options,
+    expectedCartUrl: resolvedExpectedCartUrl || options.expectedCartUrl,
+  };
+
   const results: TikTokVideoInspectionResult[] = [];
   for (let i = 0; i < urls.length; i += concurrency) {
     const chunk = urls.slice(i, i + concurrency);
     const chunkResults = await Promise.all(
-      chunk.map((url) => inspectTikTokVideoUrl(url, options, allDeals))
+      chunk.map((url) => inspectTikTokVideoUrl(url, effectiveOptions, allDeals))
     );
     results.push(...chunkResults);
   }
@@ -1244,7 +1585,10 @@ export function buildVideoInspectionCsv(results: TikTokVideoInspectionResult[]):
     'Bình luận',
     'ER (%)',
     'Gian hàng gắn trong giỏ',
-    'Mã SKU giỏ hàng',
+    'Tên sản phẩm trong giỏ',
+    'Mã SP (Product ID)',
+    'Link giỏ hàng TikTok Shop',
+    'Đối chiếu Link giỏ hàng mẫu',
     'Mã Spark Ads',
     'Hạn Spark Ads (ngày)',
     'Hashtag đã gắn',
@@ -1252,6 +1596,7 @@ export function buildVideoInspectionCsv(results: TikTokVideoInspectionResult[]):
     'USP đã nói',
     'USP còn thiếu',
     'Câu mở đầu 3s (Hook)',
+    'Giây nhắc tên SP đầu tiên',
     'Từ cấm phát hiện',
     'Hậu kiểm hiển thị 30 ngày',
     'Kết luận nghiệm thu',
@@ -1278,7 +1623,12 @@ export function buildVideoInspectionCsv(results: TikTokVideoInspectionResult[]):
     r.commentsCount,
     r.engagementRate,
     r.cartAnchorVerification.detectedShopName,
-    r.cartAnchorVerification.detectedProductId,
+    r.cartAnchorVerification.detectedProductTitle || '',
+    r.cartAnchorVerification.detectedProductId || '',
+    r.cartAnchorVerification.detectedProductUrl || '',
+    r.cartAnchorVerification.cartLinkComparison?.hasExpectedInput
+      ? r.cartAnchorVerification.cartLinkComparison.detailNote
+      : 'Chưa nhập link đối chiếu',
     r.sparkAdsVerification.sparkAdsCode || '',
     r.sparkAdsVerification.authorizedDays,
     r.contentCheck.hashtags.join(' '),
@@ -1286,6 +1636,13 @@ export function buildVideoInspectionCsv(results: TikTokVideoInspectionResult[]):
     r.contentCheck.matchedUspKeywords.join(', '),
     r.contentCheck.missingUspKeywords.join(', '),
     r.contentCheck.hookFirst3Seconds || '',
+    r.visualAndAudioCheck.firstProductAppearanceSec !== null
+      ? `${r.visualAndAudioCheck.firstProductAppearanceSec}s${
+          r.visualAndAudioCheck.firstProductMentionTerm
+            ? ` (${r.visualAndAudioCheck.firstProductMentionTerm})`
+            : ''
+        }`
+      : 'Chưa xác định',
     r.contentCheck.violatedBlacklistWords.map((w) => w.word).join(', ') || 'An toàn',
     `${r.postAirRetentionCheck.retentionStatus} (${r.postAirRetentionCheck.daysSincePublished}/30 ngày)`,
     r.verdict,

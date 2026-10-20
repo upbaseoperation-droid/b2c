@@ -1,5 +1,13 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
-import { hasPicList, isStorePic, personIdentity, planParticipantNames, type PersonIdentity } from './storePics';
+
+/** Tất cả người được phân việc trong một kế hoạch tháng: là PIC tham gia gian trong tháng đó. */
+function planParticipantNames(plan: InputPlanBreakdownState): string[] {
+  return [
+    plan.pic, plan.primaryPic, plan.growthPic, plan.mediaPic, plan.submittedBy,
+    ...(plan.assignedMembers || []),
+    ...(plan.items || []).map(i => i.assignedStaff),
+  ].filter((n): n is string => !!n && !!n.trim());
+}
 
 /**
  * Kiểm tra xem người dùng có quyền quản trị toàn cục (Admin / Giám đốc B2C / Toàn quyền mọi nhãn hàng) hay không.
@@ -36,7 +44,6 @@ interface UserScopeBase {
   key: string;
   isGlobal: boolean;
   userNameLower: string;
-  identity: PersonIdentity;
   assignedBrands: string[];
   assignedBrandsLower: Set<string>;
   allowedStoresLower: Set<string>;
@@ -102,7 +109,6 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
     key,
     isGlobal,
     userNameLower,
-    identity: personIdentity(user),
     assignedBrands: Array.from(assignedBrandsSet),
     assignedBrandsLower,
     allowedStoresLower,
@@ -123,9 +129,6 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): 
       return true;
     }
   }
-
-  // Gian đã có danh sách PIC: chỉ danh sách (theo mã nhân sự) quyết định, bỏ qua các trường PIC theo tên.
-  if (hasPicList(store.pics)) return isStorePic(store.pics, base.identity);
 
   if (!userNameLower) return false;
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { BROWSER_UA, fetchText } from '../core/http.ts';
 import { unixSecondsToIso } from '../core/text.ts';
-import type { ParsedLink, PlatformAdapter, ScrapedContent } from '../core/types.ts';
+import type { CartProductItem, ParsedLink, PlatformAdapter, ScrapedContent } from '../core/types.ts';
 
 /**
  * Giải bài SHA-256 proof-of-work của tường lửa SlardarWAF trên trang TikTok
@@ -55,10 +55,164 @@ interface TikTokItemStruct {
   stats?: Record<string, number | string>;
   statsV2?: Record<string, number | string>;
   video?: { duration?: number };
-  anchors?: Array<{ keyword?: string; description?: string }>;
+  anchors?: Array<Record<string, unknown>>;
   isECVideo?: number | boolean;
   commerceInfo?: unknown;
   imagePost?: unknown;
+}
+
+function isNonProductAnchorText(text: string): boolean {
+  const lower = text.trim().toLowerCase();
+  if (!lower) return true;
+  return (
+    lower.includes('capcut') ||
+    lower.includes('thử mẫu') ||
+    lower.includes('template') ||
+    lower.includes('green screen') ||
+    lower.includes('hiệu ứng') ||
+    lower.includes('effect') ||
+    lower.includes('sound')
+  );
+}
+
+export function extractTikTokCartAnchors(item: TikTokItemStruct): {
+  hasProductLink: boolean;
+  productTitle: string | null;
+  productUrl: string | null;
+  productId: string | null;
+  sellerId: string | null;
+  cartProducts: CartProductItem[];
+} {
+  const anchors = Array.isArray(item.anchors) ? item.anchors : [];
+  let hasProductLink = Boolean(item.isECVideo) || Boolean(item.commerceInfo);
+  let productTitle: string | null = null;
+  const cartProducts: CartProductItem[] = [];
+  const seenKeys = new Set<string>();
+
+  const pushProduct = (prod: CartProductItem) => {
+    const key = prod.productId || prod.productUrl || prod.title;
+    if (!key || seenKeys.has(key)) return;
+    seenKeys.add(key);
+    cartProducts.push(prod);
+  };
+
+  for (const anchor of anchors) {
+    if (!anchor || typeof anchor !== 'object') continue;
+    const schema = typeof anchor.schema === 'string' ? anchor.schema : '';
+    const isCapcutSchema = schema.toLowerCase().includes('capcut') && typeof anchor.extra !== 'string';
+
+    if (typeof anchor.extra === 'string' && anchor.extra.trim()) {
+      try {
+        const parsedExtra = JSON.parse(anchor.extra);
+        const outerList = Array.isArray(parsedExtra) ? parsedExtra : [parsedExtra];
+        for (const outer of outerList) {
+          if (!outer || typeof outer !== 'object') continue;
+          const outerObj = outer as Record<string, unknown>;
+          const compKey = typeof outerObj.component_key === 'string' ? outerObj.component_key : '';
+          const outerKeyword = typeof outerObj.keyword === 'string' ? outerObj.keyword.trim() : '';
+          const outerId =
+            typeof outerObj.id === 'string' && /^\d{10,25}$/.test(outerObj.id.trim())
+              ? outerObj.id.trim()
+              : typeof outerObj.id === 'number'
+                ? String(outerObj.id)
+                : '';
+
+          const isShopEntry = compKey === 'anchor_shop' || outerObj.type === 33;
+          if (isShopEntry) hasProductLink = true;
+
+          if (typeof outerObj.extra === 'string' && outerObj.extra.trim()) {
+            const rawExtraStr = outerObj.extra;
+            const rawProductId =
+              rawExtraStr.match(/"product_id"\s*:\s*"?(\d{10,25})"?/)?.[1] ||
+              rawExtraStr.match(/"material_id"\s*:\s*"?(\d{10,25})"?/)?.[1] ||
+              outerId;
+            const rawSellerId = rawExtraStr.match(/"seller_id"\s*:\s*"?(\d{10,25})"?/)?.[1];
+            const rawSkuId = rawExtraStr.match(/"sku_id"\s*:\s*"?(\d{10,25})"?/)?.[1];
+
+            try {
+              const innerObj = JSON.parse(rawExtraStr) as Record<string, unknown>;
+              const fullTitle = typeof innerObj.title === 'string' ? innerObj.title.trim() : '';
+              const elasticTitle =
+                typeof innerObj.elastic_title === 'string' ? innerObj.elastic_title.trim() : '';
+              const innerTitle = fullTitle || elasticTitle || outerKeyword;
+              const seoUrl =
+                typeof innerObj.seo_url === 'string' && innerObj.seo_url.trim().startsWith('http')
+                  ? innerObj.seo_url.trim()
+                  : '';
+              const shortUrl =
+                typeof innerObj.short_url === 'string' && innerObj.short_url.trim().startsWith('http')
+                  ? innerObj.short_url.trim()
+                  : '';
+              const finalUrl =
+                typeof innerObj.final_url === 'string' && innerObj.final_url.trim().startsWith('http')
+                  ? innerObj.final_url.trim()
+                  : '';
+              const pid = rawProductId || (seoUrl.match(/\/(\d{15,25})(?:[/?#]|$)/)?.[1] ?? '');
+              const url =
+                seoUrl ||
+                shortUrl ||
+                finalUrl ||
+                (pid ? `https://shop.tiktok.com/view/product/${pid}?region=VN&locale=vi-VN` : '');
+
+              if (pid || url || innerObj.source === 'TikTok Shop' || isShopEntry || innerTitle) {
+                hasProductLink = true;
+                if (innerTitle && !productTitle) productTitle = innerTitle;
+                if (url || pid || innerTitle) {
+                  pushProduct({
+                    productId: pid || '',
+                    skuId: rawSkuId,
+                    sellerId: rawSellerId,
+                    title: innerTitle || 'Sản phẩm TikTok Shop',
+                    anchorKeyword:
+                      outerKeyword && outerKeyword !== fullTitle ? outerKeyword : undefined,
+                    productUrl: url,
+                    source: 'TikTok Shop',
+                  });
+                }
+              }
+            } catch {
+              if (isShopEntry && (outerId || outerKeyword)) {
+                pushProduct({
+                  productId: outerId,
+                  title: outerKeyword || 'Sản phẩm TikTok Shop',
+                  productUrl: outerId
+                    ? `https://shop.tiktok.com/view/product/${outerId}?region=VN&locale=vi-VN`
+                    : '',
+                  source: 'TikTok Shop',
+                });
+              }
+            }
+          }
+          if (hasProductLink && !productTitle && outerKeyword && !isNonProductAnchorText(outerKeyword)) {
+            productTitle = outerKeyword;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!isCapcutSchema && !productTitle) {
+      const kw =
+        (typeof anchor.keyword === 'string' && anchor.keyword.trim()) ||
+        (typeof anchor.description === 'string' && anchor.description.trim()) ||
+        '';
+      if (kw && !isNonProductAnchorText(kw)) {
+        hasProductLink = true;
+        productTitle = kw;
+      }
+    }
+  }
+
+  const primary = cartProducts[0];
+  return {
+    hasProductLink,
+    productTitle: productTitle || primary?.title || null,
+    productUrl: primary?.productUrl || null,
+    productId: primary?.productId || null,
+    sellerId: primary?.sellerId || null,
+    cartProducts,
+  };
 }
 
 /** 32 bit cao của video ID TikTok là thời điểm đăng (Unix giây). */
@@ -106,8 +260,8 @@ export const tiktokAdapter: PlatformAdapter = {
     const handle = (item.author?.uniqueId ?? '').toLowerCase();
     const stats = { ...item.stats, ...item.statsV2 };
     const createTime = num(item.createTime) ?? tiktokIdToUnixSeconds(item.id);
-    const anchors = Array.isArray(item.anchors) ? item.anchors : [];
     const kind = item.imagePost ? 'photo' : 'video';
+    const cartInfo = extractTikTokCartAnchors(item);
 
     return {
       status: 'LIVE',
@@ -130,8 +284,12 @@ export const tiktokAdapter: PlatformAdapter = {
         shares: num(stats.shareCount),
         saves: num(stats.collectCount),
       },
-      hasProductLink: anchors.length > 0 || Boolean(item.isECVideo) || Boolean(item.commerceInfo),
-      productTitle: anchors[0]?.keyword || anchors[0]?.description || null,
+      hasProductLink: cartInfo.hasProductLink,
+      productTitle: cartInfo.productTitle,
+      productUrl: cartInfo.productUrl,
+      productId: cartInfo.productId,
+      sellerId: cartInfo.sellerId,
+      cartProducts: cartInfo.cartProducts,
       source: 'tiktok-ssr',
     };
   },

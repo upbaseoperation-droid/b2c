@@ -19,6 +19,8 @@ import {
 import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Presence, Select, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
+import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
+import { appendKocsToStaffBrandSheet } from '@/lib/staffBrandListingSheet';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
@@ -49,6 +51,7 @@ export interface ListingPlanContext {
   storeName?: string;
   monthKey?: string;
   salaryGrade?: SalaryGrade;
+  openStaffSheet?: boolean;
   nonce?: number;
 }
 
@@ -64,6 +67,7 @@ interface KocListingBatchHubViewProps {
   deals?: BookingDealItem[];
   activePlanContext?: ListingPlanContext | null;
   onOpenPlanStudio?: (plan: InputPlanBreakdownState) => void;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 const KL_GRADE_ORDER: Array<{ code: SalaryGrade; label: string; defaultCost: number; defaultTier: KocListingItem['tier'] }> = [
@@ -101,9 +105,10 @@ export function KocListingBatchHubView({
   deals = INITIAL_DEALS,
   activePlanContext,
   onOpenPlanStudio,
+  onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
-  const [activeSubTab, setActiveSubTab] = useState<'LISTING_APPROVAL' | 'AIR_TRACKER'>('LISTING_APPROVAL');
+  const [activeSubTab, setActiveSubTab] = useState<'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('STAFF_BRAND_SHEET');
 
   // Filters
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
@@ -138,7 +143,7 @@ export function KocListingBatchHubView({
   const [discussionInput, setDiscussionInput] = useState<string>('');
   const [discussionRole, setDiscussionRole] = useState<'BOOKING' | 'BRAND' | 'LEADER'>('BOOKING');
 
-  // Sync when navigated from Plan Final (InputPlanBreakdownView / MonthlyPlanHub)
+  // Sync when navigated from Plan Final (InputPlanBreakdownView / MonthlyPlanHub) or Quick Add Sheet
   const [prevPlanContext, setPrevPlanContext] = useState(activePlanContext);
   if (activePlanContext !== prevPlanContext) {
     setPrevPlanContext(activePlanContext);
@@ -150,8 +155,12 @@ export function KocListingBatchHubView({
       } else {
         setSelectedGrade('ALL');
       }
-      setActiveSubTab('LISTING_APPROVAL');
-      setIsKlMatrixExpanded(true);
+      if (activePlanContext.openStaffSheet) {
+        setActiveSubTab('STAFF_BRAND_SHEET');
+      } else {
+        setActiveSubTab('LISTING_APPROVAL');
+        setIsKlMatrixExpanded(true);
+      }
     }
   }
 
@@ -737,20 +746,61 @@ export function KocListingBatchHubView({
     setShowAddModal(false);
   };
 
-  // Thêm danh sách KOC từ bộ lọc Shortlist vào đợt duyệt (mặc định trạng thái DRAFT, gắn KL & Plan Final)
+  // Thêm danh sách KOC từ bộ lọc Shortlist vào đợt duyệt (mặc định trạng thái DRAFT, gắn KL & Plan Final) và đồng bộ vào Sheet Brand
   const handleAddShortlistToListings = (
-    newListings: Partial<KocListingItem>[]
+    newListings: Partial<KocListingItem>[],
+    targetStore?: StorePortfolioItem
   ) => {
     const nowIso = new Date().toISOString();
+    const targetStoreName =
+      targetStore?.storeName ||
+      newListings[0]?.storeName ||
+      (selectedStore === 'ALL' ? 'Kutieskin Chính Hãng - TikTok Shop' : selectedStore);
+    const targetMonthKey =
+      newListings[0]?.monthKey || (selectedMonth === 'ALL' ? '2026/10' : selectedMonth);
+
+    // Đồng bộ vào Sheet Listing Cá Nhân của Brand
+    const matchedKocsToAppend = newListings.map((item) => {
+      const cleanHandle = (item.kocHandle || '').replace(/^@/, '').toLowerCase();
+      const foundKoc = kocs.find(
+        (k) =>
+          k.id === item.kocId ||
+          (k.channelId || '').replace(/^@/, '').toLowerCase() === cleanHandle
+      );
+      if (foundKoc) return foundKoc;
+      return {
+        id: item.kocId,
+        stageName: item.kocName || cleanHandle,
+        channelId: cleanHandle,
+        rateCardVideo: item.proposedFee || 0,
+        followers: item.followersCount || 0,
+        tepKenh: (item.niche as KocItem['tepKenh']) || 'Beauty',
+      };
+    });
+
+    appendKocsToStaffBrandSheet({
+      kocsToAdd: matchedKocsToAppend,
+      monthKey: targetMonthKey,
+      storeName: targetStoreName,
+      staffName: currentUserName,
+      allKocs: kocs,
+      allStores: stores,
+      allDeals: deals,
+      dot: 'Đợt 1',
+      sanPham: newListings[0]?.pillarName || '',
+      contentTag: newListings[0]?.videoFormat || 'Review trực tiếp',
+      deXuatUpBase: 'Recommend',
+    });
+
     const fullListings: KocListingItem[] = newListings.map((item, idx) => {
       const grade = inferSalaryGradeFromFee(item.proposedFee || 0, item.salaryGrade);
       return {
         id: item.id || `LIST-SL-${Date.now()}-${idx}`,
         batchId: item.batchId || 'BATCH-202610-B10',
         batchCycle: item.batchCycle || 'BATCH_10',
-        monthKey: item.monthKey || (selectedMonth === 'ALL' ? '2026/10' : selectedMonth),
+        monthKey: targetMonthKey,
         storeId: item.storeId || matchedPlanFinal?.storeId || 'STORE-01',
-        storeName: item.storeName || (selectedStore === 'ALL' ? 'Kutieskin Chính Hãng - TikTok Shop' : selectedStore),
+        storeName: targetStoreName,
         brandName: item.brandName || matchedPlanFinal?.brandName || 'Kutieskin',
         sourcePlanId: item.sourcePlanId || matchedPlanFinal?.id,
         sourcePlanVersion: item.sourcePlanVersion || matchedPlanFinal?.currentVersionCode || 'v1.0',
@@ -788,6 +838,7 @@ export function KocListingBatchHubView({
     });
     onUpdateListings([...fullListings, ...listings]);
     setShowShortlistModal(false);
+    onNotify?.(`Đã đưa ${fullListings.length} KOC vào Sheet "${targetStoreName}" và danh sách đề xuất.`, 'success');
   };
 
   // Update Air Video stage
@@ -858,11 +909,37 @@ export function KocListingBatchHubView({
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
+          { key: 'STAFF_BRAND_SHEET', label: 'Sheet Listing Cá Nhân (Theo Brand)' },
           { key: 'LISTING_APPROVAL', label: 'Danh sách đề xuất', count: filteredListings.length },
           { key: 'AIR_TRACKER', label: 'Video lên sóng', count: airListings.length },
         ]}
       />
 
+      {activeSubTab === 'STAFF_BRAND_SHEET' && (
+        <StaffBrandListingSheetWorkspace
+          kocs={kocs}
+          stores={stores}
+          deals={deals}
+          currentUserName={currentUserName}
+          currentRole={currentRole}
+          selectedMonth={selectedMonth}
+          onChangeMonth={setSelectedMonth}
+          selectedStore={selectedStore}
+          onChangeStore={setSelectedStore}
+          onSyncRowsToSystemListings={(newItems, storeObj) => {
+            handleAddShortlistToListings(newItems, storeObj);
+            setActiveSubTab('LISTING_APPROVAL');
+          }}
+          onOpenShortlistFilterModal={() => {
+            setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
+            setShowShortlistModal(true);
+          }}
+          onNotify={onNotify}
+        />
+      )}
+
+      {activeSubTab !== 'STAFF_BRAND_SHEET' && (
+        <>
       <StatRow size="sm">
         <Stat
           label="Tổng đề xuất"
@@ -1723,6 +1800,8 @@ export function KocListingBatchHubView({
             </table>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* MODAL 1: ADD NEW KOC TO BATCH (DRAFT + LINKED TO KL) */}

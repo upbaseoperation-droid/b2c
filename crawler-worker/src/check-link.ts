@@ -136,6 +136,10 @@ export async function checkLink(inputUrl: string, expect: LinkExpectation = {}):
       saves: content.metrics?.saves ?? null,
     },
     hasProductLink: content.hasProductLink ?? null,
+    productTitle: content.productTitle ?? null,
+    productUrl: content.productUrl ?? null,
+    productId: content.productId ?? null,
+    cartProducts: content.cartProducts ?? [],
   };
   const checks = buildChecks(base, expect);
 
@@ -147,6 +151,10 @@ export async function checkLink(inputUrl: string, expect: LinkExpectation = {}):
     mentions: extractMentions(caption),
     durationSeconds: content.durationSeconds ?? null,
     productTitle: content.productTitle ?? null,
+    productUrl: content.productUrl ?? null,
+    productId: content.productId ?? null,
+    sellerId: content.sellerId ?? null,
+    cartProducts: content.cartProducts ?? [],
     checks,
     verdict: verdictOf(checks),
     limitations: content.limitations ?? [],

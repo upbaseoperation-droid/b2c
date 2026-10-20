@@ -10,9 +10,10 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CloudDownload, FileScan, FileText, Plus, RefreshCw, Search, UserCheck } from 'lucide-react';
-import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
-import { INITIAL_KOCS } from '../../lib/mockData';
+import { ArrowLeft, Check, CloudDownload, FileScan, FileSpreadsheet, FileText, History, Plus, RefreshCw, Search, UserCheck, XCircle } from 'lucide-react';
+import type { BookingDealItem, KocItem, OcrLegalExtractionResult, StorePortfolioItem, UserProfile } from '../../lib/types';
+import { INITIAL_DEALS, INITIAL_KOCS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
+import { AddToBrandListingSheetModal } from '../shortlist/AddToBrandListingSheetModal';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
@@ -20,6 +21,12 @@ import { KocProfile } from '../koc/KocProfile';
 import { KocHistoryEvaluationModal } from '../koc/KocHistoryEvaluationModal';
 import { KocSocialChannelsModal } from '../koc/KocSocialChannelsModal';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
+import {
+  KocChannelReviewBadge,
+  KocChannelReviewModal,
+  type KocChannelReviewTarget,
+} from '../koc/KocChannelReviewModal';
+import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
 import {
   LEGAL_TYPE_LABEL,
   findDuplicates,
@@ -54,6 +61,7 @@ import type { Column } from '../ui';
 interface KocMasterDataViewProps {
   kocs?: KocItem[];
   allDeals?: BookingDealItem[];
+  stores?: StorePortfolioItem[];
   currentUser?: UserProfile;
   /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả) */
   selectedBrand?: string;
@@ -63,6 +71,7 @@ interface KocMasterDataViewProps {
   onReturnToSource?: () => void;
   onSelectKocId?: (kocId: string | null) => void;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
+  onOpenStaffBrandSheet?: (params: { monthKey: string; storeName: string }) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
   onOpenKocPortal?: (kocId: string) => void;
@@ -71,7 +80,7 @@ interface KocMasterDataViewProps {
 }
 
 type LegalFilter = 'ALL' | LegalType;
-type IssueFilter = '' | 'MISSING' | 'DUPLICATE';
+type IssueFilter = '' | 'MISSING' | 'DUPLICATE' | 'SUITABLE' | 'NOT_SUITABLE';
 type PlatformFilter = 'ALL' | 'tiktok' | 'shopee' | 'facebook' | 'instagram' | 'threads';
 
 const ALL = 'ALL';
@@ -104,14 +113,17 @@ export const hasKocPlatform = (
 
 export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   kocs = INITIAL_KOCS,
-  allDeals,
+  allDeals = INITIAL_DEALS,
+  stores = INITIAL_STORE_PORTFOLIOS,
   currentUser,
+  selectedBrand,
   selectedKocId = null,
   externalOpenTrigger = 0,
   returnToSourceLabel,
   onReturnToSource,
   onSelectKocId,
   onOpenQuickBookWithKoc,
+  onOpenStaffBrandSheet,
   onKocUpdated,
   onKocCreated,
   onOpenKocPortal,
@@ -140,9 +152,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [metricsTarget, setMetricsTarget] = useState<KocItem | null>(null);
   const [socialTarget, setSocialTarget] = useState<KocItem | null>(null);
   const [historyEvalTarget, setHistoryEvalTarget] = useState<KocItem | null>(null);
+  const [sheetTargetKocs, setSheetTargetKocs] = useState<KocItem[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [scraperOpen, setScraperOpen] = useState(false);
   const [scraperInitialHandle, setScraperInitialHandle] = useState('');
+  const [channelReviewModalOpen, setChannelReviewModalOpen] = useState(false);
+  const [channelReviewTarget, setChannelReviewTarget] = useState<KocChannelReviewTarget | null>(null);
+  const [channelReviewMode, setChannelReviewMode] = useState<'CHANNEL_DETAIL' | 'ALL_HISTORY'>('CHANNEL_DETAIL');
+  const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
+
+  const openChannelReview = (
+    target: KocChannelReviewTarget | null,
+    mode: 'CHANNEL_DETAIL' | 'ALL_HISTORY' = 'CHANNEL_DETAIL',
+  ) => {
+    setChannelReviewTarget(target);
+    setChannelReviewMode(mode);
+    setChannelReviewModalOpen(true);
+  };
 
   // Bộ lọc
   const [search, setSearch] = useState('');
@@ -195,13 +221,29 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     });
   }, [scoped, search, category, tepKenh, salaryGrade, platform]);
 
-  const matchesIssue = (k: KocItem, f: IssueFilter) =>
-    f === '' || (f === 'MISSING' ? !hasLegalId(k) : duplicates.has(k.id));
+  const isKocMarkedSuitable = (k: KocItem): boolean => {
+    const sum = getChannelSummary(k.channelId || k.channelLink);
+    return Boolean(sum && (sum.latestReview.verdict === 'SUITABLE' || sum.suitableCount > 0));
+  };
+
+  const isKocMarkedNotSuitable = (k: KocItem): boolean => {
+    const sum = getChannelSummary(k.channelId || k.channelLink);
+    return Boolean(sum && (sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0));
+  };
+
+  const matchesIssue = (k: KocItem, f: IssueFilter) => {
+    if (f === '') return true;
+    if (f === 'MISSING') return !hasLegalId(k);
+    if (f === 'DUPLICATE') return duplicates.has(k.id);
+    if (f === 'SUITABLE') return isKocMarkedSuitable(k);
+    if (f === 'NOT_SUITABLE') return isKocMarkedNotSuitable(k);
+    return true;
+  };
 
   const filtered = useMemo(
     () => baseFiltered.filter((k) => (legal === ALL || typeOf(k) === legal) && matchesIssue(k, issue)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [baseFiltered, legal, issue, duplicates],
+    [baseFiltered, legal, issue, duplicates, channelReviews],
   );
 
   const legalChips = (['ALL', 'INDIVIDUAL', 'HOUSEHOLD', 'COMPANY'] as const).map((key) => ({
@@ -213,6 +255,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const issueChips = [
     { key: 'MISSING' as const, label: 'Thiếu giấy tờ', count: issueBase.filter((k) => !hasLegalId(k)).length },
     { key: 'DUPLICATE' as const, label: 'Nghi trùng', count: issueBase.filter((k) => duplicates.has(k.id)).length },
+    {
+      key: 'SUITABLE' as const,
+      label: 'Phù hợp',
+      count: issueBase.filter((k) => isKocMarkedSuitable(k)).length,
+    },
+    {
+      key: 'NOT_SUITABLE' as const,
+      label: 'Không phù hợp',
+      count: issueBase.filter((k) => isKocMarkedNotSuitable(k)).length,
+    },
   ];
 
   const isFiltered =
@@ -289,22 +341,76 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       onSelectKocId?.(null);
     });
 
-  const rowActions = (k: KocItem) => [
-    { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalTarget(k) },
-    ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
-    { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
-    { label: 'Tìm kênh MXH', icon: Search, onSelect: () => setSocialTarget(k) },
-    {
-      label: 'Lấy dữ liệu TikTok',
-      icon: CloudDownload,
-      onSelect: () => {
-        setScraperInitialHandle(`@${k.channelId.replace(/^@/, '')}`);
-        setScraperOpen(true);
+  const rowActions = (k: KocItem) => {
+    const reviewSummary = getChannelSummary(k.channelId || k.channelLink);
+    const defaultBrand = selectedBrand && selectedBrand !== ALL ? selectedBrand : undefined;
+    return [
+      {
+        label: 'Thêm vào Sheet Listing Brand',
+        icon: FileSpreadsheet,
+        onSelect: () => setSheetTargetKocs([k]),
       },
-    },
-    { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
-    { label: hasLegalId(k) ? 'Đọc lại giấy tờ' : 'Đọc ảnh giấy tờ', icon: FileScan, onSelect: () => setOcrTarget(k) },
-  ];
+      {
+        label: 'Đánh giá Phù hợp (theo Brand)',
+        icon: Check,
+        onSelect: () =>
+          openChannelReview({
+            handle: k.channelId,
+            channelName: k.stageName,
+            channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
+            avatarUrl: k.avatarUrl,
+            defaultBrandScope: defaultBrand,
+            initialVerdict: 'SUITABLE',
+            sourceScreen: 'Danh bạ KOC',
+          }),
+      },
+      {
+        label: 'Đánh giá Không phù hợp (theo Brand)',
+        icon: XCircle,
+        onSelect: () =>
+          openChannelReview({
+            handle: k.channelId,
+            channelName: k.stageName,
+            channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
+            avatarUrl: k.avatarUrl,
+            defaultBrandScope: defaultBrand,
+            initialVerdict: 'NOT_SUITABLE',
+            sourceScreen: 'Danh bạ KOC',
+          }),
+      },
+      ...(reviewSummary
+        ? [
+            {
+              label: `Lịch sử đánh giá kênh (${reviewSummary.totalReviews})`,
+              icon: History,
+              onSelect: () =>
+                openChannelReview({
+                  handle: k.channelId,
+                  channelName: k.stageName,
+                  channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
+                  avatarUrl: k.avatarUrl,
+                  defaultBrandScope: defaultBrand,
+                  sourceScreen: 'Danh bạ KOC',
+                }),
+            },
+          ]
+        : []),
+      { label: 'Đánh giá lịch sử & rủi ro', icon: FileText, onSelect: () => setHistoryEvalTarget(k) },
+      ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
+      { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
+      { label: 'Tìm kênh MXH', icon: Search, onSelect: () => setSocialTarget(k) },
+      {
+        label: 'Lấy dữ liệu TikTok',
+        icon: CloudDownload,
+        onSelect: () => {
+          setScraperInitialHandle(`@${k.channelId.replace(/^@/, '')}`);
+          setScraperOpen(true);
+        },
+      },
+      { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
+      { label: hasLegalId(k) ? 'Đọc lại giấy tờ' : 'Đọc ảnh giấy tờ', icon: FileScan, onSelect: () => setOcrTarget(k) },
+    ];
+  };
 
   /* --------------------------------------------------------------- Bảng */
 
@@ -314,21 +420,110 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       header: 'KOC',
       width: 220,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[280px]">
+        <div className="flex items-center gap-2.5 min-w-0 max-w-[260px]">
           <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex">
             <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           </span>
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 leading-tight space-y-0.5">
             <span {...sharedFrom('koc-title', k.id)} className="block truncate font-semibold text-ink text-xs">
               {k.stageName}
             </span>
-            <span className="block truncate text-2xs text-ink-3 mt-0.5">
+            <span className="block truncate text-2xs text-ink-3">
               @{k.channelId.replace(/^@/, '')}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
             </span>
           </div>
         </div>
       ),
+    },
+    {
+      key: 'brandReview',
+      header: 'Đánh giá & Brand',
+      width: 245,
+      render: (k) => {
+        const reviewSummary = getChannelSummary(k.channelId || k.channelLink);
+        const defaultBrand = selectedBrand && selectedBrand !== ALL ? selectedBrand : undefined;
+        const openForVerdict = (verdict?: 'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE') => {
+          openChannelReview({
+            handle: k.channelId,
+            channelName: k.stageName,
+            channelUrl: k.channelLink || `https://www.tiktok.com/@${k.channelId.replace(/^@+/, '')}`,
+            avatarUrl: k.avatarUrl,
+            defaultBrandScope: defaultBrand,
+            initialVerdict: verdict,
+            sourceScreen: 'Danh bạ KOC',
+          });
+        };
+
+        if (!reviewSummary) {
+          return (
+            <div className="grid gap-1 min-w-0 max-w-[240px]" onClick={(e) => e.stopPropagation()}>
+              <span className="text-2xs text-ink-3">Chưa có đánh giá theo Brand</span>
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => openForVerdict('SUITABLE')}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-[11px] font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
+                >
+                  <Check className="w-3 h-3 shrink-0" />
+                  <span>Phù hợp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openForVerdict('NOT_SUITABLE')}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-[11px] font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
+                >
+                  <XCircle className="w-3 h-3 shrink-0" />
+                  <span>Không phù hợp</span>
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="grid gap-1 min-w-0 max-w-[245px]" onClick={(e) => e.stopPropagation()}>
+            <KocChannelReviewBadge
+              summary={reviewSummary}
+              onClick={() => openForVerdict()}
+            />
+            <button
+              type="button"
+              onClick={() => openForVerdict()}
+              className="text-left text-[11px] leading-snug grid gap-0.5 hover:underline cursor-pointer"
+              title={`Ý kiến: ${reviewSummary.latestReview.note || reviewSummary.latestReview.reasonTags.join(', ')}`}
+            >
+              <span className="truncate font-medium text-ink-2">
+                {reviewSummary.latestReview.reviewerName} · {reviewSummary.latestReview.timeLabel}{' '}
+                {reviewSummary.latestReview.dateLabel}
+              </span>
+              {reviewSummary.latestReview.note && (
+                <span className="truncate text-ink">
+                  Ý kiến: &ldquo;{reviewSummary.latestReview.note}&rdquo;
+                </span>
+              )}
+            </button>
+            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+              <button
+                type="button"
+                onClick={() => openForVerdict('SUITABLE')}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-[10px] font-semibold hover:bg-positive-soft transition cursor-pointer"
+              >
+                <Check className="w-2.5 h-2.5" />
+                <span>+ Phù hợp</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openForVerdict('NOT_SUITABLE')}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-[10px] font-semibold hover:bg-critical-soft transition cursor-pointer"
+              >
+                <XCircle className="w-2.5 h-2.5" />
+                <span>+ K.Phù hợp</span>
+              </button>
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: 'classification',
@@ -496,8 +691,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       key: 'actions',
       header: '',
       align: 'right',
-      width: 44,
-      render: (k) => <ActionMenu items={rowActions(k)} />,
+      width: 170,
+      render: (k) => (
+        <div
+          className="flex items-center justify-end gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={FileSpreadsheet}
+            onClick={() => setSheetTargetKocs([k])}
+          >
+            Thêm vào Sheet
+          </Button>
+          <ActionMenu items={rowActions(k)} />
+        </div>
+      ),
     },
   ];
 
@@ -552,6 +762,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 {returnToSourceLabel}
               </Button>
             )}
+            <Button
+              variant="secondary"
+              icon={History}
+              onClick={() => openChannelReview(null, 'ALL_HISTORY')}
+            >
+              Lịch sử đánh giá KOC ({channelReviews.length})
+            </Button>
             <Button
               variant="secondary"
               icon={CloudDownload}
@@ -763,6 +980,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         onClose={() => setScraperOpen(false)}
         existingKocs={localKocs}
         initialHandle={scraperInitialHandle}
+        currentUser={currentUser}
         onOpenKocInMaster={(koc) => {
           setScraperOpen(false);
           openProfile(koc.id);
@@ -785,6 +1003,34 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             onNotify?.(`Đã thêm ${created.length} KOC từ dữ liệu TikTok vào danh bạ`, 'success');
           } else if (updated.length > 0) {
             onNotify?.(`Đã cập nhật dữ liệu TikTok cho ${updated.length} hồ sơ KOC`, 'success');
+          }
+        }}
+        onNotify={onNotify}
+      />
+
+      <KocChannelReviewModal
+        open={channelReviewModalOpen}
+        onClose={() => setChannelReviewModalOpen(false)}
+        target={channelReviewTarget}
+        initialMode={channelReviewMode}
+        currentUserName={currentUser?.name}
+        currentUserRole={currentUser?.roleTitle}
+        currentUserEmail={currentUser?.email}
+        reviews={channelReviews}
+        onNotify={onNotify}
+      />
+
+      <AddToBrandListingSheetModal
+        open={sheetTargetKocs.length > 0}
+        onClose={() => setSheetTargetKocs([])}
+        targetKocs={sheetTargetKocs}
+        allKocs={localKocs}
+        stores={stores}
+        deals={allDeals}
+        currentUserName={currentUser?.name || 'Chuyên viên Listing'}
+        onAddedSuccess={({ monthKey, storeName, openSheet }) => {
+          if (openSheet && onOpenStaffBrandSheet) {
+            onOpenStaffBrandSheet({ monthKey, storeName });
           }
         }}
         onNotify={onNotify}

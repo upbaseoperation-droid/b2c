@@ -108,7 +108,7 @@ function normalizeToken(str: string): string {
 export function extractVndPricesFromText(text: string): number[] {
   const prices: number[] = [];
   const fullRegex =
-    /\b(\d{1,2}(?:[.,]\d{3}){1,2})\s*(?:đ|₫|vnd|vnđ|đồng)\b/gi;
+    /\b(\d{1,3}(?:[.,]\d{3}){1,2})\s*(?:đ|₫|vnd|vnđ|đồng)\b/gi;
   for (const m of text.matchAll(fullRegex)) {
     const digits = Number(m[1].replace(/[.,]/g, ''));
     if (digits >= 15000 && digits <= 15000000) {
@@ -179,16 +179,26 @@ async function discoverOfficialBrandWebsite(
         ) {
           return null;
         }
+        const finalUrl = res.url || url;
+        let finalHost = '';
+        try {
+          finalHost = new URL(finalUrl).hostname.toLowerCase();
+        } catch {
+          // ignore
+        }
+        const hostMatchesBrand = slugs.some((s) => normalizeToken(finalHost).includes(s));
+        const titleMatchesBrand = slugs.some((s) => normalizeToken(cleanTitle).includes(s));
         const hasVnLang =
           /[ăằắặẳẵầấậẩẫềếệểễòóọỏõồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(html) ||
-          url.endsWith('.vn') ||
-          url.includes('vietnam');
+          finalHost.endsWith('.vn') ||
+          finalHost.includes('vietnam');
         return {
-          url: res.url || url,
+          url: finalUrl,
           title: cleanTitle,
           score:
             (hasVnLang ? 10 : 0) +
-            (slugs.some((s) => normalizeToken(cleanTitle).includes(s)) ? 10 : 0),
+            (titleMatchesBrand ? 10 : 0) +
+            (hostMatchesBrand ? 15 : 0),
         };
       } catch {
         return null;
@@ -247,13 +257,19 @@ async function scrapeOfficialWebsiteCatalog(
 
   // Chạy song song:
   // 1) Trang chủ HTML
-  // 2) Haravan/Shopify `/collections/all/products.json?limit=18`
-  // 3) Sapo/Shopify `/products.json?limit=18`
-  // 4) WooCommerce `/wp-json/wc/store/products?per_page=18`
-  const [homeRes, haravanJsonRes, sapoJsonRes, wcJsonRes] = await Promise.all([
+  // 2) Trang `/san-pham` HTML (phổ biến trên các website nhãn hàng Việt Nam)
+  // 3) Haravan/Shopify `/collections/all/products.json?limit=18`
+  // 4) Sapo/Shopify `/products.json?limit=18`
+  // 5) WooCommerce `/wp-json/wc/store/products?per_page=18`
+  const [homeRes, sanPhamRes, haravanJsonRes, sapoJsonRes, wcJsonRes] = await Promise.all([
     fetch(cleanBase, {
       headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
       signal: AbortSignal.timeout(4800),
+      cache: 'no-store',
+    }).catch(() => null),
+    fetch(`${cleanBase}/san-pham`, {
+      headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+      signal: AbortSignal.timeout(4500),
       cache: 'no-store',
     }).catch(() => null),
     fetch(`${cleanBase}/collections/all/products.json?limit=18`, {
@@ -417,24 +433,47 @@ async function scrapeOfficialWebsiteCatalog(
         }
       }
 
-      // Nếu chưa lấy được sản phẩm từ API JSON, bóc tách từ thẻ sản phẩm HTML trên trang chủ
-      if (products.length < 4) {
+      // Nếu chưa lấy được sản phẩm từ API JSON, bóc tách từ thẻ sản phẩm HTML trên trang chủ và `/san-pham`
+      if (products.length < 6) {
         const brandNorm = normalizeToken(brandQuery);
-        const cardRegex =
-          /<(?:h2|h3|h4|a)[^>]*>([^<]{6,110})<\/(?:h2|h3|h4|a)>[\s\S]{0,260}?(\d{1,2}(?:[.,]\d{3}){1,2})\s*(?:đ|₫|vnd|vnđ)/gi;
-        for (const m of stripped.matchAll(cardRegex)) {
-          const pTitle = stripTags(m[1]);
-          const pPrice = Number(m[2].replace(/[.,]/g, ''));
+        let sanPhamHtml = '';
+        if (sanPhamRes && sanPhamRes.ok) {
+          sanPhamHtml = await sanPhamRes.text().catch(() => '');
+        }
+        const combinedHtmlForCards = `${sanPhamHtml}\n${stripped}`
+          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+
+        const headingBlocks = combinedHtmlForCards.split(/(?=<h[2-4][^>]*>)/i);
+        for (const hBlock of headingBlocks) {
+          const hMatch = hBlock.match(/^<h[2-4][^>]*>([\s\S]*?)<\/h[2-4]>/i);
+          if (!hMatch) continue;
+          const rawHeading = stripTags(hMatch[1]).replace(/^\d+[.)]\s*/, '').trim();
+          if (rawHeading.length < 6 || rawHeading.length > 110) continue;
+          const pMatch = hBlock.match(/(\d{1,3}(?:[.,]\d{3}){1,2})\s*(?:đ|₫|vnd|vnđ|đồng)/i);
+          if (!pMatch) continue;
+          const pPrice = Number(pMatch[1].replace(/[.,]/g, ''));
+          if (pPrice < 15000 || pPrice > 15000000) continue;
+
           if (
             brandNorm.length < 3 ||
-            normalizeToken(pTitle).includes(brandNorm) ||
-            domain.includes(brandNorm)
+            normalizeToken(rawHeading).includes(brandNorm) ||
+            normalizeToken(domain).includes(brandNorm)
           ) {
+            const bulletTexts = [...hBlock.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)]
+              .map((m) => stripTags(m[1]))
+              .filter((t) => t.length >= 15 && t.length <= 180)
+              .slice(0, 2);
+            const specText = bulletTexts.join(' · ') || undefined;
+            if (specText && specs.length < 8 && !specs.includes(`${rawHeading}: ${specText}`)) {
+              specs.push(`${rawHeading}: ${specText}`);
+            }
             addProduct({
-              productName: pTitle,
+              productName: rawHeading,
               priceVnd: pPrice,
-              sourceUrl: cleanBase,
+              sourceUrl: sanPhamHtml ? `${cleanBase}/san-pham` : cleanBase,
               sourceDomain: domain,
+              specSummary: specText,
             });
           }
         }
@@ -457,6 +496,36 @@ async function scrapeOfficialWebsiteCatalog(
       20
     ),
   };
+}
+
+/**
+ * Giải mã URL chuyển hướng của công cụ tìm kiếm (Bing `/ck/a?...&u=a1...`, DuckDuckGo `uddg=...`)
+ * về URL gốc thực tế của Website / Sàn TMĐT
+ */
+export function unwrapSearchRedirectUrl(rawUrl: string): string {
+  const decoded = decodeHtmlEntities(rawUrl);
+  try {
+    const full = decoded.startsWith('//') ? `https:${decoded}` : decoded;
+    if (full.includes('uddg=')) {
+      const m = full.match(/uddg=([^&]+)/);
+      if (m) {
+        const target = decodeURIComponent(m[1]);
+        if (target.startsWith('http')) return target;
+      }
+    }
+    const u = new URL(full);
+    if (u.hostname.includes('bing.com') && u.pathname.startsWith('/ck/a')) {
+      const paramU = u.searchParams.get('u');
+      if (paramU && paramU.startsWith('a1')) {
+        const b64 = paramU.slice(2).replace(/-/g, '+').replace(/_/g, '/');
+        const target = Buffer.from(b64, 'base64').toString('utf8');
+        if (target.startsWith('http')) return target;
+      }
+    }
+    return full;
+  } catch {
+    return decoded;
+  }
 }
 
 /**
@@ -522,9 +591,12 @@ async function scrapeEcommerceMarketplaceCatalog(
         ? urlPath
         : `https://tiki.vn/${urlPath.replace(/^\/+/, '')}`;
 
-      if (price >= 15000 && price <= 15000000) {
+      const isSampleSachet =
+        price < 45000 || /\b(1ml|2ml|3ml|sample|mẫu thử|gói thử)\b/i.test(name);
+
+      if (!isSampleSachet && price >= 45000 && price <= 15000000) {
         products.push({
-          productName: name,
+          productName: name.replace(/^\[[^\]]+\]\s*/, '').trim(),
           priceVnd: price,
           originalPriceVnd: originalPrice > price ? originalPrice : undefined,
           sourceUrl: fullUrl,
@@ -551,6 +623,8 @@ async function scrapeEcommerceMarketplaceCatalog(
     // ignore
   }
 
+  products.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
+
   return {
     products: products.slice(0, 12),
     snippets: snippets.slice(0, 8),
@@ -558,62 +632,158 @@ async function scrapeEcommerceMarketplaceCatalog(
 }
 
 /**
- * Tìm kiếm trực tiếp trên Web (Bing Search vi-VN & DuckDuckGo HTML) để lấy kết quả trang web, bài viết đánh giá, giá bán
+ * Tìm kiếm trực tiếp trên Web (Bing Search vi-VN, DuckDuckGo HTML & Bing News Async)
+ * để lấy kết quả trang web, sàn TMĐT, bài viết đánh giá, giá bán (đã giải mã URL gốc & lọc kết quả rác).
  */
 export async function scrapeWebSearchSnippets(
-  searchQuery: string
+  searchQuery: string,
+  requiredBrandHint?: string
 ): Promise<LiveSearchSnippetEvidence[]> {
   const cleanQ = searchQuery.trim();
   if (!cleanQ) return [];
   const snippets: LiveSearchSnippetEvidence[] = [];
   const seenUrls = new Set<string>();
 
-  try {
-    const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(
-      cleanQ
-    )}&mkt=vi-VN&setlang=vi&cc=VN&count=10`;
-    const res = await fetch(bingUrl, {
-      headers: {
-        'User-Agent': BROWSER_UA,
-        'Accept-Language': 'vi-VN,vi;q=0.9',
-      },
-      signal: AbortSignal.timeout(4500),
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const html = await res.text();
-      const algoBlocks = html.split(/<li class="b_algo"/i).slice(1, 9);
-      for (const block of algoBlocks) {
-        const linkMatch = block.match(/<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-        if (!linkMatch) continue;
-        const rawUrl = decodeHtmlEntities(linkMatch[1]);
-        const title = stripTags(linkMatch[2]);
-        if (!rawUrl.startsWith('http') || !title || seenUrls.has(rawUrl)) continue;
-        const captionMatch =
-          block.match(/<div class="b_caption"[^>]*>([\s\S]*?)<\/div>/i) ||
-          block.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-        const snippetText = captionMatch ? stripTags(captionMatch[1]).slice(0, 260) : title;
-        let domain = 'web';
-        try {
-          domain = new URL(rawUrl).hostname.replace(/^www\./i, '').toLowerCase();
-        } catch {
-          // ignore
-        }
-        seenUrls.add(rawUrl);
-        snippets.push({
-          title,
-          url: rawUrl,
-          domain,
-          snippet: snippetText,
-          extractedPricesVnd: extractVndPricesFromText(`${title} ${snippetText}`),
-        });
-      }
+  const hintRaw = (requiredBrandHint || cleanQ.split(/\s+/).slice(0, 2).join(' '))
+    .replace(/^@+/, '')
+    .trim();
+  const brandNormFull = normalizeToken(hintRaw);
+  const brandNormFirst = normalizeToken(hintRaw.split(/[\s-]+/)[0] || '');
+
+  // Tạo truy vấn phụ nối liền tên thương hiệu nếu tên có dấu gạch ngang/khoảng trắng (ví dụ: La Roche-Posay -> larocheposay)
+  const joinedBrandQuery =
+    requiredBrandHint && /[\s-]/.test(requiredBrandHint.trim())
+      ? `${normalizeToken(requiredBrandHint)} chính hãng giá bán`
+      : cleanQ;
+
+  const pushVerifiedSnippet = (rawTitle: string, rawUrl: string, rawSnippet: string) => {
+    const cleanUrl = unwrapSearchRedirectUrl(rawUrl);
+    if (
+      !cleanUrl.startsWith('http') ||
+      cleanUrl.includes('duckduckgo.com/y.js') ||
+      cleanUrl.includes('bing.com/aclick') ||
+      seenUrls.has(cleanUrl)
+    ) {
+      return;
     }
-  } catch {
-    // ignore
+    const title = stripTags(rawTitle);
+    const snippetText = stripTags(rawSnippet).slice(0, 260) || title;
+    if (!title || /^tìm kiếm bằng hình ảnh$/i.test(title)) return;
+
+    // Lọc bỏ kết quả mồi (decoy) không liên quan đến thương hiệu đang tìm
+    const combinedNorm = normalizeToken(`${title} ${cleanUrl} ${snippetText}`);
+    const matchesBrand =
+      (brandNormFull.length >= 2 && combinedNorm.includes(brandNormFull)) ||
+      (brandNormFirst.length >= 4 && combinedNorm.includes(brandNormFirst));
+    if (!matchesBrand) return;
+
+    let domain = 'web';
+    try {
+      domain = new URL(cleanUrl).hostname.replace(/^www\./i, '').toLowerCase();
+    } catch {
+      // ignore
+    }
+    seenUrls.add(cleanUrl);
+    snippets.push({
+      title,
+      url: cleanUrl,
+      domain,
+      snippet: snippetText,
+      extractedPricesVnd: extractVndPricesFromText(`${title} ${snippetText}`),
+    });
+  };
+
+  const [bingHtml, bingJoinedHtml, ddgHtml, bingNewsHtml] = await Promise.all([
+    fetch(
+      `https://www.bing.com/search?q=${encodeURIComponent(
+        cleanQ
+      )}&mkt=vi-VN&setlang=vi&cc=VN&count=10`,
+      {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+        signal: AbortSignal.timeout(4500),
+        cache: 'no-store',
+      }
+    )
+      .then((r) => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+    joinedBrandQuery !== cleanQ
+      ? fetch(
+          `https://www.bing.com/search?q=${encodeURIComponent(
+            joinedBrandQuery
+          )}&mkt=vi-VN&setlang=vi&cc=VN&count=10`,
+          {
+            headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+            signal: AbortSignal.timeout(4500),
+            cache: 'no-store',
+          }
+        )
+          .then((r) => (r.ok ? r.text() : ''))
+          .catch(() => '')
+      : Promise.resolve(''),
+    fetch(
+      `https://html.duckduckgo.com/html/?q=${encodeURIComponent(cleanQ)}&kl=vn-vi`,
+      {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+        signal: AbortSignal.timeout(4500),
+        cache: 'no-store',
+      }
+    )
+      .then((r) => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+    fetch(
+      `https://www.bing.com/news/infinitescrollajax?InfiniteScroll=1&q=${encodeURIComponent(
+        requiredBrandHint || cleanQ
+      )}&mkt=vi-VN&setlang=vi`,
+      {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+        signal: AbortSignal.timeout(4500),
+        cache: 'no-store',
+      }
+    )
+      .then((r) => (r.ok ? r.text() : ''))
+      .catch(() => ''),
+  ]);
+
+  // 1) Bing Web Search (chính + nối liền tên brand)
+  for (const html of [bingHtml, bingJoinedHtml]) {
+    if (!html) continue;
+    const algoBlocks = html.split(/<li class="b_algo"/i).slice(1, 10);
+    for (const block of algoBlocks) {
+      const linkMatch = block.match(/<h2[^>]*>\s*<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!linkMatch) continue;
+      const captionMatch =
+        block.match(/<div class="b_caption"[^>]*>([\s\S]*?)<\/div>/i) ||
+        block.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+      pushVerifiedSnippet(linkMatch[2], linkMatch[1], captionMatch?.[1] || '');
+    }
   }
 
-  return snippets;
+  // 2) DuckDuckGo HTML Search
+  if (ddgHtml) {
+    const ddgBlocks = ddgHtml.split(/class="result\s+results_links/i).slice(1, 10);
+    for (const block of ddgBlocks) {
+      if (block.includes('result--ad')) continue;
+      const aMatch = block.match(/class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!aMatch) continue;
+      const sMatch = block.match(
+        /class="result__snippet"[^>]*>([\s\S]*?)<\/a>|class="result__snippet"[^>]*>([\s\S]*?)<\/div>/i
+      );
+      pushVerifiedSnippet(aMatch[2], aMatch[1], sMatch?.[1] || sMatch?.[2] || '');
+    }
+  }
+
+  // 3) Bing News & Bài viết đánh giá chuyên sâu
+  if (bingNewsHtml) {
+    const newsCards = bingNewsHtml.split(/class="news-card/i).slice(1, 8);
+    for (const card of newsCards) {
+      const m = card.match(/<a[^>]+class="title"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!m) continue;
+      const sm = card.match(/<div class="snippet"[^>]*>([\s\S]*?)<\/div>/i);
+      pushVerifiedSnippet(m[2], m[1], sm?.[1] || '');
+    }
+  }
+
+  return snippets.slice(0, 12);
 }
 
 /**
@@ -623,6 +793,7 @@ async function scrapeBingVideoSnippetsForBrand(
   brandQuery: string
 ): Promise<LiveSearchSnippetEvidence[]> {
   const cleanName = brandQuery.replace(/^@+/, '').trim();
+  const brandNorm = normalizeToken(cleanName);
   const snippets: LiveSearchSnippetEvidence[] = [];
   try {
     const url = `https://www.bing.com/videos/asyncv2?q=${encodeURIComponent(
@@ -640,21 +811,42 @@ async function scrapeBingVideoSnippetsForBrand(
     const html = await res.text();
     const cards = html.split(/class="mc_vtvc_con_rc"/i).slice(1, 10);
     for (const card of cards) {
-      const title = card.match(/class="mc_vtvc_title"[^>]*title="([^"]*)"/i)?.[1] || '';
+      const title =
+        card.match(/class="mc_vtvc_title[^"]*"[^>]*title="([^"]*)"/i)?.[1] ||
+        card.match(/class="mc_vtvc_title[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ||
+        card.match(/alt="([^"]*)"/i)?.[1] ||
+        '';
       const ourl = card.match(/ourl="([^"]*)"/i)?.[1] || '';
-      const cleanTitle = decodeHtmlEntities(title);
-      if (!cleanTitle || !ourl.startsWith('http')) continue;
+      const cleanTitle = stripTags(title);
+      const cleanOurl = decodeHtmlEntities(ourl);
+      if (!cleanTitle || !cleanOurl.startsWith('http')) continue;
+      if (
+        brandNorm.length >= 3 &&
+        !normalizeToken(`${cleanTitle} ${cleanOurl}`).includes(brandNorm)
+      ) {
+        continue;
+      }
+      const viewsText = stripTags(
+        card.match(/class="meta_vc_content"[^>]*>([\s\S]*?)<\/span>/i)?.[1] || ''
+      );
+      const channelText = stripTags(
+        card.match(/class="mc_vtvc_meta_row_channel"[^>]*>([\s\S]*?)<\/span>/i)?.[1] || ''
+      );
       let domain = 'tiktok.com';
       try {
-        domain = new URL(ourl).hostname.toLowerCase();
+        domain = new URL(cleanOurl).hostname.replace(/^www\./i, '').toLowerCase();
       } catch {
         // ignore
       }
+      const metaParts = [
+        channelText ? `Kênh: ${channelText}` : '',
+        viewsText ? `${viewsText}` : '',
+      ].filter(Boolean);
       snippets.push({
         title: cleanTitle,
-        url: ourl,
+        url: cleanOurl,
         domain,
-        snippet: `Video thực tế trên ${domain}: ${cleanTitle}`,
+        snippet: `Video review trên ${domain}${metaParts.length ? ` (${metaParts.join(' · ')})` : ''}: ${cleanTitle}`,
         extractedPricesVnd: extractVndPricesFromText(cleanTitle),
       });
     }
@@ -846,19 +1038,54 @@ export async function scrapeLiveBrandWebIntelligence(
     ? `${cleanName} ${extraSearchQuery.trim()}`
     : `${cleanName} sản phẩm giá bán đánh giá`;
 
+  const brandNorm = normalizeToken(cleanName);
+
   // Chạy song song:
   // 1) Dò tìm Website chính thức
   // 2) Cào danh mục sản phẩm & giá thật trên Sàn TMĐT
   // 3) Cào danh sách video thực tế từ Bing Video Search
-  // 4) Tìm kiếm trực tiếp trên Web (Bing Search vi-VN)
-  const [officialUrl, ecommerceData, videoSnippets, webSnippets] = await Promise.all([
+  // 4) Tìm kiếm trực tiếp trên Web (Bing Search vi-VN, DuckDuckGo & Bing News)
+  const [probedOfficialUrl, ecommerceData, videoSnippets, webSnippets] = await Promise.all([
     discoverOfficialBrandWebsite(cleanName, knownWebsiteUrl),
     scrapeEcommerceMarketplaceCatalog(cleanName),
     scrapeBingVideoSnippetsForBrand(cleanName),
-    scrapeWebSearchSnippets(webQuery),
+    scrapeWebSearchSnippets(webQuery, cleanName),
   ]);
 
-  // Nếu tìm thấy Website chính thức, cào sâu ngay danh mục sản phẩm (`/collections/all/products.json`, `/products.json`, `/wp-json/wc/store/products`, trang chủ)
+  let officialUrl = probedOfficialUrl;
+  const marketplaceDomains =
+    /shopee\.vn|lazada\.vn|tiki\.vn|hasaki\.vn|guardian\.com\.vn|watsons\.vn|chiaki\.vn|nhathuoclongchau|pharmacity|concung|bibomart|kidsplaza|websosanh|facebook\.com|tiktok\.com|youtube\.com|instagram\.com|kenh14|vnexpress|dantri|vietnamnet|thanhnien|tuoitre|bloganchoi|saostar/i;
+
+  const snippetBrandSite = webSnippets.find(
+    (s) =>
+      brandNorm.length >= 3 &&
+      normalizeToken(s.domain).includes(brandNorm) &&
+      !marketplaceDomains.test(s.domain)
+  );
+
+  if (snippetBrandSite) {
+    const probedHostNorm = officialUrl
+      ? normalizeToken(new URL(officialUrl).hostname)
+      : '';
+    if (!officialUrl || !probedHostNorm.includes(brandNorm)) {
+      try {
+        const u = new URL(snippetBrandSite.url);
+        officialUrl = `${u.protocol}//${u.hostname}`;
+      } catch {
+        officialUrl = snippetBrandSite.url;
+      }
+    }
+  }
+
+  const detectedShopeeUrl = webSnippets.find((s) => /shopee\.vn/i.test(s.domain))?.url;
+  const detectedTikTokSnippet = [...webSnippets, ...videoSnippets].find((s) =>
+    /tiktok\.com\/@([a-zA-Z0-9._]+)/i.test(s.url)
+  );
+  const detectedTikTokHandle = detectedTikTokSnippet?.url.match(
+    /tiktok\.com\/(@[a-zA-Z0-9._]+)/i
+  )?.[1];
+
+  // Nếu tìm thấy Website chính thức, cào sâu ngay danh mục sản phẩm (`/collections/all/products.json`, `/products.json`, `/wp-json/wc/store/products`, `/san-pham`, trang chủ)
   const officialCatalog = officialUrl
     ? await scrapeOfficialWebsiteCatalog(officialUrl, cleanName)
     : null;
@@ -877,10 +1104,63 @@ export async function scrapeLiveBrandWebIntelligence(
     }
   }
 
+  // Nếu chưa đủ sản phẩm từ Website hãng & Tiki, bóc tách thêm từ 2 trang bài viết/nhà thuốc/sàn đầu tiên trong kết quả tìm kiếm
+  if (allProducts.length < 3 && webSnippets.length > 0) {
+    const candidateSnippetPages = webSnippets
+      .filter(
+        (s) =>
+          !/facebook\.com|tiktok\.com|youtube\.com|instagram\.com/i.test(s.domain) &&
+          s.url !== officialUrl
+      )
+      .slice(0, 2);
+
+    await Promise.all(
+      candidateSnippetPages.map(async (snip) => {
+        try {
+          const pRes = await fetch(snip.url, {
+            headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'vi-VN,vi;q=0.9' },
+            signal: AbortSignal.timeout(3500),
+            cache: 'no-store',
+          });
+          if (!pRes.ok) return;
+          const pHtml = (await pRes.text())
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+          const pagePrices = extractVndPricesFromText(pHtml);
+          if (pagePrices.length > 0) {
+            snip.extractedPricesVnd = Array.from(
+              new Set([...(snip.extractedPricesVnd || []), ...pagePrices])
+            ).slice(0, 4);
+            const rawTitlePart = snip.title.split(/[|–:]/)[0].trim();
+            const cleanedProdTitle = rawTitlePart
+              .replace(/^(review|đánh giá|chi tiết|top\s*\d+|so sánh)\s+/i, '')
+              .trim();
+            const cleanSnipTitle =
+              cleanedProdTitle.charAt(0).toUpperCase() + cleanedProdTitle.slice(1);
+            const key = normalizeToken(cleanSnipTitle);
+            if (cleanSnipTitle.length >= 8 && !seenProdKeys.has(key)) {
+              seenProdKeys.add(key);
+              allProducts.push({
+                productName: cleanSnipTitle,
+                priceVnd: pagePrices[0],
+                sourceUrl: snip.url,
+                sourceDomain: snip.domain,
+                specSummary: snip.snippet.slice(0, 180),
+              });
+            }
+          }
+        } catch {
+          // ignore
+        }
+      })
+    );
+  }
+
   const allPrices = Array.from(
     new Set([
       ...allProducts.map((p) => p.priceVnd),
       ...(officialCatalog?.pricesVnd || []),
+      ...webSnippets.flatMap((s) => s.extractedPricesVnd || []),
     ])
   )
     .filter((p) => p >= 15000 && p <= 15000000)
@@ -927,12 +1207,15 @@ export async function scrapeLiveBrandWebIntelligence(
     if (extractedUsps.length >= 5) break;
     extractedUsps.push(`[${officialCatalog?.domain}] ${spec}`);
   }
-  for (const snip of ecommerceData.snippets) {
+  for (const snip of [...ecommerceData.snippets, ...webSnippets]) {
     if (extractedUsps.length >= 6) break;
-    extractedUsps.push(`[${snip.domain}] ${snip.snippet}`);
+    const uLine = `[${snip.domain}] ${snip.snippet}`;
+    if (!extractedUsps.includes(uLine)) {
+      extractedUsps.push(uLine);
+    }
   }
 
-  const allSnippets: LiveSearchSnippetEvidence[] = [
+  const rawCombinedSnippets: LiveSearchSnippetEvidence[] = [
     ...(officialCatalog
       ? [
           {
@@ -952,6 +1235,16 @@ export async function scrapeLiveBrandWebIntelligence(
     ...videoSnippets,
   ];
 
+  const allSnippets: LiveSearchSnippetEvidence[] = [];
+  const seenSnippetUrls = new Set<string>();
+  for (const sn of rawCombinedSnippets) {
+    const normUrl = sn.url.replace(/\/+$/, '').toLowerCase();
+    if (!seenSnippetUrls.has(normUrl)) {
+      seenSnippetUrls.add(normUrl);
+      allSnippets.push(sn);
+    }
+  }
+
   return {
     queriedName: cleanName,
     resolvedBrandTitle:
@@ -960,6 +1253,8 @@ export async function scrapeLiveBrandWebIntelligence(
     detectedCategoryLabel: categoryLabel,
     officialWebsiteUrl: officialUrl,
     officialWebsiteDomain: officialCatalog?.domain,
+    shopeeUrl: detectedShopeeUrl,
+    tiktokHandle: detectedTikTokHandle,
     metaTitle: officialCatalog?.metaTitle,
     metaDescription: officialCatalog?.metaDescription,
     headings: officialCatalog?.headings || [],

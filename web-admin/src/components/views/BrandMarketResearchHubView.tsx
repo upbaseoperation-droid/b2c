@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -193,16 +193,195 @@ const EXTRA_RESEARCH_SUGGESTIONS: Array<[string, string]> = [
   ['Romano', 'Chăm sóc cá nhân Nam giới'],
 ];
 
-const QUICK_RESEARCH_BRANDS: string[] = [
-  'Kutieskin',
-  'ClubClio',
-  'Cocoon',
-  'La Roche-Posay',
-  'SKIN1004',
-  'Rom&nd',
-  'Nous',
-  'Femfresh',
-];
+function renderInlineMarkdown(text: string): React.ReactNode {
+  if (!text) return null;
+  const segments = text.split(/(<br\s*\/?>)/gi);
+  return segments.map((seg, sIdx) => {
+    if (/^<br\s*\/?>$/i.test(seg)) {
+      return <br key={`br-${sIdx}`} />;
+    }
+    const tokens = seg.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+    return (
+      <React.Fragment key={`seg-${sIdx}`}>
+        {tokens.map((tok, tIdx) => {
+          if (tok.startsWith('**') && tok.endsWith('**') && tok.length > 4) {
+            return (
+              <strong key={tIdx} className="font-semibold text-ink">
+                {tok.slice(2, -2)}
+              </strong>
+            );
+          }
+          if (tok.startsWith('`') && tok.endsWith('`') && tok.length > 2) {
+            return (
+              <code
+                key={tIdx}
+                className="px-1.5 py-0.5 rounded bg-sunken border border-line font-code text-2xs text-accent"
+              >
+                {tok.slice(1, -1)}
+              </code>
+            );
+          }
+          if (tok.startsWith('*') && tok.endsWith('*') && tok.length > 2) {
+            return (
+              <em key={tIdx} className="italic text-ink-2">
+                {tok.slice(1, -1)}
+              </em>
+            );
+          }
+          return tok;
+        })}
+      </React.Fragment>
+    );
+  });
+}
+
+function renderProfessionalResearchReport(markdown: string): React.ReactNode {
+  const lines = markdown.split('\n');
+  const blocks: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+    // Markdown Table block
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableLines.push(lines[i].trim());
+        i++;
+      }
+      if (tableLines.length >= 2) {
+        const parseRow = (rowStr: string) =>
+          rowStr
+            .slice(1, -1)
+            .split('|')
+            .map((c) => c.trim());
+        const headers = parseRow(tableLines[0]);
+        const isSeparator = (rowStr: string) => /^\|[\s:-]+\|/.test(rowStr) && !/[a-zA-Z0-9À-ỹ]/.test(rowStr);
+        const bodyStartIdx = isSeparator(tableLines[1]) ? 2 : 1;
+        const rows = tableLines.slice(bodyStartIdx).filter((r) => !isSeparator(r)).map(parseRow);
+
+        blocks.push(
+          <div key={`tbl-${i}`} className="my-2.5 overflow-x-auto rounded-lg border border-line bg-surface">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-sunken border-b border-line text-ink">
+                  {headers.map((h, hIdx) => (
+                    <th key={hIdx} className="py-2 px-3 font-semibold whitespace-nowrap">
+                      {renderInlineMarkdown(h)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {rows.map((r, rIdx) => (
+                  <tr key={rIdx} className="hover:bg-canvas/60 transition align-top">
+                    {headers.map((_, cIdx) => (
+                      <td key={cIdx} className="py-2 px-3 text-ink-2 leading-relaxed">
+                        {renderInlineMarkdown(r[cIdx] || '—')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        continue;
+      }
+    }
+
+    if (/^[═─-]{4,}$/.test(trimmed)) {
+      blocks.push(<hr key={`hr-${i}`} className="border-line my-2.5" />);
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith('# ')) {
+      blocks.push(
+        <div key={`h1-${i}`} className="pb-2 border-b border-line">
+          <h3 className="text-sm font-bold text-ink">{renderInlineMarkdown(trimmed.slice(2))}</h3>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith('## ')) {
+      blocks.push(
+        <h4
+          key={`h2-${i}`}
+          className="text-xs font-bold uppercase tracking-wider text-accent pt-3 pb-1 border-b border-line/60"
+        >
+          {renderInlineMarkdown(trimmed.slice(3))}
+        </h4>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith('### ')) {
+      blocks.push(
+        <h5 key={`h3-${i}`} className="text-xs font-semibold text-ink pt-2">
+          {renderInlineMarkdown(trimmed.slice(4))}
+        </h5>
+      );
+      i++;
+      continue;
+    }
+
+    if (trimmed.startsWith('> ')) {
+      blocks.push(
+        <div
+          key={`quote-${i}`}
+          className="px-3 py-2 rounded-lg bg-accent-soft/40 border-l-2 border-accent text-xs text-ink"
+        >
+          {renderInlineMarkdown(trimmed.slice(2))}
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    if (/^[-•]\s+/.test(trimmed)) {
+      blocks.push(
+        <div key={`li-${i}`} className="flex items-start gap-2 text-xs text-ink-2 pl-1 leading-relaxed">
+          <span className="text-accent font-bold select-none mt-0.5">•</span>
+          <div className="flex-1">{renderInlineMarkdown(trimmed.replace(/^[-•]\s+/, ''))}</div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const numMatch = trimmed.match(/^(\d+\.)\s+(.*)$/);
+      blocks.push(
+        <div key={`oli-${i}`} className="flex items-start gap-2 text-xs text-ink-2 pl-1 leading-relaxed">
+          <span className="font-semibold text-ink select-none">{numMatch?.[1]}</span>
+          <div className="flex-1">{renderInlineMarkdown(numMatch?.[2] || trimmed)}</div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    blocks.push(
+      <div key={`p-${i}`} className="text-xs text-ink-2 leading-relaxed">
+        {renderInlineMarkdown(trimmed)}
+      </div>
+    );
+    i++;
+  }
+
+  return <div className="space-y-2">{blocks}</div>;
+}
 
 function serializeDossierForModelContext(
   dossier: BrandMarketResearchDossier,
@@ -397,6 +576,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [scanningCompetitorHandle, setScanningCompetitorHandle] = useState<string | null>(
     null
   );
+  const [dissectingKocHandle, setDissectingKocHandle] = useState<string | null>(null);
   const [scannedCompProfile, setScannedCompProfile] =
     useState<TikTokCompetitorProfileSummary | null>(null);
   const [scannedCompKocs, setScannedCompKocs] = useState<TikTokCompetitorKocResult[]>([]);
@@ -420,6 +600,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [webInspection, setWebInspection] = useState<LiveWebInspectionResult | null>(
     null
   );
+  const reportPanelRef = useRef<HTMLDivElement>(null);
 
   // Tìm kiếm thông tin trên mạng TRƯỚC khi đưa vào câu lệnh mô hình
   const handleRunModelResearch = useCallback(
@@ -429,7 +610,11 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       focusCompetitor?: string;
       questionOverride?: string;
       skipPreSearch?: boolean;
+      scrollToReport?: boolean;
     }) => {
+      if (options?.scrollToReport) {
+        reportPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       let d = options?.targetDossier ?? dossier;
       const mode = options?.playbook ?? activePlaybook;
       const focusComp = options?.focusCompetitor ?? focusCompetitorForModel;
@@ -491,7 +676,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         const contextText = serializeDossierForModelContext(d, {
           playbookMode: mode,
           focusCompetitorName: focusComp || undefined,
-          customQuestion: question || playbookDef.shortPrompt,
+          customQuestion: question.trim() || undefined,
           minedClusters: d.reviewClusters || minedClusters,
         });
 
@@ -823,7 +1008,104 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     [existingByHandle, onSaveScrapedKocs]
   );
 
-  // Chạy Đào bình luận khách hàng
+  // Mổ xẻ kịch bản từ video thắng của KOC đối thủ (Tab 2)
+  const handleDissectCompetitorKocVideo = useCallback(
+    async (item: TikTokCompetitorKocResult) => {
+      const compName =
+        item.competitorCollaboration.competitorBrandName ||
+        scannedCompProfile?.brandName ||
+        'Đối thủ';
+      const productPromoted =
+        item.competitorCollaboration.competitorProductPromoted || compName;
+      const videoUrl = item.competitorCollaboration.latestCollabVideoUrl || '';
+
+      setDissectingKocHandle(item.handle);
+      try {
+        let scrapedComments: string[] = [];
+        let extraSnippetsText = '';
+        let clustersFromVideo: ReviewMiningCluster[] = [];
+
+        try {
+          const res = await fetch('/api/integrations/market-research/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mode: 'DISSECT_COMPETITOR_VIDEO',
+              brandName: dossier.brandName,
+              competitorName: compName,
+              kocHandle: item.handle,
+              productPromoted,
+              videoUrl,
+            }),
+          });
+          const json = await res.json();
+          if (res.ok && json.success) {
+            if (Array.isArray(json.scrapedComments)) {
+              scrapedComments = json.scrapedComments;
+            }
+            if (Array.isArray(json.clusters) && json.clusters.length > 0) {
+              clustersFromVideo = json.clusters;
+            }
+            if (Array.isArray(json.searchSnippets) && json.searchSnippets.length > 0) {
+              extraSnippetsText = json.searchSnippets
+                .slice(0, 3)
+                .map((s: { title?: string; snippet?: string }) => `${s.title || ''}: ${s.snippet || ''}`)
+                .join(' | ');
+            }
+          }
+        } catch {
+          // Tiếp tục chạy phân tích kịch bản từ thông số video KOC
+        }
+
+        const updatedDossier: BrandMarketResearchDossier =
+          clustersFromVideo.length > 0
+            ? { ...dossier, reviewClusters: clustersFromVideo }
+            : dossier;
+        if (clustersFromVideo.length > 0) {
+          setMinedClusters(clustersFromVideo);
+          setDossier(updatedDossier);
+        }
+
+        const sampleCommentsSummary =
+          scrapedComments.length > 0
+            ? `Bình luận thực tế dưới video (${scrapedComments.length} bình luận): "${scrapedComments.slice(0, 6).join('"; "')}".`
+            : '';
+
+        const dissectQuestion = [
+          `Bóc tách kịch bản video của KOC @${item.handle} (${item.channelProfile.nickname}, ${formatFollowers(item.channelProfile.followers)} flw, ER ${item.engagementMetrics.engagementRate}%, ${formatNumber(item.competitorCollaboration.latestCollabViews)} lượt xem) đang quảng bá sản phẩm "${productPromoted}" cho đối thủ ${compName}.`,
+          sampleCommentsSummary,
+          extraSnippetsText ? `Thông tin thị trường của sản phẩm đối thủ: ${extraSnippetsText}.` : '',
+          `Yêu cầu: (1) Mổ xẻ cấu trúc câu mở đầu 3s, cảnh quay chứng minh và luận điểm bán hàng của video đối thủ; (2) Chỉ ra điểm yếu/câu hỏi khách đang phàn nàn dưới bình luận; (3) Viết kịch bản phản công 1-1 cho ${dossier.brandName} để đội Content B2C giao cho KOC cùng phân khúc (${item.affiliateMetrics.suggestedClassification.tierLabel}).`,
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+        setCustomResearchPrompt(dissectQuestion);
+        await handleRunModelResearch({
+          targetDossier: updatedDossier,
+          playbook: 'CONTENT_HOOKS_5',
+          focusCompetitor: compName,
+          questionOverride: dissectQuestion,
+          skipPreSearch: true,
+          scrollToReport: true,
+        });
+
+        onNotify?.(
+          `Đã bóc tách kịch bản video của KOC @${item.handle} (${compName})`,
+          'success'
+        );
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : 'Không thể bóc tách kịch bản video.';
+        onNotify?.(msg, 'error');
+      } finally {
+        setDissectingKocHandle(null);
+      }
+    },
+    [dossier, handleRunModelResearch, onNotify, scannedCompProfile?.brandName]
+  );
+
+  // Chạy Đào bình luận khách hàng & tự động tổng hợp Q&A + Hook kịch bản
   const handleRunReviewMining = async () => {
     if (!reviewVideoUrl.trim() && !rawReviewText.trim()) {
       onNotify?.(
@@ -848,16 +1130,33 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       if (!res.ok || !json.success) {
         throw new Error(json.message || 'Không phân tích được dữ liệu bình luận.');
       }
-      const nextClusters = Array.isArray(json.clusters) ? json.clusters : [];
+      const nextClusters: ReviewMiningCluster[] = Array.isArray(json.clusters)
+        ? json.clusters
+        : [];
       setMinedClusters(nextClusters);
       setMinedStats({
         totalLines: json.totalAnalyzedLines || 0,
         scrapedFromTikTok: json.scrapedCommentsCount || 0,
       });
+
+      const updatedDossier: BrandMarketResearchDossier = {
+        ...dossier,
+        reviewClusters: nextClusters,
+      };
+      setDossier(updatedDossier);
+
       onNotify?.(
-        `Đã phân tích ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận từ TikTok)`,
+        `Đã phân nhóm ${json.totalAnalyzedLines || 0} bình luận (${json.scrapedCommentsCount || 0} bình luận từ TikTok) và cập nhật kịch bản xử lý từ chối`,
         'success'
       );
+
+      // Tự động chạy tổng hợp Q&A & Hook 3s theo đúng bộ bình luận vừa lọc
+      void handleRunModelResearch({
+        targetDossier: updatedDossier,
+        playbook: 'CUSTOMER_PAIN_FAQ',
+        questionOverride: `Từ ${json.totalAnalyzedLines || 0} bình luận thực tế của khách hàng vừa lọc cho ${dossier.brandName}, hãy tổng hợp bộ câu trả lời Q&A chuẩn cho Livestream/KOC và 5 câu mở đầu video (Hook 3s) giải quyết trực diện các rào cản mua hàng lớn nhất.`,
+        skipPreSearch: true,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi khi phân tích bình luận.';
       onNotify?.(msg, 'error');
@@ -930,6 +1229,122 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     setCopiedModelOutput(true);
     setTimeout(() => setCopiedModelOutput(false), 1800);
   };
+
+  // Trích xuất nhận định từ Báo cáo phân tích & dữ liệu mạng để cập nhật xuống các bảng Tab 1 & Tab 2
+  const handleApplyModelInsightsToTables = useCallback(() => {
+    const rawReport = modelResearchResult?.outputText || '';
+    if (!rawReport.trim()) {
+      onNotify?.('Chưa có kết quả tổng hợp để cập nhật vào bảng dữ liệu.', 'warning');
+      return;
+    }
+
+    const lines = rawReport
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const extractedHooks: string[] = [];
+    const extractedRtbs: string[] = [];
+    const extractedPains: string[] = [];
+
+    for (const line of lines) {
+      const cleanBullet = line
+        .replace(/^[-*+•]\s*/, '')
+        .replace(/^\d+[.)]\s*/, '')
+        .replace(/\*\*/g, '')
+        .trim();
+
+      if (/^(Mở đầu|Hook\s*3s|Câu mở đầu)/i.test(cleanBullet)) {
+        const hookVal = cleanBullet
+          .replace(/^(Mở đầu|Hook\s*3s|Câu mở đầu)[^:]*:\s*/i, '')
+          .replace(/^["“]|["”]$/g, '')
+          .trim();
+        if (hookVal.length >= 15) extractedHooks.push(hookVal);
+      } else if (
+        /(thành phần|công nghệ|kiểm nghiệm|chứng nhận|ưu điểm|lợi thế)/i.test(
+          cleanBullet
+        ) &&
+        cleanBullet.length >= 25 &&
+        cleanBullet.length <= 200 &&
+        !cleanBullet.startsWith('|')
+      ) {
+        extractedRtbs.push(cleanBullet);
+      } else if (
+        /(phàn nàn|rào cản|ngại|lo lắng|băn khoăn|kích ứng|nhờn rít)/i.test(
+          cleanBullet
+        ) &&
+        cleanBullet.length >= 25 &&
+        cleanBullet.length <= 200 &&
+        !cleanBullet.startsWith('|')
+      ) {
+        extractedPains.push(cleanBullet);
+      }
+    }
+
+    setDossier((prev) => {
+      const nextRtbs = Array.from(
+        new Set([
+          ...(prev.liveAutoWebIntel?.extractedUsps || []),
+          ...extractedRtbs,
+          ...(prev.positioning.rtbs || []),
+        ])
+      ).slice(0, 6);
+
+      const nextPains = Array.from(
+        new Set([...extractedPains, ...(prev.positioning.painPoints || [])])
+      ).slice(0, 5);
+
+      const nextBlueprints = prev.contentAngleBlueprints.map((bp, idx) => {
+        const candidateHook = extractedHooks[idx];
+        return candidateHook
+          ? {
+              ...bp,
+              hook3s: candidateHook,
+            }
+          : bp;
+      });
+
+      const nextCompetitors = prev.competitors.map((comp) => {
+        const compRegex = new RegExp(
+          comp.competitorName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          'i'
+        );
+        const matchingBullet = lines.find(
+          (l) =>
+            compRegex.test(l) &&
+            !l.startsWith('|') &&
+            !l.startsWith('#') &&
+            l.length >= 35 &&
+            l.length <= 220
+        );
+        if (!matchingBullet) return comp;
+        const cleaned = matchingBullet
+          .replace(/^[-*+•]\s*/, '')
+          .replace(/\*\*/g, '')
+          .trim();
+        return {
+          ...comp,
+          upbaseCounterPlay: cleaned,
+        };
+      });
+
+      return {
+        ...prev,
+        positioning: {
+          ...prev.positioning,
+          rtbs: nextRtbs.length > 0 ? nextRtbs : prev.positioning.rtbs,
+          painPoints: nextPains.length > 0 ? nextPains : prev.positioning.painPoints,
+        },
+        contentAngleBlueprints: nextBlueprints,
+        competitors: nextCompetitors,
+      };
+    });
+
+    onNotify?.(
+      `Đã đồng bộ nhận định từ báo cáo xuống bảng Định vị, Đối thủ và Kịch bản mẫu của ${dossier.brandName}`,
+      'success'
+    );
+  }, [dossier.brandName, modelResearchResult?.outputText, onNotify]);
 
   // --- Cột bảng Danh mục Sản phẩm ---
   const skuColumns = useMemo<Column<BrandSkuPortfolioItem>[]>(
@@ -1317,6 +1732,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     playbook: 'COMPETITOR_DEEP_DIVE',
                     focusCompetitor: row.competitorName,
                     questionOverride: `So sánh ${dossier.brandName} và ${row.competitorName} (${row.heroSkuName}). Nêu cách xử lý điểm khách phàn nàn "${row.customerComplaints[0]}" trên video KOC.`,
+                    scrollToReport: true,
                   });
                 }}
               >
@@ -1435,26 +1851,44 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       },
       {
         key: 'action',
-        header: 'Danh bạ',
+        header: 'Thao tác',
         align: 'right',
-        width: 120,
+        width: 245,
         render: (item) => {
           const clean = item.handle.toLowerCase().replace(/^@+/, '');
           const alreadySaved = existingByHandle.has(clean);
+          const isDissecting = dissectingKocHandle === item.handle;
           return (
-            <Button
-              size="sm"
-              variant={alreadySaved ? 'secondary' : 'primary'}
-              icon={alreadySaved ? Check : UserPlus}
-              onClick={() => handleSaveOneCompetitorKoc(item)}
-            >
-              {alreadySaved ? 'Cập nhật' : 'Lưu KOC'}
-            </Button>
+            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={isDissecting || runningModelResearch}
+                icon={FileText}
+                onClick={() => void handleDissectCompetitorKocVideo(item)}
+              >
+                {isDissecting ? 'Đang bóc tách...' : 'Bóc tách kịch bản'}
+              </Button>
+              <Button
+                size="sm"
+                variant={alreadySaved ? 'secondary' : 'primary'}
+                icon={alreadySaved ? Check : UserPlus}
+                onClick={() => handleSaveOneCompetitorKoc(item)}
+              >
+                {alreadySaved ? 'Cập nhật' : 'Lưu KOC'}
+              </Button>
+            </div>
           );
         },
       },
     ],
-    [existingByHandle, handleSaveOneCompetitorKoc]
+    [
+      dissectingKocHandle,
+      existingByHandle,
+      handleDissectCompetitorKocVideo,
+      handleSaveOneCompetitorKoc,
+      runningModelResearch,
+    ]
   );
 
   // Tính toán chỉ số so sánh nhanh giữa Brand và Trung bình nhóm đối thủ
@@ -1720,6 +2154,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       {/* ===================================================================== */}
       {/* 3. TỔNG HỢP NGHIÊN CỨU                                                */}
       {/* ===================================================================== */}
+      <div ref={reportPanelRef}>
       <Panel
         title={`Tổng hợp nghiên cứu: ${dossier.brandName}${
           focusCompetitorForModel ? ` và ${focusCompetitorForModel}` : ''
@@ -1909,6 +2344,15 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
+                  variant="secondary"
+                  disabled={!modelResearchResult?.outputText}
+                  icon={Check}
+                  onClick={handleApplyModelInsightsToTables}
+                >
+                  Cập nhật vào các bảng
+                </Button>
+                <Button
+                  size="sm"
                   variant="ghost"
                   disabled={!modelResearchResult?.outputText}
                   icon={copiedModelOutput ? Check : Copy}
@@ -1927,7 +2371,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
               </div>
             </div>
 
-            <div className="p-4 max-h-96 overflow-y-auto">
+            <div className="p-4 max-h-[540px] overflow-y-auto">
               {runningModelResearch ? (
                 <div className="py-8 flex items-center justify-center gap-2.5 text-xs text-ink-2">
                   <RefreshCw className="w-4 h-4 animate-spin text-accent" />
@@ -1946,46 +2390,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   </span>
                 </div>
               ) : modelResearchResult?.outputText ? (
-                <div className="space-y-1.5 text-xs text-ink leading-relaxed font-sans">
-                  {modelResearchResult.outputText.split('\n').map((line, idx) => {
-                    const trimmed = line.trim();
-                    if (!trimmed) {
-                      return <div key={idx} className="h-1.5" />;
-                    }
-                    if (/^[═─]{5,}$/.test(trimmed)) {
-                      return <hr key={idx} className="border-line my-2" />;
-                    }
-                    if (
-                      /^(\d+\.|Tổng quan|So sánh đối thủ|Gợi ý kịch bản|Phân bổ KOC|Phân bổ ngân sách|Vấn đề của khách)/.test(
-                        trimmed
-                      )
-                    ) {
-                      return (
-                        <div
-                          key={idx}
-                          className="font-semibold text-ink pt-1.5 text-xs"
-                        >
-                          {trimmed}
-                        </div>
-                      );
-                    }
-                    if (trimmed.startsWith('[Góc') || trimmed.startsWith('[Nhóm')) {
-                      return (
-                        <div
-                          key={idx}
-                          className="font-semibold text-accent pt-1 text-xs"
-                        >
-                          {trimmed}
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={idx} className="text-ink-2 pl-1">
-                        {line}
-                      </div>
-                    );
-                  })}
-                </div>
+                renderProfessionalResearchReport(modelResearchResult.outputText)
               ) : (
                 <div className="text-xs text-ink-3 py-4">
                   Chọn mục phía trên hoặc bấm &ldquo;Tìm & Tổng hợp&rdquo; để xem kết quả.
@@ -1995,6 +2400,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
           </div>
         </div>
       </Panel>
+      </div>
 
       {/* ===================================================================== */}
       {/* 4. BA TAB NGHIÊN CỨU                                                  */}
@@ -2203,7 +2609,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                 variant="secondary"
                 icon={Target}
                 onClick={() =>
-                  void handleRunModelResearch({ playbook: 'CONTENT_HOOKS_5' })
+                  void handleRunModelResearch({
+                    playbook: 'CONTENT_HOOKS_5',
+                    scrollToReport: true,
+                  })
                 }
               >
                 Tạo thêm kịch bản
@@ -2361,6 +2770,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   void handleRunModelResearch({
                     playbook: 'COMPETITOR_DEEP_DIVE',
                     focusCompetitor: '',
+                    scrollToReport: true,
                   })
                 }
               >
@@ -2518,7 +2928,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                     disabled={runningModelResearch}
                     icon={RefreshCw}
                     onClick={() =>
-                      void handleRunModelResearch({ playbook: 'CUSTOMER_PAIN_FAQ' })
+                      void handleRunModelResearch({
+                        playbook: 'CUSTOMER_PAIN_FAQ',
+                        scrollToReport: true,
+                      })
                     }
                   >
                     Tổng hợp câu trả lời
@@ -2637,25 +3050,58 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
                   {inspectingUrl ? 'Đang quét...' : 'Quét trang đích'}
                 </Button>
                 {webInspection && (
-                  <Button
-                    variant="secondary"
-                    icon={FileCheck}
-                    onClick={() => {
-                      const updated = generateBrandMarketResearchDossier({
-                        brandNameOrQuery: dossier.brandName,
-                        customCategory: dossier.category,
-                        liveWebInspection: webInspection,
-                        savedBrandProfile: findProfileForBrand(dossier.brandName),
-                      });
-                      setDossier(updated);
-                      onNotify?.(
-                        `Đã cập nhật dữ liệu trang đích ${webInspection.domain} vào hồ sơ ${dossier.brandName}`,
-                        'success'
-                      );
-                    }}
-                  >
-                    Cập nhật vào hồ sơ nghiên cứu
-                  </Button>
+                  <>
+                    <Button
+                      variant="secondary"
+                      icon={FileCheck}
+                      onClick={() => {
+                        const updated = generateBrandMarketResearchDossier({
+                          brandNameOrQuery: dossier.brandName,
+                          customCategory: dossier.category,
+                          customCompetitorInputs: dossier.competitors.map(
+                            (c) => c.competitorName
+                          ),
+                          liveWebInspection: webInspection,
+                          liveAutoWebIntel: dossier.liveAutoWebIntel,
+                          savedBrandProfile: findProfileForBrand(dossier.brandName),
+                        });
+                        setDossier(updated);
+                        onNotify?.(
+                          `Đã cập nhật dữ liệu trang đích ${webInspection.domain} vào hồ sơ ${dossier.brandName}`,
+                          'success'
+                        );
+                      }}
+                    >
+                      Cập nhật vào hồ sơ
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={runningModelResearch}
+                      icon={FileText}
+                      onClick={() => {
+                        const updated = generateBrandMarketResearchDossier({
+                          brandNameOrQuery: dossier.brandName,
+                          customCategory: dossier.category,
+                          customCompetitorInputs: dossier.competitors.map(
+                            (c) => c.competitorName
+                          ),
+                          liveWebInspection: webInspection,
+                          liveAutoWebIntel: dossier.liveAutoWebIntel,
+                          savedBrandProfile: findProfileForBrand(dossier.brandName),
+                        });
+                        setDossier(updated);
+                        void handleRunModelResearch({
+                          targetDossier: updated,
+                          playbook: 'COMPETITOR_DEEP_DIVE',
+                          questionOverride: `Phân tích trang đích ${webInspection.domain} (${webInspection.pageTitle}): Mốc giá phát hiện (${webInspection.detectedPricesVnd.map(formatVnd).join(', ') || 'chưa rõ'}), tiêu đề chính (${webInspection.h1Headings.concat(webInspection.h2Headings).slice(0, 4).join('; ')}) và đề xuất hướng cạnh tranh cho ${dossier.brandName}.`,
+                          skipPreSearch: true,
+                          scrollToReport: true,
+                        });
+                      }}
+                    >
+                      Phân tích trang đích
+                    </Button>
+                  </>
                 )}
               </div>
 

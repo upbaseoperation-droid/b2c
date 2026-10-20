@@ -10,6 +10,7 @@ import {
   Copy,
   FileText,
   Clock,
+  ShoppingBag,
 } from 'lucide-react';
 import { BookingDealItem, PublicationItemModel } from '../../lib/types';
 import {
@@ -64,6 +65,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [expectedHandleInput, setExpectedHandleInput] = useState<string>(
     initialDeal?.kocChannelId || ''
   );
+  const [expectedCartUrlInput, setExpectedCartUrlInput] = useState<string>('');
   const [minDurationInput, setMinDurationInput] = useState<string>('15');
 
   const [isInspecting, setIsInspecting] = useState(false);
@@ -186,6 +188,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
           dealCode: selectedDealCode || undefined,
           expectedHandle: expectedHandleInput.trim() || selectedDealObj?.kocChannelId || undefined,
           expectedDeadline: expectedDeadlineInput.trim() || selectedDealObj?.deadlinePost || undefined,
+          expectedCartUrl: expectedCartUrlInput.trim() || undefined,
           requiredHashtags: parsedHashtags.length > 0 ? parsedHashtags : undefined,
           requiredUspKeywords: parsedUspKeywords.length > 0 ? parsedUspKeywords : undefined,
           minDurationSeconds: Number.isFinite(minDurNum) && minDurNum > 0 ? minDurNum : 15,
@@ -314,28 +317,73 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     },
     {
       key: 'published',
-      header: 'Ngày đăng & SLA',
-      width: 165,
-      render: (r) => (
-        <div className="grid gap-0.5 text-xs tabular-nums">
-          <span className="font-medium text-ink">{r.publishedTimeFormatted}</span>
-          <span className="text-2xs text-ink-3">
-            {r.durationSeconds > 0 ? `${r.durationSeconds} giây · ` : ''}
-            {r.contentCheck.hasCartAnchor ? 'Có gắn giỏ' : 'Không gắn giỏ'}
-          </span>
-          {r.expectedDeadline && (
-            <span
-              className={`text-2xs font-semibold ${
-                r.isOnTime ? 'text-positive' : 'text-critical'
-              }`}
-            >
-              {r.isOnTime
-                ? `Đúng hạn (${r.expectedDeadline})`
-                : `Trễ ${r.daysDelayed} ngày (Hạn ${r.expectedDeadline})`}
-            </span>
-          )}
-        </div>
-      ),
+      header: 'Ngày đăng, Giỏ hàng & SLA',
+      width: 210,
+      render: (r) => {
+        const cartUrl =
+          r.cartAnchorVerification.detectedProductUrl || r.contentCheck.cartAnchorUrl;
+        const extraProdCount =
+          (r.cartAnchorVerification.detectedProducts?.length ?? 0) > 1
+            ? (r.cartAnchorVerification.detectedProducts?.length ?? 1) - 1
+            : 0;
+        const cartComp = r.cartAnchorVerification.cartLinkComparison;
+        return (
+          <div className="grid gap-0.5 text-xs tabular-nums">
+            <span className="font-medium text-ink">{r.publishedTimeFormatted}</span>
+            <div className="flex items-center gap-1.5 flex-wrap text-2xs text-ink-3">
+              {r.durationSeconds > 0 ? <span>{r.durationSeconds}s ·</span> : null}
+              {r.contentCheck.hasCartAnchor ? (
+                cartUrl ? (
+                  <a
+                    href={cartUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-accent font-medium hover:underline"
+                    title={r.cartAnchorVerification.detectedProductTitle || cartUrl}
+                  >
+                    <ShoppingBag className="w-3 h-3 shrink-0" />
+                    <span>Link giỏ hàng</span>
+                    <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                  </a>
+                ) : (
+                  <span className="text-positive font-medium">Có gắn giỏ</span>
+                )
+              ) : (
+                <span>Không gắn giỏ</span>
+              )}
+              {extraProdCount > 0 && (
+                <span className="px-1 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold">
+                  +{extraProdCount} SP
+                </span>
+              )}
+            </div>
+            {cartComp?.hasExpectedInput && (
+              <span
+                className={`text-2xs font-semibold ${
+                  cartComp.status === 'MATCHED' ? 'text-positive' : 'text-critical'
+                }`}
+              >
+                {cartComp.status === 'MATCHED'
+                  ? '✓ Khớp link giỏ hàng mẫu'
+                  : cartComp.status === 'MISSING_CART'
+                  ? '✕ Chưa gắn link giỏ mẫu'
+                  : '✕ Lệch link giỏ hàng mẫu'}
+              </span>
+            )}
+            {r.expectedDeadline && (
+              <span
+                className={`text-2xs font-semibold ${
+                  r.isOnTime ? 'text-positive' : 'text-critical'
+                }`}
+              >
+                {r.isOnTime
+                  ? `Đúng hạn (${r.expectedDeadline})`
+                  : `Trễ ${r.daysDelayed} ngày (Hạn ${r.expectedDeadline})`}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'metrics',
@@ -414,6 +462,14 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       `• Link video: ${activeInspection.resolvedUrl}`,
       `• Kết luận nghiệm thu: ${activeInspection.verdict} (${activeInspection.verdictSummary})`,
       `• Thời lượng: ${activeInspection.durationSeconds} giây · Lượt xem: ${formatNumber(activeInspection.viewsCount)} (ER ${activeInspection.engagementRate}%)`,
+      `• Giỏ hàng TikTok Shop: ${
+        activeInspection.contentCheck.hasCartAnchor
+          ? activeInspection.cartAnchorVerification.detectedProductTitle || 'Có gắn giỏ hàng'
+          : 'Chưa gắn giỏ hàng'
+      }`,
+      activeInspection.cartAnchorVerification.detectedProductUrl
+        ? `• Link giỏ hàng: ${activeInspection.cartAnchorVerification.detectedProductUrl}`
+        : '',
       `• Câu mở đầu 3 giây đầu (Hook): "${activeInspection.contentCheck.hookFirst3Seconds}"`,
       activeInspection.contentCheck.hookPatternLabel
         ? `• Nhóm mở đầu: ${activeInspection.contentCheck.hookPatternLabel}`
@@ -526,8 +582,19 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
               />
             </label>
 
-            <label className="grid gap-1 text-2xs font-medium text-ink-2 sm:col-span-2 lg:col-span-2">
-              <span>Từ khóa USP bắt buộc nói trong video (phân cách dấu phẩy)</span>
+            <label className="grid gap-1 text-2xs font-medium text-ink-2">
+              <span>Link giỏ hàng mẫu đối chiếu (hoặc Mã SP)</span>
+              <input
+                type="text"
+                value={expectedCartUrlInput}
+                onChange={(e) => setExpectedCartUrlInput(e.target.value)}
+                placeholder="Dán link giỏ hàng TikTok Shop hoặc mã SP..."
+                className="h-8 px-2.5 rounded-md border border-line bg-surface-2 text-xs text-ink font-code"
+              />
+            </label>
+
+            <label className="grid gap-1 text-2xs font-medium text-ink-2">
+              <span>Từ khóa USP bắt buộc nói trong video</span>
               <input
                 type="text"
                 value={requiredUspInput}
@@ -768,25 +835,208 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
 
             {/* Câu mở đầu 3 giây đầu (Hook) & Chữ nổi trên màn hình */}
             <div className="grid md:grid-cols-2 gap-2.5">
-              <div className="p-2.5 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1">
-                <div className="flex items-center justify-between gap-2">
+              <div className="p-2.5 rounded-lg border border-accent/25 bg-accent-soft/30 space-y-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-2xs font-semibold uppercase tracking-wider text-accent">
                     Câu mở đầu 3 giây đầu (Hook 00:00 - 00:03)
                   </span>
-                  <span className="text-2xs font-code text-ink-3">
-                    Xuất hiện SP giây thứ {activeInspection.visualAndAudioCheck.firstProductAppearanceSec}s
-                  </span>
+                  {activeInspection.visualAndAudioCheck.firstProductAppearanceSec !== null ? (
+                    <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-semibold">
+                      Nhắc tên SP giây thứ {activeInspection.visualAndAudioCheck.firstProductAppearanceSec}s
+                      {activeInspection.visualAndAudioCheck.firstProductMentionTerm
+                        ? ` (“${activeInspection.visualAndAudioCheck.firstProductMentionTerm}”)`
+                        : ''}
+                    </span>
+                  ) : (
+                    <span className="text-2xs font-code text-ink-3">
+                      Chưa phát hiện mốc giây nhắc tên SP trong phụ đề
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs font-semibold text-ink leading-relaxed">
                   &ldquo;{activeInspection.contentCheck.hookFirst3Seconds || activeInspection.contentCheck.caption}&rdquo;
                 </p>
+                {activeInspection.visualAndAudioCheck.firstProductMentionQuote && (
+                  <div className="pt-1 border-t border-accent/20 flex items-start justify-between gap-2 text-2xs text-ink-2">
+                    <span>
+                      Câu nhắc SP đầu tiên ({activeInspection.visualAndAudioCheck.firstProductMentionTimeLabel}):{' '}
+                      <strong className="text-ink">
+                        &ldquo;{activeInspection.visualAndAudioCheck.firstProductMentionQuote}&rdquo;
+                      </strong>
+                    </span>
+                    {(activeInspection.visualAndAudioCheck.productMentionMoments?.length ?? 0) > 1 && (
+                      <span className="shrink-0 font-code text-accent">
+                        Tổng {activeInspection.visualAndAudioCheck.productMentionMoments?.length} lần nhắc
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="p-2.5 rounded-lg border border-line bg-surface-2 space-y-1">
-                <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
-                  Chữ chèn trên màn hình (On-screen Text / Stickers) & Giỏ hàng
-                </span>
-                {activeInspection.contentCheck.onScreenStickers.length > 0 ? (
+              <div className="p-2.5 rounded-lg border border-line bg-surface-2 space-y-1.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-ink-3">
+                    Giỏ hàng TikTok Shop & Đối chiếu Link SP
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {activeInspection.cartAnchorVerification.cartLinkComparison?.hasExpectedInput && (
+                      <Status
+                        tone={
+                          activeInspection.cartAnchorVerification.cartLinkComparison.status ===
+                          'MATCHED'
+                            ? 'positive'
+                            : 'critical'
+                        }
+                      >
+                        {activeInspection.cartAnchorVerification.cartLinkComparison.status ===
+                        'MATCHED'
+                          ? 'Khớp link mẫu'
+                          : activeInspection.cartAnchorVerification.cartLinkComparison.status ===
+                            'MISSING_CART'
+                          ? 'Chưa gắn giỏ mẫu'
+                          : 'Sai link giỏ hàng'}
+                      </Status>
+                    )}
+                    {activeInspection.contentCheck.hasCartAnchor ? (
+                      <Status tone="positive">
+                        Có gắn giỏ (
+                        {(activeInspection.cartAnchorVerification.detectedProducts?.length ?? 0) > 0
+                          ? `${activeInspection.cartAnchorVerification.detectedProducts?.length} SP`
+                          : 'Đã xác nhận'}
+                        )
+                      </Status>
+                    ) : (
+                      <Status tone="neutral">Không gắn giỏ</Status>
+                    )}
+                  </div>
+                </div>
+
+                {activeInspection.cartAnchorVerification.cartLinkComparison?.hasExpectedInput && (
+                  <div
+                    className={`p-2 rounded-lg border text-2xs space-y-0.5 ${
+                      activeInspection.cartAnchorVerification.cartLinkComparison.status ===
+                      'MATCHED'
+                        ? 'border-positive/30 bg-positive-soft/30 text-positive'
+                        : 'border-critical/40 bg-critical-soft/25 text-critical'
+                    }`}
+                  >
+                    <p className="font-semibold">
+                      {activeInspection.cartAnchorVerification.cartLinkComparison.detailNote}
+                    </p>
+                    <p className="font-code text-ink-3 truncate">
+                      Link/Mã mẫu đối chiếu:{' '}
+                      {activeInspection.cartAnchorVerification.cartLinkComparison.expectedRawInput}
+                    </p>
+                  </div>
+                )}
+
+                {(activeInspection.cartAnchorVerification.detectedProducts?.length ?? 0) > 0 ? (
+                  <div className="grid gap-1.5">
+                    {activeInspection.cartAnchorVerification.detectedProducts?.map((prod, idx) => {
+                      const comp = activeInspection.cartAnchorVerification.cartLinkComparison;
+                      const isMatchedWithExpected =
+                        comp?.hasExpectedInput &&
+                        comp.matchedProducts.some(
+                          (m) =>
+                            (m.productId && m.productId === prod.productId) ||
+                            (m.productUrl && m.productUrl === prod.productUrl)
+                        );
+                      return (
+                        <div
+                          key={prod.productId || prod.productUrl || idx}
+                          className={`p-2 rounded-lg border space-y-1 ${
+                            comp?.hasExpectedInput
+                              ? isMatchedWithExpected
+                                ? 'border-positive/40 bg-positive-soft/15'
+                                : 'border-warning/40 bg-surface'
+                              : 'border-line bg-surface'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {comp?.hasExpectedInput && (
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
+                                      isMatchedWithExpected
+                                        ? 'bg-positive text-white'
+                                        : 'bg-warning-soft text-warning'
+                                    }`}
+                                  >
+                                    {isMatchedWithExpected ? 'Đúng SP mẫu' : 'SP ngoài link mẫu'}
+                                  </span>
+                                )}
+                                <p className="text-xs font-semibold text-ink line-clamp-2">
+                                  {prod.title}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 font-code mt-0.5">
+                                {prod.anchorKeyword && (
+                                  <span className="px-1.5 py-0.2 rounded bg-accent-soft/50 text-accent font-sans font-medium">
+                                    Nhãn giỏ: &ldquo;{prod.anchorKeyword}&rdquo;
+                                  </span>
+                                )}
+                                {prod.productId && <span>Mã SP: {prod.productId}</span>}
+                                {prod.sellerId && <span>Shop ID: {prod.sellerId}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {(prod.productUrl || prod.productId) && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setExpectedCartUrlInput(prod.productUrl || prod.productId)
+                                  }
+                                >
+                                  Dùng đối chiếu
+                                </Button>
+                              )}
+                              {prod.productUrl && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={copiedKey === `cart-${idx}` ? Check : Copy}
+                                    onClick={() => handleCopyText(`cart-${idx}`, prod.productUrl)}
+                                  >
+                                    {copiedKey === `cart-${idx}` ? 'Đã chép' : 'Chép link'}
+                                  </Button>
+                                  <a
+                                    href={prod.productUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
+                                  >
+                                    <span>Mở giỏ</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {prod.productUrl && (
+                            <a
+                              href={prod.productUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block text-2xs font-code text-accent hover:underline truncate"
+                              title={prod.productUrl}
+                            >
+                              {prod.productUrl}
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : activeInspection.contentCheck.hasCartAnchor ? (
+                  <p className="text-xs text-ink-2">
+                    Gắn thẻ giỏ hàng: {activeInspection.contentCheck.cartAnchorTitle || 'TikTok Shop'}
+                  </p>
+                ) : null}
+
+                {activeInspection.contentCheck.onScreenStickers.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {activeInspection.contentCheck.onScreenStickers.map((stk, idx) => (
                       <span
@@ -797,12 +1047,6 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                       </span>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-ink-2">
-                    {activeInspection.contentCheck.hasCartAnchor
-                      ? `Gắn thẻ giỏ hàng: ${activeInspection.contentCheck.cartAnchorTitle || 'TikTok Shop'}`
-                      : 'Không chèn sticker chữ tách rời trên khung hình'}
-                  </p>
                 )}
               </div>
             </div>
@@ -849,17 +1093,38 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                     </span>
                   </div>
                   <div className="max-h-44 overflow-y-auto divide-y divide-line/60">
-                    {activeInspection.contentCheck.subtitleSegments.map((seg, idx) => (
-                      <div
-                        key={idx}
-                        className="px-3 py-1.5 flex items-start gap-2.5 text-xs hover:bg-surface/60"
-                      >
-                        <span className="font-code text-2xs text-accent bg-accent-soft/40 px-1.5 py-0.5 rounded shrink-0 mt-0.5">
-                          {seg.timeLabel}
-                        </span>
-                        <span className="text-ink leading-relaxed">{seg.text}</span>
-                      </div>
-                    ))}
+                    {activeInspection.contentCheck.subtitleSegments.map((seg, idx) => {
+                      const matchedMoment =
+                        activeInspection.visualAndAudioCheck.productMentionMoments?.find(
+                          (m) => m.timeLabel === seg.timeLabel && m.quote === seg.text
+                        );
+                      return (
+                        <div
+                          key={idx}
+                          className={`px-3 py-1.5 flex items-start justify-between gap-2.5 text-xs ${
+                            matchedMoment ? 'bg-positive-soft/25' : 'hover:bg-surface/60'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2.5 min-w-0">
+                            <span
+                              className={`font-code text-2xs px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${
+                                matchedMoment
+                                  ? 'bg-positive text-white font-semibold'
+                                  : 'text-accent bg-accent-soft/40'
+                              }`}
+                            >
+                              {seg.timeLabel}
+                            </span>
+                            <span className="text-ink leading-relaxed">{seg.text}</span>
+                          </div>
+                          {matchedMoment && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-positive-soft text-positive text-2xs font-code font-medium">
+                              SP: &ldquo;{matchedMoment.matchedTerm}&rdquo; ({matchedMoment.startSec}s)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

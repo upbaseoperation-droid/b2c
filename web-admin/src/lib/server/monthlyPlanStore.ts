@@ -1,7 +1,7 @@
 import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
-import { readCatalogWithPics } from './storePicStore';
+import { readMasterCatalog } from './masterCatalogStore';
 // Chỉ dùng phía server (API routes) — không import từ component giao diện.
 import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
@@ -151,7 +151,7 @@ function sameValue(a: unknown, b: unknown) {
 }
 
 export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
-  const { data } = await readCatalogWithPics();
+  const { data } = await readMasterCatalog();
   if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
   // A client cannot grant itself another brand by putting its own name into plan.pic.
   if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
@@ -180,7 +180,7 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
       include: planInclude,
       orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
     }),
-    readCatalogWithPics(),
+    readMasterCatalog(),
     actionAllowed(actor, 'plan_target_month', 'read')
   ]);
   if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');

@@ -14,6 +14,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'dashboard-finance': 'Đối soát & xuất file',
   'input-plan': 'Kế hoạch tháng',
   'koc-listing': 'Listing & Air Video',
+  'approved-booking-list': 'List duyệt book',
   'self-channel-hub': 'Video kênh Brand',
   'master-data': 'Dữ liệu gốc',
   'push-products': 'Sản phẩm trọng tâm',

@@ -368,6 +368,12 @@ export interface LiveScrapedCompetitorSignal {
   avgEngagementRatePct: number;
   topPromotedProduct?: string;
   latestVideoUrl?: string;
+  scrapedDealPriceVnd?: number;
+  scrapedListPriceVnd?: number;
+  scrapedWebsiteUrl?: string;
+  scrapedOriginCountry?: string;
+  scrapedUsps?: string[];
+  scrapedComplaints?: string[];
 }
 
 export interface BrandMarketResearchDossier {
@@ -3215,44 +3221,15 @@ export function generateBrandMarketResearchDossier(params: {
     0
   );
 
-  // Ghi nhận Dẫn chứng từ File 4.1 & 4.1.1 (Kế hoạch gian hàng B2C)
   const internalPlanEvIds: string[] = [];
-  for (const st of internalStoresAudit) {
-    const evId = pushEvidence({
-      category: 'INTERNAL_PLAN_41',
-      categoryLabel: 'File 4.1 & 4.1.1 (Kế hoạch Gian hàng B2C)',
-      claimSupported: `Gian hàng ${st.storeName} (${st.platform}): Hạn mức Net ${st.budgetNetVnd.toLocaleString('vi-VN')}đ — Thực chi Net ${st.actualSpentNetVnd.toLocaleString('vi-VN')}đ (${st.utilizationPct}%)`,
-      sourceDocument: `File 4.1 Plan order tổng & File 4.1.1 Input plan tuần — Mã gian hàng ${st.storeId} (PIC: ${st.pic})`,
-      exactQuoteOrMetric: `Kế hoạch tháng: ${st.totalPlannedVideos} video (${st.planPaidVideos} Paid KOC, ${st.planFocVideos} FOC, ${st.planSelfVideos} Kênh Brand). Thực tế đã book ${st.totalBookedOrders} đơn, đã lên sóng ${st.totalAiredVideos} video (Đúng lịch tuần: ${st.scheduleAdherencePct}%).`,
-      verifiedDate: verifiedToday,
-      reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-    });
-    internalPlanEvIds.push(evId);
-  }
-
-  // Ghi nhận Dẫn chứng từ File 3.2 (hoặc Quét trực tiếp Video KOC TikTok khi nghiên cứu Đối thủ)
   const bookingLedgerEvIds: string[] = [];
-  if (allStoreDeals.length > 0) {
-    for (const deal of verifiedAiredDeals.slice(0, 6)) {
-      const evId = pushEvidence({
-        category: 'BOOKING_LEDGER_32',
-        categoryLabel: 'File 3.2 (Chứng từ Đơn Booking & Link Air)',
-        claimSupported: `Đơn ${deal.dealCode} — Kênh @${deal.channelId} (${deal.klTier}) review "${deal.productName}" tại ${deal.storeName}`,
-        sourceDocument: `File 3.2 List duyệt book — Mã đơn ${deal.dealCode} · PIC ${deal.pic}`,
-        exactQuoteOrMetric: `Chi phí Net: ${deal.costVnd.toLocaleString('vi-VN')}đ | Ngày Air thực tế: ${deal.actualAirDate} (Dự kiến: ${deal.plannedAirDate})${deal.sellerGmvVnd !== undefined ? ` | Views: ${(deal.views || 0).toLocaleString('vi-VN')} | GMV Seller: ${deal.sellerGmvVnd.toLocaleString('vi-VN')}đ (${deal.sellerOrders || 0} đơn, ROAS ${deal.roas || 0}x)` : ''}`,
-        sourceUrl: deal.linkAir || undefined,
-        verifiedDate: deal.actualAirDate || verifiedToday,
-        reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-      });
-      bookingLedgerEvIds.push(evId);
-    }
-  } else if (params.primaryLiveTikTokSignal || livePrimaryKocs.length > 0) {
+  if (params.primaryLiveTikTokSignal || livePrimaryKocs.length > 0) {
     const pSig = params.primaryLiveTikTokSignal;
     if (pSig) {
       bookingLedgerEvIds.push(
         pushEvidence({
           category: 'COMPETITOR_BENCHMARK',
-          categoryLabel: 'Quét Trực tiếp Kênh TikTok & Mạng lưới KOC Đối thủ',
+          categoryLabel: 'Quét Trực tiếp Kênh TikTok & Mạng lưới KOC',
           claimSupported: `Kênh TikTok ${brandName} (@${pSig.handle.replace(/^@+/, '')}): ${pSig.followers.toLocaleString('vi-VN')} followers — Phát hiện ${pSig.detectedKocCount} KOC đang đăng video quảng bá`,
           sourceDocument: `TikTok Live Scraper — Quét trực tiếp từ khóa & thẻ @${pSig.handle.replace(/^@+/, '')}`,
           exactQuoteOrMetric: `Tổng lượt xem mẫu từ ${pSig.detectedKocCount} video KOC gần nhất: ${pSig.totalSampleViews.toLocaleString('vi-VN')} views | Tỷ lệ tương tác trung bình (ER): ${pSig.avgEngagementRatePct}%${pSig.topPromotedProduct ? ` | Sản phẩm xuất hiện nhiều nhất: "${pSig.topPromotedProduct}"` : ''}`,
@@ -3278,69 +3255,8 @@ export function generateBrandMarketResearchDossier(params: {
     }
   }
 
-  // Ghi nhận Dẫn chứng từ File 3.5 (Danh sách File Brand: Canva Brief, Google Sheet Booking, File Vận hành)
+  // Ghi nhận Dẫn chứng từ Hồ sơ Công bố & Kiểm định Sản phẩm (nếu có)
   const file35EvIds: string[] = [];
-  if (brandFiles35) {
-    if (brandFiles35.canvaBriefUrl) {
-      file35EvIds.push(
-        pushEvidence({
-          category: 'CLINICAL_REGULATORY',
-          categoryLabel: 'File 3.5 (Canva Brief Sản phẩm & Quy chuẩn Hình ảnh)',
-          claimSupported: `Tài liệu Canva Brief định hướng sản phẩm và kịch bản chính thức của ${brandName} (${brandFiles35.storeCode})`,
-          sourceDocument: `File 3.5 Danh sách file brand — Gian hàng ${brandFiles35.storeCode}`,
-          exactQuoteOrMetric: `Mô hình vận hành: ${brandFiles35.operatingModel === 'SPLIT_RESOURCE' ? 'Tách nguồn lực (Content & Booking chuyên biệt)' : 'Fullstack Content + Booking'} | Nhân sự phụ trách: ${brandFiles35.handoverTo || brandFiles35.handoverFrom || 'Phòng B2C'}.`,
-          sourceUrl: brandFiles35.canvaBriefUrl,
-          verifiedDate: verifiedToday,
-          reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-        })
-      );
-    }
-    if (brandFiles35.bookingSheetUrl) {
-      file35EvIds.push(
-        pushEvidence({
-          category: 'BOOKING_LEDGER_32',
-          categoryLabel: 'File 3.5 (Google Sheet Theo dõi Booking Gian hàng)',
-          claimSupported: `Bảng Google Sheet quản lý danh sách KOC và lịch air của gian hàng ${brandFiles35.storeCode}`,
-          sourceDocument: `File 3.5 Danh sách file brand — Link Booking Sheet (${brandFiles35.storeCode})`,
-          exactQuoteOrMetric: `Bàn giao từ: ${brandFiles35.handoverFrom || 'B2C'} → Phụ trách hiện tại: ${brandFiles35.handoverTo || 'B2C'}.`,
-          sourceUrl: brandFiles35.bookingSheetUrl,
-          verifiedDate: verifiedToday,
-          reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-        })
-      );
-    }
-    if (brandFiles35.operationFileUrl) {
-      file35EvIds.push(
-        pushEvidence({
-          category: 'INTERNAL_PLAN_41',
-          categoryLabel: 'File 3.5 (File Vận hành Gian hàng)',
-          claimSupported: `Bảng theo dõi vận hành tổng thể gian hàng ${brandFiles35.storeCode}`,
-          sourceDocument: `File 3.5 Danh sách file brand — File Vận hành (${brandFiles35.storeCode})`,
-          exactQuoteOrMetric: `Liên kết trực tiếp tới trang tính vận hành hàng tháng của nhãn ${brandName}.`,
-          sourceUrl: brandFiles35.operationFileUrl,
-          verifiedDate: verifiedToday,
-          reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-        })
-      );
-    }
-  }
-
-  // Ghi nhận Dẫn chứng từ TikTok Seller Center (CHỈ KHI TRÙNG KHỚP TRỰC TIẾP VỚI BRAND)
-  const sellerAdsEvIds: string[] = [];
-  for (const camp of directSellerCampaigns) {
-    const evId = pushEvidence({
-      category: 'SELLER_CENTER_ADS',
-      categoryLabel: 'Báo cáo TikTok Shop Seller Center (Product GMV Max)',
-      claimSupported: `Chiến dịch "${camp.campaignName}" tại gian hàng ${camp.storeName} đạt ROAS ${camp.roas}x (${camp.orders} đơn hàng)`,
-      sourceDocument: `TikTok Seller Center Ads Report — Campaign ID: ${camp.campaignId} (${camp.storeName})`,
-      exactQuoteOrMetric: `Chi phí Ads: ${camp.cost.toLocaleString('vi-VN')}đ | Doanh thu GMV: ${camp.gmv.toLocaleString('vi-VN')}đ | CPA: ${camp.cpa.toLocaleString('vi-VN')}đ/đơn | CTR: ${camp.ctr}% | CVR: ${camp.cvr}% | Hook Rate 2s: ${camp.hookRate2s}%`,
-      verifiedDate: verifiedToday,
-      reliabilityTag: 'ĐỐI SOÁT NỘI BỘ 100%',
-    });
-    sellerAdsEvIds.push(evId);
-  }
-
-  // Ghi nhận Dẫn chứng từ Hồ sơ Thương hiệu / Knowledge Base (nếu có giấy phép công bố thật)
   const matchedKb = INITIAL_BRAND_KNOWLEDGE_BASES.find(
     (kb) => normalizeKey(kb.brandName) === cleanKey || cleanKey.includes(normalizeKey(kb.brandName))
   );
@@ -3380,23 +3296,18 @@ export function generateBrandMarketResearchDossier(params: {
   // Ghi nhận Dẫn chứng Hệ thống Gian hàng Chính hãng (Official Storefront)
   const distEvId = pushEvidence({
     category: 'STOREFRONT_OFFICIAL',
-    categoryLabel: 'Hệ thống Gian hàng Chính hãng (Official Storefront)',
-    claimSupported: matchedUpbaseBrand
-      ? `${brandName} vận hành ${internalStoresAudit.length || matchedUpbaseBrand.storeCount || 1} gian hàng chính hãng trong danh mục 69 gian hàng B2C UpBase`
-      : `Hệ thống kênh chính thức của ${brandName} (${originCountry} — ${category})`,
-    sourceDocument: matchedUpbaseBrand
-      ? `Danh mục 69 Gian hàng B2C (Phụ trách = 1): ${(matchedUpbaseBrand.stores || []).map((s) => `${s.storeName} (${s.storeId})`).join(', ')}`
-      : `Kênh phân phối chính hãng ${brandName}: ${[brandCfg?.tiktokHandle ? `TikTok ${brandCfg.tiktokHandle}` : '', brandCfg?.shopeeMallUrl ? `Shopee Mall (${brandCfg.shopeeMallUrl})` : '', brandCfg?.officialWebsiteUrl ? `Website (${brandCfg.officialWebsiteUrl})` : ''].filter(Boolean).join(' · ') || `TikTok Shop & Shopee Mall ngành ${category}`}`,
-    exactQuoteOrMetric: matchedUpbaseBrand
-      ? `Nền tảng vận hành: ${(matchedUpbaseBrand.platforms || ['TikTok Shop', 'Shopee Mall']).join(' & ')} | Account PIC: ${matchedUpbaseBrand.accountPic || 'Phòng B2C'} | Booking PIC: ${matchedUpbaseBrand.brandPicName || internalStoresAudit[0]?.pic || 'Phòng B2C'}`
-      : `Sản phẩm chủ lực: "${brandCfg?.defaultHeroSkuName || params.primaryLiveTikTokSignal?.topPromotedProduct || brandName}" (Giá tham chiếu: ${(brandCfg?.defaultDealPriceVnd || 195000).toLocaleString('vi-VN')}đ / Niêm yết ${(brandCfg?.defaultListPriceVnd || 240000).toLocaleString('vi-VN')}đ).`,
+    categoryLabel: 'Hệ thống Gian hàng & Kênh Phân phối Chính hãng',
+    claimSupported: `Hệ thống kênh phân phối chính thức của ${brandName} (${originCountry} — ${category})`,
+    sourceDocument: `Kênh phân phối chính hãng ${brandName}: ${[params.liveAutoWebIntel?.officialWebsiteUrl || brandCfg?.officialWebsiteUrl ? `Website (${params.liveAutoWebIntel?.officialWebsiteUrl || brandCfg?.officialWebsiteUrl})` : '', params.liveAutoWebIntel?.shopeeUrl || brandCfg?.shopeeMallUrl ? `Shopee Mall (${params.liveAutoWebIntel?.shopeeUrl || brandCfg?.shopeeMallUrl})` : '', params.liveAutoWebIntel?.tiktokHandle || brandCfg?.tiktokHandle ? `TikTok (${params.liveAutoWebIntel?.tiktokHandle || brandCfg?.tiktokHandle})` : ''].filter(Boolean).join(' · ') || `TikTok Shop & Shopee Mall ngành ${category}`}`,
+    exactQuoteOrMetric: `Sản phẩm chủ lực: "${params.liveAutoWebIntel?.scrapedProducts?.[0]?.productName || brandCfg?.defaultHeroSkuName || params.primaryLiveTikTokSignal?.topPromotedProduct || brandName}" (Giá tham chiếu: ${(params.liveAutoWebIntel?.priceRangeVnd?.median || brandCfg?.defaultDealPriceVnd || 195000).toLocaleString('vi-VN')}đ).`,
     sourceUrl:
+      params.liveAutoWebIntel?.officialWebsiteUrl ||
+      params.liveAutoWebIntel?.shopeeUrl ||
       brandCfg?.officialWebsiteUrl ||
       brandCfg?.shopeeMallUrl ||
-      matchedUpbaseBrand?.stores?.[0]?.storeUrl ||
       undefined,
     verifiedDate: verifiedToday,
-    reliabilityTag: matchedUpbaseBrand ? 'ĐỐI SOÁT NỘI BỘ 100%' : 'NIÊM YẾT GIAN HÀNG MALL',
+    reliabilityTag: 'NIÊM YẾT GIAN HÀNG MALL',
   });
 
   // Ghi nhận Dẫn chứng Quét trực tiếp DOM Website & Danh mục Sản phẩm tự động (nếu có)
@@ -3694,11 +3605,14 @@ export function generateBrandMarketResearchDossier(params: {
     });
   }
 
-  // Nếu vẫn chưa có SKU nào, khởi tạo 1 dòng Hero SKU thật của Brand (kết hợp tín hiệu quét TikTok/Web nếu có)
-  if (skuPortfolio.length === 0) {
+  // Nếu vẫn chưa có SKU nào hoặc chưa có dòng Hero SKU mặc định của thương hiệu, bổ sung Hero SKU thật của Brand
+  if (
+    skuPortfolio.length === 0 ||
+    (brandCfg?.defaultHeroSkuName && !addedProductNames.has(normalizeKey(brandCfg.defaultHeroSkuName)))
+  ) {
     const heroName =
-      params.liveAutoWebIntel?.headings?.[0] ||
       brandCfg?.defaultHeroSkuName ||
+      params.liveAutoWebIntel?.headings?.[0] ||
       params.primaryLiveTikTokSignal?.topPromotedProduct ||
       params.liveWebInspection?.h1Headings?.[0] ||
       matchedUpbaseBrand?.heroProducts?.[0]?.productName ||
@@ -3708,7 +3622,7 @@ export function generateBrandMarketResearchDossier(params: {
         ? Math.max(5, Math.round(((defaultListPrice - defaultDealPrice) / defaultListPrice) * 100))
         : 15;
 
-    skuPortfolio.push({
+    skuPortfolio.unshift({
       id: `sku-hero-${cleanKey}-01`,
       skuCode:
         matchedUpbaseBrand?.heroProducts?.[0]?.sku ||
@@ -3720,23 +3634,15 @@ export function generateBrandMarketResearchDossier(params: {
       listPriceVnd: defaultListPrice,
       dealPriceVnd: defaultDealPrice,
       discountPct: discPct,
-      unitEconomicsNote:
-        totalBudgetNetVnd > 0
-          ? `Hạn mức ngân sách Net tháng 10: ${totalBudgetNetVnd.toLocaleString('vi-VN')}đ (${internalStoresAudit.length || 1} gian hàng)`
-          : params.primaryLiveTikTokSignal
-            ? `Quét trực tiếp TikTok @${params.primaryLiveTikTokSignal.handle.replace(/^@+/, '')}: ${params.primaryLiveTikTokSignal.followers.toLocaleString('vi-VN')} flw · ER ${params.primaryLiveTikTokSignal.avgEngagementRatePct}%`
-            : `Vận hành theo định mức gian hàng ${brandName}`,
+      unitEconomicsNote: params.primaryLiveTikTokSignal
+        ? `Quét trực tiếp TikTok @${params.primaryLiveTikTokSignal.handle.replace(/^@+/, '')}: ${params.primaryLiveTikTokSignal.followers.toLocaleString('vi-VN')} flw · ER ${params.primaryLiveTikTokSignal.avgEngagementRatePct}%`
+        : `Niêm yết trên kênh chính hãng ${brandName}`,
       affiliateCommissionPct: defaultAffComm,
-      estimatedGmvSharePct: 100,
-      monthlySalesEstimate:
-        totalPlannedVideos > 0
-          ? `Chỉ tiêu kế hoạch: ${totalPlannedVideos} video (File 4.1)`
-          : params.primaryLiveTikTokSignal
-            ? `${params.primaryLiveTikTokSignal.detectedKocCount} video KOC mẫu (${params.primaryLiveTikTokSignal.totalSampleViews.toLocaleString('vi-VN')} views)`
-            : 'Đang theo dõi trên TikTok Shop & Shopee Mall',
-      avgRatingText: matchedUpbaseBrand
-        ? `Quản lý bởi PIC: ${matchedUpbaseBrand.brandPicName || matchedUpbaseBrand.accountPic || 'Phòng B2C'}`
-        : `Ngành hàng: ${category}`,
+      estimatedGmvSharePct: skuPortfolio.length === 0 ? 100 : 45,
+      monthlySalesEstimate: params.primaryLiveTikTokSignal
+        ? `${params.primaryLiveTikTokSignal.detectedKocCount} video KOC mẫu (${params.primaryLiveTikTokSignal.totalSampleViews.toLocaleString('vi-VN')} views)`
+        : 'Đang mở bán trên TikTok Shop & Shopee Mall',
+      avgRatingText: `Ngành hàng: ${category}`,
       coreIngredientsOrSpecs:
         (brandCfg?.keySpecs || []).join(' · ') ||
         params.liveWebInspection?.extractedUsps?.[0] ||
@@ -3749,7 +3655,6 @@ export function generateBrandMarketResearchDossier(params: {
         matchedUpbaseBrand?.stores?.[0]?.storeUrl,
       evidenceIds: [
         distEvId,
-        ...(internalPlanEvIds[0] ? [internalPlanEvIds[0]] : []),
         ...(bookingLedgerEvIds[0] ? [bookingLedgerEvIds[0]] : []),
       ],
     });
@@ -3767,6 +3672,10 @@ export function generateBrandMarketResearchDossier(params: {
   for (const sig of params.liveScrapedCompetitors || []) {
     liveSignalsByHandle.set(normalizeKey(sig.handle), sig);
     liveSignalsByHandle.set(normalizeKey(sig.brandName), sig);
+    const shortBrand = sig.brandName.split(/[|–:-]/)[0].trim();
+    if (shortBrand) {
+      liveSignalsByHandle.set(normalizeKey(shortBrand), sig);
+    }
   }
   if (params.primaryLiveTikTokSignal) {
     liveSignalsByHandle.set(
@@ -3848,11 +3757,15 @@ export function generateBrandMarketResearchDossier(params: {
 
     const resolvedName =
       knownCfg?.canonicalBrandName || sig?.brandName || cleanName;
-    const resolvedListPrice = knownCfg?.defaultListPriceVnd || listPrice;
-    const resolvedDealPrice = knownCfg?.defaultDealPriceVnd || dealPrice;
+    const resolvedDealPrice =
+      sig?.scrapedDealPriceVnd || knownCfg?.defaultDealPriceVnd || dealPrice;
+    const resolvedListPrice =
+      sig?.scrapedListPriceVnd ||
+      knownCfg?.defaultListPriceVnd ||
+      Math.round((resolvedDealPrice * 1.18) / 1000) * 1000;
     const resolvedHeroSku =
-      knownCfg?.defaultHeroSkuName ||
       sig?.topPromotedProduct ||
+      knownCfg?.defaultHeroSkuName ||
       `Dòng sản phẩm chủ lực ${resolvedName}`;
 
     const cEvId = pushEvidence({
@@ -3876,35 +3789,50 @@ export function generateBrandMarketResearchDossier(params: {
       id: `comp-custom-${idx + 1}`,
       competitorName: resolvedName,
       tiktokHandle: sig ? `@${sig.handle.replace(/^@+/, '')}` : handle,
-      shopeeMallUrl: knownCfg?.shopeeMallUrl || knownCfg?.officialWebsiteUrl,
-      originCountry: knownCfg?.originCountry || 'Cùng phân khúc',
+      shopeeMallUrl:
+        sig?.scrapedWebsiteUrl || knownCfg?.shopeeMallUrl || knownCfg?.officialWebsiteUrl,
+      originCountry:
+        sig?.scrapedOriginCountry || knownCfg?.originCountry || 'Cùng phân khúc',
       priceSegment: knownCfg?.priceSegment || priceSegment,
       heroSkuName: resolvedHeroSku,
       packSizeText: knownCfg?.realSkus?.[0]?.packSize || 'Quy cách tiêu chuẩn',
       listPriceVnd: resolvedListPrice,
       dealPriceVnd: resolvedDealPrice,
       pricePerUnitComparison: sig
-        ? `Tổng lượt xem KOC mẫu vừa quét: ${sig.totalSampleViews.toLocaleString('vi-VN')} views`
+        ? `Quét trực tuyến: Giá ${resolvedDealPrice.toLocaleString('vi-VN')}đ${sig.totalSampleViews > 0 ? ` · ${sig.totalSampleViews.toLocaleString('vi-VN')} views KOC mẫu` : ''}`
         : `Đối chiếu trực tiếp với "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ)`,
       affiliateCommissionPct: knownCfg?.realSkus?.[0]?.affiliateCommissionPct || defaultAffComm,
       estimatedMonthlyVideoCount: sig ? sig.detectedKocCount : 0,
       estimatedMonthlyGmvVnd: undefined,
       storeRatingAndSoldText: sig
-        ? `${sig.followers.toLocaleString('vi-VN')} flw · ER ${sig.avgEngagementRatePct}% (${sig.detectedKocCount} KOC)`
+        ? `${sig.followers > 0 ? `${sig.followers.toLocaleString('vi-VN')} flw · ` : ''}Giá thực tế: ${resolvedDealPrice.toLocaleString('vi-VN')}đ${sig.detectedKocCount > 0 ? ` (${sig.detectedKocCount} KOC)` : ''}`
         : 'Bấm "Quét KOC" để cào dữ liệu KOC thực tế từ TikTok',
       tiktokChannelSharePct: 60,
       shopeeChannelSharePct: 40,
-      keyUsps: knownCfg?.keySpecs?.length
-        ? knownCfg.keySpecs
-        : [`Cạnh tranh trực tiếp trong nhóm ${SUB_INDUSTRY_SPECS[knownCfg?.subIndustry || subIndustryCode].categoryLabel}`],
-      customerComplaints: knownCfg?.customerComplaints?.length
-        ? knownCfg.customerComplaints
-        : ['Khách hàng so sánh kỹ về mức giá sau áp voucher và bằng chứng thực tế trên video KOC'],
+      keyUsps:
+        sig?.scrapedUsps && sig.scrapedUsps.length > 0
+          ? sig.scrapedUsps
+          : knownCfg?.keySpecs?.length
+            ? knownCfg.keySpecs
+            : [`Cạnh tranh trực tiếp trong nhóm ${SUB_INDUSTRY_SPECS[knownCfg?.subIndustry || subIndustryCode].categoryLabel}`],
+      customerComplaints:
+        sig?.scrapedComplaints && sig.scrapedComplaints.length > 0
+          ? sig.scrapedComplaints
+          : knownCfg?.customerComplaints?.length
+            ? knownCfg.customerComplaints
+            : [
+                resolvedDealPrice > dealPrice
+                  ? `Mức giá trên sàn của "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) cao hơn +${(resolvedDealPrice - dealPrice).toLocaleString('vi-VN')}đ so với "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ)`
+                  : `Khách hàng đòi hỏi bằng chứng kiểm nghiệm thực tế và so sánh độ thẩm thấu / hiệu quả dài hạn với "${heroSkuName}"`,
+              ],
       kocStrategySummary: sig
         ? `Đang triển khai ${sig.detectedKocCount} KOC được phát hiện trên TikTok với ER trung bình ${sig.avgEngagementRatePct}%.`
         : `Sử dụng nút "Quét KOC" để trích xuất danh sách KOC thực tế đang gắn thẻ ${handle}.`,
       dominantContentAngles: ['Review trải nghiệm thực tế', 'So sánh hiệu quả & giá'],
-      upbaseCounterPlay: `Tập trung chứng minh lợi điểm khác biệt của "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) và thu hút tệp KOC đang làm cho ${resolvedName}.`,
+      upbaseCounterPlay:
+        resolvedDealPrice > dealPrice
+          ? `Lên video đặt bàn cân chi phí: "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) tiết kiệm ${(resolvedDealPrice - dealPrice).toLocaleString('vi-VN')}đ/sản phẩm so với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}, đồng thời tăng hoa hồng KOC thêm +2% để thu hút tệp KOC của đối thủ.`
+          : `Đánh vào chất lượng thành phần, chứng nhận an toàn và combo quà tặng của "${heroSkuName}" (${dealPrice.toLocaleString('vi-VN')}đ) để thuyết phục tệp khách đang phân vân với "${resolvedHeroSku}" (${resolvedDealPrice.toLocaleString('vi-VN')}đ) của ${resolvedName}.`,
       evidenceIds: [cEvId],
     };
   });
@@ -3925,10 +3853,18 @@ export function generateBrandMarketResearchDossier(params: {
           avoid: f.dontSayWords,
         }));
 
+  const webExtractedPainPoints = (params.liveAutoWebIntel?.searchSnippets || [])
+    .map((s) => s.snippet)
+    .filter((sn) =>
+      /dành cho|giúp|cải thiện|khắc phục|xử lý|phục hồi|giảm|ngừa|dưỡng|làm sạch|cấp ẩm/i.test(sn)
+    )
+    .slice(0, 2)
+    .map((sn) => sn.slice(0, 140).trim());
+
   const painPointsList =
     params.savedBrandProfile?.positioning?.painPoints?.length
       ? params.savedBrandProfile.positioning.painPoints
-      : subSpec.painPoints;
+      : Array.from(new Set([...subSpec.painPoints, ...webExtractedPainPoints])).slice(0, 4);
   const barriersList =
     params.savedBrandProfile?.positioning?.barriersToTrial?.length
       ? params.savedBrandProfile.positioning.barriersToTrial
@@ -3936,10 +3872,13 @@ export function generateBrandMarketResearchDossier(params: {
   const rtbsList =
     params.savedBrandProfile?.positioning?.rtbs?.length
       ? params.savedBrandProfile.positioning.rtbs
-      : [
-          ...(brandCfg?.keySpecs || []),
-          ...subSpec.rtbs,
-        ];
+      : Array.from(
+          new Set([
+            ...(params.liveAutoWebIntel?.extractedUsps || []).slice(0, 2),
+            ...(brandCfg?.keySpecs || []),
+            ...subSpec.rtbs,
+          ])
+        ).slice(0, 5);
 
   const autoMinedClusters =
     params.liveMinedCommentTexts && params.liveMinedCommentTexts.length > 0
@@ -4288,27 +4227,64 @@ export function generateBrandMarketResearchDossier(params: {
     platformComplianceRules: subSpec.complianceRules,
   };
 
+  const secondarySkuName = skuPortfolio[1]?.productName || heroSkuName;
+  const secondaryDealPrice = skuPortfolio[1]?.dealPriceVnd || dealPrice;
+  const primaryComp = competitors[0];
+
   const contentAngleBlueprints: WinningContentAngleBlueprint[] = [
     {
       id: `angle-${cleanKey}-01`,
       pillarName: subSpec.contentPillars[0] || `Xử lý vấn đề khách hàng gặp phải`,
       targetPersona: subSpec.targetAudience,
       hook3s: `Cách dùng ${heroSkuName} xử lý tình trạng "${(painPointsList[0] || '').slice(0, 55)}"`,
-      visualProof: `Quay cận cảnh chất sản phẩm "${heroSkuName}" và thao tác dùng thực tế.`,
+      visualProof: `Quay cận cảnh chất sản phẩm "${heroSkuName}" trên nền da thật dưới camera thường và thao tác dùng thực tế.`,
       keyMessageRtb: mergedUsps[0] || subSpec.rtbs[0],
-      recommendedCta: `Chọn tại giỏ hàng gian hàng chính hãng ${brandName} (giá ${dealPrice.toLocaleString('vi-VN')}đ).`,
+      recommendedCta: `Chọn tại giỏ hàng gian hàng chính hãng ${brandName} (giá ưu đãi ${dealPrice.toLocaleString('vi-VN')}đ).`,
       bestKocTier: 'KL1 & KL2',
       evidenceIds: [distEvId],
     },
     {
       id: `angle-${cleanKey}-02`,
-      pillarName: subSpec.contentPillars[1] || `Kiểm tra thành phần & độ an toàn`,
+      pillarName: subSpec.contentPillars[1] || `Mổ xẻ thành phần & Kiểm chứng độ an toàn`,
       targetPersona: `Khách phân vân: "${barriersList[0]}"`,
-      hook3s: `Kiểm tra bảng thành phần và độ thấm thực tế của ${heroSkuName}`,
-      visualProof: `Quay rõ bao bì, tem phụ, bảng thành phần và tính chi phí mỗi lần dùng (${dealPrice.toLocaleString('vi-VN')}đ).`,
+      hook3s: `Kiểm tra bảng thành phần và độ thấm thực tế của ${heroSkuName} sau 15 giây`,
+      visualProof: `Quay rõ bao bì, tem phụ chính hãng, bảng hoạt chất và thử độ thấm không bết dính trên da.`,
       keyMessageRtb: mergedUsps[1] || subSpec.rtbs[1] || subSpec.rtbs[0],
-      recommendedCta: `Đặt tại gian hàng chính hãng ${brandName} kèm quà tặng trong giỏ hàng.`,
-      bestKocTier: 'KL2 & KL3',
+      recommendedCta: `Đặt tại gian hàng chính hãng ${brandName} kèm quà tặng trong giỏ hàng góc trái.`,
+      bestKocTier: 'KL2 & KL3 (Chuyên gia / Dược sĩ)',
+      evidenceIds: [distEvId],
+    },
+    {
+      id: `angle-${cleanKey}-03`,
+      pillarName: `Bài toán kinh tế & Đối sánh cùng phân khúc`,
+      targetPersona: `Khách hàng đang cân nhắc giữa ${brandName} và ${primaryComp?.competitorName || 'các dòng cùng phân khúc'}`,
+      hook3s: `Với ${dealPrice.toLocaleString('vi-VN')}đ cho ${heroSkuName}, tính ra mỗi ngày chỉ tốn vài nghìn đồng mà giải quyết gọn điểm yếu "${(primaryComp?.customerComplaints?.[0] || barriersList[0]).slice(0, 50)}"`,
+      visualProof: `Đặt sản phẩm lên bàn cân dung tích / số ngày sử dụng và test trực tiếp kết cấu của "${heroSkuName}".`,
+      keyMessageRtb: primaryComp?.upbaseCounterPlay || mergedUsps[0] || subSpec.rtbs[0],
+      recommendedCta: `Bấm giỏ hàng săn ngay mức giá ${dealPrice.toLocaleString('vi-VN')}đ trước khi hết khung giờ Flash Sale.`,
+      bestKocTier: 'KL2 & KL3 (Review chi tiết)',
+      evidenceIds: [distEvId],
+    },
+    {
+      id: `angle-${cleanKey}-04`,
+      pillarName: `Trả lời bình luận hoài nghi (Reply to Comment)`,
+      targetPersona: `Khách để lại câu hỏi dưới video KOC về độ hợp cơ địa & hàng chính hãng`,
+      hook3s: `Trả lời câu hỏi nhiều bạn thắc mắc nhất về ${heroSkuName}: "${(reviewClustersWithEv[0]?.suggestedFaqQuestion || `Dùng ${brandName} bao lâu thì thấy hiệu quả?`).slice(0, 65)}"`,
+      visualProof: `Ghim bình luận thật của khách lên đầu màn hình 3 giây đầu, vừa thoa sản phẩm vừa giải đáp trực diện.`,
+      keyMessageRtb: reviewClustersWithEv[0]?.suggestedFaqAnswer || subSpec.rtbs[0],
+      recommendedCta: `Xem kỹ phân loại trong giỏ hàng góc trái để chọn đúng dòng phù hợp nhất.`,
+      bestKocTier: 'KL1, KL2 & Kênh Tự Vận Hành (Self-channel)',
+      evidenceIds: [distEvId],
+    },
+    {
+      id: `angle-${cleanKey}-05`,
+      pillarName: `Kết hợp chu trình (Routine) & Săn Combo Ngày Đôi`,
+      targetPersona: `Khách hàng mua lặp lại hoặc muốn kết hợp trọn bộ ${brandName}`,
+      hook3s: `Chu trình kết hợp ${heroSkuName} và ${secondarySkuName} giúp nhân đôi hiệu quả mà tiết kiệm ngay ${discountPct}%`,
+      visualProof: `Quay trọn bộ sản phẩm + quà tặng kèm khi mở hộp (Unboxing), hướng dẫn thứ tự dùng sáng – tối.`,
+      keyMessageRtb: fourP.winningBundleMechanics[0] || `Combo tiết kiệm chính hãng ${brandName} (${secondaryDealPrice.toLocaleString('vi-VN')}đ – ${dealPrice.toLocaleString('vi-VN')}đ)`,
+      recommendedCta: `Chọn phân loại Combo trong giỏ hàng để áp chồng mã giảm giá sàn + miễn phí vận chuyển.`,
+      bestKocTier: 'KL2, KL3 & Host Livestream',
       evidenceIds: [distEvId],
     },
   ];
@@ -4630,29 +4606,36 @@ export function analyzeRawCustomerCommentsToClusters(
   const barrierQuotes: string[] = [];
   const complaintQuotes: string[] = [];
   const buyingQuotes: string[] = [];
+  const routineQuotes: string[] = [];
   const positiveQuotes: string[] = [];
 
   for (const text of cleaned) {
     if (
-      /sợ|kích ứng|dị ứng|bầu|nhạy cảm|hàng giả|chính hãng|thật không|cócorticoid|corticoid|nóng không|mỏng da|đắt|giá cao/i.test(
+      /sợ|kích ứng|dị ứng|bầu|cho con bú|sơ sinh|nhạy cảm|hàng giả|hàng nhái|chính hãng|thật không|cócorticoid|corticoid|cồn|paraben|hương liệu|nóng không|mỏng da|đắt|giá cao/i.test(
         text
       )
     ) {
       barrierQuotes.push(text);
     } else if (
-      /vón cục|bết|rít|nhờn|mùi nồng|lỏng|vỡ|chảy|không hợp|bị lên mụn|châm chích|trắng bệch|xuống tông/i.test(
+      /vón cục|bết|rít|nhờn|mùi nồng|hắc|lỏng|vỡ|chảy|vòi|nắp|không hợp|bị lên mụn|châm chích|trắng bệch|xuống tông|khác mẫu|so với|hãng kia/i.test(
         text
       )
     ) {
       complaintQuotes.push(text);
     } else if (
-      /giá sao|bao nhiêu|mua ở đâu|combo|tặng|ship|còn hàng|tư vấn|loại nào hợp|mấy tuổi/i.test(
+      /cách dùng|dùng sao|mấy lần|sáng hay tối|kết hợp|dùng chung|bôi trước|bôi sau|routine|dùng với|bao lâu/i.test(
+        text
+      )
+    ) {
+      routineQuotes.push(text);
+    } else if (
+      /giá sao|bao nhiêu|mua ở đâu|combo|tặng|quà|voucher|ship|còn hàng|tư vấn|loại nào hợp|mấy tuổi|size|dung tích|ml/i.test(
         text
       )
     ) {
       buyingQuotes.push(text);
     } else if (
-      /bị mụn|khô da|nám|thâm|rôm sảy|chàm|hăm|ngứa|rụng tóc|mệt mỏi|đổ dầu|lỗ chân lông|muỗi đốt|rạn/i.test(
+      /bị mụn|mụn ẩn|mụn viêm|khô da|bong tróc|nám|tàn nhang|thâm|rôm sảy|chàm|hăm|ngứa|rụng tóc|xơ rối|mệt mỏi|đổ dầu|lỗ chân lông|muỗi đốt|rạn/i.test(
         text
       )
     ) {
@@ -4666,76 +4649,97 @@ export function analyzeRawCustomerCommentsToClusters(
   const clusters: ReviewMiningCluster[] = [];
 
   if (painPointQuotes.length > 0) {
+    const sample = painPointQuotes[0].slice(0, 60);
     clusters.push({
       id: 'mined-pain-points',
       category: 'PAIN_POINT',
       categoryLabel: 'Nỗi đau khách hàng',
-      topicTitle: 'Vấn đề thực tế khách hàng đang gặp phải và cần giải pháp xử lý nhanh',
+      topicTitle: `Tình trạng thực tế khách gặp phải ("${sample}${painPointQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: painPointQuotes.length,
       sharePct: Math.round((painPointQuotes.length / total) * 100),
       sampleQuotes: painPointQuotes.slice(0, 4),
-      recommendedScriptHook: `Ai đang gặp đúng tình trạng "${painPointQuotes[0].slice(0, 55)}..." thì xem ngay cách xử lý thực tế này nhé!`,
-      suggestedFaqQuestion: `Sản phẩm ${brandName} xử lý tình trạng này trong bao lâu thì thấy cải thiện?`,
-      suggestedFaqAnswer: `Tùy theo cơ địa và mức độ thực tế, khách hàng thường cảm nhận sự làm dịu và cải thiện bước đầu sau 3–7 ngày sử dụng đều đặn đúng hướng dẫn.`,
+      recommendedScriptHook: `Ai đang gặp đúng tình trạng "${painPointQuotes[0].slice(0, 55)}" thì xem ngay cách xử lý thực tế với ${brandName} nhé!`,
+      suggestedFaqQuestion: `Đang gặp tình trạng "${painPointQuotes[0].slice(0, 45)}" thì dùng ${brandName} bao lâu thấy cải thiện?`,
+      suggestedFaqAnswer: `Tùy theo cơ địa và mức độ thực tế, khách hàng thường cảm nhận sự làm dịu bước đầu sau 3–7 ngày và cải thiện rõ rệt sau 2–4 tuần sử dụng đều đặn đúng hướng dẫn của ${brandName}.`,
     });
   }
 
   if (barrierQuotes.length > 0) {
+    const sample = barrierQuotes[0].slice(0, 60);
     clusters.push({
       id: 'mined-barriers',
       category: 'BARRIER_TO_TRIAL',
       categoryLabel: 'Rào cản ngần ngại mua',
-      topicTitle: 'Lo ngại về độ lành tính, cơ địa nhạy cảm hoặc nguồn gốc chính hãng',
+      topicTitle: `Lo ngại về độ an toàn, kích ứng & chính hãng ("${sample}${barrierQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: barrierQuotes.length,
       sharePct: Math.round((barrierQuotes.length / total) * 100),
       sampleQuotes: barrierQuotes.slice(0, 4),
-      recommendedScriptHook: `Giải đáp thắc mắc nhiều bạn hỏi nhất: Cơ địa nhạy cảm dùng ${brandName} có sợ kích ứng không?`,
-      suggestedFaqQuestion: `Cơ địa nhạy cảm hoặc phụ nữ mang thai/cho con bú có dùng được ${brandName} không?`,
-      suggestedFaqAnswer: `Bảng thành phần đã qua kiểm định an toàn, không chứa các chất gây hại. Tuy nhiên với cơ địa đặc biệt nhạy cảm, khách hàng nên thử trước một lượng nhỏ ở vùng da cổ tay.`,
+      recommendedScriptHook: `Giải đáp thắc mắc nhiều bạn hỏi nhất: "${barrierQuotes[0].slice(0, 58)}" — Kiểm chứng trực tiếp trên ${brandName}!`,
+      suggestedFaqQuestion: `Cơ địa nhạy cảm dùng ${brandName} có lo kích ứng không và làm sao kiểm tra hàng chính hãng?`,
+      suggestedFaqAnswer: `Sản phẩm ${brandName} phân phối trên gian hàng chính hãng có đầy đủ tem phụ, mã QR và bảng thành phần đã qua kiểm định an toàn. Với nền da cực kỳ nhạy cảm, nên test thử ở vùng da nhỏ trước khi thoa toàn mặt.`,
     });
   }
 
   if (complaintQuotes.length > 0) {
+    const sample = complaintQuotes[0].slice(0, 60);
     clusters.push({
       id: 'mined-complaints',
       category: 'COMPETITOR_COMPLAINT',
-      categoryLabel: 'Trải nghiệm chưa hài lòng / Lỗ hổng đối thủ',
-      topicTitle: 'Phàn nàn về kết cấu (bết dính, vón cục, mùi hương) hoặc quy cách đóng gói',
+      categoryLabel: 'Trải nghiệm kết cấu / So sánh đối thủ',
+      topicTitle: `Băn khoăn về kết cấu, mùi hương hoặc so sánh sản phẩm ("${sample}${complaintQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: complaintQuotes.length,
       sharePct: Math.round((complaintQuotes.length / total) * 100),
       sampleQuotes: complaintQuotes.slice(0, 4),
-      recommendedScriptHook: `Chấm dứt cảnh bôi lên bị bết rít khó chịu — test trực tiếp kết cấu thật của ${brandName} dưới camera thường!`,
-      suggestedFaqQuestion: `Kết cấu sản phẩm khi dùng ban ngày có gây nhờn rít hay bí bách không?`,
-      suggestedFaqAnswer: `Sản phẩm được tối ưu kết cấu mỏng nhẹ, thẩm thấu nhanh chỉ sau 15–30 giây khi vỗ đều, không để lại vệt trắng hay cảm giác bết dính.`,
+      recommendedScriptHook: `Test trực tiếp dưới camera thường để giải đáp bình luận: "${complaintQuotes[0].slice(0, 55)}"!`,
+      suggestedFaqQuestion: `Kết cấu thực tế của ${brandName} khi thoa lên da có bị bết dính, vón cục hay mùi nồng không?`,
+      suggestedFaqAnswer: `Kết cấu của ${brandName} được tinh chỉnh mỏng nhẹ, thẩm thấu nhanh sau 15–30 giây khi vỗ đều trên nền da ẩm nhẹ, không gây nhờn rít hay vón cục.`,
+    });
+  }
+
+  if (routineQuotes.length > 0) {
+    const sample = routineQuotes[0].slice(0, 60);
+    clusters.push({
+      id: 'mined-routine',
+      category: 'BUYING_QUESTION',
+      categoryLabel: 'Hướng dẫn sử dụng & Kết hợp Routine',
+      topicTitle: `Thắc mắc cách dùng, liều lượng & kết hợp hoạt chất ("${sample}${routineQuotes[0].length > 60 ? '...' : ''}")`,
+      mentionCount: routineQuotes.length,
+      sharePct: Math.round((routineQuotes.length / total) * 100),
+      sampleQuotes: routineQuotes.slice(0, 4),
+      recommendedScriptHook: `Trả lời bình luận "${routineQuotes[0].slice(0, 55)}": Hướng dẫn đúng thứ tự và liều lượng chuẩn để đạt hiệu quả tối đa!`,
+      suggestedFaqQuestion: `Sử dụng ${brandName} vào bước nào trong chu trình và kết hợp với các sản phẩm khác thế nào?`,
+      suggestedFaqAnswer: `Sử dụng đều đặn 1–2 lần/ngày sau bước làm sạch. Khi kết hợp nhiều sản phẩm, ưu tiên nguyên tắc lỏng trước – đặc sau và đợi khoảng 1–2 phút giữa các lớp để sản phẩm thẩm thấu hoàn toàn.`,
     });
   }
 
   if (buyingQuotes.length > 0) {
+    const sample = buyingQuotes[0].slice(0, 60);
     clusters.push({
       id: 'mined-buying',
       category: 'BUYING_QUESTION',
       categoryLabel: 'Câu hỏi chốt đơn & Chọn phân loại',
-      topicTitle: 'Khách hỏi cách chọn đúng phân loại/tông màu và ưu đãi quà tặng kèm',
+      topicTitle: `Tư vấn chọn phân loại, dung tích & ưu đãi quà tặng ("${sample}${buyingQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: buyingQuotes.length,
       sharePct: Math.round((buyingQuotes.length / total) * 100),
       sampleQuotes: buyingQuotes.slice(0, 4),
-      recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} trong 15 giây để không mua nhầm và nhận đủ quà tặng kèm!`,
-      suggestedFaqQuestion: `Nên chọn phân loại nào phù hợp nhất và mua combo có được tặng quà không?`,
-      suggestedFaqAnswer: `Khách hàng có thể đối chiếu bảng phân loại trên ảnh sản phẩm hoặc nhắn tin trực tiếp để chuyên viên tư vấn 1:1. Các đơn hàng đặt trong khung giờ ưu đãi đều được tự động đính kèm quà tặng trong giỏ hàng.`,
+      recommendedScriptHook: `Hướng dẫn chọn chuẩn phân loại ${brandName} trong 15 giây để nhận trọn bộ quà tặng và voucher trong giỏ hàng!`,
+      suggestedFaqQuestion: `Nên chọn phân loại dung tích nào tiết kiệm nhất và đặt hôm nay có quà tặng kèm không?`,
+      suggestedFaqAnswer: `Khách hàng dùng thử có thể chọn size tiêu chuẩn, hoặc chọn phân loại Combo trong giỏ hàng để tiết kiệm 15%–25% kèm quà tặng chính hãng tự động hiển thị ở bước thanh toán.`,
     });
   }
 
   if (positiveQuotes.length > 0) {
+    const sample = positiveQuotes[0].slice(0, 60);
     clusters.push({
       id: 'mined-positive',
       category: 'POSITIVE_RTB',
       categoryLabel: 'Bằng chứng khen ngợi (RTB)',
-      topicTitle: 'Khách hàng xác nhận hiệu quả thực tế và mua lặp lại',
+      topicTitle: `Phản hồi tích cực & xác nhận hiệu quả thực tế ("${sample}${positiveQuotes[0].length > 60 ? '...' : ''}")`,
       mentionCount: positiveQuotes.length,
       sharePct: Math.round((positiveQuotes.length / total) * 100),
       sampleQuotes: positiveQuotes.slice(0, 4),
-      recommendedScriptHook: `Lý do khách hàng mua lặp lại sản phẩm của ${brandName}: Xem phản hồi thực tế!`,
-      suggestedFaqQuestion: `Có thể sử dụng sản phẩm duy trì lâu dài hàng ngày không?`,
+      recommendedScriptHook: `Tổng hợp phản hồi thật của khách hàng sau khi dùng ${brandName}: "${positiveQuotes[0].slice(0, 55)}"!`,
+      suggestedFaqQuestion: `Có thể sử dụng sản phẩm ${brandName} duy trì lâu dài hàng ngày không?`,
       suggestedFaqAnswer: `Sản phẩm hoàn toàn phù hợp để sử dụng duy trì lâu dài mỗi ngày nhằm bảo vệ và nuôi dưỡng hiệu quả bền vững.`,
     });
   }
@@ -4814,10 +4818,10 @@ export function buildCompetitorMatrixCsv(dossier: BrandMarketResearchDossier): s
  */
 export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDossier): string {
   const lines: string[] = [
-    `# HỒ SƠ NGHIÊN CỨU THƯƠNG HIỆU, THỊ TRƯỜNG & ĐỐI THỦ: ${dossier.brandName.toUpperCase()}`,
+    `# BÁO CÁO NGHIÊN CỨU THƯƠNG HIỆU, THỊ TRƯỜNG & ĐỐI THỦ: ${dossier.brandName.toUpperCase()}`,
     `- **Ngành hàng:** ${dossier.category}`,
     `- **Xuất xứ:** ${dossier.originCountry}`,
-    `- **Trạng thái quản lý:** ${dossier.isUpbaseManaged ? `UpBase B2C đang vận hành (${dossier.internalExecutionAudit.totalStoresCount} gian hàng · PIC: ${dossier.accountPic || 'Phòng B2C'})` : 'Nghiên cứu mở rộng'}`,
+    `- **Khoảng giá thị trường:** ${dossier.fourP.priceRangeText}`,
     `- **Thời điểm lập báo cáo:** ${new Date(dossier.analyzedAt).toLocaleString('vi-VN')}`,
     '',
     '## 1. TÓM TẮT ĐIỀU HÀNH (EXECUTIVE SUMMARY)',
@@ -4833,7 +4837,7 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
     `- **Cơ chế Khuyến mãi & Bundle (Promotion):** ${dossier.fourP.winningBundleMechanics.join(' | ')}`,
     '',
     '## 3. MA TRẬN DANH MỤC SẢN PHẨM (SKU PORTFOLIO)',
-    '| Mã SKU | Vai trò Phễu | Tên sản phẩm | Quy cách | Giá Niêm yết | Giá Deal | HH KOC | Ghi chú |',
+    '| Mã SKU | Vai trò Phễu | Tên sản phẩm | Quy cách | Giá Niêm yết | Giá Bán/Deal | HH KOC | Ghi chú |',
     '|---|---|---|---|---|---|---|---|',
     ...dossier.skuPortfolio.map(
       (s) =>
@@ -4843,6 +4847,9 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
     '## 4. KẾT QUẢ TÌM KIẾM TRÊN MẠNG & SÀN TMĐT',
     ...(dossier.liveAutoWebIntel?.officialWebsiteUrl
       ? [`- **Website hãng:** ${dossier.liveAutoWebIntel.officialWebsiteUrl}`]
+      : []),
+    ...(dossier.liveAutoWebIntel?.shopeeUrl
+      ? [`- **Shopee Mall:** ${dossier.liveAutoWebIntel.shopeeUrl}`]
       : []),
     ...(dossier.liveAutoWebIntel?.priceRangeVnd
       ? [`- **Khoảng giá cào thực tế:** ${dossier.liveAutoWebIntel.priceRangeVnd.formattedRange}`]
@@ -4859,14 +4866,36 @@ export function buildBrandResearchMarkdownReport(dossier: BrandMarketResearchDos
       : []),
     '',
     '## 5. MA TRẬN ĐỐI ĐẦU ĐỐI THỦ TRỰC TIẾP',
-    '| Đối thủ | Kênh TikTok | Sản phẩm đối đầu | Giá Deal | Điểm mạnh USP | Điểm yếu khách phàn nàn | Đề xuất triển khai |',
-    '|---|---|---|---|---|---|---|',
+    '| Đối thủ | Kênh TikTok | Xuất xứ | Sản phẩm đối đầu | Giá Bán | HH KOC | Điểm mạnh USP | Điểm yếu khách phàn nàn | Chiến lược phản công |',
+    '|---|---|---|---|---|---|---|---|---|',
     ...dossier.competitors.map(
       (c) =>
-        `| ${c.competitorName} | ${c.tiktokHandle} | ${c.heroSkuName} | ${c.dealPriceVnd.toLocaleString('vi-VN')}đ | ${c.keyUsps[0] || ''} | ${c.customerComplaints[0] || ''} | ${c.upbaseCounterPlay} |`
+        `| ${c.competitorName} | ${c.tiktokHandle} | ${c.originCountry} | ${c.heroSkuName} | ${c.dealPriceVnd.toLocaleString('vi-VN')}đ | ${c.affiliateCommissionPct}% | ${c.keyUsps[0] || ''} | ${c.customerComplaints[0] || ''} | ${c.upbaseCounterPlay} |`
     ),
     '',
-    '## 6. SỔ DẪN CHỨNG & NGUỒN XÁC THỰC DỮ LIỆU',
+    '## 6. PHÂN TÍCH TIẾNG NÓI KHÁCH HÀNG (VOC) & RÀO CẢN MUA HÀNG',
+    `- **Nỗi đau khách hàng gặp phải:** ${(dossier.positioning.painPoints || []).join(' | ')}`,
+    `- **Rào cản trước khi xuống tiền:** ${(dossier.positioning.barriersToTrial || []).join(' | ')}`,
+    `- **Bằng chứng thuyết phục (RTB):** ${(dossier.positioning.rtbs || []).join(' | ')}`,
+    ...dossier.reviewClusters.map(
+      (cl) =>
+        `- **[${cl.categoryLabel} — ${cl.sharePct}%] ${cl.topicTitle}**\n  - Bình luận tiêu biểu: ${cl.sampleQuotes.slice(0, 2).map((q) => `"${q}"`).join(' ; ')}\n  - Mở đầu video gợi ý: "${cl.recommendedScriptHook}"\n  - Câu trả lời chuẩn: "${cl.suggestedFaqAnswer}"`
+    ),
+    '',
+    '## 7. CHIẾN LƯỢC PHÂN TẦNG KOC & KỊCH BẢN CHUYỂN ĐỔI',
+    '| Tầng KOC | Quy mô Follower | Vai trò Phễu | Tỷ trọng Ngân sách | Tỷ trọng Video | Đơn giá tham chiếu | Chỉ tiêu ROAS |',
+    '|---|---|---|---|---|---|---|',
+    ...dossier.kocTierStrategy.map(
+      (t) =>
+        `| ${t.tierCode} (${t.tierLabel}) | ${t.followerRange} | ${t.funnelRole} | ${t.budgetWeightPct}% | ${t.videoVolumeWeightPct}% | ${t.avgBookingCostRangeVnd} | ${t.targetRoas} |`
+    ),
+    '',
+    ...dossier.contentAngleBlueprints.map(
+      (a, idx) =>
+        `### Kịch bản #${idx + 1}: ${a.pillarName} (${a.bestKocTier})\n- **Chân dung khách hàng:** ${a.targetPersona}\n- **Câu mở đầu 3s (Hook):** "${a.hook3s}"\n- **Cảnh quay chứng minh (Visual Proof):** ${a.visualProof}\n- **Thông điệp cốt lõi (RTB):** ${a.keyMessageRtb}\n- **Điều hướng mua hàng (CTA):** "${a.recommendedCta}"`
+    ),
+    '',
+    '## 8. SỔ DẪN CHỨNG & NGUỒN XÁC THỰC DỮ LIỆU',
     ...dossier.evidenceLedger.map(
       (ev) =>
         `- **[${ev.id}] [${ev.reliabilityTag}] ${ev.categoryLabel}** — *${ev.claimSupported}*\n  - Nguồn gốc: ${ev.sourceDocument}${ev.sourceUrl ? ` (${ev.sourceUrl})` : ''}\n  - Số liệu / Trích dẫn: ${ev.exactQuoteOrMetric}`

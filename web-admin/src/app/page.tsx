@@ -59,6 +59,7 @@ const KocKolHubView = dynamic(() => import('../components/views/KocKolHubView').
 const CentralizedRbacHubView = dynamic(() => import('../components/views/CentralizedRbacHubView').then(m => m.CentralizedRbacHubView), { loading: ViewLoading });
 const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
 const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
+const ApprovedBookingListView = dynamic(() => import('../components/views/ApprovedBookingListView').then(m => m.ApprovedBookingListView), { loading: ViewLoading });
 const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
 const CtvManagementView = dynamic(() => import('../components/views/CtvManagementView').then(m => m.CtvManagementView), { loading: ViewLoading });
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
@@ -73,6 +74,10 @@ const TikTokCrawlerHubView = dynamic(() => import('../components/views/TikTokCra
 const BrandMarketResearchHubView = dynamic(() => import('../components/views/BrandMarketResearchHubView').then(m => m.BrandMarketResearchHubView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
+import {
+  autoMapVideoAcceptanceByKocChannel,
+  extractTikTokChannelAndVideoFromInput,
+} from '../lib/approvedBookingList';
 import { loadAccessPolicy } from '../lib/policyClient';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
 import { 
@@ -278,6 +283,12 @@ export default function App() {
   const toastQueue = useToastQueue();
   const showToast = toastQueue.show;
 
+  const [approvedBookingListContext, setApprovedBookingListContext] = useState<{
+    storeName?: string;
+    monthKey?: string;
+    nonce: number;
+  } | null>(null);
+
   const [, setRbacVersion] = useState(0);
   useEffect(() => {
     const onRbacUpdated = (event: Event) => {
@@ -286,8 +297,26 @@ export default function App() {
       if (actor) setCurrentUser(prev => prev?.id === actor.id && JSON.stringify(prev) !== JSON.stringify(actor) ? actor : prev);
     };
     const onNavigateTab = (event: Event) => {
-      const tab = (event as CustomEvent<TabKey>).detail;
-      if (tab) handleSelectTab(tab);
+      const detail = (
+        event as CustomEvent<
+          TabKey | { tab: TabKey; storeName?: string; monthKey?: string }
+        >
+      ).detail;
+      if (!detail) return;
+      if (typeof detail === 'string') {
+        handleSelectTab(detail);
+        return;
+      }
+      if (detail.tab === 'approved-booking-list') {
+        setApprovedBookingListContext({
+          storeName: detail.storeName,
+          monthKey: detail.monthKey,
+          nonce: Date.now(),
+        });
+      }
+      if (detail.tab) {
+        handleSelectTab(detail.tab);
+      }
     };
     window.addEventListener('upbase-rbac-updated', onRbacUpdated);
     window.addEventListener('upbase-navigate-tab', onNavigateTab);
@@ -994,9 +1023,7 @@ export default function App() {
     try {
       const raw = localStorage.getItem('upbase_store_overrides_v1');
       const overrides = raw ? (JSON.parse(raw) as Record<string, Partial<StorePortfolioItem>>) : {};
-      // Danh sách PIC do server quản lý (store-pics); không lưu bản sao để khỏi đè danh sách mới khi tải lại.
-      const { pics: _pics, ...storeOverride } = updatedStore;
-      overrides[updatedStore.id] = storeOverride;
+      overrides[updatedStore.id] = updatedStore;
       localStorage.setItem('upbase_store_overrides_v1', JSON.stringify(overrides));
     } catch {
       // ignore storage errors
@@ -1036,7 +1063,32 @@ export default function App() {
 
   const handleUpdateDeal = (updatedDeal: BookingDealItem) => {
     setDeals(prev => prev.map(d => d.id === updatedDeal.id ? updatedDeal : d));
-    showToast(`Đã cập nhật deal ${updatedDeal.dealCode}. GMV 30 ngày: ${updatedDeal.gmv30.toLocaleString('vi-VN')} đ (ROI ${updatedDeal.roi.toFixed(2)})`);
+    const videoLink = updatedDeal.tiktokVideoUrl || updatedDeal.videoUrl || '';
+    const extracted = extractTikTokChannelAndVideoFromInput(videoLink);
+    const channelHandle =
+      extracted.channelHandle ||
+      (updatedDeal.kocChannelId ? updatedDeal.kocChannelId.replace(/^@/, '') : '');
+    if (channelHandle && (videoLink || updatedDeal.viewsCount > 0 || updatedDeal.gmv30 > 0)) {
+      autoMapVideoAcceptanceByKocChannel({
+        acceptances: [
+          {
+            channelHandle,
+            linkAir: videoLink,
+            videoId: extracted.videoId,
+            actualAirDate: updatedDeal.postedDate || updatedDeal.postDate,
+            sparkAdsCode: updatedDeal.sparkAdsCode,
+            views30d: updatedDeal.viewsCount,
+            gmv30d: updatedDeal.gmv30 || updatedDeal.affiliateGmv,
+            orders30d: updatedDeal.ordersCount || updatedDeal.orders30,
+            storeNameFilter: updatedDeal.storeName,
+          },
+        ],
+        allKocs: kocs,
+        allStores: storePortfolios,
+        allDeals: deals,
+      });
+    }
+    showToast(`Đã cập nhật deal ${updatedDeal.dealCode} và đồng bộ nghiệm thu vào List duyệt book & Sheet Brand`);
   };
 
   const handleKocCreated = (newKoc: KocItem) => {
@@ -1315,6 +1367,44 @@ export default function App() {
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
+              onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="approved-booking-list" currentTab={activeTab}>
+            <ApprovedBookingListView
+              kocs={kocs}
+              stores={scopedStores}
+              deals={scopedDeals}
+              currentUserName={currentUser.name}
+              initialStoreName={approvedBookingListContext?.storeName}
+              initialMonthKey={approvedBookingListContext?.monthKey}
+              onCreateOrUpdateDeals={(newOrUpdatedDeals) => {
+                setDeals((prev) => {
+                  const byCode = new Map(newOrUpdatedDeals.map((d) => [d.dealCode, d]));
+                  const existingCodes = new Set(prev.map((d) => d.dealCode));
+                  const updatedExisting = prev.map((d) => byCode.get(d.dealCode) || d);
+                  const brandNew = newOrUpdatedDeals.filter((d) => !existingCodes.has(d.dealCode));
+                  return [...brandNew, ...updatedExisting];
+                });
+              }}
+              onNavigateTab={(targetTab, ctx) => {
+                if (targetTab === 'koc-listing') {
+                  setListingPlanContext({
+                    storeName: ctx?.storeName || approvedBookingListContext?.storeName,
+                    monthKey: ctx?.monthKey || approvedBookingListContext?.monthKey,
+                    openStaffSheet: true,
+                    nonce: Date.now(),
+                  });
+                  handleSelectTab('koc-listing');
+                } else if (targetTab === 'booking') {
+                  handleDrilldownToBooking({
+                    storeName: ctx?.storeName || approvedBookingListContext?.storeName,
+                    month: ctx?.monthKey || approvedBookingListContext?.monthKey || '2026/10',
+                  });
+                }
+              }}
+              onNotify={showToast}
             />
           </KeepAliveTab>
 
@@ -1532,6 +1622,7 @@ export default function App() {
             <KocMasterDataView
               kocs={kocs}
               allDeals={scopedDeals}
+              stores={scopedStores}
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               selectedKocId={selectedKocContext}
@@ -1554,6 +1645,15 @@ export default function App() {
               }
               onSelectKocId={setSelectedKocContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
+              onOpenStaffBrandSheet={({ monthKey, storeName }) => {
+                setListingPlanContext({
+                  storeName,
+                  monthKey,
+                  openStaffSheet: true,
+                  nonce: Date.now(),
+                });
+                handleSelectTab('koc-listing');
+              }}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
               onOpenKocPortal={(kocId: string | null) => {
@@ -1801,6 +1901,8 @@ export default function App() {
             <TikTokCrawlerHubView
               currentUser={currentUser}
               kocs={kocs}
+              stores={scopedStores}
+              deals={scopedDeals}
               onSaveScrapedKocs={({ created, updated }) => {
                 if (created.length > 0 || updated.length > 0) {
                   setKocs((prev) => {
@@ -1822,6 +1924,15 @@ export default function App() {
                 setKocMasterReturnTab('tiktok-crawler');
                 setKocMasterOpenTrigger((v) => v + 1);
                 handleSelectTab('koc-master', { keepReturnContext: true });
+              }}
+              onOpenStaffBrandSheet={({ monthKey, storeName }) => {
+                setListingPlanContext({
+                  storeName,
+                  monthKey,
+                  openStaffSheet: true,
+                  nonce: Date.now(),
+                });
+                handleSelectTab('koc-listing');
               }}
             />
           </KeepAliveTab>

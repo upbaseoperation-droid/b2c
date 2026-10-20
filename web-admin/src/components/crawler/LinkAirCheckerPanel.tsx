@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Download, ExternalLink, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Check, Copy, Download, ExternalLink, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { formatDate, formatNumber } from '../../lib/format';
 import {
   buildLinkAirCsv,
@@ -105,6 +105,7 @@ export function LinkAirCheckerPanel({
   const [keywords, setKeywords] = useState('');
   const [minViews, setMinViews] = useState('');
   const [requireProductLink, setRequireProductLink] = useState(false);
+  const [expectedProductUrl, setExpectedProductUrl] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -127,6 +128,7 @@ export function LinkAirCheckerPanel({
     setKeywords((ex?.requiredKeywords || []).join(', '));
     setMinViews(ex?.minViews ? String(ex.minViews) : '');
     setRequireProductLink(Boolean(ex?.requireProductLink));
+    setExpectedProductUrl(ex?.expectedProductUrl || '');
   }
 
   const links = useMemo(() => splitLinkInput(linksText), [linksText]);
@@ -152,7 +154,8 @@ export function LinkAirCheckerPanel({
       airTo: airTo || undefined,
       requiredHashtags: splitTerms(hashtags),
       requiredKeywords: splitTerms(keywords),
-      requireProductLink,
+      requireProductLink: requireProductLink || Boolean(expectedProductUrl.trim()),
+      expectedProductUrl: expectedProductUrl.trim() || undefined,
       minViews: Number(minViews) > 0 ? Number(minViews) : undefined,
     };
     onStartCheck?.();
@@ -205,6 +208,7 @@ export function LinkAirCheckerPanel({
     setKeywords('');
     setMinViews('');
     setRequireProductLink(false);
+    setExpectedProductUrl('');
     setError('');
     setResults([]);
   };
@@ -236,6 +240,69 @@ export function LinkAirCheckerPanel({
     { key: 'views', header: 'View', align: 'right', render: (r) => num(r.metrics.views) },
     { key: 'likes', header: 'Like', align: 'right', render: (r) => num(r.metrics.likes) },
     { key: 'comments', header: 'Bình luận', align: 'right', render: (r) => num(r.metrics.comments) },
+    {
+      key: 'cart',
+      header: 'Giỏ hàng / Link SP',
+      render: (r) => {
+        const cartMatchCheck = r.checks.find((c) => c.key === 'cart_link_match');
+        if (r.hasProductLink === null) {
+          return <span className="text-ink-3">—</span>;
+        }
+        if (!r.hasProductLink) {
+          return (
+            <div className="space-y-0.5">
+              <span className="text-2xs text-ink-3 block">Chưa gắn giỏ</span>
+              {cartMatchCheck && (
+                <span className="text-2xs text-critical font-semibold block">
+                  ✕ Thiếu link giỏ mẫu
+                </span>
+              )}
+            </div>
+          );
+        }
+        const extraCount = (r.cartProducts?.length ?? 0) > 1 ? (r.cartProducts?.length ?? 1) - 1 : 0;
+        return (
+          <div className="min-w-0 max-w-[230px] space-y-0.5">
+            <p className="text-xs text-ink truncate" title={r.productTitle || 'Có gắn giỏ hàng'}>
+              {r.productTitle || 'Có gắn giỏ hàng'}
+            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {r.productUrl ? (
+                <a
+                  href={r.productUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+                >
+                  <ShoppingBag className="w-3 h-3 shrink-0" />
+                  <span>Link giỏ hàng</span>
+                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                </a>
+              ) : (
+                <span className="text-2xs text-positive font-medium">Đã gắn giỏ</span>
+              )}
+              {extraCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded bg-accent-soft text-accent text-2xs font-semibold">
+                  +{extraCount} SP
+                </span>
+              )}
+            </div>
+            {cartMatchCheck && (
+              <span
+                className={`text-2xs font-semibold block ${
+                  cartMatchCheck.status === 'PASS' ? 'text-positive' : 'text-critical'
+                }`}
+              >
+                {cartMatchCheck.status === 'PASS'
+                  ? '✓ Khớp link giỏ mẫu'
+                  : '✕ Lệch link giỏ mẫu'}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: 'verdict',
       header: 'Kết luận',
@@ -332,15 +399,28 @@ export function LinkAirCheckerPanel({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-            <label className="flex items-center gap-2 text-xs text-ink cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={requireProductLink}
-                onChange={(e) => setRequireProductLink(e.target.checked)}
-                className="w-3.5 h-3.5 accent-(--color-primary)"
-              />
-              Bắt buộc gắn giỏ hàng / link sản phẩm
-            </label>
+            <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[260px]">
+              <label className="flex items-center gap-2 text-xs text-ink cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={requireProductLink || Boolean(expectedProductUrl.trim())}
+                  onChange={(e) => setRequireProductLink(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-(--color-primary)"
+                />
+                Bắt buộc gắn giỏ hàng
+              </label>
+
+              <div className="flex-1 min-w-[220px] max-w-[420px]">
+                <Input
+                  id="link-air-expected-cart-url"
+                  aria-label="Link giỏ hàng mẫu đối chiếu"
+                  value={expectedProductUrl}
+                  onChange={(e) => setExpectedProductUrl(e.target.value)}
+                  placeholder="Dán link giỏ hàng mẫu hoặc mã SP để đối chiếu..."
+                  className="h-8 text-xs font-code"
+                />
+              </div>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               {error && <span className="text-2xs text-critical">{error}</span>}
@@ -403,6 +483,7 @@ export function LinkAirCheckerPanel({
 }
 
 function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null; onClose: () => void }) {
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   if (!result) return <Modal open={false} onClose={onClose} title="">{null}</Modal>;
   const r = result;
   const platformLabel = r.platform ? LINK_AIR_PLATFORM_LABEL[r.platform] : 'Không rõ nền tảng';
@@ -413,6 +494,27 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
     ['Chia sẻ', r.metrics.shares],
     ['Lưu', r.metrics.saves],
   ];
+
+  const cartItems =
+    r.cartProducts && r.cartProducts.length > 0
+      ? r.cartProducts
+      : r.hasProductLink && (r.productUrl || r.productTitle)
+      ? [
+          {
+            productId: r.productId || '',
+            sellerId: r.sellerId || undefined,
+            title: r.productTitle || 'Sản phẩm gắn trong giỏ hàng',
+            productUrl: r.productUrl || '',
+          },
+        ]
+      : [];
+
+  const copyLink = (url: string) => {
+    if (!url) return;
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl((prev) => (prev === url ? null : prev)), 2000);
+  };
 
   return (
     <Modal
@@ -453,11 +555,92 @@ function LinkAirDetailModal({ result, onClose }: { result: LinkAirResult | null;
               <li key={c.key} className="grid grid-cols-1 sm:grid-cols-[88px_150px_minmax(0,1fr)] gap-1 sm:gap-2 text-[13px]">
                 <span className={`font-medium ${CHECK_TONE[c.status]}`}>{CHECK_LABEL[c.status]}</span>
                 <span className="text-ink">{c.label}</span>
-                <span className="text-ink-2">{c.detail}</span>
+                <span className="text-ink-2 break-all">{c.detail}</span>
               </li>
             ))}
           </ul>
         </section>
+
+        {(r.hasProductLink !== null || cartItems.length > 0) && (
+          <section className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold text-ink inline-flex items-center gap-1.5">
+                <ShoppingBag className="w-4 h-4 text-accent" />
+                <span>Giỏ hàng & Link sản phẩm gắn kèm</span>
+              </h4>
+              {r.hasProductLink ? (
+                <Status tone="positive">
+                  Có gắn giỏ ({cartItems.length > 0 ? `${cartItems.length} SP` : 'Đã xác nhận'})
+                </Status>
+              ) : (
+                <Status tone="neutral">Chưa gắn giỏ hàng</Status>
+              )}
+            </div>
+
+            {cartItems.length > 0 ? (
+              <div className="grid gap-2">
+                {cartItems.map((item, idx) => (
+                  <div
+                    key={item.productId || item.productUrl || idx}
+                    className="p-2.5 rounded-xl border border-line bg-surface-2/60 grid gap-1.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="text-xs font-semibold text-ink leading-snug">
+                          {item.title}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3 font-code">
+                          {item.anchorKeyword && (
+                            <span className="px-1.5 py-0.5 rounded bg-accent-soft/50 text-accent font-sans font-medium">
+                              Nhãn giỏ: &ldquo;{item.anchorKeyword}&rdquo;
+                            </span>
+                          )}
+                          {item.productId && <span>Mã SP: {item.productId}</span>}
+                          {item.sellerId && <span>Mã Shop: {item.sellerId}</span>}
+                        </div>
+                      </div>
+                      {item.productUrl && (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={copiedUrl === item.productUrl ? Check : Copy}
+                            onClick={() => copyLink(item.productUrl)}
+                          >
+                            {copiedUrl === item.productUrl ? 'Đã chép' : 'Chép link'}
+                          </Button>
+                          <a
+                            href={item.productUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-accent text-white text-xs font-medium hover:opacity-90"
+                          >
+                            <span>Mở giỏ hàng</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    {item.productUrl && (
+                      <a
+                        href={item.productUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-2xs font-code text-accent hover:underline break-all"
+                      >
+                        {item.productUrl}
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : r.hasProductLink ? (
+              <p className="text-xs text-ink-2">
+                Bài đăng có bật cờ gắn giỏ hàng thương mại điện tử nhưng nền tảng không công khai đường dẫn chi tiết trên bản web.
+              </p>
+            ) : null}
+          </section>
+        )}
 
         {r.status === 'LIVE' && (
           <section className="grid gap-2">

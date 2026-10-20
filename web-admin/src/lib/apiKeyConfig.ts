@@ -798,9 +798,9 @@ export const INITIAL_API_WORKSPACE_CONFIG: ApiWorkspaceConfigState = {
       fallbackProvider: 'OPENAI',
       fallbackModel: 'gpt-6.1-sol',
       temperature: 0.25,
-      maxTokens: 2200,
+      maxTokens: 2800,
       systemInstruction:
-        'Bạn là Chuyên gia Nghiên cứu Thị trường & Định vị Thương hiệu B2C tại Upbase. Dựa trên dữ liệu 4P nhãn hàng, danh mục SKU, ma trận đối thủ cạnh tranh và các cụm bình luận khách hàng trên TikTok/Shopee, hãy lập báo cáo gồm: (1) Định vị & khoảng giá tối ưu, (2) Điểm yếu của đối thủ cần khai thác ngay trong kịch bản KOC, (3) 3 góc nội dung giải quyết trực diện nỗi đau & rào cản mua hàng của khách.',
+        'Bạn là Chuyên gia Nghiên cứu Thị trường & Cạnh tranh Thương mại Điện tử B2C. BẮT BUỘC ưu tiên khai thác dữ liệu từ khối [KẾT QUẢ TÌM KIẾM TRÊN MẠNG TRƯỚC KHI PHÂN TÍCH], bảng sản phẩm (SKU), ma trận đối thủ cạnh tranh và bình luận khách hàng trên Web/TikTok Shop/Shopee Mall. Trình bày báo cáo chuyên nghiệp bằng Markdown có tiêu đề phân mục (#, ##) và Bảng đối sánh (| ... |) rõ ràng gồm: (1) Dữ liệu thực tế thu thập từ Web & Sàn TMĐT, (2) Ma trận 4P & Phễu sản phẩm định giá (Hero/Traffic/Bundle SKU), (3) Bảng đối sánh trực diện đối thủ cạnh tranh (Giá bán, đơn giá/ml, hoa hồng Affiliate, điểm yếu khách phàn nàn 1-3 sao và chiến thuật đánh chặn), (4) Kịch bản Video KOC & Kế hoạch phân bổ ngân sách KL1-KL5 + FOC.',
       sampleInputText:
         'Thương hiệu: Kutieskin (Chăm sóc da Mẹ & Bé)\nKhoảng giá chủ lực: 85.000đ - 245.000đ | SKU mũi nhọn: Kem mẩn ngứa hăm (95.000đ), Kem chàm sữa (215.000đ).\nĐối thủ trực diện: Bepanthen, Mustela, Cỏ Mềm.\nCụm bình luận khách hàng nhiều nhất: Sợ chứa corticoid (42%), Hỏi trẻ sơ sinh 1 tháng tuổi bôi mặt được không (31%).',
     },

@@ -3,14 +3,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Check,
+  Clock,
   Download,
   ExternalLink,
+  History,
   Music,
   RefreshCw,
   Search,
   UserCheck,
+  XCircle,
 } from 'lucide-react';
-import type { KocItem, TikTokVideoItem } from '../../lib/types';
+import type { KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import {
   buildScrapedKocsCsv,
   mapScrapedResultToKocItem,
@@ -19,6 +22,12 @@ import {
 } from '../../lib/tiktokKocScraper';
 import { formatDate, formatNumber } from '../../lib/format';
 import { formatFollowers } from './kocUtils';
+import {
+  KocChannelReviewBadge,
+  KocChannelReviewModal,
+  type KocChannelReviewTarget,
+} from './KocChannelReviewModal';
+import { getVerdictTone, useKocChannelReviews } from '../../lib/kocChannelReviewService';
 import {
   Avatar,
   Button,
@@ -35,6 +44,7 @@ interface TikTokKocScraperModalProps {
   onClose: () => void;
   existingKocs: KocItem[];
   initialHandle?: string;
+  currentUser?: UserProfile;
   onApplyResults: (payload: { created: KocItem[]; updated: KocItem[] }) => void;
   onSaveScrapedSession?: (payload: {
     rawInput: string;
@@ -52,6 +62,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   onClose,
   existingKocs,
   initialHandle = '',
+  currentUser,
   onApplyResults,
   onSaveScrapedSession,
   onOpenKocInMaster,
@@ -67,6 +78,9 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [results, setResults] = useState<TikTokScrapedKocResult[]>([]);
   const [selectedHandle, setSelectedHandle] = useState<string>('');
+  const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false);
+  const [reviewTarget, setReviewTarget] = useState<KocChannelReviewTarget | null>(null);
+  const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
 
   const syncKey = `${open}-${initialHandle}`;
   const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
@@ -333,264 +347,412 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
   ).length;
   const updateCount = results.length - newCount;
 
+  const activeReviewSummary = useMemo(
+    () => (activeResult ? getChannelSummary(activeResult.handle) : undefined),
+    [activeResult, getChannelSummary]
+  );
+
+  const openChannelReview = (
+    resItem: TikTokScrapedKocResult,
+    initialVerdict?: 'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE'
+  ) => {
+    setReviewTarget({
+      handle: resItem.handle,
+      channelName: resItem.channelProfile.nickname || resItem.handle,
+      channelUrl: resItem.channelProfile.channelUrl,
+      avatarUrl: resItem.channelProfile.avatarUrl,
+      initialVerdict,
+      sourceScreen: 'Cào kênh theo @handle',
+    });
+    setReviewModalOpen(true);
+  };
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Lấy dữ liệu Kênh KOC trên TikTok"
-      size="2xl"
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Đóng
-          </Button>
-          {results.length > 0 && (
-            <>
-              {matchedActiveKoc && onOpenKocInMaster && (
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title="Lấy dữ liệu Kênh KOC trên TikTok"
+        size="2xl"
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Đóng
+            </Button>
+            {activeResult && (
+              <>
                 <Button
                   variant="secondary"
-                  icon={UserCheck}
-                  onClick={() => onOpenKocInMaster(matchedActiveKoc)}
+                  icon={Check}
+                  onClick={() => openChannelReview(activeResult, 'SUITABLE')}
                 >
-                  Mở hồ sơ danh bạ
+                  ĐG Phù hợp
                 </Button>
-              )}
-              <Button variant="secondary" icon={Download} onClick={handleExportCsv}>
-                Xuất file CSV
-              </Button>
-              <Button variant="primary" icon={Check} onClick={handleSaveToMaster}>
-                {results.length === 1
-                  ? existingByHandle.has(results[0].handle.toLowerCase().replace(/^@+/, ''))
-                    ? 'Cập nhật hồ sơ KOC'
-                    : 'Thêm vào danh bạ'
-                  : `Lưu ${results.length} kênh (${newCount} mới, ${updateCount} cập nhật)`}
-              </Button>
-            </>
-          )}
-        </>
-      }
-    >
-      <div className="space-y-3">
-        <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_185px_auto] gap-2.5 items-center">
-            <input
-              id="tiktok-scraper-input"
-              type="text"
-              aria-label="Kênh TikTok (@handle hoặc link kênh)"
-              value={rawInput}
-              onChange={(e) => setRawInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !loading) {
-                  e.preventDefault();
-                  void runScrape(rawInput, period, videoLimit);
-                }
-              }}
-              placeholder="Nhập @handle hoặc link kênh TikTok (cách nhau bằng dấu phẩy, VD: @megauriviu, @chanhbeauty)..."
-              className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
-            />
-
-            <Select
-              id="tiktok-scraper-video-limit"
-              aria-label="Số video đọc / kênh"
-              value={String(videoLimit)}
-              onChange={(e) => setVideoLimit(Number(e.target.value))}
-              className="h-9 text-xs"
-            >
-              {VIDEO_LIMIT_OPTIONS.map((num) => (
-                <option key={num} value={num}>
-                  Tối đa {num} video
-                </option>
-              ))}
-            </Select>
-
-            <Button
-              variant={results.length === 0 ? 'primary' : 'secondary'}
-              icon={loading ? RefreshCw : Search}
-              disabled={loading}
-              onClick={() => runScrape(rawInput, period, videoLimit)}
-            >
-              {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
-            </Button>
-          </div>
-
-          {errorMsg && <p className="text-2xs text-critical">{errorMsg}</p>}
-          {!loading && results.length > 0 && requestedHandlesCount > results.length && (
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <Status tone="warning">
-                Chỉ lấy được {results.length}/{requestedHandlesCount} kênh KOC yêu cầu (thiếu{' '}
-                {requestedHandlesCount - results.length} kênh)
-              </Status>
-            </div>
-          )}
-        </div>
-
-        {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
-        {results.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
-            {results.map((r) => {
-              const isSelected = r.handle === activeResult?.handle;
-              const isExisting = existingByHandle.has(r.handle.toLowerCase().replace(/^@+/, ''));
-              return (
-                <button
-                  key={r.handle}
-                  type="button"
-                  onClick={() => setSelectedHandle(r.handle)}
-                  className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                    isSelected
-                      ? 'bg-accent-soft border-accent text-ink font-semibold'
-                      : 'bg-surface border-line text-ink-2 hover:bg-canvas'
-                  }`}
+                <Button
+                  variant="secondary"
+                  icon={XCircle}
+                  onClick={() => openChannelReview(activeResult, 'NOT_SUITABLE')}
                 >
-                  <span>@{r.handle}</span>
-                  <span className="text-2xs text-ink-3 tabular-nums">
-                    {formatFollowers(r.channelProfile.followers)} flw · ER {r.engagementMetrics.engagementRate}%
-                  </span>
-                  <span className="text-2xs text-ink-3">
-                    ({isExisting ? 'Đã có' : 'Mới'})
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  Không phù hợp
+                </Button>
+                {activeReviewSummary && (
+                  <Button
+                    variant="secondary"
+                    icon={History}
+                    onClick={() => openChannelReview(activeResult)}
+                  >
+                    Lịch sử ĐG ({activeReviewSummary.totalReviews})
+                  </Button>
+                )}
+              </>
+            )}
+            {results.length > 0 && (
+              <>
+                {matchedActiveKoc && onOpenKocInMaster && (
+                  <Button
+                    variant="secondary"
+                    icon={UserCheck}
+                    onClick={() => onOpenKocInMaster(matchedActiveKoc)}
+                  >
+                    Mở hồ sơ danh bạ
+                  </Button>
+                )}
+                <Button variant="secondary" icon={Download} onClick={handleExportCsv}>
+                  Xuất file CSV
+                </Button>
+                <Button variant="primary" icon={Check} onClick={handleSaveToMaster}>
+                  {results.length === 1
+                    ? existingByHandle.has(results[0].handle.toLowerCase().replace(/^@+/, ''))
+                      ? 'Cập nhật hồ sơ KOC'
+                      : 'Thêm vào danh bạ'
+                    : `Lưu ${results.length} kênh (${newCount} mới, ${updateCount} cập nhật)`}
+                </Button>
+              </>
+            )}
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface space-y-2">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_185px_auto] gap-2.5 items-center">
+              <input
+                id="tiktok-scraper-input"
+                type="text"
+                aria-label="Kênh TikTok (@handle hoặc link kênh)"
+                value={rawInput}
+                onChange={(e) => setRawInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) {
+                    e.preventDefault();
+                    void runScrape(rawInput, period, videoLimit);
+                  }
+                }}
+                placeholder="Nhập @handle hoặc link kênh TikTok (cách nhau bằng dấu phẩy, VD: @megauriviu, @chanhbeauty)..."
+                className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-line-strong font-code"
+              />
 
-        {/* Chi tiết kênh & danh sách video của kênh đang chọn */}
-        {activeResult && (
-          <div className="space-y-3">
-            <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <Avatar
-                  name={activeResult.channelProfile.nickname}
-                  src={activeResult.channelProfile.avatarUrl}
-                  size={36}
-                />
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-xs font-semibold text-ink">
-                      {activeResult.channelProfile.nickname}
-                    </h3>
-                    <a
-                      href={activeResult.channelProfile.channelUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline font-code"
-                    >
-                      @{activeResult.channelProfile.handle}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                    {matchedActiveKoc ? (
-                      onOpenKocInMaster ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenKocInMaster(matchedActiveKoc)}
-                          title="Mở hồ sơ KOC trong Danh bạ KOC"
-                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
-                        >
-                          <UserCheck className="w-3 h-3 shrink-0" />
-                          <span>Đã có trong danh bạ · Xem hồ sơ</span>
-                        </button>
-                      ) : (
-                        <Status tone="neutral">Đã có trong danh bạ</Status>
-                      )
-                    ) : (
-                      <Status tone="positive">Kênh mới</Status>
-                    )}
-                    <span className="text-2xs text-ink-3">
-                      · SĐT:{' '}
-                      <strong className="font-semibold text-ink font-code">
-                        {activeResult.channelProfile.extractedPhone || '—'}
-                      </strong>
-                    </span>
-                    <span className="text-2xs text-ink-3">
-                      · Email:{' '}
-                      <strong className="font-semibold text-ink font-code">
-                        {activeResult.channelProfile.extractedEmail || '—'}
-                      </strong>
-                    </span>
-                  </div>
+              <Select
+                id="tiktok-scraper-video-limit"
+                aria-label="Số video đọc / kênh"
+                value={String(videoLimit)}
+                onChange={(e) => setVideoLimit(Number(e.target.value))}
+                className="h-9 text-xs"
+              >
+                {VIDEO_LIMIT_OPTIONS.map((num) => (
+                  <option key={num} value={num}>
+                    Tối đa {num} video
+                  </option>
+                ))}
+              </Select>
 
-                  {activeResult.channelProfile.bio && (
-                    <p className="text-2xs text-ink-2 truncate max-w-2xl">
-                      {activeResult.channelProfile.bio}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4 text-2xs tabular-nums shrink-0">
-                <span>
-                  <span className="text-ink-3">Follower: </span>
-                  <strong className="text-ink">
-                    {formatFollowers(activeResult.channelProfile.followers)}
-                  </strong>
-                </span>
-                <span>
-                  <span className="text-ink-3">Tổng video: </span>
-                  <strong className="text-ink">
-                    {formatNumber(activeResult.channelProfile.videoCount)}
-                  </strong>
-                </span>
-                <span>
-                  <span className="text-ink-3">View TB ({activeResult.recentVideos.length} bài): </span>
-                  <strong className="text-ink">
-                    {formatNumber(activeResult.engagementMetrics.avgViews)}
-                  </strong>
-                </span>
-                <span>
-                  <span className="text-ink-3">ER: </span>
-                  <strong className="text-positive">
-                    {activeResult.engagementMetrics.engagementRate}%
-                  </strong>
-                </span>
-              </div>
+              <Button
+                variant={results.length === 0 ? 'primary' : 'secondary'}
+                icon={loading ? RefreshCw : Search}
+                disabled={loading}
+                onClick={() => runScrape(rawInput, period, videoLimit)}
+              >
+                {loading ? 'Đang lấy dữ liệu...' : 'Lấy dữ liệu kênh'}
+              </Button>
             </div>
 
-            <Panel
-              flush
-              title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
-              actions={
-                <div className="flex flex-wrap items-center gap-2">
-                  {!loading &&
-                    loadingMoreHandle !== activeResult.handle &&
-                    activeResult.recentVideos.length < requestedVideoLimit && (
-                      <Status tone="warning">
-                        Chỉ lấy được {activeResult.recentVideos.length}/{requestedVideoLimit} video yêu cầu
-                      </Status>
+            {errorMsg && <p className="text-2xs text-critical">{errorMsg}</p>}
+            {!loading && results.length > 0 && requestedHandlesCount > results.length && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <Status tone="warning">
+                  Chỉ lấy được {results.length}/{requestedHandlesCount} kênh KOC yêu cầu (thiếu{' '}
+                  {requestedHandlesCount - results.length} kênh)
+                </Status>
+              </div>
+            )}
+          </div>
+
+          {/* Danh sách các kênh đã quét (nếu quét nhiều kênh) */}
+          {results.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-2xs text-ink-3 mr-1">Đã lấy {results.length} kênh:</span>
+              {results.map((r) => {
+                const isSelected = r.handle === activeResult?.handle;
+                const isExisting = existingByHandle.has(r.handle.toLowerCase().replace(/^@+/, ''));
+                const sum = getChannelSummary(r.handle);
+                return (
+                  <button
+                    key={r.handle}
+                    type="button"
+                    onClick={() => setSelectedHandle(r.handle)}
+                    className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                      isSelected
+                        ? 'bg-accent-soft border-accent text-ink font-semibold'
+                        : 'bg-surface border-line text-ink-2 hover:bg-canvas'
+                    }`}
+                  >
+                    <span>@{r.handle}</span>
+                    {sum && (
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                          sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
+                            ? 'bg-critical-soft text-critical'
+                            : 'bg-warning-soft text-warning'
+                        }`}
+                      >
+                        {sum.latestReview.verdictLabel}
+                      </span>
                     )}
-                  {activeResult.recentVideos.length < 100 &&
-                    activeResult.recentVideos.length < activeResult.channelProfile.videoCount && (
+                    <span className="text-2xs text-ink-3 tabular-nums">
+                      {formatFollowers(r.channelProfile.followers)} flw · ER {r.engagementMetrics.engagementRate}%
+                    </span>
+                    <span className="text-2xs text-ink-3">
+                      ({isExisting ? 'Đã có' : 'Mới'})
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Chi tiết kênh & danh sách video của kênh đang chọn */}
+          {activeResult && (
+            <div className="space-y-3">
+              <div className="px-3.5 py-2.5 rounded-xl border border-line bg-surface flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <Avatar
+                    name={activeResult.channelProfile.nickname}
+                    src={activeResult.channelProfile.avatarUrl}
+                    size={36}
+                  />
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xs font-semibold text-ink">
+                        {activeResult.channelProfile.nickname}
+                      </h3>
+                      <a
+                        href={activeResult.channelProfile.channelUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline font-code"
+                      >
+                        @{activeResult.channelProfile.handle}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                      {matchedActiveKoc ? (
+                        onOpenKocInMaster ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenKocInMaster(matchedActiveKoc)}
+                            title="Mở hồ sơ KOC trong Danh bạ KOC"
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-accent-soft border border-accent/30 text-accent hover:bg-accent hover:text-white transition-colors text-2xs font-semibold cursor-pointer"
+                          >
+                            <UserCheck className="w-3 h-3 shrink-0" />
+                            <span>Đã có trong danh bạ · Xem hồ sơ</span>
+                          </button>
+                        ) : (
+                          <Status tone="neutral">Đã có trong danh bạ</Status>
+                        )
+                      ) : (
+                        <Status tone="positive">Kênh mới</Status>
+                      )}
+                      {activeReviewSummary && (
+                        <KocChannelReviewBadge
+                          summary={activeReviewSummary}
+                          onClick={() => openChannelReview(activeResult)}
+                        />
+                      )}
                       <Button
                         size="sm"
                         variant="secondary"
-                        icon={RefreshCw}
-                        disabled={loadingMoreHandle === activeResult.handle || loading}
-                        onClick={() => {
-                          const nextPreset =
-                            VIDEO_LIMIT_OPTIONS.find(
-                              (opt) => opt > activeResult.recentVideos.length
-                            ) || 100;
-                          void handleLoadMoreVideos(activeResult.handle, nextPreset);
-                        }}
+                        icon={activeReviewSummary ? History : XCircle}
+                        onClick={() => openChannelReview(activeResult)}
                       >
-                        {loadingMoreHandle === activeResult.handle
-                          ? 'Đang tải thêm...'
-                          : 'Tải thêm video'}
+                        {activeReviewSummary
+                          ? `Lịch sử ĐG (${activeReviewSummary.totalReviews})`
+                          : 'Đánh giá không phù hợp'}
                       </Button>
+                      <span className="text-2xs text-ink-3">
+                        · SĐT:{' '}
+                        <strong className="font-semibold text-ink font-code">
+                          {activeResult.channelProfile.extractedPhone || '—'}
+                        </strong>
+                      </span>
+                      <span className="text-2xs text-ink-3">
+                        · Email:{' '}
+                        <strong className="font-semibold text-ink font-code">
+                          {activeResult.channelProfile.extractedEmail || '—'}
+                        </strong>
+                      </span>
+                    </div>
+
+                    {activeResult.channelProfile.bio && (
+                      <p className="text-2xs text-ink-2 truncate max-w-2xl">
+                        {activeResult.channelProfile.bio}
+                      </p>
                     )}
+                  </div>
                 </div>
-              }
-            >
-              <DataTable
-                columns={videoColumns}
-                rows={activeResult.recentVideos}
-                rowKey={(v) => v.videoId}
-                compact
-              />
-            </Panel>
-          </div>
-        )}
-      </div>
-    </Modal>
+
+                <div className="flex flex-wrap items-center gap-4 text-2xs tabular-nums shrink-0">
+                  <span>
+                    <span className="text-ink-3">Follower: </span>
+                    <strong className="text-ink">
+                      {formatFollowers(activeResult.channelProfile.followers)}
+                    </strong>
+                  </span>
+                  <span>
+                    <span className="text-ink-3">Tổng video: </span>
+                    <strong className="text-ink">
+                      {formatNumber(activeResult.channelProfile.videoCount)}
+                    </strong>
+                  </span>
+                  <span>
+                    <span className="text-ink-3">View TB ({activeResult.recentVideos.length} bài): </span>
+                    <strong className="text-ink">
+                      {formatNumber(activeResult.engagementMetrics.avgViews)}
+                    </strong>
+                  </span>
+                  <span>
+                    <span className="text-ink-3">ER: </span>
+                    <strong className="text-positive">
+                      {activeResult.engagementMetrics.engagementRate}%
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Khung hiển thị trực tiếp lịch sử đánh giá khi tìm kiếm đúng vào kênh đã có đánh giá */}
+              {activeReviewSummary && (
+                <div
+                  className={`px-3.5 py-2.5 rounded-xl border space-y-2 ${
+                    activeReviewSummary.latestReview.verdict === 'NOT_SUITABLE' ||
+                    activeReviewSummary.notSuitableCount > 0
+                      ? 'bg-critical-soft/40 border-critical/30'
+                      : 'bg-warning-soft/40 border-warning/30'
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <History className="w-4 h-4 text-critical shrink-0" />
+                      <span className="font-semibold text-ink">
+                        Lịch sử đánh giá kênh @{activeReviewSummary.handle} ({activeReviewSummary.totalReviews} lượt)
+                      </span>
+                      <Status tone={getVerdictTone(activeReviewSummary.latestReview.verdict)}>
+                        {activeReviewSummary.latestReview.verdictLabel}
+                      </Status>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openChannelReview(activeResult)}
+                    >
+                      Xem đầy đủ &amp; Thêm đánh giá
+                    </Button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {activeReviewSummary.reviews.slice(0, 2).map((rev) => (
+                      <div
+                        key={rev.id}
+                        className="px-2.5 py-1.5 rounded-lg bg-surface border border-line text-xs flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <span className="font-semibold text-ink">{rev.reviewerName}</span>
+                          <span className="text-2xs text-ink-3 inline-flex items-center gap-1 tabular-nums">
+                            <Clock className="w-3 h-3" />
+                            {rev.timeLabel} {rev.dateLabel}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-sunken text-2xs font-medium text-ink-2">
+                            {rev.brandScope}
+                          </span>
+                          {rev.reasonTags.length > 0 && (
+                            <span className="text-2xs font-medium text-critical">
+                              · {rev.reasonTags.join(', ')}
+                            </span>
+                          )}
+                          {rev.note && (
+                            <span className="text-2xs text-ink-2 truncate max-w-md">
+                              — {rev.note}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Panel
+                flush
+                title={`Video gần nhất trên kênh (${activeResult.recentVideos.length} / ${formatNumber(activeResult.channelProfile.videoCount)} bài)`}
+                actions={
+                  <div className="flex flex-wrap items-center gap-2">
+                    {!loading &&
+                      loadingMoreHandle !== activeResult.handle &&
+                      activeResult.recentVideos.length < requestedVideoLimit && (
+                        <Status tone="warning">
+                          Chỉ lấy được {activeResult.recentVideos.length}/{requestedVideoLimit} video yêu cầu
+                        </Status>
+                      )}
+                    {activeResult.recentVideos.length < 100 &&
+                      activeResult.recentVideos.length < activeResult.channelProfile.videoCount && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={RefreshCw}
+                          disabled={loadingMoreHandle === activeResult.handle || loading}
+                          onClick={() => {
+                            const nextPreset =
+                              VIDEO_LIMIT_OPTIONS.find(
+                                (opt) => opt > activeResult.recentVideos.length
+                              ) || 100;
+                            void handleLoadMoreVideos(activeResult.handle, nextPreset);
+                          }}
+                        >
+                          {loadingMoreHandle === activeResult.handle
+                            ? 'Đang tải thêm...'
+                            : 'Tải thêm video'}
+                        </Button>
+                      )}
+                  </div>
+                }
+              >
+                <DataTable
+                  columns={videoColumns}
+                  rows={activeResult.recentVideos}
+                  rowKey={(v) => v.videoId}
+                  compact
+                />
+              </Panel>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <KocChannelReviewModal
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        target={reviewTarget}
+        reviews={channelReviews}
+        currentUserName={currentUser?.name || 'Nhân sự B2C'}
+        currentUserRole={currentUser?.role}
+        currentUserEmail={currentUser?.email}
+        onNotify={onNotify}
+      />
+    </>
   );
 };

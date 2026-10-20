@@ -26,6 +26,18 @@ export interface ContentAuthor {
   followers: number | null;
 }
 
+export interface CartProductItem {
+  productId: string;
+  skuId?: string;
+  sellerId?: string;
+  title: string;
+  anchorKeyword?: string;
+  productUrl: string;
+  coverUrl?: string;
+  categoryName?: string;
+  source?: string;
+}
+
 /** Dữ liệu một adapter bóc được từ trang công khai của bài đăng. */
 export interface ScrapedContent {
   status: LinkStatus;
@@ -40,6 +52,10 @@ export interface ScrapedContent {
   metrics?: Partial<ContentMetrics>;
   hasProductLink?: boolean | null;
   productTitle?: string | null;
+  productUrl?: string | null;
+  productId?: string | null;
+  sellerId?: string | null;
+  cartProducts?: CartProductItem[];
   source: string;
   /** Trường mà nền tảng không công khai qua trang này. */
   limitations?: string[];
@@ -71,6 +87,7 @@ export interface LinkExpectation {
   /** Tên brand, tên sản phẩm hoặc key message phải có trong caption. */
   requiredKeywords?: string[];
   requireProductLink?: boolean;
+  expectedProductUrl?: string;
   minViews?: number;
 }
 
@@ -85,6 +102,7 @@ export interface LinkCheckItem {
     | 'hashtags'
     | 'keywords'
     | 'product_link'
+    | 'cart_link_match'
     | 'min_views';
   label: string;
   status: CheckStatus;
@@ -110,6 +128,10 @@ export interface LinkCheckResult {
   metrics: ContentMetrics;
   hasProductLink: boolean | null;
   productTitle: string | null;
+  productUrl?: string | null;
+  productId?: string | null;
+  sellerId?: string | null;
+  cartProducts?: CartProductItem[];
   checks: LinkCheckItem[];
   verdict: Verdict;
   limitations: string[];

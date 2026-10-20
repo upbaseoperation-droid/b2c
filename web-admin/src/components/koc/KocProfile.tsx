@@ -24,6 +24,7 @@ import {
   FileScan,
   FileText,
   Filter,
+  History,
   MessageSquare,
   Music,
   Plus,
@@ -33,10 +34,13 @@ import {
   Star,
   TrendingUp,
   Truck,
+  XCircle,
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, TikTokVideoItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
+import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
+import { KocChannelReviewBadge, KocChannelReviewModal } from './KocChannelReviewModal';
 import {
   Avatar,
   Button,
@@ -154,6 +158,20 @@ export function KocProfile({
   const [vietQrDeal, setVietQrDeal] = useState<KocItem | null>(null);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [historyEvalModalOpen, setHistoryEvalModalOpen] = useState(false);
+  const [channelReviewModalOpen, setChannelReviewModalOpen] = useState(false);
+  const [channelReviewInitialVerdict, setChannelReviewInitialVerdict] = useState<
+    'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE' | undefined
+  >(undefined);
+
+  const openChannelReviewWithVerdict = (
+    verdict?: 'SUITABLE' | 'CAUTION' | 'NOT_SUITABLE'
+  ) => {
+    setChannelReviewInitialVerdict(verdict);
+    setChannelReviewModalOpen(true);
+  };
+
+  const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
+  const channelReviewSummary = getChannelSummary(koc.channelId);
 
   const missingDocs = !hasLegalId(koc);
   const handle = koc.channelId.replace(/^@/, '');
@@ -215,6 +233,10 @@ export function KocProfile({
                 {koc.realName && koc.realName !== koc.stageName && (
                   <span className="text-sm text-ink-3 font-normal">({koc.realName})</span>
                 )}
+                <KocChannelReviewBadge
+                  summary={channelReviewSummary}
+                  onClick={() => setChannelReviewModalOpen(true)}
+                />
                 {missingDocs && <Status tone="warning">Thiếu giấy tờ</Status>}
                 {duplicates.length > 0 && <Status tone="warning">Nghi trùng</Status>}
               </div>
@@ -252,6 +274,29 @@ export function KocProfile({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            icon={CheckCircle2}
+            onClick={() => openChannelReviewWithVerdict('SUITABLE')}
+          >
+            Đánh giá Phù hợp
+          </Button>
+          <Button
+            variant={channelReviewSummary?.latestReview.verdict === 'NOT_SUITABLE' ? 'danger' : 'secondary'}
+            icon={XCircle}
+            onClick={() => openChannelReviewWithVerdict('NOT_SUITABLE')}
+          >
+            Không phù hợp
+          </Button>
+          {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
+            <Button
+              variant="secondary"
+              icon={History}
+              onClick={() => openChannelReviewWithVerdict()}
+            >
+              Lịch sử ĐG ({channelReviewSummary.totalReviews})
+            </Button>
+          )}
           <Button variant="secondary" icon={FileText} onClick={() => setHistoryEvalModalOpen(true)}>
             Đánh giá lịch sử & rủi ro
           </Button>
@@ -272,6 +317,89 @@ export function KocProfile({
           )}
         </div>
       </header>
+
+      {/* Cảnh báo / Lịch sử đánh giá kênh KOC từ nhân viên */}
+      {channelReviewSummary && channelReviewSummary.totalReviews > 0 && (
+        <div
+          className={cx(
+            'p-3.5 rounded-xl border text-xs space-y-2',
+            channelReviewSummary.latestReview.verdict === 'NOT_SUITABLE'
+              ? 'bg-critical-soft/40 border-critical/30'
+              : channelReviewSummary.latestReview.verdict === 'CAUTION'
+                ? 'bg-warning-soft/50 border-warning/30'
+                : 'bg-positive-soft/40 border-positive/30',
+          )}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <KocChannelReviewBadge
+                summary={channelReviewSummary}
+                onClick={() => setChannelReviewModalOpen(true)}
+              />
+              <span className="font-semibold text-ink">
+                Kênh @{handle} có {channelReviewSummary.totalReviews} lượt đánh giá trong lịch sử
+              </span>
+              {channelReviewSummary.notSuitableCount > 0 && (
+                <span className="text-2xs font-medium text-critical">
+                  ({channelReviewSummary.notSuitableCount} lượt Không phù hợp)
+                </span>
+              )}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={History}
+              onClick={() => setChannelReviewModalOpen(true)}
+            >
+              Xem lịch sử & Thêm đánh giá
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {channelReviewSummary.reviews.slice(0, 2).map((rev) => (
+              <div key={rev.id} className="p-2.5 rounded-lg bg-surface border border-line text-2xs space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-semibold text-ink">
+                      {rev.reviewerName}
+                      {rev.reviewerRole ? <span className="font-normal text-ink-3"> ({rev.reviewerRole})</span> : null}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded bg-surface-2 border border-line text-ink font-semibold text-[10px]">
+                      Brand: {rev.brandScope || 'Toàn hệ thống B2C'}
+                    </span>
+                    <Status
+                      tone={
+                        rev.verdict === 'NOT_SUITABLE'
+                          ? 'critical'
+                          : rev.verdict === 'CAUTION'
+                            ? 'warning'
+                            : 'positive'
+                      }
+                    >
+                      {rev.verdictLabel}
+                    </Status>
+                  </div>
+                  <span className="text-ink-3 tabular-nums">
+                    {rev.dateLabel} · {rev.timeLabel}
+                  </span>
+                </div>
+                {rev.reasonTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {rev.reasonTags.map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="px-1.5 py-0.5 rounded bg-sunken border border-line text-3xs font-medium text-ink-2"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {rev.note && <div className="text-ink-2">Ý kiến: &ldquo;{rev.note}&rdquo;</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Cảnh báo trùng lặp nếu có */}
       {duplicates.length > 0 && (
@@ -367,6 +495,23 @@ export function KocProfile({
         deals={deals}
         duplicates={duplicates}
         onCreateBooking={onCreateBooking}
+      />
+
+      <KocChannelReviewModal
+        open={channelReviewModalOpen}
+        onClose={() => setChannelReviewModalOpen(false)}
+        target={{
+          handle: koc.channelId,
+          channelName: koc.stageName,
+          avatarUrl: koc.avatarUrl,
+          initialVerdict: channelReviewInitialVerdict,
+          sourceScreen: 'Hồ sơ KOC (Danh bạ KOC)',
+        }}
+        initialMode="CHANNEL_DETAIL"
+        currentUserName={currentUser?.name}
+        currentUserRole={currentUser?.roleTitle}
+        currentUserEmail={currentUser?.email}
+        reviews={channelReviews}
       />
     </div>
   );

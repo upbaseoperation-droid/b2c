@@ -42,6 +42,7 @@ export type TabKey =
   | 'dashboard-finance'
   | 'input-plan'
   | 'koc-listing'
+  | 'approved-booking-list'
   | 'self-channel-hub'
   | 'master-data'
   | 'push-products'
@@ -2260,6 +2261,8 @@ export interface StorePortfolioItem {
   accountOwnerName: string; // Account/Growth Owner phụ trách doanh số & quan hệ khách hàng
   b2cOwnerName: string; // B2C Ops Owner phụ trách vận hành nội dung & booking
   assignedStaff?: string; // Alias for primary B2C Ops assignee
+  assignedPic?: string; // Alias cho nhân sự phụ trách chính
+  mainProducts?: string[]; // Danh sách sản phẩm chủ lực gợi ý của gian hàng
   hasBookingLeader?: boolean; // Trưởng phòng chọn theo tháng: true = có Lead sơ duyệt, false = duyệt trực tiếp
   bookingLeader?: string; // Trưởng nhóm Booking phụ trách nhóm (nếu có)
   primaryPic?: string; // Chuyên viên chính chủ trì gian hàng (ví dụ: 'Khánh Vy')
@@ -2320,8 +2323,6 @@ export interface StorePortfolioItem {
   // Quản trị vai trò dự phòng (Backup PIC) theo BRD
   backupOwnerId?: string; // ID nhân sự dự phòng khi PIC chính vắng mặt/nghỉ phép/quá tải
   backupOwnerName?: string; // Tên nhân sự dự phòng
-  /** Danh sách PIC của gian (server gắn khi đọc từ store-pics). Có danh sách thì thay thế các trường PIC ở trên khi xét quyền. */
-  pics?: import('./storePics').StorePic[];
   isBackupActive?: boolean; // Trạng thái kích hoạt chuyển quyền backup
   backupReason?: string; // Lý do chuyển giao: Nghỉ phép, Đi công tác, Quá tải
 

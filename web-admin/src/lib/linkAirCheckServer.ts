@@ -6,7 +6,11 @@ import {
   type LinkAirStatus,
   type LinkAirVerdict,
 } from './linkAirCheck';
-import { inspectLiveTikTokVideoPage } from './tiktokOpenSourceEngines';
+import {
+  compareCartProductLinks,
+  extractShoppingUrlsFromText,
+  inspectLiveTikTokVideoPage,
+} from './tiktokOpenSourceEngines';
 
 const LINK_PREVIEW_UA =
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
@@ -315,6 +319,10 @@ export function buildLinkAirChecks(
     | 'hashtags'
     | 'metrics'
     | 'hasProductLink'
+    | 'productTitle'
+    | 'productUrl'
+    | 'productId'
+    | 'cartProducts'
   >,
   expect: LinkAirExpectation = {}
 ): LinkAirCheckItem[] {
@@ -493,14 +501,31 @@ export function buildLinkAirChecks(
     );
   }
 
-  if (expect.requireProductLink) {
+  if (expect.expectedProductUrl && expect.expectedProductUrl.trim()) {
+    const cartComp = compareCartProductLinks({
+      expectedCartInput: expect.expectedProductUrl,
+      hasCartAnchor: Boolean(input.hasProductLink),
+      actualProducts: input.cartProducts,
+      fallbackActualUrl: input.productUrl,
+      fallbackActualProductId: input.productId,
+      fallbackActualTitle: input.productTitle,
+    });
+    checks.push({
+      key: 'cart_link_match',
+      label: 'Đối chiếu link giỏ hàng',
+      status: cartComp.status === 'MATCHED' ? 'PASS' : 'FAIL',
+      detail: cartComp.detailNote,
+    });
+  } else if (expect.requireProductLink) {
     checks.push(
       input.hasProductLink === true
         ? {
             key: 'product_link',
             label: 'Gắn link sản phẩm',
             status: 'PASS',
-            detail: 'Bài có gắn giỏ hàng / link sản phẩm.',
+            detail: `Bài có gắn giỏ hàng${input.productTitle ? `: ${input.productTitle}` : ''}${
+              input.productUrl ? ` (${input.productUrl})` : ''
+            }.`,
           }
         : input.hasProductLink === false
         ? {
@@ -701,6 +726,10 @@ export async function checkSingleLinkServerless(
       },
       hasProductLink: inspected.hasCartAnchor,
       productTitle: inspected.cartAnchorTitle || null,
+      productUrl: inspected.cartAnchorUrl || null,
+      productId: inspected.cartProductId || null,
+      sellerId: inspected.cartSellerId || null,
+      cartProducts: inspected.cartProducts || [],
       limitations: [],
       source: 'tiktok-ssr-waf',
       fetchedAt,
@@ -747,6 +776,7 @@ export async function checkSingleLinkServerless(
         metrics: { views: null, likes: null, comments: null, shares: null, saves: null },
         hasProductLink: null,
         productTitle: null,
+        productUrl: null,
         limitations: [],
         source: `${parsed.platform}-meta`,
         fetchedAt,
@@ -767,6 +797,8 @@ export async function checkSingleLinkServerless(
       ogDesc.match(/([\d.,]+\s?[KMB]?)\s+comments?\b/i)?.[1]
     );
     const caption = ogDesc || ogTitle;
+    const captionShoppingUrls = extractShoppingUrlsFromText(caption);
+    const hasCaptionShopUrl = captionShoppingUrls.length > 0;
     const base: Omit<LinkAirResult, 'checks' | 'verdict'> = {
       inputUrl,
       platform: parsed.platform,
@@ -787,8 +819,15 @@ export async function checkSingleLinkServerless(
       mentions: extractMentions(caption),
       durationSeconds: null,
       metrics: { views, likes, comments, shares: null, saves: null },
-      hasProductLink: null,
-      productTitle: null,
+      hasProductLink: hasCaptionShopUrl ? true : null,
+      productTitle: hasCaptionShopUrl ? 'Link mua hàng gắn trong bài đăng' : null,
+      productUrl: captionShoppingUrls[0] || null,
+      cartProducts: captionShoppingUrls.map((url) => ({
+        productId: '',
+        title: 'Link mua hàng gắn trong bài đăng',
+        productUrl: url,
+        source: 'Caption Link',
+      })),
       limitations: [
         'Một số chỉ số không công khai qua thẻ meta của nền tảng.',
       ],

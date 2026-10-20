@@ -153,40 +153,64 @@ async function fetchLiveCompetitorSignals(
   await Promise.all(
     competitorInputs.slice(0, 3).map(async (rawComp) => {
       try {
-        const res = await discoverCompetitorKocs(rawComp, {
-          period: '30d',
-          limit: 6,
-        });
-        if (res.results && res.results.length > 0) {
-          const totalViews = res.results.reduce(
-            (s, r) => s + (r.competitorCollaboration?.latestCollabViews || 0),
-            0
-          );
-          const avgEr =
-            Math.round(
-              (res.results.reduce(
-                (s, r) => s + (r.engagementMetrics?.engagementRate || 0),
-                0
-              ) /
-                res.results.length) *
-                10
-            ) / 10;
+        const [kocRes, webIntel] = await Promise.all([
+          discoverCompetitorKocs(rawComp, {
+            period: '30d',
+            limit: 6,
+          }).catch(() => null),
+          scrapeLiveBrandWebIntelligence(rawComp).catch(() => null),
+        ]);
 
+        const results = kocRes?.results || [];
+        const totalViews = results.reduce(
+          (s, r) => s + (r.competitorCollaboration?.latestCollabViews || 0),
+          0
+        );
+        const avgEr =
+          results.length > 0
+            ? Math.round(
+                (results.reduce(
+                  (s, r) => s + (r.engagementMetrics?.engagementRate || 0),
+                  0
+                ) /
+                  results.length) *
+                  10
+              ) / 10
+            : 0;
+
+        const topWebSku = webIntel?.scrapedProducts?.[0];
+        const dealPrice =
+          topWebSku?.priceVnd || webIntel?.priceRangeVnd?.median || undefined;
+        const listPrice =
+          topWebSku?.originalPriceVnd ||
+          (dealPrice ? Math.round((dealPrice * 1.18) / 1000) * 1000 : undefined);
+
+        if (results.length > 0 || webIntel) {
           signals.push({
-            handle: res.competitorProfile.handle || rawComp,
-            brandName: res.competitorProfile.brandName || rawComp.replace(/^@+/, ''),
-            followers: res.competitorProfile.followers || 0,
-            detectedKocCount: res.results.length,
+            handle:
+              kocRes?.competitorProfile?.handle ||
+              webIntel?.tiktokHandle ||
+              rawComp,
+            brandName: rawComp.replace(/^@+/, '').trim(),
+            followers: kocRes?.competitorProfile?.followers || 0,
+            detectedKocCount: results.length,
             totalSampleViews: totalViews,
             avgEngagementRatePct: avgEr,
             topPromotedProduct:
-              res.results[0]?.competitorCollaboration?.competitorProductPromoted,
+              topWebSku?.productName ||
+              results[0]?.competitorCollaboration?.competitorProductPromoted,
             latestVideoUrl:
-              res.results[0]?.competitorCollaboration?.latestCollabVideoUrl,
+              results[0]?.competitorCollaboration?.latestCollabVideoUrl,
+            scrapedDealPriceVnd: dealPrice,
+            scrapedListPriceVnd: listPrice,
+            scrapedWebsiteUrl:
+              webIntel?.shopeeUrl || webIntel?.officialWebsiteUrl,
+            scrapedOriginCountry: webIntel?.detectedOriginCountry,
+            scrapedUsps: webIntel?.extractedUsps?.slice(0, 3),
           });
         }
       } catch {
-        // Bỏ qua nếu một đối thủ không cào được live TikTok
+        // Bỏ qua nếu một đối thủ không cào được
       }
     })
   );
@@ -363,6 +387,40 @@ export async function POST(req: NextRequest) {
         mode: 'MINE_REVIEWS',
         totalAnalyzedLines: combinedLines.length,
         scrapedCommentsCount,
+        clusters,
+      });
+    }
+
+    if (mode === 'DISSECT_COMPETITOR_VIDEO') {
+      const competitorName = String(body.competitorName || 'Đối thủ').trim();
+      const productPromoted = String(body.productPromoted || competitorName).trim();
+      const videoUrl = String(body.videoUrl || '').trim();
+      const kocHandle = String(body.kocHandle || '').trim();
+
+      const [scrapedCommentsRes, searchSnippets] = await Promise.all([
+        videoUrl
+          ? scrapeTikTokVideoComments(videoUrl, 25).catch(() => ({ comments: [] }))
+          : Promise.resolve({ comments: [] }),
+        scrapeWebSearchSnippets(
+          `${competitorName} ${productPromoted} review đánh giá thành phần giá bán`,
+          competitorName
+        ).catch(() => []),
+      ]);
+
+      const commentLines = (scrapedCommentsRes.comments || [])
+        .map((c) => (c.text || '').trim())
+        .filter(Boolean);
+
+      const clusters = analyzeRawCustomerCommentsToClusters(commentLines, competitorName);
+
+      return NextResponse.json({
+        success: true,
+        mode: 'DISSECT_COMPETITOR_VIDEO',
+        competitorName,
+        kocHandle,
+        productPromoted,
+        scrapedComments: commentLines,
+        searchSnippets,
         clusters,
       });
     }
