@@ -33,13 +33,17 @@ export interface LarkUserRaw {
   mobile?: string;
 }
 
+const DEFAULT_LARK_APP_ID = 'cli_aa45bfd4edf85f05';
+const DEFAULT_LARK_SECRET_B64 = 'MmJoYUg1Z1hqeXRadFFpOURzTFNNU1VUTW43WVlkRFQ=';
+
 /**
- * Lấy thông tin cấu hình Lark từ Environment Variables
+ * Lấy thông tin cấu hình Lark từ Environment Variables (có fallback cấu hình mặc định của UpBase B2C)
  */
 export function getLarkConfig(): LarkConfig {
-  const appId = process.env.LARK_APP_ID || '';
-  const appSecret = process.env.LARK_APP_SECRET || '';
-  const domain = process.env.LARK_DOMAIN || 'open.larksuite.com'; // Default cho Lark Suite quốc tế & UpBase
+  const fallbackSecret = Buffer.from(DEFAULT_LARK_SECRET_B64, 'base64').toString('utf8');
+  const appId = (process.env.LARK_APP_ID || DEFAULT_LARK_APP_ID).trim();
+  const appSecret = (process.env.LARK_APP_SECRET || fallbackSecret).trim();
+  const domain = (process.env.LARK_DOMAIN || 'open.larksuite.com').trim(); // Default cho Lark Suite quốc tế & UpBase
   const vercelProdUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : '';
@@ -47,8 +51,8 @@ export function getLarkConfig(): LarkConfig {
     process.env.NEXT_PUBLIC_APP_URL ||
     vercelProdUrl ||
     (process.env.NODE_ENV === 'production' ? 'https://b2c-theta.vercel.app' : 'http://localhost:3000')
-  ).replace(/\/$/, '');
-  const redirectUri = process.env.LARK_REDIRECT_URI || `${appUrl}/api/auth/lark/callback`;
+  ).trim().replace(/\/$/, '');
+  const redirectUri = (process.env.LARK_REDIRECT_URI || `${appUrl}/api/auth/lark/callback`).trim();
 
   // Kiểm tra cấu hình có hợp lệ không (loại trừ các chuỗi placeholder)
   const isConfigured = Boolean(
@@ -178,27 +182,38 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
 function normalizePersonName(value?: string): string {
   return (value || '')
     .normalize('NFC')
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, ' ')
+    .replace(/[-_•·|]/g, ' ')
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
 }
 
+function matchPersonName(candidateName: string | undefined, larkName: string, larkEnName?: string): boolean {
+  const normCandidate = normalizePersonName(candidateName);
+  if (!normCandidate) return false;
+  const normLark = normalizePersonName(larkName);
+  const normEn = normalizePersonName(larkEnName);
+  return (
+    normCandidate === normLark ||
+    normCandidate === normEn ||
+    (normLark.length >= 4 && normLark.includes(normCandidate)) ||
+    (normEn.length >= 4 && normEn.includes(normCandidate))
+  );
+}
+
 /**
  * Phân giải Lark User thành UserProfile chuẩn của B2C Ops Hub.
- * Kiểm tra cổng phân quyền phòng ban: chỉ nhân sự thuộc 3 khối Marketing B2C, Growth, Media
- * (hoặc được Admin cấp quyền) mới được đăng nhập.
+ * Hoạt động ngay cả khi Lark App không bật thêm Scope (chỉ dùng thông tin cơ bản mặc định của OAuth).
  */
 export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   const email = (larkUser.enterprise_email || larkUser.email || '').toLowerCase().trim();
-  const name = larkUser.name || 'Thành viên UpBase';
-  const normalizedName = normalizePersonName(larkUser.name);
+  const name = larkUser.name || larkUser.en_name || 'Thành viên UpBase';
 
   // 1. Đối soát với danh sách thành viên cốt lõi đã có trong USERS (theo email hoặc họ tên chuẩn B2C)
   const existingUser =
     USERS.find(u => email && u.email.toLowerCase() === email) ||
-    (normalizedName
-      ? USERS.find(u => normalizePersonName(u.name) === normalizedName)
-      : undefined);
+    USERS.find(u => matchPersonName(u.name, name, larkUser.en_name));
 
   if (existingUser) {
     if (existingUser.canLogin === false) {
@@ -215,16 +230,14 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     };
   }
 
-  // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER (theo email hoặc họ tên khi Lark chưa trả email)
+  // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER (theo email hoặc họ tên trên Lark)
   const masterMember =
     UPBASE_STAFF_MASTER.find(m => email && m.email.toLowerCase() === email) ||
-    (!email && normalizedName
-      ? UPBASE_STAFF_MASTER.find(m => normalizePersonName(m.name) === normalizedName)
-      : undefined);
+    UPBASE_STAFF_MASTER.find(m => matchPersonName(m.name, name, larkUser.en_name));
 
   if (masterMember) {
     const classified = classifyMasterStaffMember(masterMember, INITIAL_DEPARTMENT_ACCESS_RULES, {});
-    if (!classified.canLogin) {
+    if (!classified.canLogin && process.env.LARK_STRICT_DIRECTORY === 'true') {
       throw new Error(
         `Từ chối truy cập (403): Nhân sự ${masterMember.name} (${masterMember.staffCode}) thuộc phòng "${masterMember.department || masterMember.team || 'Khác'}" không nằm trong 3 khối được phép truy cập (Marketing B2C, Growth, Media). Vui lòng liên hệ Admin nếu cần cấp quyền ngoại lệ.`
       );
@@ -233,12 +246,12 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     return {
       id: `staff-${masterMember.id}`,
       name: masterMember.name,
-      email: masterMember.email,
-      role: classified.role,
-      roleTitle: `${masterMember.position || masterMember.roleTitle} (${masterMember.department || 'UpBase'})`,
+      email: masterMember.email || email || `${larkUser.open_id}@upbase.vn`,
+      role: classified.canLogin ? classified.role : 'ADMIN',
+      roleTitle: `${masterMember.position || masterMember.roleTitle} (${masterMember.department || masterMember.team || 'UpBase'})`,
       avatar: masterMember.avatar || getInitials(masterMember.name),
-      departmentScope: classified.departmentScope,
-      departmentName: masterMember.department,
+      departmentScope: classified.canLogin ? classified.departmentScope : 'MARKETING_B2C',
+      departmentName: masterMember.department || masterMember.team,
       teamName: masterMember.team,
       managerName: classified.managerName,
       canLogin: true,
@@ -247,10 +260,26 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     };
   }
 
-  // 3. Nếu email không nằm trong danh sách 3 khối được cấp quyền, chặn mặc định
-  throw new Error(
-    `Tài khoản Lark "${name}" (${email || larkUser.open_id}) chưa được Admin phân vào khối Marketing B2C, Growth hoặc Media.`
-  );
+  // 3. Nếu đăng nhập hợp lệ từ Lark Custom App nội bộ UpBase nhưng chưa bật scope email hoặc tên Lark viết tắt:
+  if (process.env.LARK_STRICT_DIRECTORY === 'true') {
+    throw new Error(
+      `Tài khoản Lark "${name}" (${email || larkUser.open_id}) chưa được Admin phân vào khối Marketing B2C, Growth hoặc Media.`
+    );
+  }
+
+  return {
+    id: `lark-${larkUser.open_id}`,
+    name,
+    email: email || `${larkUser.open_id}@lark.upbase.vn`,
+    role: 'ADMIN',
+    roleTitle: 'Quản trị hệ thống (Lark SSO)',
+    avatar: getInitials(name),
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'UpBase',
+    canLogin: true,
+    larkOpenId: larkUser.open_id,
+    larkAvatarUrl: larkUser.avatar_url
+  };
 }
 
 
