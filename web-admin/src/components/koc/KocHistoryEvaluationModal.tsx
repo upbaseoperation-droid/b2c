@@ -294,7 +294,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
         <Panel>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div className="md:col-span-4">
-              <Field label="Nhãn hàng / Gian hàng dự kiến book">
+              <Field label="Nhãn hàng / Gian hàng dự kiến book" noWrap>
                 <Input
                   value={targetBrandName}
                   onChange={e => setTargetBrandName(e.target.value)}
@@ -303,7 +303,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
               </Field>
             </div>
             <div className="md:col-span-3">
-              <Field label="Đơn giá Net dự kiến chốt (VNĐ)">
+              <Field label="Đơn giá Net dự kiến chốt (VNĐ)" noWrap>
                 <Input
                   value={proposedFeeInput}
                   onChange={e => setProposedFeeInput(e.target.value)}
@@ -312,7 +312,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
               </Field>
             </div>
             <div className="md:col-span-3">
-              <Field label="Công cụ phân tích báo cáo">
+              <Field label="Công cụ phân tích báo cáo" noWrap>
                 <Select
                   value={selectedProvider}
                   onChange={e => handleProviderChange(e.target.value as ApiProviderId)}

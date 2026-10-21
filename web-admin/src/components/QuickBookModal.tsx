@@ -444,7 +444,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     <Modal
       open={isOpen}
       onClose={onClose}
-      size="lg"
+      size="xl"
       title="Tạo booking deal mới"
       footer={
         <>

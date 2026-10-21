@@ -433,10 +433,10 @@ export function ConfirmDialog({
 /* -------------------------------------------------------------------- Form */
 
 /** Nhãn ở trên, luôn hiện. Lỗi nói rõ sai gì và sửa thế nào. */
-export function Field({ label, error, htmlFor, children, className, labelClassName }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string; labelClassName?: string }) {
+export function Field({ label, error, htmlFor, children, className, labelClassName, noWrap }: { label: string; hint?: string; error?: string; htmlFor?: string; children: React.ReactNode; className?: string; labelClassName?: string; noWrap?: boolean }) {
   return (
     <div className={cx('grid grid-cols-[minmax(0,1fr)] gap-1.5 min-w-0 [&>select]:w-full [&>[data-select-root]]:w-full', className)}>
-      <label htmlFor={htmlFor} className={cx('text-[13px] font-medium text-ink', labelClassName)}>{label}</label>
+      <label htmlFor={htmlFor} className={cx('text-[13px] font-medium text-ink', noWrap && 'whitespace-nowrap', labelClassName)}>{label}</label>
       {children}
       {error ? <p className="text-2xs text-critical">{error}</p> : null}
     </div>

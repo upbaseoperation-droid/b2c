@@ -1461,25 +1461,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   </Select>
 
                   <div className="ml-auto flex items-center gap-2 flex-wrap">
-                    <div className="hidden xl:flex items-center gap-1.5 text-2xs text-ink-2 bg-canvas px-2.5 py-1 rounded-md border border-line">
-                      <span className="text-ink-3">Mức quyền:</span>
-                      <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-semibold">
-                        ALL: Toàn quyền
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-semibold">
-                        APPROVE: Duyệt
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-semibold">
-                        SCOPED: Theo phạm vi
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-warning-soft text-warning font-semibold">
-                        VIEW: Chỉ xem
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-3 font-medium">
-                        DENIED: Khóa
-                      </span>
-                    </div>
-
                     {isAdmin && (
                       <Button
                         variant="secondary"
@@ -1506,21 +1487,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           <div className="w-full overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-sunken/50 border-b border-line text-ink-2 text-2xs font-semibold">
-                  <th className="py-2.5 px-4 min-w-[270px] max-w-[320px] sticky left-0 z-20 bg-sunken border-r border-line">
+                <tr className="bg-sunken/60 border-b border-line text-ink-2 text-2xs font-semibold">
+                  <th className="py-2 px-3 min-w-[240px] max-w-[280px] sticky left-0 z-20 bg-sunken border-r border-line text-ink font-semibold">
                     Tính năng &amp; Nghiệp vụ
                   </th>
                   {matrixRolesToRender.map((role) => (
                     <th
                       key={role.id}
-                      className="py-2.5 px-2 text-center min-w-[104px] whitespace-nowrap"
+                      className="py-2 px-1 text-center min-w-[90px] whitespace-nowrap"
                     >
-                      <div className="font-semibold text-ink text-2xs">
+                      <span className="font-semibold text-ink text-2xs">
                         {ROLE_SHORT_HEADER[role.id] || role.name.split(' (')[0]}
-                      </div>
-                      <div className="text-3xs font-normal text-ink-3 mt-0.5">
-                        {role.scopeType === 'INTERNAL' ? 'Nội bộ' : 'Đối tác'}
-                      </div>
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -1533,12 +1511,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   return (
                     <React.Fragment key={item.id}>
                       {isNewCategory && (
-                        <tr className="bg-accent-soft/60 border-y border-line">
+                        <tr className="bg-sunken/60 border-y border-line">
                           <td
                             colSpan={matrixRolesToRender.length + 1}
-                            className="py-2 px-4 text-xs font-semibold text-accent"
+                            className="py-1 px-3 text-xs font-semibold text-ink"
                           >
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <Layers className="w-3.5 h-3.5 text-accent shrink-0" />
                               <span>{item.categoryTitle}</span>
                             </div>
@@ -1546,21 +1524,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         </tr>
                       )}
                       <tr className="group hover:bg-canvas transition-colors">
-                        <td className="py-2.5 px-4 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas border-r border-line max-w-[320px]">
-                          <div className="font-semibold text-ink leading-snug">
-                            {item.featureName}
-                          </div>
-                          <div className="text-2xs text-ink-3 leading-snug mt-0.5 line-clamp-2">
-                            {item.description}
-                          </div>
-                          {item.securityNote && (
-                            <div className="mt-1 inline-flex items-center gap-1 text-3xs text-warning font-medium">
-                              <Lock className="w-2.5 h-2.5 shrink-0" />
-                              <span className="truncate max-w-[280px]" title={item.securityNote}>
-                                {item.securityNote}
+                        <td className="py-1 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas border-r border-line max-w-[280px]">
+                          <div
+                            className="font-medium text-xs text-ink truncate flex items-center justify-between gap-1.5"
+                            title={`${item.featureName}${item.description ? `\n• ${item.description}` : ''}${item.securityNote ? `\n🔒 ${item.securityNote}` : ''}`}
+                          >
+                            <span className="truncate">{item.featureName.replace(/\s*\([^)]*\)$/, '')}</span>
+                            {item.securityNote && (
+                              <span title={item.securityNote} className="inline-flex shrink-0">
+                                <Lock className="w-3 h-3 text-warning" />
                               </span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </td>
 
                         {matrixRolesToRender.map((role) => {
@@ -1586,30 +1561,38 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               ? 'bg-accent-soft/60 text-accent border-accent/20 font-semibold'
                               : level === 'VIEW'
                               ? 'bg-warning-soft text-warning border-warning/30 font-semibold'
-                              : 'bg-sunken/70 text-ink-3 border-line font-medium';
+                              : 'bg-sunken text-ink-3 border-line font-medium';
 
                           return (
-                            <td key={role.id} className="py-2 px-1.5 text-center align-middle">
-                              <select
-                                value={level}
-                                disabled={!isAdmin}
-                                onChange={(e) =>
-                                  handleUpdatePermission(
-                                    item.id,
-                                    role.id,
-                                    e.target.value as PermissionAccessLevel
-                                  )
-                                }
-                                title={`${ROLE_DISPLAY_NAME[role.id]}: ${badge.description}`}
-                                aria-label={`${item.featureName} - ${role.name}`}
-                                className={`w-full h-7 px-1.5 rounded-md border text-2xs text-center cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-default ${toneClasses}`}
-                              >
-                                <option value="ALL">ALL</option>
-                                <option value="APPROVE">APPROVE</option>
-                                <option value="SCOPED">SCOPED</option>
-                                <option value="VIEW">VIEW</option>
-                                <option value="DENIED">DENIED</option>
-                              </select>
+                            <td key={role.id} className="py-1 px-1 text-center align-middle">
+                              {isAdmin ? (
+                                <select
+                                  value={level}
+                                  onChange={(e) =>
+                                    handleUpdatePermission(
+                                      item.id,
+                                      role.id,
+                                      e.target.value as PermissionAccessLevel
+                                    )
+                                  }
+                                  title={`${ROLE_DISPLAY_NAME[role.id]}: ${badge.description}`}
+                                  aria-label={`${item.featureName} - ${role.name}`}
+                                  className={`w-full h-6 px-1 rounded border text-3xs text-center font-semibold cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-accent ${toneClasses}`}
+                                >
+                                  <option value="ALL">ALL</option>
+                                  <option value="APPROVE">APPROVE</option>
+                                  <option value="SCOPED">SCOPED</option>
+                                  <option value="VIEW">VIEW</option>
+                                  <option value="DENIED">DENIED</option>
+                                </select>
+                              ) : (
+                                <span
+                                  title={`${ROLE_DISPLAY_NAME[role.id]}: ${badge.description}`}
+                                  className={`inline-block w-full py-0.5 px-1 rounded border text-3xs text-center font-semibold ${toneClasses}`}
+                                >
+                                  {level}
+                                </span>
+                              )}
                             </td>
                           );
                         })}

@@ -610,7 +610,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
                           {requestType === 'SETTLEMENT' && (
                             <>
-                              <Field label="Link bài đăng dài (có Video ID)">
+                              <Field label="Link bài đăng dài (có Video ID)" noWrap>
                                 <Input
                                   value={line.linkAir}
                                   onChange={e =>
@@ -619,7 +619,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                                   placeholder="https://www.tiktok.com/@koc/video/742..."
                                 />
                               </Field>
-                              <Field label="Ngày lên sóng thực tế">
+                              <Field label="Ngày lên sóng thực tế" noWrap>
                                 <Input
                                   type="date"
                                   value={line.postedDate}
@@ -628,7 +628,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                                   }
                                 />
                               </Field>
-                              <Field label="Mã quảng cáo Spark Ads">
+                              <Field label="Mã quảng cáo Spark Ads" noWrap>
                                 <Input
                                   className="font-code"
                                   value={line.sparkAdsCode}
@@ -661,7 +661,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                             />
                           </Field>
                           {requestType === 'SETTLEMENT' && line.isBbntMandatory && (
-                            <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)">
+                            <Field label="Mã / Link BBNT đã ký (Bắt buộc BR-04)" noWrap>
                               <Input
                                 value={
                                   overridesByDealId[line.dealId]?.bbntUrl ??
@@ -676,7 +676,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                           )}
                           {requestType === 'SETTLEMENT' &&
                             evaluation.payee.subjectKind === 'COM' && (
-                              <Field label="Số Hóa đơn GTGT (Bắt buộc Công ty)">
+                              <Field label="Số Hóa đơn GTGT (Bắt buộc Công ty)" noWrap>
                                 <Input
                                   value={line.invoiceNumber}
                                   onChange={e =>
@@ -712,8 +712,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 ) : undefined
               }
             >
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                <Field label="Loại chủ thể thuế">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                <Field label="Loại chủ thể thuế" className="lg:col-span-3" noWrap>
                   <Select
                     value={sharedPayeeOverride.taxAccountType || evaluation.payee.subjectKind}
                     onChange={e =>
@@ -730,6 +730,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                   </Select>
                 </Field>
                 <Field
+                  className="lg:col-span-2"
+                  noWrap
                   label={
                     evaluation.payee.subjectKind === 'COM' ||
                     evaluation.payee.subjectKind === 'HKD'
@@ -746,7 +748,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     placeholder="001195018294"
                   />
                 </Field>
-                <Field label="Ngân hàng nhận thanh toán">
+                <Field label="Ngân hàng nhận thanh toán" className="lg:col-span-2" noWrap>
                   <Input
                     value={sharedPayeeOverride.bankName ?? evaluation.payee.bankName}
                     onChange={e =>
@@ -755,7 +757,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     placeholder="Techcombank, Vietcombank, MB..."
                   />
                 </Field>
-                <Field label="Số tài khoản">
+                <Field label="Số tài khoản" className="lg:col-span-2" noWrap>
                   <Input
                     className="font-code"
                     value={sharedPayeeOverride.bankAccount ?? evaluation.payee.bankAccount}
@@ -765,7 +767,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     placeholder="19036829104..."
                   />
                 </Field>
-                <Field label="Tên chủ tài khoản (Khớp CCCD/HĐ)">
+                <Field label="Tên chủ tài khoản (Khớp CCCD/HĐ)" className="lg:col-span-3" noWrap>
                   <Input
                     value={sharedPayeeOverride.bankHolder ?? evaluation.payee.bankHolder}
                     onChange={e =>

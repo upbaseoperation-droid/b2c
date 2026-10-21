@@ -338,7 +338,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
       open={open}
       onClose={onClose}
       title="Đăng ký Video ID, KOC mới & Cổng API Lịch sử Tuần"
-      size="lg"
+      size="xl"
       footer={
         <div className="flex items-center justify-between w-full gap-2">
           <div className="text-xs text-ink-3">
@@ -453,7 +453,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
               <Input value={productName} onChange={(e) => setProductName(e.target.value)} />
             </Field>
 
-            <Field label="Chi phí Cát-xê Net (VNĐ)">
+            <Field label="Chi phí Cát-xê Net (VNĐ)" noWrap>
               <Input
                 type="number"
                 value={bookingCostNet}
@@ -462,7 +462,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
             </Field>
 
             <div className="sm:col-span-2 pt-2 border-t border-line grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Field label="Chi phí Ads tuần đầu (VNĐ)">
+              <Field label="Chi phí Ads tuần đầu (VNĐ)" noWrap>
                 <Input
                   type="number"
                   value={initialAdsSpend}
@@ -470,7 +470,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
                   placeholder="0"
                 />
               </Field>
-              <Field label="Doanh thu GMV tuần (VNĐ)">
+              <Field label="Doanh thu GMV tuần (VNĐ)" noWrap>
                 <Input
                   type="number"
                   value={initialGmv}
@@ -478,7 +478,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
                   placeholder="0"
                 />
               </Field>
-              <Field label="Số đơn hàng">
+              <Field label="Số đơn hàng" noWrap>
                 <Input
                   type="number"
                   value={initialOrders}
@@ -486,7 +486,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
                   placeholder="0"
                 />
               </Field>
-              <Field label="Lượt xem (Views)">
+              <Field label="Lượt xem (Views)" noWrap>
                 <Input
                   type="number"
                   value={initialViews}

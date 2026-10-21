@@ -271,7 +271,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       open={isOpen}
       onClose={onClose}
       title="Nhận xét tiến độ và hiệu suất nhân sự"
-      size="lg"
+      size="xl"
       footer={
         <div className="flex items-center justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>

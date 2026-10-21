@@ -488,6 +488,37 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   4. Trong `staffBrandListingSheet.ts`: Mở rộng tập gian hàng khởi tạo dữ liệu mẫu ban đầu để bao gồm cả các gian hàng của Kutieskin bên cạnh top 5 gian hàng đầu tiên.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát và thay thế toàn bộ các fallback hardcode `'Kutieskin Chính Hãng - TikTok Shop'` tại `AddToBrandListingSheetModal.tsx` và `ApprovedBookingListView.tsx` sang đọc từ gian hàng thực tế.
 
+### BUG-029 — Nhãn UI Và Form Bị Rớt Dòng Đơn Độc Trên Hộp Thoại Do Chia Lưới Quá Chật & Thiếu Chống Ngắt Dòng
+- **Ngày phát hiện:** 21/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/ui/blocks.tsx`, `StaffBrandListingSheetWorkspace.tsx`, `AddToBrandListingSheetModal.tsx`, `LarkPaymentRequestModal.tsx`, `KocVideoHistoryRegistryModal.tsx`, `BrandEditors.tsx`, `StoreEditDialog.tsx`, `CtvManagementView.tsx`, `KocHistoryEvaluationModal.tsx`.
+- **Triệu chứng:** Trên các hộp thoại chọn KOC vào Sheet (`StaffBrandListingSheetWorkspace`), các nhãn trường như `Đề xuất UpBase (Cột R)` bị rớt chữ `R)` đơn độc xuống dòng thứ 2. Tương tự, trên các hộp thoại khác các cụm `(VNĐ)`, `(%)`, `(Giờ)`, `(Khớp CCCD/HĐ)` bị gãy dòng do chia lưới 4-5 cột bằng nhau trong modal cỡ `lg` (672px).
+- **Nguyên nhân gốc (Root Cause):**
+  1. Hộp thoại cấu hình cỡ `size="lg"` quá hẹp khi chia lưới nhiều cột (`grid-cols-4`, `grid-cols-5`), làm chiều rộng mỗi cột chỉ còn ~140px.
+  2. Component `<Field>` chưa có cơ chế chống ngắt dòng nhãn (`whitespace-nowrap`), khiến trình duyệt ngắt dòng ở dấu cách trước dấu ngoặc đơn hoặc ký hiệu đơn vị.
+- **Cách khắc phục:**
+  1. Nâng kích thước các modal chứa form nhiều cột lên `size="xl"` (896px).
+  2. Tái cấu trúc lưới chia cột theo tỷ lệ linh hoạt 12 cột (cột ngắn 2 cột, cột dài 3-4 cột) thay vì chia đều.
+  3. Bổ sung thuộc tính `noWrap?: boolean` và `labelClassName?: string` vào component chuẩn `<Field>` (`blocks.tsx`) và áp dụng đồng loạt cho các form liên quan.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát hơn 370 trường `Field` trên toàn bộ hệ thống.
+
+---
+
+### BUG-030 — Bảng Ma Trận Chức Năng Bị Thừa Quá Nhiều UI (Mô Tả Xám Lê Thê, Phụ Đề Cột Lặp Lại, Buzzword Tiếng Anh)
+- **Ngày phát hiện:** 21/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/CentralizedRbacHubView.tsx`.
+- **Triệu chứng:** Màn hình *Phân quyền & Nhân sự* (Tab *Ma trận chức năng*) hiển thị quá nhiều chi tiết giải thích thừa thãi: mỗi hàng có 2 dòng mô tả xám, 1 dòng cảnh báo bảo mật vàng riêng biệt; mỗi tiêu đề cột có chữ xám `Nội bộ` / `Đối tác` lặp lại 16 lần; tên tính năng kèm tiếng Anh trong ngoặc đơn; thanh lọc chứa khung chú giải màu sắc dài dòng; mỗi ô hiển thị là một thẻ `<select>` thô dày với mũi tên dropdown, đẩy chiều cao mỗi hàng lên tới ~90px khiến bảng rất khó nhìn và cuộn mỏi mắt.
+- **Nguyên nhân gốc (Root Cause):** Chưa áp dụng triệt để quy tắc `GEMINI.md` Rule 1 (Cấm dòng chữ giải thích/phụ đề bên dưới tiêu đề) vào bảng ma trận quyền dữ liệu lớn (33 tính năng × 16 vai trò).
+- **Cách khắc phục:**
+  1. Xóa bỏ toàn bộ 2 dòng mô tả xám và dòng cảnh báo bảo mật riêng biệt dưới tên tính năng; chuyển toàn bộ nội dung sang thuộc tính `title` (tooltip khi hover) kèm icon khóa `🔒` nhỏ gọn nếu có lưu ý bảo mật.
+  2. Lọc bỏ các đuôi tiếng Anh thừa trong ngoặc đơn (`featureName.replace(/\s*\([^)]*\)$/, '')`), trả lại tên nghiệp vụ tiếng Việt gọn gàng.
+  3. Xóa bỏ dòng chữ xám `Nội bộ` / `Đối tác` lặp lại ở 16 tiêu đề cột.
+  4. Xóa bỏ khung chú giải màu sắc dài dòng trên thanh lọc.
+  5. Đơn giản hóa các ô mức quyền: Hiển thị badge pill phẳng gọn gàng khi người dùng không phải Admin, dùng ô chọn tối giản (`h-6`, chữ đậm nét) khi là Admin.
+  6. Chiều cao dòng giảm từ ~90px xuống ~34px, bảng hiển thị được gấp 3 lần lượng dữ liệu trên một màn hình.
+- **Phạm vi rà soát mở rộng sang phần khác:** Các bảng phân quyền và danh mục trong toàn bộ hệ thống.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

@@ -184,7 +184,7 @@ export function WorkflowRulesDialog({
       open={open}
       onClose={onClose}
       title="Thiết lập quy tắc vận hành & phê duyệt"
-      size="lg"
+      size="xl"
       footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} label="Lưu cấu hình vận hành" />}
     >
       <div className="space-y-5">
@@ -284,7 +284,7 @@ export function WorkflowRulesDialog({
                 ))}
               </Select>
             </Field>
-            <Field label="SLA chuẩn bị hàng (Giờ)" htmlFor="wf-sample-sla">
+            <Field label="SLA chuẩn bị hàng (Giờ)" htmlFor="wf-sample-sla" noWrap>
               <Input
                 id="wf-sample-sla"
                 type="number"
@@ -328,7 +328,7 @@ export function WorkflowRulesDialog({
             </label>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <Field label="Thời hạn mã Ads (Ngày)" htmlFor="wf-ads-days">
+            <Field label="Thời hạn mã Ads (Ngày)" htmlFor="wf-ads-days" noWrap>
               <Input
                 id="wf-ads-days"
                 type="number"
@@ -338,7 +338,7 @@ export function WorkflowRulesDialog({
                 onChange={e => set('adsCodeDurationDays', Number(e.target.value) || 0)}
               />
             </Field>
-            <Field label="Thời gian giữ video công khai (Ngày)" htmlFor="wf-retain-days" hint="999 = Vĩnh viễn">
+            <Field label="Thời gian giữ video công khai (Ngày)" htmlFor="wf-retain-days" hint="999 = Vĩnh viễn" noWrap>
               <Input
                 id="wf-retain-days"
                 type="number"
@@ -348,7 +348,7 @@ export function WorkflowRulesDialog({
                 onChange={e => set('minVideoRetentionDays', Number(e.target.value) || 90)}
               />
             </Field>
-            <Field label="Độc quyền ngành hàng (Ngày)" htmlFor="wf-excl-days" hint="0 = Không yêu cầu">
+            <Field label="Độc quyền ngành hàng (Ngày)" htmlFor="wf-excl-days" hint="0 = Không yêu cầu" noWrap>
               <Input
                 id="wf-excl-days"
                 type="number"

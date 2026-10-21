@@ -72,7 +72,7 @@ export function StoreEditDialog({
       open={open}
       onClose={onClose}
       title={`Cập nhật thông số gian hàng — ${store.storeName}`}
-      size="lg"
+      size="xl"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -105,14 +105,14 @@ export function StoreEditDialog({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Gói dịch vụ">
+          <Field label="Gói dịch vụ" noWrap>
             <Input
               value={servicePackage}
               onChange={e => setServicePackage(e.target.value)}
             />
           </Field>
 
-          <Field label="Shop ID kỹ thuật sàn">
+          <Field label="Shop ID kỹ thuật sàn" noWrap>
             <Input
               className="font-code"
               placeholder="VD: TTS_VN_839219"
@@ -121,7 +121,7 @@ export function StoreEditDialog({
             />
           </Field>
 
-          <Field label="Hoa hồng Affiliate (%)">
+          <Field label="Hoa hồng Affiliate (%)" noWrap>
             <Input
               type="number"
               min={0}

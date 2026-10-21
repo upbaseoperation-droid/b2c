@@ -2096,7 +2096,7 @@ export function CtvProfileDetail({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  <Field label="Giá trọn gói (đ)">
+                  <Field label="Giá trọn gói (đ)" noWrap>
                     <Input
                       type="number"
                       value={editForm.unitRateAllInOne}
@@ -2105,7 +2105,7 @@ export function CtvProfileDetail({
                       }
                     />
                   </Field>
-                  <Field label="Giá chỉ quay (đ)">
+                  <Field label="Giá chỉ quay (đ)" noWrap>
                     <Input
                       type="number"
                       value={editForm.unitRateShootingOnly}
@@ -2114,7 +2114,7 @@ export function CtvProfileDetail({
                       }
                     />
                   </Field>
-                  <Field label="Giá dựng lẻ (đ)">
+                  <Field label="Giá dựng lẻ (đ)" noWrap>
                     <Input
                       type="number"
                       value={editForm.unitRateEditOnly}
@@ -2123,7 +2123,7 @@ export function CtvProfileDetail({
                       }
                     />
                   </Field>
-                  <Field label="Giá kịch bản (đ)">
+                  <Field label="Giá kịch bản (đ)" noWrap>
                     <Input
                       type="number"
                       value={editForm.unitRateScriptOnly}
@@ -2132,7 +2132,7 @@ export function CtvProfileDetail({
                       }
                     />
                   </Field>
-                  <Field label="Công suất/tháng">
+                  <Field label="Công suất/tháng" noWrap>
                     <Input
                       type="number"
                       value={editForm.monthlyCapacityVideos}
