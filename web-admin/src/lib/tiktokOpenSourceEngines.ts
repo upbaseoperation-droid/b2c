@@ -415,7 +415,19 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
   cartSellerId?: string;
   cartProducts: TikTokCartProductItem[];
 } {
-  const anchors = Array.isArray(itemStruct.anchors) ? itemStruct.anchors : [];
+  const anchors: unknown[] = [
+    ...(Array.isArray(itemStruct.anchors) ? itemStruct.anchors : []),
+    ...(itemStruct.anchor && typeof itemStruct.anchor === 'object'
+      ? Array.isArray(itemStruct.anchor)
+        ? itemStruct.anchor
+        : [itemStruct.anchor]
+      : []),
+    ...(Array.isArray(itemStruct.anchorsExtras) ? itemStruct.anchorsExtras : []),
+    ...(itemStruct.anchor_info && typeof itemStruct.anchor_info === 'object'
+      ? [itemStruct.anchor_info]
+      : []),
+  ];
+
   let hasCartAnchor = Boolean(itemStruct.isECVideo) || Boolean(itemStruct.commerceInfo);
   let cartAnchorTitle: string | undefined;
   const cartProducts: TikTokCartProductItem[] = [];
@@ -428,158 +440,190 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
     cartProducts.push(item);
   };
 
+  const parseIdCandidate = (raw: unknown): string => {
+    if (!raw) return '';
+    if (typeof raw === 'number' && Number.isFinite(raw)) return String(raw);
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (/^\d{10,25}$/.test(trimmed)) return trimmed;
+      const m = trimmed.match(/(?:product_id|material_id|addition_id|pdp|product)[=/:]\s*"?(\d{10,25})"?/i);
+      if (m?.[1]) return m[1];
+    }
+    return '';
+  };
+
   for (const rawAnchor of anchors) {
     if (!rawAnchor || typeof rawAnchor !== 'object') continue;
     const anchor = rawAnchor as Record<string, unknown>;
     const schema = typeof anchor.schema === 'string' ? anchor.schema : '';
-    const isCapcutSchema = schema.toLowerCase().includes('capcut') && typeof anchor.extra !== 'string';
+    const isCapcutSchema = schema.toLowerCase().includes('capcut') && typeof anchor.extra !== 'string' && !anchor.extra;
 
+    let outerList: unknown[] = [];
     if (typeof anchor.extra === 'string' && anchor.extra.trim()) {
       try {
-        const parsedExtra = JSON.parse(anchor.extra);
-        const outerList = Array.isArray(parsedExtra) ? parsedExtra : [parsedExtra];
-        for (const outer of outerList) {
-          if (!outer || typeof outer !== 'object') continue;
-          const outerObj = outer as Record<string, unknown>;
-          const compKey = typeof outerObj.component_key === 'string' ? outerObj.component_key : '';
-          const outerKeyword = typeof outerObj.keyword === 'string' ? outerObj.keyword.trim() : '';
-          const outerId =
-            typeof outerObj.id === 'string' && /^\d{10,25}$/.test(outerObj.id.trim())
-              ? outerObj.id.trim()
-              : typeof outerObj.id === 'number'
-              ? String(outerObj.id)
-              : '';
+        const parsed = JSON.parse(anchor.extra);
+        outerList = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        outerList = [];
+      }
+    } else if (Array.isArray(anchor.extra)) {
+      outerList = anchor.extra;
+    } else if (anchor.extra && typeof anchor.extra === 'object') {
+      outerList = [anchor.extra];
+    }
 
-          const isShopEntry = compKey === 'anchor_shop' || outerObj.type === 33;
-          if (isShopEntry) {
-            hasCartAnchor = true;
-          }
+    // Nếu không có mảng extra lồng nhưng chính anchor là shop anchor
+    if (outerList.length === 0) {
+      outerList = [anchor];
+    }
 
-          if (typeof outerObj.extra === 'string' && outerObj.extra.trim()) {
-            const rawExtraStr = outerObj.extra;
-            // Đọc trực tiếp ID 19 chữ số bằng regex trước khi JSON.parse để không bị mất chữ số cuối
-            const rawProductId =
-              rawExtraStr.match(/"product_id"\s*:\s*"?(\d{10,25})"?/)?.[1] ||
-              rawExtraStr.match(/"material_id"\s*:\s*"?(\d{10,25})"?/)?.[1] ||
-              outerId;
-            const rawSellerId =
-              rawExtraStr.match(/"seller_id"\s*:\s*"?(\d{10,25})"?/)?.[1] || undefined;
-            const rawSkuId =
-              rawExtraStr.match(/"sku_id"\s*:\s*"?(\d{10,25})"?/)?.[1] || undefined;
+    for (const outer of outerList) {
+      if (!outer || typeof outer !== 'object') continue;
+      const outerObj = outer as Record<string, unknown>;
+      const compKey = String(outerObj.component_key || outerObj.componentKey || anchor.component_key || '').trim();
+      const outerKeyword = String(outerObj.keyword || outerObj.name || anchor.keyword || '').trim();
+      const outerId = parseIdCandidate(outerObj.id || outerObj.product_id || anchor.id);
 
-            try {
-              const innerObj = JSON.parse(rawExtraStr) as Record<string, unknown>;
-              const fullTitle =
-                (typeof innerObj.title === 'string' && innerObj.title.trim()) || '';
-              const elasticTitle =
-                (typeof innerObj.elastic_title === 'string' && innerObj.elastic_title.trim()) || '';
-              const innerTitle = fullTitle || elasticTitle || outerKeyword;
+      const isShopEntry =
+        compKey === 'anchor_shop' ||
+        compKey.includes('shop') ||
+        compKey.includes('product') ||
+        outerObj.type === 33 ||
+        outerObj.type === 38 ||
+        anchor.type === 33 ||
+        anchor.type === 38;
 
-              const seoUrl =
-                typeof innerObj.seo_url === 'string' && innerObj.seo_url.trim().startsWith('http')
-                  ? innerObj.seo_url.trim()
-                  : '';
-              const shortUrl =
-                typeof innerObj.short_url === 'string' && innerObj.short_url.trim().startsWith('http')
-                  ? innerObj.short_url.trim()
-                  : '';
-              const finalUrl =
-                typeof innerObj.final_url === 'string' && innerObj.final_url.trim().startsWith('http')
-                  ? innerObj.final_url.trim()
-                  : '';
+      if (isShopEntry) {
+        hasCartAnchor = true;
+      }
 
-              const productId =
-                rawProductId ||
-                (seoUrl.match(/\/(\d{15,25})(?:[/?#]|$)/)?.[1] ?? '');
+      let innerObj: Record<string, unknown> | null = null;
+      let rawExtraStr = '';
+      if (typeof outerObj.extra === 'string' && outerObj.extra.trim()) {
+        rawExtraStr = outerObj.extra;
+        try {
+          innerObj = JSON.parse(rawExtraStr);
+        } catch {
+          innerObj = null;
+        }
+      } else if (outerObj.extra && typeof outerObj.extra === 'object' && !Array.isArray(outerObj.extra)) {
+        innerObj = outerObj.extra as Record<string, unknown>;
+      } else if (outerObj !== anchor && (outerObj.title || outerObj.product_id || outerObj.seo_url)) {
+        innerObj = outerObj;
+      }
 
-              const productUrl =
-                seoUrl ||
-                shortUrl ||
-                finalUrl ||
-                (productId
-                  ? `https://shop.tiktok.com/view/product/${productId}?region=VN&locale=vi-VN`
-                  : '');
+      if (innerObj || rawExtraStr) {
+        const rawProductId =
+          parseIdCandidate(innerObj?.product_id) ||
+          parseIdCandidate(innerObj?.material_id) ||
+          (rawExtraStr ? rawExtraStr.match(/"product_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : '') ||
+          (rawExtraStr ? rawExtraStr.match(/"material_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : '') ||
+          outerId;
 
-              let categoryName: string | undefined;
-              if (Array.isArray(innerObj.categories) && innerObj.categories.length > 0) {
-                const cats = innerObj.categories as Array<Record<string, unknown>>;
-                const leaf = cats.find((c) => c?.is_leaf) || cats[cats.length - 1];
-                if (typeof leaf?.category_name === 'string') {
-                  categoryName = leaf.category_name;
-                }
-              }
+        const rawSellerId =
+          parseIdCandidate(innerObj?.seller_id) ||
+          (rawExtraStr ? rawExtraStr.match(/"seller_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined);
 
-              const coverUrl =
-                typeof innerObj.cover_url === 'string' && innerObj.cover_url.trim().startsWith('http')
-                  ? innerObj.cover_url.trim()
-                  : undefined;
+        const rawSkuId =
+          parseIdCandidate(innerObj?.sku_id) ||
+          (rawExtraStr ? rawExtraStr.match(/"sku_id"\s*:\s*"?(\d{10,25})"?/)?.[1] : undefined);
 
-              if (
-                productId ||
-                productUrl ||
-                innerObj.source === 'TikTok Shop' ||
-                isShopEntry ||
-                innerTitle
-              ) {
-                hasCartAnchor = true;
-                if (innerTitle && !cartAnchorTitle) {
-                  cartAnchorTitle = innerTitle;
-                }
-                if (productUrl || productId || innerTitle) {
-                  pushProduct({
-                    productId: productId || '',
-                    skuId: rawSkuId,
-                    sellerId: rawSellerId,
-                    title: innerTitle || 'Sản phẩm TikTok Shop',
-                    anchorKeyword:
-                      outerKeyword && outerKeyword !== fullTitle
-                        ? outerKeyword
-                        : elasticTitle && elasticTitle !== fullTitle
-                        ? elasticTitle
-                        : undefined,
-                    productUrl,
-                    coverUrl,
-                    categoryName,
-                    source:
-                      typeof innerObj.source === 'string' ? innerObj.source : 'TikTok Shop',
-                  });
-                }
-              }
-            } catch {
-              // Nếu chuỗi inner extra lỗi JSON nhưng vẫn có outerId của anchor_shop
-              if (isShopEntry && (outerId || outerKeyword)) {
-                pushProduct({
-                  productId: outerId,
-                  title: outerKeyword || 'Sản phẩm TikTok Shop',
-                  anchorKeyword: outerKeyword || undefined,
-                  productUrl: outerId
-                    ? `https://shop.tiktok.com/view/product/${outerId}?region=VN&locale=vi-VN`
-                    : '',
-                  source: 'TikTok Shop',
-                });
-              }
-            }
-          } else if (isShopEntry && (outerId || outerKeyword)) {
-            if (!cartAnchorTitle && outerKeyword && !isNonProductAnchorText(outerKeyword)) {
-              cartAnchorTitle = outerKeyword;
-            }
-            pushProduct({
-              productId: outerId,
-              title: outerKeyword || 'Sản phẩm TikTok Shop',
-              anchorKeyword: outerKeyword || undefined,
-              productUrl: outerId
-                ? `https://shop.tiktok.com/view/product/${outerId}?region=VN&locale=vi-VN`
-                : '',
-              source: 'TikTok Shop',
-            });
-          }
+        const fullTitle = (typeof innerObj?.title === 'string' && innerObj.title.trim()) || '';
+        const elasticTitle = (typeof innerObj?.elastic_title === 'string' && innerObj.elastic_title.trim()) || '';
+        const innerTitle = fullTitle || elasticTitle || outerKeyword;
 
-          if (hasCartAnchor && !cartAnchorTitle && outerKeyword && !isNonProductAnchorText(outerKeyword)) {
-            cartAnchorTitle = outerKeyword;
+        const seoUrl =
+          typeof innerObj?.seo_url === 'string' && innerObj.seo_url.trim().startsWith('http')
+            ? innerObj.seo_url.trim()
+            : '';
+        const shortUrl =
+          typeof innerObj?.short_url === 'string' && innerObj.short_url.trim().startsWith('http')
+            ? innerObj.short_url.trim()
+            : '';
+        const finalUrl =
+          typeof innerObj?.final_url === 'string' && innerObj.final_url.trim().startsWith('http')
+            ? innerObj.final_url.trim()
+            : '';
+        const detailUrl =
+          typeof innerObj?.detail_url === 'string' && innerObj.detail_url.trim().startsWith('http')
+            ? innerObj.detail_url.trim()
+            : '';
+
+        const schemaUrl = String(innerObj?.schema || outerObj.schema || anchor.schema || '');
+        const schemaPid = schemaUrl.match(/(?:product_id|pdp|product)[=/](\d{10,25})/)?.[1];
+
+        const productId =
+          rawProductId ||
+          schemaPid ||
+          (seoUrl.match(/\/(\d{15,25})(?:[/?#]|$)/)?.[1] ?? '');
+
+        const productUrl =
+          seoUrl ||
+          shortUrl ||
+          finalUrl ||
+          (detailUrl.includes('tiktok.com') ? detailUrl : '') ||
+          (productId
+            ? `https://shop.tiktok.com/view/product/${productId}?region=VN&locale=vi-VN`
+            : '');
+
+        let categoryName: string | undefined;
+        if (Array.isArray(innerObj?.categories) && innerObj.categories.length > 0) {
+          const cats = innerObj.categories as Array<Record<string, unknown>>;
+          const leaf = cats.find((c) => c?.is_leaf) || cats[cats.length - 1];
+          if (typeof leaf?.category_name === 'string') {
+            categoryName = leaf.category_name;
           }
         }
-      } catch {
-        // ignore outer parse error
+
+        const coverUrl =
+          typeof innerObj?.cover_url === 'string' && innerObj.cover_url.trim().startsWith('http')
+            ? innerObj.cover_url.trim()
+            : typeof innerObj?.cover === 'string' && innerObj.cover.trim().startsWith('http')
+            ? innerObj.cover.trim()
+            : undefined;
+
+        if (productId || productUrl || innerObj?.source === 'TikTok Shop' || isShopEntry || innerTitle) {
+          hasCartAnchor = true;
+          if (innerTitle && !cartAnchorTitle && !isNonProductAnchorText(innerTitle)) {
+            cartAnchorTitle = innerTitle;
+          }
+          if (productUrl || productId || innerTitle) {
+            pushProduct({
+              productId: productId || '',
+              skuId: rawSkuId,
+              sellerId: rawSellerId,
+              title: innerTitle || 'Sản phẩm TikTok Shop',
+              anchorKeyword:
+                outerKeyword && outerKeyword !== fullTitle
+                  ? outerKeyword
+                  : elasticTitle && elasticTitle !== fullTitle
+                  ? elasticTitle
+                  : undefined,
+              productUrl,
+              coverUrl,
+              categoryName,
+              source:
+                typeof innerObj?.source === 'string' ? innerObj.source : 'TikTok Shop',
+            });
+          }
+        }
+      } else if (isShopEntry && (outerId || outerKeyword)) {
+        if (!cartAnchorTitle && outerKeyword && !isNonProductAnchorText(outerKeyword)) {
+          cartAnchorTitle = outerKeyword;
+        }
+        pushProduct({
+          productId: outerId,
+          title: outerKeyword || 'Sản phẩm TikTok Shop',
+          anchorKeyword: outerKeyword || undefined,
+          productUrl: outerId
+            ? `https://shop.tiktok.com/view/product/${outerId}?region=VN&locale=vi-VN`
+            : '',
+          source: 'TikTok Shop',
+        });
+      }
+
+      if (hasCartAnchor && !cartAnchorTitle && outerKeyword && !isNonProductAnchorText(outerKeyword)) {
+        cartAnchorTitle = outerKeyword;
       }
     }
 
@@ -587,9 +631,41 @@ export function extractTikTokShopAnchorInfo(itemStruct: Record<string, unknown>)
       const kw =
         (typeof anchor.keyword === 'string' && anchor.keyword.trim()) ||
         (typeof anchor.description === 'string' && anchor.description.trim()) ||
+        (typeof anchor.name === 'string' && anchor.name.trim()) ||
         '';
       if (kw && !isNonProductAnchorText(kw) && hasCartAnchor) {
         cartAnchorTitle = kw;
+      }
+    }
+  }
+
+  // Tầng dự phòng: Đọc trực tiếp từ itemStruct.commerceInfo nếu anchors bị TikTok ẩn
+  if (cartProducts.length === 0 && itemStruct.commerceInfo && typeof itemStruct.commerceInfo === 'object') {
+    const comm = itemStruct.commerceInfo as Record<string, unknown>;
+    hasCartAnchor = true;
+    const candidates: unknown[] = [
+      comm.product_info,
+      comm.organic_product_info,
+      comm.anchor_info,
+      ...(Array.isArray(comm.products) ? comm.products : []),
+    ].filter(Boolean);
+
+    for (const cand of candidates) {
+      if (!cand || typeof cand !== 'object') continue;
+      const cObj = cand as Record<string, unknown>;
+      const pid = parseIdCandidate(cObj.product_id || cObj.id || cObj.material_id);
+      const title = String(cObj.title || cObj.name || cObj.keyword || '').trim();
+      const pUrl =
+        String(cObj.product_url || cObj.seo_url || cObj.url || '').trim() ||
+        (pid ? `https://shop.tiktok.com/view/product/${pid}?region=VN&locale=vi-VN` : '');
+      if (pid || title) {
+        if (!cartAnchorTitle && title) cartAnchorTitle = title;
+        pushProduct({
+          productId: pid,
+          title: title || 'Sản phẩm TikTok Shop',
+          productUrl: pUrl,
+          source: 'TikTok Commerce',
+        });
       }
     }
   }

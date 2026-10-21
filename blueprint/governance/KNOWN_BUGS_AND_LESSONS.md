@@ -519,6 +519,24 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-031 — Thu Thập Dữ Liệu Video TikTok Bị Thiếu Thông Tin Giỏ Hàng & Link Sản Phẩm
+- **Ngày phát hiện:** 21/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokOpenSourceEngines.ts`, `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/components/koc/TikTokVideoInspectorModal.tsx`.
+- **Triệu chứng:** Khi đối soát nghiệm thu link video TikTok có gắn giỏ hàng TikTok Shop, hệ thống nhận diện được cờ "Có gắn giỏ" nhưng không bóc tách được thông tin chi tiết sản phẩm (tiêu đề sản phẩm, ảnh bìa, mã sản phẩm ID, mã shop ID và link giỏ hàng trực tiếp). Giao diện modal chỉ hiển thị dòng chữ chung chung "Gắn thẻ giỏ hàng: TikTok Shop" và không có nút mở link giỏ.
+- **Nguyên nhân gốc (Root Cause):**
+  1. Cấu trúc dữ liệu TikTok web SSR thay đổi: `anchor.extra` được trả về dưới dạng JSON Object/Array hoặc chuỗi JSON lồng nhiều tầng, trong khi hàm cũ chỉ parse 1 tầng chuỗi (`typeof extra === 'string'`).
+  2. Một số video trên bản web desktop chỉ gắn cờ `isECVideo = 1` nhưng mảng `anchors` trong HTML SSR bị giấu (`anchors: []`).
+  3. Mã sản phẩm (`productId`) là số nguyên dài 19 chữ số vượt quá giới hạn an toàn của JavaScript Number (`Number.MAX_SAFE_INTEGER`), nếu ép kiểu số sẽ bị làm tròn sai số đuôi.
+  4. Chưa có cơ chế truy vấn dữ liệu dự phòng từ feed tác giả (`/api/creator/item_list/`) theo `secUid` để lấy trọn vẹn danh mục giỏ hàng.
+- **Cách khắc phục:**
+  1. Nâng cấp hàm `extractTikTokShopAnchorInfo`: hỗ trợ giải mã đa tầng cả Object, Array, chuỗi JSON lồng nhau, bóc tách ID sản phẩm bằng Regex dạng chuỗi (tránh làm tròn BigInt), quét cả thuộc tính `schema` và `commerceInfo`.
+  2. Bổ sung cơ chế fallback tự động trong `tiktokVideoInspector.ts`: khi video có cờ giỏ hàng (`hasCartAnchor = true`) nhưng mảng sản phẩm rỗng, tự động gọi feed tác giả theo `secUid` để trích xuất đầy đủ thông tin sản phẩm (Tên, Ảnh, ID, Shop ID).
+  3. Đảm bảo luôn tự động sinh đường dẫn trực tiếp tới sản phẩm TikTok Shop (`https://shop.tiktok.com/view/product/${productId}?region=VN&locale=vi-VN`) khi có `productId`.
+  4. Cập nhật `TikTokVideoInspectorModal.tsx` hiển thị thẻ sản phẩm rõ ràng với ảnh bìa, tên sản phẩm, mã ID, cùng nút "Mở giỏ" và "Chép link" tiện lợi cho chuyên viên đối soát.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát toàn bộ luồng nghiệm thu link video, nhật ký nghiệm thu và kiểm tra build (`npm run build`) đạt exit code 0.
+
+---
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

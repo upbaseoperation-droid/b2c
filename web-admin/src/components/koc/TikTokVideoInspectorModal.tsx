@@ -321,7 +321,11 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
       width: 210,
       render: (r) => {
         const cartUrl =
-          r.cartAnchorVerification.detectedProductUrl || r.contentCheck.cartAnchorUrl;
+          r.cartAnchorVerification.detectedProductUrl ||
+          r.contentCheck.cartAnchorUrl ||
+          (r.cartAnchorVerification.detectedProductId
+            ? `https://shop.tiktok.com/view/product/${r.cartAnchorVerification.detectedProductId}?region=VN&locale=vi-VN`
+            : undefined);
         const extraProdCount =
           (r.cartAnchorVerification.detectedProducts?.length ?? 0) > 1
             ? (r.cartAnchorVerification.detectedProducts?.length ?? 1) - 1
@@ -583,7 +587,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             </label>
 
             <label className="grid gap-1 text-2xs font-medium text-ink-2">
-              <span>Link giỏ hàng mẫu đối chiếu (hoặc Mã SP)</span>
+              <span title="Link giỏ hàng mẫu đối chiếu hoặc Mã SP">Link giỏ hàng / Mã SP</span>
               <input
                 type="text"
                 value={expectedCartUrlInput}
@@ -594,7 +598,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
             </label>
 
             <label className="grid gap-1 text-2xs font-medium text-ink-2">
-              <span>Từ khóa USP bắt buộc nói trong video</span>
+              <span title="Từ khóa USP bắt buộc nói trong video">Từ khóa USP bắt buộc</span>
               <input
                 type="text"
                 value={requiredUspInput}
@@ -1008,48 +1012,90 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                                   Dùng đối chiếu
                                 </Button>
                               )}
-                              {prod.productUrl && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    icon={copiedKey === `cart-${idx}` ? Check : Copy}
-                                    onClick={() => handleCopyText(`cart-${idx}`, prod.productUrl)}
-                                  >
-                                    {copiedKey === `cart-${idx}` ? 'Đã chép' : 'Chép link'}
-                                  </Button>
-                                  <a
-                                    href={prod.productUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
-                                  >
-                                    <span>Mở giỏ</span>
-                                    <ExternalLink className="w-3 h-3" />
-                                  </a>
-                                </>
-                              )}
+                              {(() => {
+                                const prodLink =
+                                  prod.productUrl ||
+                                  (prod.productId
+                                    ? `https://shop.tiktok.com/view/product/${prod.productId}?region=VN&locale=vi-VN`
+                                    : undefined);
+                                if (!prodLink) return null;
+                                return (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      icon={copiedKey === `cart-${idx}` ? Check : Copy}
+                                      onClick={() => handleCopyText(`cart-${idx}`, prodLink)}
+                                    >
+                                      {copiedKey === `cart-${idx}` ? 'Đã chép' : 'Chép link'}
+                                    </Button>
+                                    <a
+                                      href={prodLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
+                                    >
+                                      <span>Mở giỏ</span>
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
-                          {prod.productUrl && (
-                            <a
-                              href={prod.productUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="block text-2xs font-code text-accent hover:underline truncate"
-                              title={prod.productUrl}
-                            >
-                              {prod.productUrl}
-                            </a>
-                          )}
+                          {(() => {
+                            const prodLink =
+                              prod.productUrl ||
+                              (prod.productId
+                                ? `https://shop.tiktok.com/view/product/${prod.productId}?region=VN&locale=vi-VN`
+                                : undefined);
+                            if (!prodLink) return null;
+                            return (
+                              <a
+                                href={prodLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block text-2xs font-code text-accent hover:underline truncate"
+                                title={prodLink}
+                              >
+                                {prodLink}
+                              </a>
+                            );
+                          })()}
                         </div>
                       );
                     })}
                   </div>
                 ) : activeInspection.contentCheck.hasCartAnchor ? (
-                  <p className="text-xs text-ink-2">
-                    Gắn thẻ giỏ hàng: {activeInspection.contentCheck.cartAnchorTitle || 'TikTok Shop'}
-                  </p>
+                  <div className="p-3 rounded-lg border border-line bg-surface space-y-1.5 text-xs">
+                    <p className="font-semibold text-ink">
+                      {activeInspection.cartAnchorVerification.detectedProductTitle ||
+                        activeInspection.contentCheck.cartAnchorTitle ||
+                        'Sản phẩm TikTok Shop'}
+                    </p>
+                    {activeInspection.cartAnchorVerification.detectedProductId && (
+                      <p className="text-2xs font-code text-ink-3">
+                        Mã SP: {activeInspection.cartAnchorVerification.detectedProductId}
+                      </p>
+                    )}
+                    {(activeInspection.cartAnchorVerification.detectedProductUrl ||
+                      activeInspection.contentCheck.cartAnchorUrl) && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <a
+                          href={
+                            activeInspection.cartAnchorVerification.detectedProductUrl ||
+                            activeInspection.contentCheck.cartAnchorUrl
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
+                        >
+                          <span>Mở giỏ hàng</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 ) : null}
 
                 {activeInspection.contentCheck.onScreenStickers.length > 0 && (

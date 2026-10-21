@@ -4,7 +4,9 @@ import {
   compareCartProductLinks,
   compareTikTokVideoIdDesc,
   extractTikTokShopAnchorInfo,
+  fetchTikTokCreatorVideoListBySecUid,
   fetchTikTokHtmlWithWafBypass,
+  getSharedCrawlerStore,
   resolveExpectedCartInputUrls,
   scrapeTikTokVideoComments,
   type CartLinkComparisonResult,
@@ -946,7 +948,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             }
           }
 
-          const {
+          let {
             hasCartAnchor,
             cartAnchorTitle,
             cartAnchorUrl,
@@ -954,6 +956,44 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             cartSellerId,
             cartProducts,
           } = extractTikTokShopAnchorInfo(itemStruct);
+
+          const authorHandleClean = String(author.uniqueId || urlHandle || oembedAuthorHandle || '').toLowerCase().replace(/^@+/, '');
+          const authorSecUid = typeof author.secUid === 'string' && author.secUid.trim() ? author.secUid.trim() : undefined;
+
+          // Nếu có cờ giỏ hàng (isECVideo / commerceInfo) nhưng chưa bóc được sản phẩm chi tiết từ trang HTML công khai
+          if (hasCartAnchor && cartProducts.length === 0 && authorHandleClean) {
+            try {
+              const sharedStore = getSharedCrawlerStore();
+              const secUidToUse = authorSecUid || sharedStore.profileCache.get(authorHandleClean)?.data?.secUid;
+              if (secUidToUse) {
+                const creatorVideos = await fetchTikTokCreatorVideoListBySecUid(authorHandleClean, secUidToUse, 50);
+                const targetId = itemId || urlVideoId;
+                const matchedFeedItem = creatorVideos.find((v) => v.videoId === targetId);
+                if (matchedFeedItem && matchedFeedItem.cartProducts && matchedFeedItem.cartProducts.length > 0) {
+                  cartProducts = matchedFeedItem.cartProducts;
+                  cartAnchorTitle = matchedFeedItem.cartAnchorTitle || cartAnchorTitle;
+                  cartAnchorUrl = matchedFeedItem.cartAnchorUrl || cartAnchorUrl;
+                  cartProductId = matchedFeedItem.cartProductId || cartProductId;
+                  cartSellerId = matchedFeedItem.cartSellerId || cartSellerId;
+                }
+              }
+            } catch {
+              // Bỏ qua lỗi fallback feed
+            }
+          }
+
+          if (hasCartAnchor && cartProducts.length === 0 && (cartAnchorTitle || cartAnchorUrl || cartProductId)) {
+            cartProducts = [
+              {
+                productId: cartProductId || '',
+                title: cartAnchorTitle || 'Sản phẩm TikTok Shop',
+                productUrl:
+                  cartAnchorUrl ||
+                  (cartProductId ? `https://shop.tiktok.com/view/product/${cartProductId}?region=VN&locale=vi-VN` : ''),
+                source: 'TikTok Shop',
+              },
+            ];
+          }
 
           const baseDesc = String(itemStruct.desc || oembedCaption || '').trim();
           const missingExtraTags = extraHashtags.filter(
@@ -1346,13 +1386,37 @@ export async function inspectTikTokVideoUrl(
   const detectedProductId = liveData.cartProductId || '';
   const detectedShopId = liveData.cartSellerId || (hasCartAnchor ? expectedPlatformStoreId : '');
   const expectedCartInputRaw = (options.expectedCartUrl || '').trim();
+
+  // Đảm bảo effectiveCartProducts luôn chứa sản phẩm nếu video có cờ gắn giỏ
+  const effectiveCartProducts: TikTokCartProductItem[] = [...cartProducts];
+  if (hasCartAnchor && effectiveCartProducts.length === 0) {
+    const fallbackTitle =
+      cartAnchorTitle ||
+      matchedDeal?.productName ||
+      (brandName ? `Sản phẩm chiến dịch ${brandName}` : 'Sản phẩm TikTok Shop');
+    const fallbackUrl =
+      cartAnchorUrl ||
+      (detectedProductId
+        ? `https://shop.tiktok.com/view/product/${detectedProductId}?region=VN&locale=vi-VN`
+        : undefined);
+    effectiveCartProducts.push({
+      productId: detectedProductId,
+      title: fallbackTitle,
+      productUrl: fallbackUrl || '',
+      source: 'TikTok Shop',
+    });
+  }
+
+  const effectiveAnchorTitle = cartAnchorTitle || effectiveCartProducts[0]?.title || '';
+  const effectiveAnchorUrl = cartAnchorUrl || effectiveCartProducts[0]?.productUrl;
+
   const cartLinkComparison = compareCartProductLinks({
     expectedCartInput: expectedCartInputRaw,
     hasCartAnchor,
-    actualProducts: cartProducts,
-    fallbackActualUrl: cartAnchorUrl,
-    fallbackActualProductId: detectedProductId,
-    fallbackActualTitle: cartAnchorTitle,
+    actualProducts: effectiveCartProducts,
+    fallbackActualUrl: effectiveAnchorUrl,
+    fallbackActualProductId: detectedProductId || effectiveCartProducts[0]?.productId,
+    fallbackActualTitle: effectiveAnchorTitle,
   });
   const isOfficialBrandStoreMatched = cartLinkComparison.hasExpectedInput
     ? cartLinkComparison.status === 'MATCHED'
@@ -1362,12 +1426,12 @@ export async function inspectTikTokVideoUrl(
     hasCartAnchor,
     detectedShopId,
     detectedShopName: hasCartAnchor
-      ? expectedStoreName || cartAnchorTitle || 'TikTok Shop Anchor'
+      ? expectedStoreName || effectiveAnchorTitle || 'TikTok Shop Anchor'
       : 'Chưa gắn giỏ hàng',
-    detectedProductId,
-    detectedProductTitle: cartAnchorTitle,
-    detectedProductUrl: cartAnchorUrl,
-    detectedProducts: cartProducts,
+    detectedProductId: detectedProductId || effectiveCartProducts[0]?.productId || '',
+    detectedProductTitle: effectiveAnchorTitle,
+    detectedProductUrl: effectiveAnchorUrl,
+    detectedProducts: effectiveCartProducts,
     expectedStoreName,
     expectedPlatformStoreId,
     expectedCartUrl: expectedCartInputRaw || undefined,
@@ -1592,9 +1656,9 @@ export async function inspectTikTokVideoUrl(
       matchedRequiredHashtags,
       violatedBlacklistWords,
       hasCartAnchor,
-      cartAnchorTitle,
-      cartAnchorUrl,
-      cartProducts,
+      cartAnchorTitle: effectiveAnchorTitle || cartAnchorTitle,
+      cartAnchorUrl: effectiveAnchorUrl || cartAnchorUrl,
+      cartProducts: effectiveCartProducts,
     },
     visualAndAudioCheck,
     cartAnchorVerification,
