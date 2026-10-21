@@ -37,6 +37,8 @@ Thumbs.db
 *.pdf
 *.docx
 *.zip
+*.mp4
+docs-video/
 pdf_preview/
 tmp/
 *.html

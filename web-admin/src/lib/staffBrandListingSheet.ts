@@ -500,7 +500,14 @@ export function buildInitialStaffSheetCollection(
 ): StaffBrandSheetCollection {
   const sheets: Record<string, StaffListingSheetRow[]> = {};
   const targetMonth = '2026/10';
-  const topStores = stores.filter((s) => s.isB2cManaged !== false).slice(0, 5);
+  const allB2c = stores.filter((s) => s.isB2cManaged !== false);
+  const topSlice = allB2c.slice(0, 5);
+  const kutieskinStores = allB2c.filter(
+    (s) =>
+      s.brandName.toLowerCase().includes('kutieskin') &&
+      !topSlice.some((t) => t.id === s.id)
+  );
+  const topStores = [...topSlice, ...kutieskinStores];
 
   topStores.forEach((store, sIdx) => {
     const key = makeSheetKey(targetMonth, store.storeName);

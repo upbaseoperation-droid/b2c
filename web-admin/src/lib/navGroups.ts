@@ -43,6 +43,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   'audit-trail': 'Nhật ký kiểm toán',
   'tiktok-crawler': 'Crawler KOC & Đối thủ',
   'market-research': 'Nghiên cứu Brand & Đối thủ',
+  'store-air-plan-report': 'Báo cáo Kế hoạch & Air Video',
 };
 
 export interface NavGroupTabItem {

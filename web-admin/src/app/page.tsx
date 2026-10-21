@@ -60,6 +60,7 @@ const CentralizedRbacHubView = dynamic(() => import('../components/views/Central
 const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
 const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
 const ApprovedBookingListView = dynamic(() => import('../components/views/ApprovedBookingListView').then(m => m.ApprovedBookingListView), { loading: ViewLoading });
+const AirBookingReportHubView = dynamic(() => import('../components/views/AirBookingReportHubView').then(m => m.AirBookingReportHubView), { loading: ViewLoading });
 const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
 const CtvManagementView = dynamic(() => import('../components/views/CtvManagementView').then(m => m.CtvManagementView), { loading: ViewLoading });
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
@@ -1535,6 +1536,37 @@ export default function App() {
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
+              onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="store-air-plan-report" currentTab={activeTab}>
+            <AirBookingReportHubView
+              currentUser={currentUser}
+              stores={scopedStores}
+              kocs={kocs}
+              deals={scopedDeals}
+              kocListings={kocListings}
+              onNavigateToTab={(tab, ctx) => {
+                if (tab === 'approved-booking-list') {
+                  setApprovedBookingListContext({
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    nonce: Date.now(),
+                  });
+                  handleSelectTab('approved-booking-list');
+                } else if (tab === 'koc-listing') {
+                  setListingPlanContext({
+                    storeName: ctx?.storeName,
+                    monthKey: ctx?.monthKey,
+                    openStaffSheet: true,
+                    nonce: Date.now(),
+                  });
+                  handleSelectTab('koc-listing');
+                } else {
+                  handleSelectTab(tab);
+                }
+              }}
               onNotify={showToast}
             />
           </KeepAliveTab>

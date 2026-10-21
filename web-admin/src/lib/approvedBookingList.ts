@@ -484,9 +484,9 @@ export function buildInitialApprovedBookingList(
 }
 
 export function loadApprovedBookingList(
-  kocs: KocItem[],
-  stores: StorePortfolioItem[],
-  deals: BookingDealItem[],
+  kocs: KocItem[] = [],
+  stores: StorePortfolioItem[] = [],
+  deals: BookingDealItem[] = [],
   defaultStaffName?: string
 ): ApprovedBookingListItem[] {
   if (typeof window === 'undefined') {

@@ -727,19 +727,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     ]
   );
 
-  // Tự động chạy tìm kiếm trên mạng & tổng hợp báo cáo khởi tạo lần đầu
-  const [hasInitializedModelReport, setHasInitializedModelReport] =
-    useState<boolean>(false);
-  useEffect(() => {
-    if (!hasInitializedModelReport) {
-      setHasInitializedModelReport(true);
-      void handleRunModelResearch({
-        targetDossier: dossier,
-        playbook: 'COMPREHENSIVE',
-      });
-    }
-  }, [dossier, handleRunModelResearch, hasInitializedModelReport]);
-
   const [prevSelectedBrand, setPrevSelectedBrand] = useState<string | undefined>(
     selectedBrand
   );
@@ -755,11 +742,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
       setDossier(nextDossier);
       setMinedClusters(nextDossier.reviewClusters || []);
       setFocusCompetitorForModel('');
-      void handleRunModelResearch({
-        targetDossier: nextDossier,
-        playbook: activePlaybook,
-        focusCompetitor: '',
-      });
+      setModelResearchResult(null);
     }
   }
 

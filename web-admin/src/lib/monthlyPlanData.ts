@@ -1,4 +1,4 @@
-import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
+﻿import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
   autoBalancePlanItems, 
@@ -149,7 +149,7 @@ const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     title: 'Kế Hoạch B2C Tháng 10 - Kutieskin (Affiliate 150M + Self Channel 50M)',
     brandName: 'Kutieskin',
     storeId: 'ST-SO0001',
-    storeName: 'Kutieskin Chính Hãng - TikTok Shop',
+    storeName: 'Kutieskin Mama_TikTok_E2E-S',
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Khánh Vy',

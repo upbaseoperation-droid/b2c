@@ -118,9 +118,15 @@ export function KocListingBatchHubView({
   const [activeSubTab, setActiveSubTab] = useState<'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('STAFF_BRAND_SHEET');
 
   // Filters
+  const defaultInitialStore = useMemo(() => {
+    return stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName || '4PM_Shopee_E2E-S';
+  }, [stores]);
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [selectedCycle, setSelectedCycle] = useState<ListingBatchCycle | 'ALL'>('ALL');
-  const [selectedStore, setSelectedStore] = useState<string>('Kutieskin Chính Hãng - TikTok Shop');
+  const [selectedStore, setSelectedStore] = useState<string>(() => {
+    const validFirst = stores.find((s) => s.isB2cManaged !== false && s.storeName)?.storeName;
+    return validFirst || '4PM_Shopee_E2E-S';
+  });
   const [selectedGrade, setSelectedGrade] = useState<SalaryGrade | 'ALL'>('ALL');
   const [selectedOverallStatus, setSelectedOverallStatus] = useState<ListingItemStatus | 'ALL'>('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState<string>('ALL');
@@ -212,8 +218,8 @@ export function KocListingBatchHubView({
     proposedFee: number;
     expectedAirDate: string;
   }>({
-    storeName: 'Kutieskin Chính Hãng - TikTok Shop',
-    brandName: 'Kutieskin',
+    storeName: '4PM_Shopee_E2E-S',
+    brandName: '4PM',
     batchCycle: 'BATCH_30',
     salaryGrade: 'KL4',
     kocName: '',
@@ -761,8 +767,9 @@ export function KocListingBatchHubView({
 
   // Mở modal thêm KOC thủ công gắn sẵn Khung lương KL từ bảng đối soát Plan Final
   const handleOpenManualAddForGrade = (grade: SalaryGrade, unitCost: number, defaultTier: KocListingItem['tier']) => {
-    const targetStoreName = selectedStore === 'ALL' ? (matchedPlanFinal?.storeName || 'Kutieskin Chính Hãng - TikTok Shop') : selectedStore;
-    const targetBrand = matchedPlanFinal?.brandName || targetStoreName.split('_')[0] || 'Kutieskin';
+    const fallbackStore = defaultInitialStore;
+    const targetStoreName = selectedStore === 'ALL' ? (matchedPlanFinal?.storeName || fallbackStore) : selectedStore;
+    const targetBrand = matchedPlanFinal?.brandName || targetStoreName.split('_')[0] || '4PM';
     setNewKocForm({
       ...newKocForm,
       storeName: targetStoreName,
@@ -861,7 +868,7 @@ export function KocListingBatchHubView({
     const targetStoreName =
       targetStore?.storeName ||
       newListings[0]?.storeName ||
-      (selectedStore === 'ALL' ? 'Kutieskin Chính Hãng - TikTok Shop' : selectedStore);
+      (selectedStore === 'ALL' ? defaultInitialStore : selectedStore);
     const targetMonthKey =
       newListings[0]?.monthKey || (selectedMonth === 'ALL' ? '2026/10' : selectedMonth);
 

@@ -84,16 +84,13 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
   useEffect(() => {
     if (!isOpen) {
       lastFetchedUrlRef.current = '';
+      setBreakdown(null);
       return;
     }
     const cleanInit = initialUrl.trim();
     setVideoUrlInput(cleanInit);
     setError(null);
-    if (cleanInit && lastFetchedUrlRef.current !== cleanInit) {
-      lastFetchedUrlRef.current = cleanInit;
-      void runExtract(cleanInit, fallbackContext);
-    }
-  }, [isOpen, initialUrl, fallbackContext]);
+  }, [isOpen, initialUrl]);
 
   const handleCopy = (text: string, key: string, label: string) => {
     if (!text) return;

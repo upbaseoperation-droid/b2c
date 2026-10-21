@@ -133,7 +133,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
   const initialStore =
     defaultStoreName && b2cStores.some((s) => s.storeName === defaultStoreName)
       ? defaultStoreName
-      : b2cStores[0]?.storeName || 'Kutieskin Chính Hãng - TikTok Shop';
+      : b2cStores[0]?.storeName || '4PM_Shopee_E2E-S';
 
   const [monthKey, setMonthKey] = useState<string>(defaultMonthKey);
   const [storeName, setStoreName] = useState<string>(initialStore);
@@ -292,7 +292,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
       open={open}
       onClose={onClose}
       title={`Đưa ${targetKocs.length} KOC vào Sheet Listing của Brand`}
-      size="lg"
+      size="xl"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -319,7 +319,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
             </Select>
           </Field>
 
-          <Field label="Sheet Brand / Gian hàng">
+          <Field label="Sheet Brand / Gian hàng" labelClassName="whitespace-nowrap">
             <Select className="w-full" value={storeName} onChange={(e) => setStoreName(e.target.value)}>
               {b2cStores.map((st) => (
                 <option key={st.id} value={st.storeName}>
@@ -329,7 +329,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
             </Select>
           </Field>
 
-          <Field label="Đợt trình duyệt">
+          <Field label="Đợt trình duyệt" labelClassName="whitespace-nowrap">
             <Select className="w-full" value={dot} onChange={(e) => setDot(e.target.value)}>
               {DOT_LISTING_OPTIONS.map((d) => (
                 <option key={d} value={d}>
@@ -341,7 +341,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Field label="Sản phẩm đề xuất (Cột K)">
+          <Field label="Sản phẩm đề xuất (Cột K)" labelClassName="whitespace-nowrap">
             <div ref={productBoxRef} className="relative flex items-center min-w-0">
               <Input
                 value={sanPham}
@@ -427,7 +427,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
               )}
           </Field>
 
-          <Field label="Content tag (Cột G)">
+          <Field label="Content tag (Cột G)" labelClassName="whitespace-nowrap">
             <Select className="w-full" value={contentTag} onChange={(e) => setContentTag(e.target.value)}>
               {CONTENT_TAG_OPTIONS.map((tag) => (
                 <option key={tag} value={tag}>
@@ -437,7 +437,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
             </Select>
           </Field>
 
-          <Field label="Đề xuất từ UpBase (Cột R)">
+          <Field label="Đề xuất từ UpBase (Cột R)" labelClassName="whitespace-nowrap">
             <Select className="w-full" value={deXuatUpBase} onChange={(e) => setDeXuatUpBase(e.target.value)}>
               {DE_XUAT_UPBASE_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -448,7 +448,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
           </Field>
         </div>
 
-        <Field label="Content note (Cột T)">
+        <Field label="Content note (Cột T)" labelClassName="whitespace-nowrap">
           <div className="space-y-2">
             <Input
               value={contentNote}

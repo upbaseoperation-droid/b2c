@@ -70,7 +70,8 @@ export type TabKey =
   | 'knowledge-qa'
   | 'audit-trail'
   | 'tiktok-crawler'
-  | 'market-research';
+  | 'market-research'
+  | 'store-air-plan-report';
 
 export interface UserProfile {
   id: string;

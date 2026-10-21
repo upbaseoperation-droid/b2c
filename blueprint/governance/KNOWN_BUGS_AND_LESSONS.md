@@ -467,6 +467,27 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   3. Xóa bỏ lệnh gọi `runExtract` trong `useEffect` của `CompetitorVideoScriptModal.tsx`, chỉ điền sẵn ô nhập đường dẫn và chờ người dùng bấm `Tách lời thoại & Hook` hoặc nhấn Enter.
 - **Phạm vi rà soát mở rộng sang phần khác:** Toàn bộ các view và drawer tích hợp API mô hình và crawler, đảm bảo 100% tuân thủ `RULE-API-02`.
 
+### BUG-028 — Lệch Tên Gian Hàng Giữa Bộ Chọn Dropdown (4PM) Và Trạng Thái Bảng Dữ Liệu (Kutieskin) Tại Màn Hình Listing & Air Video
+- **Ngày phát hiện:** 21/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/KocListingBatchHubView.tsx`, `web-admin/src/components/shortlist/StaffBrandListingSheetWorkspace.tsx`, `web-admin/src/components/shortlist/AddToBrandListingSheetModal.tsx`, `web-admin/src/components/views/ApprovedBookingListView.tsx`, `web-admin/src/lib/staffBrandListingSheet.ts`, `web-admin/src/lib/mockData.ts`.
+- **Triệu chứng:**
+  - Trên màn hình *Listing & Air Video* (Tab *Sheet Listing Cá Nhân (Theo Brand)*):
+  - Khung chọn dropdown phía trên hiển thị `4PM – 4PM_Shopee_E2E-S (5 KOC)` và các tab đính kèm `4PM_Shopee_E2E-S 5`, `4PM_TikTok_E2E-S 5`.
+  - Cụm thống kê hiển thị: `KOC: 0 | Net: 0 đ | Gross: 0 đ`.
+  - Bảng dữ liệu bên dưới hiển thị trạng thái trống: `Sheet “Kutieskin Chính Hãng - TikTok Shop” (2026/10) chưa có KOC nào`.
+- **Nguyên nhân gốc (Root Cause):**
+  1. `KocListingBatchHubView.tsx` khởi tạo `selectedStore` mặc định là `'Kutieskin Chính Hãng - TikTok Shop'` (chuỗi hardcode cũ thời mockup ban đầu).
+  2. Danh mục 69 gian hàng B2C chuẩn (`REAL_B2C_69_STORES`) không có gian hàng tên `'Kutieskin Chính Hãng - TikTok Shop'` (tên chuẩn của thương hiệu này là `'Kutieskin Mama_Shopee_E2E-S'` và `'Kutieskin Mama_TikTok_E2E-S'`). Gian hàng đầu tiên trong danh mục thực tế là `'4PM_Shopee_E2E-S'`.
+  3. `StaffBrandListingSheetWorkspace.tsx` nhận prop `selectedStore = 'Kutieskin Chính Hãng - TikTok Shop'` nhưng không đối soát xem tên đó có tồn tại trong danh sách `b2cStores` hay không.
+  4. Thẻ HTML `<select value={activeStoreName}>` nhận giá trị `'Kutieskin Chính Hãng - TikTok Shop'`. Do không có thẻ `<option>` nào khớp, trình duyệt mặc định hiển thị tùy chọn đầu tiên là `4PM – 4PM_Shopee_E2E-S (5 KOC)`.
+  5. Tuy nhiên, state nội bộ `activeStoreName` trong React vẫn giữ `'Kutieskin Chính Hãng - TikTok Shop'`. Vì sheet `'2026/10__Kutieskin...'` không có dữ liệu mẫu, React render trạng thái trống kèm thông báo `Sheet “Kutieskin...” chưa có KOC nào` và số lượng `KOC: 0`.
+- **Cách khắc phục:**
+  1. Trong `KocListingBatchHubView.tsx`: Thay chuỗi hardcode cũ bằng gian hàng B2C hợp lệ đầu tiên từ `stores` (`4PM_Shopee_E2E-S`), đồng thời cập nhật form tạo mới và các fallback.
+  2. Trong `StaffBrandListingSheetWorkspace.tsx`: Kiểm tra `isStoreValid = b2cStores.some(s => s.storeName === selectedStore)`. Nếu không hợp lệ, tự động tìm alias matching hoặc lấy `b2cStores[0]?.storeName` và phát lệnh `onChangeStore` để đồng bộ ngược lên component cha.
+  3. Trong `mockData.ts` & `monthlyPlanData.ts`: Chuẩn hóa dữ liệu mẫu của Kutieskin sang tên gian hàng chuẩn `Kutieskin Mama_TikTok_E2E-S`.
+  4. Trong `staffBrandListingSheet.ts`: Mở rộng tập gian hàng khởi tạo dữ liệu mẫu ban đầu để bao gồm cả các gian hàng của Kutieskin bên cạnh top 5 gian hàng đầu tiên.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát và thay thế toàn bộ các fallback hardcode `'Kutieskin Chính Hãng - TikTok Shop'` tại `AddToBrandListingSheetModal.tsx` và `ApprovedBookingListView.tsx` sang đọc từ gian hàng thực tế.
+
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

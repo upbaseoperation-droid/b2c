@@ -1861,6 +1861,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
 
 export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ADMIN: [
+    'store-air-plan-report',
     'cockpit',
     'overview',
     'dashboard-bi',
@@ -1900,6 +1901,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research'
   ],
   MANAGER: [
+    'store-air-plan-report',
     'cockpit',
     'overview',
     'dashboard-bi',
@@ -1939,6 +1941,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research'
   ],
   GROWTH_MANAGER: [
+    'store-air-plan-report',
     'cockpit',
     'manager',
     'task-delegation',
@@ -1993,6 +1996,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research'
   ],
   LEADER: [
+    'store-air-plan-report',
     'cockpit',
     'overview',
     'dashboard-bi',
@@ -2027,6 +2031,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research'
   ],
   BOOKING_MEMBER: [
+    'store-air-plan-report',
+    'store-air-plan-report',
     'cockpit',
     'task-delegation',
     'dashboard-store',
@@ -2108,6 +2114,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research'
   ],
   GROWTH_MEMBER: [
+    'store-air-plan-report',
     'input-plan',
     'cockpit',
     'task-delegation',
@@ -2144,6 +2151,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts'
   ],
   FINANCE: [
+    'store-air-plan-report',
     'contracts',
     'dashboard-finance'
   ],
@@ -2243,6 +2251,7 @@ export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
 }
 
 const CORE_SYNCED_ROLE_TABS: TabKey[] = [
+  'store-air-plan-report',
   'approved-booking-list',
   'tiktok-crawler',
   'market-research',
@@ -2328,6 +2337,7 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'self-channel-hub', label: 'Video kênh Brand (Self-channel)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Giao việc & nghiệm thu video kênh tự xây.' },
   { key: 'contracts', label: 'Hợp đồng & Biểu mẫu', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng & Tài Chính', description: 'Soạn hợp đồng, duyệt Pháp chế / Kế toán, trình ký điện tử và quản lý mẫu .docx.' },
   { key: 'ads-report', label: 'Báo cáo Ads TikTok', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Báo cáo hiệu quả chạy quảng cáo GMV, ROAS, CPA.' },
+  { key: 'store-air-plan-report', label: 'Báo cáo Kế hoạch & Air Video', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Báo cáo đối soát thực tế vs kế hoạch gian hàng theo KL, kiểm tra tiến độ air video và quản lý ngân sách chi tiêu.' },
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
   { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },

@@ -27,12 +27,10 @@ import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import {
   BrandAvatar,
   Button,
-  Chips,
   ConfirmDialog,
   DataTable,
   EmptyState,
   Field,
-  FilterBar,
   Input,
   Modal,
   Pagination,
@@ -63,9 +61,8 @@ import {
   updateSharedProfilesCache,
 } from '../../lib/brands/useBrandProfiles';
 
-type AdminTab = 'FILES_MANAGER' | 'BRAND_STORAGE' | 'R2_CONFIG';
+type AdminTab = 'BRAND_DOCS' | 'BUCKET_OBJECTS' | 'BRAND_STORAGE' | 'R2_CONFIG';
 type StorageFilter = 'ALL' | 'R2' | 'LOCAL' | 'LINK';
-type ViewSourceMode = 'BRAND_DOCS' | 'BUCKET_OBJECTS';
 
 interface R2StatusSummary {
   configured: boolean;
@@ -146,8 +143,7 @@ export function CloudflareAdminView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToBrandProfile?: (brandName: string) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<AdminTab>('FILES_MANAGER');
-  const [sourceMode, setSourceMode] = useState<ViewSourceMode>('BRAND_DOCS');
+  const [activeTab, setActiveTab] = useState<AdminTab>('BRAND_DOCS');
   const [r2Status, setR2Status] = useState<R2StatusSummary | null>(null);
   const [loadingR2, setLoadingR2] = useState<boolean>(true);
   const [testingR2, setTestingR2] = useState<boolean>(false);
@@ -646,40 +642,6 @@ export function CloudflareAdminView({
     }
   };
 
-  const storageChips = useMemo(
-    () => [
-      { key: 'ALL' as const, label: 'Tất cả nguồn', count: allBrandFiles.length },
-      {
-        key: 'R2' as const,
-        label: 'Cloudflare R2',
-        count: allBrandFiles.filter(f => f.storage === 'R2').length,
-      },
-      {
-        key: 'LOCAL' as const,
-        label: 'Lưu trên máy chủ',
-        count: allBrandFiles.filter(f => f.storage === 'LOCAL').length,
-      },
-      {
-        key: 'LINK' as const,
-        label: 'Link ngoài (Drive / Sheet)',
-        count: allBrandFiles.filter(f => f.storage === 'LINK').length,
-      },
-    ],
-    [allBrandFiles],
-  );
-
-  const categoryChips = useMemo(
-    () => [
-      { key: 'ALL' as const, label: 'Tất cả loại', count: allBrandFiles.length },
-      ...(Object.entries(DOC_CATEGORY_LABEL) as Array<[BrandDocCategory, string]>).map(([key, label]) => ({
-        key,
-        label,
-        count: allBrandFiles.filter(f => f.category === key).length,
-      })),
-    ],
-    [allBrandFiles],
-  );
-
   // Cột bảng danh sách tệp hồ sơ thương hiệu
   const fileColumns: Column<FlattenedBrandFileItem>[] = [
     {
@@ -997,7 +959,7 @@ export function CloudflareAdminView({
             variant="ghost"
             onClick={() => {
               setBrandFilter(r.key);
-              setActiveTab('FILES_MANAGER');
+              setActiveTab('BRAND_DOCS');
             }}
           >
             Xem tệp ({r.totalDocs})
@@ -1032,10 +994,10 @@ export function CloudflareAdminView({
 
   return (
     <div className="space-y-6">
-      {/* 1. HÀNG CHỈ SỐ TỔNG QUAN CLOUDFLARE R2 */}
+      {/* 1. HÀNG CHỈ SỐ TỔNG QUAN */}
       <StatRow>
         <Stat
-          label="Kho lưu trữ"
+          label="Hệ thống lưu trữ"
           value={r2Status?.configured ? 'Cloudflare R2' : 'Lưu trên máy chủ'}
           note={
             r2Status?.configured
@@ -1046,33 +1008,42 @@ export function CloudflareAdminView({
         <Stat
           label="Tổng số tài liệu"
           value={`${kpiMetrics.totalFiles} mục`}
-          note={`${kpiMetrics.totalR2Objects} tệp R2 · ${kpiMetrics.totalLocalObjects} tệp máy chủ`}
+          note={
+            kpiMetrics.totalR2Objects + kpiMetrics.totalLocalObjects > 0
+              ? `${kpiMetrics.totalR2Objects} tệp R2 · ${kpiMetrics.totalLocalObjects} máy chủ`
+              : `${allBrandFiles.length} tài liệu liên kết`
+          }
         />
         <Stat
-          label="Dung lượng tệp"
+          label="Tổng dung lượng"
           value={formatFileSize(kpiMetrics.totalBytes) || '0 MB'}
           note={
             kpiMetrics.physicalBytes > 0
               ? `Tệp tải lên: ${formatFileSize(kpiMetrics.physicalBytes)}`
-              : 'Tài liệu Guideline, Brief & Pháp lý'
+              : 'Guideline, Brief & Pháp lý'
           }
         />
         <Stat
-          label="Thương hiệu có tài liệu"
+          label="Độ phủ thương hiệu"
           value={`${kpiMetrics.brandsWithDocs} / ${kpiMetrics.totalBrands} nhãn`}
-          note={`${kpiMetrics.totalLegalDocs} giấy công bố & xác nhận quảng cáo`}
+          note={`${kpiMetrics.totalLegalDocs} giấy công bố pháp lý`}
         />
       </StatRow>
 
-      {/* 2. THANH TAB ĐIỀU HƯỚNG & NÚT THAO TÁC QUẢN TRỊ */}
+      {/* 2. THANH TAB ĐIỀU HƯỚNG & NÚT THAO TÁC */}
       <Tabs<AdminTab>
         value={activeTab}
         onChange={setActiveTab}
         items={[
           {
-            key: 'FILES_MANAGER',
-            label: 'Danh sách tệp',
-            count: sourceMode === 'BUCKET_OBJECTS' ? filteredBucketObjects.length : allBrandFiles.length,
+            key: 'BRAND_DOCS',
+            label: 'Tài liệu thương hiệu',
+            count: allBrandFiles.length,
+          },
+          {
+            key: 'BUCKET_OBJECTS',
+            label: 'Tệp lưu trên Bucket',
+            count: r2Status?.storedObjects?.objects.length || 0,
           },
           {
             key: 'BRAND_STORAGE',
@@ -1118,237 +1089,280 @@ export function CloudflareAdminView({
         }
       />
 
-      {/* 3. NỘI DUNG TAB 1: DANH SÁCH TỆP */}
-      {activeTab === 'FILES_MANAGER' && (
-        <div className="space-y-4">
-          {/* Thanh chuyển chế độ xem & lọc theo thương hiệu */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-line rounded-xl px-4 py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSourceMode('BRAND_DOCS');
-                  setFilePage(1);
-                }}
-                className={`h-8 px-3 rounded-md text-xs font-medium inline-flex items-center gap-1.5 transition-colors ${
-                  sourceMode === 'BRAND_DOCS'
-                    ? 'bg-primary text-white'
-                    : 'bg-sunken text-ink-2 hover:text-ink'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Tài liệu theo thương hiệu ({allBrandFiles.length})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSourceMode('BUCKET_OBJECTS');
-                  setFilePage(1);
-                  void loadR2Status(true);
-                }}
-                className={`h-8 px-3 rounded-md text-xs font-medium inline-flex items-center gap-1.5 transition-colors ${
-                  sourceMode === 'BUCKET_OBJECTS'
-                    ? 'bg-primary text-white'
-                    : 'bg-sunken text-ink-2 hover:text-ink'
-                }`}
-              >
-                <HardDrive className="w-3.5 h-3.5" />
-                <span>
-                  Tệp lưu trên Bucket ({r2Status?.storedObjects?.objects.length || 0})
-                </span>
-              </button>
-            </div>
+      {/* 3. NỘI DUNG TAB 1: TÀI LIỆU THƯƠNG HIỆU */}
+      {activeTab === 'BRAND_DOCS' && (
+        <Panel flush>
+          <div className="p-3 border-b border-line bg-surface/50">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex-1 min-w-[240px]">
+                <Input
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setFilePage(1);
+                  }}
+                  placeholder="Tìm theo tên tài liệu, đường dẫn, thương hiệu, người tải…"
+                />
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-ink-3">Thương hiệu:</span>
-              <select
-                value={brandFilter}
-                onChange={e => {
-                  setBrandFilter(e.target.value);
-                  setFilePage(1);
-                }}
-                aria-label="Lọc theo thương hiệu"
-                className="h-8 px-2.5 rounded-md border border-line bg-surface text-xs font-medium text-ink focus:outline-none focus:border-accent"
-              >
-                <option value="ALL">Tất cả 42 thương hiệu B2C</option>
-                {rows.map(r => (
-                  <option key={r.key} value={r.key}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-              {brandFilter !== 'ALL' && (
-                <Button size="sm" variant="ghost" onClick={() => setBrandFilter('ALL')}>
-                  Bỏ lọc nhãn
+              <div className="w-[190px]">
+                <Select
+                  value={brandFilter}
+                  onChange={e => {
+                    setBrandFilter(e.target.value);
+                    setFilePage(1);
+                  }}
+                  aria-label="Lọc theo thương hiệu"
+                >
+                  <option value="ALL">Tất cả thương hiệu ({rows.length})</option>
+                  {rows.map(r => (
+                    <option key={r.key} value={r.key}>
+                      {r.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="w-[180px]">
+                <Select
+                  value={categoryFilter}
+                  onChange={e => {
+                    setCategoryFilter(e.target.value as 'ALL' | BrandDocCategory);
+                    setFilePage(1);
+                  }}
+                  aria-label="Lọc theo phân loại"
+                >
+                  <option value="ALL">Tất cả phân loại ({allBrandFiles.length})</option>
+                  {(Object.entries(DOC_CATEGORY_LABEL) as Array<[BrandDocCategory, string]>).map(([key, label]) => {
+                    const count = allBrandFiles.filter(f => f.category === key).length;
+                    return (
+                      <option key={key} value={key}>
+                        {label} ({count})
+                      </option>
+                    );
+                  })}
+                </Select>
+              </div>
+
+              <div className="w-[170px]">
+                <Select
+                  value={storageFilter}
+                  onChange={e => {
+                    setStorageFilter(e.target.value as StorageFilter);
+                    setFilePage(1);
+                  }}
+                  aria-label="Lọc theo nơi lưu trữ"
+                >
+                  <option value="ALL">Tất cả nơi lưu ({allBrandFiles.length})</option>
+                  <option value="R2">Cloudflare R2 ({allBrandFiles.filter(f => f.storage === 'R2').length})</option>
+                  <option value="LOCAL">Máy chủ nội bộ ({allBrandFiles.filter(f => f.storage === 'LOCAL').length})</option>
+                  <option value="LINK">Link ngoài ({allBrandFiles.filter(f => f.storage === 'LINK').length})</option>
+                </Select>
+              </div>
+
+              {(searchQuery.trim() || brandFilter !== 'ALL' || categoryFilter !== 'ALL' || storageFilter !== 'ALL') && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setBrandFilter('ALL');
+                    setCategoryFilter('ALL');
+                    setStorageFilter('ALL');
+                    setFilePage(1);
+                  }}
+                >
+                  Đặt lại
                 </Button>
               )}
+
+              <span className="text-2xs text-ink-3 tabular-nums ml-auto shrink-0 hidden sm:inline-block">
+                Hiển thị {filteredBrandFiles.length} tài liệu
+              </span>
             </div>
           </div>
 
-          <Panel
-            title={
-              sourceMode === 'BRAND_DOCS'
-                ? 'Tài liệu thương hiệu'
-                : `Tệp trong Bucket "${r2Status?.bucket || 'upbase-b2c-brands'}"`
-            }
-            actions={
-              <div className="flex items-center gap-2">
-                <Status tone={r2Status?.configured ? 'positive' : 'info'}>
-                  {r2Status?.configured
-                    ? `Bucket: ${r2Status.bucket}`
-                    : 'Lưu trên máy chủ (.brand-data/files)'}
-                </Status>
-                {!r2Status?.configured && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={Settings}
-                    onClick={() => setActiveTab('R2_CONFIG')}
-                  >
-                    Nhập khóa R2
+
+          <DataTable
+            columns={fileColumns}
+            rows={pagedBrandFiles}
+            rowKey={item => item.uid}
+            empty={
+              <EmptyState
+                title="Không có tài liệu nào khớp bộ lọc"
+                action={
+                  <Button variant="primary" icon={Upload} onClick={() => openUploadForBrand()}>
+                    Tải tệp lên
                   </Button>
-                )}
-              </div>
-            }
-          >
-            <div className="space-y-3">
-              <FilterBar
-                search={{
-                  value: searchQuery,
-                  onChange: (v: string) => {
-                    setSearchQuery(v);
-                    setFilePage(1);
-                  },
-                  placeholder: 'Tìm theo tên tệp, đường dẫn, thương hiệu, người tải…',
-                }}
-                chips={
-                  <Chips
-                    items={storageChips}
-                    value={storageFilter}
-                    onChange={v => {
-                      setStorageFilter(v);
-                      setFilePage(1);
-                    }}
-                  />
                 }
               />
-
-              {sourceMode === 'BRAND_DOCS' && (
-                <div className="pt-1">
-                  <Chips
-                    items={categoryChips}
-                    value={categoryFilter}
-                    onChange={v => {
-                      setCategoryFilter(v);
-                      setFilePage(1);
-                    }}
-                  />
-                </div>
-              )}
-
-              {sourceMode === 'BRAND_DOCS' ? (
-                <>
-                  <DataTable
-                    columns={fileColumns}
-                    rows={pagedBrandFiles}
-                    rowKey={item => item.uid}
-                    empty={
-                      <EmptyState
-                        title="Không có tệp nào khớp bộ lọc"
-                        action={
-                          <Button variant="primary" icon={Upload} onClick={() => openUploadForBrand()}>
-                            Tải tệp lên
-                          </Button>
-                        }
-                      />
-                    }
-                  />
-                  <Pagination
-                    page={filePage}
-                    pageSize={FILE_PAGE_SIZE}
-                    total={filteredBrandFiles.length}
-                    onPageChange={setFilePage}
-                  />
-                </>
-              ) : (
-                <>
-                  {r2Status?.storedObjects?.r2Error && (
-                    <div className="rounded-lg border border-warning/30 bg-warning-soft px-3.5 py-2.5 text-xs text-warning flex items-center justify-between gap-3">
-                      <span>{r2Status.storedObjects.r2Error}</span>
-                      <Button size="sm" variant="secondary" onClick={() => setActiveTab('R2_CONFIG')}>
-                        Kiểm tra khóa R2
-                      </Button>
-                    </div>
-                  )}
-                  <DataTable
-                    columns={bucketObjectColumns}
-                    rows={pagedBucketObjects}
-                    rowKey={obj => obj.key}
-                    empty={
-                      <EmptyState
-                        title="Chưa có tệp nào trong Bucket"
-                        action={
-                          <Button variant="primary" icon={Upload} onClick={() => openUploadForBrand()}>
-                            Tải tệp lên
-                          </Button>
-                        }
-                      />
-                    }
-                  />
-                  <Pagination
-                    page={filePage}
-                    pageSize={FILE_PAGE_SIZE}
-                    total={filteredBucketObjects.length}
-                    onPageChange={setFilePage}
-                  />
-                </>
-              )}
-            </div>
-          </Panel>
-        </div>
-      )}
-
-      {/* 4. NỘI DUNG TAB 2: DUNG LƯỢNG THEO THƯƠNG HIỆU */}
-      {activeTab === 'BRAND_STORAGE' && (
-        <Panel
-          title="Tài liệu theo thương hiệu"
-          actions={
-            <Button size="sm" variant="primary" icon={Upload} onClick={() => openUploadForBrand()}>
-              Tải tệp lên
-            </Button>
-          }
-        >
-          <div className="space-y-3">
-            <FilterBar
-              search={{
-                value: searchQuery,
-                onChange: (v: string) => {
-                  setSearchQuery(v);
-                  setBrandPage(1);
-                },
-                placeholder: 'Tìm theo tên thương hiệu, mã nhãn, ngành hàng, PIC…',
-              }}
-            />
-            <DataTable
-              columns={brandStorageColumns}
-              rows={pagedBrandStorage}
-              rowKey={r => r.key}
-              onRowClick={r => {
-                setBrandFilter(r.key);
-                setActiveTab('FILES_MANAGER');
-              }}
-            />
-            <Pagination
-              page={brandPage}
-              pageSize={BRAND_PAGE_SIZE}
-              total={filteredBrandStorageRows.length}
-              onPageChange={setBrandPage}
-            />
-          </div>
+            }
+          />
+          <Pagination
+            page={filePage}
+            pageSize={FILE_PAGE_SIZE}
+            total={filteredBrandFiles.length}
+            onPageChange={setFilePage}
+          />
         </Panel>
       )}
 
-      {/* 5. NỘI DUNG TAB 3: CẤU HÌNH KẾT NỐI */}
+      {/* 4. NỘI DUNG TAB 2: TỆP LƯU TRÊN BUCKET */}
+      {activeTab === 'BUCKET_OBJECTS' && (
+        <Panel flush>
+          <div className="p-3 border-b border-line bg-surface/50">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex-1 min-w-[240px]">
+                <Input
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setFilePage(1);
+                  }}
+                  placeholder="Tìm theo tên tệp, đường dẫn lưu trữ…"
+                />
+              </div>
+
+              <div className="w-[190px]">
+                <Select
+                  value={brandFilter}
+                  onChange={e => {
+                    setBrandFilter(e.target.value);
+                    setFilePage(1);
+                  }}
+                  aria-label="Lọc theo thương hiệu"
+                >
+                  <option value="ALL">Tất cả thương hiệu ({rows.length})</option>
+                  {rows.map(r => (
+                    <option key={r.key} value={r.key}>
+                      {r.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="w-[170px]">
+                <Select
+                  value={storageFilter}
+                  onChange={e => {
+                    setStorageFilter(e.target.value as StorageFilter);
+                    setFilePage(1);
+                  }}
+                  aria-label="Lọc theo nơi lưu trữ"
+                >
+                  <option value="ALL">Tất cả nơi lưu</option>
+                  <option value="R2">Cloudflare R2</option>
+                  <option value="LOCAL">Máy chủ nội bộ</option>
+                </Select>
+              </div>
+
+              {(searchQuery.trim() || brandFilter !== 'ALL' || storageFilter !== 'ALL') && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setBrandFilter('ALL');
+                    setStorageFilter('ALL');
+                    setFilePage(1);
+                  }}
+                >
+                  Đặt lại
+                </Button>
+              )}
+
+              <span className="text-2xs text-ink-3 tabular-nums ml-auto shrink-0 hidden sm:inline-block">
+                Hiển thị {filteredBucketObjects.length} tệp
+              </span>
+            </div>
+          </div>
+
+          {r2Status?.storedObjects?.r2Error && (
+            <div className="m-3 rounded-lg border border-warning/30 bg-warning-soft px-3.5 py-2.5 text-xs text-warning flex items-center justify-between gap-3">
+              <span>{r2Status.storedObjects.r2Error}</span>
+              <Button size="sm" variant="secondary" onClick={() => setActiveTab('R2_CONFIG')}>
+                Kiểm tra cấu hình
+              </Button>
+            </div>
+          )}
+
+          <DataTable
+            columns={bucketObjectColumns}
+            rows={pagedBucketObjects}
+            rowKey={obj => obj.key}
+            empty={
+              <EmptyState
+                title="Chưa có tệp nào trong Bucket"
+                action={
+                  <Button variant="primary" icon={Upload} onClick={() => openUploadForBrand()}>
+                    Tải tệp lên
+                  </Button>
+                }
+              />
+            }
+          />
+          <Pagination
+            page={filePage}
+            pageSize={FILE_PAGE_SIZE}
+            total={filteredBucketObjects.length}
+            onPageChange={setFilePage}
+          />
+        </Panel>
+      )}
+
+      {/* 5. NỘI DUNG TAB 3: DUNG LƯỢNG THEO THƯƠNG HIỆU */}
+      {activeTab === 'BRAND_STORAGE' && (
+        <Panel flush>
+          <div className="p-3 border-b border-line bg-surface/50">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex-1 min-w-[240px]">
+                <Input
+                  value={searchQuery}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  placeholder="Tìm theo tên thương hiệu, mã nhãn, ngành hàng, PIC…"
+                />
+              </div>
+
+              {searchQuery.trim() && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setBrandPage(1);
+                  }}
+                >
+                  Đặt lại
+                </Button>
+              )}
+
+              <span className="text-2xs text-ink-3 tabular-nums ml-auto shrink-0 hidden sm:inline-block">
+                Hiển thị {filteredBrandStorageRows.length} thương hiệu
+              </span>
+            </div>
+          </div>
+          <DataTable
+            columns={brandStorageColumns}
+            rows={pagedBrandStorage}
+            rowKey={r => r.key}
+            onRowClick={r => {
+              setBrandFilter(r.key);
+              setActiveTab('BRAND_DOCS');
+            }}
+          />
+          <Pagination
+            page={brandPage}
+            pageSize={BRAND_PAGE_SIZE}
+            total={filteredBrandStorageRows.length}
+            onPageChange={setBrandPage}
+          />
+        </Panel>
+      )}
+
+      {/* 6. NỘI DUNG TAB 4: CẤU HÌNH KẾT NỐI */}
       {activeTab === 'R2_CONFIG' && (
         <CloudflareR2SetupPanel
           onNotify={onNotify}

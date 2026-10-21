@@ -156,10 +156,33 @@ export const StaffBrandListingSheetWorkspace: React.FC<
   );
 
   const activeMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
-  const activeStoreName =
-    selectedStore && selectedStore !== 'ALL'
-      ? selectedStore
-      : b2cStores[0]?.storeName || 'Kutieskin Chính Hãng - TikTok Shop';
+  const isStoreValid = b2cStores.some((s) => s.storeName === selectedStore);
+  const activeStoreName = useMemo(() => {
+    if (selectedStore && selectedStore !== 'ALL') {
+      if (isStoreValid) return selectedStore;
+      // Tìm gian hàng tương đương nếu tên cũ hoặc tên lệch (ví dụ 'Kutieskin' -> 'Kutieskin Mama_TikTok_E2E-S')
+      const lower = selectedStore.toLowerCase();
+      const matched = b2cStores.find((s) => {
+        const sLower = s.storeName.toLowerCase();
+        const bLower = (s.brandName || '').toLowerCase();
+        return (
+          sLower.includes(lower) ||
+          lower.includes(sLower) ||
+          (bLower && lower.includes(bLower)) ||
+          (bLower && bLower.includes(lower.split(/[\s-_]/)[0]))
+        );
+      });
+      if (matched) return matched.storeName;
+    }
+    return b2cStores[0]?.storeName || '';
+  }, [selectedStore, isStoreValid, b2cStores]);
+
+  // Đồng bộ lại với component cha nếu selectedStore ban đầu không hợp lệ trong b2cStores
+  useEffect(() => {
+    if (selectedStore && selectedStore !== 'ALL' && activeStoreName && selectedStore !== activeStoreName) {
+      onChangeStore(activeStoreName);
+    }
+  }, [selectedStore, activeStoreName, onChangeStore]);
 
   const activeStoreObj = useMemo(
     () =>
@@ -1877,7 +1900,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         open={isDirectoryPickerOpen}
         onClose={() => setIsDirectoryPickerOpen(false)}
         title={`Chọn KOC từ Danh bạ đưa vào Sheet "${activeStoreName}" (${activeMonth})`}
-        size="lg"
+        size="xl"
         footer={
           <>
             <Button variant="ghost" onClick={() => setIsDirectoryPickerOpen(false)}>
@@ -1896,8 +1919,8 @@ export const StaffBrandListingSheetWorkspace: React.FC<
       >
         <div className="space-y-3">
           {/* Thiết lập nhanh các trường nhân viên điền khi đưa vào Sheet */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
-            <Field label="Đợt (Cột C)">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-2.5 p-3 rounded-lg bg-sunken border border-line">
+            <Field label="Đợt (Cột C)" className="md:col-span-2" labelClassName="whitespace-nowrap">
               <Select
                 value={quickBatchDot}
                 onChange={(e) => setQuickBatchDot(e.target.value)}
@@ -1910,7 +1933,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </Select>
             </Field>
 
-            <Field label="Sản phẩm (Cột K)">
+            <Field label="Sản phẩm (Cột K)" className="md:col-span-4" labelClassName="whitespace-nowrap">
               <Input
                 value={quickProduct}
                 onChange={(e) => setQuickProduct(e.target.value)}
@@ -1920,7 +1943,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               />
             </Field>
 
-            <Field label="Content tag (Cột G)">
+            <Field label="Content tag (Cột G)" className="md:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={quickContentTag}
                 onChange={(e) => setQuickContentTag(e.target.value)}
@@ -1933,7 +1956,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
               </Select>
             </Field>
 
-            <Field label="Đề xuất UpBase (Cột R)">
+            <Field label="Đề xuất UpBase (Cột R)" className="md:col-span-3" labelClassName="whitespace-nowrap">
               <Select
                 value={quickUpbaseProposal}
                 onChange={(e) => setQuickUpbaseProposal(e.target.value)}
