@@ -37,6 +37,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
   departmentHint,
   className = ''
 }) => {
+  const listboxId = React.useId();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(value || '');
   const [prevValue, setPrevValue] = useState(value);
@@ -226,6 +227,7 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
           className="w-full pl-8 pr-14 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition shadow-2xs"
           role="combobox"
           aria-expanded={isOpen}
+          aria-controls={listboxId}
           aria-autocomplete="list"
         />
 
@@ -258,6 +260,8 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
       {/* Dropdown Results Menu */}
       {isOpen && (
         <div 
+          id={listboxId}
+          role="listbox"
           ref={listRef}
           className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-surface border border-line rounded-xl shadow-xl text-xs divide-y divide-line animate-in fade-in zoom-in-95 duration-100"
         >

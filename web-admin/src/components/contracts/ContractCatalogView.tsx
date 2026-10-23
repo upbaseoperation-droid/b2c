@@ -1023,7 +1023,7 @@ export function ContractCatalogView({
         }
       >
         <p className="text-xs text-ink-2">
-          Lưu ý: Chỉ có thể xóa biểu mẫu chưa có hồ sơ hợp đồng nào liên kết. Nếu biểu mẫu đã được sử dụng, vui lòng chuyển trạng thái sang "Ngừng áp dụng".
+          Lưu ý: Chỉ có thể xóa biểu mẫu chưa có hồ sơ hợp đồng nào liên kết. Nếu biểu mẫu đã được sử dụng, vui lòng chuyển trạng thái sang &ldquo;Ngừng áp dụng&rdquo;.
         </p>
       </Modal>
     </div>

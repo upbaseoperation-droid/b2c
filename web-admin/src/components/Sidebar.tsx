@@ -3,15 +3,11 @@
 import React, { useRef } from 'react';
 import {
   CheckSquare,
-  BarChart3,
   LayoutDashboard,
   Layers,
   FileText,
   Users,
   FileCheck,
-  TrendingUp,
-  Package,
-  Coins,
   BookOpen,
   Calendar,
   Database,
@@ -22,16 +18,12 @@ import {
   Loader2,
   KeyRound,
   Film,
-  Store,
   PanelLeftClose,
-  Building2,
-  FileSpreadsheet,
   ChevronDown,
   ChevronRight,
   Sliders,
   HelpCircle,
   ClipboardList,
-  ShieldCheck,
   Search,
   Clapperboard,
   Contact,
@@ -219,10 +211,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return new Set(getAllowedTabsForRole(currentUser.role));
   }, [currentUser.role, rbacTick]);
 
-  const lastGroupTabRef = useRef<Record<string, TabKey>>({});
+  const [lastGroupTabs, setLastGroupTabs] = React.useState<Record<string, TabKey>>({});
   for (const [groupId, tabs] of Object.entries(GROUP_TABS)) {
-    if (tabs.includes(activeTab) && allowedSet.has(activeTab)) {
-      lastGroupTabRef.current[groupId] = activeTab;
+    if (tabs.includes(activeTab) && allowedSet.has(activeTab) && lastGroupTabs[groupId] !== activeTab) {
+      setLastGroupTabs((prev) => ({ ...prev, [groupId]: activeTab }));
     }
   }
 
@@ -248,7 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         } else if (item.group) {
           // Mục nhóm: hiện khi vai trò mở được ít nhất một màn trong nhóm, bấm vào mở lại màn gần nhất trong nhóm.
           const allowedInGroup = (GROUP_TABS[item.group] ?? []).filter(k => allowedSet.has(k));
-          const remembered = lastGroupTabRef.current[item.group];
+          const remembered = allowedInGroup.includes(activeTab)
+            ? activeTab
+            : lastGroupTabs[item.group];
           const targetTab = (remembered && allowedInGroup.includes(remembered)) ? remembered : allowedInGroup[0];
           if (targetTab) items.push({ ...item, key: targetTab, badge: badgeOf(targetTab, item.badge) });
         } else if (allowedSet.has(item.key)) {
@@ -261,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     return filtered;
-  }, [currentUser.role, allowedSet, badgeCounts, activeTab]);
+  }, [currentUser.role, allowedSet, badgeCounts, activeTab, lastGroupTabs]);
 
   const footerItems = FOOTER_ITEMS.filter(f => allowedSet.has(f.key));
 

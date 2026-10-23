@@ -13,14 +13,13 @@ import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfo
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
-import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
+import { formatNumber, formatVndShort } from '../../lib/format';
 import {
   PROFILE_MONTH_OPTIONS,
   buildBrandMonthlyPlanReport,
   type BrandMonthlyPlanReport,
 } from '../../lib/monthlyProfileMetrics';
 import {
-  Avatar,
   BrandAvatar,
   Button,
   ChannelTag,
@@ -33,7 +32,6 @@ import {
   Stat,
   StatRow,
   Skeleton,
-  Status,
   channelOf,
   closeShared,
   openShared,
@@ -44,7 +42,7 @@ import { BrandProfileDetail, type BrandDetailTab } from '../brands/BrandProfileD
 import { CloudflareR2SetupModal } from '../brands/CloudflareR2SetupPanel';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
-import { isBrandManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
+import { isBrandManagedByUser } from '../../lib/rbacScope';
 
 type Filter = 'ALL' | 'MINE' | 'KEY_BUDGET' | 'COMPLETE' | 'EXPIRED_LEGAL';
 
@@ -276,14 +274,16 @@ export function BrandProfilesView({
     }
   };
 
-  useEffect(() => {
+  const [prevInitialDetailTab, setPrevInitialDetailTab] = useState<BrandDetailTab | undefined>(initialDetailTab);
+  if (initialDetailTab !== prevInitialDetailTab) {
+    setPrevInitialDetailTab(initialDetailTab);
     if (initialDetailTab) {
       setDetailTab(initialDetailTab);
       if (!openKey && visible.length > 0) {
         setOpenKey(visible[0].key);
       }
     }
-  }, [initialDetailTab, openKey, visible]);
+  }
 
   if (loadError && !profiles) {
     return (

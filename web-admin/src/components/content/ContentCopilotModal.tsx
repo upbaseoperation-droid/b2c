@@ -56,14 +56,17 @@ export const ContentCopilotModal: React.FC<ContentCopilotModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Sync khi mở modal
-  React.useEffect(() => {
+  const syncKey = `${open}|${brandName}|${productName}|${initialPillar}|${initialScript}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
     if (open) {
       if (brandName) setSelectedBrand(brandName);
       if (productName) setSelectedProduct(productName);
       if (initialPillar) setSelectedPillar(initialPillar);
       if (initialScript) setScriptInput(initialScript);
     }
-  }, [open, brandName, productName, initialPillar, initialScript]);
+  }
 
   const brandProfile = useMemo(() => findBrandProfile(profiles, selectedBrand) || profiles[0], [profiles, selectedBrand]);
 

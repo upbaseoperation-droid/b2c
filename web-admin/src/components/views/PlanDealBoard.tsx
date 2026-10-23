@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronDown, ChevronRight, Lock, Plus, RefreshCw, Search, Send, Trash2, Unlock } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, Plus, Search, Send, Trash2 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
@@ -96,7 +96,7 @@ const ACCEPT_LABEL: Record<AcceptanceStatus, string> = { PENDING: 'Chưa nghiệ
 const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2 py-2 text-left text-2xs font-medium text-ink-3';
 const TD = 'border-b border-line px-2 py-1.5 align-middle text-[13px] text-ink';
 
-interface PlanLite extends InputPlanBreakdownState {}
+type PlanLite = InputPlanBreakdownState;
 
 export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], currentUserName = 'Nhân viên', onNotify, onOpenContract }) => {
   const notify = useCallback((msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type), [onNotify]);
@@ -221,12 +221,18 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   }, []);
 
   useEffect(() => {
-    void loadFrameworks(handlesKey);
+    void Promise.resolve().then(() => loadFrameworks(handlesKey));
   }, [handlesKey, loadFrameworks]);
 
-  useEffect(() => {
+  const currentPlanId = plan?.id ?? null;
+  const [prevPlanId, setPrevPlanId] = useState<string | null>(currentPlanId);
+  if (currentPlanId !== prevPlanId) {
+    setPrevPlanId(currentPlanId);
     setSlots([]);
     setCatalog({ groups: [] });
+  }
+
+  useEffect(() => {
     if (!plan) return;
     let cancelled = false;
     (async () => {
@@ -260,7 +266,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
   }, []);
   useEffect(() => {
-    void loadContracts();
+    void Promise.resolve().then(() => loadContracts());
   }, [loadContracts, selectedId]);
 
   const kocOfHandle = useCallback((handle: string) => kocs.find(k => normHandle(k.channelId || '') === normHandle(handle)), [kocs]);
@@ -333,17 +339,21 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   const openDeal = deals.find(d => d.id === openDealId) || null;
 
   // Khởi tạo thông tin ngân hàng/CCCD của KOC khi mở Deal
-  useEffect(() => {
-    if (!openDeal) return;
-    const matchedKoc = kocOfHandle(openDeal.kocHandle);
-    const alt = matchedKoc?.alternatePayees?.[0];
-    setPayeeQuickForm({
-      bankName: matchedKoc?.bankName || alt?.bankName || '',
-      bankAccount: matchedKoc?.bankAccount || alt?.bankAccount || '',
-      bankHolder: matchedKoc?.realName || alt?.holderName || openDeal.kocName || '',
-      legalId: matchedKoc?.cccd || matchedKoc?.taxCode || alt?.legalId || '',
-    });
-  }, [openDeal, kocOfHandle]);
+  const openDealSyncKey = openDeal ? `${openDeal.id}::${openDeal.kocHandle}` : '';
+  const [prevOpenDealSyncKey, setPrevOpenDealSyncKey] = useState('');
+  if (openDealSyncKey !== prevOpenDealSyncKey) {
+    setPrevOpenDealSyncKey(openDealSyncKey);
+    if (openDeal) {
+      const matchedKoc = kocOfHandle(openDeal.kocHandle);
+      const alt = matchedKoc?.alternatePayees?.[0];
+      setPayeeQuickForm({
+        bankName: matchedKoc?.bankName || alt?.bankName || '',
+        bankAccount: matchedKoc?.bankAccount || alt?.bankAccount || '',
+        bankHolder: matchedKoc?.realName || alt?.holderName || openDeal.kocName || '',
+        legalId: matchedKoc?.cccd || matchedKoc?.taxCode || alt?.legalId || '',
+      });
+    }
+  }
 
   const closingState: MonthlyClosingState = useMemo(
     () =>

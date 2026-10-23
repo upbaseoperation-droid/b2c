@@ -403,7 +403,11 @@ export function ContractForm({
       values['token:[Thành tiền (VNĐ)]'] ||
       '';
     const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : (deal?.totalValue || (deal as any)?.paymentAmount || (deal as any)?.contractAmount || 0);
+    const dealRecord = deal as unknown as Record<string, unknown> | undefined;
+    const fallbackAmount = Number(
+      deal?.totalValue || dealRecord?.paymentAmount || dealRecord?.contractAmount || 0
+    );
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackAmount;
   }, [values, deal, isKocOwnForm, customContractValue]);
 
   const numericAdvance = useMemo(() => {

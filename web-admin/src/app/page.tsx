@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
@@ -452,7 +452,6 @@ export default function App() {
   // Tải phiên đăng nhập từ cookie hoặc vai trò đã chọn ở trang /login (song song hóa auth + access-policy)
   useEffect(() => {
     async function loadUser() {
-      const hadSavedUser = typeof window !== 'undefined' && Boolean(localStorage.getItem('upbase_selected_user_id'));
       const savedTab = typeof window !== 'undefined' ? (sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY) as TabKey | null) : null;
       try {
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
@@ -522,13 +521,14 @@ export default function App() {
     loadUser();
   }, [handleUserChange]);
 
+  const activePolicyUserId = currentUser?.id;
   useEffect(() => {
-    if (!currentUser || isLoadingAuth) return;
+    if (!activePolicyUserId || isLoadingAuth) return;
     const refresh = () => { void loadAccessPolicy().catch(error => showToast(error.message, 'error')); };
     window.addEventListener('focus', refresh);
     const timer = window.setInterval(refresh, 30000);
     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
-  }, [currentUser?.id, isLoadingAuth, showToast]);
+  }, [activePolicyUserId, isLoadingAuth, showToast]);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -1454,8 +1454,8 @@ export default function App() {
 
         <main id="workspace" className={`px-3 sm:px-4 lg:px-6 py-4 sm:py-5 w-full mx-auto space-y-5 pb-20 lg:pb-5 min-w-0 max-w-full ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
-              <div className="w-14 h-14 rounded-2xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
+            <div className="p-8 sm:p-12 rounded-xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
+              <div className="w-14 h-14 rounded-xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
                 <ShieldAlert className="w-7 h-7" />
               </div>
               <div className="space-y-1.5">

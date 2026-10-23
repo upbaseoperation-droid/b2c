@@ -10,20 +10,17 @@ import {
   Download,
   ExternalLink,
   FileCheck,
-  FileSpreadsheet,
   FileText,
   Globe,
   MessageSquare,
   RefreshCw,
   Search,
   ShieldAlert,
-  Sliders,
   Swords,
   Target,
   UserPlus,
   Users,
 } from 'lucide-react';
-import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import type { BrandDetail, KocItem } from '../../lib/types';
 import {
@@ -33,14 +30,11 @@ import {
   generateBrandMarketResearchDossier,
   type BrandMarketResearchDossier,
   type BrandSkuPortfolioItem,
-  type BookedProductSummaryItem,
   type CompetitorMatrixItem,
-  type InternalStoreAuditItem,
   type KocTierAllocationItem,
   type LiveWebInspectionResult,
   type PlatformComplianceRuleItem,
   type ReviewMiningCluster,
-  type VerifiedBookedDealEvidenceItem,
   type WinningContentAngleBlueprint,
 } from '../../lib/brandMarketResearchEngine';
 import {
@@ -55,10 +49,8 @@ import {
 import { brandKey } from '../../lib/brands/types';
 import {
   API_CONFIG_UPDATED_EVENT,
-  PROVIDER_MODELS_CATALOG,
   getEffectiveConfigForPurpose,
   loadApiWorkspaceConfig,
-  type ApiProviderId,
 } from '../../lib/apiKeyConfig';
 import {
   executeOperationalReport,
@@ -72,11 +64,8 @@ import {
   BrandAvatar,
   Button,
   ChannelBar,
-  ChannelTag,
-  channelOf,
   DataTable,
   Field,
-  FilterBar,
   Input,
   PageActions,
   Panel,
@@ -495,7 +484,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   const [tab2CompetitorInput, setTab2CompetitorInput] = useState<string>('');
   const [analyzingDossier, setAnalyzingDossier] = useState<boolean>(false);
   const [savingToProfile, setSavingToProfile] = useState<boolean>(false);
-  const [showApiSetupPanel, setShowApiSetupPanel] = useState<boolean>(false);
   const [isReportDrawerOpen, setIsReportDrawerOpen] = useState<boolean>(false);
 
   const { profiles: savedBrandProfiles } = useBrandProfiles();
@@ -529,12 +517,8 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     return getEffectiveConfigForPurpose('BRAND_MARKET_RESEARCH', cfg);
   }, [apiConfigVersion]);
 
-  const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>(
-    () => effectiveApiRoute.primaryProvider
-  );
-  const [selectedModel, setSelectedModel] = useState<string>(
-    () => effectiveApiRoute.primaryModel
-  );
+  const selectedProvider = effectiveApiRoute.primaryProvider;
+  const selectedModel = effectiveApiRoute.primaryModel;
   const [activePlaybook, setActivePlaybook] =
     useState<ResearchPlaybookMode>('COMPREHENSIVE');
   const [focusCompetitorForModel, setFocusCompetitorForModel] = useState<string>('');
@@ -548,29 +532,10 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
   useEffect(() => {
     const onCfgUpdated = () => {
       setApiConfigVersion((v) => v + 1);
-      const latest = getEffectiveConfigForPurpose(
-        'BRAND_MARKET_RESEARCH',
-        loadApiWorkspaceConfig()
-      );
-      setSelectedProvider(latest.primaryProvider);
-      setSelectedModel(latest.primaryModel);
     };
     window.addEventListener(API_CONFIG_UPDATED_EVENT, onCfgUpdated);
     return () => window.removeEventListener(API_CONFIG_UPDATED_EVENT, onCfgUpdated);
   }, []);
-
-  const availableModels = useMemo(
-    () => PROVIDER_MODELS_CATALOG[selectedProvider] || [],
-    [selectedProvider]
-  );
-
-  const handleProviderChange = (prov: ApiProviderId) => {
-    setSelectedProvider(prov);
-    const list = PROVIDER_MODELS_CATALOG[prov] || [];
-    if (list.length > 0) {
-      setSelectedModel(list[0].id);
-    }
-  };
 
   // --- State Quét KOC của Đối thủ ngay trong Tab 2 ---
   const [scanningCompetitorHandle, setScanningCompetitorHandle] = useState<string | null>(
@@ -2129,41 +2094,6 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
         title={`Tổng hợp nghiên cứu: ${dossier.brandName}${
           focusCompetitorForModel ? ` và ${focusCompetitorForModel}` : ''
         }`}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedProvider}
-              onChange={(e) => handleProviderChange(e.target.value as ApiProviderId)}
-              aria-label="Chọn nhà cung cấp mô hình"
-              className="px-2.5 py-1 bg-surface border border-line rounded-md text-2xs font-semibold text-ink outline-none"
-            >
-              <option value="GOOGLE">Google Gemini</option>
-              <option value="OPENAI">OpenAI ChatGPT</option>
-              <option value="CLAUDE">Anthropic Claude</option>
-              <option value="INTERNAL">Xử lý nội bộ</option>
-            </select>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              aria-label="Chọn mô hình phân tích"
-              className="px-2.5 py-1 bg-surface border border-line rounded-md text-2xs font-code text-ink outline-none"
-            >
-              {availableModels.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-            <Button
-              size="sm"
-              variant="secondary"
-              icon={Sliders}
-              onClick={() => setIsReportDrawerOpen(true)}
-            >
-              Câu lệnh chỉ dẫn
-            </Button>
-          </div>
-        }
       >
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">

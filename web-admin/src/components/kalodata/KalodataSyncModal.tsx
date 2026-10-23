@@ -326,7 +326,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
           ) : result ? (
             <div className="space-y-6">
               {/* Profile Card */}
-              <div className="bg-surface p-5 rounded-2xl border border-line flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="bg-surface p-5 rounded-xl border border-line flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -444,7 +444,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               {/* Chi tiết phân bổ kênh bán & Nhân khẩu học */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Cơ cấu nguồn doanh số */}
-                <div className="bg-surface p-5 rounded-2xl border border-line space-y-3.5">
+                <div className="bg-surface p-5 rounded-xl border border-line space-y-3.5">
                   <h5 className="text-xs font-semibold text-ink flex items-center gap-2">
                     <Video className="w-4 h-4 text-primary" />
                     <span>Cơ cấu doanh số theo định dạng nội dung</span>
@@ -505,7 +505,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                 </div>
 
                 {/* Nhân khẩu học người xem */}
-                <div className="bg-surface p-5 rounded-2xl border border-line space-y-3.5">
+                <div className="bg-surface p-5 rounded-xl border border-line space-y-3.5">
                   <h5 className="text-xs font-semibold text-ink flex items-center gap-2">
                     <Users className="w-4 h-4 text-success" />
                     <span>Nhân khẩu học tệp người theo dõi</span>
@@ -562,7 +562,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
 
               {/* Sản phẩm bán chạy */}
               {result.topProducts && result.topProducts.length > 0 && (
-                <div className="bg-surface p-5 rounded-2xl border border-line space-y-3">
+                <div className="bg-surface p-5 rounded-xl border border-line space-y-3">
                   <h5 className="text-xs font-semibold text-ink flex items-center gap-2">
                     <ShoppingBag className="w-4 h-4 text-primary" />
                     <span>Top sản phẩm gắn link bán chạy nhất của KOC</span>

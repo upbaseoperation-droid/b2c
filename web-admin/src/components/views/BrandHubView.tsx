@@ -605,7 +605,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* ========================================================================= */}
       {/* 1. ENTERPRISE HEADER (Context-aware, low noise, high clarity) */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {selectedPortalId === 'ALL' ? (
             <div className="flex items-center gap-3.5">
@@ -1536,7 +1536,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* All approved empty state */}
           {pendingApprovalsCount === 0 && (
-            <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center space-y-3">
+            <div className="p-8 rounded-xl bg-white border border-slate-200/80 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
@@ -1917,7 +1917,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* TAB 4: TRAO ĐỔI (TWO-WAY DISCUSSION) */}
       {/* ========================================================================= */}
       {activeTab === 'DISCUSSION' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col h-[560px] overflow-hidden animate-in fade-in duration-150">
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs flex flex-col h-[560px] overflow-hidden animate-in fade-in duration-150">
           <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-ink text-white font-semibold flex items-center justify-center text-xs">
@@ -1956,7 +1956,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                       <span>•</span>
                       <span>{msg.time}</span>
                     </div>
-                    <div className={`p-3 rounded-2xl leading-relaxed text-xs ${
+                    <div className={`p-3 rounded-xl leading-relaxed text-xs ${
                       isBrand 
                         ? 'bg-blue-600 text-white rounded-tr-none' 
                         : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs'

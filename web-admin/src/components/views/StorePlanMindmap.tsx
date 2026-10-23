@@ -249,7 +249,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 }) => {
   // Danh sách hạng mục cục bộ để kéo thanh trượt phản hồi 0ms (120fps) không chờ parent 4600 dòng render xong
   const [localItems, setLocalItems] = useState<InputPlanRowItem[]>(() => planState.items);
-  const lastPropagatedItemsRef = useRef<InputPlanRowItem[]>(planState.items);
+  const [prevPlanItems, setPrevPlanItems] = useState<InputPlanRowItem[]>(planState.items);
   const pendingItemsRef = useRef<InputPlanRowItem[] | null>(null);
   const rafUpdateRef = useRef<number | null>(null);
   const onUpdateItemsRef = useRef(onUpdateItems);
@@ -262,16 +262,19 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
   const branchDragBaselineRef = useRef<{
     branchId: MindmapBranchId;
     weights: Record<string, number>;
-    lockedMax?: number;
   } | null>(null);
-  const itemLockedMaxRef = useRef<Record<string, number>>({});
+  const [branchLockedMax, setBranchLockedMax] = useState<{
+    branchId: MindmapBranchId;
+    max: number;
+  } | null>(null);
+  const [itemLockedMax, setItemLockedMax] = useState<Record<string, number>>({});
 
   // Đồng bộ khi planState.items thay đổi từ bên ngoài (chuyển gian hàng, đổi phiên bản, bấm "Khớp theo chỉ tiêu")
-  if (planState.items !== lastPropagatedItemsRef.current) {
-    lastPropagatedItemsRef.current = planState.items;
+  if (planState.items !== prevPlanItems) {
+    setPrevPlanItems(planState.items);
     setLocalItems(planState.items);
-    branchDragBaselineRef.current = null;
-    itemLockedMaxRef.current = {};
+    setBranchLockedMax(null);
+    setItemLockedMax({});
   }
 
   const flushPendingItems = useCallback(() => {
@@ -282,7 +285,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     if (pendingItemsRef.current) {
       const toFlush = pendingItemsRef.current;
       pendingItemsRef.current = null;
-      lastPropagatedItemsRef.current = toFlush;
+      setPrevPlanItems(toFlush);
       onUpdateItemsRef.current(toFlush);
     }
   }, []);
@@ -303,7 +306,6 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
   const commitItems = useCallback((nextItems: InputPlanRowItem[], immediate = false) => {
     setLocalItems(nextItems);
-    lastPropagatedItemsRef.current = nextItems;
 
     if (immediate) {
       if (rafUpdateRef.current !== null) {
@@ -311,6 +313,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         rafUpdateRef.current = null;
       }
       pendingItemsRef.current = null;
+      setPrevPlanItems(nextItems);
       onUpdateItemsRef.current(nextItems);
       return;
     }
@@ -322,6 +325,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         if (pendingItemsRef.current) {
           const toCommit = pendingItemsRef.current;
           pendingItemsRef.current = null;
+          setPrevPlanItems(toCommit);
           startTransition(() => {
             onUpdateItemsRef.current(toCommit);
           });
@@ -367,9 +371,13 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     setManuallyEnabledBranches(nextEnabled);
     const firstActive = Array.from(nextEnabled)[0] || 'VIDEO_AFFILIATE';
     setSelectedBranchId(firstActive);
-    branchDragBaselineRef.current = null;
-    itemLockedMaxRef.current = {};
+    setBranchLockedMax(null);
+    setItemLockedMax({});
   }
+
+  useEffect(() => {
+    branchDragBaselineRef.current = null;
+  }, [planIdentityKey, planState.items]);
 
   // Trạng thái kéo-thả nhánh từ kho nhánh hoặc kéo-thả định dạng/nhân sự vào mục con
   const [draggingBranchId, setDraggingBranchId] = useState<MindmapBranchId | null>(null);
@@ -520,6 +528,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
 
   // Ghi nhận tỷ trọng gốc của nhánh khi bắt đầu nhấn chuột vào thanh trượt tổng nhánh
   const beginBranchSliderDrag = (branchId: MindmapBranchId, lockedMax: number) => {
+    setBranchLockedMax({ branchId, max: lockedMax });
     const branchItems = localItems.filter(it => matchItemToBranch(it, branchId));
     const sumQty = branchItems.reduce((s, it) => s + (it.qty || 0), 0);
     if (sumQty > 0) {
@@ -527,9 +536,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       branchItems.forEach(it => {
         weights[it.id] = it.qty || 0;
       });
-      branchDragBaselineRef.current = { branchId, weights, lockedMax };
-    } else if (branchDragBaselineRef.current?.branchId === branchId) {
-      branchDragBaselineRef.current.lockedMax = lockedMax;
+      branchDragBaselineRef.current = { branchId, weights };
     }
   };
 
@@ -853,8 +860,8 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                   : 0;
               const baseMaxBranch = branch.id === 'FOC' ? 250 : Math.max(120, planState.totalTargetContents || 100);
               const maxBranchQty =
-                branchDragBaselineRef.current?.branchId === branch.id && branchDragBaselineRef.current.lockedMax
-                  ? branchDragBaselineRef.current.lockedMax
+                branchLockedMax?.branchId === branch.id
+                  ? branchLockedMax.max
                   : Math.max(baseMaxBranch, stat.totalQty);
               const branchSliderVal = Math.min(stat.totalQty, maxBranchQty);
               const branchSliderPct = maxBranchQty > 0 ? Math.min(100, Math.max(0, (branchSliderVal / maxBranchQty) * 100)) : 0;
@@ -1032,7 +1039,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                 {selectedBranchStats.items.map(item => {
                   const isDragOver = dragOverItemId === item.id;
                   const baseMaxItem = selectedBranchId === 'FOC' ? 200 : 80;
-                  const maxItemSlider = itemLockedMaxRef.current[item.id] ?? Math.max(baseMaxItem, item.qty);
+                  const maxItemSlider = itemLockedMax[item.id] ?? Math.max(baseMaxItem, item.qty);
                   const itemSliderVal = Math.min(item.qty, maxItemSlider);
                   const itemSliderPct = maxItemSlider > 0 ? Math.min(100, Math.max(0, (itemSliderVal / maxItemSlider) * 100)) : 0;
                   const shareOfBranchPct =
@@ -1160,7 +1167,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                             value={itemSliderVal}
                             onPointerDown={(e) => {
                               e.stopPropagation();
-                              itemLockedMaxRef.current[item.id] = maxItemSlider;
+                              setItemLockedMax(prev => ({ ...prev, [item.id]: maxItemSlider }));
                             }}
                             onPointerUp={flushPendingItems}
                             onMouseUp={flushPendingItems}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button, Modal, Segmented } from './ui';
 import { AlertTriangle, CheckCircle2, Lock, Plus, ShieldAlert, Trash2, Unlock, Zap } from 'lucide-react';
 import {
@@ -145,28 +145,32 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   );
 
   // Đồng bộ khi mở modal với KOC hoặc Brand chọn sẵn
-  useEffect(() => {
-    if (!isOpen) return;
-    const initKoc = preselectedKoc || kocsSource.find(k => k.id === selectedKocId) || kocsSource[0];
-    if (preselectedKoc) {
-      setSelectedKocId(preselectedKoc.id);
-      setRate(preselectedKoc.rateCardVideo);
-      if (preselectedKoc.salaryGrade) {
-        setSalaryGrade(preselectedKoc.salaryGrade);
-        const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(preselectedKoc.salaryGrade);
+  const syncKey = `${isOpen}|${preselectedKoc?.id || ''}|${preselectedBrand || ''}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
+    if (isOpen) {
+      const initKoc = preselectedKoc || kocsSource.find(k => k.id === selectedKocId) || kocsSource[0];
+      if (preselectedKoc) {
+        setSelectedKocId(preselectedKoc.id);
+        setRate(preselectedKoc.rateCardVideo);
+        if (preselectedKoc.salaryGrade) {
+          setSalaryGrade(preselectedKoc.salaryGrade);
+          const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(preselectedKoc.salaryGrade);
+          setPricingDisplayMode(isSmallKoc ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW');
+        }
+        setDeliverables(buildDefaultDeliverables(preselectedKoc.rateCardVideo, preselectedKoc.bookingPic || 'Lê Phương Thảo'));
+      } else if (initKoc) {
+        const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(initKoc.salaryGrade || 'KL4');
         setPricingDisplayMode(isSmallKoc ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW');
       }
-      setDeliverables(buildDefaultDeliverables(preselectedKoc.rateCardVideo, preselectedKoc.bookingPic || 'Lê Phương Thảo'));
-    } else if (initKoc) {
-      const isSmallKoc = ['KL1', 'KL2', 'KL3'].includes(initKoc.salaryGrade || 'KL4');
-      setPricingDisplayMode(isSmallKoc ? 'PACKAGE_TOTAL' : 'ITEMIZED_SOW');
+      if (preselectedBrand && preselectedBrand !== 'ALL') {
+        setBrandName(preselectedBrand);
+      }
+      setOverCeilingReason('');
+      setValidationError(null);
     }
-    if (preselectedBrand && preselectedBrand !== 'ALL') {
-      setBrandName(preselectedBrand);
-    }
-    setOverCeilingReason('');
-    setValidationError(null);
-  }, [isOpen, preselectedKoc, preselectedBrand, selectedKocId, kocsSource]);
+  }
 
   // Danh sách toàn bộ thương hiệu B2C từ Hồ sơ thương hiệu & Master
   const brandOptions = useMemo(() => {
@@ -289,7 +293,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     }
     setValidationError(null);
 
-    const { id, dealCode, jobId, appendixCode } = createDealIdentifiers(currentKoc.stageName);
+    const { id, dealCode, jobId } = createDealIdentifiers(currentKoc.stageName);
     const masterBrand = REAL_B2C_42_BRANDS.find(b => b.name.toLowerCase() === brandName.toLowerCase());
     const bannedNote = activeProfile?.contentRules?.banned.length
       ? `Tránh ${activeProfile.contentRules.banned.length} từ cấm (${activeProfile.contentRules.banned.slice(0, 2).map(b => `"${b.phrase}"`).join(', ')}).`

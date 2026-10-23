@@ -76,22 +76,17 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
     return () => window.removeEventListener(API_CONFIG_UPDATED_EVENT, handleUpdate);
   }, []);
 
-  useEffect(() => {
+  const syncKey = `${purposeId}|${effective.primaryProvider}|${effective.primaryModel}|${effective.fallbackProvider}|${effective.fallbackModel}|${effective.primaryApiKey}|${effective.purpose.systemInstruction}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
     setPrimaryProvider(effective.primaryProvider);
     setPrimaryModel(effective.primaryModel);
     setFallbackProvider(effective.fallbackProvider);
     setFallbackModel(effective.fallbackModel);
     setApiKeyInput(effective.primaryApiKey);
     setSystemPrompt(effective.purpose.systemInstruction);
-  }, [
-    purposeId,
-    effective.primaryProvider,
-    effective.primaryModel,
-    effective.fallbackProvider,
-    effective.fallbackModel,
-    effective.primaryApiKey,
-    effective.purpose.systemInstruction,
-  ]);
+  }
 
   const primaryModels = useMemo(
     () => PROVIDER_MODELS_CATALOG[primaryProvider] || [],

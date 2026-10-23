@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ConfirmDialog, PageActions, StatRow, Stat, Button, Modal } from '../ui';
 import { 
   Layers, 
@@ -190,10 +190,11 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
   // Master Angles State
   const [angles, setAngles] = useState<ContentAngleItem[]>(initialScopedAngles);
-
-  useEffect(() => {
+  const [prevScopedAngles, setPrevScopedAngles] = useState<ContentAngleItem[]>(initialScopedAngles);
+  if (initialScopedAngles !== prevScopedAngles) {
+    setPrevScopedAngles(initialScopedAngles);
     setAngles(initialScopedAngles);
-  }, [initialScopedAngles]);
+  }
 
   // Active View Mode: 'CARDS' | 'MATRIX' | 'TABLE'
   const [viewMode, setViewMode] = useState<'CARDS' | 'MATRIX' | 'TABLE'>('CARDS');
@@ -205,13 +206,12 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const [selectedPillar, setSelectedPillar] = useState<string>('ALL');
   const [selectedStatus] = useState<string>('ALL');
 
-  useEffect(() => {
-    if (initialProductId) {
-      setSelectedProduct(initialProductId);
-    } else {
-      setSelectedProduct('ALL');
-    }
-  }, [initialProductId, brandName]);
+  const productSyncKey = `${brandName}::${initialProductId || ''}`;
+  const [prevProductSyncKey, setPrevProductSyncKey] = useState(productSyncKey);
+  if (productSyncKey !== prevProductSyncKey) {
+    setPrevProductSyncKey(productSyncKey);
+    setSelectedProduct(initialProductId || 'ALL');
+  }
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -616,7 +616,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           </div>
 
           {filteredAngles.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center space-y-3">
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-accent-soft text-accent flex items-center justify-center mx-auto">
                 <Search className="w-6 h-6" />
               </div>
@@ -636,7 +636,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                 return (
                   <div
                     key={angle.id}
-                    className="bg-white border border-slate-200 hover:border-line-strong rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4 relative group"
+                    className="bg-white border border-slate-200 hover:border-line-strong rounded-xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4 relative group"
                   >
                     {/* Top Row: Product & Pillar Label */}
                     <div className="space-y-2">

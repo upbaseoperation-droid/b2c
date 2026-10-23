@@ -5,14 +5,8 @@ import {
   ArrowDownToLine,
   ArrowLeftRight,
   ArrowUpFromLine,
-  CalendarClock,
-  CheckCircle2,
-  Clock,
-  Database,
-  History,
   RefreshCw,
   Settings2,
-  ShieldCheck,
 } from 'lucide-react';
 import type { KocItem } from '../../lib/types';
 import { formatNumber } from '../../lib/format';
@@ -75,11 +69,16 @@ export const UpaffiliateSyncModal: React.FC<UpaffiliateSyncModalProps> = ({
   const [draftConfig, setDraftConfig] = useState<UpaffiliateSyncConfig>(config);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
-  React.useEffect(() => {
+  const [prevOpenConfig, setPrevOpenConfig] = useState<{
+    open: boolean;
+    config: UpaffiliateSyncConfig;
+  }>({ open, config });
+  if (open !== prevOpenConfig.open || config !== prevOpenConfig.config) {
+    setPrevOpenConfig({ open, config });
     if (open) {
       setDraftConfig(config);
     }
-  }, [open, config]);
+  }
 
   const metrics = useMemo(() => computeKocUpaffiliateSyncMetrics(kocs), [kocs]);
 

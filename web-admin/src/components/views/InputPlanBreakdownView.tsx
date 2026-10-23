@@ -2741,7 +2741,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* 3. MAIN CONTENT AREA: BẢNG PHÂN RÃ GỌN GÀNG, THOÁNG MẮT                   */}
       {/* ========================================================================= */}
       {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
+        <div className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-xs">
           {/* Nút khớp trần khi còn dư ngân sách/sản lượng */}
           {!isPlanLocked && (budgetHeadroom > 0 || contentHeadroom > 0) && (
             <div className="px-4 py-2 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-end gap-2 text-xs">
@@ -2982,7 +2982,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* 6. TAB EXCEL PREVIEW (CLEAN SHEET 4.1.1 VERIFICATION)                     */}
       {/* ========================================================================= */}
       {activeTab === 'EXCEL_PREVIEW' && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
           <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface text-ink">
             <div className="flex items-center gap-2.5">
               <FileSpreadsheet className="w-5 h-5 text-emerald-600" />

@@ -693,7 +693,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   return (
     <div className="space-y-6">
       {isManagerOrStaff && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-3.5">
+        <div className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs space-y-3.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-2xs">
@@ -863,7 +863,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
       {viewMode === 'NETWORK_COCKPIT' && isManagerOrStaff ? (
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
               <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                 <span>Mạng Lưới KOC Hợp Tác</span>
                 <Users className="w-4 h-4 text-blue-600" />
@@ -873,7 +873,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
               <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                 <span>Hợp Đồng Booking Đang Chạy</span>
                 <Briefcase className="w-4 h-4 text-emerald-600" />
@@ -883,7 +883,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
               <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                 <span>Hàng Mẫu &amp; Video Đang Chạy</span>
                 <Truck className="w-4 h-4 text-amber-600" />
@@ -893,7 +893,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
               <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                 <span>Tổng GMV Thực Tế &amp; Dự Kiến</span>
                 <DollarSign className="w-4 h-4 text-blue-600" />
@@ -904,7 +904,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
@@ -1141,7 +1141,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+          <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="relative shrink-0">
@@ -1829,7 +1829,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
           {activeTab === 'APPROVALS' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               {pendingActionCount === 0 && (
-                <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center space-y-3">
+                <div className="p-8 rounded-xl bg-white border border-slate-200/80 text-center space-y-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>

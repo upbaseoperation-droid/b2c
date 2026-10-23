@@ -99,7 +99,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <nav
       aria-label="Thanh điều hướng nhanh trên di động"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-surface/95 backdrop-blur border-t border-line pb-[env(safe-area-inset-bottom)] select-none shadow-[0_-2px_10px_rgb(22_23_26/0.05)]"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-surface border-t border-line pb-[env(safe-area-inset-bottom)] select-none shadow-[0_-2px_10px_rgb(22_23_26/0.05)]"
     >
       <div className="h-14 flex items-center justify-around px-1 max-w-lg mx-auto">
         {quickItems.map((item) => {

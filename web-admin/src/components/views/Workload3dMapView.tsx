@@ -65,7 +65,6 @@ interface Workload3dMapViewProps {
 }
 
 type SpatialLayoutMode = 'THREE_TIER_3D' | 'FOCUS_ORBIT';
-type WorkloadLoadStatus = 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD';
 type RoleFilterGroup =
   | 'ALL'
   | 'LEADER'
@@ -1550,7 +1549,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
       {/* 3. Main 3D Viewport + Side Inspector Panel (Equal Height 720px Aligned) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-        <div className="lg:col-span-8 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[720px]">
+        <div className="lg:col-span-8 bg-surface border border-line rounded-xl overflow-hidden flex flex-col h-[720px]">
           <div className="px-3 py-2 bg-sunken/60 border-b border-line flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex flex-wrap items-center gap-2.5 text-2xs text-ink-2 font-medium">
               <span className="inline-flex items-center gap-1">
@@ -1651,10 +1650,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         </div>
 
         {/* Right: Detailed Workload & Assignment Inspector Panel (4 cols, matched 720px height) */}
-        <div className="lg:col-span-4 bg-surface border border-line rounded-2xl overflow-hidden flex flex-col h-[720px]">
+        <div className="lg:col-span-4 bg-surface border border-line rounded-xl overflow-hidden flex flex-col h-[720px]">
           {!selectedNode ? (
             <div className="p-6 text-center space-y-3 my-auto">
-              <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-xl bg-accent-soft text-accent flex items-center justify-center mx-auto">
                 <Compass className="w-6 h-6" />
               </div>
               <div>

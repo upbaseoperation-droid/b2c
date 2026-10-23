@@ -16,10 +16,7 @@ import {
 import {
   AlertTriangle,
   Check,
-  ChevronDown,
-  ChevronUp,
   Copy,
-  Key,
   RefreshCw,
   Send,
 } from 'lucide-react';
@@ -41,7 +38,6 @@ import {
   calculateExecutionCost,
   recordApiUsageLog,
 } from '../lib/apiKeyConfig';
-import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 
 interface AiStaffReviewModalProps {
   isOpen: boolean;
@@ -68,18 +64,17 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
   }
 
   const [reviewType, setReviewType] = useState<AiReviewType>('COMPREHENSIVE');
-  const [apiProvider, setApiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'>(() => {
+  const [apiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'>(() => {
     const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
     if (eff.primaryProvider === 'GOOGLE') return 'GEMINI';
     if (eff.primaryProvider === 'OPENAI') return 'OPENAI';
     if (eff.primaryProvider === 'CLAUDE') return 'CLAUDE';
     return 'AUTO';
   });
-  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+  const [customApiKey] = useState<string>(() => {
     const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
     return eff.primaryApiKey || '';
   });
-  const [showApiSettings, setShowApiSettings] = useState<boolean>(false);
   const [customInstruction, setCustomInstruction] = useState<string>(() => {
     const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
     return eff.purpose.systemInstruction || '';

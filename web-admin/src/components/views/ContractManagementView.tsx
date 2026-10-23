@@ -64,6 +64,12 @@ export function ContractManagementView({
   const [page, setPage] = useState(1);
   const [quickViewRecord, setQuickViewRecord] = useState<ContractRecord | null>(null);
   const [quickViewDoc, setQuickViewDoc] = useState<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> } | null>(null);
+  const quickViewRecordId = quickViewRecord?.id || '';
+  const [prevQuickViewRecordId, setPrevQuickViewRecordId] = useState(quickViewRecordId);
+  if (quickViewRecordId !== prevQuickViewRecordId) {
+    setPrevQuickViewRecordId(quickViewRecordId);
+    setQuickViewDoc(null);
+  }
   const [isContractReportOpen, setIsContractReportOpen] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -85,7 +91,7 @@ export function ContractManagementView({
 
   // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
   useEffect(() => {
-    setQuickViewDoc(null);
+    // quickViewDoc cleared during render when quickViewRecordId changes
     if (!quickViewRecord) return;
     let cancelled = false;
     contractApi<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> }>(`/api/contracts/${quickViewRecord.id}/document?preview=1`)

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, channelOf, Presence, BrandAvatar, Modal, Button } from '../ui';
+import { ChannelTag, channelOf, BrandAvatar, Modal, Button } from '../ui';
 import {
   Building2,
   Store,
@@ -815,7 +815,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       {/* Main Grid: Mindmap Canvas (Left/Center) + Node Inspector Drawer (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Mindmap Interactive Tree Canvas */}
-        <div className="lg:col-span-8 bg-canvas border border-line rounded-2xl p-4 sm:p-6 shadow-inner overflow-x-auto min-h-[620px] relative">
+        <div className="lg:col-span-8 bg-canvas border border-line rounded-xl p-4 sm:p-6 shadow-inner overflow-x-auto min-h-[620px] relative">
           {/* Subtle Grid Background */}
           <div 
             className="absolute inset-0 opacity-[0.35] pointer-events-none"
@@ -837,7 +837,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     toggleNode('root');
                     setSelectedNode({ type: 'ROOT', data: { brandsCount: brands.length, storesCount: stores.length } });
                   }}
-                  className={`w-full sm:w-64 p-4 rounded-2xl cursor-pointer transition-colors border shadow-sm ${
+                  className={`w-full sm:w-64 p-4 rounded-xl cursor-pointer transition-colors border shadow-sm ${
                     expandedNodes.has('root')
                       ? 'bg-white border-accent/20 ring-2 ring-accent/20 shadow-md'
                       : 'bg-white border-line hover:border-line-strong'
@@ -1198,7 +1198,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
         {/* Right Column: Node Inspector & Master Data Detail Editor */}
         <div className="lg:col-span-4 space-y-4">
           {/* Main Inspector Card */}
-          <div className="bg-white border border-line rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="bg-white border border-line rounded-xl p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center text-accent font-semibold">

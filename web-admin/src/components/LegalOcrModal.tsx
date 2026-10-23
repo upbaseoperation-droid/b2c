@@ -329,7 +329,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface/90 text-ink border border-line rounded text-2xs font-medium backdrop-blur-xs">
+                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface text-ink border border-line rounded text-2xs font-medium">
                     Nhấp để đổi ảnh khác
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface/90 text-ink border border-line rounded text-2xs font-medium backdrop-blur-xs">
+                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface text-ink border border-line rounded text-2xs font-medium">
                     Nhấp để đổi tệp khác
                   </div>
                 </div>
@@ -426,8 +426,8 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
           <div className="lg:col-span-7 space-y-4">
             {/* If no result yet */}
             {!extractionResult && !isScanning && (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-line bg-sunken text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-info-soft text-primary flex items-center justify-center mx-auto">
+              <div className="p-8 rounded-xl border-2 border-dashed border-line bg-sunken text-center space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-info-soft text-primary flex items-center justify-center mx-auto">
                   <FileText className="w-6 h-6" />
                 </div>
                 <h4 className="text-sm font-semibold text-ink">
@@ -440,7 +440,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             )}
 
             {isScanning && (
-              <div className="p-12 rounded-2xl border border-success-line bg-success-soft/50 text-center space-y-3">
+              <div className="p-12 rounded-xl border border-success-line bg-success-soft/50 text-center space-y-3">
                 <RefreshCw className="w-8 h-8 text-success animate-spin mx-auto" />
                 <h4 className="text-sm font-semibold text-ink">
                   Đang đọc thông tin từ ảnh chụp...

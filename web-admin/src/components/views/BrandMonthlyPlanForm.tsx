@@ -839,7 +839,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                               ))}
                             </Select>
                             {r.kl && (
-                              <div className="text-[10px] text-ink-3 truncate">
+                              <div className="text-2xs text-ink-3 truncate">
                                 {getTierBookingOwnerLabel(r.kl, r.source)}
                               </div>
                             )}

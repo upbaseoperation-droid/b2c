@@ -68,7 +68,10 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
   const defaultRoute = useMemo(() => getDefaultPurposeRoute(purposeId), [purposeId]);
 
   // Đồng bộ dữ liệu khi mở khung hoặc đổi phân hệ
-  useEffect(() => {
+  const syncKey = `${isOpen}|${purposeId}|${contextDataText}|${customSystemPrompt || ''}|${effectiveRoute.primaryProvider}|${effectiveRoute.primaryModel}|${effectiveRoute.purpose.systemInstruction}`;
+  const [prevSyncKey, setPrevSyncKey] = useState('');
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
     if (isOpen) {
       setSelectedProvider(effectiveRoute.primaryProvider);
       setSelectedModel(effectiveRoute.primaryModel);
@@ -76,15 +79,7 @@ export const OperationalReportDrawer: React.FC<OperationalReportDrawerProps> = (
       const activePrompt = effectiveRoute.purpose.systemInstruction || customSystemPrompt || defaultRoute.systemInstruction;
       setEditablePrompt(activePrompt);
     }
-  }, [
-    isOpen,
-    contextDataText,
-    customSystemPrompt,
-    effectiveRoute.primaryProvider,
-    effectiveRoute.primaryModel,
-    effectiveRoute.purpose.systemInstruction,
-    defaultRoute.systemInstruction,
-  ]);
+  }
 
   const availableModels = useMemo(() => {
     return PROVIDER_MODELS_CATALOG[selectedProvider] || [];

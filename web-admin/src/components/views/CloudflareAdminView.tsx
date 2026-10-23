@@ -2,20 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CheckCircle2,
-  Cloud,
   Download,
-  ExternalLink,
   Eye,
-  FileSpreadsheet,
-  FileText,
   FolderOpen,
-  HardDrive,
   Loader2,
   Plus,
   RefreshCw,
   Server,
-  Settings,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -221,8 +214,12 @@ export function CloudflareAdminView({
         if (next.access) setAccess(next.access);
       }
     });
-    void loadProfiles();
-    void loadR2Status(true);
+    void Promise.resolve().then(() => {
+      if (!cancelled) {
+        void loadProfiles();
+        void loadR2Status(true);
+      }
+    });
     return () => {
       cancelled = true;
       unsubscribe();

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Check,
   Copy,
@@ -44,11 +44,22 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
   const [error, setError] = useState<string | null>(null);
   const [breakdown, setBreakdown] = useState<CompetitorVideoScriptBreakdown | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const lastFetchedUrlRef = useRef<string>('');
+
+  const syncKey = `${isOpen}|${initialUrl}`;
+  const [prevSyncKey, setPrevSyncKey] = useState(syncKey);
+  if (syncKey !== prevSyncKey) {
+    setPrevSyncKey(syncKey);
+    if (!isOpen) {
+      setBreakdown(null);
+    } else {
+      setVideoUrlInput(initialUrl.trim());
+      setError(null);
+    }
+  }
 
   const runExtract = async (
     targetUrl: string,
-    ctx?: ScriptExtractFallbackContext
+    ctx: ScriptExtractFallbackContext | undefined = fallbackContext
   ) => {
     const clean = targetUrl.trim();
     if (!clean) {
@@ -80,17 +91,6 @@ export const CompetitorVideoScriptModal: React.FC<CompetitorVideoScriptModalProp
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!isOpen) {
-      lastFetchedUrlRef.current = '';
-      setBreakdown(null);
-      return;
-    }
-    const cleanInit = initialUrl.trim();
-    setVideoUrlInput(cleanInit);
-    setError(null);
-  }, [isOpen, initialUrl]);
 
   const handleCopy = (text: string, key: string, label: string) => {
     if (!text) return;

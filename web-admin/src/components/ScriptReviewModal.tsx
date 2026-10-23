@@ -95,25 +95,35 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   );
 
   // Đồng bộ trạng thái checklist theo kết quả quét từ cấm thực tế
-  useEffect(() => {
-    if (!isOpen || !script) return;
-    setSelectedBrandName('');
-    setIsRevisionMode(false);
-    setRevisionRound(1);
-    setFeedbackNotes('');
-    setErrorMsg(null);
-    setLlmReviewResult(null);
-    const cfg = loadApiWorkspaceConfig();
-    setScriptPrompt(getEffectiveConfigForPurpose('SCRIPT_REVIEW', cfg).purpose.systemInstruction);
-  }, [isOpen, script]);
+  const openSyncKey = `${isOpen}|${script?.id || ''}`;
+  const [prevOpenSyncKey, setPrevOpenSyncKey] = useState(openSyncKey);
+  if (openSyncKey !== prevOpenSyncKey) {
+    setPrevOpenSyncKey(openSyncKey);
+    if (isOpen && script) {
+      setSelectedBrandName('');
+      setIsRevisionMode(false);
+      setRevisionRound(1);
+      setFeedbackNotes('');
+      setErrorMsg(null);
+      setLlmReviewResult(null);
+      const cfg = loadApiWorkspaceConfig();
+      setScriptPrompt(getEffectiveConfigForPurpose('SCRIPT_REVIEW', cfg).purpose.systemInstruction);
+    }
+  }
 
-  useEffect(() => {
-    if (!complianceResult) return;
-    const hasBanned = complianceResult.issues.some(i => i.type === 'BLACKLIST_WORD');
-    const hasMissingUsp = complianceResult.issues.some(i => i.type === 'MISSING_USP');
-    setCheckNoBannedKeywords(!hasBanned);
-    setCheckUsp(!hasMissingUsp);
-  }, [complianceResult]);
+  const complianceSyncKey = complianceResult
+    ? `${script?.id || ''}|${detectedBrandProfile?.key || ''}|${complianceResult.overallScore}|${complianceResult.issues.map(i => i.id).join(',')}`
+    : '';
+  const [prevComplianceSyncKey, setPrevComplianceSyncKey] = useState('');
+  if (complianceSyncKey !== prevComplianceSyncKey) {
+    setPrevComplianceSyncKey(complianceSyncKey);
+    if (complianceResult) {
+      const hasBanned = complianceResult.issues.some(i => i.type === 'BLACKLIST_WORD');
+      const hasMissingUsp = complianceResult.issues.some(i => i.type === 'MISSING_USP');
+      setCheckNoBannedKeywords(!hasBanned);
+      setCheckUsp(!hasMissingUsp);
+    }
+  }
 
   // Keyboard accessibility: ESC key to close modal
   useEffect(() => {

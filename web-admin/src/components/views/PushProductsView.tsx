@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Flame,
   Lock,
   MessageSquare,
   Send,
@@ -26,11 +25,9 @@ import {
   ChevronRight,
   Calendar,
   Clock,
-  Boxes,
   FileEdit,
   SlidersHorizontal,
   Copy,
-  ShoppingBag,
   CheckCheck
 } from 'lucide-react';
 import {
@@ -878,8 +875,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         );
       case 'ARCHIVED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-            <History className="w-3.5 h-3.5 text-gray-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sunken text-ink-2 border border-line">
+            <History className="w-3.5 h-3.5 text-ink-3" />
             Lịch sử lưu trữ
           </span>
         );
@@ -1258,7 +1255,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
           ) : (
             brandStoreHierarchy.map(bGroup => (
-              <div key={bGroup.brandId} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div key={bGroup.brandId} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Brand Header Banner */}
                 <div className="bg-slate-50 p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center gap-3.5 min-w-0">

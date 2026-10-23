@@ -614,8 +614,10 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   2. Thay thế toàn bộ màu ngoài chuẩn (`indigo`, `purple`, `teal`, `sky`, `orange`) và nền tối cũ (`bg-slate-900`/`800`) sang hệ token ngữ nghĩa (`primary`, `accent`, `positive`, `warning`, `danger`, `ink`, `surface`, `sunken`).
   3. Chuyển đổi toàn bộ 16 hộp thoại tự dựng sang component `<Modal>` chuẩn và thay toàn bộ `window.confirm`/`alert` bằng `<ConfirmDialog>` và thông báo `onNotify`.
   4. Xóa thẻ `<h1>` trùng lặp trong `AirBookingReportHubView.tsx`, gỡ bỏ toàn bộ dòng phụ đề `<p>` / `description` / `hint` dưới tiêu đề và trường nhập liệu.
-  5. Đổi nền các ô `sticky right-0` sang nền đặc (`bg-surface group-hover:bg-canvas`), gỡ bỏ `animate-ping`/`animate-pulse`/`transition-all`/`backdrop-blur` ngoài chuẩn và bổ sung responsive breakpoint cho các lưới đa cột trên thiết bị di động.
-- **Phạm vi rà soát mở rộng sang phần khác:** Đã chạy trình quét tự động và ESLint (`no-restricted-syntax`) trên toàn bộ 107+ tệp `.tsx` trong `src/components` và `src/app`, đạt **0 lỗi `no-restricted-syntax`**, **0 lỗi TypeScript (`tsc --noEmit`)** và build sản phẩm (`npm run build`) thành công.
+  5. Đổi nền các ô `sticky right-0` và thanh `TopHeader` / `MobileBottomNav` sang nền đặc (`bg-surface`), gỡ bỏ hoàn toàn `backdrop-blur`, `animate-ping`, `animate-pulse`, `transition-all`, chuẩn hóa toàn bộ 44 khung `rounded-2xl` về `rounded-xl` và bổ sung khóa chặn vĩnh viễn vào `eslint.config.mjs`.
+  6. Xóa bộ chọn Nhà cung cấp / Mô hình trên hộp thoại người dùng cuối (`KocSocialChannelsModal.tsx`, `BrandMarketResearchHubView.tsx`, `AiStaffReviewModal.tsx`) theo đúng `RULE-API-01` để đọc tự động từ Trung tâm Cấu hình API.
+  7. Xử lý triệt để toàn bộ 25 tệp giao diện có lỗi React Compiler (`react-hooks/set-state-in-effect` và `react-hooks/refs`) bằng cơ chế đồng bộ state theo `prevKey` trong lúc render, triệt tiêu hiện tượng render kép khi mở hộp thoại hoặc chuyển bộ lọc.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã chạy trình quét tự động 2 vòng và ESLint trên toàn bộ 107+ tệp `.tsx` trong `src/components` và `src/app`, đạt **0 lỗi ESLint (`0 errors`)**, **0 lỗi `no-restricted-syntax`**, **0 lỗi TypeScript (`tsc --noEmit`)** và build sản phẩm (`npm run build`) thành công.
 
 ---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)

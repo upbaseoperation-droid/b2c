@@ -367,7 +367,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
           {activeTab === 'VERSION_HISTORY' && (
             <div className="space-y-4">
               {/* KHỐI 1: DANH SÁCH CÁC PHIÊN BẢN TRONG THÁNG & NÚT TẠO PHIÊN BẢN MỚI */}
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0">
@@ -607,7 +607,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               </div>
 
               {/* KHỐI 2: CHI TIẾT PHIÊN BẢN ĐƯỢC CHỌN & ĐỐI CHIẾU SO VỚI BẢN GỐC ĐẦU THÁNG (v1.0) */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+              <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-emerald-600 shrink-0" />

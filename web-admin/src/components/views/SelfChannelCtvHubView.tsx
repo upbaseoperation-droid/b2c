@@ -2055,7 +2055,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       {activeTab === 'APPROVALS' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           {stats.pendingApprovalsCount === 0 ? (
-            <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center space-y-3">
+            <div className="p-8 rounded-xl bg-white border border-slate-200/80 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-6 h-6" />
               </div>

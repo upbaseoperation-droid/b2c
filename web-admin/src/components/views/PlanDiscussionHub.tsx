@@ -171,7 +171,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
   const isManagerOrLead = currentRole === 'LEAD' || ['ADMIN', 'MANAGER'].includes(currentUser?.role || '');
 
   return (
-    <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden flex flex-col">
+    <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden flex flex-col">
       {/* HEADER: SỔ BIÊN BẢN & LỊCH SỬ TRAO ĐỔI 4 BÊN */}
       <div className="p-4 sm:p-5 border-b border-line bg-canvas flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -345,7 +345,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             return (
               <div
                 key={msg.id || index}
-                className={`p-4 rounded-2xl border transition-colors ${
+                className={`p-4 rounded-xl border transition-colors ${
                   msg.type === 'REVISION_REQUEST'
                     ? 'bg-rose-50/50 border-rose-200'
                     : msg.type === 'PRE_APPROVAL_PASS'

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Check, Code2, Copy, Plus, Send, Video } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Code2, Copy, Plus, Send } from 'lucide-react';
 import type { KocItem } from '../../lib/types';
 import {
   STANDARD_WEEK_OPTIONS,
@@ -59,7 +59,7 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
   const [storeName, setStoreName] = useState('Cathy Doll_TikTok_E2E-C');
   const [productName, setProductName] = useState('Gel kẻ mắt Cathy Doll');
   const [bookingCostNet, setBookingCostNet] = useState('1500000');
-  const [sparkAdsCode, setSparkAdsCode] = useState('');
+  const [sparkAdsCode] = useState('');
   const [weekKey, setWeekKey] = useState('2026-W42');
   const [initialAdsSpend, setInitialAdsSpend] = useState('');
   const [initialGmv, setInitialGmv] = useState('');
@@ -76,105 +76,114 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
   const [newKocFirstVideo, setNewKocFirstVideo] = useState('');
 
   // Form Tab 3: Gửi thử API JSON
+  const buildDefaultApiPayload = (
+    mode: 'INGEST_WEEKLY_DATA' | 'REGISTER_NEW_VIDEO' | 'REGISTER_NEW_KOC'
+  ): string => {
+    if (mode === 'INGEST_WEEKLY_DATA') {
+      return JSON.stringify(
+        {
+          action: 'INGEST_WEEKLY_DATA',
+          weekKey: '2026-W42',
+          fileName: 'API_Weekly_Ads_W42.json',
+          rows: [
+            {
+              videoId: '7675354051319581970',
+              adsSpend: 2350000,
+              gmv: 12850000,
+              orders: 142,
+              views: 58400,
+              impressions: 51200,
+              clicks: 1890,
+              ctr: 3.69,
+              cvr: 4.95,
+              hookRate2s: 29.4,
+              completionRate100: 1.2,
+              authorizationType: 'Video code',
+              explorationStatus: 'Performing',
+            },
+          ],
+        },
+        null,
+        2
+      );
+    }
+    if (mode === 'REGISTER_NEW_VIDEO') {
+      return JSON.stringify(
+        {
+          action: 'REGISTER_NEW_VIDEO',
+          videoId: '7695128901234567890',
+          linkAir: 'https://www.tiktok.com/@soanhtran98/video/7695128901234567890',
+          dealCode: 'BO261068901',
+          kocChannelId: 'soanhtran98',
+          kocStageName: 'Sơ Anh Trần',
+          brandName: 'Mine',
+          storeName: 'Mine_TikTok_E2E-C',
+          productName: 'Tinh chất phục hồi Mine',
+          bookingCostNet: 5000000,
+          weekKey: '2026-W42',
+          initialAdsSpend: 1200000,
+          initialGmv: 6800000,
+          initialOrders: 45,
+          initialViews: 32000,
+        },
+        null,
+        2
+      );
+    }
+    return JSON.stringify(
+      {
+        action: 'REGISTER_NEW_KOC',
+        channelId: 'linhbeauty.official',
+        stageName: 'Linh Beauty Review',
+        followers: 68000,
+        avgViews: 24000,
+        rateCardVideo: 2500000,
+        tepKenh: 'Beauty',
+        kocCategory: 'Personal care',
+        brandName: 'ClubClio',
+        storeName: 'ClubClio_TikTok_E2E-C',
+        videoId: '7695889900112233445',
+        dealCode: 'BO261069102',
+      },
+      null,
+      2
+    );
+  };
+
   const [apiMode, setApiMode] = useState<'INGEST_WEEKLY_DATA' | 'REGISTER_NEW_VIDEO' | 'REGISTER_NEW_KOC'>('INGEST_WEEKLY_DATA');
-  const [apiPayloadText, setApiPayloadText] = useState('');
+  const [apiPayloadText, setApiPayloadText] = useState(() => buildDefaultApiPayload('INGEST_WEEKLY_DATA'));
   const [apiResponseText, setApiResponseText] = useState('');
 
-  useEffect(() => {
-    if (!open) return;
-    setActiveTab(initialTab);
-    setErrorMsg('');
-    if (prefillKoc) {
-      const cleanH = normalizeChannelHandle(prefillKoc.channelId);
-      setKocChannelId(cleanH);
-      setKocStageName(prefillKoc.stageName || cleanH);
-      if (prefillKoc.brandName) {
-        setBrandName(prefillKoc.brandName);
-        setStoreName(`${prefillKoc.brandName}_TikTok_E2E-C`);
-      }
-      if (prefillKoc.rateCardVideo !== undefined) {
-        setBookingCostNet(String(prefillKoc.rateCardVideo));
-      }
-    }
-  }, [open, initialTab, prefillKoc]);
+  const handleSelectApiMode = (
+    nextMode: 'INGEST_WEEKLY_DATA' | 'REGISTER_NEW_VIDEO' | 'REGISTER_NEW_KOC'
+  ) => {
+    setApiMode(nextMode);
+    setApiPayloadText(buildDefaultApiPayload(nextMode));
+  };
 
-  useEffect(() => {
-    if (apiMode === 'INGEST_WEEKLY_DATA') {
-      setApiPayloadText(
-        JSON.stringify(
-          {
-            action: 'INGEST_WEEKLY_DATA',
-            weekKey: '2026-W42',
-            fileName: 'API_Weekly_Ads_W42.json',
-            rows: [
-              {
-                videoId: '7675354051319581970',
-                adsSpend: 2350000,
-                gmv: 12850000,
-                orders: 142,
-                views: 58400,
-                impressions: 51200,
-                clicks: 1890,
-                ctr: 3.69,
-                cvr: 4.95,
-                hookRate2s: 29.4,
-                completionRate100: 1.2,
-                authorizationType: 'Video code',
-                explorationStatus: 'Performing',
-              },
-            ],
-          },
-          null,
-          2
-        )
-      );
-    } else if (apiMode === 'REGISTER_NEW_VIDEO') {
-      setApiPayloadText(
-        JSON.stringify(
-          {
-            action: 'REGISTER_NEW_VIDEO',
-            videoId: '7695128901234567890',
-            linkAir: 'https://www.tiktok.com/@soanhtran98/video/7695128901234567890',
-            dealCode: 'BO261068901',
-            kocChannelId: 'soanhtran98',
-            kocStageName: 'Sơ Anh Trần',
-            brandName: 'Mine',
-            storeName: 'Mine_TikTok_E2E-C',
-            productName: 'Tinh chất phục hồi Mine',
-            bookingCostNet: 5000000,
-            weekKey: '2026-W42',
-            initialAdsSpend: 1200000,
-            initialGmv: 6800000,
-            initialOrders: 45,
-            initialViews: 32000,
-          },
-          null,
-          2
-        )
-      );
-    } else {
-      setApiPayloadText(
-        JSON.stringify(
-          {
-            action: 'REGISTER_NEW_KOC',
-            channelId: 'linhbeauty.official',
-            stageName: 'Linh Beauty Review',
-            followers: 68000,
-            avgViews: 24000,
-            rateCardVideo: 2500000,
-            tepKenh: 'Beauty',
-            kocCategory: 'Personal care',
-            brandName: 'ClubClio',
-            storeName: 'ClubClio_TikTok_E2E-C',
-            videoId: '7695889900112233445',
-            dealCode: 'BO261069102',
-          },
-          null,
-          2
-        )
-      );
+  const openSyncKey = open
+    ? `${initialTab}:${prefillKoc?.id || ''}:${prefillKoc?.channelId || ''}:${prefillKoc?.brandName || ''}:${prefillKoc?.rateCardVideo ?? ''}`
+    : '';
+  const [prevOpenSyncKey, setPrevOpenSyncKey] = useState(openSyncKey);
+  if (openSyncKey !== prevOpenSyncKey) {
+    setPrevOpenSyncKey(openSyncKey);
+    if (open) {
+      setActiveTab(initialTab);
+      setErrorMsg('');
+      if (prefillKoc) {
+        const cleanH = normalizeChannelHandle(prefillKoc.channelId);
+        setKocChannelId(cleanH);
+        setKocStageName(prefillKoc.stageName || cleanH);
+        if (prefillKoc.brandName) {
+          setBrandName(prefillKoc.brandName);
+          setStoreName(`${prefillKoc.brandName}_TikTok_E2E-C`);
+        }
+        if (prefillKoc.rateCardVideo !== undefined) {
+          setBookingCostNet(String(prefillKoc.rateCardVideo));
+        }
+      }
     }
-  }, [apiMode]);
+  }
 
   const handleVideoInputBlur = () => {
     const raw = videoInputRaw.trim();
@@ -586,21 +595,21 @@ export const KocVideoHistoryRegistryModal: React.FC<KocVideoHistoryRegistryModal
                 <Button
                   size="sm"
                   variant={apiMode === 'INGEST_WEEKLY_DATA' ? 'primary' : 'secondary'}
-                  onClick={() => setApiMode('INGEST_WEEKLY_DATA')}
+                  onClick={() => handleSelectApiMode('INGEST_WEEKLY_DATA')}
                 >
                   1. Nạp số liệu tuần theo Video ID
                 </Button>
                 <Button
                   size="sm"
                   variant={apiMode === 'REGISTER_NEW_VIDEO' ? 'primary' : 'secondary'}
-                  onClick={() => setApiMode('REGISTER_NEW_VIDEO')}
+                  onClick={() => handleSelectApiMode('REGISTER_NEW_VIDEO')}
                 >
                   2. Phát sinh Video mới
                 </Button>
                 <Button
                   size="sm"
                   variant={apiMode === 'REGISTER_NEW_KOC' ? 'primary' : 'secondary'}
-                  onClick={() => setApiMode('REGISTER_NEW_KOC')}
+                  onClick={() => handleSelectApiMode('REGISTER_NEW_KOC')}
                 >
                   3. Phát sinh KOC mới
                 </Button>

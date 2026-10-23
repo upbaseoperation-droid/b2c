@@ -17,7 +17,6 @@ import {
 } from '../ui';
 import type { ChipOption } from '../ui';
 import {
-  KeyRound,
   Search,
   CheckCircle2,
   Eye,
@@ -28,7 +27,6 @@ import {
   Users,
   Lock,
   Unlock,
-  ShieldCheck,
   Check,
   RotateCcw,
 } from 'lucide-react';
@@ -45,7 +43,6 @@ import {
   RbacAuditLogItem,
 } from '../../lib/types';
 import {
-  RBAC_ROLE_DEFINITIONS,
   ALL_ROLE_DEFINITIONS,
   ALL_SYSTEM_SCREENS,
   ROLE_ALLOWED_TABS,
@@ -279,15 +276,26 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [policyError, setPolicyError] = useState('');
   const [savedDraft, setSavedDraft] = useState('');
 
-  const draftPolicy = {
-    staffOverrides,
-    deptRules,
-    roleAllowedTabs: roleAllowedTabsMap,
-    roleDefaultLanding: roleDefaultLandingMap,
-    internalStaff,
-    matrix: matrixItems,
-    audit: auditLogs,
-  };
+  const draftPolicy = useMemo(
+    () => ({
+      staffOverrides,
+      deptRules,
+      roleAllowedTabs: roleAllowedTabsMap,
+      roleDefaultLanding: roleDefaultLandingMap,
+      internalStaff,
+      matrix: matrixItems,
+      audit: auditLogs,
+    }),
+    [
+      staffOverrides,
+      deptRules,
+      roleAllowedTabsMap,
+      roleDefaultLandingMap,
+      internalStaff,
+      matrixItems,
+      auditLogs,
+    ]
+  );
   const draftText = useMemo(
     () =>
       serializePolicyDraft({
@@ -326,21 +334,16 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   useEffect(() => {
     if (policyRevision === null) return;
     hydrateRbacPolicy(draftPolicy, currentUser);
-  }, [
-    policyRevision,
-    staffOverrides,
-    deptRules,
-    roleAllowedTabsMap,
-    roleDefaultLandingMap,
-    internalStaff,
-    matrixItems,
-    auditLogs,
-    currentUser,
-  ]);
+  }, [policyRevision, draftPolicy, currentUser]);
+
+  const [prevUserId, setPrevUserId] = useState(currentUser?.id);
+  if (currentUser?.id !== prevUserId) {
+    setPrevUserId(currentUser?.id);
+    setPolicyRevision(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setPolicyRevision(null);
     loadAccessPolicy()
       .then((record) => {
         if (!cancelled) applyPolicy(record);

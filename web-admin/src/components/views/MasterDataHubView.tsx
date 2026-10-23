@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   ActionMenu,
   Button, 
@@ -128,7 +128,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   onContributorCreated,
   onContributorUpdated,
   onContributorDeleted,
-  onUpdateStore,
   onNavigateToBrandProfile,
   onNavigateToStoreProfile,
   onNavigateToCtvProfile,
@@ -167,7 +166,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   // Modal 2: Đồng bộ / Nhập hàng loạt từ Lark Base
   const [isLarkSyncModalOpen, setIsLarkSyncModalOpen] = useState(false);
   const [larkRawText, setLarkRawText] = useState('');
-  const [isSyncingLark, setIsSyncingLark] = useState(false);
+  const [isSyncingLark] = useState(false);
 
   // Modal 3: Chỉnh sửa thông tin cơ bản của Brand
   const [isEditBrandModalOpen, setIsEditBrandModalOpen] = useState(false);
@@ -719,23 +718,27 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
   const serializeCatalog = (c: MasterCatalog): string => JSON.stringify({ brands: c.brands, stores: c.stores, products: c.products, pillars: c.pillars, castTiers: c.castTiers, niches: c.niches, formats: c.formats });
   const catalogDirty = savedCatalog !== '' && serializeCatalog(draftCatalog) !== savedCatalog;
-  const acceptCatalog = (body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
+  const acceptCatalog = useCallback((body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
     const data = body.data;
     setBrandList(data.brands); setStoreList(data.stores); setProductList(data.products); setPillarList(data.pillars);
     setExtraCatalog({ castTiers: data.castTiers, niches: data.niches, formats: data.formats });
     setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(serializeCatalog(data));
-  };
+  }, []);
   const reloadCatalog = async () => {
     const res = await fetch('/api/master-data', { cache: 'no-store' });
     const body = await res.json(); if (!res.ok) throw new Error(body.error);
     acceptCatalog(body); setCatalogError('');
   };
+  const [prevCatalogUserId, setPrevCatalogUserId] = useState(currentUser.id);
+  if (currentUser.id !== prevCatalogUserId) {
+    setPrevCatalogUserId(currentUser.id);
+    setBrandList([]); setStoreList([]); setProductList([]); setExtraCatalog({ castTiers: [], niches: [], formats: [] }); setSavedCatalog(''); setCatalogError(''); setCatalogRevision(null); setCanEditCatalog(false);
+  }
   useEffect(() => {
     let cancelled = false;
-    setBrandList([]); setStoreList([]); setProductList([]); setExtraCatalog({ castTiers: [], niches: [], formats: [] }); setSavedCatalog(''); setCatalogError(''); setCatalogRevision(null); setCanEditCatalog(false);
     fetch('/api/master-data', { cache: 'no-store' }).then(async res => { const body = await res.json(); if (!res.ok) throw new Error(body.error); if (!cancelled) acceptCatalog(body); }).catch(e => { if (!cancelled) setCatalogError(e.message); });
     return () => { cancelled = true; };
-  }, [currentUser.id]);
+  }, [currentUser.id, acceptCatalog]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => { if (catalogDirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn);

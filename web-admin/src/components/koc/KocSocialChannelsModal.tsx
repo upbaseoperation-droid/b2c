@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Check, ExternalLink, Loader2, RefreshCw, Search, Sliders, X } from 'lucide-react';
-import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
+import React, { useEffect, useState } from 'react';
+import { Check, ExternalLink, Loader2, RefreshCw, Search, X } from 'lucide-react';
 import type { KocItem } from '../../lib/types';
 import {
   extractHandleFromSocialInput,
@@ -13,8 +12,6 @@ import {
   type SocialPlatformKey,
 } from '../../lib/kocSocialDiscovery';
 import {
-  type ApiProviderId,
-  PROVIDER_MODELS_CATALOG,
   getEffectiveConfigForPurpose,
   loadApiWorkspaceConfig,
   recordApiUsageLog,
@@ -27,7 +24,6 @@ import {
   Input,
   InstagramLogo,
   Modal,
-  Select,
   ShopeeLogo,
   Status,
   ThreadsLogo,
@@ -105,9 +101,6 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [discoveryResult, setDiscoveryResult] = useState<KocSocialDiscoveryResult | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>('GOOGLE');
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
-  const [showApiSetup, setShowApiSetup] = useState<boolean>(false);
   const [customUrlInput, setCustomUrlInput] = useState<string>('');
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
@@ -127,37 +120,45 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
     THREADS: false,
   });
 
-  const availableModels = useMemo(
-    () => PROVIDER_MODELS_CATALOG[selectedProvider] || [],
-    [selectedProvider]
-  );
-
-  const handleProviderChange = (prov: ApiProviderId) => {
-    setSelectedProvider(prov);
-    const models = PROVIDER_MODELS_CATALOG[prov] || [];
-    if (models.length > 0) {
-      setSelectedModel(models[0].id);
+  const openKey =
+    open && koc
+      ? `${koc.id}:${koc.shopeeChannel || ''}:${koc.facebookChannel || ''}:${koc.instagramChannel || ''}:${koc.threadsChannel || ''}`
+      : '';
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    if (open && koc) {
+      setSelectedValues({
+        SHOPEE: koc.shopeeChannel || '',
+        FACEBOOK: koc.facebookChannel || '',
+        INSTAGRAM: koc.instagramChannel || '',
+        THREADS: koc.threadsChannel || '',
+      });
+      setConfirmedFlags({
+        SHOPEE: Boolean(koc.shopeeChannel),
+        FACEBOOK: Boolean(koc.facebookChannel),
+        INSTAGRAM: Boolean(koc.instagramChannel),
+        THREADS: Boolean(koc.threadsChannel),
+      });
+      setDiscoveryResult(null);
+      setErrorMsg(null);
+      setLoading(false);
     }
-  };
+  }
 
-  const resolveLlmConfig = (provOverride?: ApiProviderId, modelOverride?: string) => {
+  const resolveLlmConfig = () => {
     const workspaceCfg = loadApiWorkspaceConfig();
     const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
-    const provider = provOverride || selectedProvider || effective.primaryProvider || 'GOOGLE';
+    const provider = effective.primaryProvider || 'GOOGLE';
     const model =
-      modelOverride ||
-      selectedModel ||
-      (provider === effective.primaryProvider
-        ? effective.primaryModel
-        : provider === 'INTERNAL'
+      provider === 'INTERNAL'
         ? 'upbase-social-discovery-v2'
-        : workspaceCfg.providers[provider]?.defaultModel || 'gemini-3.8-flash');
+        : effective.primaryModel ||
+          workspaceCfg.providers[provider]?.defaultModel ||
+          'gemini-3.8-flash';
     const apiKey =
-      provider === effective.primaryProvider && effective.primaryApiKey
-        ? effective.primaryApiKey
-        : provider === 'INTERNAL'
-        ? ''
-        : workspaceCfg.providers[provider]?.apiKey || '';
+      effective.primaryApiKey ||
+      (provider === 'INTERNAL' ? '' : workspaceCfg.providers[provider]?.apiKey || '');
     const baseUrl =
       provider === 'INTERNAL' ? undefined : workspaceCfg.providers[provider]?.baseUrl;
     const systemInstruction = effective.purpose.systemInstruction;
@@ -167,8 +168,6 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
 
   const runSearch = async (
     target: KocItem,
-    provOverride?: ApiProviderId,
-    modelOverride?: string,
     customUrlOverride?: string
   ) => {
     if (abortControllerRef.current) {
@@ -183,7 +182,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const llmConfig = resolveLlmConfig(provOverride, modelOverride);
+      const llmConfig = resolveLlmConfig();
       const effectiveCustomUrl =
         customUrlOverride !== undefined ? customUrlOverride : customUrlInput;
       const res = await fetch('/api/integrations/tiktok-koc/social-discovery', {
@@ -292,37 +291,12 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
       }
       return;
     }
-    const workspaceCfg = loadApiWorkspaceConfig();
-    const effective = getEffectiveConfigForPurpose('KOC_MATCHING', workspaceCfg);
-    const initProv = effective.primaryProvider === 'INTERNAL' ? 'GOOGLE' : effective.primaryProvider;
-    const initModel =
-      effective.primaryProvider === 'INTERNAL'
-        ? workspaceCfg.providers.GOOGLE?.defaultModel || 'gemini-3.8-flash'
-        : effective.primaryModel;
-    setSelectedProvider(initProv);
-    setSelectedModel(initModel);
-    setSelectedValues({
-      SHOPEE: koc.shopeeChannel || '',
-      FACEBOOK: koc.facebookChannel || '',
-      INSTAGRAM: koc.instagramChannel || '',
-      THREADS: koc.threadsChannel || '',
-    });
-    setConfirmedFlags({
-      SHOPEE: Boolean(koc.shopeeChannel),
-      FACEBOOK: Boolean(koc.facebookChannel),
-      INSTAGRAM: Boolean(koc.instagramChannel),
-      THREADS: Boolean(koc.threadsChannel),
-    });
-    setDiscoveryResult(null);
-    setErrorMsg(null);
-    setLoading(false);
 
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, koc]);
 
   if (!koc) return null;
@@ -433,48 +407,21 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
           </div>
         )}
 
-        {/* Thanh cấu hình mô hình ngôn ngữ & tìm kiếm sâu */}
+        {/* Thanh dò tìm tự động & dán đường dẫn link trực tiếp */}
         <div className="p-3 rounded-xl border border-line bg-surface space-y-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-ink">Công cụ phân tích & tìm kiếm:</span>
-              <Select
-                value={selectedProvider}
-                onChange={(e) => handleProviderChange(e.target.value as ApiProviderId)}
-                aria-label="Nhà cung cấp mô hình"
-                className="w-auto text-xs"
-              >
-                <option value="GOOGLE">Google Gemini + Google Search</option>
-                <option value="OPENAI">OpenAI (ChatGPT)</option>
-                <option value="CLAUDE">Anthropic (Claude)</option>
-                <option value="INTERNAL">Bộ phân tích đa nguồn nội bộ</option>
-              </Select>
-              {selectedProvider !== 'INTERNAL' && availableModels.length > 0 && (
-                <Select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  aria-label="Mô hình phân tích"
-                  className="w-auto text-xs"
-                >
-                  {availableModels.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={Search}
-                onClick={() => void runSearch(koc)}
-                disabled={loading}
-              >
-                {loading ? 'Đang dò tìm...' : 'Quét qua mô hình & Google'}
-              </Button>
-            </div>
+            <span className="text-xs font-semibold text-ink">
+              Dò tìm và phân tích liên kết kênh mạng xã hội
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Search}
+              onClick={() => void runSearch(koc)}
+              disabled={loading}
+            >
+              {loading ? 'Đang dò tìm...' : 'Dò tìm kênh tự động'}
+            </Button>
           </div>
 
           {/* Ô nhập đường dẫn link trực tiếp để bóc tách kênh ngay */}
@@ -485,7 +432,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  void runSearch(koc, undefined, undefined, customUrlInput);
+                  void runSearch(koc, customUrlInput);
                 }
               }}
               placeholder="Dán link KOC (Link Bio Beacons/Linktree, Facebook, Instagram, Shopee...) để phân tích ngay"
@@ -495,7 +442,7 @@ export const KocSocialChannelsModal: React.FC<KocSocialChannelsModalProps> = ({
               size="sm"
               variant="secondary"
               icon={Search}
-              onClick={() => void runSearch(koc, undefined, undefined, customUrlInput)}
+              onClick={() => void runSearch(koc, customUrlInput)}
               disabled={loading || !customUrlInput.trim()}
             >
               Phân tích link

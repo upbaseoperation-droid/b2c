@@ -72,110 +72,137 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
     [startDate, endDate]
   );
 
+  const buildSyncedPhases = (
+    months: string[],
+    prevPhases: CampaignMonthlyPhase[],
+    totalBudget: number,
+    totalGmv: number,
+    totalKoc: number
+  ): CampaignMonthlyPhase[] => {
+    if (months.length === 0) return prevPhases;
+    const count = months.length;
+    return months.map((m, idx) => {
+      const existing = prevPhases.find(p => p.month === m);
+      if (existing) return existing;
+      const defaultPhaseLabels =
+        count === 1
+          ? [`Chiến dịch trọn gói Tháng ${m.split('/')[1]}`]
+          : count === 2
+            ? ['Giai đoạn 1: Teasing & Khởi động', 'Giai đoạn 2: Booming Mega Sale & Chốt đơn']
+            : [
+                'Giai đoạn 1: Khởi động & Seeding',
+                'Giai đoạn 2: Bùng nổ Mega Sale (Booming)',
+                'Giai đoạn 3: Duy trì & Tối ưu mua lặp lại (Sustain)',
+              ];
+      const share = 1 / count;
+      return {
+        month: m,
+        phaseName: defaultPhaseLabels[idx] || `Giai đoạn ${idx + 1} (${m})`,
+        allocatedBudget: Math.round((totalBudget * share) / 1000000) * 1000000,
+        spentBudget: 0,
+        targetGmv: Math.round((totalGmv * share) / 1000000) * 1000000,
+        actualGmv: 0,
+        targetKocCount: Math.max(1, Math.round(totalKoc * share)),
+        saleMilestones: `Mốc sale trọng tâm tháng ${m}`,
+        kvAdaptNotes: idx === 0 ? 'Treo bộ Key Visual gốc chiến dịch' : `Adapt Key Visual & badge sale tháng ${m}`,
+      };
+    });
+  };
+
   // Populate when opening modal or changing initialCampaign
-  useEffect(() => {
-    if (!isOpen) return;
-    setActiveTab('OVERVIEW_PHASES');
-    if (initialCampaign) {
-      setTitle(initialCampaign.title);
-      setCode(initialCampaign.code);
-      setBrand(initialCampaign.brand);
-      setStatus(initialCampaign.status);
-      setTargetAudience(initialCampaign.targetAudience || '');
-      setBigIdea(initialCampaign.bigIdea || '');
-      setKeyMessage(initialCampaign.keyMessage || '');
-      setHeroSkusInput((initialCampaign.heroSkus || []).join(', '));
-      setTargetCir(initialCampaign.targetCir ?? 16.0);
-      setContentPic(initialCampaign.contentPic || 'Quỳnh Như');
-      setBrandStrategyPic(initialCampaign.brandStrategyPic || 'Nguyễn Thị Thu Hà');
-      setKvPic(initialCampaign.kvPic || initialCampaign.keyVisualSpec?.kvPic || 'Lê Hoàng Nam');
-      setBudget(initialCampaign.budget);
-      setTargetGmv(initialCampaign.targetGmv);
-      setTargetKocCount(initialCampaign.targetKocCount);
-      setStartDate(initialCampaign.startDate);
-      setEndDate(initialCampaign.endDate);
-      setRoleInYearPlan(initialCampaign.roleInYearPlan || '');
-      setObjectivesAndBarriers(initialCampaign.objectivesAndBarriers || '');
-      setSeasonalOpportunity(initialCampaign.seasonalOpportunity || '');
-      setComboPromoOffer(initialCampaign.comboPromoOffer || '');
-      setSaleMilestones(initialCampaign.saleMilestones || '');
-      setKvTheme(initialCampaign.keyVisualSpec?.theme || '');
-      setKvFonts(initialCampaign.keyVisualSpec?.fonts || 'Montserrat Bold / Inter Regular');
-      setKvMoodboard(initialCampaign.keyVisualSpec?.moodboard || '');
-      setKvProposalUrl(initialCampaign.keyVisualSpec?.proposalUrl || '');
-      setKvPromoText(initialCampaign.keyVisualSpec?.promoTextOnKv || '');
-      setKvRefDate(initialCampaign.keyVisualSpec?.refDate || '2026-09-20');
-      setKvOrderDate(initialCampaign.keyVisualSpec?.orderDate || '2026-09-23');
-      setKvHangDate(initialCampaign.keyVisualSpec?.hangDate || '2026-09-30');
-      setMonthlyPhases(initialCampaign.monthlyPhases || []);
-    } else {
-      setTitle('');
-      setCode('');
-      setBrand(defaultBrand || 'Senka');
-      setStatus('ACTIVE');
-      setTargetAudience('');
-      setBigIdea('');
-      setKeyMessage('');
-      setHeroSkusInput('');
-      setTargetCir(16.0);
-      setContentPic('Quỳnh Như');
-      setBrandStrategyPic('Nguyễn Thị Thu Hà');
-      setKvPic('Lê Hoàng Nam');
-      setBudget(150000000);
-      setTargetGmv(1000000000);
-      setTargetKocCount(25);
-      setStartDate('2026-10-01');
-      setEndDate('2026-10-31');
-      setRoleInYearPlan('');
-      setObjectivesAndBarriers('');
-      setSeasonalOpportunity('');
-      setComboPromoOffer('');
-      setSaleMilestones('W1: Warm-up | W2: Mega Sale 10.10 | W3: 20.10 | W4: Payday 25.10');
-      setKvTheme('');
-      setKvFonts('Montserrat Bold / Inter Regular');
-      setKvMoodboard('');
-      setKvProposalUrl('');
-      setKvPromoText('');
-      setKvRefDate('2026-09-20');
-      setKvOrderDate('2026-09-23');
-      setKvHangDate('2026-09-30');
-      setMonthlyPhases([]);
+  const initSyncKey = `${isOpen}|${initialCampaign?.id || 'NEW'}|${defaultBrand || ''}`;
+  const [prevInitSyncKey, setPrevInitSyncKey] = useState('');
+  if (initSyncKey !== prevInitSyncKey) {
+    setPrevInitSyncKey(initSyncKey);
+    if (isOpen) {
+      setActiveTab('OVERVIEW_PHASES');
+      if (initialCampaign) {
+        setTitle(initialCampaign.title);
+        setCode(initialCampaign.code);
+        setBrand(initialCampaign.brand);
+        setStatus(initialCampaign.status);
+        setTargetAudience(initialCampaign.targetAudience || '');
+        setBigIdea(initialCampaign.bigIdea || '');
+        setKeyMessage(initialCampaign.keyMessage || '');
+        setHeroSkusInput((initialCampaign.heroSkus || []).join(', '));
+        setTargetCir(initialCampaign.targetCir ?? 16.0);
+        setContentPic(initialCampaign.contentPic || 'Quỳnh Như');
+        setBrandStrategyPic(initialCampaign.brandStrategyPic || 'Nguyễn Thị Thu Hà');
+        setKvPic(initialCampaign.kvPic || initialCampaign.keyVisualSpec?.kvPic || 'Lê Hoàng Nam');
+        setBudget(initialCampaign.budget);
+        setTargetGmv(initialCampaign.targetGmv);
+        setTargetKocCount(initialCampaign.targetKocCount);
+        setStartDate(initialCampaign.startDate);
+        setEndDate(initialCampaign.endDate);
+        setRoleInYearPlan(initialCampaign.roleInYearPlan || '');
+        setObjectivesAndBarriers(initialCampaign.objectivesAndBarriers || '');
+        setSeasonalOpportunity(initialCampaign.seasonalOpportunity || '');
+        setComboPromoOffer(initialCampaign.comboPromoOffer || '');
+        setSaleMilestones(initialCampaign.saleMilestones || '');
+        setKvTheme(initialCampaign.keyVisualSpec?.theme || '');
+        setKvFonts(initialCampaign.keyVisualSpec?.fonts || 'Montserrat Bold / Inter Regular');
+        setKvMoodboard(initialCampaign.keyVisualSpec?.moodboard || '');
+        setKvProposalUrl(initialCampaign.keyVisualSpec?.proposalUrl || '');
+        setKvPromoText(initialCampaign.keyVisualSpec?.promoTextOnKv || '');
+        setKvRefDate(initialCampaign.keyVisualSpec?.refDate || '2026-09-20');
+        setKvOrderDate(initialCampaign.keyVisualSpec?.orderDate || '2026-09-23');
+        setKvHangDate(initialCampaign.keyVisualSpec?.hangDate || '2026-09-30');
+        const initMonths = getCoveredMonthsFromRange(initialCampaign.startDate, initialCampaign.endDate);
+        setMonthlyPhases(
+          buildSyncedPhases(
+            initMonths,
+            initialCampaign.monthlyPhases || [],
+            initialCampaign.budget,
+            initialCampaign.targetGmv,
+            initialCampaign.targetKocCount
+          )
+        );
+      } else {
+        setTitle('');
+        setCode('');
+        setBrand(defaultBrand || 'Senka');
+        setStatus('ACTIVE');
+        setTargetAudience('');
+        setBigIdea('');
+        setKeyMessage('');
+        setHeroSkusInput('');
+        setTargetCir(16.0);
+        setContentPic('Quỳnh Như');
+        setBrandStrategyPic('Nguyễn Thị Thu Hà');
+        setKvPic('Lê Hoàng Nam');
+        setBudget(150000000);
+        setTargetGmv(1000000000);
+        setTargetKocCount(25);
+        setStartDate('2026-10-01');
+        setEndDate('2026-10-31');
+        setRoleInYearPlan('');
+        setObjectivesAndBarriers('');
+        setSeasonalOpportunity('');
+        setComboPromoOffer('');
+        setSaleMilestones('W1: Warm-up | W2: Mega Sale 10.10 | W3: 20.10 | W4: Payday 25.10');
+        setKvTheme('');
+        setKvFonts('Montserrat Bold / Inter Regular');
+        setKvMoodboard('');
+        setKvProposalUrl('');
+        setKvPromoText('');
+        setKvRefDate('2026-09-20');
+        setKvOrderDate('2026-09-23');
+        setKvHangDate('2026-09-30');
+        const initMonths = getCoveredMonthsFromRange('2026-10-01', '2026-10-31');
+        setMonthlyPhases(buildSyncedPhases(initMonths, [], 150000000, 1000000000, 25));
+      }
     }
-  }, [isOpen, initialCampaign, defaultBrand]);
+  }
 
   // Automatically sync monthlyPhases whenever coveredMonths changes
-  useEffect(() => {
-    if (coveredMonths.length === 0) return;
-    setMonthlyPhases(prev => {
-      const count = coveredMonths.length;
-      return coveredMonths.map((m, idx) => {
-        const existing = prev.find(p => p.month === m);
-        if (existing) return existing;
-        const defaultPhaseLabels =
-          count === 1
-            ? [`Chiến dịch trọn gói Tháng ${m.split('/')[1]}`]
-            : count === 2
-              ? ['Giai đoạn 1: Teasing & Khởi động', 'Giai đoạn 2: Booming Mega Sale & Chốt đơn']
-              : [
-                  'Giai đoạn 1: Khởi động & Seeding',
-                  'Giai đoạn 2: Bùng nổ Mega Sale (Booming)',
-                  'Giai đoạn 3: Duy trì & Tối ưu mua lặp lại (Sustain)',
-                ];
-        const share = 1 / count;
-        return {
-          month: m,
-          phaseName: defaultPhaseLabels[idx] || `Giai đoạn ${idx + 1} (${m})`,
-          allocatedBudget: Math.round((budget * share) / 1000000) * 1000000,
-          spentBudget: 0,
-          targetGmv: Math.round((targetGmv * share) / 1000000) * 1000000,
-          actualGmv: 0,
-          targetKocCount: Math.max(1, Math.round(targetKocCount * share)),
-          saleMilestones: `Mốc sale trọng tâm tháng ${m}`,
-          kvAdaptNotes: idx === 0 ? 'Treo bộ Key Visual gốc chiến dịch' : `Adapt Key Visual & badge sale tháng ${m}`,
-        };
-      });
-    });
-  }, [coveredMonths, budget, targetGmv, targetKocCount]);
+  const phaseSyncKey = `${coveredMonths.join(',')}|${budget}|${targetGmv}|${targetKocCount}`;
+  const [prevPhaseSyncKey, setPrevPhaseSyncKey] = useState(phaseSyncKey);
+  if (phaseSyncKey !== prevPhaseSyncKey) {
+    setPrevPhaseSyncKey(phaseSyncKey);
+    if (coveredMonths.length > 0) {
+      setMonthlyPhases(prev => buildSyncedPhases(coveredMonths, prev, budget, targetGmv, targetKocCount));
+    }
+  }
 
   // ESC key listener
   useEffect(() => {

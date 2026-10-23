@@ -7,7 +7,7 @@
  * - 5 phân khu chuyên sâu: Tổng quan & Định vị, Kho tệp & Tài liệu (Cloudflare R2), Gian hàng sàn & Booking, Sản phẩm & Trần thù lao, Quy chuẩn & Pháp lý.
  */
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -21,7 +21,6 @@ import {
   FileSignature,
   FileSpreadsheet,
   FileText,
-  FolderOpen,
   Layers,
   Loader2,
   Pencil,
@@ -34,7 +33,7 @@ import {
 import type { BookingDealItem, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandDocCategory, BrandDocument, BrandPermissions, BrandProfile, BrandSection } from '../../lib/brands/types';
 import { SECTION_LABEL } from '../../lib/brands/types';
-import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import {
   PROFILE_MONTH_OPTIONS,
@@ -45,7 +44,6 @@ import {
 } from '../../lib/monthlyProfileMetrics';
 import {
   ActionMenu,
-  Avatar,
   BrandAvatar,
   Button,
   ChannelTag,
@@ -58,7 +56,6 @@ import {
   Pagination,
   Panel,
   Person,
-  SectionHeader,
   Select,
   Stat,
   StatRow,
@@ -222,11 +219,13 @@ export function BrandProfileDetail({
   const [activeTab, setActiveTab] = useState<BrandDetailTab>(initialTab || 'STORES');
   const [selectedAngleProductId, setSelectedAngleProductId] = useState<string>('ALL');
 
-  useEffect(() => {
+  const [prevInitialTab, setPrevInitialTab] = useState<BrandDetailTab | undefined>(initialTab);
+  if (initialTab !== prevInitialTab) {
+    setPrevInitialTab(initialTab);
     if (initialTab) {
       setActiveTab(initialTab);
     }
-  }, [initialTab]);
+  }
   const [dialog, setDialog] = useState<null | 'POSITIONING' | 'ENTITY' | 'RATECARD' | 'CONTENT_RULES' | 'WORKFLOW_RULES'>(null);
   const [item, setItem] = useState<null | { list: ListKey; index: number }>(null);
   const [removing, setRemoving] = useState<null | { list: ListKey; index: number }>(null);
@@ -2672,7 +2671,7 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function Aside({ title, action, note, children }: { title: string; action?: React.ReactNode; note?: string; children: React.ReactNode }) {
+function Aside({ title, action, children }: { title: string; action?: React.ReactNode; note?: string; children: React.ReactNode }) {
   return (
     <section className="px-4 py-4">
       <div className="flex items-center justify-between gap-2 min-h-7 mb-2">

@@ -9,7 +9,6 @@ import {
   Plus,
   Search,
   Upload,
-  Video,
 } from 'lucide-react';
 import type { KocItem } from '../../lib/types';
 import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
@@ -49,7 +48,7 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
   onKocCreated,
 }) => {
   const [subView, setSubView] = useState<'VIDEO_SNAPSHOTS' | 'KOC_AGGREGATED' | 'BATCH_LOGS'>('VIDEO_SNAPSHOTS');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploadingWeekFile, setUploadingWeekFile] = useState(false);
 
   const [batches, setBatches] = useState<WeeklyHistoryBatchLog[]>([]);
@@ -67,13 +66,20 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
   const [selectedVideoForTimeline, setSelectedVideoForTimeline] = useState<string | null>(null);
 
   const weeklyFileInputRef = useRef<HTMLInputElement>(null);
+  const targetChannelId = targetKoc?.channelId;
+
+  const [prevTargetChannelId, setPrevTargetChannelId] = useState(targetChannelId);
+  if (targetChannelId !== prevTargetChannelId) {
+    setPrevTargetChannelId(targetChannelId);
+    setLoading(true);
+  }
 
   const fetchHistoryStore = useCallback(async () => {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
-      if (targetKoc?.channelId) {
-        qs.set('channelId', normalizeChannelHandle(targetKoc.channelId));
+      if (targetChannelId) {
+        qs.set('channelId', normalizeChannelHandle(targetChannelId));
       }
       const res = await fetch(`/api/koc-video-history?${qs.toString()}`);
       const data = await res.json();
@@ -88,11 +94,33 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
     } finally {
       setLoading(false);
     }
-  }, [targetKoc?.channelId]);
+  }, [targetChannelId]);
 
   useEffect(() => {
-    void fetchHistoryStore();
-  }, [fetchHistoryStore]);
+    let cancelled = false;
+    const qs = new URLSearchParams();
+    if (targetChannelId) {
+      qs.set('channelId', normalizeChannelHandle(targetChannelId));
+    }
+    fetch(`/api/koc-video-history?${qs.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.success) {
+          setBatches(data.batches || []);
+          setRegisteredVideos(data.registeredVideos || []);
+          setVideoSnapshots(data.videoSnapshots || []);
+          setKocSummaries(data.kocSummaries || []);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetChannelId]);
 
   const handleUploadWeeklyExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -325,7 +325,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
           </div>
         )}
         <div
-          className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
+          className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
             mine ? 'bg-primary text-white rounded-br-md' : 'bg-surface text-ink border border-line rounded-bl-md'
           } ${m.status === 'sending' ? 'opacity-70' : ''} ${m.status === 'failed' ? 'ring-2 ring-critical/40' : ''}`}
         >

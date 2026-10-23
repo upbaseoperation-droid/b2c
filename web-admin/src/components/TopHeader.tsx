@@ -41,7 +41,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface/95 backdrop-blur border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3 shrink-0">
       {/* Khối 1: Nút menu di động / ẩn menu desktop & Tiêu đề trang */}
       <div className="order-1 flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
         {onToggleMobileSidebar && (

@@ -81,6 +81,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
       setCreatedSlipResult(null);
       setOverridesByDealId({});
       setSharedPayeeOverride({});
+      setLoadingHistory(true);
       if (initialDeal) {
         setSelectedDealIds([initialDeal.id]);
         const isAlreadyVerified =
@@ -116,10 +117,27 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
   }, []);
 
   useEffect(() => {
-    if (open) {
-      loadHistorySlips();
-    }
-  }, [open, loadHistorySlips]);
+    if (!open) return;
+    let active = true;
+    fetch('/api/integrations/larkbase/payment-requests')
+      .then(res => res.json())
+      .then(json => {
+        if (active && Array.isArray(json?.slips)) {
+          setHistorySlips(json.slips);
+        }
+      })
+      .catch(() => {
+        // Giữ nguyên danh sách hiện tại nếu lỗi mạng
+      })
+      .finally(() => {
+        if (active) {
+          setLoadingHistory(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   // Danh sách các Deal đã chọn
   const selectedDeals = useMemo(
@@ -965,6 +983,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
 
               {showQrPreview && evaluation.payee.vietQrUrl && (
                 <div className="mt-3 p-3 rounded-lg border border-line bg-sunken flex flex-wrap items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={evaluation.payee.vietQrUrl}
                     alt="Mã QR chuyển khoản"

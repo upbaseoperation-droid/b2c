@@ -312,7 +312,7 @@ function LoginContent() {
           <BrandLogo height={26} />
         </div>
 
-        <div className="w-full max-w-[480px] my-auto bg-surface border border-line rounded-2xl p-4 sm:p-8 shadow-2xs space-y-4 sm:space-y-5">
+        <div className="w-full max-w-[480px] my-auto bg-surface border border-line rounded-xl p-4 sm:p-8 shadow-2xs space-y-4 sm:space-y-5">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Đăng nhập</h1>
           </div>

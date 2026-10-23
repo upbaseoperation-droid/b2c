@@ -390,7 +390,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* SECTION 01: ĐỊNH HƯỚNG THÁNG (VỊ TRÍ BRAND STRATEGY + CAMPAIGN)       */}
       {/* ===================================================================== */}
       {showSec01 && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-accent">01.</span>
             <h3 className="text-xs font-semibold text-ink uppercase">ĐỊNH HƯỚNG THÁNG</h3>
@@ -445,7 +445,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* SECTION 02: KẾ HOẠCH KPI THÁNG (SHOPEE | TIKTOK SHOP | TOTAL)         */}
       {/* ===================================================================== */}
       {showSec02 && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-accent">02.</span>
             <h3 className="text-xs font-semibold text-ink uppercase">KẾ HOẠCH KPI THÁNG</h3>
@@ -657,7 +657,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* SECTION 03: KEY VISUAL CHUNG CỦA THÁNG                                */}
       {/* ===================================================================== */}
       {showSec03 && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-accent">03.</span>
             <h3 className="text-xs font-semibold text-ink uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
@@ -720,7 +720,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* SECTION 04: TIKTOK SHOP • CONTENT, KOC & BOOKING                      */}
       {/* ===================================================================== */}
       {showSec04 && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
           <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-accent">04.</span>
             <h3 className="text-xs font-semibold text-ink uppercase">
@@ -1067,7 +1067,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* SECTION 05: SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT & TARGET TUẦN         */}
       {/* ===================================================================== */}
       {showSec05 && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
           <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
             <span className="font-mono text-xs font-semibold text-accent">05.</span>
             <h3 className="text-xs font-semibold text-ink uppercase">

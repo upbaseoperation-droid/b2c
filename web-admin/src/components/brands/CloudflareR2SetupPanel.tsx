@@ -103,24 +103,26 @@ export function CloudflareR2SetupPanel({
     [onStatusChange],
   );
 
-  const fetchStatus = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/integrations/cloudflare-r2', { cache: 'no-store' });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        applyServerStatus(data as R2StatusPayload);
-      }
-    } catch {
-      // Ignore network error on initial load
-    } finally {
-      setLoading(false);
-    }
-  }, [applyServerStatus]);
-
   useEffect(() => {
-    void fetchStatus();
-  }, [fetchStatus]);
+    let cancelled = false;
+    fetch('/api/integrations/cloudflare-r2', { cache: 'no-store' })
+      .then(res => res.json().then(data => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (cancelled) return;
+        if (ok && data.ok) {
+          applyServerStatus(data as R2StatusPayload);
+        }
+      })
+      .catch(() => {
+        // Ignore network error on initial load
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [applyServerStatus]);
 
   // Tự động tách Account ID và Endpoint chuẩn khi người dùng dán S3 URL từ Cloudflare
   const handleEndpointChange = (rawVal: string) => {
