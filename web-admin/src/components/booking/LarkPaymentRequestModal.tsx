@@ -309,19 +309,140 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
     }
   };
 
+  const handleAdvanceLarkApprovalStep = async (targetSlip: LarkPaymentRequestSlip) => {
+    try {
+      const res = await fetch('/api/integrations/larkbase/payment-requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slipId: targetSlip.id,
+          approvalInstanceCode: targetSlip.larkSync.approvalInstanceCode,
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json?.slip) {
+        const updatedSlip = json.slip as LarkPaymentRequestSlip;
+        setHistorySlips(prev =>
+          prev.map(s => (s.id === updatedSlip.id ? updatedSlip : s))
+        );
+        if (createdSlipResult?.id === updatedSlip.id) {
+          setCreatedSlipResult(updatedSlip);
+        }
+        if (onSuccessUpdateDeals) {
+          const matchedDeals = allDeals.filter(d =>
+            updatedSlip.lineItems.some(l => l.dealId === d.id || l.dealCode === d.dealCode)
+          );
+          if (matchedDeals.length > 0) {
+            onSuccessUpdateDeals(matchedDeals, updatedSlip);
+          }
+        }
+      }
+    } catch {
+      // Giữ nguyên nếu lỗi mạng
+    }
+  };
+
+  const renderLarkApprovalNodes = (
+    hasLeader: boolean,
+    leaderName?: string,
+    directorName = 'Đặng Thị Yến Nhi',
+    currentStatus?: LarkPaymentRequestSlip['larkSync']['approvalStatus']
+  ) => {
+    const steps: Array<{
+      key: string;
+      title: string;
+      actor: string;
+      done: boolean;
+      active: boolean;
+    }> = [
+      {
+        key: 'STEP_PIC',
+        title: '1. Đối soát Deal & Phụ lục',
+        actor: currentUserName,
+        done: Boolean(currentStatus),
+        active: !currentStatus,
+      },
+      ...(hasLeader
+        ? [
+            {
+              key: 'STEP_LEADER',
+              title: '2. Trưởng nhóm sơ duyệt',
+              actor: leaderName || 'Nguyễn Thị Ngọc Tâm',
+              done:
+                currentStatus === 'PENDING_DIRECTOR' ||
+                currentStatus === 'PENDING_FINANCE' ||
+                currentStatus === 'APPROVED' ||
+                currentStatus === 'PAID',
+              active: currentStatus === 'PENDING_LEADER',
+            },
+          ]
+        : []),
+      {
+        key: 'STEP_DIRECTOR',
+        title: `${hasLeader ? '3' : '2'}. Duyệt hạn mức Order Net`,
+        actor: `GĐ MKT · ${directorName}`,
+        done:
+          currentStatus === 'PENDING_FINANCE' ||
+          currentStatus === 'APPROVED' ||
+          currentStatus === 'PAID',
+        active: currentStatus === 'PENDING_DIRECTOR',
+      },
+      {
+        key: 'STEP_FINANCE',
+        title: `${hasLeader ? '4' : '3'}. Kế toán đối soát & Giải ngân`,
+        actor: 'Phòng TCKT (VietQR)',
+        done: currentStatus === 'APPROVED' || currentStatus === 'PAID',
+        active: currentStatus === 'PENDING_FINANCE',
+      },
+    ];
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        {steps.map(st => (
+          <div
+            key={st.key}
+            className={`rounded-lg border px-2.5 py-2 text-xs ${
+              st.done
+                ? 'border-positive/40 bg-positive-soft/30 text-ink'
+                : st.active
+                ? 'border-accent bg-accent-soft/25 text-ink'
+                : 'border-line bg-sunken text-ink-3'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-semibold">{st.title}</span>
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  st.done
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : st.active
+                    ? 'bg-sky-100 text-sky-800'
+                    : 'bg-surface text-ink-3'
+                }`}
+              >
+                {st.done ? 'Đã duyệt' : st.active ? 'Đang xử lý' : 'Chờ tới lượt'}
+              </span>
+            </div>
+            <div className="text-[11px] text-ink-2 mt-0.5 truncate">{st.actor}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       size="xl"
-      title="Tạo phiếu đề nghị thanh toán & Đồng bộ Lark (Bảng 3.2)"
+      title="Đối soát Thanh toán theo Deal & Tạo luồng phê duyệt Lark Approval"
       footer={
         activeTab === 'CREATE_SLIP' ? (
           <div className="flex flex-wrap items-center justify-between gap-3 w-full">
             <div className="flex items-center gap-2 text-xs">
               {evaluation.canSubmit ? (
                 <Status tone="positive">
-                  Đạt 100% điều kiện Bảng 3.2 · Sẵn sàng đẩy phiếu
+                  Đạt 100% điều kiện Đối soát Deal · Sẵn sàng tạo luồng Lark Approval
                 </Status>
               ) : (
                 <Status tone="critical">
@@ -346,10 +467,10 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 onClick={handleSubmitToLark}
               >
                 {submitting
-                  ? 'Đang đẩy sang Lark...'
+                  ? 'Đang tạo luồng Lark Approval...'
                   : requestType === 'ADVANCE'
-                  ? 'Đẩy phiếu tạm ứng sang Lark'
-                  : 'Đẩy phiếu ĐNTT sang Lark'}
+                  ? 'Tạo luồng Tạm ứng trên Lark Approval'
+                  : 'Tạo luồng ĐNTT Deal trên Lark Approval'}
               </Button>
             </div>
           </div>
@@ -367,12 +488,12 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
           items={[
             {
               key: 'CREATE_SLIP',
-              label: 'Kiểm tra Bảng 3.2 & Tạo phiếu',
+              label: 'Đối soát Deal & Tạo luồng Lark Approval',
               count: selectedDeals.length,
             },
             {
               key: 'SLIP_HISTORY',
-              label: 'Lịch sử phiếu đã đẩy Lark',
+              label: 'Luồng phê duyệt đã tạo trên Lark Approval',
               count: historySlips.length,
             },
           ]}
@@ -385,8 +506,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                   setCreatedSlipResult(null);
                 }}
                 items={[
-                  { key: 'SETTLEMENT', label: 'ĐNTT Tất toán (Đợt 2 / 100%)' },
-                  { key: 'ADVANCE', label: 'Phiếu Tạm ứng (Đợt 1)' },
+                  { key: 'SETTLEMENT', label: 'ĐNTT Tất toán Deal (Đợt 2 / 100%)' },
+                  { key: 'ADVANCE', label: 'Phiếu Tạm ứng Deal (Đợt 1)' },
                 ]}
               />
             ) : (
@@ -406,21 +527,39 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
         {activeTab === 'CREATE_SLIP' && (
           <div className="space-y-4">
             {createdSlipResult && (
-              <div className="rounded-xl border border-positive/40 bg-positive-soft p-4 space-y-2">
+              <div className="rounded-xl border border-positive/40 bg-positive-soft p-4 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <CheckCircle2 className="w-4 h-4 text-positive shrink-0" />
                     <span className="text-sm font-semibold text-ink">
-                      Đã khởi tạo phiếu {createdSlipResult.slipCode} thành công
+                      Đã khởi tạo luồng phê duyệt Lark Approval cho phiếu {createdSlipResult.slipCode}
                     </span>
                     <Status tone="positive">
-                      {createdSlipResult.larkSync.approvalInstanceCode}
+                      Mã Lark Approval: {createdSlipResult.larkSync.approvalInstanceCode}
                     </Status>
                   </div>
-                  <span className="text-xs font-code text-ink-2">
-                    Bản ghi Larkbase: {createdSlipResult.larkSync.larkbaseRecordId}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-code text-ink-2">
+                      Bản ghi Larkbase 3.2: {createdSlipResult.larkSync.larkbaseRecordId}
+                    </span>
+                    {createdSlipResult.larkSync.approvalStatus !== 'PAID' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={CheckCircle2}
+                        onClick={() => handleAdvanceLarkApprovalStep(createdSlipResult)}
+                      >
+                        Duyệt bước tiếp theo trên Lark
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                {renderLarkApprovalNodes(
+                  createdSlipResult.approvalRoute.hasBookingLeader,
+                  createdSlipResult.approvalRoute.bookingLeaderName,
+                  createdSlipResult.approvalRoute.marketingDirectorName,
+                  createdSlipResult.larkSync.approvalStatus
+                )}
                 <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
                     Luồng duyệt: <strong>{createdSlipResult.approvalRoute.routeSummary}</strong>
@@ -446,16 +585,16 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             {/* Hàng chỉ số tổng hợp của phiếu */}
             <StatRow>
               <Stat
-                label="Số mã BO trong phiếu"
-                value={`${evaluation.totals.dealsCount} mã BO`}
-                note={evaluation.lineItems.map(i => i.dealCode).join(', ') || 'Chưa chọn BO'}
+                label="Số Deal trong phiếu"
+                value={`${evaluation.totals.dealsCount} Deal`}
+                note={evaluation.lineItems.map(i => `${i.dealCode} (${i.contractAppendixCode || 'PL'})`).join(', ') || 'Chưa chọn Deal'}
               />
               <Stat
-                label="Tổng Net thỏa thuận"
+                label="Tổng giá trị Deal (Net)"
                 value={formatVndShort(evaluation.totals.agreedNetTotal)}
                 note={
                   evaluation.totals.droppedDeductionTotal > 0
-                    ? `Trừ rớt sóng: -${formatVndShort(evaluation.totals.droppedDeductionTotal)}`
+                    ? `Khấu trừ phần hủy: -${formatVndShort(evaluation.totals.droppedDeductionTotal)}`
                     : `Đã tạm ứng: ${formatVndShort(evaluation.totals.advancePaidTotal)}`
                 }
               />
@@ -473,6 +612,18 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                 note={evaluation.totals.amountInWords}
               />
             </StatRow>
+
+            {/* Sơ đồ luồng phê duyệt thanh toán trên Lark Approval */}
+            <Panel title="Luồng phê duyệt thanh toán tự động trên Lark Approval">
+              <div className="space-y-2">
+                {renderLarkApprovalNodes(
+                  evaluation.approvalRoute.hasBookingLeader,
+                  evaluation.approvalRoute.bookingLeaderName,
+                  evaluation.approvalRoute.marketingDirectorName,
+                  createdSlipResult?.larkSync.approvalStatus
+                )}
+              </div>
+            </Panel>
 
             {/* Khung 1: Danh sách mã BO trong phiếu & Gom đơn cùng KOC/MCN */}
             <Panel
@@ -546,11 +697,14 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-code text-xs font-semibold text-ink">
-                              {line.dealCode}
+                              Deal: {line.dealCode}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-[10px] text-ink-2">
+                              HĐNT: {line.masterContractCode} · Phụ lục: {line.contractAppendixCode}
                             </span>
                             <Status tone={line.isEligible ? 'positive' : 'critical'}>
                               {line.isEligible
-                                ? 'Đủ hồ sơ Bảng 3.2'
+                                ? 'Đủ nghiệm thu Deal (B1+B2)'
                                 : `Chặn cứng: Thiếu ${line.issues.length} mục`}
                             </Status>
                             <span className="text-xs font-semibold text-ink">
@@ -572,7 +726,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                               </Button>
                             )}
                             <span className="text-xs font-semibold text-ink tabular-nums">
-                              Thực chuyển: {formatVnd(line.netTransferAmount)}
+                              Thanh toán Deal: {formatVnd(line.netTransferAmount)}
                             </span>
                             {selectedDeals.length > 1 && (
                               <Button
@@ -585,6 +739,37 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                               />
                             )}
                           </div>
+                        </div>
+
+                        {/* Tóm tắt cấu trúc chi phí của Deal: Asset Video + Dịch vụ gia tăng - Khấu trừ phần hủy */}
+                        <div className="flex flex-wrap items-center gap-3 px-2.5 py-1.5 rounded bg-surface border border-line text-[11px] font-code text-ink-2">
+                          <span>
+                            Asset Video: <strong>{formatVnd(line.videoAssetNetAmount ?? line.agreedNetAmount)}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Dịch vụ gia tăng: <strong>{formatVnd(line.addonServicesNetAmount || 0)}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Tổng Deal: <strong>{formatVnd(line.agreedNetAmount)}</strong>
+                          </span>
+                          {line.droppedDeductionAmount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="text-critical font-semibold">
+                                Khấu trừ hạng mục hủy: -{formatVnd(line.droppedDeductionAmount)}
+                              </span>
+                            </>
+                          )}
+                          {line.advancePaidAmount > 0 && (
+                            <>
+                              <span>•</span>
+                              <span>
+                                Đã tạm ứng: -{formatVnd(line.advancePaidAmount)}
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         {/* Danh sách lỗi chặn cứng của mã BO này (nếu có) */}
@@ -824,7 +1009,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             {historySlips.map(slip => (
               <div
                 key={slip.id}
-                className="rounded-xl border border-line bg-surface p-3.5 space-y-2"
+                className="rounded-xl border border-line bg-surface p-3.5 space-y-2.5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -839,11 +1024,15 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                           : 'warning'
                       }
                     >
-                      {slip.larkSync.approvalStatus === 'APPROVED'
-                        ? 'Đã duyệt trên Lark'
+                      {slip.larkSync.approvalStatus === 'PAID'
+                        ? 'Đã giải ngân hoàn tất'
+                        : slip.larkSync.approvalStatus === 'APPROVED'
+                        ? 'Đã duyệt trên Lark · Chờ giải ngân'
+                        : slip.larkSync.approvalStatus === 'PENDING_FINANCE'
+                        ? 'Chờ Kế toán đối soát & giải ngân'
                         : slip.larkSync.approvalStatus === 'PENDING_LEADER'
-                        ? 'Chờ Leader sơ duyệt'
-                        : 'Chờ GĐ MKT & Kế toán duyệt'}
+                        ? 'Chờ Leader sơ duyệt trên Lark'
+                        : 'Chờ GĐ MKT duyệt trên Lark'}
                     </Status>
                     <span className="text-xs font-semibold text-ink">
                       {slip.requestTypeLabel}
@@ -852,10 +1041,28 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                       ({slip.larkSync.approvalInstanceCode})
                     </span>
                   </div>
-                  <div className="text-xs font-semibold text-ink tabular-nums">
-                    Thực chuyển: {formatVnd(slip.totals.netTransferTotal)}
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs font-semibold text-ink tabular-nums">
+                      Thực chuyển: {formatVnd(slip.totals.netTransferTotal)}
+                    </div>
+                    {slip.larkSync.approvalStatus !== 'PAID' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={CheckCircle2}
+                        onClick={() => handleAdvanceLarkApprovalStep(slip)}
+                      >
+                        Duyệt bước tiếp theo trên Lark
+                      </Button>
+                    )}
                   </div>
                 </div>
+                {renderLarkApprovalNodes(
+                  slip.approvalRoute.hasBookingLeader,
+                  slip.approvalRoute.bookingLeaderName,
+                  slip.approvalRoute.marketingDirectorName,
+                  slip.larkSync.approvalStatus
+                )}
                 <div className="text-xs text-ink-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
                     KOC: <strong>{slip.payee.kocStageName}</strong> ({slip.payee.bankName} ·{' '}
@@ -863,9 +1070,13 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                     {slip.payee.bankHolder})
                   </span>
                   <span>
-                    Mã BO:{' '}
+                    Deal &amp; Phụ lục:{' '}
                     <strong className="font-code">
-                      {slip.lineItems.map(i => i.dealCode).join(', ')}
+                      {slip.lineItems
+                        .map(
+                          i => `${i.dealCode} (${i.contractAppendixCode || `PL-${i.dealCode}-01`})`
+                        )
+                        .join(', ')}
                     </strong>
                   </span>
                   <span>Người lập: {slip.createdBy}</span>

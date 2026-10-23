@@ -1,3 +1,4 @@
+import { klLabel, klBaseCost } from './klTiers';
 import {
   BookingDealItem,
   InputPlanBreakdownState,
@@ -350,13 +351,13 @@ export function computeMissingPlanQuotas(
   storeName?: string
 ): MissingGradeQuota[] {
   const gradeDefs: Array<{ grade: SalaryGrade; label: string; defaultCost: number }> = [
-    { grade: 'KL1', label: 'KL1 (< 500K)', defaultCost: 400_000 },
-    { grade: 'KL2', label: 'KL2 (500K - 1.5M)', defaultCost: 1_000_000 },
-    { grade: 'KL3', label: 'KL3 (1.5M - 3M)', defaultCost: 2_200_000 },
-    { grade: 'KL4', label: 'KL4 (3M - 6M)', defaultCost: 4_500_000 },
-    { grade: 'KL5', label: 'KL5 (6M - 12M)', defaultCost: 8_500_000 },
-    { grade: 'KL6', label: 'KL6 (12M - 25M)', defaultCost: 16_000_000 },
-    { grade: 'KL7', label: 'KL7 (> 25M)', defaultCost: 30_000_000 },
+    { grade: 'KL1', label: klLabel('KL1'), defaultCost: klBaseCost('KL1') },
+    { grade: 'KL2', label: klLabel('KL2'), defaultCost: klBaseCost('KL2') },
+    { grade: 'KL3', label: klLabel('KL3'), defaultCost: klBaseCost('KL3') },
+    { grade: 'KL4', label: klLabel('KL4'), defaultCost: klBaseCost('KL4') },
+    { grade: 'KL5', label: klLabel('KL5'), defaultCost: klBaseCost('KL5') },
+    { grade: 'KL6', label: klLabel('KL6'), defaultCost: klBaseCost('KL6') },
+    { grade: 'KL7', label: klLabel('KL7'), defaultCost: klBaseCost('KL7') },
     { grade: 'TAP UpAffiliate', label: 'FOC / TAP (0đ)', defaultCost: 0 },
   ];
 

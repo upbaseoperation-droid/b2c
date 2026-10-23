@@ -295,6 +295,39 @@ export async function POST(request: NextRequest) {
                     type: 'input',
                     value: built.lineItems.map(i => i.dealCode).join(', '),
                   },
+                  {
+                    id: 'master_contract_codes',
+                    type: 'input',
+                    value: Array.from(
+                      new Set(built.lineItems.map(i => i.masterContractCode).filter(Boolean))
+                    ).join(', '),
+                  },
+                  {
+                    id: 'appendix_codes',
+                    type: 'input',
+                    value: built.lineItems
+                      .map(i => i.contractAppendixCode || `PL-${i.dealCode}-01`)
+                      .join(', '),
+                  },
+                  {
+                    id: 'video_asset_net_amount',
+                    type: 'amount',
+                    value: String(
+                      built.lineItems.reduce((s, i) => s + (i.videoAssetNetAmount || 0), 0)
+                    ),
+                  },
+                  {
+                    id: 'addon_services_net_amount',
+                    type: 'amount',
+                    value: String(
+                      built.lineItems.reduce((s, i) => s + (i.addonServicesNetAmount || 0), 0)
+                    ),
+                  },
+                  {
+                    id: 'dropped_deduction_amount',
+                    type: 'amount',
+                    value: String(built.totals.droppedDeductionTotal),
+                  },
                   { id: 'koc_name', type: 'input', value: built.payee.kocStageName },
                   { id: 'payee_holder', type: 'input', value: built.payee.bankHolder },
                   {
@@ -454,7 +487,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         slip,
-        message: `Đã tạo phiếu ${slipCode} (${approvalInstanceCode}) và đồng bộ ${built.lineItems.length} mã BO lên Lark Approval & Larkbase 3.2.`,
+        message: `Đã tạo phiếu ${slipCode} (${approvalInstanceCode}) và đồng bộ ${built.lineItems.length} Deal lên Lark Approval & Larkbase 3.2.`,
       },
       { status: 201 }
     );
@@ -467,6 +500,88 @@ export async function POST(request: NextRequest) {
           err instanceof Error
             ? err.message
             : 'Lỗi máy chủ khi đẩy phiếu đề nghị thanh toán sang Lark.',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/integrations/larkbase/payment-requests
+ * Cập nhật bước duyệt trong luồng Lark Approval (PENDING_LEADER -> PENDING_DIRECTOR -> PENDING_FINANCE -> APPROVED -> PAID)
+ */
+export async function PATCH(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Vui lòng đăng nhập để cập nhật luồng Lark Approval.' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    seedInitialPaymentSlips();
+    const body = (await request.json()) as {
+      slipId?: string;
+      approvalInstanceCode?: string;
+      nextStatus?: LarkPaymentRequestSlip['larkSync']['approvalStatus'];
+    };
+
+    const target = Array.from(memoryPaymentRequestSlips.values()).find(
+      s =>
+        (body.slipId && s.id === body.slipId) ||
+        (body.approvalInstanceCode &&
+          s.larkSync.approvalInstanceCode === body.approvalInstanceCode)
+    );
+
+    if (!target) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'SLIP_NOT_FOUND',
+          message: 'Không tìm thấy phiếu luồng phê duyệt Lark Approval tương ứng.',
+        },
+        { status: 404 }
+      );
+    }
+
+    const order: LarkPaymentRequestSlip['larkSync']['approvalStatus'][] = target.approvalRoute
+      .hasBookingLeader
+      ? ['PENDING_LEADER', 'PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID']
+      : ['PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID'];
+
+    const currentIdx = order.indexOf(target.larkSync.approvalStatus);
+    const resolvedNext: LarkPaymentRequestSlip['larkSync']['approvalStatus'] =
+      body.nextStatus ||
+      (currentIdx >= 0 && currentIdx < order.length - 1
+        ? order[currentIdx + 1]
+        : 'PAID');
+
+    const updatedSlip: LarkPaymentRequestSlip = {
+      ...target,
+      larkSync: {
+        ...target.larkSync,
+        approvalStatus: resolvedNext,
+        syncedAt: new Date().toISOString(),
+      },
+    };
+
+    memoryPaymentRequestSlips.set(updatedSlip.id, updatedSlip);
+
+    return NextResponse.json({
+      success: true,
+      slip: updatedSlip,
+      message: `Đã cập nhật trạng thái luồng Lark Approval (${updatedSlip.larkSync.approvalInstanceCode}) sang ${resolvedNext}.`,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'INTERNAL_ERROR',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Lỗi khi cập nhật trạng thái luồng Lark Approval.',
       },
       { status: 500 }
     );

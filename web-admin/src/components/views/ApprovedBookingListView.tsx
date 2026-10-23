@@ -11,7 +11,10 @@ import {
   ExternalLink,
   FileCheck,
   FileSpreadsheet,
+  FileText,
+  Layers,
   Loader2,
+  Lock,
   Plus,
   RefreshCw,
   Search,
@@ -19,10 +22,13 @@ import {
   ShoppingBag,
   Sparkles,
   Trash2,
+  Unlock,
   Video,
 } from 'lucide-react';
 import type {
   BookingDealItem,
+  DealContractAppendixStatus,
+  DealRightsTermItem,
   KocItem,
   SalaryGrade,
   StorePortfolioItem,
@@ -35,6 +41,7 @@ import {
   PHAN_LOAI_VIDEO_OPTIONS,
   autoMapVideoAcceptanceByKocChannel,
   buildBookingDealFromApprovedItem,
+  buildDefaultAddonServicesForDeal,
   computeAirSlaStatus,
   computeWeekLabelFromDate,
   downloadApprovedBookingListCsv,
@@ -42,6 +49,8 @@ import {
   extractTikTokChannelAndVideoFromInput,
   formatApprovedBookingListToTsv,
   generateBookingOrderCode,
+  generateDealAppendixCode,
+  generateMasterContractCode,
   loadApprovedBookingList,
   recalculateApprovedBookingItem,
   saveApprovedBookingList,
@@ -58,6 +67,8 @@ import {
 } from '../../lib/staffBrandListingSheet';
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
+import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
+import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
 import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select, Status } from '../ui';
 
 export interface ApprovedBookingListViewProps {
@@ -268,8 +279,165 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     }
   };
 
-  // Tạo Booking Order (mã BO...) cho 1 dòng hoặc nhiều dòng đã chọn
+  // ============================================================================
+  // HỘP THOẠI TẠO DEAL (1 VIDEO ASSET + DỊCH VỤ GIA TĂNG) & LẬP PHỤ LỤC HỢP ĐỒNG
+  // ============================================================================
+  const [dealBuilderTargetId, setDealBuilderTargetId] = useState<string | null>(null);
+  const [dealDraftCode, setDealDraftCode] = useState<string>('');
+  const [dealDraftMasterContract, setDealDraftMasterContract] = useState<string>('');
+  const [dealDraftAppendixCode, setDealDraftAppendixCode] = useState<string>('');
+  const [dealDraftAppendixStatus, setDealDraftAppendixStatus] =
+    useState<DealContractAppendixStatus>('CHỜ_KÝ');
+  const [dealDraftPlannedAirDate, setDealDraftPlannedAirDate] = useState<string>('');
+  const [dealDraftVideoNetCost, setDealDraftVideoNetCost] = useState<number>(0);
+  const [dealDraftAdvanceAmount, setDealDraftAdvanceAmount] = useState<number>(0);
+  const [dealDraftAddons, setDealDraftAddons] = useState<DealRightsTermItem[]>([]);
+
+  const dealBuilderItem = useMemo(
+    () => items.find((i) => i.id === dealBuilderTargetId) || null,
+    [items, dealBuilderTargetId]
+  );
+
+  const openDealBuilderModal = (item: ApprovedBookingListItem) => {
+    const seqIdx = items.findIndex((x) => x.id === item.id);
+    const maBo =
+      item.maBooking ||
+      generateBookingOrderCode(item.thangPlan, (seqIdx >= 0 ? seqIdx : 0) + 201);
+    const masterCode =
+      item.masterContractCode || generateMasterContractCode(item.idKenh, item.kocId);
+    const appendixCode =
+      item.contractAppendixCode || generateDealAppendixCode(maBo, 1);
+    const existingAddons =
+      item.addonServices && item.addonServices.length > 0
+        ? item.addonServices
+        : buildDefaultAddonServicesForDeal({
+            maBooking: maBo,
+            totalNet: item.chiPhiBookingNetCuoi,
+            sparkAdsCode: item.sparkAdsCode,
+            actualAirDate: item.actualAirDate,
+            includeDefaultAddons: true,
+          });
+    const addonsSum = existingAddons.reduce(
+      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+      0
+    );
+    const baseVideoCost = Math.max(0, item.chiPhiBookingNetCuoi - addonsSum);
+
+    setDealBuilderTargetId(item.id);
+    setDealDraftCode(maBo);
+    setDealDraftMasterContract(masterCode);
+    setDealDraftAppendixCode(appendixCode);
+    setDealDraftAppendixStatus(
+      item.contractAppendixStatus && item.contractAppendixStatus !== 'CHƯA_LẬP'
+        ? item.contractAppendixStatus
+        : 'CHỜ_KÝ'
+    );
+    setDealDraftPlannedAirDate(
+      item.plannedAirDate || `${item.thangPlan.replace('/', '-')}-20`
+    );
+    setDealDraftVideoNetCost(baseVideoCost);
+    setDealDraftAdvanceAmount(item.soTienTamUngTruoc || 0);
+    setDealDraftAddons(existingAddons);
+  };
+
+  const handleTogglePresetAddonInBuilder = (
+    termType: DealRightsTermItem['termType'],
+    defaultLabel: string,
+    anchorType: 'ACCEPTANCE_DATE' | 'AIR_DATE',
+    defaultDays: number
+  ) => {
+    setDealDraftAddons((prev) => {
+      const exists = prev.some((a) => a.termType === termType);
+      if (exists) {
+        return prev.filter((a) => a.termType !== termType);
+      }
+      const newAddon: DealRightsTermItem = {
+        id: `${dealDraftCode || 'DEAL'}-ADDON-${termType}-${Date.now().toString().slice(-3)}`,
+        termType,
+        termLabel: defaultLabel,
+        scopeType: 'ASSET',
+        anchorType,
+        durationDays: defaultDays,
+        allocatedWeightPct: 10,
+        allocatedCostVnd: 0,
+        status: 'PENDING_ANCHOR',
+        acceptanceStatus: 'LOCKED_BY_VIDEO',
+        evidenceCodeOrUrl: '',
+      };
+      return [...prev, newAddon];
+    });
+  };
+
+  const handleSaveDealBuilderModal = () => {
+    if (!dealBuilderItem) return;
+    if (!dealDraftPlannedAirDate.trim()) {
+      onNotify?.(
+        `Vui lòng chọn Ngày air dự kiến cho Asset Video của kênh @${dealBuilderItem.idKenh}.`,
+        'warning'
+      );
+      return;
+    }
+    const addonsTotal = dealDraftAddons.reduce(
+      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+      0
+    );
+    const totalDealNet = Math.max(0, dealDraftVideoNetCost) + addonsTotal;
+    const finalDealCode =
+      dealDraftCode.trim() || generateBookingOrderCode(dealBuilderItem.thangPlan, 205);
+    const finalAppendixCode =
+      dealDraftAppendixCode.trim() || generateDealAppendixCode(finalDealCode, 1);
+
+    let savedRow: ApprovedBookingListItem | null = null;
+    updateItemsAndSync((prev) =>
+      prev.map((it) => {
+        if (it.id !== dealBuilderItem.id) return it;
+        const nextRow = recalculateApprovedBookingItem({
+          ...it,
+          maBooking: finalDealCode,
+          bookingOrderCreated: true,
+          bookingOrderCreatedAt: it.bookingOrderCreatedAt || new Date().toISOString(),
+          linkedDealId: finalDealCode,
+          plannedAirDate: dealDraftPlannedAirDate,
+          chiPhiBookingNetCuoi: totalDealNet,
+          videoAssetNetCost: Math.max(0, dealDraftVideoNetCost),
+          addonServicesNetCost: addonsTotal,
+          soTienTamUngTruoc: Math.max(0, dealDraftAdvanceAmount),
+          addonServices: dealDraftAddons,
+          masterContractCode:
+            dealDraftMasterContract.trim() ||
+            generateMasterContractCode(it.idKenh, it.kocId),
+          contractAppendixCode: finalAppendixCode,
+          contractAppendixStatus: dealDraftAppendixStatus,
+        });
+        savedRow = nextRow;
+        return nextRow;
+      })
+    );
+
+    if (savedRow) {
+      const syncedRow: ApprovedBookingListItem = savedRow;
+      syncApprovedItemsBackToStaffBrandSheets([syncedRow], kocs, stores, deals);
+      if (onCreateOrUpdateDeals) {
+        onCreateOrUpdateDeals([buildBookingDealFromApprovedItem(syncedRow)]);
+      }
+    }
+
+    setDealBuilderTargetId(null);
+    onNotify?.(
+      `Đã tạo Deal ${finalDealCode} (1 Video Asset + ${dealDraftAddons.length} dịch vụ gia tăng) & Phụ lục ${finalAppendixCode}.`,
+      'success'
+    );
+  };
+
+  // Tạo Deal (mã BO...) & Phụ lục cho 1 dòng hoặc nhiều dòng đã chọn
   const handleCreateBookingOrders = (targetItemIds?: string[]) => {
+    if (targetItemIds && targetItemIds.length === 1) {
+      const singleTarget = items.find((i) => i.id === targetItemIds[0]);
+      if (singleTarget) {
+        openDealBuilderModal(singleTarget);
+        return;
+      }
+    }
     const idsToProcess =
       targetItemIds && targetItemIds.length > 0
         ? targetItemIds
@@ -278,8 +446,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         : filteredItems.filter((i) => !i.bookingOrderCreated).map((i) => i.id);
 
     if (idsToProcess.length === 0) {
-      onNotify?.('Tất cả các dòng hiển thị đã được tạo Mã Booking Order (BO...).', 'info');
+      onNotify?.('Tất cả các dòng hiển thị đã được tạo Deal & Phụ lục.', 'info');
       return;
+    }
+
+    if (idsToProcess.length === 1) {
+      const singleTarget = items.find((i) => i.id === idsToProcess[0]);
+      if (singleTarget) {
+        openDealBuilderModal(singleTarget);
+        return;
+      }
     }
 
     const idSet = new Set(idsToProcess);
@@ -288,7 +464,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     );
     if (missingAirDate.length > 0) {
       onNotify?.(
-        `Vui lòng điền "P.Ngày air (Ngày air chốt)" cho kênh @${missingAirDate[0].idKenh} trước khi tạo Booking Order.`,
+        `Vui lòng điền "P.Ngày air (Ngày air chốt)" cho kênh @${missingAirDate[0].idKenh} trước khi tạo Deal.`,
         'warning'
       );
       return;
@@ -302,12 +478,29 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         if (!idSet.has(item.id)) return item;
         const maBo =
           item.maBooking || generateBookingOrderCode(item.thangPlan, idx + 201);
+        const defaultAddons =
+          item.addonServices && item.addonServices.length > 0
+            ? item.addonServices
+            : buildDefaultAddonServicesForDeal({
+                maBooking: maBo,
+                totalNet: item.chiPhiBookingNetCuoi,
+                sparkAdsCode: item.sparkAdsCode,
+                actualAirDate: item.actualAirDate,
+                includeDefaultAddons: true,
+              });
         const updated = recalculateApprovedBookingItem({
           ...item,
           maBooking: maBo,
           bookingOrderCreated: true,
           bookingOrderCreatedAt: new Date().toISOString(),
           linkedDealId: maBo,
+          addonServices: defaultAddons,
+          masterContractCode:
+            item.masterContractCode ||
+            generateMasterContractCode(item.idKenh, item.kocId),
+          contractAppendixCode:
+            item.contractAppendixCode || generateDealAppendixCode(maBo, 1),
+          contractAppendixStatus: item.contractAppendixStatus || 'CHỜ_KÝ',
         });
         syncedApprovedItems.push(updated);
         createdDeals.push(buildBookingDealFromApprovedItem(updated));
@@ -330,7 +523,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
     setSelectedIds([]);
     onNotify?.(
-      `Đã tạo thành công ${createdDeals.length} Booking Order (${createdDeals
+      `Đã tạo thành công ${createdDeals.length} Deal kèm Phụ lục (${createdDeals
         .slice(0, 3)
         .map((d) => d.id)
         .join(', ')}${createdDeals.length > 3 ? '...' : ''}) và đồng bộ sang Quản lý Booking & Sheet Brand.`,
@@ -452,6 +645,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     Record<string, TikTokVideoInspectionResult>
   >({});
   const [isInspectingTikTokLinks, setIsInspectingTikTokLinks] = useState(false);
+  // Lưu chỉnh sửa Nghiệm thu Bước 2 (Dịch vụ gia tăng & Quyền lợi theo Deal) theo id dòng
+  const [stage2AddonEdits, setStage2AddonEdits] = useState<
+    Record<string, DealRightsTermItem[]>
+  >({});
 
   // Hộp thoại đối soát sâu Kịch bản & Giỏ hàng TikTok Shop (TikTokVideoInspectorModal)
   const [inspectorTargetItem, setInspectorTargetItem] =
@@ -559,6 +756,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const openAcceptanceModalForRow = (row?: ApprovedBookingListItem) => {
     setRowManualBoMap({});
     setRowFieldOverrides({});
+    setStage2AddonEdits({});
     if (row) {
       setSelectedTargetBoItemId(row.id);
       setAcceptanceBulkText(buildSampleLineForItem(row, 0));
@@ -908,10 +1106,41 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       allDeals: deals,
     });
 
-    setItems(result.updatedList);
+    // Áp dụng cập nhật Nghiệm thu Bước 2 (Dịch vụ gia tăng & Quyền lợi theo Deal) sau khi Bước 1 Video đã nghiệm thu
+    let finalUpdatedList = result.updatedList;
+    let finalUpdatedApprovedItems = result.updatedApprovedItems;
 
-    if (result.updatedApprovedItems.length > 0 && onCreateOrUpdateDeals) {
-      const dealsToSync = result.updatedApprovedItems.map((it) =>
+    if (Object.keys(stage2AddonEdits).length > 0) {
+      const modifiedItems: ApprovedBookingListItem[] = [];
+      finalUpdatedList = finalUpdatedList.map((it) => {
+        const editedAddons = stage2AddonEdits[it.id];
+        if (!editedAddons) return it;
+        const recalc = recalculateApprovedBookingItem({
+          ...it,
+          addonServices: editedAddons,
+        });
+        modifiedItems.push(recalc);
+        return recalc;
+      });
+      saveApprovedBookingList(finalUpdatedList, true);
+      if (modifiedItems.length > 0) {
+        syncApprovedItemsBackToStaffBrandSheets(modifiedItems, kocs, stores, deals);
+        const modMap = new Map(modifiedItems.map((m) => [m.id, m]));
+        finalUpdatedApprovedItems = finalUpdatedApprovedItems.map(
+          (u) => modMap.get(u.id) || u
+        );
+        modifiedItems.forEach((m) => {
+          if (!finalUpdatedApprovedItems.some((u) => u.id === m.id)) {
+            finalUpdatedApprovedItems.push(m);
+          }
+        });
+      }
+    }
+
+    setItems(finalUpdatedList);
+
+    if (finalUpdatedApprovedItems.length > 0 && onCreateOrUpdateDeals) {
+      const dealsToSync = finalUpdatedApprovedItems.map((it) =>
         buildBookingDealFromApprovedItem(it)
       );
       onCreateOrUpdateDeals(dealsToSync);
@@ -955,6 +1184,117 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           : ''
       }`,
       result.matchedCount > 0 ? 'success' : 'warning'
+    );
+  };
+
+  // ============================================================================
+  // ĐỐI SOÁT THANH TOÁN THEO DEAL & TẠO LUỒNG PHÊ DUYỆT LARK APPROVAL
+  // ============================================================================
+  const [isLarkPaymentModalOpen, setIsLarkPaymentModalOpen] = useState<boolean>(false);
+  const [larkPaymentInitialItem, setLarkPaymentInitialItem] =
+    useState<ApprovedBookingListItem | null>(null);
+
+  const dealsForLarkModal = useMemo(() => {
+    const dealMap = new Map<string, BookingDealItem>();
+    deals.forEach((d) => {
+      dealMap.set(d.id, d);
+    });
+    items.forEach((it) => {
+      const built = buildBookingDealFromApprovedItem(it);
+      dealMap.set(built.id, built);
+    });
+    return Array.from(dealMap.values());
+  }, [deals, items]);
+
+  const openLarkPaymentModalForItem = (item?: ApprovedBookingListItem) => {
+    if (item) {
+      setLarkPaymentInitialItem(item);
+      setIsLarkPaymentModalOpen(true);
+      return;
+    }
+    const candidate =
+      (selectedIds.length > 0
+        ? filteredItems.find((i) => selectedIds.includes(i.id))
+        : undefined) ||
+      filteredItems.find(
+        (i) => i.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+      ) ||
+      filteredItems.find((i) => i.bookingOrderCreated) ||
+      filteredItems[0] ||
+      null;
+    setLarkPaymentInitialItem(candidate);
+    setIsLarkPaymentModalOpen(true);
+  };
+
+  const handleSaveAcceptanceAndOpenLarkApproval = () => {
+    const firstMatched =
+      parsedAcceptanceRows.find((r) => r.matchedItem)?.matchedItem || null;
+    handleConfirmVideoAcceptanceMapping();
+    const refreshedList = loadApprovedBookingList(kocs, stores, deals, currentUserName);
+    const updatedTarget = firstMatched
+      ? refreshedList.find((x) => x.id === firstMatched.id) || firstMatched
+      : refreshedList.find(
+          (x) => x.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+        ) || null;
+    setLarkPaymentInitialItem(updatedTarget);
+    setIsLarkPaymentModalOpen(true);
+  };
+
+  const handleLarkPaymentSuccess = (
+    updatedDeals: BookingDealItem[],
+    createdSlip: LarkPaymentRequestSlip
+  ) => {
+    const dealCodesInSlip = new Set(
+      createdSlip.lineItems.map((l) => l.dealCode.toUpperCase())
+    );
+    const dealIdsInSlip = new Set(createdSlip.lineItems.map((l) => l.dealId));
+
+    const changedRows: ApprovedBookingListItem[] = [];
+    updateItemsAndSync((prev) =>
+      prev.map((it) => {
+        const matchCode =
+          it.maBooking && dealCodesInSlip.has(it.maBooking.toUpperCase());
+        const matchId =
+          dealIdsInSlip.has(`deal-from-32-${it.id}`) ||
+          (it.linkedDealId ? dealIdsInSlip.has(it.linkedDealId) : false);
+        if (!matchCode && !matchId) return it;
+
+        const nextPaymentStatus: ApprovedBookingPaymentStatus =
+          createdSlip.larkSync.approvalStatus === 'PAID'
+            ? 'Đã thanh toán'
+            : 'Đã lập ĐNTT';
+        const recalc = recalculateApprovedBookingItem({
+          ...it,
+          nganHang: createdSlip.payee.bankName || it.nganHang,
+          soTaiKhoan: createdSlip.payee.bankAccount || it.soTaiKhoan,
+          tenTaiKhoanNganHang:
+            createdSlip.payee.bankHolder || it.tenTaiKhoanNganHang,
+          soCccd: createdSlip.payee.legalId || it.soCccd,
+          trangThaiPhieuThanhToan: nextPaymentStatus,
+          soTienDaThanhToan:
+            createdSlip.larkSync.approvalStatus === 'PAID'
+              ? createdSlip.totals.netTransferTotal
+              : it.soTienDaThanhToan,
+          larkApprovalInstanceCode: createdSlip.larkSync.approvalInstanceCode,
+          larkSlipCode: createdSlip.slipCode,
+          larkApprovalStatus: createdSlip.larkSync.approvalStatus,
+          larkApprovalRouteSummary: createdSlip.approvalRoute.routeSummary,
+          larkSyncedAt: createdSlip.larkSync.syncedAt,
+        });
+        changedRows.push(recalc);
+        return recalc;
+      })
+    );
+
+    if (changedRows.length > 0) {
+      syncApprovedItemsBackToStaffBrandSheets(changedRows, kocs, stores, deals);
+    }
+    if (onCreateOrUpdateDeals) {
+      onCreateOrUpdateDeals(updatedDeals);
+    }
+    onNotify?.(
+      `Đã kết nối Lark Approval: khởi tạo luồng phê duyệt ${createdSlip.larkSync.approvalInstanceCode} (${createdSlip.slipCode}) cho ${createdSlip.lineItems.length} Deal.`,
+      'success'
     );
   };
 
@@ -1199,7 +1539,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               icon={Video}
               onClick={() => openAcceptanceModalForRow()}
             >
-              Nghiệm thu Video
+              Nghiệm thu theo Deal (2 bước)
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Send}
+              onClick={() => openLarkPaymentModalForItem()}
+            >
+              Đối soát &amp; Luồng Lark Approval
             </Button>
 
             <Button
@@ -1208,7 +1557,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               icon={FileCheck}
               onClick={() => handleCreateBookingOrders()}
             >
-              Tạo Booking Order (
+              Tạo Deal &amp; Phụ lục (
               {selectedIds.length > 0 ? selectedIds.length : stats.pendingBoCount})
             </Button>
 
@@ -1275,8 +1624,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   />
                 </th>
                 <th className="sticky left-[38px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[142px] min-w-[142px] max-w-[142px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 1 · File 3.2</div>
-                  <div className="font-semibold text-ink truncate">Mã Booking (BO)</div>
+                  <div className="text-[10px] font-mono text-ink-3">Cột 1 · Deal &amp; Phụ lục</div>
+                  <div className="font-semibold text-ink truncate">Mã Deal &amp; Phụ lục</div>
                 </th>
                 <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[168px] min-w-[168px] max-w-[168px] text-left shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
                   <div className="text-[10px] font-mono text-ink-3">Cột 2 · KOC</div>
@@ -1443,7 +1792,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         />
                       </td>
 
-                      {/* Cột 1: Mã Booking (BO...) */}
+                      {/* Cột 1: Mã Deal (BO...) & Phụ lục Hợp đồng + Cấu trúc Asset Video + DV gia tăng */}
                       <td
                         className={`sticky left-[38px] z-10 ${stickyCellBg} px-2.5 py-2 border-r border-line w-[142px] min-w-[142px] max-w-[142px] align-middle`}
                       >
@@ -1453,22 +1802,34 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               <CheckCircle2 className="w-3 h-3 shrink-0" />
                               <span className="truncate">{item.maBooking}</span>
                             </span>
-                            <div className="text-[10px] text-ink-3 truncate" title={item.pipelineStatus}>
-                              {item.pipelineStatus}
+                            <div className="text-[10px] font-mono text-ink-2 truncate" title={`HĐNT: ${item.masterContractCode || '—'} · Phụ lục Deal: ${item.contractAppendixCode || '—'}`}>
+                              {item.contractAppendixCode || `PL-${item.maBooking}-01`} ({item.contractAppendixStatus || 'CHỜ_KÝ'})
+                            </div>
+                            <div className="flex items-center justify-between gap-1 text-[10px] text-ink-3">
+                              <span className="truncate">
+                                1 Video + {(item.addonServices || []).length} DV kèm
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openDealBuilderModal(item)}
+                                className="font-semibold text-accent hover:underline shrink-0"
+                              >
+                                Sửa Deal
+                              </button>
                             </div>
                           </div>
                         ) : (
                           <div className="space-y-1">
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800">
-                              Chờ tạo BO
+                              Chờ tạo Deal
                             </span>
                             <div>
                               <button
                                 type="button"
-                                onClick={() => handleCreateBookingOrders([item.id])}
+                                onClick={() => openDealBuilderModal(item)}
                                 className="text-[11px] font-semibold text-accent hover:underline"
                               >
-                                + Tạo mã BO ngay
+                                + Tạo Deal &amp; Phụ lục
                               </button>
                             </div>
                           </div>
@@ -1558,7 +1919,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         </td>
                       )}
 
-                      {/* Cột 18: Nhân viên điền Giá cuối cùng (Chi phí thanh toán Booking Net) */}
+                      {/* Cột 18: Nhân viên điền Giá cuối cùng của Deal (Video Asset + Dịch vụ gia tăng) */}
                       <td className="px-2.5 py-2 border-r border-line align-middle bg-amber-50/25">
                         <input
                           type="number"
@@ -1572,12 +1933,15 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           }
                           className="w-full h-7 px-2 rounded border border-amber-300 bg-surface text-right font-mono font-bold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
                         />
-                        {item.chiPhiBookingNetCuoi !== item.giaDeXuatNet && (
-                          <div className="text-[10px] text-right font-mono text-ink-3 mt-0.5">
-                            Chênh:{' '}
-                            {formatVndShort(
-                              item.chiPhiBookingNetCuoi - item.giaDeXuatNet
-                            )}
+                        <div className="text-[10px] text-right font-mono text-ink-3 mt-0.5">
+                          Video: {formatVndShort(item.videoAssetNetCost ?? item.chiPhiBookingNetCuoi)}
+                          {(item.addonServicesNetCost || 0) > 0
+                            ? ` · DV: +${formatVndShort(item.addonServicesNetCost || 0)}`
+                            : ' · DV: Gộp gói'}
+                        </div>
+                        {(item.khauTruHangMucHuy || 0) > 0 && (
+                          <div className="text-[10px] text-right font-mono text-rose-700 font-semibold">
+                            Khấu trừ phần hủy: -{formatVndShort(item.khauTruHangMucHuy || 0)}
                           </div>
                         )}
                       </td>
@@ -1645,7 +2009,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                       {viewColumnMode !== 'BOOKING_FOCUS' && (
                         <>
-                          {/* Cột 9: Link air / Link nghiệm thu */}
+                          {/* Cột 9: Nghiệm thu Bước 1 (Video Asset) -> Bước 2 (Dịch vụ gia tăng) */}
                           <td className="px-2.5 py-2 border-r border-line align-middle bg-emerald-50/20">
                             <div className="space-y-1">
                               <input
@@ -1654,42 +2018,64 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 onChange={(e) =>
                                   handleFieldChange(item.id, 'linkAir', e.target.value)
                                 }
-                                placeholder="Dán link video TikTok nghiệm thu..."
+                                placeholder="Bước 1: Dán link video TikTok nghiệm thu..."
                                 className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
                               />
                               {item.linkAir ? (
-                                <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                                  <div className="flex items-center gap-1.5">
-                                    <a
-                                      href={item.linkAir}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-[11px] font-semibold text-emerald-700 hover:underline"
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                    <div className="flex items-center gap-1.5">
+                                      <a
+                                        href={item.linkAir}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] font-semibold text-emerald-700 hover:underline"
+                                      >
+                                        Mở video ↗
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => openDeepVideoInspector(item)}
+                                        className="text-[10px] font-semibold text-accent hover:underline"
+                                        title="Kiểm tra 5 tiêu chí Brief, Hook 3s & Giỏ hàng TikTok Shop"
+                                      >
+                                        · Đối soát Brief &amp; Giỏ
+                                      </button>
+                                    </div>
+                                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                                      B1: Đã nghiệm thu Video
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-1 text-[10px]">
+                                    <span
+                                      className={
+                                        item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+                                          ? 'text-emerald-700 font-semibold'
+                                          : 'text-amber-700 font-semibold'
+                                      }
                                     >
-                                      Mở video ↗
-                                    </a>
+                                      {item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+                                        ? `B2: Đã nghiệm thu đủ (${(item.addonServices || []).filter((a) => a.acceptanceStatus === 'VERIFIED').length} DV)`
+                                        : `B2: Chờ nghiệm thu phần khác (${(item.addonServices || []).filter((a) => a.acceptanceStatus === 'PENDING_ACCEPTANCE').length} DV)`}
+                                    </span>
                                     <button
                                       type="button"
-                                      onClick={() => openDeepVideoInspector(item)}
-                                      className="text-[10px] font-semibold text-accent hover:underline"
-                                      title="Kiểm tra 5 tiêu chí Brief, Hook 3s & Giỏ hàng TikTok Shop"
+                                      onClick={() => openAcceptanceModalForRow(item)}
+                                      className="font-semibold text-accent hover:underline"
                                     >
-                                      · Đối soát Brief &amp; Giỏ
+                                      Nghiệm thu B2
                                     </button>
                                   </div>
-                                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
-                                    Đã nghiệm thu
-                                  </span>
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-between gap-1 text-[10px] text-ink-3">
-                                  <span>Chưa có link air</span>
+                                  <span>B1: Chưa có Video · B2: Đang khóa</span>
                                   <button
                                     type="button"
                                     onClick={() => openAcceptanceModalForRow(item)}
                                     className="font-semibold text-accent hover:underline"
                                   >
-                                    + Điền nghiệm thu
+                                    + Nghiệm thu B1→B2
                                   </button>
                                 </div>
                               )}
@@ -1830,7 +2216,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             </span>
                           </td>
 
-                          {/* Cột 22 & 30: Trạng thái thanh toán & Nội dung chuyển khoản */}
+                          {/* Cột 22 & 30: Kế toán Thanh toán theo Deal & Nội dung chuyển khoản */}
                           <td className="px-2.5 py-2 border-r border-line align-middle space-y-1">
                             <select
                               value={item.trangThaiPhieuThanhToan}
@@ -1856,12 +2242,44 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 </option>
                               ))}
                             </select>
-                            <div
-                              className="text-[10px] font-mono text-ink-3 truncate max-w-[165px]"
-                              title={item.noiDungChuyenKhoan}
-                            >
-                              {item.noiDungChuyenKhoan}
+                            <div className="text-[10px] font-mono text-ink-2 truncate">
+                              TT theo Deal: <strong>{formatVnd(item.soTienCanThanhToan)}</strong>
                             </div>
+                            {item.larkApprovalInstanceCode ? (
+                              <div className="flex items-center justify-between gap-1 text-[10px]">
+                                <span
+                                  className="px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 font-mono font-semibold truncate"
+                                  title={item.larkApprovalRouteSummary || item.larkApprovalInstanceCode}
+                                >
+                                  {item.larkSlipCode || item.larkApprovalInstanceCode}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => openLarkPaymentModalForItem(item)}
+                                  className="font-semibold text-accent hover:underline shrink-0"
+                                >
+                                  Luồng Lark
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-1 text-[10px]">
+                                <span
+                                  className="font-mono text-ink-3 truncate max-w-[115px]"
+                                  title={item.noiDungChuyenKhoan}
+                                >
+                                  {item.noiDungChuyenKhoan}
+                                </span>
+                                {item.bookingOrderCreated && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openLarkPaymentModalForItem(item)}
+                                    className="font-semibold text-accent hover:underline shrink-0"
+                                  >
+                                    + Lark Approval
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </td>
 
                           {/* Cột 23-26: Ngân hàng, STK, CCCD */}
@@ -1879,7 +2297,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         </>
                       )}
 
-                      {/* Thao tác trên dòng: Tạo BO & Nghiệm thu Video */}
+                      {/* Thao tác trên dòng: Tạo Deal & Phụ lục / Nghiệm thu 2 bước / Luồng Lark Approval */}
                       <td className="px-2.5 py-2 align-middle text-center">
                         <div className="flex flex-col gap-1">
                           {!item.bookingOrderCreated ? (
@@ -1887,20 +2305,45 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               variant="primary"
                               size="sm"
                               icon={FileCheck}
-                              onClick={() => handleCreateBookingOrders([item.id])}
+                              onClick={() => openDealBuilderModal(item)}
                             >
-                              Tạo Booking Order
+                              Tạo Deal &amp; Phụ lục
                             </Button>
                           ) : (
                             <>
                               <Button
-                                variant={isAccepted ? 'secondary' : 'primary'}
+                                variant={
+                                  item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+                                    ? 'secondary'
+                                    : 'primary'
+                                }
                                 size="sm"
                                 icon={Video}
                                 onClick={() => openAcceptanceModalForRow(item)}
                               >
-                                {isAccepted ? 'Cập nhật nghiệm thu' : 'Nghiệm thu Video'}
+                                {item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
+                                  ? 'Đã nghiệm thu Deal'
+                                  : isAccepted
+                                    ? 'Nghiệm thu phần khác'
+                                    : 'Nghiệm thu Video (B1)'}
                               </Button>
+                              {(item.sequentialAcceptanceStage ===
+                                '3_DA_NGHIEM_THU_TOAN_DEAL' ||
+                                item.soTienTamUngTruoc > 0 ||
+                                Boolean(item.larkApprovalInstanceCode)) && (
+                                <Button
+                                  variant={
+                                    item.larkApprovalInstanceCode ? 'secondary' : 'primary'
+                                  }
+                                  size="sm"
+                                  icon={Send}
+                                  onClick={() => openLarkPaymentModalForItem(item)}
+                                >
+                                  {item.larkApprovalInstanceCode
+                                    ? `Lark: ${item.larkSlipCode || 'Đã tạo'}`
+                                    : 'Tạo luồng Lark Approval'}
+                                </Button>
+                              )}
                               {item.linkAir && (
                                 <button
                                   type="button"
@@ -1924,11 +2367,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         </div>
       </div>
 
-      {/* Hộp thoại Nghiệm thu Video — Tự động tìm kênh KOC, Quét số liệu thực & Chỉnh sửa trực tiếp */}
+      {/* Hộp thoại Nghiệm thu theo Deal: Bước 1 (Video) -> Bước 2 (Dịch vụ gia tăng) -> Thanh toán Deal */}
       <Modal
         open={isAcceptanceModalOpen}
         onClose={() => setIsAcceptanceModalOpen(false)}
-        title="Nghiệm thu Video — Tự động khớp kênh KOC, Đối soát SLA & Hiệu quả 30d"
+        title="Nghiệm thu theo Deal: Bước 1 (Asset Video) → Bước 2 (Dịch vụ gia tăng) → Thanh toán Deal"
         size="2xl"
         footer={
           <>
@@ -1960,12 +2403,20 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 : 'Quét số liệu thực từ link TikTok'}
             </Button>
             <Button
-              variant="primary"
+              variant="secondary"
               icon={Check}
               disabled={parsedAcceptanceRows.length === 0}
               onClick={handleConfirmVideoAcceptanceMapping}
             >
-              Xác nhận Nghiệm thu &amp; Đồng bộ ({parsedAcceptanceRows.length})
+              Lưu Nghiệm thu ({parsedAcceptanceRows.length})
+            </Button>
+            <Button
+              variant="primary"
+              icon={Send}
+              disabled={parsedAcceptanceRows.length === 0}
+              onClick={handleSaveAcceptanceAndOpenLarkApproval}
+            >
+              Lưu Nghiệm thu &amp; Tạo luồng Lark Approval
             </Button>
           </>
         }
@@ -2378,7 +2829,476 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               </table>
             </div>
           </div>
+
+          {/* Tầng 4 (Bước 2): Nghiệm thu Dịch vụ gia tăng & Quyền lợi theo Deal + Đối soát Kế toán thanh toán Deal */}
+          <div className="border border-line rounded-lg overflow-hidden bg-surface">
+            <div className="px-3 py-2 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-ink inline-flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-accent" />
+                Bước 2: Nghiệm thu Dịch vụ gia tăng &amp; Quyền lợi theo Deal (Mở khóa sau khi Bước 1 có Video)
+              </span>
+              <span className="text-[11px] font-mono text-ink-2">
+                Kế toán đối soát &amp; thanh toán theo từng Deal (Phụ lục Deal)
+              </span>
+            </div>
+
+            <div className="p-3 space-y-3 max-h-72 overflow-y-auto">
+              {parsedAcceptanceRows.map((row, idx) => {
+                const m = row.matchedItem;
+                if (!m) return null;
+                const hasVideoStep1 = Boolean(
+                  row.linkAir?.trim() || m.linkAir?.trim() || row.actualAirDate?.trim()
+                );
+                const currentAddons =
+                  stage2AddonEdits[m.id] ||
+                  (m.addonServices && m.addonServices.length > 0
+                    ? m.addonServices
+                    : buildDefaultAddonServicesForDeal({
+                        maBooking: m.maBooking || 'DEAL',
+                        totalNet: m.chiPhiBookingNetCuoi,
+                        sparkAdsCode: row.sparkAdsCode || m.sparkAdsCode,
+                        actualAirDate: row.actualAirDate || m.actualAirDate,
+                        includeDefaultAddons: true,
+                      }));
+
+                const addonsCost = currentAddons.reduce(
+                  (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+                  0
+                );
+                const droppedCost = currentAddons
+                  .filter((a) => a.acceptanceStatus === 'DROPPED')
+                  .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+                const videoCost = Math.max(0, m.chiPhiBookingNetCuoi - addonsCost);
+                const effectiveDealPayable = Math.max(
+                  0,
+                  m.chiPhiBookingNetCuoi - droppedCost - (m.soTienTamUngTruoc || 0)
+                );
+
+                return (
+                  <div
+                    key={`${m.id}-${idx}`}
+                    className="p-2.5 rounded-lg border border-line bg-sunken/30 space-y-2 text-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-line">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-bold text-ink">
+                          Deal: {m.maBooking || 'Sẽ cấp mã BO'} · @{m.idKenh}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-[10px] text-ink-2">
+                          HĐNT: {m.masterContractCode || generateMasterContractCode(m.idKenh, m.kocId)}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-[10px] text-ink-2">
+                          Phụ lục: {m.contractAppendixCode || `PL-${m.maBooking || 'DEAL'}-01`}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+                        <span>Video: {formatVnd(videoCost)}</span>
+                        <span>+ DV kèm: {formatVnd(addonsCost)}</span>
+                        {droppedCost > 0 && (
+                          <span className="text-rose-700 font-semibold">
+                            - Khấu trừ hủy: {formatVnd(droppedCost)}
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
+                          Kế toán thanh toán Deal: {formatVnd(effectiveDealPayable)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {!hasVideoStep1 ? (
+                      <div className="flex items-center gap-2 p-2 rounded bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium">
+                        <Lock className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          Đang khóa Bước 2: Cần điền Link Video nghiệm thu ở Bước 1 trước khi nghiệm thu các phần dịch vụ gia tăng của Deal.
+                        </span>
+                      </div>
+                    ) : currentAddons.length === 0 ? (
+                      <div className="text-ink-3 text-xs">
+                        Deal chỉ gồm 1 Video thuần (không có dịch vụ gia tăng đi kèm). Đủ điều kiện chuyển Kế toán thanh toán theo Deal.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {currentAddons.map((addon, addonIdx) => {
+                          const effectiveStatus =
+                            addon.acceptanceStatus === 'LOCKED_BY_VIDEO'
+                              ? 'PENDING_ACCEPTANCE'
+                              : addon.acceptanceStatus || 'PENDING_ACCEPTANCE';
+                          return (
+                            <div
+                              key={addon.id || addonIdx}
+                              className="p-2 rounded border border-line bg-surface space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-ink inline-flex items-center gap-1">
+                                  <Unlock className="w-3 h-3 text-emerald-600 shrink-0" />
+                                  {addon.termLabel}
+                                </span>
+                                <span className="font-mono text-[10px] text-ink-3">
+                                  {addon.allocatedCostVnd
+                                    ? formatVnd(addon.allocatedCostVnd)
+                                    : 'Gộp trong gói Deal'}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-12 gap-1.5 items-center">
+                                <input
+                                  type="text"
+                                  value={
+                                    addon.termType === 'ADS_CODE'
+                                      ? addon.evidenceCodeOrUrl || row.sparkAdsCode || ''
+                                      : addon.evidenceCodeOrUrl || ''
+                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const nextList = currentAddons.map((a, i) =>
+                                      i === addonIdx
+                                        ? {
+                                            ...a,
+                                            evidenceCodeOrUrl: val,
+                                            acceptanceStatus: val.trim()
+                                              ? ('VERIFIED' as const)
+                                              : a.acceptanceStatus,
+                                          }
+                                        : a
+                                    );
+                                    setStage2AddonEdits((prev) => ({
+                                      ...prev,
+                                      [m.id]: nextList,
+                                    }));
+                                  }}
+                                  placeholder="Mã Spark Ads / Link bài Reup / Link bàn giao file..."
+                                  className="col-span-7 h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                                />
+                                <select
+                                  value={effectiveStatus}
+                                  onChange={(e) => {
+                                    const nextSt = e.target
+                                      .value as DealRightsTermItem['acceptanceStatus'];
+                                    const nextList = currentAddons.map((a, i) =>
+                                      i === addonIdx
+                                        ? {
+                                            ...a,
+                                            acceptanceStatus: nextSt,
+                                          }
+                                        : a
+                                    );
+                                    setStage2AddonEdits((prev) => ({
+                                      ...prev,
+                                      [m.id]: nextList,
+                                    }));
+                                  }}
+                                  className={`col-span-5 h-7 px-1.5 rounded border text-xs font-semibold ${
+                                    effectiveStatus === 'VERIFIED'
+                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                      : effectiveStatus === 'DROPPED'
+                                        ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                                  }`}
+                                >
+                                  <option value="VERIFIED">Đã nghiệm thu</option>
+                                  <option value="PENDING_ACCEPTANCE">Chờ trả quyền lợi</option>
+                                  <option value="DROPPED">Không thực hiện (Khấu trừ)</option>
+                                </select>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
+      </Modal>
+
+      {/* Hộp thoại Tạo Deal (Asset Video + Dịch vụ gia tăng) & Lập Phụ lục Hợp đồng */}
+      <Modal
+        open={Boolean(dealBuilderItem)}
+        onClose={() => setDealBuilderTargetId(null)}
+        title="Tạo Deal & Lập Phụ lục Hợp đồng (1 Video Asset + Dịch vụ gia tăng)"
+        size="xl"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDealBuilderTargetId(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant="primary"
+              icon={FileCheck}
+              onClick={handleSaveDealBuilderModal}
+            >
+              Lưu Deal &amp; Phát hành Phụ lục
+            </Button>
+          </>
+        }
+      >
+        {dealBuilderItem && (
+          <div className="space-y-4 text-xs">
+            {/* Khối 1: Định danh Deal & Phụ lục Hợp đồng (1 HĐNT/KOC + 1 Phụ lục/Deal) */}
+            <div className="p-3 rounded-lg border border-line bg-sunken/40 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-ink inline-flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-accent" />
+                  1. Định danh Deal &amp; Phụ lục Hợp đồng (KOC: @{dealBuilderItem.idKenh} · {dealBuilderItem.storeName})
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800">
+                  Brand đã duyệt
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <Field label="Mã Deal (Booking Order)">
+                  <Input
+                    value={dealDraftCode}
+                    onChange={(e) => {
+                      const nextCode = e.target.value;
+                      setDealDraftCode(nextCode);
+                      setDealDraftAppendixCode(generateDealAppendixCode(nextCode, 1));
+                    }}
+                  />
+                </Field>
+                <Field label="Mã Hợp đồng nguyên tắc (1 HĐNT / KOC)">
+                  <Input
+                    value={dealDraftMasterContract}
+                    onChange={(e) => setDealDraftMasterContract(e.target.value)}
+                  />
+                </Field>
+                <Field label="Mã Phụ lục theo Deal (1 Phụ lục / Deal)">
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={dealDraftAppendixCode}
+                      onChange={(e) => setDealDraftAppendixCode(e.target.value)}
+                    />
+                    <select
+                      value={dealDraftAppendixStatus}
+                      onChange={(e) =>
+                        setDealDraftAppendixStatus(
+                          e.target.value as DealContractAppendixStatus
+                        )
+                      }
+                      className="h-9 px-2 rounded-lg border border-line bg-surface text-xs font-semibold text-ink shrink-0"
+                    >
+                      <option value="CHỜ_KÝ">Chờ ký PL</option>
+                      <option value="ĐÃ_KÝ">Đã ký PL</option>
+                      <option value="CHƯA_LẬP">Chưa lập</option>
+                    </select>
+                  </div>
+                </Field>
+              </div>
+            </div>
+
+            {/* Khối 2: Cấu hình Asset (Video gốc bên trong Deal) */}
+            <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
+              <div className="font-semibold text-ink inline-flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5 text-accent" />
+                2. Asset bên trong Deal: Video gốc ({dealBuilderItem.sanPham || dealBuilderItem.brandName})
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <Field label="Ngày air dự kiến (Asset Video)">
+                  <Input
+                    type="date"
+                    value={dealDraftPlannedAirDate}
+                    onChange={(e) => setDealDraftPlannedAirDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Đơn giá Net của Asset Video (VNĐ)">
+                  <Input
+                    type="number"
+                    value={dealDraftVideoNetCost}
+                    onChange={(e) =>
+                      setDealDraftVideoNetCost(Math.max(0, Number(e.target.value) || 0))
+                    }
+                  />
+                </Field>
+                <Field label="Số tiền tạm ứng trước theo Deal (VNĐ)">
+                  <Input
+                    type="number"
+                    value={dealDraftAdvanceAmount}
+                    onChange={(e) =>
+                      setDealDraftAdvanceAmount(Math.max(0, Number(e.target.value) || 0))
+                    }
+                  />
+                </Field>
+              </div>
+            </div>
+
+            {/* Khối 3: Các Dịch vụ gia tăng đi kèm trong Deal (Add-on Services) */}
+            <div className="p-3 rounded-lg border border-line bg-surface space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-ink inline-flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-accent" />
+                  3. Dịch vụ gia tăng &amp; Quyền lợi đi kèm trong Deal (Nghiệm thu ở Bước 2 sau Video)
+                </span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {[
+                    {
+                      type: 'ADS_CODE' as const,
+                      label: '+ Mã Spark Ads (30d)',
+                      fullLabel: 'Cấp mã quảng cáo Spark Ads (30 ngày)',
+                      anchor: 'ACCEPTANCE_DATE' as const,
+                      days: 30,
+                    },
+                    {
+                      type: 'IMAGE_USAGE' as const,
+                      label: '+ Sử dụng hình ảnh (30d)',
+                      fullLabel: 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)',
+                      anchor: 'ACCEPTANCE_DATE' as const,
+                      days: 30,
+                    },
+                    {
+                      type: 'EXCLUSIVITY' as const,
+                      label: '+ Độc quyền ngành hàng',
+                      fullLabel: 'Độc quyền ngành hàng (30 ngày)',
+                      anchor: 'AIR_DATE' as const,
+                      days: 30,
+                    },
+                    {
+                      type: 'CROSS_POST_REUP' as const,
+                      label: '+ Đăng chéo / Reup Wave 1',
+                      fullLabel: 'Đăng chéo kênh phụ / Reup Wave 1',
+                      anchor: 'ACCEPTANCE_DATE' as const,
+                      days: 30,
+                    },
+                    {
+                      type: 'LINK_BIO_CART' as const,
+                      label: '+ Gắn giỏ & Link Bio',
+                      fullLabel: 'Gắn giỏ hàng & Link Bio (30 ngày)',
+                      anchor: 'AIR_DATE' as const,
+                      days: 30,
+                    },
+                  ].map((preset) => {
+                    const active = dealDraftAddons.some(
+                      (a) => a.termType === preset.type
+                    );
+                    return (
+                      <button
+                        key={preset.type}
+                        type="button"
+                        onClick={() =>
+                          handleTogglePresetAddonInBuilder(
+                            preset.type,
+                            preset.fullLabel,
+                            preset.anchor,
+                            preset.days
+                          )
+                        }
+                        className={`px-2 py-1 rounded border text-[11px] font-semibold transition-colors ${
+                          active
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                            : 'bg-sunken border-line text-ink-2 hover:bg-surface'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {dealDraftAddons.length === 0 ? (
+                <div className="p-2.5 rounded border border-dashed border-line text-ink-3 text-center">
+                  Deal hiện chỉ có 1 Asset Video thuần. Bấm các nút phía trên nếu Deal có kèm Dịch vụ gia tăng (Mã Ads, Hình ảnh, Độc quyền, Đăng chéo...).
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {dealDraftAddons.map((addon, idx) => (
+                    <div
+                      key={addon.id || idx}
+                      className="grid grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
+                    >
+                      <div className="col-span-5">
+                        <input
+                          type="text"
+                          value={addon.termLabel}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDealDraftAddons((prev) =>
+                              prev.map((a, i) =>
+                                i === idx ? { ...a, termLabel: val } : a
+                              )
+                            );
+                          }}
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink"
+                        />
+                      </div>
+                      <div className="col-span-3 flex items-center gap-1">
+                        <span className="text-[10px] text-ink-3 shrink-0">Thời hạn:</span>
+                        <input
+                          type="number"
+                          value={addon.durationDays}
+                          onChange={(e) => {
+                            const days = Math.max(1, Number(e.target.value) || 30);
+                            setDealDraftAddons((prev) =>
+                              prev.map((a, i) =>
+                                i === idx ? { ...a, durationDays: days } : a
+                              )
+                            );
+                          }}
+                          className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-mono text-xs text-right text-ink"
+                        />
+                        <span className="text-[10px] text-ink-3">ngày</span>
+                      </div>
+                      <div className="col-span-3 flex items-center gap-1">
+                        <span className="text-[10px] text-ink-3 shrink-0">Phí Net:</span>
+                        <input
+                          type="number"
+                          value={addon.allocatedCostVnd || 0}
+                          onChange={(e) => {
+                            const cost = Math.max(0, Number(e.target.value) || 0);
+                            setDealDraftAddons((prev) =>
+                              prev.map((a, i) =>
+                                i === idx ? { ...a, allocatedCostVnd: cost } : a
+                              )
+                            );
+                          }}
+                          className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-right font-semibold text-ink"
+                        />
+                      </div>
+                      <div className="col-span-1 text-right">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDealDraftAddons((prev) =>
+                              prev.filter((_, i) => i !== idx)
+                            )
+                          }
+                          className="text-rose-600 hover:text-rose-800 text-xs font-semibold"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tóm tắt Tổng giá trị Deal cho Phụ lục & Kế toán */}
+              <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+                <div className="text-ink-2">
+                  Cấu trúc Deal: <strong>1 Asset Video</strong> ({formatVnd(dealDraftVideoNetCost)}) +{' '}
+                  <strong>{dealDraftAddons.length} Dịch vụ gia tăng</strong> (
+                  {formatVnd(
+                    dealDraftAddons.reduce(
+                      (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+                      0
+                    )
+                  )}
+                  )
+                </div>
+                <div className="px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 font-bold text-emerald-800">
+                  Tổng giá trị Deal (Ghi trên Phụ lục):{' '}
+                  {formatVnd(
+                    dealDraftVideoNetCost +
+                      dealDraftAddons.reduce(
+                        (s, a) => s + (Number(a.allocatedCostVnd) || 0),
+                        0
+                      )
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Hộp thoại Đối soát sâu 5 tiêu chí Brief, Kịch bản 4 bước, Hook 3s & Giỏ hàng TikTok Shop */}
@@ -2393,6 +3313,21 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         }
         initialUrl={inspectorInitialUrl}
         onAcceptVideoForDeal={handleAcceptVideoFromDeepInspector}
+      />
+
+      {/* Hộp thoại Đối soát Thanh toán theo Deal & Tạo luồng phê duyệt Lark Approval */}
+      <LarkPaymentRequestModal
+        open={isLarkPaymentModalOpen}
+        onClose={() => setIsLarkPaymentModalOpen(false)}
+        initialDeal={
+          larkPaymentInitialItem
+            ? buildBookingDealFromApprovedItem(larkPaymentInitialItem)
+            : null
+        }
+        allDeals={dealsForLarkModal}
+        kocs={kocs}
+        currentUserName={currentUserName}
+        onSuccessUpdateDeals={handleLarkPaymentSuccess}
       />
     </div>
   );

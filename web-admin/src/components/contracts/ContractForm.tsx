@@ -67,8 +67,7 @@ export function ContractForm({
   );
   const inferAcceptanceTemplate = (parentTplId?: string) => {
     if (!parentTplId) return '';
-    const prefix = parentTplId.split('-')[0];
-    const candidate = `${prefix}-BBNT`;
+    const candidate = parentTplId.endsWith('-HDNT') ? parentTplId.replace(/-HDNT$/, '-VID-BBNT') : parentTplId.endsWith('-HD') ? parentTplId.replace(/-HD$/, '-BBNT') : `${parentTplId.split('-')[0]}-BBNT`;
     return data.templates.some(t => t.id === candidate) ? candidate : '';
   };
   const [templateId, setTemplateId] = useState(

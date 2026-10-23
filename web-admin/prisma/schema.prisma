@@ -1056,3 +1056,40 @@ model AppSharedRecord {
   revision Int @default(0)
   data Json
 }
+
+// =========================================================================
+// BẢNG TẠM: KOC MỚI KHÁM PHÁ (CHƯA CÓ TRÊN UPAFFILIATE - CHỜ ĐẨY SANG UPAFFILIATE)
+// =========================================================================
+model PendingKocDiscovery {
+  id                   String            @id @default(uuid())
+  channelId            String            @unique // Handle chuẩn hóa (không có @, chữ thường)
+  channelUrl           String            // Link kênh TikTok
+  stageName            String            // Tên kênh / Nghệ danh
+  realName             String?           // Họ tên thật (nếu có)
+  platform             String            @default("TIKTOK")
+  phone                String?
+  zalo                 String?
+  email                String?
+  shippingAddress      String?
+  followersCount       Int               @default(0)
+  avgViews             Int               @default(0)
+  engagementRate       Float?
+  discoverySource      String            @default("SEARCH_BAR") // COMPETITOR_DISCOVERY, HASHTAG_DISCOVERY, SEARCH_BAR
+  sourceContext        String            // Tên đối thủ hoặc Hashtag phát hiện
+  sampleVideoUrl       String?
+  sampleVideoViews     Int?
+  sampleVideoCaption   String?
+  discoveredByStaffId  String?
+  discoveredByStaffName String?
+  discoveredAt         DateTime          @default(now())
+  exportStatus         String            @default("PENDING_EXPORT") // PENDING_EXPORT, EXPORTED, DUPLICATE_REJECTED
+  upaffiliateMasterId  String?
+  exportedAt           DateTime?
+  notes                String?
+
+  @@index([channelId])
+  @@index([discoverySource])
+  @@index([exportStatus])
+  @@index([discoveredAt])
+}
+

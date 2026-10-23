@@ -91,6 +91,10 @@ export interface DealPaymentLineBreakdown {
   bookingLeader?: string;
   approverDirector: string;
   requestType: PaymentRequestType;
+  masterContractCode?: string;
+  contractAppendixCode?: string;
+  videoAssetNetAmount?: number;
+  addonServicesNetAmount?: number;
   agreedNetAmount: number;
   droppedDeductionAmount: number;
   effectiveSettledNetAmount: number;
@@ -355,11 +359,29 @@ export function evaluateDealForPaymentRequest(
   const issues: PaymentValidationIssue[] = [];
   const payee = resolvePayeeProfileForDeal(deal, koc, override);
 
-  // 1. Tính toán số tiền Net, khấu trừ hạng mục DROPPED, tạm ứng
+  // 1. Tính toán số tiền Net theo Deal (Asset Video + Dịch vụ gia tăng), khấu trừ hạng mục DROPPED, tạm ứng
   const agreedNetAmount = Math.max(0, Math.round(deal.totalValue || 0));
-  const droppedDeductionAmount = (deal.deliverables || [])
+  const droppedDeliverablesCost = (deal.deliverables || [])
     .filter(item => item.lockStatus === 'DROPPED')
     .reduce((sum, item) => sum + Math.round(item.allocatedCostVnd || 0), 0);
+  const droppedAddonsCost = (deal.rightsTerms || [])
+    .filter(item => item.acceptanceStatus === 'DROPPED')
+    .reduce((sum, item) => sum + Math.round(item.allocatedCostVnd || 0), 0);
+  const droppedDeductionAmount = Math.max(
+    droppedDeliverablesCost + droppedAddonsCost,
+    Math.round(deal.droppedCostVnd || 0)
+  );
+  const addonServicesNetAmount =
+    deal.addonsCostVnd !== undefined
+      ? Math.round(deal.addonsCostVnd)
+      : (deal.rightsTerms || []).reduce(
+          (sum, item) => sum + Math.round(item.allocatedCostVnd || 0),
+          0
+        );
+  const videoAssetNetAmount =
+    deal.videoAssetCostVnd !== undefined
+      ? Math.round(deal.videoAssetCostVnd)
+      : Math.max(0, agreedNetAmount - addonServicesNetAmount);
 
   const effectiveSettledNetAmount = Math.max(0, agreedNetAmount - droppedDeductionAmount);
 
@@ -541,8 +563,29 @@ export function evaluateDealForPaymentRequest(
         code: 'MISSING_SPARK_ADS_CODE',
         group: 'ACCEPTANCE_TECH',
         fieldKey: 'sparkAdsCode',
-        fieldLabel: 'Mã quảng cáo Spark Ads',
-        message: `Đơn ${deal.dealCode} đang ở trạng thái "Chưa cấp mã Ads". Vui lòng điền mã Spark Ads hoặc xác nhận Deal không dùng mã Ads.`,
+        fieldLabel: 'Mã quảng cáo Spark Ads (Nghiệm thu Bước 2)',
+        message: `Deal ${deal.dealCode} đang ở trạng thái "Chưa cấp mã Ads". Vui lòng hoàn tất nghiệm thu Bước 2 (cấp mã Spark Ads) hoặc xác nhận Deal không dùng mã Ads.`,
+        canQuickFix: true,
+      });
+    }
+
+    const unverifiedAddons = (deal.rightsTerms || []).filter(
+      item =>
+        item.acceptanceStatus === 'LOCKED_BY_VIDEO' ||
+        item.acceptanceStatus === 'PENDING_ACCEPTANCE'
+    );
+    if (
+      unverifiedAddons.length > 0 &&
+      adsCodeStatus !== 'ĐÃ_NGHIỆM_THU' &&
+      adsCodeStatus !== 'KHÔNG_DÙNG' &&
+      !sparkAdsCode
+    ) {
+      issues.push({
+        code: 'STAGE2_ADDONS_NOT_VERIFIED',
+        group: 'ACCEPTANCE_TECH',
+        fieldKey: 'sparkAdsCode',
+        fieldLabel: 'Nghiệm thu Bước 2 (Dịch vụ gia tăng theo Deal)',
+        message: `Deal ${deal.dealCode} còn ${unverifiedAddons.length} dịch vụ gia tăng (${unverifiedAddons.map(a => a.termLabel).join(', ')}) chưa nghiệm thu ở Bước 2.`,
         canQuickFix: true,
       });
     }
@@ -596,6 +639,13 @@ export function evaluateDealForPaymentRequest(
     bookingLeader,
     approverDirector: 'Đặng Thị Yến Nhi',
     requestType,
+    masterContractCode:
+      deal.masterContractCode ||
+      `HDNT-2026-${(deal.kocChannelId || deal.kocId || 'KOC').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8)}`,
+    contractAppendixCode:
+      deal.contractAppendixCode || `PL-${deal.dealCode}-01`,
+    videoAssetNetAmount,
+    addonServicesNetAmount,
     agreedNetAmount,
     droppedDeductionAmount,
     effectiveSettledNetAmount,

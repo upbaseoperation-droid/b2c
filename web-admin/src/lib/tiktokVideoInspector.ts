@@ -9,6 +9,8 @@ import {
   getSharedCrawlerStore,
   resolveExpectedCartInputUrls,
   scrapeTikTokVideoComments,
+  type CartDiagnosticCode,
+  type CartDiagnosisInfo,
   type CartLinkComparisonResult,
   type TikTokCartProductItem,
 } from './tiktokOpenSourceEngines';
@@ -76,6 +78,9 @@ export interface TikTokCartAnchorVerification {
   expectedCartUrl?: string;
   cartLinkComparison?: CartLinkComparisonResult;
   isOfficialBrandStoreMatched: boolean; // Khớp đúng gian hàng chính hãng UpBase vận hành
+  diagnosticCode?: CartDiagnosticCode;
+  diagnosticReason?: string;
+  hasCapCutConflict?: boolean;
 }
 
 export interface TikTokSparkAdsVerification {
@@ -767,6 +772,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
   cartProductId?: string;
   cartSellerId?: string;
   cartProducts?: TikTokCartProductItem[];
+  cartDiagnosis?: CartDiagnosisInfo;
   isLiveSuccess: boolean;
 }> {
   let resolvedUrl = rawUrl.trim();
@@ -955,6 +961,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             cartProductId,
             cartSellerId,
             cartProducts,
+            diagnosis,
           } = extractTikTokShopAnchorInfo(itemStruct);
 
           const authorHandleClean = String(author.uniqueId || urlHandle || oembedAuthorHandle || '').toLowerCase().replace(/^@+/, '');
@@ -975,10 +982,50 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
                   cartAnchorUrl = matchedFeedItem.cartAnchorUrl || cartAnchorUrl;
                   cartProductId = matchedFeedItem.cartProductId || cartProductId;
                   cartSellerId = matchedFeedItem.cartSellerId || cartSellerId;
+                  if (diagnosis) {
+                    diagnosis.code = 'ACTIVE_CART';
+                    diagnosis.reason = `Đã bóc tách thành công ${cartProducts.length} sản phẩm từ danh sách video của KOC.`;
+                  }
                 }
               }
             } catch {
               // Bỏ qua lỗi fallback feed
+            }
+          }
+
+          // Fallback qua Docker Mobile/Hybrid API nếu cấu hình TIKTOK_CRAWLER_API_URL
+          if (hasCartAnchor && cartProducts.length === 0) {
+            const crawlerApiUrl = process.env.TIKTOK_CRAWLER_API_URL?.trim();
+            if (crawlerApiUrl) {
+              try {
+                const mobileRes = await fetch(
+                  `${crawlerApiUrl.replace(/\/+$/, '')}/api/hybrid/video_data?url=${encodeURIComponent(resolvedUrl)}`,
+                  {
+                    signal: AbortSignal.timeout(3000),
+                    cache: 'no-store',
+                  }
+                );
+                if (mobileRes.ok) {
+                  const mobileJson = await mobileRes.json();
+                  const mobileItem = (mobileJson?.data?.aweme_detail || mobileJson?.data) as Record<string, unknown> | undefined;
+                  if (mobileItem) {
+                    const mobileExtracted = extractTikTokShopAnchorInfo(mobileItem);
+                    if (mobileExtracted.cartProducts.length > 0) {
+                      cartProducts = mobileExtracted.cartProducts;
+                      cartAnchorTitle = mobileExtracted.cartAnchorTitle || cartAnchorTitle;
+                      cartAnchorUrl = mobileExtracted.cartAnchorUrl || cartAnchorUrl;
+                      cartProductId = mobileExtracted.cartProductId || cartProductId;
+                      cartSellerId = mobileExtracted.cartSellerId || cartSellerId;
+                      if (diagnosis) {
+                        diagnosis.code = 'ACTIVE_CART';
+                        diagnosis.reason = `Đã bóc tách thành công ${cartProducts.length} sản phẩm từ TikTok Mobile Crawler API.`;
+                      }
+                    }
+                  }
+                }
+              } catch {
+                // Bỏ qua nếu docker crawler api chưa bật
+              }
             }
           }
 
@@ -1041,6 +1088,7 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             cartProductId,
             cartSellerId,
             cartProducts,
+            cartDiagnosis: diagnosis,
             isLiveSuccess: true,
           };
         }
@@ -1437,6 +1485,9 @@ export async function inspectTikTokVideoUrl(
     expectedCartUrl: expectedCartInputRaw || undefined,
     cartLinkComparison,
     isOfficialBrandStoreMatched,
+    diagnosticCode: liveData.cartDiagnosis?.code || (hasCartAnchor ? 'OUT_OF_STOCK_OR_HIDDEN' : 'NO_CART'),
+    diagnosticReason: liveData.cartDiagnosis?.reason,
+    hasCapCutConflict: liveData.cartDiagnosis?.hasCapCutAnchor,
   };
 
   // 3. Tầng kiểm tra hiệu lực Mã quảng cáo Spark Ads

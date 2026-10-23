@@ -100,14 +100,26 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     plan.leaderApprovalStatus === 'ĐÃ_SƠ_DUYỆT' ||
     ['LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || '');
 
-  const signOff: MultiPartySignOff = deriveSignOff(plan);
+  // Plan lập từ Plan order tổng (bảng 4.1): Growth đã giao số và gói Ads trong chính bảng đó
+  const b2cOrderSourced = Boolean(plan.reference41);
+  const baseSignOff = deriveSignOff(plan);
+  const signOff: MultiPartySignOff = b2cOrderSourced
+    ? {
+        ...baseSignOff,
+        growth: { ...baseSignOff.growth, confirmed: true, note: 'Số giao nằm trong Plan order tổng (bảng 4.1).' },
+        media: { ...baseSignOff.media, confirmed: true, note: 'Gói Ads nằm trong Plan order tổng (bảng 4.1).' },
+      }
+    : baseSignOff;
   const allPrePartiesConfirmed =
     signOff.growth.confirmed &&
     signOff.booking.confirmed &&
     signOff.media.confirmed &&
     (!hasLeader || leaderConfirmed);
 
-  const canLeaderAct = ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser?.role || '') || currentRole === 'LEAD';
+  const normName = (v?: string) => (v || '').trim().toLowerCase();
+  const isGlobalManager = ['ADMIN', 'MANAGER'].includes(currentUser?.role || '') || currentRole === 'LEAD';
+  const isPlanLeader = Boolean(plan.bookingLeader) && normName(currentUser?.name) === normName(plan.bookingLeader);
+  const canLeaderAct = isGlobalManager || isPlanLeader;
 
   const handleConfirmAction = () => {
     if (!pendingActionType) return;
@@ -335,6 +347,8 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         ? `Growth (${plan.growthPic || 'Trần Thị Ánh'})`
         : currentRole === 'MEDIA'
         ? `Media (${plan.mediaPic || 'Phan Thành Đạt'})`
+        : isPlanLeader && !isGlobalManager
+        ? `Trưởng nhóm B2C (${currentUser?.name})`
         : `Giám đốc Marketing B2C (${currentUser?.name || 'Đặng Thị Yến Nhi'})`;
     const log = `${actor} yêu cầu hiệu chỉnh kế hoạch: "${revisionNote}"`;
 
@@ -379,7 +393,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       summary: `${plan.totalTargetContents} video · KL1–KL7 & FOC`,
       confirmed: signOff.booking.confirmed,
       action:
-        currentRole === 'BOOKING' && !signOff.booking.confirmed && !isLocked ? (
+        currentRole === 'BOOKING' && !signOff.booking.confirmed && !isLocked && !b2cOrderSourced ? (
           <button
             type="button"
             onClick={() => {
@@ -401,7 +415,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             summary: 'Sơ duyệt nội bộ gian hàng',
             confirmed: leaderConfirmed,
             action:
-              canLeaderAct && !leaderConfirmed && !isLocked ? (
+              canLeaderAct && !leaderConfirmed && !isLocked && plan.status === 'PENDING_PRE_APPROVAL' ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -464,7 +478,8 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     },
   ];
 
-  const confirmedCount = partyRows.filter(r => r.confirmed).length;
+  const visibleRows = b2cOrderSourced ? partyRows.filter(r => r.key !== 'growth' && r.key !== 'media') : partyRows;
+  const confirmedCount = visibleRows.filter(r => r.confirmed).length;
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-2xs">
@@ -476,12 +491,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           ) : (
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
-                confirmedCount === partyRows.length ? 'bg-emerald-500' : 'bg-rose-500'
+                confirmedCount === visibleRows.length ? 'bg-emerald-500' : 'bg-rose-500'
               }`}
             />
           )}
           <h3 className="font-semibold text-xs text-slate-900">
-            Trạng thái duyệt ({confirmedCount}/{partyRows.length} bên)
+            Trạng thái duyệt ({confirmedCount}/{visibleRows.length} bên)
           </h3>
           <span className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-2xs font-semibold text-slate-700">
             {currentVersion}
@@ -506,7 +521,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               </select>
             </div>
           )}
-          {!isLocked && (
+          {!isLocked && (canLeaderAct || currentRole === 'GROWTH' || currentRole === 'MEDIA') && (
             <button
               type="button"
               onClick={() => setIsRevisionModalOpen(true)}
@@ -538,7 +553,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
       {/* Danh sách các bên: mỗi bên đúng 1 dòng — Xanh là Đã duyệt, Đỏ là Chưa duyệt */}
       <div className="space-y-1.5">
-        {partyRows.map((row) => (
+        {visibleRows.map((row) => (
           <div
             key={row.key}
             className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs transition ${

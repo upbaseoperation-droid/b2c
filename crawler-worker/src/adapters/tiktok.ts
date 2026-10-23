@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { BROWSER_UA, fetchText } from '../core/http.ts';
 import { unixSecondsToIso } from '../core/text.ts';
-import type { CartProductItem, ParsedLink, PlatformAdapter, ScrapedContent } from '../core/types.ts';
+import type { CartDiagnosis, CartDiagnosticCode, CartProductItem, ParsedLink, PlatformAdapter, ScrapedContent } from '../core/types.ts';
 
 /**
  * Giải bài SHA-256 proof-of-work của tường lửa SlardarWAF trên trang TikTok
@@ -59,6 +59,7 @@ interface TikTokItemStruct {
   isECVideo?: number | boolean;
   commerceInfo?: unknown;
   imagePost?: unknown;
+  AnchorTypes?: unknown[];
 }
 
 function isNonProductAnchorText(text: string): boolean {
@@ -82,6 +83,7 @@ export function extractTikTokCartAnchors(item: TikTokItemStruct): {
   productId: string | null;
   sellerId: string | null;
   cartProducts: CartProductItem[];
+  cartDiagnosis: CartDiagnosis;
 } {
   const anchors = Array.isArray(item.anchors) ? item.anchors : [];
   let hasProductLink = Boolean(item.isECVideo) || Boolean(item.commerceInfo);
@@ -225,6 +227,45 @@ export function extractTikTokCartAnchors(item: TikTokItemStruct): {
   }
 
   const primary = cartProducts[0];
+
+  const rawAnchorTypes = Array.isArray(item.AnchorTypes)
+    ? (item.AnchorTypes as unknown[]).map(String)
+    : [];
+
+  const hasCapCutAnchor =
+    rawAnchorTypes.includes('54') ||
+    anchors.some((a) => {
+      if (!a || typeof a !== 'object') return false;
+      const rec = a as Record<string, unknown>;
+      const s = String(rec.schema || '').toLowerCase();
+      const kw = String(rec.keyword || '').toLowerCase();
+      const desc = String(rec.description || '').toLowerCase();
+      return rec.type === 54 || s.includes('capcut') || kw.includes('capcut') || desc.includes('capcut');
+    });
+
+  let diagnosticCode: CartDiagnosticCode = 'NO_CART';
+  let diagnosticReason = 'Video không gắn giỏ hàng hoặc link sản phẩm nào.';
+
+  if (cartProducts.length > 0) {
+    diagnosticCode = 'ACTIVE_CART';
+    diagnosticReason = `Đã bóc tách thành công ${cartProducts.length} sản phẩm TikTok Shop công khai trên video.`;
+  } else if (hasProductLink) {
+    if (hasCapCutAnchor) {
+      diagnosticCode = 'CAPCUT_CONFLICT';
+      diagnosticReason =
+        'Xác nhận video có bật giỏ hàng khi đăng (isECVideo: 1), nhưng bị thẻ mẫu CapCut (type 54) đè lên trên bản Web Desktop. Thẻ giỏ hàng chỉ hiển thị trực tiếp trên ứng dụng TikTok di động.';
+    } else {
+      diagnosticCode = 'OUT_OF_STOCK_OR_HIDDEN';
+      diagnosticReason =
+        'Video có bật giỏ hàng khi đăng (isECVideo: 1), nhưng TikTok không trả về chi tiết thẻ sản phẩm trên Web (sản phẩm có thể đã hết hàng, bị shop tạm ẩn hoặc bị gỡ khỏi TikTok Shop).';
+    }
+  }
+
+  const cartDiagnosis: CartDiagnosis = {
+    code: diagnosticCode,
+    reason: diagnosticReason,
+  };
+
   return {
     hasProductLink,
     productTitle: productTitle || primary?.title || null,
@@ -232,6 +273,7 @@ export function extractTikTokCartAnchors(item: TikTokItemStruct): {
     productId: primary?.productId || null,
     sellerId: primary?.sellerId || null,
     cartProducts,
+    cartDiagnosis,
   };
 }
 
@@ -310,6 +352,7 @@ export const tiktokAdapter: PlatformAdapter = {
       productId: cartInfo.productId,
       sellerId: cartInfo.sellerId,
       cartProducts: cartInfo.cartProducts,
+      cartDiagnosis: cartInfo.cartDiagnosis,
       source: 'tiktok-ssr',
     };
   },

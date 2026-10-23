@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { klLabel } from '../../lib/klTiers';
 import { Avatar, Presence, Status, Modal, Button } from '../ui';
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import { LegalOcrModal } from '../LegalOcrModal';
@@ -796,13 +797,13 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-blue-500"
               >
                 <option value="ALL">Tất cả Khung lương (KL)</option>
-                <option value="KL1">KL1 (&lt; 1 Triệu)</option>
-                <option value="KL2">KL2 (1 - 3 Triệu)</option>
-                <option value="KL3">KL3 (3 - 6 Triệu)</option>
-                <option value="KL4">KL4 (6 - 10 Triệu)</option>
-                <option value="KL5">KL5 (10 - 18 Triệu)</option>
-                <option value="KL6">KL6 (18 - 35 Triệu)</option>
-                <option value="KL7">KL7 (&gt; 35 Triệu)</option>
+                <option value="KL1">{klLabel('KL1')}</option>
+                <option value="KL2">{klLabel('KL2')}</option>
+                <option value="KL3">{klLabel('KL3')}</option>
+                <option value="KL4">{klLabel('KL4')}</option>
+                <option value="KL5">{klLabel('KL5')}</option>
+                <option value="KL6">{klLabel('KL6')}</option>
+                <option value="KL7">{klLabel('KL7')}</option>
               </select>
             </div>
 

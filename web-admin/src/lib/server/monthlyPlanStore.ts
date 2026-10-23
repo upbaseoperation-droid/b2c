@@ -13,6 +13,7 @@ import type {
   UserProfile
 } from '../types';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
+import { checkBreakdownForSubmit } from '../planBreakdownRules';
 import type { PlanChatMessage, UserMessageType } from '../planChat';
 import { notifyPlanMessages } from './planRealtime';
 
@@ -170,7 +171,9 @@ export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: Use
 export async function assertPlanIdAccess(id: string, actor: UserProfile, action: 'read' | 'write' = 'read') {
   const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
   if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
-  await assertPlanAccess(toStored(row).plan, actor, action);
+  const plan = toStored(row).plan;
+  await assertPlanAccess(plan, actor, action);
+  return plan;
 }
 /** Lấy danh sách kế hoạch. Lần đầu khi bảng trống sẽ nạp bộ kế hoạch mẫu ban đầu. */
 export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthlyPlan[]> {
@@ -266,6 +269,27 @@ export async function saveMonthlyPlan(
     await assertPlanAccess(stored, actor, 'write');
     await assertPlanAccess(plan, actor, 'write');
 
+    // Gửi duyệt: bảng phân rã phải hợp lệ và đã giải trình nếu lệch số bảng 4.1
+    if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status || '') && plan.status !== stored.status) {
+      const gate = checkBreakdownForSubmit(plan);
+      if (!gate.canSubmit) throw new PlanStoreError('INVALID', gate.reason || 'Kế hoạch chưa đủ điều kiện gửi duyệt.');
+    }
+
+    // Luồng duyệt: gian có Trưởng nhóm phải sơ duyệt trước khi lên Giám đốc
+    const nameKey = (v?: string) => (v || '').trim().toLowerCase();
+    const fromStatus = stored.status || 'DRAFT';
+    const toStatus = plan.status || 'DRAFT';
+    const leaderName = stored.hasBookingLeader !== false ? stored.bookingLeader : undefined;
+    const isGlobalManager = isStaffGlobalAdminOrManager(actor);
+    const isPlanLeader = Boolean(leaderName) && nameKey(actor.name) === nameKey(leaderName);
+    if (leaderName && toStatus === 'PENDING_APPROVAL' && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !isGlobalManager) {
+      throw new PlanStoreError('INVALID', 'Gian có Trưởng nhóm: kế hoạch phải qua sơ duyệt trước khi lên Giám đốc.');
+    }
+    if (fromStatus === 'PENDING_PRE_APPROVAL' && toStatus === 'PENDING_APPROVAL' && !isGlobalManager && !isPlanLeader) {
+      throw new PlanStoreError('FORBIDDEN', 'Chỉ Trưởng nhóm của gian hàng hoặc quản lý được sơ duyệt.');
+    }
+    const isLeaderStep = isPlanLeader && fromStatus === 'PENDING_PRE_APPROVAL' && ['PENDING_APPROVAL', 'REVISION_REQUESTED'].includes(toStatus);
+
     if (existing.revision !== expectedRevision) {
       throw new PlanStoreError(
         'CONFLICT',
@@ -275,7 +299,9 @@ export async function saveMonthlyPlan(
     }
 
     const protectedStatuses = ['PRE_APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED', 'REVISION_REQUESTED'];
-    if ((plan.status !== stored.status && (protectedStatuses.includes(plan.status || '') || protectedStatuses.includes(stored.status || ''))) || Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0')) await assertPlanAccess(stored, actor, 'approve');
+    if ((plan.status !== stored.status && (protectedStatuses.includes(plan.status || '') || protectedStatuses.includes(stored.status || ''))) || Boolean(plan.isVersionLocked) !== Boolean(stored.isVersionLocked) || (plan.currentVersionCode || 'v1.0') !== (stored.currentVersionCode || 'v1.0')) {
+      if (!isLeaderStep) await assertPlanAccess(stored, actor, 'approve');
+    }
     const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
     if (existing.isVersionLocked && sameVersion) {
       if (!plan.isVersionLocked) {

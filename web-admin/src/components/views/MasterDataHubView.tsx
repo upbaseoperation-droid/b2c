@@ -59,6 +59,7 @@ import {
   StaffMasterView,
   ContributorsMasterView
 } from './master-data';
+import { ProductCatalogView } from './ProductCatalogView';
 import {
   UPBASE_MASTER_SLA_CONFIG,
   UPBASE_MASTER_KPI_DEFINITIONS
@@ -67,6 +68,7 @@ import {
 export type MasterDataSubTab = 
   | 'brands' 
   | 'stores' 
+  | 'product-catalog'
   | 'products' 
   | 'pillars' 
   | 'cast-tiers' 
@@ -783,7 +785,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         items={[
           { key: 'brands', label: 'Thương hiệu', count: brandList.length },
           { key: 'stores', label: 'Gian hàng', count: storeList.length },
-          { key: 'products', label: 'Sản phẩm', count: productList.length },
+          { key: 'product-catalog', label: 'Danh mục sản phẩm' },
+          { key: 'products', label: 'Sản phẩm (bảng cũ)', count: productList.length },
           { key: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length },
           { key: 'cast-tiers', label: 'Bậc cast', count: extraCatalog.castTiers.length },
           { key: 'koc-niches', label: 'Tệp kênh', count: extraCatalog.niches.length },
@@ -1234,6 +1237,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           onNavigateToStoreManagement={onNavigateToStoreProfile}
         />
       )}
+
+      {/* SUB-TAB: DANH MỤC SẢN PHẨM THEO BRAND (nhóm → sản phẩm → link giỏ hàng, link affiliate) */}
+      {activeSubTab === 'product-catalog' && <ProductCatalogView brandNames={brandList.map(b => b.name)} legacyProducts={productList} onNotify={onNotify} />}
 
       {/* SUB-TAB 3: SẢN PHẨM (Master Product Catalog) */}
       {activeSubTab === 'products' && (

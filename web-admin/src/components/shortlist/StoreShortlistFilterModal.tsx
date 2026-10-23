@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { klLabel } from '../../lib/klTiers';
 import { Modal, Button, Chips, Status } from '../ui';
 import {
   Filter,
@@ -95,13 +96,13 @@ function getTodayIsoDate(): string {
 
 const KL_FILTER_OPTIONS: Array<{ id: SalaryGrade; label: string }> = [
   { id: 'TAP UpAffiliate', label: 'FOC / TAP (0đ)' },
-  { id: 'KL1', label: 'KL1 (< 500k)' },
-  { id: 'KL2', label: 'KL2 (500k - 1.5M)' },
-  { id: 'KL3', label: 'KL3 (1.5M - 3M)' },
-  { id: 'KL4', label: 'KL4 (3M - 6M)' },
-  { id: 'KL5', label: 'KL5 (6M - 12M)' },
-  { id: 'KL6', label: 'KL6 (12M - 25M)' },
-  { id: 'KL7', label: 'KL7 (> 25M)' },
+  { id: 'KL1', label: klLabel('KL1') },
+  { id: 'KL2', label: klLabel('KL2') },
+  { id: 'KL3', label: klLabel('KL3') },
+  { id: 'KL4', label: klLabel('KL4') },
+  { id: 'KL5', label: klLabel('KL5') },
+  { id: 'KL6', label: klLabel('KL6') },
+  { id: 'KL7', label: klLabel('KL7') },
 ];
 
 export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps> = ({

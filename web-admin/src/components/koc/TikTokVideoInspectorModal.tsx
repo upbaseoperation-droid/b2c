@@ -902,10 +902,20 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                       </Status>
                     )}
                     {activeInspection.contentCheck.hasCartAnchor ? (
-                      <Status tone="positive">
+                      <Status
+                        tone={
+                          (activeInspection.cartAnchorVerification.detectedProducts?.length ?? 0) > 0
+                            ? 'positive'
+                            : activeInspection.cartAnchorVerification.hasCapCutConflict
+                            ? 'warning'
+                            : 'neutral'
+                        }
+                      >
                         Có gắn giỏ (
                         {(activeInspection.cartAnchorVerification.detectedProducts?.length ?? 0) > 0
                           ? `${activeInspection.cartAnchorVerification.detectedProducts?.length} SP`
+                          : activeInspection.cartAnchorVerification.diagnosticCode === 'CAPCUT_CONFLICT'
+                          ? 'Thẻ CapCut đè web'
                           : 'Đã xác nhận'}
                         )
                       </Status>
@@ -1067,36 +1077,82 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
                     })}
                   </div>
                 ) : activeInspection.contentCheck.hasCartAnchor ? (
-                  <div className="p-3 rounded-lg border border-line bg-surface space-y-1.5 text-xs">
-                    <p className="font-semibold text-ink">
-                      {activeInspection.cartAnchorVerification.detectedProductTitle ||
-                        activeInspection.contentCheck.cartAnchorTitle ||
-                        'Sản phẩm TikTok Shop'}
-                    </p>
-                    {activeInspection.cartAnchorVerification.detectedProductId && (
-                      <p className="text-2xs font-code text-ink-3">
-                        Mã SP: {activeInspection.cartAnchorVerification.detectedProductId}
-                      </p>
-                    )}
-                    {(activeInspection.cartAnchorVerification.detectedProductUrl ||
-                      activeInspection.contentCheck.cartAnchorUrl) && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <a
-                          href={
-                            activeInspection.cartAnchorVerification.detectedProductUrl ||
-                            activeInspection.contentCheck.cartAnchorUrl
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
-                        >
-                          <span>Mở giỏ hàng</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                  <div className="p-3 rounded-lg border border-line bg-surface space-y-2 text-xs">
+                    {(activeInspection.cartAnchorVerification.detectedProductTitle ||
+                      activeInspection.contentCheck.cartAnchorTitle) ? (
+                      <>
+                        <p className="font-semibold text-ink">
+                          {activeInspection.cartAnchorVerification.detectedProductTitle ||
+                            activeInspection.contentCheck.cartAnchorTitle}
+                        </p>
+                        {activeInspection.cartAnchorVerification.detectedProductId && (
+                          <p className="text-2xs font-code text-ink-3">
+                            Mã SP: {activeInspection.cartAnchorVerification.detectedProductId}
+                          </p>
+                        )}
+                        {(activeInspection.cartAnchorVerification.detectedProductUrl ||
+                          activeInspection.contentCheck.cartAnchorUrl) && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <a
+                              href={
+                                activeInspection.cartAnchorVerification.detectedProductUrl ||
+                                activeInspection.contentCheck.cartAnchorUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-accent text-white text-2xs font-medium hover:opacity-90"
+                            >
+                              <span>Mở giỏ hàng</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                              activeInspection.cartAnchorVerification.diagnosticCode === 'CAPCUT_CONFLICT'
+                                ? 'bg-warning-soft text-warning border border-warning/30'
+                                : 'bg-surface-2 text-ink-2 border border-line'
+                            }`}
+                          >
+                            {activeInspection.cartAnchorVerification.diagnosticCode === 'CAPCUT_CONFLICT'
+                              ? 'Xung đột mẫu CapCut trên Web'
+                              : 'Thẻ SP ẩn / Hết tồn kho'}
+                          </span>
+                          <span className="text-2xs text-ink-3">
+                            Tín hiệu gốc: isECVideo = 1
+                          </span>
+                        </div>
+                        <p className="text-2xs text-ink-2 leading-relaxed">
+                          {activeInspection.cartAnchorVerification.diagnosticReason ||
+                            'Xác nhận video có bật giỏ hàng khi đăng, nhưng TikTok không trả về chi tiết thẻ sản phẩm trên giao diện Web (thường do sản phẩm hết hàng hoặc bị CapCut đè).'}
+                        </p>
+                        <div className="flex items-center gap-2 pt-1 flex-wrap">
+                          <a
+                            href={activeInspection.resolvedUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 h-6 px-2 rounded bg-surface-2 border border-line text-2xs text-ink hover:text-accent font-medium"
+                          >
+                            <span>Mở video kiểm tra trên TikTok</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <span className="text-2xs text-ink-3">
+                            Gợi ý: Dán mã SP của Brand vào ô tìm kiếm phía trên để đối soát
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
-                ) : null}
+                ) : (
+                  <div className="p-2.5 rounded-lg border border-dashed border-line bg-surface-2 text-2xs text-ink-3">
+                    {activeInspection.cartAnchorVerification.diagnosticReason ||
+                      'Video không gắn giỏ hàng TikTok Shop (isECVideo = 0).'}
+                  </div>
+                )}
 
                 {activeInspection.contentCheck.onScreenStickers.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">

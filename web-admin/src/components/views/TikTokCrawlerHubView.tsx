@@ -87,6 +87,13 @@ import {
 } from '../crawler/CompetitorVideoScriptModal';
 import { TikTokCrawlCreativeLoader } from '../crawler/TikTokCrawlCreativeLoader';
 import {
+  fetchStagingKocs,
+  saveStagingKocsBatch,
+  normalizeKocHandle,
+  type StagingKocItem,
+} from '../../lib/kocStagingService';
+import { PendingKocStagingModal } from '../koc/PendingKocStagingModal';
+import {
   ActionMenu,
   Avatar,
   Button,
@@ -505,6 +512,48 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     return map;
   }, [kocs]);
 
+  // --- Bảng tạm KOC mới chưa có trên Upaffiliate (Pending Staging) ---
+  const [stagingKocs, setStagingKocs] = useState<StagingKocItem[]>([]);
+  const [pendingStagingModalOpen, setPendingStagingModalOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    void fetchStagingKocs().then((items) => {
+      if (isMounted) setStagingKocs(items);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stagingByHandle = useMemo(() => {
+    const map = new Map<string, StagingKocItem>();
+    for (const it of stagingKocs) {
+      const clean = normalizeKocHandle(it.channelId);
+      if (clean) map.set(clean, it);
+    }
+    return map;
+  }, [stagingKocs]);
+
+  const handleRemoveStagingItem = async (channelId: string) => {
+    try {
+      const res = await fetch(
+        `/api/integrations/upaffiliate/staging?channelId=${encodeURIComponent(channelId)}`,
+        { method: 'DELETE' }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.items)) {
+          setStagingKocs(json.items);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setStagingKocs((prev) => prev.filter((it) => it.channelId !== channelId));
+  };
+
   const compNextPageOffsetRef = useRef(0);
   const tagNextPageOffsetRef = useRef(0);
 
@@ -676,6 +725,41 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           compProfile: latestProfile,
           compResults: finalMerged,
         });
+
+        // Tự động kiểm tra đối soát Upaffiliate & lưu vào Bảng Tạm nếu chưa có
+        const newCompetitorKocsToStage = finalMerged
+          .filter((r) => {
+            const clean = normalizeKocHandle(r.handle);
+            return !existingByHandle.has(clean) && !stagingByHandle.has(clean);
+          })
+          .map((r) => ({
+            channelId: normalizeKocHandle(r.handle),
+            channelUrl: r.channelProfile.channelUrl,
+            stageName: r.channelProfile.nickname || r.handle,
+            phone: r.channelProfile.extractedPhone || undefined,
+            followersCount: r.channelProfile.followers || 0,
+            avgViews: r.engagementMetrics?.avgViews || 0,
+            engagementRate: r.engagementMetrics?.engagementRate,
+            discoverySource: 'COMPETITOR_DISCOVERY' as const,
+            sourceContext: `Đối thủ: ${displayLabel}`,
+            sampleVideoUrl: r.competitorCollaboration.latestCollabVideoUrl,
+            sampleVideoViews: r.competitorCollaboration.latestCollabViews,
+            sampleVideoCaption: r.competitorCollaboration.latestCollabCaption,
+            discoveredByStaffId: currentUser?.id,
+            discoveredByStaffName: currentUser?.name,
+          }));
+
+        if (newCompetitorKocsToStage.length > 0) {
+          void saveStagingKocsBatch(newCompetitorKocsToStage).then((res) => {
+            if (res.success && res.savedCount > 0) {
+              setStagingKocs(res.items);
+              onNotify?.(
+                `Đã đối soát & tự động lưu ${res.savedCount} KOC chưa có trên Upaffiliate vào Bảng Tạm.`,
+                'info'
+              );
+            }
+          });
+        }
       }
     } catch {
       if (accumulatedMap.size === 0) {
@@ -847,6 +931,41 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           queryLabel: displayTag,
           tagResults: finalMerged,
         });
+
+        // Tự động kiểm tra đối soát Upaffiliate & lưu vào Bảng Tạm nếu chưa có
+        const newHashtagKocsToStage = finalMerged
+          .filter((r) => {
+            const clean = normalizeKocHandle(r.handle);
+            return !existingByHandle.has(clean) && !stagingByHandle.has(clean);
+          })
+          .map((r) => ({
+            channelId: normalizeKocHandle(r.handle),
+            channelUrl: r.channelProfile.channelUrl,
+            stageName: r.channelProfile.nickname || r.handle,
+            phone: r.channelProfile.extractedPhone || undefined,
+            followersCount: r.channelProfile.followers || 0,
+            avgViews: r.engagementMetrics?.avgViews || 0,
+            engagementRate: r.engagementMetrics?.engagementRate,
+            discoverySource: 'HASHTAG_DISCOVERY' as const,
+            sourceContext: `Hashtag: ${displayTag}`,
+            sampleVideoUrl: r.matchedHashtagVideo.videoUrl,
+            sampleVideoViews: r.matchedHashtagVideo.views,
+            sampleVideoCaption: r.matchedHashtagVideo.captionSnippet,
+            discoveredByStaffId: currentUser?.id,
+            discoveredByStaffName: currentUser?.name,
+          }));
+
+        if (newHashtagKocsToStage.length > 0) {
+          void saveStagingKocsBatch(newHashtagKocsToStage).then((res) => {
+            if (res.success && res.savedCount > 0) {
+              setStagingKocs(res.items);
+              onNotify?.(
+                `Đã đối soát & tự động lưu ${res.savedCount} KOC chưa có trên Upaffiliate vào Bảng Tạm.`,
+                'info'
+              );
+            }
+          });
+        }
       }
     } catch {
       if (accumulatedMap.size === 0) {
@@ -1768,34 +1887,58 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     onNotify?.(`Đã xuất CSV ${filteredTrendingCreators.length} KOC xu hướng`, 'success');
   };
 
-  const renderKocStatusBadge = (matchedKoc: KocItem | undefined, isExisting: boolean) => {
-    if (matchedKoc && onNavigateToKocMaster) {
+  const renderKocStatusBadge = (
+    matchedKoc: KocItem | undefined,
+    isExisting: boolean,
+    rawHandle?: string
+  ) => {
+    const clean = rawHandle ? normalizeKocHandle(rawHandle) : '';
+    const inStaging = clean ? stagingByHandle.get(clean) : undefined;
+
+    // 1. Nếu đã có trong Upaffiliate Master Data (danh bạ chính thức)
+    if (matchedKoc) {
       return (
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onNavigateToKocMaster(matchedKoc.id);
+            if (onNavigateToKocMaster) onNavigateToKocMaster(matchedKoc.id);
           }}
-          title="Mở hồ sơ KOC trong Danh bạ KOC"
-          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-soft text-accent border border-accent/25 hover:bg-accent hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
+          title={`Đã có trên Upaffiliate Master · ${matchedKoc.salaryGrade || ''} · ${matchedKoc.bookingPic || ''}`}
+          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-positive-soft text-positive border border-positive/30 hover:bg-positive hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
-          <span>Đã có · Danh bạ</span>
+          <span>✓ Upaffiliate Master</span>
         </button>
       );
     }
 
+    // 2. Nếu chưa có trên Upaffiliate nhưng đã lưu trong bảng tạm (Staging)
+    if (inStaging) {
+      return (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setPendingStagingModalOpen(true);
+          }}
+          title={`Chưa có trên Upaffiliate · Đã lưu bảng tạm lúc ${new Date(inStaging.discoveredAt).toLocaleDateString('vi-VN')} · Nhấp để mở bảng tạm`}
+          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-soft text-accent border border-accent/30 hover:bg-accent hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+          <span>+ Đã lưu bảng tạm</span>
+        </button>
+      );
+    }
+
+    // 3. Nếu chưa có trên Upaffiliate và chưa có trong bảng tạm
     return (
       <span
-        className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 ${
-          isExisting
-            ? 'bg-sunken text-ink-2 border border-line'
-            : 'bg-positive-soft text-positive'
-        }`}
+        title="Chưa có trên Upaffiliate"
+        className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 bg-sunken text-ink-2 border border-line"
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
-        <span>{isExisting ? 'Đã có' : 'KOC Mới'}</span>
+        <span className="w-1.5 h-1.5 rounded-full bg-ink-3 shrink-0" />
+        <span>Chưa có trên Upaffiliate</span>
       </span>
     );
   };
@@ -1820,19 +1963,21 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     isExisting: boolean;
   }) => {
     const reviewSummary = getChannelSummary(params.handle);
+    const cleanHandle = params.handle.replace(/^@+/, '');
     return (
-      <div className="flex items-center gap-2.5 min-w-0 max-w-[295px]">
-        <Avatar name={params.nickname || params.handle} src={params.avatarUrl} size={36} />
-        <div className="grid gap-0.5 min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+      <div className="flex items-start gap-2.5 min-w-0">
+        <Avatar name={params.nickname || cleanHandle} src={params.avatarUrl} size={36} className="shrink-0 mt-0.5" />
+        <div className="grid gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
             <a
               href={params.channelUrl}
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0"
+              className="text-xs font-bold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0 break-all"
+              title={`@${cleanHandle}`}
             >
-              <span className="truncate">@{params.handle.replace(/^@+/, '')}</span>
+              <span className="font-code text-xs font-bold text-ink hover:text-accent break-all">@{cleanHandle}</span>
               <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
             </a>
             {params.verified && (
@@ -1843,7 +1988,9 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 ✓
               </span>
             )}
-            {renderKocStatusBadge(params.matchedKoc, params.isExisting)}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            {renderKocStatusBadge(params.matchedKoc, params.isExisting, params.handle)}
             {reviewSummary && (
               <KocChannelReviewBadge
                 summary={reviewSummary}
@@ -1861,8 +2008,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               />
             )}
           </div>
-          <div className="flex items-center gap-1.5 min-w-0 text-2xs text-ink-2">
-            <span className="truncate">{params.nickname || params.handle}</span>
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0 text-2xs text-ink-2">
+            <span className="truncate max-w-[150px] font-medium" title={params.nickname || cleanHandle}>
+              {params.nickname || cleanHandle}
+            </span>
             {params.phone ? (
               <>
                 <span className="text-ink-3 shrink-0">·</span>
@@ -1874,7 +2023,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             ) : params.email ? (
               <>
                 <span className="text-ink-3 shrink-0">·</span>
-                <span className="text-ink-3 font-code truncate max-w-[120px]">{params.email}</span>
+                <span className="text-ink-3 font-code truncate max-w-[130px]" title={params.email}>{params.email}</span>
               </>
             ) : null}
           </div>
@@ -2305,7 +2454,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'koc',
       header: 'Kênh KOC & Liên hệ',
-      width: 245,
+      width: 285,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
@@ -2434,7 +2583,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'koc',
       header: 'Kênh KOC & Liên hệ',
-      width: 245,
+      width: 285,
       render: (r) => {
         const p = r.channelProfile;
         const matchedKoc = existingByHandle.get(r.handle.toLowerCase().replace(/^@+/, ''));
@@ -2621,7 +2770,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     {
       key: 'koc',
       header: 'Kênh KOC & Liên hệ',
-      width: 245,
+      width: 285,
       render: (c) => {
         const matchedKoc = existingByHandle.get(c.handle.toLowerCase().replace(/^@+/, ''));
         return renderUnifiedKocIdentityCell({
@@ -2949,15 +3098,15 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {
         key: 'channel',
         header: 'Kênh KOC',
-        width: 210,
+        width: 230,
         render: (rev) => (
           <div className="flex items-center gap-2 min-w-0">
-            <Avatar name={rev.channelName || rev.channelHandle || 'KOC'} src={rev.avatarUrl} size={26} />
+            <Avatar name={rev.channelName || rev.channelHandle || 'KOC'} src={rev.avatarUrl} size={26} className="shrink-0" />
             <div className="min-w-0 grid">
-              <span className="font-semibold text-xs text-ink truncate">
+              <span className="font-semibold text-xs text-ink truncate" title={rev.channelName || `@${rev.channelHandle || rev.handle}`}>
                 {rev.channelName || `@${rev.channelHandle || rev.handle}`}
               </span>
-              <span className="font-code text-2xs text-ink-3 truncate">@{rev.channelHandle || rev.handle}</span>
+              <span className="font-code text-2xs text-ink-3 break-all">@{rev.channelHandle || rev.handle}</span>
             </div>
           </div>
         ),
@@ -3404,6 +3553,19 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       {/* Nút chính bên trái, menu tiện ích ⋯ ở ngoài cùng bên phải */}
       <PageActions>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={Users}
+            onClick={() => setPendingStagingModalOpen(true)}
+          >
+            <span>Bảng Tạm KOC</span>
+            {stagingKocs.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-accent text-white text-2xs font-semibold tabular-nums">
+                {stagingKocs.length}
+              </span>
+            )}
+          </Button>
           <Button
             size="sm"
             variant="primary"
@@ -4992,6 +5154,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             onOpenStaffBrandSheet({ monthKey, storeName });
           }
         }}
+        onNotify={onNotify}
+      />
+
+      <PendingKocStagingModal
+        open={pendingStagingModalOpen}
+        onClose={() => setPendingStagingModalOpen(false)}
+        stagingItems={stagingKocs}
+        onRemoveItem={handleRemoveStagingItem}
         onNotify={onNotify}
       />
     </div>

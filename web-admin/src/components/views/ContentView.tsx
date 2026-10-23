@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Tabs, Textarea } from '../ui';
+import { ContentPlanBoard } from './ContentPlanBoard';
+import { BrandMonthlyPlanForm } from './BrandMonthlyPlanForm';
 import { 
   CheckCircle, 
   RotateCcw, 
@@ -18,7 +20,7 @@ import {
   ShieldAlert,
   RefreshCw
 } from 'lucide-react';
-import { ScriptReviewItem, ContentItemModel, PublicationItemModel } from '../../lib/types';
+import { ScriptReviewItem, ContentItemModel, PublicationItemModel, KocItem, BookingDealItem } from '../../lib/types';
 import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS, INITIAL_DEALS } from '../../lib/mockData';
 import { generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
@@ -31,9 +33,13 @@ import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
   onNavigateToAngles?: () => void;
+  kocs?: KocItem[];
+  deals?: BookingDealItem[];
+  currentUserName?: string;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-type ContentSubTab = 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
+type ContentSubTab = 'BRAND_PLAN' | 'CONTENT_PLAN' | 'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS';
 
 const PILLAR_OPTIONS = [
   'Nỗi đau - Giải pháp',
@@ -50,13 +56,13 @@ const FORMAT_OPTIONS = [
   'Mở hộp âm thanh thực',
 ];
 
-export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles }) => {
+export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles, currentUserName, onNotify, kocs, deals }) => {
   const { profiles } = useBrandProfiles();
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
   const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_ITEMS');
+  const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('BRAND_PLAN');
   const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
   const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
@@ -255,6 +261,8 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
+          { key: 'BRAND_PLAN', label: 'Plan tháng của Brand' },
+    { key: 'CONTENT_PLAN', label: 'Kế hoạch content' },
           { key: 'CONTENT_ITEMS', label: 'Kho nội dung', count: contentItems.length },
           { key: 'SCRIPTS', label: 'Chờ duyệt kịch bản', count: scripts.filter(s => s.status === 'PENDING').length },
           { key: 'DRAFT_VIDEOS', label: 'Video nháp KOC' },
@@ -298,6 +306,9 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           </div>
         }
       />
+
+      {activeSubTab === 'BRAND_PLAN' && <BrandMonthlyPlanForm currentUserName={currentUserName} onNotify={onNotify} />}
+      {activeSubTab === 'CONTENT_PLAN' && <ContentPlanBoard kocs={kocs} deals={deals} currentUserName={currentUserName} onNotify={onNotify} />}
 
       {/* View 0: Content Items Master Grid */}
       {activeSubTab === 'CONTENT_ITEMS' && (

@@ -38,6 +38,18 @@ export interface CartProductItem {
   source?: string;
 }
 
+export type CartDiagnosticCode =
+  | 'ACTIVE_CART'
+  | 'CAPCUT_CONFLICT'
+  | 'OUT_OF_STOCK_OR_HIDDEN'
+  | 'NO_CART'
+  | 'CAPTION_LINK';
+
+export interface CartDiagnosis {
+  code: CartDiagnosticCode;
+  reason: string;
+}
+
 /** Dữ liệu một adapter bóc được từ trang công khai của bài đăng. */
 export interface ScrapedContent {
   status: LinkStatus;
@@ -56,6 +68,7 @@ export interface ScrapedContent {
   productId?: string | null;
   sellerId?: string | null;
   cartProducts?: CartProductItem[];
+  cartDiagnosis?: CartDiagnosis;
   source: string;
   /** Trường mà nền tảng không công khai qua trang này. */
   limitations?: string[];
@@ -132,6 +145,7 @@ export interface LinkCheckResult {
   productId?: string | null;
   sellerId?: string | null;
   cartProducts?: CartProductItem[];
+  cartDiagnosis?: CartDiagnosis;
   checks: LinkCheckItem[];
   verdict: Verdict;
   limitations: string[];

@@ -663,7 +663,7 @@ export interface DealDeliverableItem {
 
 export interface DealRightsTermItem {
   id: string;
-  termType: 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'LINK_BIO_CART';
+  termType: 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'LINK_BIO_CART' | 'CROSS_POST_REUP';
   termLabel: string;
   scopeType: 'ASSET' | 'MEDIA_CHANNEL' | 'DEAL'; // 3 tầng phạm vi: Bài lẻ | Kênh | Toàn Deal
   targetDeliverableId?: string;
@@ -674,7 +674,16 @@ export interface DealRightsTermItem {
   allocatedWeightPct?: number;
   allocatedCostVnd?: number;
   status: 'ACTIVE' | 'PENDING_ANCHOR' | 'EXPIRING_SOON' | 'EXPIRED';
+  acceptanceStatus?: 'LOCKED_BY_VIDEO' | 'PENDING_ACCEPTANCE' | 'VERIFIED' | 'DROPPED';
+  evidenceCodeOrUrl?: string; // Mã Spark Ads, link bài đăng chéo Wave 1, hoặc link bàn giao file raw/hình ảnh
+  verifiedAt?: string;
 }
+
+export type DealContractAppendixStatus = 'CHƯA_LẬP' | 'CHỜ_KÝ' | 'ĐÃ_KÝ';
+export type DealSequentialAcceptanceStage =
+  | '1_CHO_NGHIEM_THU_VIDEO'
+  | '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC'
+  | '3_DA_NGHIEM_THU_TOAN_DEAL';
 
 export interface DealRevisionItem {
   version: number;
@@ -867,7 +876,15 @@ export interface BookingDealItem {
   deliverables?: DealDeliverableItem[]; // Danh sách các bài đăng đa kênh (Tách Media Channel vs Affiliate Channel & Khóa Wave 0 -> Wave 1)
   rightsTerms?: DealRightsTermItem[]; // Các điều khoản bản quyền, mã Ads, độc quyền theo 3 tầng (Asset / Media Channel / Deal)
   revisions?: DealRevisionItem[]; // Lịch sử vòng đàm phán & đánh dấu trường thay đổi
-  contractAppendixCode?: string; // Mã Phụ lục hợp đồng gom theo tháng (giảm tải ký hợp đồng lẻ)
+  contractAppendixCode?: string; // Mã Phụ lục hợp đồng theo từng Deal (1 HĐNT/KOC + 1 Phụ lục/Deal)
+  masterContractCode?: string; // Mã Hợp đồng nguyên tắc (HĐNT) của KOC
+  contractAppendixStatus?: DealContractAppendixStatus; // Trạng thái ký Phụ lục của Deal
+  videoAssetCostVnd?: number; // Chi phí Net của Asset (Video chính) trong Deal
+  addonsCostVnd?: number; // Tổng chi phí Net các Dịch vụ gia tăng trong Deal
+  droppedCostVnd?: number; // Khấu trừ hạng mục Dịch vụ gia tăng không thực hiện khi quyết toán Deal
+  sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu 2 tầng: (1) Video -> (2) Dịch vụ gia tăng & Quyền lợi
+  stage1VideoVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Asset Video (Tầng 1)
+  stage2AddonsVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Dịch vụ gia tăng / các phần khác (Tầng 2)
 }
 
 export interface MasterTierQuota {
@@ -2792,6 +2809,35 @@ export interface PlanAlignmentProtocol {
   };
 }
 
+export type PlanTierKey = 'KL1' | 'KL2' | 'KL3' | 'KL4' | 'KL5' | 'KL6' | 'KL7';
+
+/** Một tuần trong bảng phân rã (tương ứng một dòng bảng 4.1.1 Input plan). Ngân sách luôn là Net. */
+export interface PlanWeekRow {
+  week: string; // 'W43 [19.10 - 25.10]'
+  tiers: Partial<Record<PlanTierKey, { qty: number; budgetNet: number }>>;
+  foc: { tapBrand: number; tap: number; tapUp: number };
+  self: { reviewVoice: number; videoAi: number; videoRemix: number; videoToLive: number; nhacText: number; budgetNet: number };
+  live: { sessions: number; budgetNet: number };
+}
+
+/** Số của bảng 4.1 Plan order tổng dùng để đối chiếu với bảng phân rã. Chi phí Net = Gross ÷ 1,08 ÷ 1,10. */
+export interface PlanReference41 {
+  month: string;
+  importedAt: string;
+  importedBy: string;
+  videoAff: number;
+  foc: number;
+  cast: number;
+  affCostGross: number;
+  affCostNet: number;
+  selfVideos: number;
+  selfCostGross: number;
+  selfCostNet: number;
+  liveSessions: number;
+  liveCostGross: number;
+  liveCostNet: number;
+}
+
 export interface InputPlanBreakdownState {
   id: string;
   title: string;
@@ -2822,6 +2868,10 @@ export interface InputPlanBreakdownState {
   createdAt?: string;
   updatedAt?: string;
   items: InputPlanRowItem[];
+  // Phân rã theo tuần (nguồn của items có id bắt đầu bằng 'WB-') và số 4.1 để đối chiếu
+  weeklyBreakdown?: PlanWeekRow[];
+  reference41?: PlanReference41;
+  breakdownNote?: string; // Giải trình khi tổng phân rã lệch số 4.1
   // Layer 1: Khung chỉ số cốt lõi thống nhất giữa các bên trước khi phân rã Layer 2
   coreMetricsLayer1?: CorePlanMetricsLayer1;
   // Phân bổ 2 kênh độc lập: Affiliate vs Self Channel (Kênh thương hiệu)
@@ -3563,6 +3613,9 @@ export interface KocListingItem {
   // Trạng thái tổng hợp
   overallStatus: ListingItemStatus;
   dropReason?: string;
+  // Kết quả Brand duyệt đọc lần gần nhất từ Google Sheet (chỉ áp dụng khi giá trị trên sheet đổi so với lần đọc trước)
+  lastSheetDecision?: 'APPROVED' | 'REJECTED' | 'CONSIDER' | 'NONE';
+  lastSheetDecisionAt?: string;
   
   // Theo dõi Air Video
   generatedDealId?: string;

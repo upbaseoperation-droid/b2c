@@ -24,6 +24,8 @@ import {
   useFlipList
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
+import { PlanOrderUploadModal } from './PlanOrderUploadModal';
+import { getBreakdownHealth } from '../../lib/planBreakdownRules';
 import {
   Plus,
   AlertCircle,
@@ -34,6 +36,7 @@ import {
   Store as StoreIcon,
   RefreshCw,
   Database,
+  Upload,
   FileText,
   Building2,
   Sparkles,
@@ -212,6 +215,25 @@ interface StoreGovernanceItem {
   workstreamSummary: StorePlanWorkstreamSummary;
 }
 
+/** Tình trạng bảng phân rã tuần của kế hoạch so với số bảng 4.1. */
+function BreakdownHealthText({ plan }: { plan: InputPlanBreakdownState }) {
+  const h = getBreakdownHealth(plan);
+  if (!h) return null;
+  let tone = 'text-positive';
+  let label = plan.reference41 ? 'Khớp 4.1' : 'Đã phân rã';
+  if (h.empty) {
+    tone = 'text-warning';
+    label = 'Chưa phân rã';
+  } else if (h.errors > 0) {
+    tone = 'text-critical';
+    label = 'Lỗi phân rã: ' + h.errors;
+  } else if (h.mismatches > 0) {
+    tone = 'text-warning';
+    label = 'Lệch 4.1: ' + h.mismatches + ' chỉ tiêu';
+  }
+  return <span className={'font-medium ' + tone}>{label}</span>;
+}
+
 interface MonthlyPlanHubProps {
   plans: InputPlanBreakdownState[];
   storePortfolios?: StorePortfolioItem[];
@@ -230,6 +252,8 @@ interface MonthlyPlanHubProps {
   onOpenPlanReport?: () => void;
   onOpenListingForPlan?: (plan: InputPlanBreakdownState) => void;
   syncBadge?: React.ReactNode;
+  /** Gọi sau khi tải Plan order tổng xong để tải lại danh sách kế hoạch. */
+  onPlanOrderUploaded?: () => void;
 }
 
 export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
@@ -248,8 +272,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   onNotify,
   onOpenPlanReport,
   onOpenListingForPlan,
-  syncBadge
+  syncBadge,
+  onPlanOrderUploaded
 }) => {
+  const [isPlanOrderUploadOpen, setIsPlanOrderUploadOpen] = useState(false);
   const effectiveCampaigns = useMemo<CampaignItem[]>(() => {
     return campaigns && campaigns.length > 0 ? campaigns : INITIAL_CAMPAIGNS;
   }, [campaigns]);
@@ -817,7 +843,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   const picList = useMemo(() => {
     const set = new Set<string>();
-    scopedPlans.forEach(p => set.add(p.pic));
+    scopedPlans.forEach(p => { if (p.pic) set.add(p.pic); });
     return Array.from(set);
   }, [scopedPlans]);
 
@@ -1008,6 +1034,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     <div className="space-y-6">
       <PageActions>
         {syncBadge}
+        {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
+          <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>Tải Plan order tổng</Button>
+        )}
         <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>Đồng bộ Larkbase</Button>
         {onOpenPlanReport && (
           <Button
@@ -2546,9 +2575,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           {plan.title}
                         </h3>
                         <div className="flex items-center gap-2 mt-1.5 text-2xs text-ink-3 flex-wrap">
-                          <span>B2C: <strong className="text-ink font-medium">{plan.pic}</strong></span>
+                          <span>B2C: <strong className="text-ink font-medium">{plan.pic || 'Chưa giao'}</strong></span>
                           <span>•</span>
                           <span>Growth: <strong className="text-ink-2 font-medium">{plan.growthPic?.split(' (')[0] || 'Team'}</strong></span>
+                          {getBreakdownHealth(plan) && <span>•</span>}
+                          <BreakdownHealthText plan={plan} />
                           {budgetDelta !== 0 && (
                             <>
                               <span>•</span>
@@ -2713,12 +2744,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             <div className="space-y-0.5 text-2xs leading-tight">
                               <div className="flex items-center gap-1 min-w-0">
                                 <span className="text-ink-3 w-10 shrink-0">B2C:</span>
-                                <span className="font-medium text-ink truncate">{plan.pic}</span>
+                                <span className="font-medium text-ink truncate">{plan.pic || 'Chưa giao'}</span>
                               </div>
                               <div className="flex items-center gap-1 min-w-0">
                                 <span className="text-ink-3 w-10 shrink-0">Growth:</span>
                                 <span className="text-ink-2 truncate">{plan.growthPic?.split(' (')[0] || 'Team'}</span>
                               </div>
+                              {getBreakdownHealth(plan) && (
+                                <div className="min-w-0 truncate">
+                                  <BreakdownHealthText plan={plan} />
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="py-2 px-2 text-right tabular-nums align-middle bg-sunken/25">
@@ -3042,6 +3078,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         }}
         onCancel={() => setApprovingQuickPlan(null)}
       />
+
+      {onPlanOrderUploaded && (
+        <PlanOrderUploadModal
+          open={isPlanOrderUploadOpen}
+          onClose={() => setIsPlanOrderUploadOpen(false)}
+          onUploaded={() => onPlanOrderUploaded()}
+          onNotify={onNotify}
+        />
+      )}
 
       {/* 7. MODAL BẢNG HỨNG KẾ HOẠCH B2C BOOKING ĐÃ DUYỆT TỪ LARKBASE */}
       <Modal

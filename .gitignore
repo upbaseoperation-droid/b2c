@@ -41,7 +41,10 @@ Thumbs.db
 docs-video/
 pdf_preview/
 tmp/
+tmp_*
 *.html
+.lark-browser-profile/
+Knowledge - MD/
 
 # Local Agent & Tooling
 .agents/

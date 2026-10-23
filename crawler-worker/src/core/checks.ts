@@ -13,11 +13,8 @@ type CheckInput = Pick<
   | 'hashtags'
   | 'metrics'
   | 'hasProductLink'
-  | 'productTitle'
-  | 'productUrl'
-  | 'productId'
-  | 'cartProducts'
->;
+> &
+  Partial<Pick<LinkCheckResult, 'productTitle' | 'productUrl' | 'productId' | 'cartProducts' | 'cartDiagnosis'>>;
 
 function extractProductIdFromToken(raw?: string | null): string | undefined {
   if (!raw) return undefined;

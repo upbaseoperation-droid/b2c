@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
+import { klLabel, klBaseCost, klFromFee } from '../../lib/klTiers';
 import {
   KocListingItem,
   KocListingDiscussionItem,
@@ -20,6 +21,8 @@ import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Prese
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
+import { PlanListingBoard } from './PlanListingBoard';
+import { PlanDealBoard } from './PlanDealBoard';
 import {
   appendKocsToStaffBrandSheet,
   loadStaffSheetCollection,
@@ -78,26 +81,19 @@ interface KocListingBatchHubViewProps {
 }
 
 const KL_GRADE_ORDER: Array<{ code: SalaryGrade; label: string; defaultCost: number; defaultTier: KocListingItem['tier'] }> = [
-  { code: 'KL1', label: 'KL1 (< 500K)', defaultCost: 400000, defaultTier: 'NANO' },
-  { code: 'KL2', label: 'KL2 (500K - 1.5M)', defaultCost: 1000000, defaultTier: 'NANO' },
-  { code: 'KL3', label: 'KL3 (1.5M - 3M)', defaultCost: 2200000, defaultTier: 'MICRO' },
-  { code: 'KL4', label: 'KL4 (3M - 6M)', defaultCost: 4500000, defaultTier: 'MICRO' },
-  { code: 'KL5', label: 'KL5 (6M - 12M)', defaultCost: 8500000, defaultTier: 'MACRO' },
-  { code: 'KL6', label: 'KL6 (12M - 25M)', defaultCost: 16000000, defaultTier: 'MACRO' },
-  { code: 'KL7', label: 'KL7 (> 25M)', defaultCost: 30000000, defaultTier: 'MEGA' },
+  { code: 'KL1', label: klLabel('KL1'), defaultCost: klBaseCost('KL1'), defaultTier: 'NANO' },
+  { code: 'KL2', label: klLabel('KL2'), defaultCost: klBaseCost('KL2'), defaultTier: 'NANO' },
+  { code: 'KL3', label: klLabel('KL3'), defaultCost: klBaseCost('KL3'), defaultTier: 'MICRO' },
+  { code: 'KL4', label: klLabel('KL4'), defaultCost: klBaseCost('KL4'), defaultTier: 'MICRO' },
+  { code: 'KL5', label: klLabel('KL5'), defaultCost: klBaseCost('KL5'), defaultTier: 'MACRO' },
+  { code: 'KL6', label: klLabel('KL6'), defaultCost: klBaseCost('KL6'), defaultTier: 'MACRO' },
+  { code: 'KL7', label: klLabel('KL7'), defaultCost: klBaseCost('KL7'), defaultTier: 'MEGA' },
   { code: 'TAP UpAffiliate', label: 'FOC / TAP (0đ)', defaultCost: 0, defaultTier: 'NANO' },
 ];
 
 function inferSalaryGradeFromFee(fee: number, existingGrade?: SalaryGrade): SalaryGrade {
   if (existingGrade) return existingGrade;
-  if (!fee || fee <= 0) return 'TAP UpAffiliate';
-  if (fee < 500000) return 'KL1';
-  if (fee <= 1500000) return 'KL2';
-  if (fee <= 3000000) return 'KL3';
-  if (fee <= 6000000) return 'KL4';
-  if (fee <= 12000000) return 'KL5';
-  if (fee <= 25000000) return 'KL6';
-  return 'KL7';
+  return klFromFee(fee);
 }
 
 export function KocListingBatchHubView({
@@ -115,7 +111,7 @@ export function KocListingBatchHubView({
   onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
-  const [activeSubTab, setActiveSubTab] = useState<'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('STAFF_BRAND_SHEET');
+  const [activeSubTab, setActiveSubTab] = useState<'PLAN_BOARD' | 'DEAL_BOARD' | 'STAFF_BRAND_SHEET' | 'LISTING_APPROVAL' | 'AIR_TRACKER'>('PLAN_BOARD');
 
   // Filters
   const defaultInitialStore = useMemo(() => {
@@ -1050,11 +1046,18 @@ export function KocListingBatchHubView({
         value={activeSubTab}
         onChange={setActiveSubTab}
         items={[
+          { key: 'PLAN_BOARD', label: 'Điều phối theo kế hoạch' },
+        { key: 'DEAL_BOARD', label: 'Deal & nghiệm thu' },
           { key: 'STAFF_BRAND_SHEET', label: 'Sheet Listing Cá Nhân (Theo Brand)' },
           { key: 'LISTING_APPROVAL', label: 'Danh sách đề xuất', count: filteredListings.length },
           { key: 'AIR_TRACKER', label: 'Video lên sóng', count: airListings.length },
         ]}
       />
+
+      {activeSubTab === 'PLAN_BOARD' && (
+        <PlanListingBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />
+      )}
+      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />}
 
       {activeSubTab === 'STAFF_BRAND_SHEET' && (
         <StaffBrandListingSheetWorkspace
@@ -1079,7 +1082,7 @@ export function KocListingBatchHubView({
         />
       )}
 
-      {activeSubTab !== 'STAFF_BRAND_SHEET' && (
+      {activeSubTab !== 'STAFF_BRAND_SHEET' && activeSubTab !== 'PLAN_BOARD' && activeSubTab !== 'DEAL_BOARD' && (
         <>
       <StatRow size="sm">
         <Stat

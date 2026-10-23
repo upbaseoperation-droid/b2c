@@ -60,18 +60,17 @@ import { exportInputPlanStudioToExcel, exportBrandMonthlyOneSheetToExcel } from 
 import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
 import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
 import { MonthlyPlanHub } from './MonthlyPlanHub';
+import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
+import { checkBreakdownForSubmit } from '../../lib/planBreakdownRules';
 import {
   INITIAL_MONTHLY_PLANS,
   getPlanVersionSnapshots,
   enrichPlanWithVersions,
-  buildDefaultWeeklyMatrix,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
 import { filterScopedPlans } from '../../lib/rbacScope';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
-import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
-import { usePlanChat } from '../../lib/usePlanChat';
 import { PlanSyncBadge } from './PlanSyncBadge';
 import {
   ConfirmDialog,
@@ -271,7 +270,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
   const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Đồng bộ vai trò thao tác theo tài khoản đang đăng nhập
   const [prevUserRole, setPrevUserRole] = useState<string | undefined>(undefined);
@@ -305,107 +303,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     | 'EXCEL_PREVIEW'
     | 'BRAND_ONE_SHEET'
   >('OVERVIEW');
-
-  // Ma trận phân rã 5 tuần thực tế chia tách 4 khối cột nghiệp vụ độc lập
-  const [weeklyMatrix, setWeeklyMatrix] = useState(() =>
-    buildDefaultWeeklyMatrix(INITIAL_MONTHLY_PLANS[0]?.month || '2026/10', INITIAL_MONTHLY_PLANS[0]?.pic || 'Khánh Vy')
-  );
-
-  const [expandedWeekIndex, setExpandedWeekIndex] = useState<number | null>(null);
-
-  const weeklyMatrixTotals = useMemo(() => {
-    const affQty = weeklyMatrix.reduce((s, r) => s + (Number(r.affPaidQty) || 0), 0);
-    const affBudget = weeklyMatrix.reduce((s, r) => s + (Number(r.affPaidBudget) || 0), 0);
-    const tapQty = weeklyMatrix.reduce((s, r) => s + (Number(r.tapFreeQty) || 0), 0);
-    const selfQty = weeklyMatrix.reduce((s, r) => s + (Number(r.selfChannelQty) || 0), 0);
-    const selfBudget = weeklyMatrix.reduce((s, r) => s + (Number(r.selfChannelBudget) || 0), 0);
-    const multiQty = weeklyMatrix.reduce((s, r) => s + (Number(r.multiQty) || 0), 0);
-    const multiBudget = weeklyMatrix.reduce((s, r) => s + (Number(r.multiBudget) || 0), 0);
-
-    const totalQty = affQty + tapQty + selfQty + multiQty;
-    const totalBudget = affBudget + selfBudget + multiBudget;
-
-    return {
-      affQty,
-      affBudget,
-      tapQty,
-      selfQty,
-      selfBudget,
-      multiQty,
-      multiBudget,
-      totalQty,
-      totalBudget
-    };
-  }, [weeklyMatrix]);
-
-  const handleUpdateWeeklyMatrixCell = (index: number, field: string, value: number | string) => {
-    setWeeklyMatrix(prev => prev.map((row, idx) => {
-      if (idx === index) {
-        return {
-          ...row,
-          [field]: typeof value === 'number' ? Math.max(0, value) : value
-        };
-      }
-      return row;
-    }));
-  };
-
-  const handleUpdateWeeklyTier = (weekIdx: number, tierKey: string, val: number) => {
-    setWeeklyMatrix(prev => prev.map((row, idx) => {
-      if (idx === weekIdx) {
-        const curTiers = row.tiers || { kl1: 0, kl2: 0, kl3: 0, kl4: 0, kl5: 0, kl6: 0, kl7: 0 };
-        const updatedTiers = { ...curTiers, [tierKey]: Math.max(0, val) };
-        const newAffQty = Object.values(updatedTiers).reduce((a, b) => a + b, 0);
-        return {
-          ...row,
-          tiers: updatedTiers,
-          affPaidQty: newAffQty
-        };
-      }
-      return row;
-    }));
-  };
-
-  const handleResetWeeklyMatrix = () => {
-    setWeeklyMatrix(buildDefaultWeeklyMatrix(planState.month || '2026/10', planState.pic || 'Khánh Vy'));
-    if (onNotify) onNotify('Đã khôi phục ma trận phân rã 5 tuần về phân bổ chuẩn!');
-  };
-
-  const handleSaveWeeklyMatrix = () => {
-    if (onNotify) onNotify(`Đã lưu thành công kế hoạch phân rã 5 tuần cho gian hàng ${planState.brandName}!`);
-  };
-
-  const handleSyncWeeklyMatrixToStore = () => {
-    if (onApplyPlanToWeeklyStore) {
-      const w1 = weeklyMatrix[0];
-      const weeklyPlan: WeeklyStorePlan411 = {
-        id: `plan-411-${planState.brandName}-${planState.month}-${w1.week.slice(0, 3)}`,
-        month: planState.month,
-        week: w1.week,
-        pic: w1.pic,
-        storeName: planState.brandName,
-        tiktokAffiliateQty: w1.affPaidQty,
-        tapAffiliateQty: w1.tapFreeQty,
-        kocTiersCount: w1.tiers || { kl1: 2, kl2: 3, kl3: 3, kl4: 1, kl5: 1, kl6: 0, kl7: 0 },
-        totalAffiliateBudget: w1.affPaidBudget,
-        tierBudgets: {
-          kl1: 500000,
-          kl2: 3000000,
-          kl3: 7500000,
-          kl4: 4500000,
-          kl5: 8500000,
-          kl6: 0,
-          kl7: 0
-        },
-        actualBookedQty: 0,
-        actualSpentBudget: 0,
-        targetGmv: planState.targetGmv ? Math.round(planState.targetGmv / 5) : 0,
-        notes: `Kế hoạch phân rã tuần từ Studio: 4 Trụ cột (Affiliate ${w1.affPaidQty} clip, TAP ${w1.tapFreeQty} clip, Kênh tự xây ${w1.selfChannelQty} clip, Đa sàn ${w1.multiQty} clip)`
-      };
-      onApplyPlanToWeeklyStore(weeklyPlan);
-    }
-    if (onNotify) onNotify(`Đã đồng bộ phân rã tuần vào lịch thực thi gian hàng ${planState.brandName}!`);
-  };
 
   // View Mode: 'CARDS' (Intuitive & Visual) or 'TABLE' (Clean & Fast)
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
@@ -507,14 +404,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
   });
 
-  // Trao đổi realtime của kế hoạch đang mở (tin lưu qua API riêng, không phụ thuộc revision)
-  const planChat = usePlanChat({
-    planId: isShowingStudio ? planState.id : null,
-    initialMessages: planState.discussions ?? [],
-    currentUser,
-    enabled: isChatOpen
-  });
-
   // State thu gọn / mở rộng chi tiết Campaign & Key Visual ở Tab 1
   const [isCampaignDetailExpanded, setIsCampaignDetailExpanded] = useState(false);
 
@@ -530,16 +419,25 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [submissionNote, setSubmissionNote] = useState<string>('');
 
   const handleSubmitPlanToManager = () => {
+    const gate = checkBreakdownForSubmit(planState);
+    if (!gate.canSubmit) {
+      notify(gate.reason || 'Chưa đủ điều kiện gửi duyệt.');
+      return;
+    }
     const actor = currentUser?.name || planState.pic || 'Nhân viên Booking';
     const now = new Date().toISOString();
     const finalNote = submissionNote.trim() || `Đã trao đổi thống nhất với Growth (${planState.growthPic || 'Growth Lead'}) về các chỉ số GMV và ngân sách B2C. Kính gửi Quản lý phê duyệt.`;
     const log = `Nhân viên (${actor}) đã GỬI DUYỆT QUẢN LÝ sau khi thống nhất chỉ số với Growth team: "${finalNote}"`;
 
-    handleStatusChangeForPlan(planState.id, 'PENDING_APPROVAL', log, finalNote);
+    // Gian có Trưởng nhóm: sơ duyệt trước, rồi mới tới Giám đốc. Gian không có Trưởng nhóm: lên thẳng Giám đốc.
+    const needsLeader = planState.hasBookingLeader !== false && Boolean(planState.bookingLeader);
+    const nextStatus: MonthlyPlanStatus = needsLeader ? 'PENDING_PRE_APPROVAL' : 'PENDING_APPROVAL';
+    handleStatusChangeForPlan(planState.id, nextStatus, log, finalNote);
 
     setPlanState(prev => ({
       ...prev,
-      status: 'PENDING_APPROVAL',
+      status: nextStatus,
+      leaderApprovalStatus: needsLeader ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG',
       growthAlignmentStatus: 'ĐÃ_THỐNG_NHẤT',
       growthAlignmentNotes: finalNote,
       submittedAt: now,
@@ -956,74 +854,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     notify(`Đã tự động khớp phần ngân sách dư vào KL1–KL3 và bù đủ chỉ tiêu video vào FOC (0đ).`);
   };
 
-  // Tự động rải tổng 4 đầu việc B2C xuống 5 tuần (W1 -> W5) theo nhịp chiến dịch
-  const handleDistributeWeeklyByPattern = (pattern: 'EVEN' | 'MEGA_EARLY' | 'PAYDAY_PEAK') => {
-    const weights =
-      pattern === 'MEGA_EARLY'
-        ? [0.30, 0.25, 0.18, 0.17, 0.10]
-        : pattern === 'PAYDAY_PEAK'
-        ? [0.15, 0.28, 0.17, 0.28, 0.12]
-        : [0.20, 0.20, 0.20, 0.20, 0.20];
-
-    const splitByWeights = (total: number) => {
-      let rem = total;
-      return weights.map((w, i) => {
-        if (i === weights.length - 1) return Math.max(0, rem);
-        const val = Math.round(total * w);
-        rem -= val;
-        return Math.max(0, val);
-      });
-    };
-
-    const affQtyArr = splitByWeights(channelTotals.affiliatePaid.qty);
-    const affBudArr = splitByWeights(channelTotals.affiliatePaid.budget);
-    const focQtyArr = splitByWeights(channelTotals.tapFreecast.qty);
-    const selfQtyArr = splitByWeights(channelTotals.selfChannel.qty);
-    const selfBudArr = splitByWeights(channelTotals.selfChannel.budget);
-    const multiQtyArr = splitByWeights(channelTotals.multiPlatform.qty);
-    const multiBudArr = splitByWeights(channelTotals.multiPlatform.budget);
-
-    const getTierTotal = (code: string) => planState.items.find(it => it.tierCode === code)?.qty || 0;
-    const kl1Arr = splitByWeights(getTierTotal('KL1'));
-    const kl2Arr = splitByWeights(getTierTotal('KL2'));
-    const kl3Arr = splitByWeights(getTierTotal('KL3'));
-    const kl4Arr = splitByWeights(getTierTotal('KL4'));
-    const kl5Arr = splitByWeights(getTierTotal('KL5'));
-    const kl6Arr = splitByWeights(getTierTotal('KL6'));
-    const kl7Arr = splitByWeights(getTierTotal('KL7'));
-
-    setWeeklyMatrix(prev =>
-      prev.map((row, idx) => ({
-        ...row,
-        pic: planState.pic || row.pic,
-        affPaidQty: affQtyArr[idx],
-        affPaidBudget: affBudArr[idx],
-        tapFreeQty: focQtyArr[idx],
-        selfChannelQty: selfQtyArr[idx],
-        selfChannelBudget: selfBudArr[idx],
-        multiQty: multiQtyArr[idx],
-        multiBudget: multiBudArr[idx],
-        tiers: {
-          kl1: kl1Arr[idx],
-          kl2: kl2Arr[idx],
-          kl3: kl3Arr[idx],
-          kl4: kl4Arr[idx],
-          kl5: kl5Arr[idx],
-          kl6: kl6Arr[idx],
-          kl7: kl7Arr[idx],
-        }
-      }))
-    );
-
-    const patternLabel =
-      pattern === 'MEGA_EARLY'
-        ? 'Nhịp Mega Sale đầu tháng (dồn W1–W2)'
-        : pattern === 'PAYDAY_PEAK'
-        ? 'Nhịp Mid-month & Payday (đỉnh W2 & W4)'
-        : 'Rải đều 5 tuần (20% mỗi tuần)';
-    notify(`Đã tự động rải 4 đầu việc B2C xuống 5 tuần theo ${patternLabel}.`);
-  };
-
   const handleApplyPreset = (preset: 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER') => {
     const balanced = autoBalancePlanItems(
       planState.items,
@@ -1422,6 +1252,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         )}
         <MonthlyPlanHub
           plans={monthlyPlans}
+          onPlanOrderUploaded={() => planSync.reload()}
           storePortfolios={storePortfolios}
           campaigns={effectiveCampaigns}
           onCampaignsChange={updateCampaigns}
@@ -1439,7 +1270,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           onOpenPlanReport={() => setIsPlanReportOpen(true)}
         onSelectPlan={(selected, options) => {
           setPlanState(selected);
-          setWeeklyMatrix(buildDefaultWeeklyMatrix(selected.month || '2026/10', selected.pic || 'Khánh Vy'));
           if (options?.focusStaffName) {
             setFocusedStaffFilter(options.focusStaffName);
             if (options.focusWorkstream === 'AFFILIATE_PAID') setActiveTab('AFFILIATE_PAID');
@@ -1455,7 +1285,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         onCreatePlan={(newPlan) => {
           setMonthlyPlans(prev => [newPlan, ...prev]);
           setPlanState(newPlan);
-          setWeeklyMatrix(buildDefaultWeeklyMatrix(newPlan.month || '2026/10', newPlan.pic || 'Khánh Vy'));
           setIsShowingStudio(true);
         }}
         onClonePlan={(sourcePlan, targetMonth) => {
@@ -1548,6 +1377,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // MÀN HÌNH 2: PHÂN RÃ KẾ HOẠCH CHI TIẾT
   const openSubmitToManager = () => {
+    const gate = checkBreakdownForSubmit(planState);
+    if (!gate.canSubmit) {
+      notify(gate.reason || 'Chưa đủ điều kiện gửi duyệt.');
+      return;
+    }
     setSubmissionNote(`Em đã phân rã xong 4 kênh theo đúng chỉ tiêu GMV (${(planState.targetGmv / 1000000).toLocaleString('vi-VN')} Tr) và ngân sách trần (${(planState.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr) đã thống nhất với Growth Lead. Kính gửi Quản lý phê duyệt giải ngân.`);
     setGrowthAlignedConfirm(true);
     setIsSubmitToManagerModalOpen(true);
@@ -1557,6 +1391,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const isLeadUser = ['ADMIN', 'MANAGER'].includes(userRole) || currentRole === 'LEAD';
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
   const hasLeader = Boolean(planState.hasBookingLeader !== undefined ? planState.hasBookingLeader : planState.bookingLeader);
+  const isPlanLeaderUser = hasLeader && Boolean(planState.bookingLeader) && (currentUser?.name || '').trim().toLowerCase() === (planState.bookingLeader || '').trim().toLowerCase();
   const studioVersionSnapshots = getPlanVersionSnapshots(planState);
   const activeVersionCode = planState.currentVersionCode || 'v1.0';
 
@@ -1679,8 +1514,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <span>Lưu</span>
         </button>
 
-        <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
-
         <div className="relative">
           <button
             type="button"
@@ -1770,6 +1603,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
         {isPlanLocked ? (
           <Status tone="positive">{`Đã chốt ${activeVersionCode}`}</Status>
+        ) : planStatus === 'PENDING_PRE_APPROVAL' ? (
+          isPlanLeaderUser || isLeadUser ? (
+            <button
+              type="button"
+              onClick={() => setActiveTab('OVERVIEW')}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Xem &amp; sơ duyệt</span>
+            </button>
+          ) : (
+            <Status tone="warning">Chờ Trưởng nhóm sơ duyệt</Status>
+          )
         ) : planStatus === 'PENDING_APPROVAL' ? (
           isLeadUser ? (
             <button
@@ -1838,7 +1684,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            3. Lịch tuần
+            3. Phân rã tuần
           </button>
           <button
             type="button"
@@ -3121,549 +2967,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 5. TAB MA TRẬN PHÂN RÃ TUẦN - 4 TRỤ CỘT TRIỂN KHAI (W1 -> W5)            */}
-      {/* ========================================================================= */}
+      {/* PHÂN RÃ TUẦN: nhập theo tuần, tự cộng và đối chiếu với bảng 4.1 */}
       {activeTab === 'WEEKLY_MATRIX' && (
-        <div className="space-y-4">
-          {/* Thanh điều khiển 1 dòng gọn gàng (Bỏ 5 hộp lặp lại chỉ số bên dưới bảng) */}
-          <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-semibold text-slate-800 mr-1">Tự động rải 5 tuần theo nhịp:</span>
-              <button
-                type="button"
-                onClick={() => handleDistributeWeeklyByPattern('MEGA_EARLY')}
-                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
-              >
-                Mega Sale đầu tháng (Dồn W1–W2: 55%)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDistributeWeeklyByPattern('PAYDAY_PEAK')}
-                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
-              >
-                Mid-month &amp; Payday (Đỉnh W2 &amp; W4)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDistributeWeeklyByPattern('EVEN')}
-                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
-              >
-                Rải đều 5 tuần (20% / tuần)
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              <button
-                onClick={handleResetWeeklyMatrix}
-                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                <span>Khôi phục mẫu</span>
-              </button>
-              <button
-                onClick={handleSyncWeeklyMatrixToStore}
-                className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              >
-                <SendHorizonal className="w-3.5 h-3.5 text-blue-600" />
-                <span>Đồng bộ lịch tuần</span>
-              </button>
-              <button
-                onClick={handleSaveWeeklyMatrix}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5 text-amber-300" />
-                <span>Lưu 5 tuần</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Ma Trận Phân Rã Chi Tiết 5 Tuần Table (Gọn gàng không cuộn ngang) */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left text-xs border-collapse">
-                <thead>
-                  {/* Hàng Header Nhóm (Group Headers) */}
-                  <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
-                    <th className="py-2.5 px-2.5 w-[12%] border-r border-slate-200">Tuần</th>
-                    <th colSpan={2} className="py-2 px-2 text-center w-[16%] bg-blue-100/90 text-blue-950 border-r border-blue-200 font-semibold">
-                      1. KOC trả phí
-                    </th>
-                    <th className="py-2 px-2 text-center w-[8%] bg-blue-100/90 text-blue-950 border-r border-blue-200 font-semibold">
-                      2. FOC (0đ)
-                    </th>
-                    <th colSpan={2} className="py-2 px-2 text-center w-[16%] bg-emerald-100/90 text-emerald-950 border-r border-emerald-200 font-semibold">
-                      3. Kênh tự xây
-                    </th>
-                    <th colSpan={2} className="py-2 px-2 text-center w-[16%] bg-amber-100/90 text-amber-950 border-r border-amber-200 font-semibold">
-                      4. Đa sàn ngoài TikTok
-                    </th>
-                    <th colSpan={2} className="py-2 px-2 text-center w-[14%] bg-slate-800 text-white border-r border-slate-700 font-semibold">
-                      Tổng Tuần
-                    </th>
-                    <th className="py-2 px-2 w-[9%] text-center border-r border-slate-200">PIC B2C</th>
-                    <th className="py-2 px-1.5 w-[5%] text-center border-r border-slate-200">TT</th>
-                    <th className="py-2 px-1 w-[4%] text-center">Mở</th>
-                  </tr>
-                  {/* Hàng Header Cột Con (Sub Headers) */}
-                  <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-2xs">
-                    <th className="py-1.5 px-2.5 border-r border-slate-200 text-slate-400">Giai đoạn</th>
-                    {/* Trụ 1 */}
-                    <th className="py-1.5 px-1.5 text-center bg-blue-50/50 text-blue-900 border-r border-blue-100">Video</th>
-                    <th className="py-1.5 px-1.5 text-right bg-blue-50/50 text-blue-900 border-r border-blue-200">Ngân sách</th>
-                    {/* Trụ 2 */}
-                    <th className="py-1.5 px-1.5 text-center bg-blue-50/50 text-blue-900 border-r border-blue-200">Video 0đ</th>
-                    {/* Trụ 3 */}
-                    <th className="py-1.5 px-1.5 text-center bg-emerald-50/50 text-emerald-900 border-r border-emerald-100">Video</th>
-                    <th className="py-1.5 px-1.5 text-right bg-emerald-50/50 text-emerald-900 border-r border-emerald-200">Chi phí SX</th>
-                    {/* Trụ 4 */}
-                    <th className="py-1.5 px-1.5 text-center bg-amber-50/50 text-amber-900 border-r border-amber-100">Video</th>
-                    <th className="py-1.5 px-1.5 text-right bg-amber-50/50 text-amber-900 border-r border-amber-200">Ngân sách</th>
-                    {/* Tổng */}
-                    <th className="py-1.5 px-1.5 text-center bg-slate-100 text-slate-900 border-r border-slate-200 font-semibold">Video</th>
-                    <th className="py-1.5 px-1.5 text-right bg-slate-100 text-slate-900 border-r border-slate-300 font-semibold">Chi phí</th>
-                    {/* Meta */}
-                    <th className="py-1.5 px-1.5 text-center border-r border-slate-200">Thực thi</th>
-                    <th className="py-1.5 px-1 text-center border-r border-slate-200">Tiến độ</th>
-                    <th className="py-1.5 px-1 text-center">Bậc</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100">
-                  {weeklyMatrix.map((row, idx) => {
-                    const rowTotalQty = (row.affPaidQty || 0) + (row.tapFreeQty || 0) + (row.selfChannelQty || 0) + (row.multiQty || 0);
-                    const rowTotalBudget = (row.affPaidBudget || 0) + (row.selfChannelBudget || 0) + (row.multiBudget || 0);
-                    const isExpanded = expandedWeekIndex === idx;
-
-                    return (
-                      <React.Fragment key={row.week}>
-                        <tr className={`hover:bg-slate-50/80 transition ${isExpanded ? 'bg-blue-50/30' : ''}`}>
-                          {/* Cột Tuần */}
-                          <td className="py-2 px-2.5 border-r border-slate-200 align-middle">
-                            <span className="font-semibold text-slate-900 block font-mono text-xs">
-                              {row.week.split(' ')[0]}
-                            </span>
-                            <span className="text-2xs text-slate-500 font-mono block truncate">
-                              {row.week.split(' ').slice(1).join(' ')}
-                            </span>
-                          </td>
-
-                          {/* Trụ 1: Affiliate Có Cast */}
-                          <td className="py-2 px-1.5 border-r border-blue-100 bg-blue-50/20 text-center align-middle">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.affPaidQty}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'affPaidQty', Number(e.target.value))}
-                              className="w-full max-w-[48px] text-center font-semibold font-mono py-1 px-1 bg-white border border-blue-300 rounded text-blue-950 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                            />
-                          </td>
-                          <td className="py-2 px-1.5 border-r border-blue-200 bg-blue-50/20 text-right align-middle">
-                            <input
-                              type="number"
-                              step="1000000"
-                              min="0"
-                              value={row.affPaidBudget}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'affPaidBudget', Number(e.target.value))}
-                              className="w-full text-right font-medium font-mono py-0.5 px-1 bg-white border border-blue-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 text-2xs"
-                            />
-                            <span className="text-2xs text-blue-600 block mt-0.5 font-mono">
-                              {formatVndShort(row.affPaidBudget)}
-                            </span>
-                          </td>
-
-                          {/* Trụ 2: TAP Freecast (FOC 0đ) */}
-                          <td className="py-2 px-1.5 border-r border-blue-200 bg-blue-50/20 text-center align-middle">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.tapFreeQty}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'tapFreeQty', Number(e.target.value))}
-                              className="w-full max-w-[52px] text-center font-semibold font-mono py-1 px-1 bg-white border border-blue-300 rounded text-blue-950 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
-                            />
-                            <span className="text-2xs text-blue-600 block mt-0.5 font-mono">0 đ</span>
-                          </td>
-
-                          {/* Trụ 3: Kênh Tự Xây */}
-                          <td className="py-2 px-1.5 border-r border-emerald-100 bg-emerald-50/20 text-center align-middle">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.selfChannelQty}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'selfChannelQty', Number(e.target.value))}
-                              className="w-full max-w-[48px] text-center font-semibold font-mono py-1 px-1 bg-white border border-emerald-300 rounded text-emerald-950 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
-                            />
-                          </td>
-                          <td className="py-2 px-1.5 border-r border-emerald-200 bg-emerald-50/20 text-right align-middle">
-                            <input
-                              type="number"
-                              step="500000"
-                              min="0"
-                              value={row.selfChannelBudget}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'selfChannelBudget', Number(e.target.value))}
-                              className="w-full text-right font-medium font-mono py-0.5 px-1 bg-white border border-emerald-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-2xs"
-                            />
-                            <span className="text-2xs text-emerald-600 block mt-0.5 font-mono">
-                              {formatVndShort(row.selfChannelBudget)}
-                            </span>
-                          </td>
-
-                          {/* Trụ 4: Đa Sàn Khác */}
-                          <td className="py-2 px-1.5 border-r border-amber-100 bg-amber-50/20 text-center align-middle">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.multiQty}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'multiQty', Number(e.target.value))}
-                              className="w-full max-w-[48px] text-center font-semibold font-mono py-1 px-1 bg-white border border-amber-300 rounded text-amber-950 focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs"
-                            />
-                          </td>
-                          <td className="py-2 px-1.5 border-r border-amber-200 bg-amber-50/20 text-right align-middle">
-                            <input
-                              type="number"
-                              step="500000"
-                              min="0"
-                              value={row.multiBudget}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'multiBudget', Number(e.target.value))}
-                              className="w-full text-right font-medium font-mono py-0.5 px-1 bg-white border border-amber-300 rounded text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500 text-2xs"
-                            />
-                            <span className="text-2xs text-amber-600 block mt-0.5 font-mono">
-                              {formatVndShort(row.multiBudget)}
-                            </span>
-                          </td>
-
-                          {/* Tổng Tuần */}
-                          <td className="py-2 px-1.5 border-r border-slate-200 bg-slate-50 text-center font-mono font-semibold text-slate-900 text-xs align-middle">
-                            {rowTotalQty}
-                          </td>
-                          <td className="py-2 px-1.5 border-r border-slate-300 bg-slate-50 text-right font-mono font-semibold text-blue-950 text-xs align-middle">
-                            {formatVndShort(rowTotalBudget)}
-                          </td>
-
-                          {/* PIC */}
-                          <td className="py-2 px-1.5 border-r border-slate-200 align-middle">
-                            <select
-                              value={row.pic}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'pic', e.target.value)}
-                              className="w-full text-2xs font-semibold px-1 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded text-slate-800 focus:outline-none focus:border-blue-500 truncate"
-                            >
-                              {PIC_OPTIONS.map(staff => (
-                                <option key={staff} value={staff}>{staff}</option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Trạng Thái */}
-                          <td className="py-2 px-1 border-r border-slate-200 text-center align-middle">
-                            <select
-                              value={row.status}
-                              onChange={(e) => handleUpdateWeeklyMatrixCell(idx, 'status', e.target.value)}
-                              className={`w-full text-2xs font-semibold px-1 py-0.5 rounded border text-center truncate ${
-                                row.status === 'Đã lập'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : row.status === 'Đang chạy'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
-                              }`}
-                            >
-                              <option value="Đã lập">Đã lập</option>
-                              <option value="Dự thảo">Dự thảo</option>
-                              <option value="Đang chạy">Đang chạy</option>
-                              <option value="Hoàn thành">Xong</option>
-                            </select>
-                          </td>
-
-                          {/* Nút Xem Chi Tiết Bậc KOC */}
-                          <td className="py-2 px-1 text-center align-middle">
-                            <button
-                              onClick={() => setExpandedWeekIndex(isExpanded ? null : idx)}
-                              className={`p-1 rounded border transition ${
-                                isExpanded
-                                  ? 'bg-blue-600 text-white border-blue-600'
-                                  : 'bg-white hover:bg-slate-100 text-slate-500 border-slate-200'
-                              }`}
-                              title={isExpanded ? 'Thu gọn chi tiết bậc' : 'Mở rộng chi tiết bậc KOC và định dạng'}
-                            >
-                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                            </button>
-                          </td>
-                        </tr>
-
-                        {/* MỞ RỘNG CHI TIẾT BẬC KOC VÀ ĐỊNH DẠNG TUẦN NÀY */}
-                        {isExpanded && (
-                          <tr className="bg-slate-50/90 border-b border-blue-100">
-                            <td colSpan={12} className="p-4">
-                              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4 shadow-xs">
-                                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-600" />
-                                    <h4 className="text-xs font-semibold text-slate-900">
-                                      Chi Tiết Phân Bậc KOC &amp; Định Dạng Tuần {row.week.split(' ')[0]} ({row.pic} phụ trách)
-                                    </h4>
-                                  </div>
-                                  <span className="text-2xs text-slate-500 font-mono">
-                                    Tổng: {rowTotalQty} clip ({formatVndShort(rowTotalBudget)})
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                  {/* Khối 1: Phân bậc KL1 -> KL7 */}
-                                  <div className="p-3 rounded-lg bg-blue-50/40 border border-blue-100 space-y-2">
-                                    <span className="text-2xs font-semibold text-blue-900 block  ">
-                                      Bậc KOC Có Cast (KL1 - KL7)
-                                    </span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-2xs">
-                                      {(['kl1', 'kl2', 'kl3', 'kl4', 'kl5', 'kl6', 'kl7'] as const).map(tierKey => (
-                                        <div key={tierKey} className="flex items-center justify-between bg-white px-2 py-1 rounded border border-blue-200">
-                                          <span className="font-mono font-semibold text-blue-900 ">{tierKey}</span>
-                                          <input
-                                            type="number"
-                                            min="0"
-                                            value={row.tiers?.[tierKey] || 0}
-                                            onChange={(e) => handleUpdateWeeklyTier(idx, tierKey, Number(e.target.value))}
-                                            className="w-10 text-center font-mono font-semibold py-0.5 border border-slate-200 rounded text-slate-900"
-                                          />
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-
-                                  {/* Khối 2: Nguồn TAP FOC */}
-                                  <div className="p-3 rounded-lg bg-blue-50/40 border border-blue-100 space-y-2">
-                                    <span className="text-2xs font-semibold text-blue-900 block  ">
-                                      Nguồn Mẫu TAP Freecast
-                                    </span>
-                                    <div className="space-y-1.5 text-2xs">
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-blue-200">
-                                        <span className="text-blue-950 font-medium">TAP UpAffiliate</span>
-                                        <span className="font-mono font-semibold text-blue-900">{row.tapChannels?.upAffiliate || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-blue-200">
-                                        <span className="text-blue-950 font-medium">TAP Brand (TikTok)</span>
-                                        <span className="font-mono font-semibold text-blue-900">{row.tapChannels?.brand || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-blue-200">
-                                        <span className="text-blue-950 font-medium">TAP Upbase Nội bộ</span>
-                                        <span className="font-mono font-semibold text-blue-900">{row.tapChannels?.upbase || 0} clip</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Khối 3: Định dạng Kênh Tự Xây */}
-                                  <div className="p-3 rounded-lg bg-emerald-50/40 border border-emerald-100 space-y-2">
-                                    <span className="text-2xs font-semibold text-emerald-900 block  ">
-                                      Định Dạng Kênh Tự Xây (Inhouse)
-                                    </span>
-                                    <div className="space-y-1.5 text-2xs">
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-emerald-200">
-                                        <span className="text-emerald-950 font-medium">Review voice</span>
-                                        <span className="font-mono font-semibold text-emerald-900">{row.selfFormats?.voice || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-emerald-200">
-                                        <span className="text-emerald-950 font-medium">Nhạc text trending</span>
-                                        <span className="font-mono font-semibold text-emerald-900">{row.selfFormats?.text || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-emerald-200">
-                                        <span className="text-emerald-950 font-medium">Video remix / Highlight</span>
-                                        <span className="font-mono font-semibold text-emerald-900">{row.selfFormats?.remix || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-emerald-200">
-                                        <span className="text-emerald-950 font-medium">Kịch bản dựng tự động</span>
-                                        <span className="font-mono font-semibold text-emerald-900">{row.selfFormats?.autoScript || 0} clip</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Khối 4: Booking Đa Sàn Khác */}
-                                  <div className="p-3 rounded-lg bg-amber-50/40 border border-amber-100 space-y-2">
-                                    <span className="text-2xs font-semibold text-amber-900 block  ">
-                                      Booking Đa Nền Tảng Khác
-                                    </span>
-                                    <div className="space-y-1.5 text-2xs">
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
-                                        <span className="text-amber-950 font-medium">Shopee Video (Reup/Aff)</span>
-                                        <span className="font-mono font-semibold text-amber-900">{row.multiPlatforms?.shopee || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
-                                        <span className="text-amber-950 font-medium">Facebook Reels</span>
-                                        <span className="font-mono font-semibold text-amber-900">{row.multiPlatforms?.facebook || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
-                                        <span className="text-amber-950 font-medium">Threads Viral Post</span>
-                                        <span className="font-mono font-semibold text-amber-900">{row.multiPlatforms?.threads || 0} clip</span>
-                                      </div>
-                                      <div className="flex items-center justify-between bg-white px-2 py-1 rounded border border-amber-200">
-                                        <span className="text-amber-950 font-medium">Instagram Reels</span>
-                                        <span className="font-mono font-semibold text-amber-900">{row.multiPlatforms?.instagram || 0} clip</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-
-                {/* ================================================================= */}
-                {/* FOOTER ĐỐI SOÁT: 3 HÀNG CHUẨN KẾ TOÁN & VẬN HÀNH                  */}
-                {/* ================================================================= */}
-                <tfoot>
-                  {/* HÀNG 1: TỔNG THỰC TẾ 5 TUẦN */}
-                  <tr className="bg-blue-50/70 border-t-2 border-blue-300 font-semibold text-xs">
-                    <td className="py-2.5 px-2.5 text-slate-900 border-r border-blue-200">
-                      Tổng 5 Tuần
-                    </td>
-                    {/* Trụ 1 */}
-                    <td className="py-2 px-1.5 text-center text-blue-950 font-mono border-r border-blue-200 font-semibold">
-                      {weeklyMatrixTotals.affQty}
-                    </td>
-                    <td className="py-2 px-1.5 text-right text-blue-950 font-mono border-r border-blue-300 font-semibold">
-                      {formatVndShort(weeklyMatrixTotals.affBudget)}
-                    </td>
-                    {/* Trụ 2 */}
-                    <td className="py-2 px-1.5 text-center text-blue-950 font-mono border-r border-blue-300 font-semibold">
-                      {weeklyMatrixTotals.tapQty}
-                    </td>
-                    {/* Trụ 3 */}
-                    <td className="py-2 px-1.5 text-center text-emerald-950 font-mono border-r border-emerald-200 font-semibold">
-                      {weeklyMatrixTotals.selfQty}
-                    </td>
-                    <td className="py-2 px-1.5 text-right text-emerald-950 font-mono border-r border-emerald-300 font-semibold">
-                      {formatVndShort(weeklyMatrixTotals.selfBudget)}
-                    </td>
-                    {/* Trụ 4 */}
-                    <td className="py-2 px-1.5 text-center text-amber-950 font-mono border-r border-amber-200 font-semibold">
-                      {weeklyMatrixTotals.multiQty}
-                    </td>
-                    <td className="py-2 px-1.5 text-right text-amber-950 font-mono border-r border-amber-300 font-semibold">
-                      {formatVndShort(weeklyMatrixTotals.multiBudget)}
-                    </td>
-                    {/* Tổng Kế Hoạch Tuần */}
-                    <td className="py-2 px-1.5 text-center text-slate-900 font-mono text-xs border-r border-slate-300 font-semibold bg-blue-100/60">
-                      {weeklyMatrixTotals.totalQty}
-                    </td>
-                    <td className="py-2 px-1.5 text-right text-blue-900 font-mono text-xs border-r border-slate-300 font-semibold bg-blue-100/60">
-                      {formatVndShort(weeklyMatrixTotals.totalBudget)}
-                    </td>
-                    <td colSpan={3} className="py-2 px-2 text-center text-2xs text-slate-600 font-semibold">
-                      Tổng thực tế 5 tuần
-                    </td>
-                  </tr>
-
-                  {/* HÀNG 2: CHỈ TIÊU GIAO TỪ BẢNG MACRO 4.1 */}
-                  <tr className="bg-slate-100/80 border-t border-slate-200 font-medium text-xs text-slate-700">
-                    <td className="py-2 px-2.5 border-r border-slate-200 font-semibold">
-                      Chỉ Tiêu 4.1
-                    </td>
-                    {/* Trụ 1: Target */}
-                    <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {layer1Metrics.qtyAffiliatePaid}
-                    </td>
-                    <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(layer1Metrics.budgetAffiliateNet)}
-                    </td>
-                    {/* Trụ 2: Target */}
-                    <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {layer1Metrics.qtyFocSample}
-                    </td>
-                    {/* Trụ 3: Target */}
-                    <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {layer1Metrics.qtySelfChannel}
-                    </td>
-                    <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(layer1Metrics.budgetSelfChannelNet)}
-                    </td>
-                    {/* Trụ 4: Target */}
-                    <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-slate-600">
-                      {layer1Metrics.qtyMultiPlatform}
-                    </td>
-                    <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-slate-600">
-                      {formatVndShort(layer1Metrics.budgetMultiPlatformNet)}
-                    </td>
-                    {/* Tổng Target */}
-                    <td className="py-2 px-1.5 text-center font-mono font-semibold text-slate-800 border-r border-slate-200 bg-slate-200/50">
-                      {totalLayer1Videos}
-                    </td>
-                    <td className="py-2 px-1.5 text-right font-mono font-semibold text-slate-800 border-r border-slate-200 bg-slate-200/50">
-                      {formatVndShort(totalLayer1ChannelBudgetNet - layer1Metrics.budgetAdsNet - layer1Metrics.budgetLivestreamNet)}
-                    </td>
-                    <td colSpan={3} className="py-2 px-2 text-center text-2xs text-slate-500">
-                      Đề bài Chỉ tiêu tháng
-                    </td>
-                  </tr>
-
-                  {/* HÀNG 3: ĐỐI SOÁT CHÊNH LỆCH (VARIANCE GAP) */}
-                  {(() => {
-                    const targetNonLiveBudget =
-                      layer1Metrics.budgetAffiliateNet +
-                      layer1Metrics.budgetSelfChannelNet +
-                      layer1Metrics.budgetMultiPlatformNet;
-                    const videoDelta = weeklyMatrixTotals.totalQty - totalLayer1Videos;
-                    const budgetDelta = weeklyMatrixTotals.totalBudget - targetNonLiveBudget;
-                    const isBudgetSafe = budgetDelta <= 0;
-
-                    return (
-                      <tr className="bg-slate-50 border-t border-slate-200 font-semibold text-xs">
-                        <td className="py-2 px-2.5 border-r border-slate-200 text-slate-900">
-                          Chênh Lệch
-                        </td>
-                        {/* Trụ 1: Gap */}
-                        <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.affQty - layer1Metrics.qtyAffiliatePaid >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.affQty - layer1Metrics.qtyAffiliatePaid}
-                        </td>
-                        <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.affBudget - layer1Metrics.budgetAffiliateNet)}
-                        </td>
-                        {/* Trụ 2: Gap */}
-                        <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.tapQty - layer1Metrics.qtyFocSample >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.tapQty - layer1Metrics.qtyFocSample}
-                        </td>
-                        {/* Trụ 3: Gap */}
-                        <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.selfQty - layer1Metrics.qtySelfChannel >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.selfQty - layer1Metrics.qtySelfChannel}
-                        </td>
-                        <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.selfBudget - layer1Metrics.budgetSelfChannelNet)}
-                        </td>
-                        {/* Trụ 4: Gap */}
-                        <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {weeklyMatrixTotals.multiQty - layer1Metrics.qtyMultiPlatform >= 0 ? '+' : ''}
-                          {weeklyMatrixTotals.multiQty - layer1Metrics.qtyMultiPlatform}
-                        </td>
-                        <td className="py-2 px-1.5 text-right font-mono border-r border-slate-200 text-2xs text-slate-600">
-                          {formatVndShort(weeklyMatrixTotals.multiBudget - layer1Metrics.budgetMultiPlatformNet)}
-                        </td>
-                        {/* Tổng Gap */}
-                        <td className="py-2 px-1.5 text-center font-mono border-r border-slate-200 text-xs font-semibold text-blue-900 bg-slate-100">
-                          {videoDelta >= 0 ? `+${videoDelta}` : videoDelta}
-                        </td>
-                        <td className={`py-2 px-1.5 text-right font-mono border-r border-slate-200 text-xs font-semibold bg-slate-100 ${
-                          isBudgetSafe ? 'text-emerald-700' : 'text-rose-700'
-                        }`}>
-                          {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
-                        </td>
-                        <td colSpan={3} className="py-2 px-1.5 text-center">
-                          <span className={`text-2xs font-semibold ${
-                            isBudgetSafe ? 'text-emerald-700' : 'text-rose-700'
-                          }`}>
-                            {isBudgetSafe ? '✓ Trong trần' : 'Vượt trần'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })()}
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
+        <PlanWeeklyBreakdown
+          plan={planState}
+          readOnly={isPlanLocked || !['DRAFT', 'REVISION_REQUESTED'].includes(planStatus)}
+          onChange={patch => setPlanState(prev => ({ ...prev, ...patch }))}
+        />
       )}
 
       </fieldset>
@@ -4207,15 +3517,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           setIsVersionHistoryModalOpen(false);
         }}
         onNotify={notify}
-      />
-
-      {/* Khung trao đổi 4 bên (trượt từ bên phải, không chiếm chỗ bảng phân rã) */}
-      <PlanChatDrawer
-        open={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        plan={planState}
-        currentUser={currentUser}
-        chat={planChat}
       />
 
       <OperationalReportDrawer

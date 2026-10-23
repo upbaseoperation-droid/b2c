@@ -159,6 +159,7 @@ export async function checkLink(inputUrl: string, expect: LinkExpectation = {}):
     productId: content.productId ?? null,
     sellerId: content.sellerId ?? null,
     cartProducts: content.cartProducts ?? [],
+    cartDiagnosis: content.cartDiagnosis,
     checks,
     verdict: verdictOf(checks),
     limitations: content.limitations ?? [],

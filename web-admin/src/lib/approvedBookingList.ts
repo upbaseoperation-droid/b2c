@@ -1,4 +1,13 @@
-import type { BookingDealItem, KocItem, SalaryGrade, StorePortfolioItem } from './types';
+import type {
+  BookingDealItem,
+  DealContractAppendixStatus,
+  DealDeliverableItem,
+  DealRightsTermItem,
+  DealSequentialAcceptanceStage,
+  KocItem,
+  SalaryGrade,
+  StorePortfolioItem,
+} from './types';
 import {
   buildTikTokChannelUrl,
   computeGrossFeeWithTax,
@@ -10,7 +19,7 @@ import {
   type StaffListingSheetRow,
 } from './staffBrandListingSheet';
 
-export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v1';
+export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v2';
 export const APPROVED_BOOKING_LIST_UPDATED_EVENT = 'upbase-approved-booking-list-updated';
 
 export type ApprovedBookingPaymentStatus =
@@ -25,6 +34,12 @@ export type ApprovedBookingPipelineStatus =
   | 'Đang thực thi (Đã tạo BO)'
   | 'Đã nghiệm thu video'
   | 'Đã quyết toán';
+
+export type AddonServicesAcceptanceStatus =
+  | 'KHONG_CO'
+  | 'KHOA_CHO_VIDEO'
+  | 'CHO_NGHIEM_THU'
+  | 'DA_NGHIEM_THU_DU';
 
 export interface ApprovedBookingListItem {
   id: string;
@@ -109,6 +124,32 @@ export interface ApprovedBookingListItem {
   soTaiKhoan: string;                  // Cột 24: Số tài khoản
   nganHang: string;                    // Cột 25: Ngân hàng
   soCccd: string;                      // Cột 26: CCCD/MST/Passport
+
+  // 6. Cấu trúc Deal (1 Video Asset + Dịch vụ gia tăng) & Phụ lục Hợp đồng & Nghiệm thu 2 tầng
+  dealStructureType?: 'VIDEO_ONLY' | 'VIDEO_AND_ADDONS';
+  videoAssetNetCost?: number;          // Chi phí Net phần Asset Video gốc trong Deal
+  addonServicesNetCost?: number;       // Tổng chi phí Net các dịch vụ gia tăng đi kèm trong Deal
+  khauTruHangMucHuy?: number;          // Khấu trừ dịch vụ gia tăng không thực hiện (DROPPED) khi quyết toán Deal
+  addonServices?: DealRightsTermItem[]; // Danh sách các dịch vụ gia tăng & quyền lợi đi kèm trong Deal
+  masterContractCode?: string;         // Mã HĐNT của KOC (1 HĐNT / KOC)
+  contractAppendixCode?: string;       // Mã Phụ lục hợp đồng của Deal (1 Phụ lục / Deal)
+  contractAppendixStatus?: DealContractAppendixStatus; // Trạng thái ký Phụ lục Deal
+  sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu tuần tự: (1) Video -> (2) Phần khác
+  addonsAcceptanceStatus?: AddonServicesAcceptanceStatus;
+
+  // 7. Kết nối Luồng phê duyệt thanh toán trên Lark Approval
+  larkApprovalInstanceCode?: string;   // Mã instance luồng duyệt trên Lark Approval (VD: LARK-DNTT-202610-001)
+  larkSlipCode?: string;               // Mã phiếu đối soát thanh toán (VD: DNTT-202610-001 / TU-202610-001)
+  larkApprovalStatus?:
+    | 'CHƯA_TẠO_LUỒNG'
+    | 'PENDING_LEADER'
+    | 'PENDING_DIRECTOR'
+    | 'PENDING_FINANCE'
+    | 'APPROVED'
+    | 'PAID'
+    | 'REJECTED';
+  larkApprovalRouteSummary?: string;   // Tóm tắt luồng phê duyệt Lark Approval (Chuyên viên -> Leader -> GĐ MKT -> Kế toán)
+  larkSyncedAt?: string;
 }
 
 export const LOAI_TAI_KHOAN_THANH_TOAN_OPTIONS: string[] = [
@@ -149,6 +190,85 @@ export function generateBookingOrderCode(monthKey: string, seqHint?: number): st
     ? String(35000 + (seqHint % 60000)).padStart(5, '0')
     : String(Math.floor(10000 + Math.random() * 89999));
   return `BO${yy}${mm}${suffix}`;
+}
+
+/**
+ * Sinh mã Hợp đồng nguyên tắc (HĐNT) theo KOC (1 HĐNT / KOC)
+ */
+export function generateMasterContractCode(idKenh: string, kocId?: string): string {
+  const raw = (normalizeTikTokId(idKenh) || kocId || 'KOC')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase()
+    .slice(0, 8);
+  return `HDNT-2026-${raw || 'KOC'}`;
+}
+
+/**
+ * Sinh mã Phụ lục hợp đồng theo từng Deal (1 Phụ lục / Deal)
+ */
+export function generateDealAppendixCode(maBooking: string, seq = 1): string {
+  if (!maBooking) return '';
+  return `PL-${maBooking.trim()}-${String(seq).padStart(2, '0')}`;
+}
+
+/**
+ * Tạo danh sách Dịch vụ gia tăng (Add-on Services) mặc định đi kèm Asset Video trong Deal
+ */
+export function buildDefaultAddonServicesForDeal(params: {
+  maBooking: string;
+  totalNet: number;
+  sparkAdsCode?: string;
+  actualAirDate?: string;
+  includeDefaultAddons?: boolean;
+}): DealRightsTermItem[] {
+  const { maBooking, totalNet, sparkAdsCode, actualAirDate, includeDefaultAddons = true } = params;
+  if (!includeDefaultAddons || totalNet <= 0) {
+    return [];
+  }
+  const hasVideoVerified = Boolean(actualAirDate?.trim());
+  const hasSparkCode = Boolean(sparkAdsCode?.trim());
+  const prefix = maBooking || 'DEAL';
+  const adsCost = totalNet >= 10000000 ? Math.round(totalNet * 0.1) : 0;
+  const imageCost = totalNet >= 10000000 ? Math.round(totalNet * 0.1) : 0;
+
+  return [
+    {
+      id: `${prefix}-ADDON-ADS`,
+      termType: 'ADS_CODE',
+      termLabel: 'Cấp mã quảng cáo Spark Ads (30 ngày)',
+      scopeType: 'ASSET',
+      anchorType: 'ACCEPTANCE_DATE',
+      durationDays: 30,
+      allocatedWeightPct: 10,
+      allocatedCostVnd: adsCost,
+      status: hasSparkCode && hasVideoVerified ? 'ACTIVE' : 'PENDING_ANCHOR',
+      acceptanceStatus: !hasVideoVerified
+        ? 'LOCKED_BY_VIDEO'
+        : hasSparkCode
+          ? 'VERIFIED'
+          : 'PENDING_ACCEPTANCE',
+      evidenceCodeOrUrl: sparkAdsCode || '',
+      verifiedAt: hasSparkCode && hasVideoVerified ? actualAirDate : undefined,
+    },
+    {
+      id: `${prefix}-ADDON-IMG`,
+      termType: 'IMAGE_USAGE',
+      termLabel: 'Quyền sử dụng hình ảnh & file video gốc (30 ngày)',
+      scopeType: 'ASSET',
+      anchorType: 'ACCEPTANCE_DATE',
+      durationDays: 30,
+      allocatedWeightPct: 10,
+      allocatedCostVnd: imageCost,
+      status: hasVideoVerified ? 'ACTIVE' : 'PENDING_ANCHOR',
+      acceptanceStatus: !hasVideoVerified
+        ? 'LOCKED_BY_VIDEO'
+        : hasSparkCode
+          ? 'VERIFIED'
+          : 'PENDING_ACCEPTANCE',
+      evidenceCodeOrUrl: hasSparkCode ? 'Đã bàn giao file video gốc & hình ảnh' : '',
+      verifiedAt: hasSparkCode && hasVideoVerified ? actualAirDate : undefined,
+    },
+  ];
 }
 
 /**
@@ -239,7 +359,127 @@ export function recalculateApprovedBookingItem(
   const grossWithTax = computeGrossFeeWithTax(finalNet);
   const klGrade = mapTepBookingToSalaryGrade(finalNet);
   const tamUng = Math.max(0, Number(item.soTienTamUngTruoc) || 0);
-  const canThanhToan = Math.max(0, finalNet - tamUng);
+
+  const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
+  const acceptanceStatus = hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU';
+  const extractedVideoMatch = (item.linkAir || '').match(/\/video\/(\d+)/i);
+  const videoId = extractedVideoMatch ? extractedVideoMatch[1] : item.videoId || '';
+  const tuanReal = item.actualAirDate
+    ? computeWeekLabelFromDate(item.actualAirDate)
+    : item.tuanReal || '';
+  const thangAirReal = item.actualAirDate
+    ? item.actualAirDate.slice(0, 7).replace('-', '/')
+    : item.thangAirReal || '';
+
+  // Chuẩn hóa danh sách Dịch vụ gia tăng (Add-on Services) trong Deal & Nghiệm thu 2 tầng tuần tự
+  const rawAddons =
+    item.addonServices !== undefined
+      ? item.addonServices
+      : item.bookingOrderCreated && finalNet > 0
+        ? buildDefaultAddonServicesForDeal({
+            maBooking: item.maBooking,
+            totalNet: finalNet,
+            sparkAdsCode: item.sparkAdsCode,
+            actualAirDate: item.actualAirDate,
+          })
+        : [];
+
+  const normalizedAddons: DealRightsTermItem[] = rawAddons.map((addon) => {
+    if (addon.acceptanceStatus === 'DROPPED') {
+      return {
+        ...addon,
+        status: 'EXPIRED',
+      };
+    }
+    // Tầng 1 chưa nghiệm thu Video -> Khóa toàn bộ nghiệm thu dịch vụ gia tăng (Tầng 2)
+    if (!hasAir) {
+      return {
+        ...addon,
+        status: 'PENDING_ANCHOR',
+        acceptanceStatus: 'LOCKED_BY_VIDEO',
+      };
+    }
+    // Tầng 1 đã nghiệm thu Video -> Mở khóa Tầng 2
+    const isAdsTerm = addon.termType === 'ADS_CODE';
+    const syncedEvidence = isAdsTerm
+      ? item.sparkAdsCode?.trim() || addon.evidenceCodeOrUrl?.trim() || ''
+      : addon.evidenceCodeOrUrl?.trim() || '';
+    const isVerifiedAddon =
+      addon.acceptanceStatus === 'VERIFIED' ||
+      (isAdsTerm && Boolean(syncedEvidence));
+
+    let expiresAt = addon.expiresAt;
+    if (isVerifiedAddon && !expiresAt && (item.actualAirDate || item.ngayDienLinkAir)) {
+      const anchorStr =
+        addon.anchorType === 'AIR_DATE'
+          ? item.actualAirDate || item.ngayDienLinkAir
+          : item.ngayDienLinkAir || item.actualAirDate;
+      const anchorDate = new Date(anchorStr);
+      if (!Number.isNaN(anchorDate.getTime())) {
+        anchorDate.setDate(anchorDate.getDate() + (addon.durationDays || 30));
+        expiresAt = anchorDate.toISOString().slice(0, 10);
+      }
+    }
+
+    return {
+      ...addon,
+      evidenceCodeOrUrl: syncedEvidence,
+      expiresAt,
+      status: isVerifiedAddon ? 'ACTIVE' : 'PENDING_ANCHOR',
+      acceptanceStatus: isVerifiedAddon ? 'VERIFIED' : 'PENDING_ACCEPTANCE',
+      verifiedAt: isVerifiedAddon
+        ? addon.verifiedAt || item.ngayDienLinkAir || item.actualAirDate
+        : undefined,
+    };
+  });
+
+  const addonServicesNetCost = normalizedAddons.reduce(
+    (sum, a) => sum + (Number(a.allocatedCostVnd) || 0),
+    0
+  );
+  const khauTruHangMucHuy = normalizedAddons
+    .filter((a) => a.acceptanceStatus === 'DROPPED')
+    .reduce((sum, a) => sum + (Number(a.allocatedCostVnd) || 0), 0);
+  const videoAssetNetCost = Math.max(0, finalNet - addonServicesNetCost);
+  const dealStructureType: 'VIDEO_ONLY' | 'VIDEO_AND_ADDONS' =
+    normalizedAddons.length > 0 ? 'VIDEO_AND_ADDONS' : 'VIDEO_ONLY';
+
+  const activeAddons = normalizedAddons.filter((a) => a.acceptanceStatus !== 'DROPPED');
+  let sequentialAcceptanceStage: DealSequentialAcceptanceStage = '1_CHO_NGHIEM_THU_VIDEO';
+  let addonsAcceptanceStatus: AddonServicesAcceptanceStatus =
+    activeAddons.length > 0 ? 'KHOA_CHO_VIDEO' : 'KHONG_CO';
+
+  if (hasAir) {
+    if (activeAddons.length === 0) {
+      sequentialAcceptanceStage = '3_DA_NGHIEM_THU_TOAN_DEAL';
+      addonsAcceptanceStatus = 'KHONG_CO';
+    } else if (activeAddons.every((a) => a.acceptanceStatus === 'VERIFIED')) {
+      sequentialAcceptanceStage = '3_DA_NGHIEM_THU_TOAN_DEAL';
+      addonsAcceptanceStatus = 'DA_NGHIEM_THU_DU';
+    } else {
+      sequentialAcceptanceStage = '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC';
+      addonsAcceptanceStatus = 'CHO_NGHIEM_THU';
+    }
+  }
+
+  // Mã HĐNT (1 HĐNT/KOC) & Mã Phụ lục theo Deal (1 Phụ lục/Deal)
+  const masterContractCode =
+    item.masterContractCode || generateMasterContractCode(cleanId, item.kocId);
+  const contractAppendixCode =
+    item.contractAppendixCode ||
+    (item.bookingOrderCreated && item.maBooking
+      ? generateDealAppendixCode(item.maBooking, 1)
+      : '');
+  const contractAppendixStatus: DealContractAppendixStatus =
+    item.contractAppendixStatus ||
+    (hasAir
+      ? 'ĐÃ_KÝ'
+      : item.bookingOrderCreated && item.maBooking
+        ? 'CHỜ_KÝ'
+        : 'CHƯA_LẬP');
+
+  // Số tiền cần thanh toán theo Deal = Tổng giá Deal - Khấu trừ phần hủy - Tạm ứng
+  const canThanhToan = Math.max(0, finalNet - khauTruHangMucHuy - tamUng);
 
   const views30 = Math.max(0, Number(item.views30d) || Number(item.views14d) || 0);
   const gmv30 = Math.max(0, Number(item.gmv30d) || Number(item.gmv14d) || 0);
@@ -252,17 +492,6 @@ export function recalculateApprovedBookingItem(
   const orders14 = Math.max(0, Number(item.orders14d) || Math.round(orders30 * 0.75));
   const gpm14 = views14 > 0 ? Math.round((gmv14 / views14) * 1000) : 0;
   const roi14 = finalNet > 0 ? Number((gmv14 / finalNet).toFixed(2)) : 0;
-
-  const hasAir = Boolean(item.linkAir?.trim() || item.actualAirDate?.trim());
-  const acceptanceStatus = hasAir ? 'DA_NGHIEM_THU' : 'CHUA_NGHIEM_THU';
-  const extractedVideoMatch = (item.linkAir || '').match(/\/video\/(\d+)/i);
-  const videoId = extractedVideoMatch ? extractedVideoMatch[1] : item.videoId || '';
-  const tuanReal = item.actualAirDate
-    ? computeWeekLabelFromDate(item.actualAirDate)
-    : item.tuanReal || '';
-  const thangAirReal = item.actualAirDate
-    ? item.actualAirDate.slice(0, 7).replace('-', '/')
-    : item.thangAirReal || '';
 
   const slaInfo = computeAirSlaStatus(item.plannedAirDate, item.actualAirDate);
   const danhGia = hasAir
@@ -282,9 +511,18 @@ export function recalculateApprovedBookingItem(
     pipelineStatus = 'Chờ chốt giá & ngày air';
   }
 
+  // Kế toán thanh toán theo Deal: chỉ đủ điều kiện ĐNTT khi hoàn tất nghiệm thu cả Video lẫn các phần khác của Deal
   let paymentStatus: ApprovedBookingPaymentStatus = item.trangThaiPhieuThanhToan;
-  if (acceptanceStatus === 'DA_NGHIEM_THU' && paymentStatus === 'Chờ nghiệm thu') {
+  if (
+    sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL' &&
+    paymentStatus === 'Chờ nghiệm thu'
+  ) {
     paymentStatus = 'Đủ điều kiện ĐNTT';
+  } else if (
+    sequentialAcceptanceStage !== '3_DA_NGHIEM_THU_TOAN_DEAL' &&
+    paymentStatus === 'Đủ điều kiện ĐNTT'
+  ) {
+    paymentStatus = 'Chờ nghiệm thu';
   }
 
   const noiDungChuyenKhoan =
@@ -321,6 +559,16 @@ export function recalculateApprovedBookingItem(
     pipelineStatus,
     trangThaiPhieuThanhToan: paymentStatus,
     noiDungChuyenKhoan,
+    dealStructureType,
+    videoAssetNetCost,
+    addonServicesNetCost,
+    khauTruHangMucHuy,
+    addonServices: normalizedAddons,
+    masterContractCode,
+    contractAppendixCode,
+    contractAppendixStatus,
+    sequentialAcceptanceStage,
+    addonsAcceptanceStatus,
   };
 }
 
@@ -497,7 +745,7 @@ export function loadApprovedBookingList(
     if (raw) {
       const parsed = JSON.parse(raw) as ApprovedBookingListItem[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map(recalculateApprovedBookingItem);
       }
     }
   } catch {
@@ -660,23 +908,50 @@ export function transferBrandApprovedRowsToBookingList(params: {
 export function buildBookingDealFromApprovedItem(
   item: ApprovedBookingListItem
 ): BookingDealItem {
-  const maBo = item.maBooking || generateBookingOrderCode(item.thangPlan);
-  const salaryGrade: SalaryGrade = item.klGrade || 'KL3';
-  const isVerified = item.acceptanceStatus === 'DA_NGHIEM_THU';
+  const normalized = recalculateApprovedBookingItem(item);
+  const maBo = normalized.maBooking || generateBookingOrderCode(normalized.thangPlan);
+  const salaryGrade: SalaryGrade = normalized.klGrade || 'KL3';
+  const isVideoVerified = normalized.acceptanceStatus === 'DA_NGHIEM_THU';
+  const isFullyVerified =
+    normalized.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL';
+  const addons = normalized.addonServices || [];
+  const addonsCost = normalized.addonServicesNetCost || 0;
+  const videoCost =
+    normalized.videoAssetNetCost ?? Math.max(0, normalized.chiPhiBookingNetCuoi - addonsCost);
+  const primaryDeliverable: DealDeliverableItem = {
+    id: `${maBo}-ASSET-VID-01`,
+    title: `Video gốc TikTok - ${normalized.sanPham || normalized.brandName}`,
+    mediaChannel: 'TikTok',
+    affiliateChannel: normalized.storeName.toLowerCase().includes('shopee')
+      ? 'Shopee'
+      : 'TikTok Shop',
+    productionType: 'ORIGINAL',
+    wave: 0,
+    lockStatus: isVideoVerified ? 'VERIFIED' : 'UNLOCKED',
+    assignedChannelPic: normalized.nguoiPhuTrach,
+    allocatedWeightPct:
+      normalized.chiPhiBookingNetCuoi > 0
+        ? Math.round((videoCost / normalized.chiPhiBookingNetCuoi) * 100)
+        : 100,
+    allocatedCostVnd: videoCost,
+    airDate: normalized.actualAirDate || normalized.plannedAirDate || undefined,
+    publishedUrl: normalized.linkAir || undefined,
+  };
+
   return {
     id: maBo,
     dealCode: maBo,
-    jobId: item.id,
-    campaignCode: `CAMP-${item.thangPlan.replace(/\D/g, '')}`,
-    campaignTitle: `Chiến dịch ${item.brandName} (${item.thangPlan})`,
-    brandName: item.brandName,
-    storeName: item.storeName,
-    productName: item.sanPham,
-    bookingBatch: item.dot || 'Đợt 1',
+    jobId: normalized.id,
+    campaignCode: `CAMP-${normalized.thangPlan.replace(/\D/g, '')}`,
+    campaignTitle: `Chiến dịch ${normalized.brandName} (${normalized.thangPlan})`,
+    brandName: normalized.brandName,
+    storeName: normalized.storeName,
+    productName: normalized.sanPham,
+    bookingBatch: normalized.dot || 'Đợt 1',
     bookingFormat: 'Booking Video KOC',
-    kocId: item.kocId || `KOC-${item.idKenh}`,
-    kocStageName: item.tenKenh || item.idKenh,
-    kocChannelId: `@${normalizeTikTokId(item.idKenh)}`,
+    kocId: normalized.kocId || `KOC-${normalized.idKenh}`,
+    kocStageName: normalized.tenKenh || normalized.idKenh,
+    kocChannelId: `@${normalizeTikTokId(normalized.idKenh)}`,
     kocTier:
       salaryGrade === 'KL6' || salaryGrade === 'KL7'
         ? 'TIER_1_CELEB'
@@ -687,35 +962,90 @@ export function buildBookingDealFromApprovedItem(
             : 'TIER_4_AFFILIATE',
     salaryGrade,
     segment: salaryGrade === 'TAP UpAffiliate' ? 'Massive Creator' : 'Mid Creator',
-    tepKenh: (item.tepKenh as BookingDealItem['tepKenh']) || 'Chưa phân loại',
+    tepKenh: (normalized.tepKenh as BookingDealItem['tepKenh']) || 'Chưa phân loại',
     kocCategory: 'Reviewer',
     contentPillar: 'Review trực tiếp',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
-    brandApprovalDate: item.createdAt.slice(0, 10),
+    brandApprovalDate: normalized.createdAt.slice(0, 10),
     kocResponseStatus: 'ĐỒNG_Ý',
-    pipelineText: isVerified ? 'Done' : 'Đang triển khai',
-    status: isVerified ? 'VIDEO_VERIFIED' : 'CONTRACT_GENERATED',
-    statusLabel: isVerified ? 'Đã nghiệm thu video' : 'Đã tạo hợp đồng & gửi mẫu',
-    currentStage: isVerified ? '5_SETTLEMENT' : '2_DEAL_CONTRACT',
-    sparkAdsCode: item.sparkAdsCode || undefined,
-    tiktokVideoUrl: item.linkAir || undefined,
-    videoUrl: item.linkAir || undefined,
-    assignedStaff: item.nguoiPhuTrach,
-    bookingPic: item.nguoiPhuTrach,
-    leadBooking: item.leaderName,
-    totalValue: item.chiPhiBookingNetCuoi,
-    advanceAmount: item.soTienTamUngTruoc,
-    finalAmount: item.soTienCanThanhToan,
-    deadlinePost: item.plannedAirDate,
-    postedDate: item.actualAirDate || undefined,
-    viewsCount: item.views30d || 0,
-    affiliateGmv: item.gmv30d || 0,
-    gmv30: item.gmv30d || 0,
-    roi: item.roi30d || 0,
-    ordersCount: item.orders30d || 0,
-    publishedDays: isVerified ? 7 : 0,
+    pipelineText: isFullyVerified
+      ? 'Done'
+      : isVideoVerified
+        ? 'Chờ nghiệm thu dịch vụ đi kèm'
+        : 'Đang triển khai',
+    status: isVideoVerified ? 'VIDEO_VERIFIED' : 'CONTRACT_GENERATED',
+    statusLabel: isFullyVerified
+      ? 'Đã nghiệm thu toàn Deal'
+      : isVideoVerified
+        ? 'Đã nghiệm thu Video (Chờ phần khác)'
+        : 'Đã lập Phụ lục Deal & Gửi mẫu',
+    currentStage: isFullyVerified
+      ? '5_SETTLEMENT'
+      : isVideoVerified
+        ? '4_AIR_GROWTH'
+        : '2_DEAL_CONTRACT',
+    sparkAdsCode: normalized.sparkAdsCode || undefined,
+    adsCodeStatus: normalized.sparkAdsCode ? 'ĐÃ_NGHIỆM_THU' : 'CHƯA_CẤP',
+    tiktokVideoUrl: normalized.linkAir || undefined,
+    videoUrl: normalized.linkAir || undefined,
+    assignedStaff: normalized.nguoiPhuTrach,
+    bookingPic: normalized.nguoiPhuTrach,
+    leadBooking: normalized.leaderName,
+    totalValue: normalized.chiPhiBookingNetCuoi,
+    advanceAmount: normalized.soTienTamUngTruoc,
+    finalAmount: normalized.soTienCanThanhToan,
+    deadlinePost: normalized.plannedAirDate,
+    postedDate: normalized.actualAirDate || undefined,
+    viewsCount: normalized.views30d || 0,
+    affiliateGmv: normalized.gmv30d || 0,
+    gmv30: normalized.gmv30d || 0,
+    roi: normalized.roi30d || 0,
+    ordersCount: normalized.orders30d || 0,
+    publishedDays: isVideoVerified ? 7 : 0,
     remainingSlaHours: 48,
     isSlaWarning: false,
+    kocBankName: normalized.nganHang || undefined,
+    kocBankAccount: normalized.soTaiKhoan || undefined,
+    kocBankHolder: normalized.tenTaiKhoanNganHang || undefined,
+    kocIdCardNumber: normalized.soCccd || undefined,
+    hasIdCardScan: Boolean(normalized.soCccd?.trim()),
+    contractScanUrl:
+      normalized.contractAppendixStatus === 'ĐÃ_KÝ'
+        ? `https://drive.google.com/drive/folders/upbase-pl-${(
+            normalized.contractAppendixCode || maBo
+          ).toLowerCase()}`
+        : undefined,
+    signedContractUrl:
+      normalized.contractAppendixStatus === 'ĐÃ_KÝ'
+        ? `https://drive.google.com/drive/folders/upbase-pl-${(
+            normalized.contractAppendixCode || maBo
+          ).toLowerCase()}`
+        : undefined,
+    larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
+    dealType: addons.length > 0 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',
+    pricingDisplayMode:
+      salaryGrade === 'KL4' ||
+      salaryGrade === 'KL5' ||
+      salaryGrade === 'KL6' ||
+      salaryGrade === 'KL7'
+        ? 'ITEMIZED_SOW'
+        : 'PACKAGE_TOTAL',
+    deliverables: [primaryDeliverable],
+    rightsTerms: addons,
+    masterContractCode: normalized.masterContractCode,
+    contractAppendixCode:
+      normalized.contractAppendixCode || generateDealAppendixCode(maBo, 1),
+    contractAppendixStatus: normalized.contractAppendixStatus || 'CHỜ_KÝ',
+    videoAssetCostVnd: videoCost,
+    addonsCostVnd: addonsCost,
+    droppedCostVnd: normalized.khauTruHangMucHuy || 0,
+    sequentialAcceptanceStage: normalized.sequentialAcceptanceStage,
+    stage1VideoVerifiedAt: isVideoVerified
+      ? normalized.ngayDienLinkAir || normalized.actualAirDate
+      : undefined,
+    stage2AddonsVerifiedAt: isFullyVerified
+      ? normalized.ngayDienLinkAir || normalized.actualAirDate
+      : undefined,
   };
 }
 

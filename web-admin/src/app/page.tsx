@@ -1766,6 +1766,10 @@ export default function App() {
 
           <KeepAliveTab tabKey="content" currentTab={activeTab}>
             <ContentView
+              kocs={kocs}
+              deals={scopedDeals}
+              currentUserName={currentUser.name}
+              onNotify={showToast}
               onScriptApprovedNotification={handleScriptApprovedNotification}
               onNavigateToAngles={() => {
                 setBrandInitialDetailTab('PRODUCTS');

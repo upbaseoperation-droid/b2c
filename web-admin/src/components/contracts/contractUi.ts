@@ -176,7 +176,8 @@ export function prefill(
     return Number.isFinite(num) && num > 0 ? num : 0;
   })();
 
-  const totalAmount = deal?.totalValue || parentMoneyFallback || 0;
+  const droppedDeduction = deal?.droppedCostVnd || 0;
+  const totalAmount = Math.max(0, (deal?.totalValue || parentMoneyFallback || 0) - droppedDeduction);
   const unitPrice = quantity > 1 && totalAmount ? Math.round(totalAmount / quantity) : totalAmount;
 
   // Tính thuế và tổng giá trị hợp đồng theo quy định BR-09
@@ -275,11 +276,13 @@ export function prefill(
     }
     // Mã quảng cáo (Spark Ads)
     if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
-      return '30';
+      const adsRight = deal?.rightsTerms?.find(rt => rt.termType === 'ADS_CODE');
+      return String(adsRight?.durationDays || deal?.sparkAdsExpiryDays || 30);
     }
     // Thời hạn sử dụng hình ảnh
     if (title.includes('sử dụng hình ảnh') && (title.includes('số ngày') || context.includes('ngày từ ngày'))) {
-      return '90';
+      const imgRight = deal?.rightsTerms?.find(rt => rt.termType === 'IMAGE_USAGE');
+      return String(imgRight?.durationDays || 90);
     }
     // Ngày bắt đầu sử dụng hình ảnh
     if (title.includes('bắt đầu sử dụng hình ảnh')) {

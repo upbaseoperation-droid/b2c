@@ -62,6 +62,7 @@ export function useMonthlyPlanSync({
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const rerunRef = useRef(false);
   const readyRef = useRef(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Giữ callback mới nhất mà không làm effect chạy lại
   const callbacksRef = useRef({ onLoaded, onReplacePlan, onNotify });
@@ -106,7 +107,7 @@ export function useMonthlyPlanSync({
     return () => {
       cancelled = true;
     };
-  }, [rememberStored]);
+  }, [rememberStored, reloadKey]);
 
   const getDirtyPlans = useCallback(
     () => latestPlansRef.current.filter(p => lastSavedRef.current.get(p.id) !== serialize(p)),
@@ -216,6 +217,8 @@ export function useMonthlyPlanSync({
     errorMessage,
     /** Lưu ngay các thay đổi. Trả về true nếu lưu thành công (hoặc không có gì để lưu). */
     saveNow: flush,
+    /** Tải lại danh sách từ database (sau khi tải Plan order tổng lên). */
+    reload: () => setReloadKey(k => k + 1),
     isPersistent: status !== 'offline' && status !== 'loading'
   };
 }

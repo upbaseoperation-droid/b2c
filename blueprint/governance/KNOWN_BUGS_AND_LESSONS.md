@@ -537,6 +537,67 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ---
 
+### BUG-032 — Thiếu Chẩn Đoán Nguyên Nhân Kỹ Thuật Khi Giỏ Hàng Bị Ẩn & Xung Đột Anchor CapCut Trên TikTok Web
+- **Ngày phát hiện:** 21/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokOpenSourceEngines.ts`, `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/components/koc/TikTokVideoInspectorModal.tsx`, `crawler-worker/src/adapters/tiktok.ts`, `crawler-worker/src/core/types.ts`, `crawler-worker/src/check-link.ts`, `crawler-worker/src/cli.ts`.
+- **Triệu chứng:** Khi đối soát một số video TikTok có gắn giỏ hàng nhưng không cung cấp nguồn đối chiếu, nếu TikTok Web không trả về chi tiết sản phẩm hoặc KOC dùng mẫu CapCut, giao diện chỉ hiển thị dòng dự phòng mờ nhạt `Gắn thẻ giỏ hàng: TikTok Shop`, không hiển thị thông tin sản phẩm cào được và không có chẩn đoán nguyên nhân kỹ thuật cụ thể (tại sao video có cờ giỏ hàng nhưng không lấy được link/mã SP).
+- **Nguyên nhân gốc (Root Cause):**
+  1. Chưa có bộ phân loại chẩn đoán kỹ thuật (`CartDiagnosisInfo`) dựa trên các trường thực tế của TikTok: `isECVideo`, `AnchorTypes`, `anchors[].type`, `commerceInfo`.
+  2. Khi KOC gắn đồng thời Giỏ hàng và Mẫu CapCut, TikTok Web trả về `AnchorTypes: ['54', '33']`, trong đó phần tử `anchors[0]` là CapCut (`type: 54`), còn thẻ giỏ hàng (`type: 35/33`) bị đẩy xuống phần tử thứ hai hoặc giấu trên bản web. Nếu chỉ đọc phần tử đầu thì sẽ bỏ sót sản phẩm.
+  3. Giao diện `TikTokVideoInspectorModal.tsx` khi `detectedProducts` rỗng chỉ in dòng text cụt lủn `Gắn thẻ giỏ hàng: TikTok Shop`, không giải thích nguyên nhân nền tảng và không cung cấp đường dẫn mở video trực tiếp.
+- **Cách khắc phục:**
+  1. Bổ sung bộ chẩn đoán kỹ thuật 5 mã trạng thái chuẩn (`CartDiagnosticCode`):
+     - `ACTIVE_CART`: Đã bóc tách thành công thẻ sản phẩm công khai trên video.
+     - `CAPCUT_CONFLICT`: Video có bật giỏ hàng khi đăng (`isECVideo: 1` / Anchor 33), nhưng bị thẻ mẫu CapCut (`type: 54`) đè lên trên bản Web Desktop.
+     - `OUT_OF_STOCK_OR_HIDDEN`: Video có bật giỏ hàng khi đăng (`isECVideo: 1`), nhưng TikTok không trả về thẻ sản phẩm (sản phẩm hết tồn kho, shop tạm ẩn hoặc bị gỡ).
+     - `CAPTION_LINK`: KOC dán link sản phẩm trong phần mô tả bài đăng.
+     - `NO_CART`: Video không gắn giỏ hàng (`isECVideo: 0`).
+  2. Nâng cấp cơ chế Deep Anchor Traversal: Quét sâu toàn bộ các phần tử trong `anchors`, bóc tách thành công thẻ giỏ hàng `type: 35/33` kể cả khi nằm sau thẻ CapCut `type: 54`.
+  3. Bổ sung fallback kết nối TikTok Mobile Crawler API (`TIKTOK_CRAWLER_API_URL` qua container Docker) khi bản Web desktop không render thẻ giỏ hàng.
+  4. Đồng bộ logic chẩn đoán `CartDiagnosis` sang service độc lập `crawler-worker` (`types.ts`, `tiktok.ts`, `check-link.ts`, `cli.ts`).
+  5. Cập nhật giao diện `TikTokVideoInspectorModal.tsx`:
+     - Huy hiệu trạng thái phản ánh đúng bản chất: `Có gắn giỏ (Thẻ CapCut đè web)` (tone vàng cảnh báo) thay vì báo chung chung.
+     - Khung hiển thị chi tiết khi `detectedProducts` rỗng: hiển thị banner chẩn đoán nguyên nhân kỹ thuật, nhãn tín hiệu gốc (`isECVideo: 1`), nút `Mở video kiểm tra trên TikTok` và hướng dẫn dán link/mã SP đối soát.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra cả 2 phân hệ `crawler-worker` (toàn bộ 17 unit test pass, typecheck sạch) và `web-admin` (`npm run build` hoàn thành với exit code 0).
+
+---
+
+### BUG-033 — Khung Lương KL1–KL7 Mỗi Màn Một Số, Lệch Bảng 5.6 Tệp Cast Của Lark
+- **Ngày phát hiện:** 22/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/klTiers.ts` (mới), `StoreShortlistFilterModal.tsx`, `KocKolHubView.tsx`, `KocListingBatchHubView.tsx`, `kocRecommendationEngine.ts`, `larkbaseBookingPlanSync.ts`, `planBreakdownRules.ts`.
+- **Triệu chứng:** Cùng một bậc KOC nhưng nhãn và đơn giá khác nhau giữa các màn: KL4 là 3M–5M hoặc 3M–6M, KL5 là 5M–10M, 6M–12M hoặc 10M–18M, KL6 là 10M–30M, 12M–25M, 10M–20M hoặc 18M–35M, KL7 là trên 20M, 25M, 30M hoặc 35M. Đơn giá mặc định (400k, 2,2M, 14M, 25M...) lệch giá thực tế trong bảng 4.1.1 và 3.2.
+- **Nguyên nhân gốc (Root Cause):** Mỗi màn tự khai báo mảng khung lương bằng số cứng, không có nguồn dùng chung; không đối chiếu với bảng 5.6 Tệp cast (khoảng giá và giá cơ sở: 250k, 1M, 2M, 4M, 7,5M, 18M, 45M).
+- **Cách khắc phục:**
+  1. Tạo `klTiers.ts` làm nguồn duy nhất (khoảng giá, nhãn, giá cơ sở theo bảng 5.6).
+  2. Các màn lọc, hộp thoại, bộ gợi ý KOC, đồng bộ Larkbase và bộ kiểm soát phân rã đều đọc từ `klTiers.ts`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Còn các chuỗi số cứng trong `mockData.ts`, `marketingKnowledgeBase.ts`, `inputPlanDefaults.ts`, `CreateKocModal.tsx`, `BookingView.tsx`, `StaffBrandListingSheetWorkspace.tsx` (đa số đã đúng 10M–30M và trên 30M, riêng dữ liệu mẫu trong `mockData.ts` còn ghi KL7 trên 25tr). Khi thêm màn mới dùng khung lương phải import từ `klTiers.ts`.
+
+### BUG-034 — Hai Người Cùng Thao Tác Một Kế Hoạch: Người Lưu Sau Mất Toàn Bộ Phần Vừa Sửa
+- **Ngày phát hiện:** 22/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/lib/usePlanRecord.ts`, `useListingBoard.ts`, `threeWayMerge.ts` (mới); các màn dùng bản ghi chung theo kế hoạch: Kế hoạch content, Điều phối listing, Plan tháng của Brand, Danh mục sản phẩm, Deal.
+- **Triệu chứng:** Khi người khác lưu trước, máy chủ trả 409 và màn hình tải lại bản mới, bỏ hết phần người dùng vừa sửa, dù hai người sửa hai KOC hoặc hai content khác nhau.
+- **Nguyên nhân gốc (Root Cause):** Chống ghi đè bằng `revision` trên cả bản ghi nhưng không có bước gộp; phía máy khách không giữ bản mốc để so sánh.
+- **Cách khắc phục:**
+  1. Máy khách giữ bản mốc (bản máy chủ đã tải hoặc lưu gần nhất). Khi gặp 409, tải bản mới nhất rồi gộp ba bên (`threeWayMerge`): phần chỉ một bên sửa thì lấy bản đã sửa, danh sách có `id` gộp theo từng phần tử, hai bên cùng sửa một giá trị khác nhau thì giữ bản máy chủ và báo số mục trùng. Sau đó tự lưu lại, tối đa 3 lần.
+  2. Khi máy chủ từ chối (400, 403, 423) thì báo lý do và tải lại, màn hình không giữ trạng thái lệch với dữ liệu thật.
+- **Phạm vi rà soát mở rộng sang phần khác:** Mọi bản ghi mới dùng `usePlanRecord`. Các thao tác ghi trực tiếp từ máy chủ (đẩy sheet, lấy kết quả Brand, sổ hợp đồng nguyên tắc) đã tự thử lại khi gặp 409. Danh sách không có `id` ở từng phần tử được coi là một khối và xung đột khi hai người cùng sửa.
+
+### BUG-035 — Cắt Cụt ID Kênh TikTok (Truncate) Trên Màn Hình Cào Dữ Liệu KOC
+- **Ngày phát hiện:** 23/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/TikTokCrawlerHubView.tsx`.
+- **Triệu chứng:** Trong bảng quét dữ liệu KOC (các tab Quét đối thủ, Hashtag, Xu hướng), cột "Kênh KOC & Liên hệ" bị co ngắn tên handle ID kênh thành 3-5 ký tự kèm dấu ba chấm (ví dụ: `@hal...`, `@cia...`, `@bs...`, `@go...`), khiến chuyên viên không thể đọc hoặc đối soát được ID kênh TikTok thực tế.
+- **Nguyên nhân gốc (Root Cause):**
+  1. Trong hàm hiển thị `renderUnifiedKocIdentityCell`, ID kênh, tích xanh, huy hiệu trạng thái (`KOC Mới`) và huy hiệu đánh giá Brand được nhồi nhét chung vào một hàng ngang flexbox hẹp kèm class `truncate`. Khi các huy hiệu chiếm diện tích, flexbox tự động co ép chuỗi ID kênh lại.
+  2. Độ rộng cột `Kênh KOC & Liên hệ` cố định ở mức 245px quá hẹp đối với các handle dài khi kèm theo nhiều nhãn trạng thái.
+- **Cách khắc phục:**
+  1. Tách cấu trúc hiển thị thành 3 hàng độc lập:
+     - Hàng 1: ID kênh TikTok đầy đủ (bỏ class `truncate`, sử dụng `font-code font-bold text-xs break-all`) + Tích xanh xác thực + Link mở video TikTok.
+     - Hàng 2: Huy hiệu trạng thái KOC (`KOC Mới` / `Đã có trong Master`) + Nhãn đánh giá Brand.
+     - Hàng 3: Tên hiển thị (Nickname) + SĐT hoặc Email.
+  2. Nâng độ rộng cột `Kênh KOC & Liên hệ` từ 245px lên 285px trên cả 3 bảng dữ liệu cào.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra các bảng phụ `inlineReviewColumns` và nâng độ rộng lên 230px, đảm bảo toàn bộ các màn hình hiển thị ID KOC không bị cắt cụt.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

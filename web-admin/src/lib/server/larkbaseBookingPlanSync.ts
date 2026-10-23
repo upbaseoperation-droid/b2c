@@ -1,5 +1,6 @@
 // Đồng bộ Kế hoạch B2C Booking đã duyệt từ Larkbase (Bitable API v1 + Webhook) về bảng hứng hệ thống
 import { Prisma } from '@prisma/client';
+import { klLabel, klBaseCost } from '../klTiers';
 import prisma from '../prisma';
 import { fetchLarkAppAccessToken, getLarkConfig } from '../larkAuth';
 import type {
@@ -21,7 +22,7 @@ const NGOC_TAM_MANAGED_STORES = [
   'rejuran'
 ];
 
-function resolveBookingLeader(storeName: string, rawLeader?: string | null): string | undefined {
+export function resolveBookingLeader(storeName: string, rawLeader?: string | null): string | undefined {
   if (rawLeader && rawLeader.trim().toLowerCase().includes('ngọc tâm')) {
     return 'Nguyễn Thị Ngọc Tâm';
   }
@@ -250,13 +251,13 @@ const memoryIngestedRecords = new Map<string, LarkbaseBookingPlanRecordItem>(
 );
 
 const TIER_BENCHMARK_NET: Record<keyof LarkbaseBookingPlanRecordItem['kocTierBreakdown'], { code: 'KL1' | 'KL2' | 'KL3' | 'KL4' | 'KL5' | 'KL6' | 'KL7'; label: string; unitCost: number }> = {
-  kl1: { code: 'KL1', label: 'Bậc Cast KL1 (0 - 500k)', unitCost: 400000 },
-  kl2: { code: 'KL2', label: 'Bậc Cast KL2 (500k - 1.5M)', unitCost: 1000000 },
-  kl3: { code: 'KL3', label: 'Bậc Cast KL3 (1.5M - 3M)', unitCost: 2200000 },
-  kl4: { code: 'KL4', label: 'Bậc Cast KL4 (3M - 5M)', unitCost: 4000000 },
-  kl5: { code: 'KL5', label: 'Bậc Cast KL5 (5M - 10M)', unitCost: 7500000 },
-  kl6: { code: 'KL6', label: 'Bậc Cast KL6 (10M - 20M)', unitCost: 14000000 },
-  kl7: { code: 'KL7', label: 'Bậc Cast KL7 (> 20M)', unitCost: 25000000 }
+  kl1: { code: 'KL1', label: 'Bậc Cast ' + klLabel('KL1'), unitCost: klBaseCost('KL1') },
+  kl2: { code: 'KL2', label: 'Bậc Cast ' + klLabel('KL2'), unitCost: klBaseCost('KL2') },
+  kl3: { code: 'KL3', label: 'Bậc Cast ' + klLabel('KL3'), unitCost: klBaseCost('KL3') },
+  kl4: { code: 'KL4', label: 'Bậc Cast ' + klLabel('KL4'), unitCost: klBaseCost('KL4') },
+  kl5: { code: 'KL5', label: 'Bậc Cast ' + klLabel('KL5'), unitCost: klBaseCost('KL5') },
+  kl6: { code: 'KL6', label: 'Bậc Cast ' + klLabel('KL6'), unitCost: klBaseCost('KL6') },
+  kl7: { code: 'KL7', label: 'Bậc Cast ' + klLabel('KL7'), unitCost: klBaseCost('KL7') }
 };
 
 /**

@@ -16,6 +16,23 @@ const SOURCES = [
   ['COM-BBNT', 'Nghiệm thu video · Công ty', 'Công ty', 'ACCEPTANCE', '3.1.2. BM.BBNT.VID.COM.Ver052026 boooking video.docx'],
   ['CTV-HD', 'Hợp đồng nguyên tắc · CTV tháng', 'CTV tháng', 'CONTRACT', '4.1. BM.HĐVID.CTV.Ver052026 Upbase HĐNT booking CTV Video tháng.docx'],
   ['CTV-BBNT', 'Nghiệm thu · CTV tháng', 'CTV tháng', 'ACCEPTANCE', '4.2. BM.BBNTVID.CTV.Ver052026 Upbase BBNT booking Video tháng.docx'],
+  ['IND-LIVE-HD', 'Hợp đồng livestream · Cá nhân', 'Cá nhân', 'CONTRACT', '1. Hợp đồng booking Livestream cá nhân.docx'],
+  ['IND-LIVE-BBNT', 'Nghiệm thu livestream · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '2. BBNT booking Livestream cá nhân.docx'],
+  ['HKD-LIVE-HD', 'Hợp đồng livestream · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '1. Hợp đồng booking Livestream HKD.docx'],
+  ['HKD-LIVE-BBNT', 'Nghiệm thu livestream · Hộ kinh doanh', 'Hộ kinh doanh', 'ACCEPTANCE', '2. BBNT booking Livestream HKD.docx'],
+  ['COM-LIVE-HD', 'Hợp đồng livestream · Công ty', 'Công ty', 'CONTRACT', '1. Hợp đồng booking Livestream công ty.docx'],
+  ['COM-LIVE-BBNT', 'Nghiệm thu livestream · Công ty', 'Công ty', 'ACCEPTANCE', '2. BBNT booking Livestream công ty.docx'],
+  ['IND-HDNT', 'Hợp đồng nguyên tắc video · Cá nhân', 'Cá nhân', 'CONTRACT', '1. HĐNT cá nhân booking Video.docx'],
+  ['IND-SOW', 'SOW booking video · Cá nhân', 'Cá nhân', 'CONTRACT', '2. SOW cá nhân booking Video.docx'],
+  ['IND-VID-BBNT', 'Nghiệm thu video (bản mới) · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '3. BBNT cá nhân booking Video.docx'],
+  ['HKD-HDNT', 'Hợp đồng nguyên tắc video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '1. HĐNT HKD booking Video.docx'],
+  ['HKD-SOW', 'SOW booking video · Hộ kinh doanh', 'Hộ kinh doanh', 'CONTRACT', '2. SOW HKD booking Video.docx'],
+  ['HKD-VID-BBNT', 'Nghiệm thu video (bản mới) · Hộ kinh doanh', 'Hộ kinh doanh', 'ACCEPTANCE', '3. BBNT HKD booking Video.docx'],
+  ['COM-HDNT', 'Hợp đồng nguyên tắc video · Công ty', 'Công ty', 'CONTRACT', '1. HĐNT Công ty booking Video.docx'],
+  ['COM-SOW', 'SOW booking video · Công ty', 'Công ty', 'CONTRACT', '2. SOW Công ty booking Video.docx'],
+  ['COM-VID-BBNT', 'Nghiệm thu video (bản mới) · Công ty', 'Công ty', 'ACCEPTANCE', '3. BBNT Công ty booking Video.docx'],
+  ['CTV-HDNT', 'Hợp đồng nguyên tắc CTV kênh (bản mới)', 'CTV tháng', 'CONTRACT', '1. HĐNT booking video CTV Kênh.docx'],
+  ['CTV-VID-BBNT', 'Nghiệm thu CTV kênh theo tháng (bản mới)', 'CTV tháng', 'ACCEPTANCE', '2. BBNT booking video CTV Kênh.docx'],
 ] as const;
 export const decodeXml = (text: string) => text.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, v: string) => v.startsWith('#x') ? String.fromCodePoint(parseInt(v.slice(2), 16)) : v.startsWith('#') ? String.fromCodePoint(Number(v.slice(1))) : ({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[v] || ''));
 const encodeXml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -191,6 +208,7 @@ export interface CatalogOverride {
 
 function defaultCategoryFor(id: string, kind: 'CONTRACT' | 'ACCEPTANCE'): ContractCategory {
   if (id.startsWith('CTV-')) return 'CTV_FRAMEWORK';
+  if (id.includes('-LIVE-') || id.endsWith('-SOW')) return 'LIVESTREAM_APPENDIX';
   if (kind === 'ACCEPTANCE') return 'ACCEPTANCE_SETTLEMENT';
   return 'BOOKING_VIDEO';
 }
@@ -204,6 +222,13 @@ function defaultDescriptionFor(id: string, subject: string, kind: 'CONTRACT' | '
     return kind === 'CONTRACT'
       ? 'Hợp đồng nguyên tắc theo tháng dành cho Cộng tác viên (CTV) sản xuất video kênh nội bộ.'
       : 'Biên bản nghiệm thu tổng hợp số lượng video đạt chuẩn trong tháng của CTV để tất toán thù lao.';
+  }
+  if (id.endsWith('-SOW')) return `Phụ lục SOW của booking video (mỗi job hoặc mỗi tháng một phụ lục) đi kèm hợp đồng nguyên tắc, áp dụng cho đối tác là ${subject.toLowerCase()}.`;
+  if (id.endsWith('-HDNT')) return `Hợp đồng nguyên tắc booking video (ký một lần khi bắt đầu hợp tác) dành cho đối tác là ${subject.toLowerCase()}.`;
+  if (id.includes('-LIVE-')) {
+    return kind === 'CONTRACT'
+      ? `Mẫu hợp đồng booking livestream affiliate áp dụng cho đối tác là ${subject.toLowerCase()}, ký theo từng booking (hợp đồng sự vụ).`
+      : `Biên bản nghiệm thu các phiên livestream và giá trị thanh toán thực tế cho đối tác ${subject.toLowerCase()}.`;
   }
   return kind === 'CONTRACT'
     ? `Mẫu hợp đồng dịch vụ sản xuất & đăng tải video quảng cáo áp dụng cho đối tác là ${subject.toLowerCase()}.`

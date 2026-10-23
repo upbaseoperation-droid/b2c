@@ -429,7 +429,13 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
       dealType,
       sourceDealCode: dealType === 'SERVICE_ONLY' ? sourceDealCode : undefined,
       pricingDisplayMode,
-      contractAppendixCode: appendixCode,
+      masterContractCode: `HDNT-2026-${(currentKoc.channelId || currentKoc.id).replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 8)}`,
+      contractAppendixCode: `PL-${dealCode}-01`,
+      contractAppendixStatus: 'CHỜ_KÝ',
+      videoAssetCostVnd: finalDeliverables?.[0]?.allocatedCostVnd ?? rate,
+      addonsCostVnd: finalRightsTerms.reduce((s, r) => s + (r.allocatedCostVnd || 0), 0),
+      sequentialAcceptanceStage:
+        dealType === 'SERVICE_ONLY' ? '3_DA_NGHIEM_THU_TOAN_DEAL' : '1_CHO_NGHIEM_THU_VIDEO',
       deliverables: finalDeliverables,
       rightsTerms: finalRightsTerms,
     };

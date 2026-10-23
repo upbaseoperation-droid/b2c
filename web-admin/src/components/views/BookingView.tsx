@@ -23,6 +23,7 @@ import {
   KocItem, 
   BookingDealItem, 
   DealDeliverableItem,
+  DealRightsTermItem,
   KocCandidateItem,
   StaffDetailedPlanItem,
   MonthlyStaffAllocation,
@@ -408,6 +409,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     status: BookingDealItem['status'];
     statusLabel: string;
     deliverables: DealDeliverableItem[];
+    rightsTerms: DealRightsTermItem[];
   }>({
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     brandRejectReason: '',
@@ -424,7 +426,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
     gmv30: 0,
     status: 'VIDEO_SUBMITTED',
     statusLabel: 'Video Đã Lên Sóng',
-    deliverables: []
+    deliverables: [],
+    rightsTerms: []
   });
 
   // State cho Hộp thoại Cập nhật Vận đơn Hàng mẫu (Bước 3)
@@ -1097,20 +1100,46 @@ export const BookingView: React.FC<BookingViewProps> = ({
       gmv30: deal.gmv30 || 0,
       status: deal.status,
       statusLabel: deal.statusLabel,
-      deliverables: deal.deliverables ? deal.deliverables.map(item => ({ ...item })) : []
+      deliverables: deal.deliverables ? deal.deliverables.map(item => ({ ...item })) : [],
+      rightsTerms: deal.rightsTerms ? deal.rightsTerms.map(rt => ({ ...rt })) : []
     });
   };
 
   const handleSaveDealUpdate = () => {
     if (!editingDeal) return;
     const newGmv = Number(editForm.gmv30) || 0;
-    const droppedCost = editForm.deliverables
+    const droppedDeliverablesCost = editForm.deliverables
       .filter(item => item.lockStatus === 'DROPPED')
       .reduce((sum, item) => sum + (item.allocatedCostVnd || 0), 0);
+    const droppedAddonsCost = editForm.rightsTerms
+      .filter(rt => rt.acceptanceStatus === 'DROPPED')
+      .reduce((sum, rt) => sum + (rt.allocatedCostVnd || 0), 0);
+    const droppedCost = droppedDeliverablesCost + droppedAddonsCost;
     const effectiveTotalCost = Math.max(1, (editingDeal.totalValue || 1) - droppedCost);
     const computedRoi = Number((newGmv / effectiveTotalCost).toFixed(2));
     const isWinner = newGmv >= 30000000;
     const isBreakEven = computedRoi >= 1.0;
+
+    const hasVideoVerified =
+      Boolean(editForm.tiktokVideoUrl.trim()) ||
+      editForm.deliverables.some(d => d.wave === 0 && d.lockStatus === 'VERIFIED');
+    const resolvedRightsTerms = editForm.rightsTerms.map(rt => {
+      if (!hasVideoVerified) {
+        return { ...rt, acceptanceStatus: 'LOCKED_BY_VIDEO' as const };
+      }
+      if (rt.acceptanceStatus === 'LOCKED_BY_VIDEO' || !rt.acceptanceStatus) {
+        return { ...rt, acceptanceStatus: 'PENDING_ACCEPTANCE' as const };
+      }
+      return rt;
+    });
+    const allAddonsDone =
+      resolvedRightsTerms.length === 0 ||
+      resolvedRightsTerms.every(rt => rt.acceptanceStatus === 'VERIFIED' || rt.acceptanceStatus === 'DROPPED');
+    const nextSequentialStage: BookingDealItem['sequentialAcceptanceStage'] = !hasVideoVerified
+      ? '1_CHO_NGHIEM_THU_VIDEO'
+      : allAddonsDone
+        ? '3_DA_NGHIEM_THU_TOAN_DEAL'
+        : '2_DA_NGHIEM_THU_VIDEO_CHO_PHAN_KHAC';
 
     let updatedStatusLabel = editForm.statusLabel;
     if (editForm.brandApprovalStatus === 'TỪ_CHỐI') {
@@ -1154,6 +1183,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
       status: editForm.status,
       statusLabel: updatedStatusLabel,
       deliverables: editForm.deliverables.length > 0 ? editForm.deliverables : editingDeal.deliverables,
+      rightsTerms: resolvedRightsTerms.length > 0 ? resolvedRightsTerms : editingDeal.rightsTerms,
+      droppedCostVnd: droppedCost,
+      sequentialAcceptanceStage: nextSequentialStage,
       finalAmount: Math.max(0, (editingDeal.totalValue || 0) - (editingDeal.advanceAmount || 0) - droppedCost),
     };
 
@@ -2672,7 +2704,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
         open={!!editingDeal}
         onClose={() => setEditingDeal(null)}
         size="lg"
-        title={editingDeal ? `Cập nhật job ${editingDeal.dealCode}` : ''}
+        title={editingDeal ? `Cập nhật Deal ${editingDeal.dealCode}` : ''}
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditingDeal(null)}>Hủy</Button>
@@ -2693,16 +2725,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   </span>
                 )}
               </div>
-              {editingDeal.contractAppendixCode && (
-                <span className="font-code text-ink-3">Phụ lục: {editingDeal.contractAppendixCode}</span>
-              )}
+              <div className="flex items-center gap-2 flex-wrap font-code text-ink-3">
+                {editingDeal.masterContractCode && (
+                  <span>HĐNT: {editingDeal.masterContractCode}</span>
+                )}
+                <span>Phụ lục Deal: {editingDeal.contractAppendixCode || `PL-${editingDeal.dealCode}-01`}</span>
+              </div>
             </div>
 
             {editForm.deliverables.length > 0 && (
               <div className="rounded-lg border border-line bg-surface p-3 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-ink">
-                    Hạng mục bàn giao đa nền tảng (Wave 0 → Wave 1 & Đối soát từng phần)
+                    Bước 1 · Nghiệm thu Asset (Video gốc Wave 0) & Bàn giao đa nền tảng (Wave 1)
                   </span>
                   <span className="text-2xs text-ink-3">
                     {editForm.deliverables.filter(i => i.lockStatus === 'VERIFIED').length}/{editForm.deliverables.length} hoàn tất
@@ -2741,10 +2776,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
                               const nextList = prev.deliverables.map((dItem, dIdx) =>
                                 dIdx === idx ? { ...dItem, lockStatus: nextStatus } : dItem
                               );
-                              // Tự động mở khóa các hạng mục Wave 1 khi Wave 0 đã VERIFIED
+                              // Tự động mở khóa các hạng mục Wave 1 và Bước 2 Dịch vụ gia tăng khi Wave 0 (Asset Video) đã VERIFIED
                               const wave0Done = nextList
                                 .filter(x => x.wave === 0)
                                 .every(x => x.lockStatus === 'VERIFIED');
+                              const nextRights = prev.rightsTerms.map(rt => {
+                                if (!wave0Done && !prev.tiktokVideoUrl.trim()) {
+                                  return { ...rt, acceptanceStatus: 'LOCKED_BY_VIDEO' as const };
+                                }
+                                if ((wave0Done || prev.tiktokVideoUrl.trim()) && rt.acceptanceStatus === 'LOCKED_BY_VIDEO') {
+                                  return { ...rt, acceptanceStatus: 'PENDING_ACCEPTANCE' as const };
+                                }
+                                return rt;
+                              });
                               return {
                                 ...prev,
                                 deliverables: nextList.map(x =>
@@ -2752,14 +2796,15 @@ export const BookingView: React.FC<BookingViewProps> = ({
                                     ? { ...x, lockStatus: 'UNLOCKED' }
                                     : x
                                 ),
+                                rightsTerms: nextRights,
                               };
                             });
                           }}
                         >
-                          <option value="LOCKED_BY_WAVE_0">Khóa chờ Wave 0</option>
+                          <option value="LOCKED_BY_WAVE_0">Khóa chờ Video gốc (Wave 0)</option>
                           <option value="UNLOCKED">Đã mở khóa (Thực thi)</option>
                           <option value="VERIFIED">Đã nghiệm thu</option>
-                          <option value="DROPPED">Hủy hạng mục (Trừ tất toán)</option>
+                          <option value="DROPPED">Hủy hạng mục (Trừ tất toán Deal)</option>
                         </Select>
                       </div>
                     </div>
@@ -2773,20 +2818,61 @@ export const BookingView: React.FC<BookingViewProps> = ({
               </div>
             )}
 
-            {editingDeal.rightsTerms && editingDeal.rightsTerms.length > 0 && (
-              <div className="rounded-lg border border-line bg-surface p-3 space-y-1.5">
-                <div className="text-xs font-semibold text-ink">Thời hạn bản quyền & Quảng cáo (3 cấp: Asset / Media Channel / Deal)</div>
-                <div className="grid sm:grid-cols-3 gap-2">
-                  {editingDeal.rightsTerms.map(rt => (
-                    <div key={rt.id} className="p-2 rounded border border-line bg-sunken/50 text-2xs">
-                      <div className="font-semibold text-ink">{rt.termLabel} ({rt.scopeType})</div>
-                      <div className="text-ink-2 mt-0.5">{rt.targetMediaChannel || 'Toàn Deal'} · {rt.durationDays} ngày</div>
-                      <div className="text-ink-3">Mốc: {rt.anchorType === 'AIR_DATE' ? 'Ngày Air' : 'Nghiệm thu'} (Hết hạn: {rt.expiresAt || 'Chưa kích hoạt'})</div>
-                    </div>
-                  ))}
+            {editForm.rightsTerms.length > 0 && (() => {
+              const videoVerified =
+                Boolean(editForm.tiktokVideoUrl.trim()) ||
+                editForm.deliverables.some(d => d.wave === 0 && d.lockStatus === 'VERIFIED');
+              return (
+                <div className="rounded-lg border border-line bg-surface p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-semibold text-ink">
+                      Bước 2 · Nghiệm thu Dịch vụ gia tăng & Quyền lợi theo Deal (Mở khóa sau khi nghiệm thu Video)
+                    </span>
+                    <Status tone={videoVerified ? 'positive' : 'warning'}>
+                      {videoVerified ? 'Đã mở khóa Bước 2' : 'Khóa chờ nghiệm thu Asset Video (Bước 1)'}
+                    </Status>
+                  </div>
+                  <div className="space-y-1.5">
+                    {editForm.rightsTerms.map((rt, rIdx) => (
+                      <div key={rt.id} className="p-2 rounded border border-line bg-sunken/50 grid sm:grid-cols-12 gap-2 items-center text-2xs">
+                        <div className="sm:col-span-5">
+                          <div className="font-semibold text-ink">{rt.termLabel} ({rt.scopeType})</div>
+                          <div className="text-ink-2 mt-0.5">
+                            {rt.targetMediaChannel || 'Toàn Deal'} · {rt.durationDays} ngày · Mốc: {rt.anchorType === 'AIR_DATE' ? 'Ngày Air' : 'Nghiệm thu'}
+                          </div>
+                        </div>
+                        <div className="sm:col-span-3 tabular-nums">
+                          <div className="font-semibold text-ink-2">
+                            {rt.allocatedCostVnd && rt.allocatedCostVnd > 0 ? `+${formatVnd(rt.allocatedCostVnd)}` : 'Gộp trong Deal'}
+                          </div>
+                          <div className="text-ink-3">Hết hạn: {rt.expiresAt || 'Kích hoạt sau nghiệm thu'}</div>
+                        </div>
+                        <div className="sm:col-span-4">
+                          <Select
+                            disabled={!videoVerified}
+                            value={!videoVerified ? 'LOCKED_BY_VIDEO' : (rt.acceptanceStatus || 'PENDING_ACCEPTANCE')}
+                            onChange={e => {
+                              const nextSt = e.target.value as NonNullable<DealRightsTermItem['acceptanceStatus']>;
+                              setEditForm(prev => ({
+                                ...prev,
+                                rightsTerms: prev.rightsTerms.map((item, i) =>
+                                  i === rIdx ? { ...item, acceptanceStatus: nextSt } : item
+                                ),
+                              }));
+                            }}
+                          >
+                            <option value="LOCKED_BY_VIDEO">Khóa chờ nghiệm thu Video</option>
+                            <option value="PENDING_ACCEPTANCE">Chờ nghiệm thu phần dịch vụ</option>
+                            <option value="VERIFIED">Đã nghiệm thu dịch vụ</option>
+                            <option value="DROPPED">Không thực hiện (Khấu trừ khỏi Deal)</option>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {editingDeal.revisions && editingDeal.revisions.length > 0 && (
               <div className="rounded-lg border border-line bg-surface p-3 space-y-1.5">
