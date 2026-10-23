@@ -931,7 +931,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                           </div>
                           <div className="w-full h-1.5 bg-sunken rounded-full overflow-hidden border border-line">
                             <div
-                              className={`h-full rounded-full transition-all duration-300 ${
+                              className={`h-full rounded-full data-bar ${
                                 isOverbudget
                                   ? 'bg-critical'
                                   : spentPct >= 80
@@ -1924,7 +1924,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                       {/* Thanh Progress */}
                       <div className="w-full h-2 bg-sunken rounded-full overflow-hidden border border-line">
                         <div
-                          className={`h-full rounded-full transition-all duration-300 ${
+                          className={`h-full rounded-full data-bar ${
                             isOverbudget
                               ? 'bg-critical'
                               : spentPct >= 80

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Plus, Search, Trash2 } from 'lucide-react';
 import type { InputPlanBreakdownState, StorePortfolioItem } from '../../lib/types';
-import { Button, Field, Input, Select, Textarea } from '../ui';
+import { Button, ConfirmDialog, Field, Input, Select, Textarea } from '../ui';
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
 import { weekLabelsForMonth } from '../../lib/planBreakdownRules';
 import { usePlanRecord } from '../../lib/usePlanRecord';
@@ -20,12 +20,14 @@ import {
   OVERVIEW_METRICS,
   SOURCES,
   SOURCE_LABEL,
+  STRATEGY_OWNER_MODE_LABEL,
   aggregateWeeks,
   computeKpi,
   computeOverview,
   daysBetween,
   detectChannel,
   diagnoseBrandPlan,
+  getTierBookingOwnerLabel,
   newId,
   newMilestone,
   newPillar,
@@ -39,10 +41,12 @@ import {
   type ContentSource,
   type KpiUnit,
   type PlanChannel,
+  type StrategyOwnerMode,
 } from '../../lib/brandPlanRules';
 
 interface BrandMonthlyPlanFormProps {
   currentUserName?: string;
+  currentUserRole?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -90,7 +94,7 @@ const NumInput: React.FC<{ value: number | null | undefined; onChange: (v: numbe
 const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2 py-2 text-left text-2xs font-medium text-ink-3';
 const TD = 'border-b border-line px-2 py-1.5 align-top text-[13px] text-ink';
 
-export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ currentUserName = 'Nhân viên', onNotify }) => {
+export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ currentUserName = 'Nhân viên', currentUserRole, onNotify }) => {
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
@@ -172,8 +176,12 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   // Nhóm sản phẩm của Brand (Dữ liệu gốc › Danh mục sản phẩm)
   const [productGroups, setProductGroups] = useState<{ id: string; name: string }[] | null>(null);
   const planBrand = plan?.brandName || '';
-  useEffect(() => {
+  const [prevPlanBrand, setPrevPlanBrand] = useState(planBrand);
+  if (planBrand !== prevPlanBrand) {
+    setPrevPlanBrand(planBrand);
     setProductGroups(null);
+  }
+  useEffect(() => {
     if (!planBrand) return;
     let cancelled = false;
     (async () => {
@@ -195,6 +203,24 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   const issues = useMemo(() => (plan ? diagnoseBrandPlan(plan, data, members, channelHint, productGroups) : []), [plan, data, members, channelHint, productGroups]);
   const errorCount = issues.filter(i => i.level === 'error').length;
   const channelOfStore = channelHint ?? (plan ? detectChannel(plan) : null);
+
+  const normalizeName = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+  const isManagerUser = useMemo(() => {
+    const managerRoles = ['ADMIN', 'MANAGER', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'FINANCE'];
+    if (currentUserRole && managerRoles.includes(currentUserRole)) return true;
+    const nameSlug = normalizeName(currentUserName);
+    if (nameSlug === normalizeName('Đặng Thị Yến Nhi') || nameSlug === normalizeName('Đỗ Văn Giang')) return true;
+    if (catalogStore?.bookingLeader && normalizeName(catalogStore.bookingLeader) === nameSlug) return true;
+    return false;
+  }, [currentUserRole, currentUserName, catalogStore?.bookingLeader]);
+
+  const canEditRow = (r: BrandPlanRow) => {
+    if (isManagerUser) return true;
+    if (!r.pic || !r.pic.trim()) return true;
+    return normalizeName(r.pic) === normalizeName(currentUserName);
+  };
 
   const approvalStatus = data.approval.status;
   const locked = approvalStatus === 'PENDING' || approvalStatus === 'APPROVED';
@@ -226,25 +252,55 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   ];
 
   /* ------------------------------------------------------- 1. Định hướng */
-  const renderDirection = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <Field label="Người lập / duyệt">
-          <Input value={data.planner} onChange={e => patch({ planner: e.target.value })} placeholder={plan?.pic || currentUserName} />
-        </Field>
-        <Field label="Ngày chốt / trạng thái">
-          <Input value={data.statusNote} onChange={e => patch({ statusNote: e.target.value })} />
-        </Field>
+  const renderDirection = () => {
+    const ownerMode: StrategyOwnerMode = data.strategyOwnerMode || 'CONTENT_TEAM';
+    const hasBookingLeader = Boolean(catalogStore?.bookingLeader && catalogStore.bookingLeader.trim());
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-2.5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <Field label="Chủ trì chiến lược (1 Dự Án — 1 Strategy Owner)">
+              <Select
+                value={ownerMode}
+                onChange={e => patch({ strategyOwnerMode: e.target.value as StrategyOwnerMode })}
+              >
+                {(Object.keys(STRATEGY_OWNER_MODE_LABEL) as StrategyOwnerMode[]).map(k => (
+                  <option key={k} value={k}>
+                    {STRATEGY_OWNER_MODE_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Người lập / duyệt">
+              <Input value={data.planner} onChange={e => patch({ planner: e.target.value })} placeholder={plan?.pic || currentUserName} />
+            </Field>
+            <Field label="Ngày chốt / trạng thái">
+              <Input value={data.statusNote} onChange={e => patch({ statusNote: e.target.value })} />
+            </Field>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
+            <span className="rounded border border-line bg-surface px-2 py-1 font-medium text-ink">
+              {ownerMode === 'BRAND_TEAM'
+                ? 'Brand Team: Strategy Owner tổng thể · Content Team: Book KOL KL5–KL7 & Hero Content · Booking Team: Book KOC KL1–KL4 & FOC'
+                : 'Content Team: Strategy Owner toàn diện · Content Team: Book KOL KL5–KL7 · Booking Team: Book KOC KL1–KL4 & FOC'}
+            </span>
+            <span className="rounded border border-line bg-surface px-2 py-1 text-ink-2">
+              {hasBookingLeader
+                ? `Luồng duyệt 2 cấp: Chuyên viên → Trưởng nhóm (${catalogStore?.bookingLeader}) sơ duyệt → Giám đốc Marketing (Đặng Thị Yến Nhi)`
+                : 'Gian hàng không có Leader: Chuyên viên trình duyệt trực tiếp Giám đốc Marketing (Đặng Thị Yến Nhi)'}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {DIRECTION_FIELDS.map(f => (
+            <Field key={f.key} label={f.label}>
+              <Textarea rows={3} value={data.direction[f.key] || ''} onChange={e => patch({ direction: { ...data.direction, [f.key]: e.target.value } })} />
+            </Field>
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {DIRECTION_FIELDS.map(f => (
-          <Field key={f.key} label={f.label}>
-            <Textarea rows={3} value={data.direction[f.key] || ''} onChange={e => patch({ direction: { ...data.direction, [f.key]: e.target.value } })} />
-          </Field>
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   /* ------------------------------------------------------------- 2. KPI */
   const renderKpi = () => {
@@ -400,6 +456,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
 
   const patchPillar = (index: number, next: Partial<BrandPlanPillar>) => patch({ pillars: data.pillars.map((p, i) => (i === index ? { ...p, ...next } : p)) });
   const [pillarPick, setPillarPick] = useState('');
+  const [pendingDeletePillar, setPendingDeletePillar] = useState<{ index: number; id: string; usedCount: number } | null>(null);
 
   const addPillarFromCatalog = () => {
     const found = CONTENT_PILLARS.find(p => p.name === pillarPick);
@@ -478,7 +535,10 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                       className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical"
                       onClick={() => {
                         const used = data.rows.filter(r => r.pillarId === p.id).length;
-                        if (used > 0 && !window.confirm(`Pillar này đang dùng ở ${used} dòng content. Xóa vẫn tiếp tục?`)) return;
+                        if (used > 0) {
+                          setPendingDeletePillar({ index: i, id: p.id, usedCount: used });
+                          return;
+                        }
                         patch({ pillars: data.pillars.filter((_, k) => k !== i), rows: data.rows.map(r => (r.pillarId === p.id ? { ...r, pillarId: '' } : r)) });
                       }}
                     >
@@ -503,7 +563,18 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     const ov = computeOverview(data.overview);
     const setTarget = (week: string, next: { gmv?: number | null; views?: number | null }) =>
       patch({ weekTargets: { ...data.weekTargets, [channel]: { ...targets, [week]: { ...targets[week], ...next } } } });
-    const addRow = (week: string, source: ContentSource = 'AFFILIATE') => patch({ rows: [...data.rows, { ...newRow(channel, week), source, ...(source === 'AFFILIATE' ? {} : { kl: '' }) }] });
+    const addRow = (week: string, source: ContentSource = 'AFFILIATE') =>
+      patch({
+        rows: [
+          ...data.rows,
+          {
+            ...newRow(channel, week),
+            source,
+            ...(source === 'AFFILIATE' ? {} : { kl: '' }),
+            pic: isManagerUser ? (plan?.pic || currentUserName) : currentUserName,
+          },
+        ],
+      });
     const copyRow = (r: BrandPlanRow) => {
       const idx = data.rows.findIndex(x => x.id === r.id);
       const next = [...data.rows];
@@ -714,108 +785,137 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                     </td>
                   </tr>
                 )}
-                {rows.map(r => (
-                  <tr key={r.id}>
-                    <td className={`${TD} w-[150px]`}>
-                      <Select value={r.week} onChange={e => patchRow(r.id, { week: e.target.value })}>
-                        <option value="">Chọn tuần</option>
-                        {weeks.map(w => (
-                          <option key={w} value={w}>
-                            {w}
-                          </option>
-                        ))}
-                        {r.week && !weeks.includes(r.week) && <option value={r.week}>{r.week}</option>}
-                      </Select>
-                    </td>
-                    <td className={`${TD} w-[100px]`}>
-                      <Input className="h-8" value={r.airDate} placeholder="dd/mm" onChange={e => patchRow(r.id, { airDate: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[170px]`}>
-                      <Select value={r.productGroupId} onChange={e => patchRow(r.id, { productGroupId: e.target.value })}>
-                        <option value="">Chọn nhóm</option>
-                        {(productGroups || []).map(g => (
-                          <option key={g.id} value={g.id}>
-                            {g.name || 'Chưa đặt tên'}
-                          </option>
-                        ))}
-                        {r.productGroupId && !(productGroups || []).some(g => g.id === r.productGroupId) && <option value={r.productGroupId}>Nhóm không còn trong danh mục</option>}
-                      </Select>
-                    </td>
-                    <td className={`${TD} w-[170px]`}>
-                      <Input className="h-8" value={r.sku} onChange={e => patchRow(r.id, { sku: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[160px]`}>
-                      <Select value={r.source} onChange={e => patchRow(r.id, { source: e.target.value as ContentSource, kl: e.target.value === 'AFFILIATE' ? r.kl : '' })}>
-                        {SOURCES.map(s => (
-                          <option key={s} value={s}>
-                            {SOURCE_LABEL[s]}
-                          </option>
-                        ))}
-                      </Select>
-                    </td>
-                    <td className={`${TD} w-[90px]`}>
-                      {r.source === 'AFFILIATE' ? (
-                        <Select value={r.kl} onChange={e => patchRow(r.id, { kl: e.target.value })}>
-                          <option value="">Chọn</option>
-                          {KL_OPTIONS.map(k => (
-                            <option key={k} value={k}>
-                              {k}
+                {rows.map(r => {
+                  const rowEditable = !locked && canEditRow(r);
+                  const lockTitle = rowEditable ? undefined : `Chỉ PIC (${r.pic || 'chưa gán'}) hoặc Leader/Quản lý mới có quyền chỉnh sửa dòng này`;
+                  return (
+                    <tr key={r.id} className={rowEditable ? '' : 'bg-sunken/40'} title={lockTitle}>
+                      <td className={`${TD} w-[150px]`}>
+                        <Select value={r.week} disabled={!rowEditable} onChange={e => patchRow(r.id, { week: e.target.value })}>
+                          <option value="">Chọn tuần</option>
+                          {weeks.map(w => (
+                            <option key={w} value={w}>
+                              {w}
+                            </option>
+                          ))}
+                          {r.week && !weeks.includes(r.week) && <option value={r.week}>{r.week}</option>}
+                        </Select>
+                      </td>
+                      <td className={`${TD} w-[100px]`}>
+                        <Input className="h-8" value={r.airDate} disabled={!rowEditable} placeholder="dd/mm" onChange={e => patchRow(r.id, { airDate: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[170px]`}>
+                        <Select value={r.productGroupId} disabled={!rowEditable} onChange={e => patchRow(r.id, { productGroupId: e.target.value })}>
+                          <option value="">Chọn nhóm</option>
+                          {(productGroups || []).map(g => (
+                            <option key={g.id} value={g.id}>
+                              {g.name || 'Chưa đặt tên'}
+                            </option>
+                          ))}
+                          {r.productGroupId && !(productGroups || []).some(g => g.id === r.productGroupId) && <option value={r.productGroupId}>Nhóm không còn trong danh mục</option>}
+                        </Select>
+                      </td>
+                      <td className={`${TD} w-[170px]`}>
+                        <Input className="h-8" value={r.sku} disabled={!rowEditable} onChange={e => patchRow(r.id, { sku: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[160px]`}>
+                        <Select value={r.source} disabled={!rowEditable} onChange={e => patchRow(r.id, { source: e.target.value as ContentSource, kl: e.target.value === 'AFFILIATE' ? r.kl : '' })}>
+                          {SOURCES.map(s => (
+                            <option key={s} value={s}>
+                              {SOURCE_LABEL[s]}
                             </option>
                           ))}
                         </Select>
-                      ) : (
-                        <div className="px-2 py-1.5 text-ink-3">—</div>
-                      )}
-                    </td>
-                    <td className={`${TD} w-[200px]`}>
-                      <Textarea rows={2} value={r.kocCriteria} onChange={e => patchRow(r.id, { kocCriteria: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[170px]`}>
-                      <Select value={r.pillarId} onChange={e => patchRow(r.id, { pillarId: e.target.value })}>
-                        <option value="">Chọn pillar</option>
-                        {data.pillars
-                          .filter(p => p.id)
-                          .map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.id} · {p.name}
-                            </option>
-                          ))}
-                        {r.pillarId && !data.pillars.some(p => p.id === r.pillarId) && <option value={r.pillarId}>{r.pillarId}</option>}
-                      </Select>
-                    </td>
-                    <td className={`${TD} w-[120px]`}>
-                      <Input className="h-8" value={r.goal} onChange={e => patchRow(r.id, { goal: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[240px]`}>
-                      <Textarea rows={2} value={r.angle} onChange={e => patchRow(r.id, { angle: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[100px]`}>
-                      <Input className="h-8" value={r.type} onChange={e => patchRow(r.id, { type: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[100px]`}>
-                      <Input className="h-8" value={r.production} placeholder="VJ / Remix" onChange={e => patchRow(r.id, { production: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[90px]`}>
-                      <NumInput value={r.qty} onChange={v => patchRow(r.id, { qty: v })} />
-                    </td>
-                    <td className={`${TD} w-[130px]`}>
-                      <NumInput value={r.budget} onChange={v => patchRow(r.id, { budget: v })} />
-                    </td>
-                    <td className={`${TD} w-[130px]`}>
-                      <Input className="h-8" value={r.pic} list="brand-plan-pic" onChange={e => patchRow(r.id, { pic: e.target.value })} />
-                    </td>
-                    <td className={`${TD} w-[70px]`}>
-                      <div className="flex items-center">
-                        <button type="button" aria-label="Nhân đôi dòng" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-ink" onClick={() => copyRow(r)}>
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        <button type="button" aria-label="Xóa dòng" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => delRow(r.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className={`${TD} w-[125px]`}>
+                        {r.source === 'AFFILIATE' ? (
+                          <div className="space-y-1">
+                            <Select value={r.kl} disabled={!rowEditable} onChange={e => patchRow(r.id, { kl: e.target.value })}>
+                              <option value="">Chọn</option>
+                              {KL_OPTIONS.map(k => (
+                                <option key={k} value={k}>
+                                  {k}
+                                </option>
+                              ))}
+                            </Select>
+                            {r.kl && (
+                              <div className="text-[10px] text-ink-3 truncate">
+                                {getTierBookingOwnerLabel(r.kl, r.source)}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="px-2 py-1.5 text-2xs text-ink-3">{getTierBookingOwnerLabel('', r.source)}</div>
+                        )}
+                      </td>
+                      <td className={`${TD} w-[200px]`}>
+                        <Textarea rows={2} value={r.kocCriteria} disabled={!rowEditable} onChange={e => patchRow(r.id, { kocCriteria: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[170px]`}>
+                        <Select value={r.pillarId} disabled={!rowEditable} onChange={e => patchRow(r.id, { pillarId: e.target.value })}>
+                          <option value="">Chọn pillar</option>
+                          {data.pillars
+                            .filter(p => p.id)
+                            .map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.id} · {p.name}
+                              </option>
+                            ))}
+                          {r.pillarId && !data.pillars.some(p => p.id === r.pillarId) && <option value={r.pillarId}>{r.pillarId}</option>}
+                        </Select>
+                      </td>
+                      <td className={`${TD} w-[120px]`}>
+                        <Input className="h-8" value={r.goal} disabled={!rowEditable} onChange={e => patchRow(r.id, { goal: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[240px]`}>
+                        <Textarea rows={2} value={r.angle} disabled={!rowEditable} onChange={e => patchRow(r.id, { angle: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[100px]`}>
+                        <Input className="h-8" value={r.type} disabled={!rowEditable} onChange={e => patchRow(r.id, { type: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[100px]`}>
+                        <Input className="h-8" value={r.production} disabled={!rowEditable} placeholder="VJ / Remix" onChange={e => patchRow(r.id, { production: e.target.value })} />
+                      </td>
+                      <td className={`${TD} w-[90px]`}>
+                        <NumInput value={r.qty} className={rowEditable ? '' : 'cursor-not-allowed bg-sunken'} onChange={v => rowEditable && patchRow(r.id, { qty: v })} />
+                      </td>
+                      <td className={`${TD} w-[130px]`}>
+                        <NumInput value={r.budget} className={rowEditable ? '' : 'cursor-not-allowed bg-sunken'} onChange={v => rowEditable && patchRow(r.id, { budget: v })} />
+                      </td>
+                      <td className={`${TD} w-[130px]`}>
+                        <Input
+                          className={`h-8 ${!rowEditable ? 'cursor-not-allowed bg-sunken' : ''}`}
+                          value={r.pic}
+                          list="brand-plan-pic"
+                          disabled={!rowEditable}
+                          onChange={e => patchRow(r.id, { pic: e.target.value })}
+                        />
+                      </td>
+                      <td className={`${TD} w-[70px]`}>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            aria-label="Nhân đôi dòng"
+                            disabled={!rowEditable}
+                            className={`rounded p-1.5 ${rowEditable ? 'text-ink-3 hover:bg-sunken hover:text-ink' : 'text-ink-4 cursor-not-allowed opacity-30'}`}
+                            onClick={() => rowEditable && copyRow(r)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Xóa dòng"
+                            disabled={!rowEditable}
+                            className={`rounded p-1.5 ${rowEditable ? 'text-ink-3 hover:bg-sunken hover:text-critical' : 'text-ink-4 cursor-not-allowed opacity-30'}`}
+                            onClick={() => rowEditable && delRow(r.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {rows.length > 0 && (
                   <tr>
                     <td colSpan={11} className={`${TD} text-right font-semibold`}>
@@ -912,7 +1012,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                 </span>
                 {(approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
                   <Button size="md" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
-                    Gửi duyệt
+                    {catalogStore?.bookingLeader ? `Gửi Trưởng nhóm (${catalogStore.bookingLeader})` : 'Trình duyệt Giám đốc Marketing'}
                   </Button>
                 )}
                 {approvalStatus === 'PENDING' && (
@@ -974,6 +1074,28 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
           </>
         )}
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeletePillar)}
+        title="Xóa pillar"
+        message={
+          pendingDeletePillar
+            ? `Pillar "${pendingDeletePillar.id}" đang dùng ở ${pendingDeletePillar.usedCount} dòng content. Xóa vẫn tiếp tục?`
+            : ''
+        }
+        confirmLabel="Xóa pillar"
+        tone="danger"
+        onConfirm={() => {
+          if (pendingDeletePillar) {
+            patch({
+              pillars: data.pillars.filter((_, k) => k !== pendingDeletePillar.index),
+              rows: data.rows.map(r => (r.pillarId === pendingDeletePillar.id ? { ...r, pillarId: '' } : r)),
+            });
+          }
+          setPendingDeletePillar(null);
+        }}
+        onCancel={() => setPendingDeletePillar(null)}
+      />
     </div>
   );
 };

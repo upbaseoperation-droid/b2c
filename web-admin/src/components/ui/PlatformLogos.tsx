@@ -192,17 +192,17 @@ export function PlatformBadge({
   const v = (platform || '').toUpperCase();
 
   // Style màu theo sàn
-  let themeStyles = 'bg-slate-100 text-slate-700 border-slate-200/80';
+  let themeStyles = 'bg-sunken text-ink-2 border-line';
   if (v.includes('SHOPEE')) {
-    themeStyles = 'bg-orange-50/80 text-orange-700 border-orange-200/70 hover:bg-orange-100/60';
+    themeStyles = 'bg-warning-soft text-warning border-warning/25 hover:bg-warning-soft/80';
   } else if (v.includes('TIKTOK')) {
-    themeStyles = 'bg-zinc-100 text-zinc-900 border-zinc-200/90 hover:bg-zinc-200/60';
+    themeStyles = 'bg-sunken text-ink border-line-strong hover:bg-sunken/80';
   } else if (v.includes('LAZADA')) {
-    themeStyles = 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70 hover:bg-indigo-100/60';
+    themeStyles = 'bg-accent-soft text-accent border-accent/25 hover:bg-accent-soft/80';
   } else if (v.includes('LIVE')) {
-    themeStyles = 'bg-rose-50/80 text-rose-700 border-rose-200/70 hover:bg-rose-100/60';
+    themeStyles = 'bg-positive-soft text-positive border-positive/25 hover:bg-positive-soft/80';
   } else if (v.includes('SELF') || v.includes('TỰ XÂY')) {
-    themeStyles = 'bg-blue-50/80 text-blue-700 border-blue-200/70 hover:bg-blue-100/60';
+    themeStyles = 'bg-accent-soft text-accent border-accent/25 hover:bg-accent-soft/80';
   }
 
   if (variant === 'icon-only' || !showLabel) {

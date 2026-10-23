@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button, Modal } from './ui';
 import {
   AlertTriangle,
@@ -109,45 +109,45 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [isFetchingTikTok, setIsFetchingTikTok] = useState(false);
   const [scrapedCache, setScrapedCache] = useState<TikTokScrapedKocResult | null>(null);
 
-  const wasOpenRef = useRef(false);
-  if (isOpen && !wasOpenRef.current) {
-    wasOpenRef.current = true;
-    setStageName('');
-    setChannelId('');
-    setRealName('');
-    setBookingFormat('Booking Video KOC');
-    setFormError(null);
-    setShopeeChannel('');
-    setFacebookChannel('');
-    setInstagramChannel('');
-    setThreadsChannel('');
-    setSocialCandidates(null);
-    setRateCardVideo(3000000);
-    setSalaryGrade('KL4');
-    setSegment('Mid Creator');
-    setTepKenh('Review Nữ');
-    setKocCategory('Personal care');
-    setTier('TIER_3_MICRO');
-    setFollowers(50000);
-    setGmvBestCase(15000000);
-    setFemaleRatio(85);
-    setAgeGroup('18-24');
-    setPhone('');
-    setZalo('');
-    setEmail('');
-    setLocation('Hà Nội');
-    setShippingAddress('');
-    setLegalType('INDIVIDUAL');
-    setCompanyName('');
-    setTaxCode('');
-    setLegalRepresentative('');
-    setCccd('');
-    setBankName('Techcombank');
-    setBankAccount('');
-    setTiktokLookupInput('');
-    setScrapedCache(null);
-  } else if (!isOpen && wasOpenRef.current) {
-    wasOpenRef.current = false;
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setStageName('');
+      setChannelId('');
+      setRealName('');
+      setBookingFormat('Booking Video KOC');
+      setFormError(null);
+      setShopeeChannel('');
+      setFacebookChannel('');
+      setInstagramChannel('');
+      setThreadsChannel('');
+      setSocialCandidates(null);
+      setRateCardVideo(3000000);
+      setSalaryGrade('KL4');
+      setSegment('Mid Creator');
+      setTepKenh('Review Nữ');
+      setKocCategory('Personal care');
+      setTier('TIER_3_MICRO');
+      setFollowers(50000);
+      setGmvBestCase(15000000);
+      setFemaleRatio(85);
+      setAgeGroup('18-24');
+      setPhone('');
+      setZalo('');
+      setEmail('');
+      setLocation('Hà Nội');
+      setShippingAddress('');
+      setLegalType('INDIVIDUAL');
+      setCompanyName('');
+      setTaxCode('');
+      setLegalRepresentative('');
+      setCccd('');
+      setBankName('Techcombank');
+      setBankAccount('');
+      setTiktokLookupInput('');
+      setScrapedCache(null);
+    }
   }
 
   const handleSearchSocialChannels = async () => {

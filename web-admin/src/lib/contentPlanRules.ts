@@ -1,4 +1,4 @@
-// Kế hoạch content theo tháng: mỗi content là một ô (slot), xếp vào tuần × bậc của bảng phân rã 4.1.1.
+// Kế hoạch content theo tháng: mỗi video trong kế hoạch (4.1.1) tương ứng 1 Brief Content (ContentSlot), xếp vào tuần × bậc.
 import type { InputPlanBreakdownState } from './types';
 import { FOC_TYPES, SELF_TYPES, resolveWeekRows } from './planBreakdownRules';
 import { KL_TIERS, type KlCode } from './klTiers';
@@ -6,6 +6,7 @@ import { CONTENT_PILLARS, pillarGroupOf } from './contentPillars';
 import type { BrandPlanPillar, BrandPlanRow, PlanChannel } from './brandPlanRules';
 
 export type ContentRowKey = KlCode | 'FOC' | 'SELF';
+export type ContentBriefStatus = 'DRAFT' | 'READY';
 
 export const CONTENT_ROWS: { key: ContentRowKey; label: string }[] = [
   ...KL_TIERS.map(t => ({ key: t.code as ContentRowKey, label: t.label })),
@@ -13,11 +14,35 @@ export const CONTENT_ROWS: { key: ContentRowKey; label: string }[] = [
   { key: 'SELF', label: 'Self channel' },
 ];
 
+export const BRIEF_FORMAT_OPTIONS = [
+  'Talking Head + B-roll',
+  'Voiceover B-roll',
+  'POV Tình huống trước/sau',
+  'Mở hộp & trải nghiệm thực tế',
+  'So sánh trực quan',
+] as const;
+
 export interface ContentSlot {
   id: string;
+  /** Mã định danh dòng Định hướng / Brief mẫu trong kế hoạch (VD: BR-01 .. BR-10). */
+  briefCode?: string;
+  /** Số lượng video mục tiêu của dòng Brief / Góc nội dung này (VD: 10 dòng Brief × 10 video = 100 video). */
+  targetQty?: number;
   pillar: string;
   angle: string;
   product: string;
+  /** Câu mở đầu 3 giây đầu (Hook 3s) trong Brief gửi KOC. */
+  hook?: string;
+  /** Điểm nhấn sản phẩm / Thông điệp USP bắt buộc trong video. */
+  usp?: string;
+  /** Lời kêu gọi hành động (CTA) & hướng dẫn gắn giỏ hàng. */
+  cta?: string;
+  /** Định dạng sản xuất video. */
+  format?: string;
+  /** Link tài liệu Brief chi tiết gửi KOC (Docs / Drive / Canva). */
+  briefUrl?: string;
+  /** Trạng thái hoàn thiện Brief Content. */
+  briefStatus?: ContentBriefStatus;
   /** Tuần đã xếp, null nếu chưa xếp. */
   week: string | null;
   /** Hàng đã xếp (bậc KL, FOC hoặc self channel). */
@@ -52,17 +77,84 @@ export interface ContentPlanData {
 
 export const isPlaced = (s: ContentSlot): boolean => Boolean(s.week && s.row);
 
+/** Số lượng video mục tiêu của 1 dòng Brief / Angle (mặc định = 1 nếu chưa khai báo). */
+export const slotTargetQty = (s: ContentSlot): number => Math.max(1, Math.floor(s.targetQty || 1));
+
+/** Kiểm tra 1 dòng Brief Content đã có đủ thông tin cốt lõi (Sản phẩm + Góc nội dung Angle) để giao cho Job/KOC chưa. */
+export const isBriefReady = (s: ContentSlot): boolean =>
+  s.briefStatus === 'READY' || Boolean(s.product.trim() && (s.angle.trim() || (s.hook || '').trim() || (s.usp || '').trim()));
+
+/** Lấy mã hiển thị chuẩn của dòng Brief Content (VD: BR-01 .. BR-10). */
+export const formatBriefCode = (s: ContentSlot, indexZeroBased?: number): string => {
+  if (s.briefCode && s.briefCode.trim()) return s.briefCode.trim();
+  if (typeof indexZeroBased === 'number' && indexZeroBased >= 0) {
+    return `BR-${String(indexZeroBased + 1).padStart(2, '0')}`;
+  }
+  return `BR-${s.id.slice(-4).toUpperCase()}`;
+};
+
+/** Đánh lại mã `briefCode` tuần tự (`BR-01` .. `BR-N`) cho các dòng Brief chưa có mã. */
+export function ensureSequentialBriefCodes(slots: ContentSlot[]): ContentSlot[] {
+  const used = new Set<string>();
+  for (const s of slots) {
+    if (s.briefCode && s.briefCode.trim()) used.add(s.briefCode.trim().toUpperCase());
+  }
+  let counter = 1;
+  return slots.map(s => {
+    if (s.briefCode && s.briefCode.trim()) return s;
+    let candidate = `BR-${String(counter).padStart(2, '0')}`;
+    while (used.has(candidate)) {
+      counter += 1;
+      candidate = `BR-${String(counter).padStart(2, '0')}`;
+    }
+    used.add(candidate);
+    counter += 1;
+    return { ...s, briefCode: candidate };
+  });
+}
+
 let seq = 0;
-export function newSlot(input: { pillar: string; angle?: string; product?: string; week?: string | null; row?: ContentRowKey | null; createdBy: string }): ContentSlot {
+export function newSlot(input: {
+  briefCode?: string;
+  targetQty?: number;
+  pillar: string;
+  angle?: string;
+  product?: string;
+  hook?: string;
+  usp?: string;
+  cta?: string;
+  format?: string;
+  briefUrl?: string;
+  note?: string;
+  week?: string | null;
+  row?: ContentRowKey | null;
+  pic?: string;
+  createdBy: string;
+}): ContentSlot {
   const now = new Date().toISOString();
   seq += 1;
+  const angle = input.angle?.trim() || '';
+  const product = input.product?.trim() || '';
+  const hook = input.hook?.trim() || '';
+  const usp = input.usp?.trim() || '';
+  const targetQty = Math.max(1, Math.floor(input.targetQty || 1));
   return {
     id: `CS-${Date.now().toString(36)}-${seq}-${Math.random().toString(36).slice(2, 6)}`,
+    briefCode: input.briefCode?.trim() || undefined,
+    targetQty,
     pillar: input.pillar,
-    angle: input.angle?.trim() || '',
-    product: input.product?.trim() || '',
+    angle,
+    product,
+    hook: hook || undefined,
+    usp: usp || undefined,
+    cta: input.cta?.trim() || undefined,
+    format: input.format?.trim() || undefined,
+    briefUrl: input.briefUrl?.trim() || undefined,
+    briefStatus: product && (angle || hook || usp) ? 'READY' : 'DRAFT',
+    note: input.note?.trim() || undefined,
     week: input.week ?? null,
     row: input.row ?? null,
+    pic: input.pic?.trim() || undefined,
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
@@ -90,11 +182,62 @@ export function requiredGrid(plan: InputPlanBreakdownState): { weeks: string[]; 
   return { weeks: rows.map(r => r.week), grid, hasData };
 }
 
+/**
+ * Khởi tạo các dòng Định hướng / Brief mẫu theo khung tuần × bậc KL của Kế hoạch (bảng phân rã 4.1.1).
+ * Mỗi ô (tuần × bậc) đang thiếu N video sẽ chỉ tạo 1 dòng Brief mẫu duy nhất có `targetQty = N` video
+ * (VD: 10 dòng Brief × 10 video = 100 video), không sinh 100 thẻ rời.
+ */
+export function generateMissingSlotsFromBreakdown(
+  plan: InputPlanBreakdownState,
+  existingSlots: ContentSlot[],
+  actor: string,
+  defaultProduct = ''
+): { slots: ContentSlot[]; addedCount: number; addedVideos: number } {
+  const { weeks, grid } = requiredGrid(plan);
+  const next = [...existingSlots];
+  let addedCount = 0;
+  let addedVideos = 0;
+  let pillarIdx = 0;
+
+  for (const w of weeks) {
+    for (const row of CONTENT_ROWS) {
+      const need = grid[w]?.[row.key] || 0;
+      if (need <= 0) continue;
+      const haveVideos = next
+        .filter(s => s.week === w && s.row === row.key)
+        .reduce((sum, s) => sum + slotTargetQty(s), 0);
+      const missingVideos = Math.max(0, need - haveVideos);
+      if (missingVideos <= 0) continue;
+      const pillar = CONTENT_PILLARS[pillarIdx % CONTENT_PILLARS.length]?.name || CONTENT_PILLARS[0].name;
+      pillarIdx += 1;
+      next.push(
+        newSlot({
+          targetQty: missingVideos,
+          pillar,
+          product: defaultProduct,
+          week: w,
+          row: row.key,
+          pic: plan.pic || actor,
+          createdBy: actor,
+        })
+      );
+      addedCount += 1;
+      addedVideos += missingVideos;
+    }
+  }
+  return { slots: ensureSequentialBriefCodes(next), addedCount, addedVideos };
+}
+
 export interface ContentDiagnostics {
   totalRequired: number;
+  /** Số dòng Định hướng / Brief mẫu (VD: 10 dòng Brief). */
   totalSlots: number;
+  /** Tổng số lượng video mục tiêu của các dòng Brief (VD: 10 dòng × 10 video = 100 video). */
+  totalBriefVideos: number;
   placed: number;
+  placedVideos: number;
   unplaced: number;
+  readyBriefs: number;
   byPillarGroup: { group: string; count: number; share: number }[];
   issues: { severity: 'warning' | 'info'; message: string }[];
 }
@@ -102,36 +245,54 @@ export interface ContentDiagnostics {
 export function diagnoseContentPlan(plan: InputPlanBreakdownState, slots: ContentSlot[]): ContentDiagnostics {
   const { weeks, grid } = requiredGrid(plan);
   const totalRequired = weeks.reduce((s, w) => s + Object.values(grid[w] || {}).reduce((a, b) => a + (b || 0), 0), 0);
+  const totalBriefVideos = slots.reduce((sum, s) => sum + slotTargetQty(s), 0);
   const placed = slots.filter(isPlaced);
+  const placedVideos = placed.reduce((sum, s) => sum + slotTargetQty(s), 0);
+  const readyBriefs = slots.filter(isBriefReady).length;
   const issues: ContentDiagnostics['issues'] = [];
 
   for (const w of weeks) {
     for (const row of CONTENT_ROWS) {
       const need = grid[w]?.[row.key] || 0;
-      const have = placed.filter(s => s.week === w && s.row === row.key).length;
-      if (have > need) issues.push({ severity: 'warning', message: `${w.split(' ')[0]} ${row.key}: đã xếp ${have} content, bảng phân rã chỉ cần ${need}` });
-      else if (have < need) issues.push({ severity: 'info', message: `${w.split(' ')[0]} ${row.key}: còn thiếu ${need - have} content` });
+      const have = placed.filter(s => s.week === w && s.row === row.key).reduce((sum, s) => sum + slotTargetQty(s), 0);
+      if (have > need) issues.push({ severity: 'warning', message: `${w.split(' ')[0]} ${row.key}: đã phân bổ ${have} video trong các dòng Brief, bảng phân rã chỉ cần ${need}` });
+      else if (have < need) issues.push({ severity: 'info', message: `${w.split(' ')[0]} ${row.key}: còn thiếu ${need - have} video trong các dòng Brief theo kế hoạch` });
     }
   }
   // content xếp vào tuần/hàng không còn trong bảng phân rã
   for (const s of placed) {
-    if (!weeks.includes(s.week as string)) issues.push({ severity: 'warning', message: `Content "${s.pillar}" đang xếp vào tuần không có trong kế hoạch (${s.week})` });
+    if (!weeks.includes(s.week as string)) issues.push({ severity: 'warning', message: `Brief "${s.briefCode || s.pillar}" đang xếp vào tuần không có trong kế hoạch (${s.week})` });
   }
   const noInfo = slots.filter(s => !s.product.trim()).length;
-  if (noInfo > 0) issues.push({ severity: 'info', message: `${noInfo} content chưa ghi sản phẩm` });
+  if (noInfo > 0) issues.push({ severity: 'info', message: `${noInfo} dòng Brief chưa ghi sản phẩm` });
+  const noAngle = slots.filter(s => !s.angle.trim() && !(s.hook || '').trim()).length;
+  if (noAngle > 0) issues.push({ severity: 'info', message: `${noAngle} dòng Brief chưa có góc tiếp cận (Angle / Hook 3s)` });
 
   const counts = new Map<string, number>();
-  for (const s of slots) counts.set(pillarGroupOf(s.pillar), (counts.get(pillarGroupOf(s.pillar)) || 0) + 1);
+  for (const s of slots) {
+    const qty = slotTargetQty(s);
+    counts.set(pillarGroupOf(s.pillar), (counts.get(pillarGroupOf(s.pillar)) || 0) + qty);
+  }
   const byPillarGroup = Array.from(counts.entries())
-    .map(([group, count]) => ({ group, count, share: slots.length ? count / slots.length : 0 }))
+    .map(([group, count]) => ({ group, count, share: totalBriefVideos ? count / totalBriefVideos : 0 }))
     .sort((a, b) => b.count - a.count);
-  if (slots.length >= 5 && byPillarGroup[0] && byPillarGroup[0].share > 0.6) {
-    issues.push({ severity: 'warning', message: `Nhóm pillar "${byPillarGroup[0].group}" chiếm ${Math.round(byPillarGroup[0].share * 100)}% content, nội dung dễ bị lặp` });
+  if (slots.length >= 3 && byPillarGroup[0] && byPillarGroup[0].share > 0.6) {
+    issues.push({ severity: 'warning', message: `Nhóm pillar "${byPillarGroup[0].group}" chiếm ${Math.round(byPillarGroup[0].share * 100)}% tổng số video, nội dung dễ bị lặp` });
   }
   const order = { warning: 0, info: 1 } as const;
   issues.sort((a, b) => order[a.severity] - order[b.severity]);
 
-  return { totalRequired, totalSlots: slots.length, placed: placed.length, unplaced: slots.length - placed.length, byPillarGroup, issues };
+  return {
+    totalRequired,
+    totalSlots: slots.length,
+    totalBriefVideos,
+    placed: placed.length,
+    placedVideos,
+    unplaced: slots.length - placed.length,
+    readyBriefs,
+    byPillarGroup,
+    issues,
+  };
 }
 
 export const pillarNames = CONTENT_PILLARS.map(p => p.name);
@@ -141,6 +302,7 @@ export const pillarNames = CONTENT_PILLARS.map(p => p.name);
 export interface BrandPlanSlotSpec {
   planRowId: string;
   planRowIndex: number;
+  targetQty: number;
   week: string;
   row: ContentRowKey;
   pillar: string;
@@ -153,7 +315,7 @@ export interface BrandPlanSlotSpec {
 const KL_CODES = new Set<string>(KL_TIERS.map(t => t.code));
 
 /**
- * Mỗi dòng Chi tiết Content của sàn đang xét sinh ra đúng "số lượng" content.
+ * Mỗi dòng Chi tiết Content của sàn đang xét tương ứng 1 dòng Định hướng / Brief mẫu có `targetQty = qty` (số lượng video mục tiêu).
  * Video affiliate theo bậc KL, TAP vào hàng FOC; video self vào hàng Self channel. Livestream không có trong lưới này.
  */
 export function slotSpecsFromBrandPlan(rows: BrandPlanRow[], pillars: BrandPlanPillar[], channel: PlanChannel, groups: { id: string; name: string }[] = []): { specs: BrandPlanSlotSpec[]; skipped: { live: number; noWeek: number; noTier: number } } {
@@ -181,9 +343,18 @@ export function slotSpecsFromBrandPlan(rows: BrandPlanRow[], pillars: BrandPlanP
       skipped.noTier += qty;
       continue;
     }
-    for (let i = 0; i < qty; i++) {
-      specs.push({ planRowId: r.id, planRowIndex: i, week: r.week, row, pillar: pillarName(r.pillarId), angle: r.angle.trim(), product: [groupName(r.productGroupId), r.sku.trim()].filter(Boolean).join(' · '), productGroupId: r.productGroupId || undefined, pic: r.pic.trim() });
-    }
+    specs.push({
+      planRowId: r.id,
+      planRowIndex: 0,
+      targetQty: qty,
+      week: r.week,
+      row,
+      pillar: pillarName(r.pillarId),
+      angle: r.angle.trim(),
+      product: [groupName(r.productGroupId), r.sku.trim()].filter(Boolean).join(' · '),
+      productGroupId: r.productGroupId || undefined,
+      pic: r.pic.trim(),
+    });
   }
   return { specs, skipped };
 }
@@ -200,8 +371,7 @@ export interface BrandPlanSyncResult {
 }
 
 /**
- * Đồng bộ content từ plan tháng của Brand. Plan là nguồn của tuần, hàng, sản phẩm, pillar, angle và PIC.
- * Không bao giờ đụng tới KOC đã gán. Content không còn trong plan chỉ bị xóa khi chưa gán KOC.
+ * Đồng bộ các dòng Brief mẫu từ plan tháng của Brand. Plan là nguồn của tuần, hàng, số lượng video mục tiêu, sản phẩm, pillar, angle và PIC.
  */
 export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlotSpec[], actor: string): BrandPlanSyncResult {
   const now = new Date().toISOString();
@@ -232,6 +402,7 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
     if (movedManually) manualKept++;
     const merged: ContentSlot = {
       ...s,
+      targetQty: spec.targetQty,
       week: movedManually ? s.week : spec.week,
       row: movedManually ? s.row : spec.row,
       planWeek: spec.week,
@@ -242,7 +413,15 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       pic: spec.pic || s.pic,
       productGroupId: spec.productGroupId || s.productGroupId,
     };
-    const changed = merged.week !== s.week || merged.row !== s.row || merged.product !== s.product || merged.angle !== s.angle || merged.pillar !== s.pillar || merged.pic !== s.pic || merged.productGroupId !== s.productGroupId;
+    const changed =
+      merged.targetQty !== s.targetQty ||
+      merged.week !== s.week ||
+      merged.row !== s.row ||
+      merged.product !== s.product ||
+      merged.angle !== s.angle ||
+      merged.pillar !== s.pillar ||
+      merged.pic !== s.pic ||
+      merged.productGroupId !== s.productGroupId;
     if (changed) {
       updated++;
       merged.updatedAt = now;
@@ -252,7 +431,15 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
   let added = 0;
   for (const spec of specs) {
     if (seen.has(keyOf(spec.planRowId, spec.planRowIndex))) continue;
-    const slot = newSlot({ pillar: spec.pillar, angle: spec.angle, product: spec.product, week: spec.week, row: spec.row, createdBy: actor });
+    const slot = newSlot({
+      targetQty: spec.targetQty,
+      pillar: spec.pillar,
+      angle: spec.angle,
+      product: spec.product,
+      week: spec.week,
+      row: spec.row,
+      createdBy: actor,
+    });
     slot.pic = spec.pic || undefined;
     slot.productGroupId = spec.productGroupId;
     slot.planRowId = spec.planRowId;
@@ -262,5 +449,5 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
     next.push(slot);
     added++;
   }
-  return { slots: next, added, updated, removed, keptOrphans, manualKept };
+  return { slots: ensureSequentialBriefCodes(next), added, updated, removed, keptOrphans, manualKept };
 }

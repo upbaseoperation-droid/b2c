@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
   CheckCircle2,
@@ -23,7 +23,6 @@ import type { StaffListingSheetRow } from '../../lib/staffBrandListingSheet';
 import { normalizeTikTokId } from '../../lib/staffBrandListingSheet';
 import { formatVndShort } from '../../lib/format';
 import {
-  DEFAULT_EMAIL_SERVER_CONFIG,
   DEFAULT_KOC_EMAIL_TEMPLATES,
   KOC_EMAIL_CATEGORY_LABELS,
   KOC_EMAIL_MERGE_VARIABLES,
@@ -44,6 +43,10 @@ import {
   type KocOutreachEmailState,
 } from '../../lib/kocOutreachEmailService';
 import { Button, Field, Input, Modal, Segmented, Select, Status, Tabs, Textarea } from '../ui';
+
+function makeCustomTemplateId(prefix: string): string {
+  return `${prefix}-${new Date().getTime()}`;
+}
 
 export interface KocOutreachEmailModalProps {
   open: boolean;
@@ -95,24 +98,10 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     initialTab
   );
 
-  useEffect(() => {
-    if (open) {
-      setActiveTab(initialTab);
-    }
-  }, [open, initialTab]);
-
   // Trạng thái lưu trữ Mẫu thư, Cấu hình máy chủ & Nhật ký gửi
   const [emailState, setEmailState] = useState<KocOutreachEmailState>(() =>
     loadKocOutreachEmailState()
   );
-
-  useEffect(() => {
-    if (!open) return;
-    setEmailState(loadKocOutreachEmailState());
-    void hydrateKocOutreachEmailStateFromServer().then((remote) => {
-      setEmailState(remote);
-    });
-  }, [open]);
 
   // Quyền Trưởng phòng quản lý mẫu thư (mặc định bật cho Manager/Admin/Leader hoặc cho phép bật trực tiếp để quản trị)
   const isDefaultManager =
@@ -122,12 +111,6 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     currentUserName.includes('Giang') ||
     currentUserName.includes('Quản trị');
   const [managerModeEnabled, setManagerModeEnabled] = useState<boolean>(isDefaultManager);
-
-  useEffect(() => {
-    if (isDefaultManager) {
-      setManagerModeEnabled(true);
-    }
-  }, [isDefaultManager]);
 
   // Danh sách dòng KOC đưa vào phiên gửi mail
   const candidateRows = useMemo(
@@ -153,33 +136,15 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   const [emailDraftByRowId, setEmailDraftByRowId] = useState<Record<string, string>>({});
   const wasOpenRef = useRef<boolean>(false);
 
-  // Chỉ khởi tạo danh sách chọn & bản nháp email khi bắt đầu mở Modal (không reset khi đang gõ email)
-  useEffect(() => {
-    if (!open) {
-      wasOpenRef.current = false;
-      return;
-    }
-    if (!wasOpenRef.current) {
-      wasOpenRef.current = true;
-      const ids = candidateRows.map((r) => r.id);
-      setSelectedRecipientRowIds(ids);
-      setActivePreviewRowId(ids[0] || '');
-      const map: Record<string, string> = {};
-      for (const r of candidateRows) {
-        const clean = normalizeTikTokId(r.idKenh).toLowerCase();
-        const matched = kocByHandleMap.get(clean);
-        map[r.id] = (r.email || matched?.email || '').trim();
-      }
-      setEmailDraftByRowId(map);
-    }
-  }, [open, candidateRows, kocByHandleMap]);
-
-  const getEffectiveRowEmail = (row: StaffListingSheetRow): string => {
-    const draft = emailDraftByRowId[row.id];
-    if (draft !== undefined) return draft.trim();
-    const clean = normalizeTikTokId(row.idKenh).toLowerCase();
-    return (row.email || kocByHandleMap.get(clean)?.email || '').trim();
-  };
+  const getEffectiveRowEmail = useCallback(
+    (row: StaffListingSheetRow): string => {
+      const draft = emailDraftByRowId[row.id];
+      if (draft !== undefined) return draft.trim();
+      const clean = normalizeTikTokId(row.idKenh).toLowerCase();
+      return (row.email || kocByHandleMap.get(clean)?.email || '').trim();
+    },
+    [emailDraftByRowId, kocByHandleMap]
+  );
 
   // Chọn mẫu thư trong Tab COMPOSE
   const approvedTemplates = useMemo(
@@ -211,21 +176,55 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   const [customNoteForKoc, setCustomNoteForKoc] = useState<string>('');
   const [hideExactFeeInEmail, setHideExactFeeInEmail] = useState<boolean>(false);
   const [isSendingBatch, setIsSendingBatch] = useState<boolean>(false);
+  const [configDraft, setConfigDraft] = useState<KocEmailServerConfig>(() => ({
+    ...emailState.serverConfig,
+  }));
 
-  // Tự động chọn mẫu thư gợi ý khi mở modal
+  // Khởi tạo danh sách chọn, bản nháp email & mẫu gợi ý khi bắt đầu mở Modal
   useEffect(() => {
-    if (!open) return;
-    const recommended = recommendTemplateForRow(
-      activePreviewRow,
-      approvedTemplates,
-      activeStoreObj?.brandName
-    );
-    if (recommended) {
-      setSelectedTemplateId(recommended.id);
-      setComposeSubjectDraft(recommended.subjectTemplate);
-      setComposeBodyDraft(recommended.bodyTemplate);
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
     }
-  }, [open]);
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true;
+      const ids = candidateRows.map((r) => r.id);
+      const map: Record<string, string> = {};
+      for (const r of candidateRows) {
+        const clean = normalizeTikTokId(r.idKenh).toLowerCase();
+        const matched = kocByHandleMap.get(clean);
+        map[r.id] = (r.email || matched?.email || '').trim();
+      }
+      const firstRow = candidateRows[0];
+      const recommended = recommendTemplateForRow(
+        firstRow,
+        approvedTemplates,
+        activeStoreObj?.brandName
+      );
+      void hydrateKocOutreachEmailStateFromServer().then((remote) => {
+        setActiveTab(initialTab);
+        if (isDefaultManager) setManagerModeEnabled(true);
+        setSelectedRecipientRowIds(ids);
+        setActivePreviewRowId(ids[0] || '');
+        setEmailDraftByRowId(map);
+        setEmailState(remote);
+        setConfigDraft({ ...remote.serverConfig });
+        if (recommended) {
+          setSelectedTemplateId(recommended.id);
+          setComposeSubjectDraft(recommended.subjectTemplate);
+          setComposeBodyDraft(recommended.bodyTemplate);
+        }
+      });
+    }
+  }, [
+    open,
+    initialTab,
+    isDefaultManager,
+    candidateRows,
+    kocByHandleMap,
+    approvedTemplates,
+    activeStoreObj?.brandName,
+  ]);
 
   const currentComposeTemplate = useMemo(
     () =>
@@ -292,7 +291,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     customNoteForKoc,
     emailState.serverConfig.signatureBlock,
     hideExactFeeInEmail,
-    emailDraftByRowId,
+    getEffectiveRowEmail,
   ]);
 
   // Lọc danh sách người nhận bên trái
@@ -304,7 +303,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
       if (recipientFilter === 'NO_EMAIL') return !hasValidEmail;
       return true;
     });
-  }, [candidateRows, recipientFilter, emailDraftByRowId]);
+  }, [candidateRows, recipientFilter, getEffectiveRowEmail]);
 
   // Đếm số KOC đã chọn có email hợp lệ
   const selectedRowsWithValidEmail = useMemo(() => {
@@ -312,7 +311,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     return candidateRows.filter(
       (r) => selSet.has(r.id) && getEffectiveRowEmail(r).includes('@')
     );
-  }, [candidateRows, selectedRecipientRowIds, emailDraftByRowId]);
+  }, [candidateRows, selectedRecipientRowIds, getEffectiveRowEmail]);
 
   // Tra cứu lịch sử gửi mail theo rowId hoặc idKenh
   const latestLogByHandle = useMemo(() => {
@@ -627,12 +626,6 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     selectedManagerTemplate || DEFAULT_KOC_EMAIL_TEMPLATES[0]
   );
 
-  useEffect(() => {
-    if (selectedManagerTemplate) {
-      setTplForm({ ...selectedManagerTemplate });
-    }
-  }, [selectedManagerTemplate]);
-
   const uniqueBrandNames = useMemo(() => {
     const set = new Set<string>();
     for (const s of allStores) {
@@ -642,7 +635,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   }, [allStores]);
 
   const handleCreateNewTemplate = () => {
-    const newId = `tpl-custom-${Date.now()}`;
+    const newId = makeCustomTemplateId('tpl-custom');
     const nextNumber = emailState.templates.length + 1;
     const newTpl: KocEmailTemplateItem = {
       id: newId,
@@ -675,7 +668,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   };
 
   const handleDuplicateTemplate = (tpl: KocEmailTemplateItem) => {
-    const newId = `tpl-copy-${Date.now()}`;
+    const newId = makeCustomTemplateId('tpl-copy');
     const copyTpl: KocEmailTemplateItem = {
       ...tpl,
       id: newId,
@@ -759,18 +752,21 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
     setEmailState(nextState);
     saveKocOutreachEmailState(nextState, true);
     setEditingTemplateId(remaining[0].id);
+    setTplForm({ ...remaining[0] });
     onNotify?.(`Đã xóa mẫu thư "${target?.name || ''}".`, 'info');
   };
 
   const handleRestoreDefaultTemplates = () => {
+    const restored = DEFAULT_KOC_EMAIL_TEMPLATES.map((t) => ({ ...t }));
     const nextState: KocOutreachEmailState = {
       ...emailState,
-      templates: DEFAULT_KOC_EMAIL_TEMPLATES.map((t) => ({ ...t })),
+      templates: restored,
       updatedAt: new Date().toISOString(),
     };
     setEmailState(nextState);
     saveKocOutreachEmailState(nextState, true);
-    setEditingTemplateId(DEFAULT_KOC_EMAIL_TEMPLATES[0].id);
+    setEditingTemplateId(restored[0].id);
+    setTplForm({ ...restored[0] });
     onNotify?.('Đã khôi phục 5 bộ mẫu thư mời hợp tác chuẩn B2C UpBase.', 'success');
   };
 
@@ -791,16 +787,9 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
   // ============================================================================
   // TAB 3: CẤU HÌNH MÁY CHỦ MAIL & NHẬT KÝ GỬI (SETTINGS_LOGS)
   // ============================================================================
-  const [configDraft, setConfigDraft] = useState<KocEmailServerConfig>(() => ({
-    ...emailState.serverConfig,
-  }));
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResultBanner, setTestResultBanner] = useState<string>('');
   const [inspectingLog, setInspectingLog] = useState<KocEmailOutreachLogItem | null>(null);
-
-  useEffect(() => {
-    setConfigDraft({ ...emailState.serverConfig });
-  }, [emailState.serverConfig]);
 
   const handleSaveServerConfig = () => {
     const nextState: KocOutreachEmailState = {
@@ -1038,7 +1027,7 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                 </div>
 
                 {/* Bộ lọc nhanh trạng thái có Email */}
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
                   {(
                     [
                       { key: 'ALL', label: `Tất cả (${candidateRows.length})` },
@@ -1446,7 +1435,10 @@ export const KocOutreachEmailModal: React.FC<KocOutreachEmailModalProps> = ({
                   return (
                     <div
                       key={tpl.id}
-                      onClick={() => setEditingTemplateId(tpl.id)}
+                      onClick={() => {
+                        setEditingTemplateId(tpl.id);
+                        setTplForm({ ...tpl });
+                      }}
                       className={`p-3 cursor-pointer transition-colors ${
                         isActive
                           ? 'bg-accent-soft/35 border-l-2 border-l-ink'

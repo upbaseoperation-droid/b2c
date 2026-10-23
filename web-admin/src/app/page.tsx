@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useR
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey, getNavLabelForRole } from '../components/Sidebar';
-import { TAB_LABELS, getNavGroupForTab, DASHBOARD_EXEC_TAB_KEYS } from '../lib/navGroups';
+import { TAB_LABELS, getNavGroupForTab, DASHBOARD_EXEC_TAB_KEYS, TAB_ALIASES } from '../lib/navGroups';
 import { TopHeader } from '../components/TopHeader';
 import { MobileBottomNav } from '../components/MobileBottomNav';
 import { QuickBookModal } from '../components/QuickBookModal';
@@ -15,6 +15,7 @@ import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDash
 
 import dynamic from 'next/dynamic';
 import type { ContractIntent } from '../components/views/ContractManagementView';
+import type { ContractDocument } from '../lib/planDealLink';
 import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
 
 /** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
@@ -235,14 +236,15 @@ export default function App() {
 
   const handleSelectTab = useCallback((tab: TabKey, options?: { keepReturnContext?: boolean }) => {
     hasUserNavigatedRef.current = true;
+    const mapped = TAB_ALIASES[tab] ?? tab;
     const resolvedTab: TabKey =
-      tab === 'content-angles'
+      mapped === 'content-angles'
         ? 'brand-knowledge'
-        : tab === 'workload-3d' || tab === 'performance-p3'
+        : mapped === 'workload-3d' || mapped === 'performance-p3'
           ? 'manager'
-          : tab === 'audit-trail'
+          : mapped === 'audit-trail'
             ? 'partner-access'
-            : tab;
+            : mapped;
     if (tab === 'content-angles') {
       setBrandInitialDetailTab('PRODUCTS');
     } else if (tab === 'brand-knowledge') {
@@ -761,6 +763,33 @@ export default function App() {
     window.addEventListener('upbase-master-data-updated', reload);
     return () => { cancelled = true; window.removeEventListener('upbase-master-data-updated', reload); };
   }, [currentUserId, currentUserRole, isLoadingAuth, showToast]);
+
+  // Đồng bộ toàn bộ Deal/Job thực tế từ SQLite (/api/deal-board?all=1) vào danh sách deals để Hồ sơ KOC, Dashboard B2C và Quản lý Hợp đồng dùng chung 1 nguồn dữ liệu duy nhất
+  useEffect(() => {
+    let cancelled = false;
+    const syncLiveDeals = () => {
+      fetch('/api/deal-board?all=1', { cache: 'no-store' })
+        .then(res => res.json().catch(() => null))
+        .then(body => {
+          if (cancelled || !body || !Array.isArray(body.bookingDeals)) return;
+          const liveDeals = body.bookingDeals as BookingDealItem[];
+          setDeals(prev => {
+            const nonPlanDeals = prev.filter(d => !d.id.startsWith('planjob-'));
+            if (liveDeals.length === 0) return nonPlanDeals;
+            return [...liveDeals, ...nonPlanDeals];
+          });
+        })
+        .catch(() => undefined);
+    };
+    if (currentUserId && !isLoadingAuth) {
+      syncLiveDeals();
+    }
+    window.addEventListener('upbase-deal-board-updated', syncLiveDeals);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('upbase-deal-board-updated', syncLiveDeals);
+    };
+  }, [currentUserId, isLoadingAuth]);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   // Shared Plan State between Manager & Employees
@@ -911,18 +940,25 @@ export default function App() {
     setContractIntent({ dealId: deal.id, nonce: Date.now() });
     setActiveTab('contracts');
   };
+  // Deal/Job của kế hoạch: đưa bản Job vào danh sách rồi mở hồ sơ hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu của Job đó.
+  const openContractForPlanDeal = (deal: BookingDealItem, document: ContractDocument) => {
+    setDeals(prev => (prev.some(d => d.id === deal.id) ? prev.map(d => (d.id === deal.id ? deal : d)) : [deal, ...prev]));
+    setContractIntent({ dealId: deal.id, nonce: Date.now(), document });
+    setActiveTab('contracts');
+  };
   const [preselectedKoc, setPreselectedKoc] = useState<KocItem | null>(null);
   const [preselectedBrand, setPreselectedBrand] = useState<string | null>(null);
 
   // Mobile Drawer & Desktop Sidebar Collapse State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
-
-  useLayoutEffect(() => {
-    if (localStorage.getItem('upbase_sidebar_collapsed') === 'true') {
-      setIsSidebarCollapsed(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('upbase_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
     }
-  }, []);
+  });
 
   const handleToggleSidebarCollapse = useCallback(() => {
     setIsSidebarCollapsed(prev => {
@@ -1423,7 +1459,7 @@ export default function App() {
                 <ShieldAlert className="w-7 h-7" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-lg font-semibold text-ink">Không có quyền truy cập màn hình này</h2>
+                <div className="text-lg font-semibold text-ink">Không có quyền truy cập màn hình này</div>
                 <p className="text-xs text-ink-2 leading-relaxed">
                   Tài khoản hiện tại <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-critical font-semibold">{pageTitleOf(activeTab)}</strong>.
                 </p>
@@ -1536,6 +1572,7 @@ export default function App() {
               deals={scopedDeals}
               activePlanContext={listingPlanContext}
               onOpenPlanStudio={() => setActiveTab('input-plan')}
+              onOpenContractForPlanDeal={openContractForPlanDeal}
               onNotify={showToast}
             />
           </KeepAliveTab>
@@ -1548,23 +1585,25 @@ export default function App() {
               deals={scopedDeals}
               kocListings={kocListings}
               onNavigateToTab={(tab, ctx) => {
+                const storeName = typeof ctx?.storeName === 'string' ? ctx.storeName : undefined;
+                const monthKey = typeof ctx?.monthKey === 'string' ? ctx.monthKey : undefined;
                 if (tab === 'approved-booking-list') {
                   setApprovedBookingListContext({
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
+                    storeName,
+                    monthKey,
                     nonce: Date.now(),
                   });
                   handleSelectTab('approved-booking-list');
                 } else if (tab === 'koc-listing') {
                   setListingPlanContext({
-                    storeName: ctx?.storeName,
-                    monthKey: ctx?.monthKey,
+                    storeName,
+                    monthKey,
                     openStaffSheet: true,
                     nonce: Date.now(),
                   });
                   handleSelectTab('koc-listing');
                 } else {
-                  handleSelectTab(tab);
+                  handleSelectTab(tab as TabKey);
                 }
               }}
               onNotify={showToast}
@@ -1769,6 +1808,7 @@ export default function App() {
               kocs={kocs}
               deals={scopedDeals}
               currentUserName={currentUser.name}
+              currentUserRole={currentUser.role}
               onNotify={showToast}
               onScriptApprovedNotification={handleScriptApprovedNotification}
               onNavigateToAngles={() => {
@@ -2205,3 +2245,5 @@ export default function App() {
     </div>
   );
 }
+
+

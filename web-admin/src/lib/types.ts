@@ -588,6 +588,82 @@ export interface KocItem {
   avgShares?: number; // Lượt chia sẻ trung bình trên các video gần nhất
   engagementRate?: number; // Tỷ lệ tương tác trung bình ER% ((Tim + Bình luận + Chia sẻ) / View * 100)
   recentVideos?: TikTokVideoItem[]; // Danh sách video & nội dung gần nhất trên kênh
+
+  // ==========================================
+  // TỔ CHỨC 2 BẢNG DỮ LIỆU KOC & QUAN HỆ 1 KOC -> N HỒ SƠ PHÁP LÝ (ERD kol-connector)
+  // ==========================================
+  datasetType?: 'COOPERATED' | 'NEW'; // Bảng 1: KOC Cũ kèm lịch sử (COOPERATED) | Bảng 2: KOC Mới / Tiềm năng (NEW)
+  legalProfiles?: KocLegalProfile[]; // Quan hệ 1:N từ creator -> creator_legal_profile + creator_payment_account
+  bookingReadiness?: KocBookingReadiness; // Độ sẵn sàng booking (dành cho KOC Mới / Tiềm năng)
+  missingInfoCategory?: string; // Phân loại tình trạng thiếu thông tin (ERD Col 13/17)
+  missingFieldsDetail?: string; // Chi tiết các trường còn thiếu (CCCD, STK, SĐT/Zalo, Địa chỉ...)
+  cccdAuditFlag?: string; // Cờ đối soát CCCD (1 CCCD duy nhất / Có >1 CCCD / Dùng chung CCCD)
+  proposedStores?: string; // Danh sách các gian hàng đã đề xuất KOC này (Sheet 3.1 / 3.4)
+  sourceSheet?: string; // Nguồn phát hiện KOC (3.4 List KOCs tổng hợp, 3.1 List KOC chưa duyệt, TikTok Scraper...)
+  appearancesCount?: number; // Số lần xuất hiện trong các đợt đề xuất
+  contactStatus?: 'ĐÃ_LIÊN_HỆ' | 'CHƯA_LIÊN_HỆ' | 'ĐANG_THƯƠNG_LƯỢNG' | 'TỪ_CHỐI'; // Trạng thái tiếp cận KOC mới
+  contactHistory?: KocContactLogItem[]; // Lịch sử liên hệ với KOC (theo đặc tả Quản lý thông tin KOC)
+  upaffiliateCreatorId?: string; // Mã định danh Creator trên UpAffiliate (VD: UPA-CR-0001)
+  upaffiliateSyncStatus?: 'SYNCED' | 'LOCAL_MODIFIED' | 'PENDING_PUSH' | 'CONFLICT';
+  upaffiliateSyncedAt?: string; // Thời điểm đồng bộ gần nhất với UpAffiliate
+  upaffiliateRevision?: number; // Phiên bản bản ghi trên UpAffiliate
+}
+
+export type KocBookingReadiness =
+  | 'SẴN_SÀNG_BOOKING'
+  | 'TIẾP_CẬN_BỔ_SUNG_PHÁP_LÝ'
+  | 'CẦN_XIN_LIÊN_HỆ'
+  | 'CHỜ_TIẾP_CẬN';
+
+export interface KocContactLogItem {
+  id: string;
+  contactedAt: string; // Thời gian liên hệ (VD: 2026-10-20 14:30)
+  picName: string; // Nhân sự liên hệ
+  channel: 'Zalo' | 'TikTok DM' | 'Email' | 'Điện thoại' | 'Lark';
+  summary: string; // Nội dung trao đổi / phản hồi báo giá
+  outcome?: 'ĐÃ_PHẢN_HỒI' | 'CHƯA_PHẢN_HỒI' | 'ĐỒNG_Ý_BÁO_GIÁ' | 'TỪ_CHỐI';
+}
+
+/**
+ * Thực thể Hồ sơ pháp lý & Tài khoản thụ hưởng của KOC (1 KOC -> N KocLegalProfile).
+ * Giải quyết bài toán thực tế:
+ * - KOC chuyển đổi từ Cá nhân (TNCN 10%) -> Hộ kinh doanh (HKD) -> Công ty/MCN (VAT 8%) hoặc ngược lại.
+ * - KOC dùng CCCD/Tài khoản ngân hàng của người thân (có ủy quyền) hoặc đổi số CCCD 9 số -> 12 số.
+ * - Mỗi hồ sơ pháp lý gắn với tài khoản ngân hàng thụ hưởng và Hợp đồng nguyên tắc (HĐNT) tương ứng.
+ */
+export interface KocLegalProfile {
+  id: string;
+  profileCode: string; // VD: HSPL-01, HSPL-02
+  legalType: 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
+  isDefault: boolean; // Hồ sơ mặc định dùng để tự động điền khi tạo Booking Deal / Hợp đồng mới
+  status: 'ACTIVE' | 'ARCHIVED' | 'PENDING_VERIFY';
+  taxAccountType: string; // VD: (Thuế TNCN 10%) Tài khoản cá nhân | Hộ kinh doanh xuất hóa đơn | (VAT 8%) Tài khoản doanh nghiệp
+  holderName: string; // Họ tên cá nhân đứng tên hợp đồng / Tên Hộ kinh doanh / Tên Công ty MCN
+  representativeName?: string; // Người đại diện pháp luật (nếu là Công ty/HKD) hoặc Người ủy quyền
+  relationshipNote?: string; // Chính chủ KOC | Người thân nhận ủy quyền | Công ty MCN quản lý | Hộ kinh doanh cá thể
+  cccd?: string; // Số CCCD/CMND (9 hoặc 12 số)
+  cccdIssueDate?: string;
+  cccdIssuePlace?: string;
+  taxCode?: string; // Mã số thuế cá nhân / HKD / Doanh nghiệp
+  businessLicenseNo?: string; // Số ĐKKD
+  registeredAddress?: string; // Địa chỉ thường trú hoặc địa chỉ ĐKKD trên hợp đồng
+  bankName?: string; // Ngân hàng thụ hưởng gắn với pháp nhân này
+  bankAccount?: string; // Số tài khoản ngân hàng thụ hưởng
+  bankBranch?: string;
+  isOcrVerified?: boolean;
+  // Hợp đồng nguyên tắc (HĐNT) gắn liền với pháp nhân này
+  frameworkContractCode?: string; // VD: HDNT-2026-0028
+  frameworkContractStatus?: 'CHƯA_KÝ' | 'ĐANG_TRÌNH_KÝ' | 'ĐÃ_KÝ' | 'HẾT_HẠN';
+  frameworkContractSignedAt?: string;
+  frameworkContractDriveUrl?: string;
+  // Thống kê lịch sử sử dụng pháp nhân này trong các đợt nghiệm thu
+  dealsUsedCount?: number;
+  latestBrandUsed?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  upaffiliateLegalProfileId?: string;
+  upaffiliateSyncedAt?: string;
+  notes?: string;
 }
 
 export interface TikTokVideoItem {
@@ -822,6 +898,17 @@ export interface BookingDealItem {
   kocBankName?: string; // Ngân hàng nhận thanh toán
   kocBankAccount?: string; // Số tài khoản chính chủ
   kocBankHolder?: string; // Tên chủ tài khoản
+  legalProfileId?: string; // Khóa ngoại trỏ tới Hồ sơ pháp lý (KocLegalProfile) được chọn cho Job này
+  legalProfileSnapshot?: {
+    profileCode: string;
+    legalType: 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
+    holderName: string;
+    legalId: string;
+    taxAccountType: string;
+    bankName?: string;
+    bankAccount?: string;
+    frameworkContractCode?: string;
+  }; // Snapshot bất biến (job_creator_*) tại thời điểm chốt Deal & duyệt chi
 
   // 2. Gửi mẫu & Cảnh báo leo thang
   shippingOrderCreatedAt?: string; // Thời điểm Content nộp đủ thông tin gửi mẫu
@@ -3613,6 +3700,9 @@ export interface KocListingItem {
   // Trạng thái tổng hợp
   overallStatus: ListingItemStatus;
   dropReason?: string;
+  // Mốc thời gian gửi và Brand duyệt để tính SLA
+  sentToBrandAt?: string;
+  brandDecidedAt?: string;
   // Kết quả Brand duyệt đọc lần gần nhất từ Google Sheet (chỉ áp dụng khi giá trị trên sheet đổi so với lần đọc trước)
   lastSheetDecision?: 'APPROVED' | 'REJECTED' | 'CONSIDER' | 'NONE';
   lastSheetDecisionAt?: string;

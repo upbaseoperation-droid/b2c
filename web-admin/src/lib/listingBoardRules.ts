@@ -59,7 +59,17 @@ export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, r
     case 'DRAFT':
       return { item: { ...base, overallStatus: 'DRAFT', brandApprovalStatus: 'BRAND_PENDING', kocNegotiationStatus: 'NOT_CONTACTED', dropReason: undefined } };
     case 'WAIT_BRAND':
-      return { item: { ...base, overallStatus: 'SUBMITTED', brandApprovalStatus: 'BRAND_PENDING', brandApprovedAt: undefined, brandApprovedBy: undefined } };
+      return {
+        item: {
+          ...base,
+          overallStatus: 'SUBMITTED',
+          brandApprovalStatus: 'BRAND_PENDING',
+          sentToBrandAt: item.sentToBrandAt || now,
+          brandApprovedAt: undefined,
+          brandApprovedBy: undefined,
+          brandDecidedAt: undefined,
+        },
+      };
     case 'NEGOTIATING':
       return {
         item: {
@@ -245,10 +255,92 @@ export function computeAlerts(plan: InputPlanBreakdownState, items: KocListingIt
 }
 
 // ---------------------------------------------------------------------------------------------
-// Tạo mục listing
+// Tạo mục listing & Theo dõi 3 Đợt Listing (Ngày 10: 60% — Ngày 20: 30% — Ngày 30: 10%)
 // ---------------------------------------------------------------------------------------------
 
-const BATCH_CYCLES: ListingBatchCycle[] = ['BATCH_10', 'BATCH_20', 'BATCH_30'];
+export const BATCH_CYCLES: ListingBatchCycle[] = ['BATCH_10', 'BATCH_20', 'BATCH_30'];
+
+export interface BatchCycleSpec {
+  key: ListingBatchCycle;
+  label: string;
+  shortLabel: string;
+  dueDayOfMonth: 10 | 20 | 30;
+  ratio: number; // 0.6 | 0.3 | 0.1
+  priorityNote: string;
+}
+
+export const BATCH_CYCLE_SPECS: BatchCycleSpec[] = [
+  {
+    key: 'BATCH_10',
+    label: 'Đợt 1 · Hạn ngày 10 (60% chỉ tiêu)',
+    shortLabel: 'Đợt 1 (Ngày 10 · 60%)',
+    dueDayOfMonth: 10,
+    ratio: 0.6,
+    priorityNote: 'Ít nhất 60% số lượng & ngân sách, ưu tiên KL cao nhất (KL7 → KL3) về thấp',
+  },
+  {
+    key: 'BATCH_20',
+    label: 'Đợt 2 · Hạn ngày 20 (30% chỉ tiêu)',
+    shortLabel: 'Đợt 2 (Ngày 20 · 30%)',
+    dueDayOfMonth: 20,
+    ratio: 0.3,
+    priorityNote: '30% số lượng & ngân sách tiếp theo + bù các kênh rớt Đợt 1',
+  },
+  {
+    key: 'BATCH_30',
+    label: 'Đợt 3 · Hạn ngày 30 (10% chỉ tiêu)',
+    shortLabel: 'Đợt 3 (Ngày 30 · 10%)',
+    dueDayOfMonth: 30,
+    ratio: 0.1,
+    priorityNote: '10% số lượng & ngân sách còn lại + chốt bù toàn bộ phát sinh trong tháng',
+  },
+];
+
+export interface BatchCycleProgress extends BatchCycleSpec {
+  targetQty: number;
+  targetBudget: number;
+  listedQty: number;
+  confirmedQty: number;
+  committedBudget: number;
+  highKlListedCount: number; // KL3-KL7
+}
+
+export function computeBatchProgress(plan: InputPlanBreakdownState, items: KocListingItem[]): BatchCycleProgress[] {
+  const { total } = computeProgress(plan, items);
+  const q1 = Math.ceil(total.requiredQty * 0.6);
+  const q2 = Math.ceil(total.requiredQty * 0.3);
+  const q3 = Math.max(0, total.requiredQty - q1 - q2);
+
+  const b1 = Math.round(total.requiredBudget * 0.6);
+  const b2 = Math.round(total.requiredBudget * 0.3);
+  const b3 = Math.max(0, total.requiredBudget - b1 - b2);
+
+  const targets: Record<ListingBatchCycle, { qty: number; budget: number }> = {
+    BATCH_10: { qty: q1, budget: b1 },
+    BATCH_20: { qty: q2, budget: b2 },
+    BATCH_30: { qty: q3, budget: b3 },
+  };
+
+  return BATCH_CYCLE_SPECS.map(spec => {
+    const batchItems = items.filter(i => (i.batchCycle || 'BATCH_10') === spec.key && columnOf(i) !== 'DROPPED');
+    const confirmedItems = batchItems.filter(i => columnOf(i) === 'CONFIRMED');
+    const committedBudget = batchItems.reduce((s, i) => s + itemFee(i), 0);
+    const highKlListedCount = batchItems.filter(i => {
+      const g = itemGrade(i);
+      return ['KL3', 'KL4', 'KL5', 'KL6', 'KL7'].includes(g);
+    }).length;
+
+    return {
+      ...spec,
+      targetQty: targets[spec.key].qty,
+      targetBudget: targets[spec.key].budget,
+      listedQty: batchItems.length,
+      confirmedQty: confirmedItems.length,
+      committedBudget,
+      highKlListedCount,
+    };
+  });
+}
 
 const tierFromFollowers = (followers: number): KocListingItem['tier'] =>
   followers >= 1_000_000 ? 'CELEB' : followers >= 500_000 ? 'MEGA' : followers >= 100_000 ? 'MACRO' : followers >= 10_000 ? 'MICRO' : 'NANO';
@@ -432,17 +524,24 @@ export function applyBrandDecision(item: KocListingItem, decision: BrandDecision
       next = moveItem(next, 'WAIT_BRAND', actor).item || next;
     }
     if (columnOf(next) === 'WAIT_BRAND') next = moveItem(next, 'NEGOTIATING', actor).item || next;
+    next = {
+      ...next,
+      brandApprovalStatus: 'BRAND_APPROVED',
+      brandApprovedAt: next.brandApprovedAt || now,
+      brandApprovedBy: next.brandApprovedBy || actor,
+      brandDecidedAt: next.brandDecidedAt || now,
+    };
     changed = next !== item;
   } else if (decision === 'REJECTED') {
     if (col !== 'DROPPED' && col !== 'CONFIRMED') {
       const dropped = moveItem(next, 'DROPPED', actor, reason || 'Brand từ chối').item;
       if (dropped) {
-        next = { ...dropped, brandApprovalStatus: 'BRAND_REJECTED' };
+        next = { ...dropped, brandApprovalStatus: 'BRAND_REJECTED', brandDecidedAt: now };
         changed = true;
       }
     }
   } else if (decision === 'CONSIDER') {
-    next = { ...next, brandFeedbackNote: `Brand cân nhắc${note ? `: ${note}` : ''}`, updatedAt: now };
+    next = { ...next, brandFeedbackNote: `Brand cân nhắc${note ? `: ${note}` : ''}`, brandDecidedAt: now, updatedAt: now };
     changed = true;
   }
   if (note && decision !== 'CONSIDER' && decision !== 'NONE' && next.brandFeedbackNote !== note && !restored) {
@@ -451,4 +550,114 @@ export function applyBrandDecision(item: KocListingItem, decision: BrandDecision
   // Luôn ghi nhớ giá trị sheet đã đọc để lần sau chỉ xử lý khi có thay đổi
   next = { ...next, lastSheetDecision: decision, lastSheetDecisionAt: now };
   return { item: next, changed, restored };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Đo lường SLA Brand duyệt
+// ---------------------------------------------------------------------------------------------
+
+export interface BrandSlaSummary {
+  totalPending: number;
+  pendingOverdue: number;
+  pendingOnTime: number;
+  totalDecided: number;
+  decidedOnTime: number;
+  decidedOverdue: number;
+  onTimeRatePct: number;
+  avgResponseHours: number;
+  overdueHandles: string[];
+}
+
+export function computeBrandSlaMetrics(items: KocListingItem[], thresholdHours = 48): BrandSlaSummary {
+  const now = Date.now();
+  let totalPending = 0;
+  let pendingOverdue = 0;
+  let pendingOnTime = 0;
+  let totalDecided = 0;
+  let decidedOnTime = 0;
+  let decidedOverdue = 0;
+  let totalDurationHours = 0;
+  const overdueHandles: string[] = [];
+
+  for (const it of items) {
+    if (it.overallStatus === 'DROPPED' && it.brandApprovalStatus !== 'BRAND_REJECTED') continue;
+    const sentTime = it.sentToBrandAt ? new Date(it.sentToBrandAt).getTime() : (it.createdAt ? new Date(it.createdAt).getTime() : 0);
+    const isPending = it.overallStatus === 'SUBMITTED' && it.brandApprovalStatus === 'BRAND_PENDING';
+    const isDecided = it.brandApprovalStatus === 'BRAND_APPROVED' || it.brandApprovalStatus === 'BRAND_REJECTED' || it.lastSheetDecision === 'APPROVED' || it.lastSheetDecision === 'REJECTED';
+
+    if (isPending) {
+      totalPending++;
+      const elapsedHours = sentTime ? (now - sentTime) / (1000 * 3600) : 0;
+      if (elapsedHours > thresholdHours) {
+        pendingOverdue++;
+        if (it.kocHandle) overdueHandles.push(it.kocHandle);
+      } else {
+        pendingOnTime++;
+      }
+    } else if (isDecided && sentTime) {
+      totalDecided++;
+      const decidedTime = it.brandDecidedAt ? new Date(it.brandDecidedAt).getTime() : (it.brandApprovedAt ? new Date(it.brandApprovedAt).getTime() : (it.lastSheetDecisionAt ? new Date(it.lastSheetDecisionAt).getTime() : (it.updatedAt ? new Date(it.updatedAt).getTime() : now)));
+      const durationHours = Math.max(0, (decidedTime - sentTime) / (1000 * 3600));
+      totalDurationHours += durationHours;
+      if (durationHours <= thresholdHours) {
+        decidedOnTime++;
+      } else {
+        decidedOverdue++;
+      }
+    }
+  }
+
+  const onTimeRatePct = totalDecided > 0 ? Math.round((decidedOnTime / totalDecided) * 100) : (totalPending > 0 ? Math.round((pendingOnTime / totalPending) * 100) : 100);
+  const avgResponseHours = totalDecided > 0 ? Math.round((totalDurationHours / totalDecided) * 10) / 10 : 0;
+
+  return {
+    totalPending,
+    pendingOverdue,
+    pendingOnTime,
+    totalDecided,
+    decidedOnTime,
+    decidedOverdue,
+    onTimeRatePct,
+    avgResponseHours,
+    overdueHandles,
+  };
+}
+
+export function getItemSlaBadge(item: KocListingItem, thresholdHours = 48): {
+  label: string;
+  variant: 'success' | 'warning' | 'critical' | 'neutral';
+  hours: number;
+  isOverdue: boolean;
+} | null {
+  const sentTime = item.sentToBrandAt ? new Date(item.sentToBrandAt).getTime() : (item.createdAt ? new Date(item.createdAt).getTime() : 0);
+  if (!sentTime || isNaN(sentTime)) return null;
+
+  const isPending = item.overallStatus === 'SUBMITTED' && item.brandApprovalStatus === 'BRAND_PENDING';
+  const isDecided = item.brandApprovalStatus === 'BRAND_APPROVED' || item.brandApprovalStatus === 'BRAND_REJECTED' || item.lastSheetDecision === 'APPROVED' || item.lastSheetDecision === 'REJECTED';
+
+  if (isPending) {
+    const hours = Math.max(0, Math.round((Date.now() - sentTime) / (1000 * 3600)));
+    const isOverdue = hours > thresholdHours;
+    return {
+      label: isOverdue ? `Chờ ${hours}h (Quá hạn SLA)` : `Chờ ${hours}h`,
+      variant: isOverdue ? 'critical' : 'warning',
+      hours,
+      isOverdue,
+    };
+  }
+
+  if (isDecided) {
+    const decidedTime = item.brandDecidedAt ? new Date(item.brandDecidedAt).getTime() : (item.brandApprovedAt ? new Date(item.brandApprovedAt).getTime() : (item.lastSheetDecisionAt ? new Date(item.lastSheetDecisionAt).getTime() : 0));
+    if (!decidedTime) return null;
+    const hours = Math.max(0, Math.round((decidedTime - sentTime) / (1000 * 3600)));
+    const isOverdue = hours > thresholdHours;
+    return {
+      label: isOverdue ? `Duyệt sau ${hours}h (Trễ SLA)` : `Duyệt sau ${hours}h (Đúng hạn)`,
+      variant: isOverdue ? 'warning' : 'success',
+      hours,
+      isOverdue,
+    };
+  }
+
+  return null;
 }

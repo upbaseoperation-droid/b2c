@@ -228,7 +228,7 @@ function mergeCookieStrings(...cookieParts: Array<string | undefined>): string {
 export async function fetchTikTokHtmlWithWafBypass(
   url: string,
   timeoutMs = 6500
-): Promise<{ html: string; finalUrl: string } | null> {
+): Promise<{ html: string; finalUrl: string; cookies?: string } | null> {
   const store = getSharedCrawlerStore();
   return store.tiktokLimiter.run(async () => {
     try {
@@ -256,7 +256,7 @@ export async function fetchTikTokHtmlWithWafBypass(
       const html1 = await r1.text();
       const wafCookie1 = solveTikTokWafHtml(html1);
       if (!wafCookie1) {
-        return { html: html1, finalUrl };
+        return { html: html1, finalUrl, cookies: mergeCookieStrings(...setCookies1) };
       }
 
       const combinedCookie1 = mergeCookieStrings(...setCookies1, wafCookie1);
@@ -287,6 +287,7 @@ export async function fetchTikTokHtmlWithWafBypass(
         return {
           html: html2,
           finalUrl: finalUrl2,
+          cookies: mergeCookieStrings(combinedCookie1, ...setCookies2),
         };
       }
 
@@ -305,10 +306,16 @@ export async function fetchTikTokHtmlWithWafBypass(
         cache: 'no-store',
       });
 
+      const setCookies3 = (
+        r3.headers.getSetCookie ? r3.headers.getSetCookie() : [r3.headers.get('set-cookie') || '']
+      )
+        .map((c) => c.split(';')[0].trim())
+        .filter(Boolean);
       const html3 = await r3.text();
       return {
         html: html3,
         finalUrl: r3.url ? r3.url.split('?')[0] : finalUrl2,
+        cookies: mergeCookieStrings(combinedCookie2, ...setCookies3),
       };
     } catch {
       return null;

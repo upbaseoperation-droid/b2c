@@ -10,9 +10,7 @@ import {
   Eye,
   EyeOff,
   HardDrive,
-  KeyRound,
   Loader2,
-  Play,
   RefreshCw,
   Save,
   Server,
@@ -425,7 +423,7 @@ export function CloudflareR2SetupPanel({
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5 text-xs">
           <div className="rounded-xl border border-line bg-canvas/60 p-3.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-semibold flex items-center justify-center shrink-0">
                 1
               </span>
               <span className="font-semibold text-ink">Tạo Bucket</span>
@@ -439,7 +437,7 @@ export function CloudflareR2SetupPanel({
 
           <div className="rounded-xl border border-line bg-canvas/60 p-3.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-semibold flex items-center justify-center shrink-0">
                 2
               </span>
               <span className="font-semibold text-ink">Tạo API Token</span>
@@ -454,7 +452,7 @@ export function CloudflareR2SetupPanel({
 
           <div className="rounded-xl border border-line bg-canvas/60 p-3.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-semibold flex items-center justify-center shrink-0">
                 3
               </span>
               <span className="font-semibold text-ink">Sao chép khóa kết nối</span>
@@ -468,7 +466,7 @@ export function CloudflareR2SetupPanel({
 
           <div className="rounded-xl border border-line bg-canvas/60 p-3.5 space-y-2">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-bold flex items-center justify-center shrink-0">
+              <span className="w-5 h-5 rounded-full bg-accent text-white text-2xs font-semibold flex items-center justify-center shrink-0">
                 4
               </span>
               <span className="font-semibold text-ink">Kiểm tra &amp; Lưu</span>
@@ -619,19 +617,19 @@ export function CloudflareR2SetupPanel({
 
                 <div className="flex flex-wrap items-center gap-4 text-2xs pt-1 border-t border-line/60">
                   <span className="inline-flex items-center gap-1 font-medium">
-                    <span className={latestTestResult.writeVerified ? 'text-positive font-bold' : 'text-critical font-bold'}>
+                    <span className={latestTestResult.writeVerified ? 'text-positive font-semibold' : 'text-critical font-semibold'}>
                       {latestTestResult.writeVerified ? '✓' : '✕'}
                     </span>
                     <span>Ghi tệp (PUT)</span>
                   </span>
                   <span className="inline-flex items-center gap-1 font-medium">
-                    <span className={latestTestResult.readVerified ? 'text-positive font-bold' : 'text-critical font-bold'}>
+                    <span className={latestTestResult.readVerified ? 'text-positive font-semibold' : 'text-critical font-semibold'}>
                       {latestTestResult.readVerified ? '✓' : '✕'}
                     </span>
                     <span>Đọc tệp (GET)</span>
                   </span>
                   <span className="inline-flex items-center gap-1 font-medium">
-                    <span className={latestTestResult.deleteVerified ? 'text-positive font-bold' : 'text-critical font-bold'}>
+                    <span className={latestTestResult.deleteVerified ? 'text-positive font-semibold' : 'text-critical font-semibold'}>
                       {latestTestResult.deleteVerified ? '✓' : '✕'}
                     </span>
                     <span>Xóa tệp nháp (DELETE)</span>

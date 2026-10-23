@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Modal, Presence, Status } from '../ui';
 import {
-  X,
   MessageSquare,
   ShieldCheck,
   DollarSign,
@@ -543,7 +542,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       <div
                         key={snap.id}
                         onClick={() => setSelectedSnapshotId(snap.id)}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-colors flex flex-col justify-between ${
                           isSelected
                             ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
                             : 'bg-white hover:bg-slate-50 border-slate-200'

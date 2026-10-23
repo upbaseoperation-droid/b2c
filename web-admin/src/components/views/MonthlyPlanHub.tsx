@@ -2245,7 +2245,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       type="button"
                       onClick={() => setPersonalSelectedStaff(isFocused ? 'ALL' : staff.staffName)}
                       className={cx(
-                        'text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2',
+                        'text-left p-3 rounded-xl border transition-colors cursor-pointer flex flex-col justify-between gap-2',
                         isFocused
                           ? 'bg-accent-soft/60 border-accent ring-2 ring-accent/20 shadow-sm'
                           : 'bg-canvas/60 border-line hover:border-line-strong hover:bg-surface'
@@ -3442,7 +3442,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     className={cx(
                       'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
                       !editingBrandPlan.hasCampaign
-                        ? 'bg-slate-800 text-white'
+                        ? 'bg-ink text-white'
                         : 'text-ink-2 hover:text-ink'
                     )}
                   >

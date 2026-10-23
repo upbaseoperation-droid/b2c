@@ -1690,7 +1690,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                           </Status>
                         </div>
                         <h3 className="text-base font-semibold text-ink mt-1">{st.name}</h3>
-                        <p className="text-xs text-ink-2">{st.roleGroup}</p>
+                        <div className="text-xs text-ink-2">{st.roleGroup}</div>
                       </div>
                       {selectedNodeId && (
                         <button
@@ -2111,7 +2111,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                       <div>
                         <PlatformBadge platform={s.platform} />
                         <h3 className="text-base font-semibold text-ink mt-1">{s.storeName}</h3>
-                        <p className="text-xs text-ink-3">Thương hiệu: {s.brandName}</p>
+                        <div className="text-xs text-ink-3">Thương hiệu: {s.brandName}</div>
                       </div>
                       {onNavigateToStoreProfile && (
                         <Button

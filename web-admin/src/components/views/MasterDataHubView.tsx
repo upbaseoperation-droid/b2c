@@ -5,6 +5,7 @@ import {
   ActionMenu,
   Button, 
   Chips,
+  ConfirmDialog,
   DataTable,
   EmptyState,
   FilterBar,
@@ -17,22 +18,18 @@ import {
   Tabs, 
   Modal, 
   ChannelTag,
-  channelOf,
   useFlipList,
   BrandAvatar,
   ShopeeLogo,
   TikTokLogo
 } from '../ui';
-import { DEFAULT_MASTER_CATALOG, INITIAL_MASTER_PRODUCTS, type MasterCatalog } from '../../lib/masterCatalog';
+import { type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
-import { formatVndShort, formatVnd } from '../../lib/format';
+import { formatVnd } from '../../lib/format';
 import { 
-  Search, 
   ExternalLink, 
   RotateCcw, 
   Plus, 
-  X, 
-  ChevronRight,
   Trash2,
   Archive,
   AlertCircle,
@@ -41,14 +38,11 @@ import {
   Edit3
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar, Contributor, BookingDealItem } from '../../lib/types';
-import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { INITIAL_KOCS, INITIAL_BRANDS } from '../../lib/mockData';
 import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
 import { 
-  UPBASE_MASTER_PILLARS, 
-  UPBASE_CAST_TIERS, 
-  UPBASE_VIDEO_FORMATS, 
-  UPBASE_KOC_NICHES, 
-  UPBASE_STAFF_MASTER
+  UPBASE_STAFF_MASTER,
+  UPBASE_MASTER_PILLARS
 } from '../../lib/importedMasterData';
 import { KocMasterDataView } from './KocMasterDataView';
 import { 
@@ -758,6 +752,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     finally { setCatalogBusy(false); }
   };
 
+  const [confirmReloadOpen, setConfirmReloadOpen] = useState(false);
+
   return (
     <div className="space-y-5">
       {(catalogDirty || catalogError) && (
@@ -773,12 +769,36 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 {catalogBusy ? 'Đang lưu…' : 'Lưu danh mục'}
               </Button>
             )}
-            <Button size="sm" variant="ghost" disabled={catalogBusy} onClick={() => { if (catalogDirty && !window.confirm('Bỏ bản nháp và tải dữ liệu mới nhất?')) return; reloadCatalog().catch(e => setCatalogError(e.message)); }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={catalogBusy}
+              onClick={() => {
+                if (catalogDirty) {
+                  setConfirmReloadOpen(true);
+                  return;
+                }
+                reloadCatalog().catch(e => setCatalogError(e.message));
+              }}
+            >
               Tải lại
             </Button>
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmReloadOpen}
+        title="Bỏ bản nháp và tải dữ liệu mới nhất?"
+        description="Các thay đổi chưa lưu trên danh mục hiện tại sẽ bị hủy bỏ."
+        confirmLabel="Tải lại dữ liệu"
+        cancelLabel="Giữ bản nháp"
+        tone="danger"
+        onCancel={() => setConfirmReloadOpen(false)}
+        onConfirm={() => {
+          setConfirmReloadOpen(false);
+          reloadCatalog().catch(e => setCatalogError(e.message));
+        }}
+      />
 
       {/* Sub-Tabs Navigation */}
       <Tabs

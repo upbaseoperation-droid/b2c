@@ -306,7 +306,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
     if (trimmed.startsWith('# ')) {
       blocks.push(
         <div key={`h1-${i}`} className="pb-2 border-b border-line">
-          <h3 className="text-sm font-bold text-ink">{renderInlineMarkdown(trimmed.slice(2))}</h3>
+          <h3 className="text-sm font-semibold text-ink">{renderInlineMarkdown(trimmed.slice(2))}</h3>
         </div>
       );
       i++;
@@ -317,7 +317,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
       blocks.push(
         <h4
           key={`h2-${i}`}
-          className="text-xs font-bold uppercase tracking-wider text-accent pt-3 pb-1 border-b border-line/60"
+          className="text-xs font-semibold uppercase tracking-wider text-accent pt-3 pb-1 border-b border-line/60"
         >
           {renderInlineMarkdown(trimmed.slice(3))}
         </h4>
@@ -352,7 +352,7 @@ function renderProfessionalResearchReport(markdown: string): React.ReactNode {
     if (/^[-•]\s+/.test(trimmed)) {
       blocks.push(
         <div key={`li-${i}`} className="flex items-start gap-2 text-xs text-ink-2 pl-1 leading-relaxed">
-          <span className="text-accent font-bold select-none mt-0.5">•</span>
+          <span className="text-accent font-semibold select-none mt-0.5">•</span>
           <div className="flex-1">{renderInlineMarkdown(trimmed.replace(/^[-•]\s+/, ''))}</div>
         </div>
       );

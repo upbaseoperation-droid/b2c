@@ -2,11 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  BarChart3,
   Calendar,
   CheckCircle2,
   AlertTriangle,
-  Clock,
   TrendingUp,
   Coins,
   Film,
@@ -18,13 +16,7 @@ import {
   Trash2,
   Download,
   ExternalLink,
-  ShieldAlert,
-  ArrowUpRight,
-  ArrowDownRight,
-  Filter,
   Layers,
-  Sparkles,
-  ShoppingBag,
 } from 'lucide-react';
 import {
   SalaryGrade,
@@ -33,20 +25,17 @@ import {
   StorePortfolioItem,
   KocItem,
   BookingDealItem,
+  KocListingItem,
 } from '../../lib/types';
 import {
   StoreAirPlan,
   StoreAirPlanKlDetail,
   STANDARD_KL_LIST,
   BENCHMARK_KL_UNIT_COST,
-  INITIAL_STORE_AIR_PLANS,
   loadStoreAirPlans,
-  saveStoreAirPlans,
   upsertStoreAirPlan,
   deleteStoreAirPlan,
   computeAirBookingComparisonReport,
-  KlComparisonRow,
-  StoreAirReportItem,
   STORE_AIR_PLAN_UPDATED_EVENT,
 } from '../../lib/storeAirPlanData';
 import {
@@ -54,8 +43,7 @@ import {
   loadApprovedBookingList,
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
 } from '../../lib/approvedBookingList';
-import { KocListingItem } from '../../lib/types';
-import { Modal } from '../ui/blocks';
+import { Button, ConfirmDialog, Modal, PageActions, Segmented } from '../ui';
 
 interface AirBookingReportHubViewProps {
   currentUser: UserProfile;
@@ -63,8 +51,8 @@ interface AirBookingReportHubViewProps {
   kocs?: KocItem[];
   deals?: BookingDealItem[];
   kocListings?: KocListingItem[];
-  onNavigateToTab?: (tabKey: any, context?: any) => void;
-  onNotify?: (msg: string) => void;
+  onNavigateToTab?: (tabKey: string, context?: Record<string, unknown>) => void;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = ({
@@ -73,7 +61,6 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
   kocs = [],
   deals = [],
   kocListings = [],
-  onNavigateToTab,
   onNotify,
 }) => {
   // 1. Phân quyền: Kiểm tra vai trò Quản lý hay Chuyên viên
@@ -103,13 +90,17 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
   // Nếu là Specialist thì mặc định chọn chính mình
   const [selectedPic, setSelectedPic] = useState<string>(() => (isManager ? '' : currentUser.name));
   const [selectedStore, setSelectedStore] = useState<string>('');
-  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [selectedBrand] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'OVERBUDGET' | 'LATE_AIR' | 'NO_PLAN'>('ALL');
   const [searchKeyword, setSearchKeyword] = useState<string>('');
 
   // 5. State Modal thêm/sửa Kế hoạch
   const [isPlanModalOpen, setIsPlanModalOpen] = useState<boolean>(false);
   const [editingPlan, setEditingPlan] = useState<StoreAirPlan | null>(null);
+  const [pendingDeletePlan, setPendingDeletePlan] = useState<{
+    id: string;
+    storeName: string;
+  } | null>(null);
   const [planFormData, setPlanFormData] = useState<{
     id: string;
     monthKey: string;
@@ -161,7 +152,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       window.removeEventListener(STORE_AIR_PLAN_UPDATED_EVENT, handlePlanUpdate);
       window.removeEventListener(APPROVED_BOOKING_LIST_UPDATED_EVENT, handleBookingUpdate);
     };
-  }, []);
+  }, [kocs, stores, deals, currentUser.name]);
 
   // Danh sách các tháng có dữ liệu
   const availableMonths = useMemo(() => {
@@ -367,7 +358,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
   // Lưu Kế hoạch
   const handleSavePlan = () => {
     if (!planFormData.storeName) {
-      alert('Vui lòng chọn hoặc nhập tên gian hàng.');
+      onNotify?.('Vui lòng chọn hoặc nhập tên gian hàng.', 'warning');
       return;
     }
 
@@ -397,16 +388,20 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
     const updated = upsertStoreAirPlan(newPlan);
     setPlans(updated);
     setIsPlanModalOpen(false);
-    onNotify?.(`Đã lưu kế hoạch gian hàng ${newPlan.storeName} (${newPlan.monthKey})`);
+    onNotify?.(`Đã lưu kế hoạch gian hàng ${newPlan.storeName} (${newPlan.monthKey})`, 'success');
   };
 
   // Xóa Kế hoạch
   const handleDeletePlan = (planId: string, storeName: string) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa kế hoạch gian hàng "${storeName}" không?`)) {
-      const updated = deleteStoreAirPlan(planId);
-      setPlans(updated);
-      onNotify?.(`Đã xóa kế hoạch của gian hàng ${storeName}`);
-    }
+    setPendingDeletePlan({ id: planId, storeName });
+  };
+
+  const confirmDeletePlan = () => {
+    if (!pendingDeletePlan) return;
+    const updated = deleteStoreAirPlan(pendingDeletePlan.id);
+    setPlans(updated);
+    onNotify?.(`Đã xóa kế hoạch của gian hàng ${pendingDeletePlan.storeName}`, 'info');
+    setPendingDeletePlan(null);
   };
 
   // Xuất file CSV báo cáo
@@ -469,64 +464,33 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 bg-slate-50 min-h-screen text-slate-800">
-      {/* 1. Header & Điều hướng Phân hệ */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Báo cáo Kế hoạch & Air Video</h1>
-            </div>
-          </div>
-        </div>
+      {/* 1. Thanh hành động & Điều hướng Phân hệ */}
+      <PageActions>
+        <Segmented<'REPORT' | 'PLAN_STUDIO'>
+          value={activeSubTab}
+          onChange={setActiveSubTab}
+          items={[
+            { key: 'REPORT', label: 'Báo cáo đối soát & Air' },
+            { key: 'PLAN_STUDIO', label: 'Kế hoạch Gian hàng theo KL' },
+          ]}
+        />
 
-        {/* Nút chuyển đổi SubTab & Hành động */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-            <button
-              onClick={() => setActiveSubTab('REPORT')}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activeSubTab === 'REPORT'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Báo cáo đối soát & Air
-            </button>
-            <button
-              onClick={() => setActiveSubTab('PLAN_STUDIO')}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activeSubTab === 'PLAN_STUDIO'
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Kế hoạch Gian hàng theo KL
-            </button>
-          </div>
+        {activeSubTab === 'PLAN_STUDIO' && (
+          <Button variant="primary" size="md" icon={Plus} onClick={handleOpenCreatePlan}>
+            Tạo kế hoạch gian hàng
+          </Button>
+        )}
 
-          {activeSubTab === 'PLAN_STUDIO' && (
-            <button
-              onClick={handleOpenCreatePlan}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Tạo kế hoạch gian hàng
-            </button>
-          )}
-
-          <button
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium rounded-lg shadow-sm transition-colors"
-            title="Xuất file đối soát Excel (.csv)"
-          >
-            <Download className="w-4 h-4 text-slate-500" />
-            Xuất file
-          </button>
-        </div>
-      </div>
+        <Button
+          variant="secondary"
+          size="md"
+          icon={Download}
+          onClick={handleExportCsv}
+          title="Xuất file đối soát Excel (.csv)"
+        >
+          Xuất file
+        </Button>
+      </PageActions>
 
       {/* 2. Thanh Bộ lọc Đa chiều */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
@@ -536,7 +500,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-accent"
           >
             {availableMonths.map((m) => (
               <option key={m} value={m}>
@@ -553,7 +517,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             <select
               value={selectedPic}
               onChange={(e) => setSelectedPic(e.target.value)}
-              className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none focus:ring-1 focus:ring-accent"
             >
               <option value="">Toàn bộ nhân sự ({availablePics.length})</option>
               {availablePics.map((p) => (
@@ -563,7 +527,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               ))}
             </select>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50/60 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-medium">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent-soft border border-accent/25 text-accent rounded-lg text-xs font-medium">
               <Users className="w-3.5 h-3.5" />
               <span>{currentUser.name} (Chuyên viên)</span>
             </div>
@@ -576,7 +540,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <select
             value={selectedStore}
             onChange={(e) => setSelectedStore(e.target.value)}
-            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 max-w-[200px] truncate focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="text-xs font-medium px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 max-w-[200px] truncate focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Tất cả gian hàng</option>
             {availableStores.map((s) => (
@@ -595,7 +559,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             placeholder="Tìm theo gian hàng, thương hiệu, nhân sự..."
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -605,7 +569,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             onClick={() => setStatusFilter('ALL')}
             className={`px-2 py-1 rounded-md transition-colors ${
               statusFilter === 'ALL'
-                ? 'bg-slate-800 text-white font-semibold'
+                ? 'bg-primary text-white font-semibold'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -656,7 +620,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                   <span className="text-xs font-medium">Chỉ tiêu NMV</span>
                   <TrendingUp className="w-4 h-4 text-emerald-600" />
                 </div>
-                <div className="text-xl font-bold text-slate-900">
+                <div className="text-xl font-semibold text-slate-900">
                   {reportSummary.totalActualNmv.toLocaleString('vi-VN')} đ
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
@@ -671,7 +635,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       reportSummary.nmvRate >= 100
                         ? 'text-emerald-600'
                         : reportSummary.nmvRate >= 70
-                        ? 'text-indigo-600'
+                        ? 'text-accent'
                         : 'text-amber-600'
                     }`}
                   >
@@ -692,9 +656,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               <div>
                 <div className="flex items-center justify-between text-slate-500 mb-2">
                   <span className="text-xs font-medium">Ngân sách & Chi tiêu</span>
-                  <Coins className="w-4 h-4 text-indigo-600" />
+                  <Coins className="w-4 h-4 text-accent" />
                 </div>
-                <div className="text-xl font-bold text-slate-900">
+                <div className="text-xl font-semibold text-slate-900">
                   {reportSummary.totalBookedNetSpend.toLocaleString('vi-VN')} đ
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
@@ -723,7 +687,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                         ? 'bg-red-500'
                         : reportSummary.budgetBurnRate >= 85
                         ? 'bg-amber-500'
-                        : 'bg-indigo-500'
+                        : 'bg-accent'
                     }`}
                     style={{ width: `${Math.min(100, reportSummary.budgetBurnRate)}%` }}
                   />
@@ -736,9 +700,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               <div>
                 <div className="flex items-center justify-between text-slate-500 mb-2">
                   <span className="text-xs font-medium">Tiến độ Air Video</span>
-                  <Film className="w-4 h-4 text-purple-600" />
+                  <Film className="w-4 h-4 text-accent" />
                 </div>
-                <div className="text-xl font-bold text-slate-900">
+                <div className="text-xl font-semibold text-slate-900">
                   {reportSummary.totalAiredVideos} / {reportSummary.totalPlanVideos} video
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
@@ -748,13 +712,13 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-slate-500">Hoàn thành</span>
-                  <span className="font-semibold text-purple-600">
+                  <span className="font-semibold text-accent">
                     {reportSummary.airRate.toFixed(1)}%
                   </span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-purple-500 rounded-full"
+                    className="h-full bg-accent rounded-full"
                     style={{ width: `${Math.min(100, reportSummary.airRate)}%` }}
                   />
                 </div>
@@ -766,26 +730,26 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
               <div>
                 <div className="flex items-center justify-between text-slate-500 mb-2">
                   <span className="text-xs font-medium">SLA Air & Nghiệm thu</span>
-                  <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <div>
-                    <div className="text-sm font-bold text-teal-700">
+                    <div className="text-sm font-semibold text-emerald-700">
                       {reportSummary.totalOntimeVideos}
                     </div>
-                    <div className="text-[10px] text-slate-400">Đúng hạn</div>
+                    <div className="text-2xs text-slate-400">Đúng hạn</div>
                   </div>
                   <div className="border-l border-slate-200 pl-3">
-                    <div className="text-sm font-bold text-amber-600">
+                    <div className="text-sm font-semibold text-amber-600">
                       {reportSummary.totalLateVideos}
                     </div>
-                    <div className="text-[10px] text-slate-400">Trễ hạn</div>
+                    <div className="text-2xs text-slate-400">Trễ hạn</div>
                   </div>
                   <div className="border-l border-slate-200 pl-3">
-                    <div className="text-sm font-bold text-indigo-700">
+                    <div className="text-sm font-semibold text-accent">
                       {reportSummary.totalAcceptedVideos}
                     </div>
-                    <div className="text-[10px] text-slate-400">Đã nghiệm thu</div>
+                    <div className="text-2xs text-slate-400">Đã nghiệm thu</div>
                   </div>
                 </div>
               </div>
@@ -802,8 +766,8 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-sm font-bold text-slate-900">
+                <Layers className="w-4 h-4 text-accent" />
+                <h2 className="text-sm font-semibold text-slate-900">
                   Đối soát chi tiết theo Phân tầng Khung lương (KL)
                 </h2>
               </div>
@@ -844,13 +808,13 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       <td className="py-2.5 px-3 text-right font-medium text-slate-800">
                         {row.planBudget.toLocaleString('vi-VN')} đ
                       </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-indigo-700">
+                      <td className="py-2.5 px-3 text-right font-medium text-accent">
                         {row.actualBookedVideos}
                       </td>
                       <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
                         {row.actualNetSpend.toLocaleString('vi-VN')} đ
                       </td>
-                      <td className="py-2.5 px-3 text-right font-semibold text-purple-700">
+                      <td className="py-2.5 px-3 text-right font-semibold text-accent">
                         {row.actualAiredVideos}
                       </td>
                       <td className="py-2.5 px-3 text-right">
@@ -859,7 +823,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             row.airCompletionRate >= 100
                               ? 'text-emerald-600'
                               : row.airCompletionRate >= 60
-                              ? 'text-indigo-600'
+                              ? 'text-accent'
                               : 'text-slate-500'
                           }`}
                         >
@@ -883,7 +847,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       </td>
                       <td className="py-2.5 px-3 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          className={`inline-block px-2 py-0.5 rounded-full text-2xs font-semibold ${
                             row.burnWarning === 'BỘI_CHI'
                               ? 'bg-red-100 text-red-700'
                               : row.burnWarning === 'SẮP_TRẦN'
@@ -913,8 +877,8 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Store className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-sm font-bold text-slate-900">
+                <Store className="w-4 h-4 text-accent" />
+                <h2 className="text-sm font-semibold text-slate-900">
                   Đối soát theo Gian hàng ({filteredStoreReports.length} gian hàng)
                 </h2>
               </div>
@@ -949,12 +913,12 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       <tr key={row.storeName} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-2.5 px-3">
                           <div className="font-semibold text-slate-900">{row.storeName}</div>
-                          <div className="text-[11px] text-slate-500">{row.brandName}</div>
+                          <div className="text-2xs text-slate-500">{row.brandName}</div>
                         </td>
                         <td className="py-2.5 px-3">
                           <div className="font-medium text-slate-800">{row.picName}</div>
                           {row.leaderName && (
-                            <div className="text-[10px] text-slate-400">
+                            <div className="text-2xs text-slate-400">
                               Leader: {row.leaderName}
                             </div>
                           )}
@@ -971,7 +935,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                         <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
                           {row.actualNetSpend.toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="py-2.5 px-3 text-right font-medium text-teal-700">
+                        <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
                           {row.actualPaidSpend > 0
                             ? `${row.actualPaidSpend.toLocaleString('vi-VN')} đ`
                             : '0 đ'}
@@ -987,23 +951,23 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                                   ? 'bg-red-500'
                                   : row.budgetBurnRate >= 85
                                   ? 'bg-amber-500'
-                                  : 'bg-indigo-500'
+                                  : 'bg-accent'
                               }`}
                               style={{ width: `${Math.min(100, row.budgetBurnRate)}%` }}
                             />
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <div className="font-semibold text-purple-700">
+                          <div className="font-semibold text-accent">
                             {row.actualAiredVideos} / {row.planVideos || row.actualBookedVideos} video
                           </div>
-                          <div className="text-[10px] text-slate-400">
+                          <div className="text-2xs text-slate-400">
                             {row.actualAiredOntime} đúng hạn · {row.actualAiredLate} trễ
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            className={`inline-block px-2 py-0.5 rounded-full text-2xs font-semibold ${
                               row.spendStatus === 'VƯỢT_NGÂN_SÁCH'
                                 ? 'bg-red-100 text-red-700'
                                 : row.spendStatus === 'SẮP_TRẦN'
@@ -1025,7 +989,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                         <td className="py-2.5 px-3 text-center">
                           <button
                             onClick={() => setDetailStoreName(row.storeName)}
-                            className="px-2.5 py-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
+                            className="px-2.5 py-1 text-2xs font-medium text-accent bg-accent-soft hover:bg-accent-soft/80 rounded-md transition-colors"
                           >
                             Xem video
                           </button>
@@ -1043,7 +1007,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                <h2 className="text-sm font-bold text-slate-900">
+                <h2 className="text-sm font-semibold text-slate-900">
                   Cảnh báo tiến độ: Video đang chờ lên sóng hoặc trễ hạn ({pendingAirBookings.length} video)
                 </h2>
               </div>
@@ -1080,7 +1044,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                         <td className="py-2 px-3 text-slate-700">{b.storeName}</td>
                         <td className="py-2 px-3">
                           <div className="font-semibold text-slate-900">{b.tenKenh || b.idKenh}</div>
-                          <div className="text-[10px] text-slate-400">@{b.idKenh}</div>
+                          <div className="text-2xs text-slate-400">@{b.idKenh}</div>
                         </td>
                         <td className="py-2 px-3 font-medium text-slate-700">{b.klGrade}</td>
                         <td className="py-2 px-3 text-right font-semibold text-slate-900">
@@ -1089,7 +1053,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                         <td className="py-2 px-3 text-slate-700">{b.plannedAirDate || '—'}</td>
                         <td className="py-2 px-3">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
                               b.trangThaiSlaAir?.includes('Trễ')
                                 ? 'bg-red-100 text-red-700'
                                 : 'bg-amber-100 text-amber-700'
@@ -1105,7 +1069,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                               href={b.linkAir}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-indigo-600 hover:underline flex items-center justify-center gap-1"
+                              className="text-accent hover:underline flex items-center justify-center gap-1"
                             >
                               Xem video <ExternalLink className="w-3 h-3" />
                             </a>
@@ -1129,18 +1093,14 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-sm font-bold text-slate-900">
+                <Calendar className="w-4 h-4 text-accent" />
+                <h2 className="text-sm font-semibold text-slate-900">
                   Danh mục Kế hoạch Gian hàng theo KL ({plans.length} kế hoạch)
                 </h2>
               </div>
-              <button
-                onClick={handleOpenCreatePlan}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" />
+              <Button variant="primary" size="sm" icon={Plus} onClick={handleOpenCreatePlan}>
                 Thêm kế hoạch gian hàng
-              </button>
+              </Button>
             </div>
 
             <div className="overflow-x-auto">
@@ -1165,17 +1125,17 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                     return (
                       <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-2.5 px-3 font-semibold text-slate-700">{p.monthKey}</td>
-                        <td className="py-2.5 px-3 font-bold text-slate-900">{p.storeName}</td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-900">{p.storeName}</td>
                         <td className="py-2.5 px-3 text-slate-600">{p.brandName}</td>
                         <td className="py-2.5 px-3 font-medium text-slate-800">{p.picName}</td>
                         <td className="py-2.5 px-3 text-slate-500">{p.leaderName || '—'}</td>
                         <td className="py-2.5 px-3 text-right font-medium text-emerald-700">
                           {p.targetNmv.toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-slate-900">
+                        <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
                           {p.targetBudget.toLocaleString('vi-VN')} đ
                         </td>
-                        <td className="py-2.5 px-3 text-right font-semibold text-indigo-700">
+                        <td className="py-2.5 px-3 text-right font-semibold text-accent">
                           {p.targetVideos}
                         </td>
                         <td className="py-2.5 px-3">
@@ -1184,7 +1144,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                               activeKls.map((k) => (
                                 <span
                                   key={k.kl}
-                                  className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px]"
+                                  className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-2xs"
                                 >
                                   {k.kl}: {k.targetVideos} video
                                 </span>
@@ -1198,7 +1158,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                           <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => handleOpenEditPlan(p)}
-                              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                              className="p-1 text-slate-500 hover:text-accent hover:bg-accent-soft rounded transition-colors"
                               title="Chỉnh sửa kế hoạch"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -1238,7 +1198,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
             </button>
             <button
               onClick={handleSavePlan}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors"
+              className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors"
             >
               Lưu kế hoạch
             </button>
@@ -1318,7 +1278,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetNmv: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bold text-emerald-700"
+                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-emerald-700"
               />
             </div>
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
@@ -1330,7 +1290,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetBudget: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bold text-slate-900"
+                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-slate-900"
               />
             </div>
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
@@ -1341,16 +1301,16 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                 onChange={(e) =>
                   setPlanFormData({ ...planFormData, targetVideos: Number(e.target.value) || 0 })
                 }
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bold text-indigo-700"
+                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-semibold text-accent"
               />
             </div>
           </div>
 
           {/* Bảng phân rã chi tiết theo từng KL */}
           <div className="border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-3.5 py-2.5 bg-slate-50 font-bold text-slate-800 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-3.5 py-2.5 bg-slate-50 font-semibold text-slate-800 border-b border-slate-200 flex items-center justify-between">
               <span>Phân bổ chi tiết theo Phân tầng Khung lương (KL)</span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-2xs text-slate-500">
                 Tự động tính thành tiền theo số lượng và đơn giá
               </span>
             </div>
@@ -1382,7 +1342,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             )
                           }
                           placeholder="0"
-                          className="w-16 px-2 py-1 text-right border border-slate-200 rounded font-semibold text-indigo-700"
+                          className="w-16 px-2 py-1 text-right border border-slate-200 rounded font-semibold text-accent"
                         />
                       </td>
                       <td className="py-2 px-3 text-right">
@@ -1451,7 +1411,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           <div className="flex items-center justify-end w-full">
             <button
               onClick={() => setDetailStoreName(null)}
-              className="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-900 transition-colors"
+              className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary-hover transition-colors"
             >
               Đóng
             </button>
@@ -1489,14 +1449,14 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       </td>
                       <td className="py-2 px-3">
                         <div className="font-semibold text-slate-900">{b.tenKenh || b.idKenh}</div>
-                        <div className="text-[10px] text-slate-400">@{b.idKenh}</div>
+                        <div className="text-2xs text-slate-400">@{b.idKenh}</div>
                       </td>
                       <td className="py-2 px-3 font-medium text-slate-700">{b.klGrade}</td>
                       <td className="py-2 px-3 text-right font-semibold text-slate-900">
                         {b.chiPhiBookingNetCuoi?.toLocaleString('vi-VN')} đ
                       </td>
                       <td className="py-2 px-3 text-slate-600">{b.plannedAirDate || '—'}</td>
-                      <td className="py-2 px-3 font-medium text-purple-700">
+                      <td className="py-2 px-3 font-medium text-accent">
                         {b.actualAirDate || 'Chưa air'}
                       </td>
                       <td className="py-2 px-3 text-right font-semibold text-emerald-700">
@@ -1504,9 +1464,9 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                       </td>
                       <td className="py-2 px-3 text-center">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
                             b.acceptanceStatus === 'DA_NGHIEM_THU'
-                              ? 'bg-teal-100 text-teal-700'
+                              ? 'bg-emerald-100 text-emerald-700'
                               : 'bg-amber-100 text-amber-700'
                           }`}
                         >
@@ -1519,7 +1479,7 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
                             href={b.linkAir}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-indigo-600 hover:underline flex items-center justify-center gap-1"
+                            className="text-accent hover:underline flex items-center justify-center gap-1"
                           >
                             Xem link <ExternalLink className="w-3 h-3" />
                           </a>
@@ -1535,6 +1495,16 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeletePlan)}
+        title="Xác nhận xóa kế hoạch gian hàng"
+        message={`Bạn có chắc chắn muốn xóa kế hoạch của gian hàng "${pendingDeletePlan?.storeName || ''}" không?`}
+        confirmLabel="Xóa kế hoạch"
+        tone="danger"
+        onConfirm={confirmDeletePlan}
+        onCancel={() => setPendingDeletePlan(null)}
+      />
     </div>
   );
 };

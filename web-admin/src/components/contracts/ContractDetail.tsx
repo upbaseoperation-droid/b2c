@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, CheckCircle2, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, Scale, ScanSearch } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status, Textarea } from '../ui';
@@ -14,6 +14,8 @@ import type { ActionMenuItem, StatusTone } from '../ui';
 import { formatDate } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
+import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
+import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 
@@ -78,6 +80,7 @@ export function ContractDetail({
   );
 
   const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<number>(record.version);
   const [comparePrev, setComparePrev] = useState<boolean>(record.versions.length > 0);
   const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
@@ -135,6 +138,20 @@ export function ContractDetail({
   const current = record.checks.filter(c => c.version === record.version).at(-1);
   const previousSnapshot = record.versions.find(v => v.version === selectedVersion - 1);
   const shownValues = previewData?.values || (selectedVersion === record.version ? record.values : record.versions.find(v => v.version === selectedVersion)?.values || record.values);
+  const isAcceptanceDoc = isAcceptance(record.templateId) || template?.kind === 'ACCEPTANCE';
+  const shownScreenshots =
+    selectedVersion === record.version
+      ? record.acceptanceScreenshots && record.acceptanceScreenshots.length > 0
+        ? record.acceptanceScreenshots
+        : isAcceptanceDoc
+          ? findSavedScreenshotsForContext({
+              dealId: record.dealId || linkedDeal?.id,
+              dealCode: record.dealCode || linkedDeal?.dealCode,
+              kocId: record.kocId || linkedKoc?.id,
+              videoUrl: linkedDeal?.tiktokVideoUrl,
+            })
+          : []
+      : record.versions.find(v => v.version === selectedVersion)?.acceptanceScreenshots || [];
 
   return (
     <div className="space-y-6">
@@ -153,6 +170,16 @@ export function ContractDetail({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isAcceptanceDoc && (
+            <Button
+              variant="secondary"
+              icon={Camera}
+              disabled={busy}
+              onClick={() => setScreenshotModalOpen(true)}
+            >
+              Chụp ảnh sản phẩm từ video{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
+            </Button>
+          )}
           {editable && <Button icon={Pencil} onClick={onEdit}>Sửa</Button>}
           {myStep && <Button disabled={busy} onClick={() => setDialog('changes')}>Yêu cầu sửa</Button>}
           <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-1.5 h-[34px] px-3.5 rounded-md border border-line-strong bg-surface text-[13.5px] font-medium text-ink hover:bg-sunken">
@@ -453,6 +480,7 @@ export function ContractDetail({
                 onSelectField={key => setActiveFieldKey(key)}
                 downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
                 signingPeople={selectedVersion === signing?.version ? signing.people : undefined}
+                acceptanceScreenshots={shownScreenshots}
                 isTemplatePreview={record.isKocOwnForm}
                 versionSelector={
                   record.versions.length > 0 ? (
@@ -636,6 +664,24 @@ export function ContractDetail({
         reason={{ label: 'Lý do thu hồi', required: true }}
         onConfirm={note => onAction({ action: 'WITHDRAW', note: note || '' }, 'Đã thu hồi hồ sơ')}
         onOpenChange={o => !o && setDialog(null)}
+      />
+      <VideoProductScreenshotModal
+        open={screenshotModalOpen}
+        onClose={() => setScreenshotModalOpen(false)}
+        initialVideoUrl={linkedDeal?.tiktokVideoUrl || ''}
+        productName={shownValues.TEN_NHAN_HANG || record.brand || ''}
+        brandName={record.brand || ''}
+        dealId={record.dealId || linkedDeal?.id}
+        dealCode={record.dealCode || linkedDeal?.dealCode}
+        kocId={record.kocId || linkedKoc?.id}
+        authorHandle={linkedKoc?.channelId || linkedKoc?.tiktokChannel}
+        existingScreenshots={shownScreenshots}
+        onApplyScreenshots={items => {
+          onAction(
+            { action: 'UPDATE_ACCEPTANCE_SCREENSHOTS', acceptanceScreenshots: items },
+            'Đã đính kèm ảnh chụp sản phẩm vào Biên bản nghiệm thu',
+          );
+        }}
       />
     </div>
   );

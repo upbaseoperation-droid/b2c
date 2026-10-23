@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import { klLabel, klBaseCost, klFromFee } from '../../lib/klTiers';
 import {
   KocListingItem,
@@ -17,12 +17,13 @@ import {
   KocItem,
   BookingDealItem
 } from '@/lib/types';
-import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Presence, Select, Stat, StatRow, Tabs } from '../ui';
+import { ActionMenu, ConfirmDialog, FilterBar, Modal, PageActions, Button, Select, Stat, StatRow, Tabs } from '../ui';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { StaffBrandListingSheetWorkspace } from '../shortlist/StaffBrandListingSheetWorkspace';
 import { PlanListingBoard } from './PlanListingBoard';
 import { PlanDealBoard } from './PlanDealBoard';
+import type { ContractDocument } from '../../lib/planDealLink';
 import {
   appendKocsToStaffBrandSheet,
   loadStaffSheetCollection,
@@ -36,7 +37,6 @@ import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import {
   Filter,
-  Search,
   Plus,
   Send,
   CheckCircle2,
@@ -44,8 +44,6 @@ import {
   AlertTriangle,
   Clock,
   ExternalLink,
-  ChevronRight,
-  Calendar,
   ShieldCheck,
   RotateCcw,
   FileText,
@@ -77,6 +75,7 @@ interface KocListingBatchHubViewProps {
   deals?: BookingDealItem[];
   activePlanContext?: ListingPlanContext | null;
   onOpenPlanStudio?: (plan: InputPlanBreakdownState) => void;
+  onOpenContractForPlanDeal?: (deal: BookingDealItem, document: ContractDocument) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -108,6 +107,7 @@ export function KocListingBatchHubView({
   deals = INITIAL_DEALS,
   activePlanContext,
   onOpenPlanStudio,
+  onOpenContractForPlanDeal,
   onNotify,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
@@ -126,7 +126,7 @@ export function KocListingBatchHubView({
   const [selectedGrade, setSelectedGrade] = useState<SalaryGrade | 'ALL'>('ALL');
   const [selectedOverallStatus, setSelectedOverallStatus] = useState<ListingItemStatus | 'ALL'>('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState<string>('ALL');
-  const [selectedKocStatus, setSelectedKocStatus] = useState<string>('ALL');
+  const [selectedKocStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -156,18 +156,6 @@ export function KocListingBatchHubView({
     sparkCode: '',
     isAnchored: false,
   });
-
-  useEffect(() => {
-    if (selectedListingForAir) {
-      setAirUpdateForm({
-        stage: selectedListingForAir.airVideoStage || 'SAMPLE_DISPATCHED',
-        videoUrl: selectedListingForAir.publishedVideoUrl || '',
-        actualDate: selectedListingForAir.actualAirDate || '2026-10-09',
-        sparkCode: selectedListingForAir.sparkAdsCode || '',
-        isAnchored: selectedListingForAir.isCartAnchored ?? false,
-      });
-    }
-  }, [selectedListingForAir]);
   const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
   const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
   const [isKocReportOpen, setIsKocReportOpen] = useState<boolean>(false);
@@ -1057,7 +1045,7 @@ export function KocListingBatchHubView({
       {activeSubTab === 'PLAN_BOARD' && (
         <PlanListingBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />
       )}
-      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} />}
+      {activeSubTab === 'DEAL_BOARD' && <PlanDealBoard kocs={kocs} currentUserName={currentUserName} onNotify={onNotify} onOpenContract={onOpenContractForPlanDeal} />}
 
       {activeSubTab === 'STAFF_BRAND_SHEET' && (
         <StaffBrandListingSheetWorkspace
@@ -1297,7 +1285,7 @@ export function KocListingBatchHubView({
                               setShortlistTargetGrade(row.code);
                               setShowShortlistModal(true);
                             }}
-                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap"
+                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-primary text-white hover:bg-primary-hover transition-colors cursor-pointer whitespace-nowrap"
                             title={`Mở bộ lọc kho KOC theo chuẩn ${row.label} để đưa vào Bản nháp (Draft)`}
                           >
                             + Nháp
@@ -1925,6 +1913,13 @@ export function KocListingBatchHubView({
                             type="button"
                             onClick={() => {
                               setSelectedListingForAir(item);
+                              setAirUpdateForm({
+                                stage: item.airVideoStage || 'SAMPLE_DISPATCHED',
+                                videoUrl: item.publishedVideoUrl || '',
+                                actualDate: item.actualAirDate || '2026-10-09',
+                                sparkCode: item.sparkAdsCode || '',
+                                isAnchored: item.isCartAnchored ?? false,
+                              });
                               setShowAirUpdateModal(true);
                             }}
                             className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded transition-colors cursor-pointer"
@@ -2372,7 +2367,7 @@ export function KocListingBatchHubView({
                   <button
                     type="button"
                     onClick={() => handleAddListingDiscussion(inspectingListing.id)}
-                    className="px-3 py-1.5 rounded text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 shrink-0 cursor-pointer"
+                    className="px-3 py-1.5 rounded text-xs font-semibold bg-primary text-white hover:bg-primary-hover shrink-0 cursor-pointer"
                   >
                     Gửi trao đổi
                   </button>

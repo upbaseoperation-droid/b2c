@@ -10,7 +10,6 @@ import {
   ArrowRight,
   RotateCcw,
   Plus,
-  Sliders,
   ExternalLink,
   MessageSquare,
   Building2,
@@ -49,15 +48,12 @@ import {
 import {
   loadApiWorkspaceConfig,
   getEffectiveConfigForPurpose,
-  updatePurposeSystemInstruction,
-  resetPurposeSystemInstruction,
   API_CONFIG_UPDATED_EVENT,
   recordApiUsageLog,
   calculateExecutionCost,
 } from '../../lib/apiKeyConfig';
 import { BrandDetail, KocItem, StorePortfolioItem, TabKey, UserProfile } from '../../lib/types';
 import { formatVnd, formatVndShort } from '../../lib/format';
-import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 interface MarketingKnowledgeQaViewProps {
   currentUser: UserProfile;
@@ -272,12 +268,10 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
     return getEffectiveConfigForPurpose('KNOWLEDGE_QA', cfg);
   }, [apiConfigVersion]);
 
-  const [showPromptEditor, setShowPromptEditor] = useState(false);
-  const [customQaPrompt, setCustomQaPrompt] = useState<string>(() => {
+  const [customQaPrompt] = useState<string>(() => {
     const cfg = loadApiWorkspaceConfig();
     return getEffectiveConfigForPurpose('KNOWLEDGE_QA', cfg).purpose.systemInstruction;
   });
-  const [promptSavedMsg, setPromptSavedMsg] = useState<string | null>(null);
 
   // Lịch sử hội thoại hỏi đáp
   const [questionInput, setQuestionInput] = useState('');
@@ -1162,7 +1156,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 <div className="lg:col-span-8">
                   <Panel
                     title={`${currentArticle.code} · ${currentArticle.title}`}
-                    description={`Nguồn chuẩn: ${currentArticle.sourceDoc} · Cập nhật: ${currentArticle.updatedAt}`}
                     actions={
                       <div className="flex items-center gap-2">
                         <Button
@@ -1344,12 +1337,10 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           {playbookSubTab === 'faqs' ? (
             <div className="grid grid-cols-1 gap-4">
               {filteredFaqs.map(faq => {
-                const catMeta = KNOWLEDGE_CATEGORIES.find(c => c.id === faq.category);
                 return (
                   <Panel
                     key={faq.id}
                     title={faq.question}
-                    description={`Chủ đề: ${catMeta?.label || faq.category} · Nguồn: ${faq.sourceDoc}`}
                     actions={
                       <div className="flex items-center gap-2">
                         {faq.relatedTab && onNavigateToTab && (
@@ -1400,7 +1391,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                 <Panel
                   key={obj.id}
                   title={obj.situation}
-                  description={`Nhóm tình huống: ${obj.group}`}
                   actions={
                     <Button
                       variant="ghost"
@@ -1646,7 +1636,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
 
           <Field
             label="Nội dung chi tiết các bước & quy tắc"
-            hint="Mỗi dòng sẽ được tách thành một đoạn hướng dẫn rõ ràng trong Sổ tay"
           >
             <Textarea
               rows={6}

@@ -19,6 +19,7 @@ type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' |
   internalNotes?: string;
   isKocOwnForm?: boolean;
   customFile?: ContractRecord['customFile'];
+  acceptanceScreenshots?: ContractRecord['acceptanceScreenshots'];
 };
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
@@ -38,6 +39,7 @@ export function editContract(record: ContractRecord, actor: ContractActor, input
     at: record.updatedAt,
     actorId: actor.id,
     customFile: record.customFile ? structuredClone(record.customFile) : undefined,
+    acceptanceScreenshots: record.acceptanceScreenshots ? structuredClone(record.acceptanceScreenshots) : undefined,
   });
   Object.assign(next, input); next.version++; next.steps = []; next.approval = 'DRAFT'; event(next, actor, 'EDIT'); return next;
 }

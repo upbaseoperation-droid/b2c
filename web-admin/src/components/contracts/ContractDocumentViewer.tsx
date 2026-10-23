@@ -20,7 +20,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import type { ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
 import { Button, Modal } from '../ui';
 
 export interface ContractDocumentViewerProps {
@@ -39,6 +39,7 @@ export interface ContractDocumentViewerProps {
   maxHeight?: string;
   compactToolbar?: boolean;
   isTemplatePreview?: boolean;
+  acceptanceScreenshots?: AcceptanceScreenshotItem[];
 }
 
 export function ContractDocumentViewer({
@@ -57,6 +58,7 @@ export function ContractDocumentViewer({
   maxHeight = '760px',
   compactToolbar = false,
   isTemplatePreview = false,
+  acceptanceScreenshots = [],
 }: ContractDocumentViewerProps) {
   const [highlight, setHighlight] = useState(true);
   const [zoom, setZoom] = useState<number>(100);
@@ -153,6 +155,10 @@ export function ContractDocumentViewer({
     .doc-header { border-bottom: 1px solid #ccc; padding-bottom: 6px; margin-bottom: 14px; font-size: 10pt; color: #444; }
     .doc-footer { border-top: 1px solid #ccc; padding-top: 6px; margin-top: 18px; font-size: 10pt; color: #444; }
     .field-mark { background: transparent !important; border: none !important; padding: 0 !important; color: inherit !important; }
+    .doc-screenshot-section { margin: 16px 0; page-break-inside: avoid; }
+    .doc-screenshot-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    .doc-screenshot-card { width: 47%; border: 1px solid #333; padding: 6px; box-sizing: border-box; page-break-inside: avoid; }
+    .doc-screenshot-card img { width: 100%; max-height: 250px; object-fit: contain; background: #000; display: block; margin: 0 auto 6px; }
   </style>
 </head>
 <body>${printRef.current.innerHTML}</body>
@@ -265,7 +271,7 @@ export function ContractDocumentViewer({
               ? `${fieldTitle} · Đổi từ "${prevVal || 'Trống'}" sang "${val}"`
               : `${fieldTitle}: ${val}${onSelectField ? ' (Bấm để sửa ô này)' : ''}`
           }
-          className={`field-mark inline rounded px-1 py-0.5 font-medium transition-all ${
+          className={`field-mark inline rounded px-1 py-0.5 font-medium transition-colors ${
             changed
               ? 'bg-blue-100 text-blue-950 border-b-2 border-blue-600'
               : 'bg-emerald-50/95 text-emerald-950 border-b-2 border-emerald-600/70'
@@ -286,7 +292,7 @@ export function ContractDocumentViewer({
         onClick={onSelectField ? () => onSelectField(f.key) : undefined}
         onKeyDown={onSelectField ? e => (e.key === 'Enter' || e.key === ' ') && onSelectField(f.key) : undefined}
         title={`${fieldTitle}${f.required ? ' (Bắt buộc điền)' : ' (Tùy chọn)'}${onSelectField ? ' · Bấm để nhập' : ''}`}
-        className={`field-mark inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-sans text-[12px] leading-snug transition-all ${
+        className={`field-mark inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-sans text-[12px] leading-snug transition-colors ${
           f.required
             ? 'bg-amber-50 text-amber-900 border border-dashed border-amber-500 font-medium'
             : 'bg-neutral-100 text-neutral-600 border border-dashed border-neutral-400'
@@ -443,53 +449,101 @@ export function ContractDocumentViewer({
     );
   };
 
-  const renderSheet = (inModal = false) => (
-    <div
-      ref={inModal ? undefined : containerRef}
-      style={inModal ? undefined : { maxHeight }}
-      className="overflow-auto bg-sunken/80 p-3 sm:p-6 rounded-b-xl"
-    >
-      <div
-        ref={inModal ? undefined : printRef}
-        style={{
-          fontFamily: '"Times New Roman", Times, serif',
-          fontSize: `${Math.round(14.5 * (zoom / 100))}px`,
-          lineHeight: 1.6,
-        }}
-        className="mx-auto w-full max-w-[810px] bg-white text-[#141413] shadow-[0_2px_14px_rgba(0,0,0,0.07)] border border-[#d8d5ce] rounded-sm px-6 py-8 sm:px-14 sm:py-11 selection:bg-amber-200/70"
-      >
-        {/* Header biểu mẫu pháp chế */}
-        {headerBlocks.length > 0 && (
-          <div className="doc-header mb-5 pb-2 border-b border-[#e2dfd8] text-[12px] text-[#575653] flex items-center justify-between gap-2">
-            <span>Biểu mẫu Pháp chế Upbase</span>
-            <div className="text-right font-mono">
-              {headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))}
+  const renderAcceptanceScreenshotsBlock = () => {
+    if (!acceptanceScreenshots || acceptanceScreenshots.length === 0) return null;
+    return (
+      <div className="doc-screenshot-section my-5 pt-3 border-t border-[#333]">
+        <p className="font-semibold uppercase text-[14px] text-[#111] mb-2">
+          HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU)
+        </p>
+        <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+          {acceptanceScreenshots.map((shot, sIdx) => (
+            <div
+              key={shot.id || sIdx}
+              className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-[12.5px] leading-snug"
+            >
+              <div className="bg-black rounded-xs overflow-hidden mb-2 flex items-center justify-center max-h-[240px]">
+                <img
+                  src={shot.imageDataUrl}
+                  alt={shot.note || `Khung hình sản phẩm mốc ${shot.timeLabel}`}
+                  className="max-h-[240px] w-auto object-contain mx-auto"
+                />
+              </div>
+              <p className="font-semibold text-[#111]">
+                Ảnh #{sIdx + 1}: Khung hình sản phẩm tại giây {shot.timeLabel}
+                {shot.matchedTerm ? ` — ${shot.matchedTerm}` : ''}
+              </p>
+              {shot.note && <p className="text-[#333] mt-0.5">Ghi chú: {shot.note}</p>}
+              {shot.videoUrl && (
+                <p className="text-2xs text-[#555] font-mono break-all mt-0.5">
+                  Link video: {shot.videoUrl}
+                </p>
+              )}
             </div>
-          </div>
-        )}
-
-        {/* Nội dung chính của hợp đồng */}
-        {bodyBlocks.length > 0 ? (
-          <div className="space-y-1">
-            {bodyBlocks.map((b, i) => renderBlock(b, `body-${i}`))}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}
-          </div>
-        )}
-
-        {/* Footer số hiệu & trang */}
-        {footerBlocks.length > 0 && (
-          <div className="doc-footer mt-8 pt-3 border-t border-[#e2dfd8] text-[12px] text-[#575653] flex flex-wrap items-center justify-between gap-2">
-            {footerBlocks.map((b, i) => (
-              <div key={`ftr-${i}`}>{renderBlock(b, `ftr-${i}`)}</div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderSheet = (inModal = false) => {
+    const sigIdx = bodyBlocks.findIndex(
+      b => b.kind === 'table' && b.variant === 'signature'
+    );
+    const beforeSigBlocks = sigIdx >= 0 ? bodyBlocks.slice(0, sigIdx) : bodyBlocks;
+    const fromSigBlocks = sigIdx >= 0 ? bodyBlocks.slice(sigIdx) : [];
+
+    return (
+      <div
+        ref={inModal ? undefined : containerRef}
+        style={inModal ? undefined : { maxHeight }}
+        className="overflow-auto bg-sunken/80 p-3 sm:p-6 rounded-b-xl"
+      >
+        <div
+          ref={inModal ? undefined : printRef}
+          style={{
+            fontFamily: '"Times New Roman", Times, serif',
+            fontSize: `${Math.round(14.5 * (zoom / 100))}px`,
+            lineHeight: 1.6,
+          }}
+          className="mx-auto w-full max-w-[810px] bg-white text-[#141413] shadow-[0_2px_14px_rgba(0,0,0,0.07)] border border-[#d8d5ce] rounded-sm px-6 py-8 sm:px-14 sm:py-11 selection:bg-amber-200/70"
+        >
+          {/* Header biểu mẫu pháp chế */}
+          {headerBlocks.length > 0 && (
+            <div className="doc-header mb-5 pb-2 border-b border-[#e2dfd8] text-[12px] text-[#575653] flex items-center justify-between gap-2">
+              <span>Biểu mẫu Pháp chế Upbase</span>
+              <div className="text-right font-mono">
+                {headerBlocks.map((b, i) => renderBlock(b, `hdr-${i}`))}
+              </div>
+            </div>
+          )}
+
+          {/* Nội dung chính của hợp đồng */}
+          {bodyBlocks.length > 0 ? (
+            <div className="space-y-1">
+              {beforeSigBlocks.map((b, i) => renderBlock(b, `body-pre-${i}`))}
+              {renderAcceptanceScreenshotsBlock()}
+              {fromSigBlocks.map((b, i) => renderBlock(b, `body-sig-${i}`))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}
+              {renderAcceptanceScreenshotsBlock()}
+            </div>
+          )}
+
+          {/* Footer số hiệu & trang */}
+          {footerBlocks.length > 0 && (
+            <div className="doc-footer mt-8 pt-3 border-t border-[#e2dfd8] text-[12px] text-[#575653] flex flex-wrap items-center justify-between gap-2">
+              {footerBlocks.map((b, i) => (
+                <div key={`ftr-${i}`}>{renderBlock(b, `ftr-${i}`)}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">

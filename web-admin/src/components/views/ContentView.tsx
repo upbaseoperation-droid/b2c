@@ -29,6 +29,7 @@ import { brandProfileToKnowledgeBase, findBrandProfile, useBrandProfiles } from 
 import { ScriptReviewModal } from '../ScriptReviewModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
+import { ContentCopilotModal } from '../content/ContentCopilotModal';
 
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
@@ -36,6 +37,7 @@ interface ContentViewProps {
   kocs?: KocItem[];
   deals?: BookingDealItem[];
   currentUserName?: string;
+  currentUserRole?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -56,7 +58,7 @@ const FORMAT_OPTIONS = [
   'Mở hộp âm thanh thực',
 ];
 
-export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles, currentUserName, onNotify, kocs, deals }) => {
+export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles, currentUserName, currentUserRole, onNotify, kocs, deals }) => {
   const { profiles } = useBrandProfiles();
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
   const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
@@ -68,6 +70,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
   const [isVideoInspectorOpen, setIsVideoInspectorOpen] = useState(false);
   const [inspectInitialUrl, setInspectInitialUrl] = useState<string>('');
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   // State tạo kịch bản / brief mới
   const [isCreateScriptOpen, setIsCreateScriptOpen] = useState(false);
@@ -297,6 +300,13 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
               Nghiệm thu video
             </Button>
             <Button
+              variant="secondary"
+              icon={Lightbulb}
+              onClick={() => setIsCopilotOpen(true)}
+            >
+              Gợi ý & Soát xét
+            </Button>
+            <Button
               variant="primary"
               icon={Plus}
               onClick={handleOpenCreateScript}
@@ -307,7 +317,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         }
       />
 
-      {activeSubTab === 'BRAND_PLAN' && <BrandMonthlyPlanForm currentUserName={currentUserName} onNotify={onNotify} />}
+      {activeSubTab === 'BRAND_PLAN' && <BrandMonthlyPlanForm currentUserName={currentUserName} currentUserRole={currentUserRole} onNotify={onNotify} />}
       {activeSubTab === 'CONTENT_PLAN' && <ContentPlanBoard kocs={kocs} deals={deals} currentUserName={currentUserName} onNotify={onNotify} />}
 
       {/* View 0: Content Items Master Grid */}
@@ -589,7 +599,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                           CP: {formatVndShort(pub.costAttributed)}
                         </div>
                       </td>
-                      <td className="p-3.5 pr-6 text-right sm:sticky sm:right-0 bg-white/95 border-l border-slate-200 sm:shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
+                      <td className="p-3.5 pr-6 text-right sm:sticky sm:right-0 bg-surface group-hover:bg-canvas border-l border-slate-200 sm:shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
                         <div className="flex flex-col items-end gap-1">
                           <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Đã đối soát
@@ -861,6 +871,24 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           )}
         </div>
       </Modal>
+
+      <ContentCopilotModal
+        open={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        brandName={newBrandName}
+        productName={newProductName}
+        initialPillar={newPillar}
+        initialScript={`${newHook}\n${newPainPoint}\n${newUsp}\n${newCta}`.trim()}
+        onApplyAngle={data => {
+          setNewAngleName(data.angleName);
+          setNewHook(data.hook);
+          setNewPainPoint(data.painPoint);
+          setNewUsp(data.usp);
+          setNewCta(data.cta);
+          setIsCreateScriptOpen(true);
+        }}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

@@ -1152,9 +1152,9 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     <button
                       key={sev}
                       onClick={() => setSeverityFilter(sev)}
-                      className={`px-2 py-0.5 rounded text-2xs font-medium transition ${
+                      className={`px-2 py-0.5 rounded text-2xs font-medium transition-colors ${
                         severityFilter === sev
-                          ? 'bg-slate-900 text-white font-semibold'
+                          ? 'bg-primary text-white font-semibold'
                           : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -1834,7 +1834,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </Button>
             <Button
               variant="primary"
-              onClick={(e) => handleAddKeyword(e as any)}
+              onClick={(e) => handleAddKeyword(e as unknown as React.FormEvent)}
             >
               Lưu từ khóa
             </Button>

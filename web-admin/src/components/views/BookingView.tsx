@@ -458,7 +458,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       carrier: deal.sampleCarrier || 'GHN',
       trackingCode:
         deal.sampleTrackingCode ||
-        `GHN-${deal.dealCode.replace(/[^0-9]/g, '').slice(-8) || Date.now().toString().slice(-8)}`,
+        `GHN-${deal.dealCode.replace(/[^0-9]/g, '').slice(-8) || '00000001'}`,
       sentDate: deal.sampleSentDate || '18/10/2026',
       deliveredDate:
         deal.sampleDeliveredDate || (deal.sampleStatus === 'ĐÃ_NHẬN' ? '20/10/2026' : ''),
@@ -1544,7 +1544,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   {st.label}
                 </div>
                 <div className="mt-2 flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-bold text-ink tabular-nums">
+                  <span className="text-lg font-semibold text-ink tabular-nums">
                     {formatNumber(stat.count)} <span className="text-2xs font-normal text-ink-3">job</span>
                   </span>
                   <span className="text-xs font-semibold font-mono text-ink-2 tabular-nums">

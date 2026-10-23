@@ -82,28 +82,28 @@ export function PositioningDialog({ open, value, busy, onClose, onSave }: { open
             {(Object.keys(TONE_LABEL) as ToneTag[]).map(t => <option key={t} value={t}>{TONE_LABEL[t]}</option>)}
           </Select>
         </Field>
-        <Field label="Giọng văn (Tone & Voice)" htmlFor="bp-voice" hint="Cách KOC nên nói về nhãn: xưng hô, mức độ trang trọng, điều cần tránh.">
+        <Field label="Giọng văn (Tone & Voice)" htmlFor="bp-voice">
           <Textarea id="bp-voice" rows={2} maxLength={1000} value={v.toneOfVoice} onChange={e => set('toneOfVoice', e.target.value)} />
         </Field>
       </div>
       <Field label="Khách hàng mục tiêu (Target Audience)" htmlFor="bp-aud"><Textarea id="bp-aud" rows={2} maxLength={1500} value={v.targetAudience} onChange={e => set('targetAudience', e.target.value)} /></Field>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Nỗi đau khách hàng (Pain Points)" htmlFor="bp-pains" hint="Mỗi dòng 1 vấn đề khách đang gặp để KOC mở Hook.">
+        <Field label="Nỗi đau khách hàng (Pain Points)" htmlFor="bp-pains">
           <Textarea id="bp-pains" rows={3} value={painPointsText} onChange={e => setPainPointsText(e.target.value)} />
         </Field>
-        <Field label="Rào cản mua hàng (Barriers to Trial)" htmlFor="bp-barriers" hint="Mỗi dòng 1 lý do khách ngần ngại chưa mua (giá, sợ kích ứng, sợ hàng giả...).">
+        <Field label="Rào cản mua hàng (Barriers to Trial)" htmlFor="bp-barriers">
           <Textarea id="bp-barriers" rows={3} value={barriersText} onChange={e => setBarriersText(e.target.value)} />
         </Field>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Bằng chứng tin cậy (RTB — Reason to Believe)" htmlFor="bp-rtbs" hint="Mỗi dòng 1 bằng chứng kiểm nghiệm, nguồn gốc, cam kết chính hãng.">
+        <Field label="Bằng chứng tin cậy (RTB — Reason to Believe)" htmlFor="bp-rtbs">
           <Textarea id="bp-rtbs" rows={3} value={rtbsText} onChange={e => setRtbsText(e.target.value)} />
         </Field>
-        <Field label="Tuyến nội dung chủ đạo (Content Pillars & Angles)" htmlFor="bp-pillars" hint="Mỗi dòng 1 tuyến nội dung theo phễu Awareness / Consideration / Conversion.">
+        <Field label="Tuyến nội dung chủ đạo (Content Pillars & Angles)" htmlFor="bp-pillars">
           <Textarea id="bp-pillars" rows={3} value={pillarsText} onChange={e => setPillarsText(e.target.value)} />
         </Field>
       </div>
-      <Field label="Đối thủ cạnh tranh trực tiếp (Không nhắc tên / Không xuất hiện cùng)" htmlFor="bp-comp" hint="Mỗi dòng 1 thương hiệu hoặc nhóm đối thủ.">
+      <Field label="Đối thủ cạnh tranh trực tiếp (Không nhắc tên / Không xuất hiện cùng)" htmlFor="bp-comp">
         <Textarea id="bp-comp" rows={2} value={competitorsText} onChange={e => setCompetitorsText(e.target.value)} />
       </Field>
       <Field label="Câu chuyện thương hiệu & Bối cảnh ngành hàng" htmlFor="bp-story"><Textarea id="bp-story" rows={3} maxLength={3000} value={v.story} onChange={e => set('story', e.target.value)} /></Field>
@@ -119,7 +119,7 @@ export function EntityDialog({ open, value, fallbackCompany, busy, onClose, onSa
   return (
     <Modal open={open} onClose={onClose} title="Sửa pháp nhân"  footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(v)} />}>
       <Field label="Tên công ty" htmlFor="be-co"><Input id="be-co" maxLength={200} value={v.companyName} onChange={e => set('companyName', e.target.value)} /></Field>
-      <Field label="Mã số thuế" htmlFor="be-tax" hint="10 chữ số, hoặc thêm “-” và 3 số chi nhánh."><Input id="be-tax" inputMode="numeric" maxLength={14} value={v.taxCode} onChange={e => set('taxCode', e.target.value)} className="font-code" /></Field>
+      <Field label="Mã số thuế" htmlFor="be-tax"><Input id="be-tax" inputMode="numeric" maxLength={14} value={v.taxCode} onChange={e => set('taxCode', e.target.value)} className="font-code" /></Field>
       <Field label="Người liên hệ phía nhãn" htmlFor="be-ct"><Input id="be-ct" maxLength={200} value={v.contactPerson} onChange={e => set('contactPerson', e.target.value)} /></Field>
       <Field label="Xuất xứ" htmlFor="be-org"><Input id="be-org" maxLength={100} value={v.originCountry} onChange={e => set('originCountry', e.target.value)} placeholder="Nhật Bản, Việt Nam…" /></Field>
     </Modal>
@@ -222,7 +222,7 @@ export function WorkflowRulesDialog({
         {/* Nhóm 2: Quy trình duyệt của Nhãn & SLA */}
         <div className="rounded-lg border border-line bg-canvas/50 p-3.5 space-y-3">
           <h4 className="text-xs font-semibold text-ink">2. Cổng phê duyệt của Nhãn hàng &amp; SLA (Tác động Pipeline Booking &amp; Duyệt kịch bản)</h4>
-          <Field label="Quy tắc duyệt danh sách KOC (Shortlist)" htmlFor="wf-koc-mode" hint="Nếu chọn tự duyệt KL1–KL3 hoặc Tự chủ, hệ thống sẽ bỏ qua bước chờ Brand duyệt khi tạo Deal thuộc phạm vi đó.">
+          <Field label="Quy tắc duyệt danh sách KOC (Shortlist)" htmlFor="wf-koc-mode">
             <Select id="wf-koc-mode" value={v.kocApprovalMode} onChange={e => set('kocApprovalMode', e.target.value as KocApprovalMode)}>
               {(Object.keys(KOC_APPROVAL_MODE_LABEL) as KocApprovalMode[]).map(k => (
                 <option key={k} value={k}>{KOC_APPROVAL_MODE_LABEL[k]}</option>
@@ -250,7 +250,7 @@ export function WorkflowRulesDialog({
             </label>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="SLA tự động cho phép đăng nếu Nhãn không phản hồi (Giờ)" htmlFor="wf-auto-air" hint="Chuẩn SLA B2C là 72 giờ (3 ngày). Nhập 0 nếu bắt buộc phải đợi Nhãn xác nhận.">
+            <Field label="SLA tự động cho phép đăng nếu Nhãn không phản hồi (Giờ)" htmlFor="wf-auto-air">
               <Input
                 id="wf-auto-air"
                 type="number"
@@ -260,7 +260,7 @@ export function WorkflowRulesDialog({
                 onChange={e => set('autoAirAfterHours', Number(e.target.value) || 0)}
               />
             </Field>
-            <Field label="Số vòng yêu cầu chỉnh sửa miễn phí tối đa (Vòng)" htmlFor="wf-revisions" hint="Vượt quá số vòng này hệ thống sẽ cảnh báo phát sinh chi phí khi duyệt kịch bản.">
+            <Field label="Số vòng yêu cầu chỉnh sửa miễn phí tối đa (Vòng)" htmlFor="wf-revisions">
               <Input
                 id="wf-revisions"
                 type="number"
@@ -338,7 +338,7 @@ export function WorkflowRulesDialog({
                 onChange={e => set('adsCodeDurationDays', Number(e.target.value) || 0)}
               />
             </Field>
-            <Field label="Thời gian giữ video công khai (Ngày)" htmlFor="wf-retain-days" hint="999 = Vĩnh viễn" noWrap>
+            <Field label="Thời gian giữ video công khai (Ngày)" htmlFor="wf-retain-days" noWrap>
               <Input
                 id="wf-retain-days"
                 type="number"
@@ -348,7 +348,7 @@ export function WorkflowRulesDialog({
                 onChange={e => set('minVideoRetentionDays', Number(e.target.value) || 90)}
               />
             </Field>
-            <Field label="Độc quyền ngành hàng (Ngày)" htmlFor="wf-excl-days" hint="0 = Không yêu cầu" noWrap>
+            <Field label="Độc quyền ngành hàng (Ngày)" htmlFor="wf-excl-days" noWrap>
               <Input
                 id="wf-excl-days"
                 type="number"
@@ -369,10 +369,10 @@ export function WorkflowRulesDialog({
             <span>Cho phép tính phụ phí riêng khi mua thêm Mã Ads / Đăng chéo đa nền tảng (Bỏ chọn = Bắt buộc đàm phán trọn gói All-in trong giá cast)</span>
           </label>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Các kênh Nhãn được phép đăng lại (Repost)" htmlFor="wf-repost" hint="Mỗi dòng 1 kênh.">
+            <Field label="Các kênh Nhãn được phép đăng lại (Repost)" htmlFor="wf-repost">
               <Textarea id="wf-repost" rows={2} value={repostText} onChange={e => setRepostText(e.target.value)} />
             </Field>
-            <Field label="Tệp KOC ưu tiên của nhãn" htmlFor="wf-niches" hint="Mỗi dòng 1 nhóm KOC ưu tiên.">
+            <Field label="Tệp KOC ưu tiên của nhãn" htmlFor="wf-niches">
               <Textarea id="wf-niches" rows={2} value={nichesText} onChange={e => setNichesText(e.target.value)} />
             </Field>
           </div>
@@ -459,21 +459,21 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
   });
   return (
     <Modal open={open} onClose={onClose} title="Sửa quy chuẩn nội dung & yêu cầu bài đăng" size="lg" footer={<Footer busy={busy} onClose={onClose} onSave={save} />}>
-      <Field label="Từ cấm" htmlFor="cr-ban" hint="Mỗi dòng: cụm từ | thay bằng | lý do. Ví dụ: trị dứt điểm | hỗ trợ cải thiện | quảng cáo mỹ phẩm không được nói công dụng điều trị">
+      <Field label="Từ cấm" htmlFor="cr-ban">
         <Textarea id="cr-ban" rows={5} value={banned} onChange={e => setBanned(e.target.value)} />
       </Field>
-      <Field label="Cụm từ nên dùng" htmlFor="cr-pref" hint="Mỗi dòng: cụm từ | khi nào dùng.">
+      <Field label="Cụm từ nên dùng" htmlFor="cr-pref">
         <Textarea id="cr-pref" rows={3} value={preferred} onChange={e => setPreferred(e.target.value)} />
       </Field>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Hình ảnh nên có" htmlFor="cr-do" hint="Mỗi dòng một ý."><Textarea id="cr-do" rows={3} value={doList} onChange={e => setDoList(e.target.value)} /></Field>
-        <Field label="Hình ảnh không được dùng" htmlFor="cr-dont" hint="Mỗi dòng một ý."><Textarea id="cr-dont" rows={3} value={dontList} onChange={e => setDontList(e.target.value)} /></Field>
+        <Field label="Hình ảnh nên có" htmlFor="cr-do"><Textarea id="cr-do" rows={3} value={doList} onChange={e => setDoList(e.target.value)} /></Field>
+        <Field label="Hình ảnh không được dùng" htmlFor="cr-dont"><Textarea id="cr-dont" rows={3} value={dontList} onChange={e => setDontList(e.target.value)} /></Field>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Hashtag bắt buộc trên bài đăng" htmlFor="cr-tags" hint="Mỗi dòng 1 hashtag (VD: #Kutieskin).">
+        <Field label="Hashtag bắt buộc trên bài đăng" htmlFor="cr-tags">
           <Textarea id="cr-tags" rows={2} value={hashtags} onChange={e => setHashtags(e.target.value)} />
         </Field>
-        <Field label="Tài khoản bắt buộc Tag / Mention" htmlFor="cr-mentions" hint="Mỗi dòng 1 tài khoản (VD: @kutieskin.official).">
+        <Field label="Tài khoản bắt buộc Tag / Mention" htmlFor="cr-mentions">
           <Textarea id="cr-mentions" rows={2} value={mentions} onChange={e => setMentions(e.target.value)} />
         </Field>
       </div>
@@ -625,7 +625,7 @@ export function ItemDialog({
           const id = `it-${f.key}`;
           const set = (x: string) => setForm(p => ({ ...p, [f.key]: f.kind === 'money' ? moneyInput(x) : x }));
           return (
-            <Field key={f.key} label={`${f.label}${f.required ? ' *' : ''}`} htmlFor={id} hint={f.hint ?? (f.kind === 'lines' ? 'Mỗi dòng một ý.' : undefined)} className={f.wide || f.kind === 'long' || f.kind === 'lines' || f.kind === 'file' ? 'md:col-span-2' : undefined}>
+            <Field key={f.key} label={`${f.label}${f.required ? ' *' : ''}`} htmlFor={id} className={f.wide || f.kind === 'long' || f.kind === 'lines' || f.kind === 'file' ? 'md:col-span-2' : undefined}>
               {f.kind === 'file' ? (
                 <div className="grid gap-2.5">
                   {uploadContext && (

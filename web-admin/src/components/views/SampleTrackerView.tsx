@@ -724,7 +724,7 @@ export default function SampleTrackerView({
                     </td>
 
                     {/* Actions */}
-                    <td className="py-2.5 px-3 text-right sticky right-0 bg-surface/95 border-l border-line">
+                    <td className="py-2.5 px-3 text-right sticky right-0 bg-surface group-hover:bg-canvas border-l border-line">
                       <div className="flex items-center justify-end gap-1">
                         {item.status === 'DELIVERING' && (
                           <Button

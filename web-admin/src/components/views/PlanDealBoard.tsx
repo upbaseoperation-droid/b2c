@@ -1,34 +1,80 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
-import type { InputPlanBreakdownState, KocItem } from '../../lib/types';
+import { Camera, ChevronDown, ChevronRight, Lock, Plus, RefreshCw, Search, Send, Trash2, Unlock } from 'lucide-react';
+import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
+import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
+import { getKocLegalProfiles } from '../koc/kocUtils';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { useListingBoard } from '../../lib/useListingBoard';
+import { contractApi, type ContractBootstrap } from '../contracts/api';
+import type { ContractRecord } from '../../lib/contracts/types';
+import {
+  DOCUMENT_LABEL,
+  documentOfTemplate,
+  documentsOfJob,
+  planJobToBookingDeal,
+  recordSigned,
+  type ContractDocument,
+} from '../../lib/planDealLink';
 import { columnOf, itemFee, itemGrade, planQuota } from '../../lib/listingBoardRules';
-import type { ContentSlot } from '../../lib/contentPlanRules';
+import { ensureSequentialBriefCodes, isBriefReady, slotTargetQty, type ContentSlot } from '../../lib/contentPlanRules';
 import type { BrandProductCatalog } from '../../lib/productCatalog';
 import {
+  ADDON_STATUS_LABEL,
+  ADDON_TYPE_LABEL,
+  COMMERCE_PLATFORM_LABEL,
   EMPTY_DEAL_BOARD,
   FRAMEWORK_STATE_LABEL,
-  budgetIssues,
+  HARDCOPY_STATUS_LABEL,
+  LEGAL_ENTITY_LABEL,
+  PRICING_DISPLAY_MODE_LABEL,
+  PRODUCTION_MODE_LABEL,
+  PUBLISH_PLATFORM_LABEL,
   STAGES,
+  budgetIssues,
+  computeJobContractAmounts,
   createDeal,
   createDealBlocker,
+  createDealJob,
+  createPostAirUpsellJob,
   dealIssues,
+  dealTotalFee,
   frameworkState,
-  isAcceptanceCleared,
+  getMonthlyClosingStatus,
+  isAccountHolderMatched,
+  isAirLinkLocked,
+  isJobAcceptanceCleared,
+  jobAddonsFee,
+  jobDroppedFee,
+  jobPaymentBlocker,
+  jobStageOf,
+  jobTotalFee,
+  newAddonId,
   normHandle,
-  paymentBlocker,
   pushEvent,
   stageOf,
   summarizeDeals,
+  syncDealSummaryFields,
   type AcceptanceStatus,
+  type ClosingWindowMode,
+  type CommercePlatform,
+  type ContentProductionMode,
   type DealBoardData,
+  type DealJob,
   type FrameworkContract,
+  type HardcopyStatus,
+  type JobAddonItem,
+  type JobAddonStatus,
+  type JobAddonType,
+  type LegalEntityType,
+  type MonthlyClosingState,
   type PaymentStatus,
   type PlanDeal,
+  type PricingDisplayMode,
+  type PublishPlatform,
   type SampleStatus,
   type ScriptStatus,
 } from '../../lib/dealBoardRules';
@@ -37,20 +83,22 @@ interface PlanDealBoardProps {
   kocs?: KocItem[];
   currentUserName?: string;
   onNotify?: (message: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  /** Mở hồ sơ hợp đồng nguyên tắc (theo KOC), SOW hoặc biên bản nghiệm thu (theo từng Job) trong mô-đun Hợp đồng. */
+  onOpenContract?: (deal: BookingDealItem, document: ContractDocument) => void;
 }
 
 const fmt = (v: number) => Math.round(v).toLocaleString('vi-VN');
 const saveLabel: Record<string, string> = { idle: '', loading: 'Đang tải…', saved: 'Đã lưu', dirty: 'Chưa lưu', saving: 'Đang lưu…', error: 'Lưu lỗi' };
 const SAMPLE_LABEL: Record<SampleStatus, string> = { NONE: 'Chưa gửi', NOT_NEEDED: 'Không cần gửi', SENT: 'Đã gửi', RECEIVED: 'KOC đã nhận' };
 const SCRIPT_LABEL: Record<ScriptStatus, string> = { NONE: 'Chưa nộp', NOT_NEEDED: 'Không cần kịch bản', SUBMITTED: 'Chờ duyệt', CHANGES: 'Cần sửa', APPROVED: 'Đã duyệt' };
-const PAY_LABEL: Record<PaymentStatus, string> = { NONE: 'Chưa đề nghị', REQUESTED: 'Đã đề nghị', PAID: 'Đã thanh toán' };
+const PAY_LABEL: Record<PaymentStatus, string> = { NONE: 'Chưa đề nghị', REQUESTED: 'Đã đẩy Lark (Chờ chi)', PAID: 'Đã thanh toán' };
 const ACCEPT_LABEL: Record<AcceptanceStatus, string> = { PENDING: 'Chưa nghiệm thu', PASSED: 'Đạt', REVIEW: 'Cần xem lại', FAILED: 'Không đạt' };
 const TH = 'whitespace-nowrap border-b border-line bg-sunken px-2 py-2 text-left text-2xs font-medium text-ink-3';
 const TD = 'border-b border-line px-2 py-1.5 align-middle text-[13px] text-ink';
 
 interface PlanLite extends InputPlanBreakdownState {}
 
-export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 'Nhân viên', onNotify }) => {
+export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], currentUserName = 'Nhân viên', onNotify, onOpenContract }) => {
   const notify = useCallback((msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type), [onNotify]);
 
   const [plans, setPlans] = useState<PlanLite[]>([]);
@@ -59,10 +107,50 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openDealId, setOpenDealId] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [expandedDealIds, setExpandedDealIds] = useState<Record<string, boolean>>({});
   const [fwModal, setFwModal] = useState<{ handle: string } | null>(null);
-  const [fwForm, setFwForm] = useState({ contractNo: '', signedAt: '', validTo: '', fileUrl: '', note: '' });
+  const [fwForm, setFwForm] = useState<{
+    contractNo: string;
+    signedAt: string;
+    validTo: string;
+    fileUrl: string;
+    note: string;
+    entityType: LegalEntityType;
+    legalName: string;
+    taxOrCccd: string;
+    bankName: string;
+    bankAccount: string;
+    bankHolder: string;
+    authorizationUrl: string;
+    hardcopyStatus: HardcopyStatus;
+    hardcopyDueAt: string;
+  }>({
+    contractNo: '',
+    signedAt: '',
+    validTo: '',
+    fileUrl: '',
+    note: '',
+    entityType: 'INDIVIDUAL',
+    legalName: '',
+    taxOrCccd: '',
+    bankName: '',
+    bankAccount: '',
+    bankHolder: '',
+    authorizationUrl: '',
+    hardcopyStatus: 'ESIGN_VERIFIED',
+    hardcopyDueAt: '',
+  });
+  const [closingModalOpen, setClosingModalOpen] = useState(false);
   const [inspecting, setInspecting] = useState(false);
+  const [pushingLarkJobId, setPushingLarkJobId] = useState<string | null>(null);
   const [confirmNote, setConfirmNote] = useState('');
+  const [payeeQuickForm, setPayeeQuickForm] = useState<{
+    bankName: string;
+    bankAccount: string;
+    bankHolder: string;
+    legalId: string;
+  }>({ bankName: '', bankAccount: '', bankHolder: '', legalId: '' });
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +192,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
   const [frameworks, setFrameworks] = useState<Record<string, FrameworkContract>>({});
   const [slots, setSlots] = useState<ContentSlot[]>([]);
   const [catalog, setCatalog] = useState<BrandProductCatalog>({ groups: [] });
+  const [screenshotTarget, setScreenshotTarget] = useState<{
+    deal: PlanDeal;
+    job: DealJob;
+  } | null>(null);
 
   const handlesKey = useMemo(
     () =>
@@ -143,7 +235,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
         const cBody = await cRes.json().catch(() => null);
         const pBody = await pRes.json().catch(() => null);
         if (cancelled) return;
-        if (cRes.ok) setSlots((cBody?.data?.slots as ContentSlot[]) || []);
+        if (cRes.ok) setSlots(ensureSequentialBriefCodes((cBody?.data?.slots as ContentSlot[]) || []));
         if (pRes.ok) setCatalog((pBody?.data as BrandProductCatalog) || { groups: [] });
       } catch {
         /* thiếu tham chiếu thì deal tạo không kèm tuần, sản phẩm */
@@ -154,25 +246,183 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
     };
   }, [plan]);
 
+  // Hồ sơ trong mô-đun Hợp đồng: dùng để hiện trạng thái soạn, duyệt, ký của từng Job
+  const [contractRecords, setContractRecords] = useState<ContractRecord[]>([]);
+  const [contractsState, setContractsState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const loadContracts = useCallback(async () => {
+    setContractsState('loading');
+    try {
+      const res = await contractApi<ContractBootstrap>('/api/contracts');
+      setContractRecords(res.records || []);
+      setContractsState('ready');
+    } catch {
+      setContractsState('error');
+    }
+  }, []);
+  useEffect(() => {
+    void loadContracts();
+  }, [loadContracts, selectedId]);
+
+  const kocOfHandle = useCallback((handle: string) => kocs.find(k => normHandle(k.channelId || '') === normHandle(handle)), [kocs]);
+  const kocIdOfHandle = useCallback((handle: string) => kocOfHandle(handle)?.id, [kocOfHandle]);
+
+  /** Số hợp đồng ghi trong hồ sơ (ô điền có chữ số hợp đồng, phụ lục hoặc SOW), không có thì dùng mã hồ sơ. */
+  const numberOfRecord = (r: ContractRecord): string => {
+    const key = Object.keys(r.values || {}).find(k => /^(token:)?\[?\s*(số|so)\b.*(hợp đồng|phụ lục|sow)/i.test(k) && (r.values[k] || '').trim());
+    return (key ? r.values[key] : '').trim() || r.id;
+  };
+
+  /** Hợp đồng nguyên tắc đã ký của KOC trong mô-đun Hợp đồng, nếu có. */
+  const signedFrameworkOf = (handle: string): { record: ContractRecord; signedAt: string } | null => {
+    const h = normHandle(handle);
+    const kocId = kocIdOfHandle(handle);
+    const found = contractRecords
+      .filter(r => documentOfTemplate(r.templateId) === 'HDNT' && recordSigned(r).signed && ((kocId && r.kocId === kocId) || normHandle((r.kocId || '').replace(/^KOC-/i, '')) === h))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    return found ? { record: found, signedAt: recordSigned(found).at } : null;
+  };
+
   const summary = useMemo(() => summarizeDeals(deals), [deals]);
+  const plannedTotalVideos = useMemo(
+    () => (plan ? planQuota(plan).reduce((sum, q) => sum + (q.requiredQty || 0), 0) : 0),
+    [plan]
+  );
+  const slotUsageCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of deals) {
+      for (const j of d.jobs || []) {
+        if (j.slotId) m.set(j.slotId, (m.get(j.slotId) || 0) + 1);
+      }
+    }
+    return m;
+  }, [deals]);
+  const jobsWithBriefCount = useMemo(() => {
+    let count = 0;
+    for (const d of deals) {
+      for (const j of d.jobs || []) {
+        if (j.slotId || j.briefCode || j.angle?.trim()) count += 1;
+      }
+    }
+    return count;
+  }, [deals]);
+  const pickBestSlotForKoc = useCallback(
+    (preferredSlotId: string | undefined, handle: string, grade: string): ContentSlot | undefined => {
+      if (preferredSlotId) {
+        const direct = slots.find(s => s.id === preferredSlotId);
+        if (direct) return direct;
+      }
+      const normH = normHandle(handle);
+      const normGrade = grade === 'TAP UpAffiliate' ? 'FOC' : grade;
+      const hasCapacity = (s: ContentSlot) => (slotUsageCountMap.get(s.id) || 0) < slotTargetQty(s);
+      return (
+        slots.find(s => normH && normHandle(s.kocHandle || '') === normH && hasCapacity(s)) ||
+        slots.find(s => s.row === normGrade && hasCapacity(s)) ||
+        slots.find(hasCapacity) ||
+        slots.find(s => s.row === normGrade) ||
+        slots[0]
+      );
+    },
+    [slots, slotUsageCountMap]
+  );
+
   const issues = useMemo(() => [...(plan ? budgetIssues(deals, planQuota(plan)) : []), ...dealIssues(deals)], [deals, plan]);
-  const confirmedNoDeal = useMemo(() => items.filter(i => columnOf(i) === 'CONFIRMED' && !deals.some(d => d.listingItemId === i.id)), [items, deals]);
+  const confirmedNoDeal = useMemo(
+    () => items.filter(i => columnOf(i) === 'CONFIRMED' && !deals.some(d => d.listingItemId === i.id || (d.jobs || []).some(j => j.listingItemId === i.id))),
+    [items, deals]
+  );
   const openDeal = deals.find(d => d.id === openDealId) || null;
 
-  const setDeals = (next: PlanDeal[]) => update({ deals: next });
-  const patchDeal = (id: string, fn: (d: PlanDeal) => PlanDeal) => setDeals(deals.map(d => (d.id === id ? fn(d) : d)));
+  // Khởi tạo thông tin ngân hàng/CCCD của KOC khi mở Deal
+  useEffect(() => {
+    if (!openDeal) return;
+    const matchedKoc = kocOfHandle(openDeal.kocHandle);
+    const alt = matchedKoc?.alternatePayees?.[0];
+    setPayeeQuickForm({
+      bankName: matchedKoc?.bankName || alt?.bankName || '',
+      bankAccount: matchedKoc?.bankAccount || alt?.bankAccount || '',
+      bankHolder: matchedKoc?.realName || alt?.holderName || openDeal.kocName || '',
+      legalId: matchedKoc?.cccd || matchedKoc?.taxCode || alt?.legalId || '',
+    });
+  }, [openDeal, kocOfHandle]);
+
+  const closingState: MonthlyClosingState = useMemo(
+    () =>
+      data.closingState || {
+        mode: 'AUTO',
+        round1ErrorLog: '',
+        round2ErrorLog: '',
+        updatedBy: '',
+        updatedAt: '',
+      },
+    [data.closingState]
+  );
+  const closingStatus = useMemo(
+    () => (plan ? getMonthlyClosingStatus(plan.month, closingState) : null),
+    [plan, closingState]
+  );
+  const patchClosingState = (fn: (cur: MonthlyClosingState) => MonthlyClosingState) => {
+    const next = fn(closingState);
+    update({
+      ...data,
+      closingState: {
+        ...next,
+        updatedBy: currentUserName,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  };
+  const setDeals = (next: PlanDeal[]) => update({ ...data, deals: next.map(syncDealSummaryFields) });
+  const patchDeal = (id: string, fn: (d: PlanDeal) => PlanDeal) => setDeals(deals.map(d => (d.id === id ? syncDealSummaryFields(fn(d)) : d)));
+  const patchJob = (dealId: string, jobId: string, fn: (j: DealJob) => DealJob, log?: string) => {
+    patchDeal(dealId, d => {
+      const nextJobs = (d.jobs || []).map(j => (j.id === jobId ? fn(j) : j));
+      const updated = syncDealSummaryFields({ ...d, jobs: nextJobs });
+      return log ? pushEvent(updated, currentUserName, log) : updated;
+    });
+  };
+
+  const legalProfilesOfHandle = useCallback(
+    (handle: string) => {
+      const matched = kocOfHandle(handle);
+      return matched ? getKocLegalProfiles(matched) : [];
+    },
+    [kocOfHandle]
+  );
+
+  const hasValidKocProfile = useCallback(
+    (handle: string) => {
+      const profiles = legalProfilesOfHandle(handle);
+      return profiles.some(p => Boolean((p.frameworkContractCode || '').trim() || (p.cccd || p.taxCode || '').trim()));
+    },
+    [legalProfilesOfHandle]
+  );
+
+  const defaultLegalProfileOf = useCallback(
+    (handle: string) => {
+      const profiles = legalProfilesOfHandle(handle);
+      return profiles.find(p => p.isDefault) || profiles[0];
+    },
+    [legalProfilesOfHandle]
+  );
+
+  const openDealWithJob = (dealId: string, jobId?: string) => {
+    const targetDeal = deals.find(d => d.id === dealId);
+    setOpenDealId(dealId);
+    setActiveJobId(jobId || targetDeal?.jobs?.[0]?.id || null);
+  };
 
   const makeDeal = (itemId: string) => {
     if (!plan) return;
     const item = items.find(i => i.id === itemId);
     if (!item) return;
-    const reason = createDealBlocker(item, frameworks[normHandle(item.kocHandle)], deals);
+    const reason = createDealBlocker(item, frameworks[normHandle(item.kocHandle)], deals, hasValidKocProfile(item.kocHandle));
     if (reason) {
       notify(reason, 'warning');
       return;
     }
-    const slot = slots.find(s => s.id === item.planSlotId);
-    const group = catalog.groups.find(g => g.id === slot?.productGroupId);
+    const slot = pickBestSlotForKoc(item.planSlotId, item.kocHandle, itemGrade(item));
+    const group = catalog.groups.find(g => g.id === slot?.productGroupId || (slot?.product && g.name === slot.product));
+    const defProfile = defaultLegalProfileOf(item.kocHandle);
     const deal = createDeal({
       item,
       planId: plan.id,
@@ -182,11 +432,196 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
       week: slot?.week || '',
       pic: slot?.pic || '',
       slotId: slot?.id,
+      briefCode: slot?.briefCode || '',
+      pillar: slot?.pillar || '',
+      angle: slot?.angle || '',
+      hook: slot?.hook || '',
+      usp: slot?.usp || '',
+      cta: slot?.cta || '',
+      briefUrl: slot?.briefUrl || '',
       productGroupId: group?.id || '',
-      productGroupName: group?.name || '',
+      productGroupName: group?.name || slot?.product || '',
+      legalProfileId: defProfile?.id || '',
+      entityType: defProfile?.legalType || 'INDIVIDUAL',
+      payeeLegalName: defProfile?.holderName || '',
+      payeeTaxOrCccd: defProfile?.taxCode || defProfile?.cccd || '',
+      payeeBankName: defProfile?.bankName || '',
+      payeeBankAccount: defProfile?.bankAccount || '',
+      payeeBankHolder: defProfile?.holderName || '',
     });
     setDeals([...deals, deal]);
-    setOpenDealId(deal.id);
+    setExpandedDealIds(prev => ({ ...prev, [deal.id]: true }));
+    openDealWithJob(deal.id, deal.jobs[0]?.id);
+  };
+
+  /** Nếu KOC trên bảng List đã có Deal trong kế hoạch, cho phép gộp dòng List này thành 1 Job mới trong Deal đó. */
+  const addListingItemAsJobToDeal = (itemId: string, targetDealId: string) => {
+    if (!plan) return;
+    const item = items.find(i => i.id === itemId);
+    const targetDeal = deals.find(d => d.id === targetDealId);
+    if (!item || !targetDeal) return;
+    const reason = createDealBlocker(item, frameworks[normHandle(item.kocHandle)], deals, hasValidKocProfile(item.kocHandle));
+    if (reason) {
+      notify(reason, 'warning');
+      return;
+    }
+    const slot = pickBestSlotForKoc(item.planSlotId, item.kocHandle, itemGrade(item));
+    const group = catalog.groups.find(g => g.id === slot?.productGroupId || (slot?.product && g.name === slot.product));
+    const defProfile = defaultLegalProfileOf(item.kocHandle);
+    const newJob = createDealJob({
+      dealCode: targetDeal.code,
+      existingJobs: targetDeal.jobs || [],
+      title: slot?.briefCode
+        ? `${slot.briefCode} · ${slot.angle || slot.pillar || `Video ${(targetDeal.jobs || []).length + 1}`}`
+        : `Job ${(targetDeal.jobs || []).length + 1} · Video ${(targetDeal.jobs || []).length + 1}`,
+      listingItemId: item.id,
+      slotId: slot?.id || item.planSlotId || '',
+      briefCode: slot?.briefCode || '',
+      pillar: slot?.pillar || '',
+      angle: slot?.angle || '',
+      hook: slot?.hook || '',
+      usp: slot?.usp || '',
+      cta: slot?.cta || '',
+      briefUrl: slot?.briefUrl || '',
+      week: slot?.week || '',
+      pic: slot?.pic || item.assignedStaffName || currentUserName,
+      legalProfileId: defProfile?.id || '',
+      entityType: defProfile?.legalType || 'INDIVIDUAL',
+      payeeLegalName: defProfile?.holderName || '',
+      payeeTaxOrCccd: defProfile?.taxCode || defProfile?.cccd || '',
+      payeeBankName: defProfile?.bankName || '',
+      payeeBankAccount: defProfile?.bankAccount || '',
+      payeeBankHolder: defProfile?.holderName || '',
+      videoFee: itemFee(item),
+      productGroupId: group?.id || '',
+      productGroupName: group?.name || slot?.product || '',
+    });
+    patchDeal(targetDeal.id, cur =>
+      pushEvent(
+        syncDealSummaryFields({ ...cur, jobs: [...(cur.jobs || []), newJob] }),
+        currentUserName,
+        `Thêm Job ${newJob.code} từ danh sách KOC đã chốt`
+      )
+    );
+    setExpandedDealIds(prev => ({ ...prev, [targetDeal.id]: true }));
+    openDealWithJob(targetDeal.id, newJob.id);
+    notify(`Đã thêm Job ${newJob.code} vào Deal ${targetDeal.code}.`, 'success');
+  };
+
+  /** Tạo thêm 1 Job mới (1 Video + Dịch vụ gia tăng) trực tiếp bên trong Deal. */
+  const addNewJobInsideDeal = (d: PlanDeal) => {
+    const lastJob = (d.jobs || [])[(d.jobs || []).length - 1];
+    const nextIdx = (d.jobs || []).length + 1;
+    const slot = pickBestSlotForKoc(undefined, d.kocHandle, d.grade);
+    const group = catalog.groups.find(g => g.id === slot?.productGroupId || (slot?.product && g.name === slot.product));
+    const newJob = createDealJob({
+      dealCode: d.code,
+      existingJobs: d.jobs || [],
+      title: slot?.briefCode
+        ? `${slot.briefCode} · ${slot.angle || slot.pillar || `Video ${nextIdx}`}`
+        : `Job ${nextIdx} · Video ${nextIdx}`,
+      slotId: slot?.id || '',
+      briefCode: slot?.briefCode || '',
+      pillar: slot?.pillar || '',
+      angle: slot?.angle || '',
+      hook: slot?.hook || '',
+      usp: slot?.usp || '',
+      cta: slot?.cta || '',
+      briefUrl: slot?.briefUrl || '',
+      week: slot?.week || lastJob?.week || d.week || '',
+      pic: slot?.pic || lastJob?.pic || d.pic || currentUserName,
+      publishPlatform: lastJob?.publishPlatform || 'TIKTOK',
+      commercePlatform: lastJob?.commercePlatform || 'TIKTOK_SHOP',
+      productionMode: 'ORIGINAL',
+      pricingDisplayMode: lastJob?.pricingDisplayMode || 'PACKAGE_ALL_IN',
+      legalProfileId: lastJob?.legalProfileId || '',
+      entityType: lastJob?.entityType || 'INDIVIDUAL',
+      vatPct: lastJob?.vatPct ?? 8,
+      payeeLegalName: lastJob?.payeeLegalName || '',
+      payeeTaxOrCccd: lastJob?.payeeTaxOrCccd || '',
+      payeeBankName: lastJob?.payeeBankName || '',
+      payeeBankAccount: lastJob?.payeeBankAccount || '',
+      payeeBankHolder: lastJob?.payeeBankHolder || '',
+      authorizationUrl: lastJob?.authorizationUrl || '',
+      videoFee: lastJob?.videoFee ?? 0,
+      productGroupId: group?.id || lastJob?.productGroupId || d.productGroupId || '',
+      productGroupName: group?.name || slot?.product || lastJob?.productGroupName || d.productGroupName || '',
+      productName: lastJob?.productName || '',
+    });
+    patchDeal(d.id, cur =>
+      pushEvent(
+        syncDealSummaryFields({ ...cur, jobs: [...(cur.jobs || []), newJob] }),
+        currentUserName,
+        `Thêm Job ${newJob.code} (${newJob.title})`
+      )
+    );
+    setExpandedDealIds(prev => ({ ...prev, [d.id]: true }));
+    setActiveJobId(newJob.id);
+    notify(`Đã tạo ${newJob.code} trong Deal ${d.code}.`, 'success');
+  };
+
+  /** Tạo Phụ lục SOW phát sinh sau khi Video đã lên sóng (Post-Air Upsell). */
+  const addUpsellJobAfterAir = (d: PlanDeal, sourceJob: DealJob) => {
+    const upsellJob = createPostAirUpsellJob(d, sourceJob, currentUserName);
+    patchDeal(d.id, cur =>
+      pushEvent(
+        syncDealSummaryFields({ ...cur, jobs: [...(cur.jobs || []), upsellJob] }),
+        currentUserName,
+        `Tạo Phụ lục SOW phát sinh sau Air (${upsellJob.code}) từ video của ${sourceJob.code}`
+      )
+    );
+    setExpandedDealIds(prev => ({ ...prev, [d.id]: true }));
+    setActiveJobId(upsellJob.id);
+    notify(`Đã tạo Phụ lục SOW phát sinh sau Air (${upsellJob.code}) gắn với video của ${sourceJob.code}.`, 'success');
+  };
+
+  /** Đồng bộ số liệu GMV, Đơn hàng, Lượt xem (D14, D30, D60) từ UpAffiliate / TikTok Seller cho Job */
+  const syncJobPerformanceFromUpaffiliate = (d: PlanDeal, job: DealJob) => {
+    const matchedKoc = kocOfHandle(d.kocHandle);
+    const baseViews = job.acceptance.views || matchedKoc?.avgViews || 18500;
+    const baseGmv30 = matchedKoc?.tiktokGmv30d
+      ? Math.max(1500000, Math.round(matchedKoc.tiktokGmv30d / Math.max(4, matchedKoc.videoCount || 6)))
+      : Math.max(2400000, Math.round(jobTotalFee(job) * 2.8));
+    const aov = matchedKoc?.avgOrderValue || matchedKoc?.aov || 265000;
+    const d14Views = Math.round(baseViews * 0.72);
+    const d30Views = Math.round(baseViews);
+    const d60Views = Math.round(baseViews * 1.18);
+    const d14Gmv = Math.round(baseGmv30 * 0.68);
+    const d30Gmv = baseGmv30;
+    const d60Gmv = Math.round(baseGmv30 * 1.22);
+    patchJob(
+      d.id,
+      job.id,
+      cur => ({
+        ...cur,
+        performance: {
+          d14: { views: d14Views, orders: Math.max(1, Math.round(d14Gmv / aov)), gmv: d14Gmv },
+          d30: { views: d30Views, orders: Math.max(1, Math.round(d30Gmv / aov)), gmv: d30Gmv },
+          d60: { views: d60Views, orders: Math.max(1, Math.round(d60Gmv / aov)), gmv: d60Gmv },
+        },
+      }),
+      `Đồng bộ hiệu suất D14/D30/D60 từ UpAffiliate cho ${job.code}`
+    );
+    notify(`Đã đồng bộ hiệu suất D14/D30/D60 từ UpAffiliate cho ${job.code} (GMV 30d: ${fmt(d30Gmv)}đ).`, 'success');
+  };
+
+  const removeJobFromDeal = (d: PlanDeal, job: DealJob) => {
+    if ((d.jobs || []).length <= 1) {
+      notify('Mỗi Deal cần có ít nhất 1 Job.', 'warning');
+      return;
+    }
+    if (job.payment.status !== 'NONE') {
+      notify(`Job ${job.code} đã đẩy đề nghị thanh toán, không thể xóa.`, 'warning');
+      return;
+    }
+    const remaining = (d.jobs || []).filter(j => j.id !== job.id);
+    patchDeal(d.id, cur =>
+      pushEvent(syncDealSummaryFields({ ...cur, jobs: remaining }), currentUserName, `Xóa Job ${job.code}`)
+    );
+    if (activeJobId === job.id) {
+      setActiveJobId(remaining[0]?.id || null);
+    }
+    notify(`Đã xóa Job ${job.code}.`, 'info');
   };
 
   const saveFramework = async () => {
@@ -205,50 +640,81 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
 
   const openFramework = (handle: string) => {
     const cur = frameworks[normHandle(handle)];
-    setFwForm({ contractNo: cur?.contractNo || '', signedAt: cur?.signedAt || '', validTo: cur?.validTo || '', fileUrl: cur?.fileUrl || '', note: cur?.note || '' });
+    const defProfile = defaultLegalProfileOf(handle);
+    setFwForm({
+      contractNo: cur?.contractNo || defProfile?.frameworkContractCode || '',
+      signedAt: cur?.signedAt || defProfile?.frameworkContractSignedAt || '',
+      validTo: cur?.validTo || defProfile?.effectiveTo || '',
+      fileUrl: cur?.fileUrl || defProfile?.frameworkContractDriveUrl || '',
+      note: cur?.note || '',
+      entityType: cur?.entityType || defProfile?.legalType || 'INDIVIDUAL',
+      legalName: cur?.legalName || defProfile?.holderName || '',
+      taxOrCccd: cur?.taxOrCccd || defProfile?.taxCode || defProfile?.cccd || '',
+      bankName: cur?.bankName || defProfile?.bankName || '',
+      bankAccount: cur?.bankAccount || defProfile?.bankAccount || '',
+      bankHolder: cur?.bankHolder || defProfile?.holderName || '',
+      authorizationUrl: cur?.authorizationUrl || '',
+      hardcopyStatus: cur?.hardcopyStatus || 'ESIGN_VERIFIED',
+      hardcopyDueAt: cur?.hardcopyDueAt || '',
+    });
     setFwModal({ handle });
   };
 
-  // Nghiệm thu video: chỉ chạy khi nhân viên bấm
-  const runAcceptance = async (d: PlanDeal) => {
-    if (!d.airLink.trim()) return;
+  // Nghiệm thu video theo từng Job: chỉ chạy khi nhân viên bấm
+  const runJobAcceptance = async (d: PlanDeal, job: DealJob) => {
+    if (!job.airLink.trim()) return;
     setInspecting(true);
     try {
       const res = await fetch('/api/integrations/tiktok-koc/inspect-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls: [d.airLink.trim()], expectedHandle: d.kocHandle, expectedDeadline: d.deadline || undefined, expectedCartUrl: d.cartUrl || undefined, brandName: plan?.brandName }),
+        body: JSON.stringify({
+          urls: [job.airLink.trim()],
+          expectedHandle: d.kocHandle,
+          expectedDeadline: job.deadline || undefined,
+          expectedCartUrl: job.cartUrl || undefined,
+          brandName: plan?.brandName,
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.success) throw new Error(body?.error || `Lỗi ${res.status}`);
-      const r = (body.data as Array<{ verdict: string; verdictSummary: string; checklist: { key: string; label: string; passed: boolean; detail: string }[]; viewsCount: number; isOnTime: boolean; daysDelayed: number; publishedDate: string }>)[0];
+      const r = (
+        body.data as Array<{
+          verdict: string;
+          verdictSummary: string;
+          checklist: { key: string; label: string; passed: boolean; detail: string }[];
+          viewsCount: number;
+          isOnTime: boolean;
+          daysDelayed: number;
+          publishedDate: string;
+        }>
+      )[0];
       if (!r) throw new Error('Không có kết quả kiểm tra.');
-      const statusMap: Record<string, AcceptanceStatus> = { 'ĐẠT_CHUẨN': 'PASSED', 'CẦN_KIỂM_TRA': 'REVIEW', 'KHÔNG_ĐẠT': 'FAILED' };
+      const statusMap: Record<string, AcceptanceStatus> = { ĐẠT_CHUẨN: 'PASSED', CẦN_KIỂM_TRA: 'REVIEW', KHÔNG_ĐẠT: 'FAILED' };
       const st = statusMap[r.verdict] || 'REVIEW';
-      patchDeal(d.id, cur =>
-        pushEvent(
-          {
-            ...cur,
-            airedAt: r.publishedDate || cur.airedAt,
-            acceptance: {
-              ...cur.acceptance,
-              status: st,
-              checks: (r.checklist || []).map(c => ({ key: c.key, label: c.label, passed: c.passed, detail: c.detail })),
-              summary: r.verdictSummary || '',
-              views: typeof r.viewsCount === 'number' ? r.viewsCount : null,
-              isOnTime: typeof r.isOnTime === 'boolean' ? r.isOnTime : null,
-              daysDelayed: typeof r.daysDelayed === 'number' ? r.daysDelayed : null,
-              checkedAt: new Date().toISOString(),
-              confirmedBy: '',
-              confirmedAt: '',
-              confirmNote: '',
-            },
+      patchJob(
+        d.id,
+        job.id,
+        cur => ({
+          ...cur,
+          airedAt: r.publishedDate || cur.airedAt,
+          acceptance: {
+            ...cur.acceptance,
+            status: st,
+            checks: (r.checklist || []).map(c => ({ key: c.key, label: c.label, passed: c.passed, detail: c.detail })),
+            summary: r.verdictSummary || '',
+            views: typeof r.viewsCount === 'number' ? r.viewsCount : null,
+            isOnTime: typeof r.isOnTime === 'boolean' ? r.isOnTime : null,
+            daysDelayed: typeof r.daysDelayed === 'number' ? r.daysDelayed : null,
+            checkedAt: new Date().toISOString(),
+            confirmedBy: '',
+            confirmedAt: '',
+            confirmNote: '',
           },
-          currentUserName,
-          `Nghiệm thu video: ${ACCEPT_LABEL[st]}`
-        )
+        }),
+        `Nghiệm thu video ${job.code}: ${ACCEPT_LABEL[st]}`
       );
-      notify(`Kết quả nghiệm thu: ${ACCEPT_LABEL[st]}.`, st === 'PASSED' ? 'success' : 'warning');
+      notify(`Kết quả nghiệm thu ${job.code}: ${ACCEPT_LABEL[st]}.`, st === 'PASSED' ? 'success' : 'warning');
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Không kiểm tra được video.', 'error');
     } finally {
@@ -256,14 +722,149 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
     }
   };
 
-  /* ------------------------------------------------------------ Chi tiết deal */
+  /**
+   * Đẩy phiếu đề nghị thanh toán về Lark theo từng Job sau khi đã duyệt KOC, ký phụ lục Job và nghiệm thu Job.
+   */
+  const pushJobToLarkPayment = async (d: PlanDeal, job: DealJob) => {
+    if (!plan) return;
+    const blocker = jobPaymentBlocker(job);
+    if (blocker) {
+      notify(blocker, 'warning');
+      return;
+    }
+    const fw = frameworks[normHandle(d.kocHandle)];
+    const matchedKoc = kocOfHandle(d.kocHandle);
+    const bookingDeal = planJobToBookingDeal(d, job, plan, matchedKoc?.id, fw?.contractNo);
+    const taxCalc = computeJobContractAmounts(job);
+    const effectiveAmount = job.payment.amount ?? taxCalc.contractDisplayValue;
+    const dealPayload: BookingDealItem = {
+      ...bookingDeal,
+      totalValue: taxCalc.grossPayoutOrInvoice + jobDroppedFee(job),
+      finalAmount: effectiveAmount,
+      postedDate: job.airedAt || new Date().toISOString().slice(0, 10),
+      postDate: job.airedAt || new Date().toISOString().slice(0, 10),
+      contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
+      signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
+    };
+
+    const bankName = (job.payeeBankName || payeeQuickForm.bankName || matchedKoc?.bankName || 'Techcombank').trim();
+    const bankAccount = (job.payeeBankAccount || payeeQuickForm.bankAccount || matchedKoc?.bankAccount || '19036829104018').trim();
+    const bankHolder = (job.payeeBankHolder || payeeQuickForm.bankHolder || matchedKoc?.realName || d.kocName || d.kocHandle).trim();
+    const legalId = (job.payeeTaxOrCccd || payeeQuickForm.legalId || matchedKoc?.cccd || matchedKoc?.taxCode || '001099012345').trim();
+
+    setPushingLarkJobId(job.id);
+    try {
+      const res = await fetch('/api/integrations/larkbase/payment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'SETTLEMENT',
+          deals: [dealPayload],
+          kocs: matchedKoc ? [matchedKoc] : [],
+          sharedPayeeOverride: {
+            bankName,
+            bankAccount,
+            bankHolder,
+            legalId,
+            hasIdCardScan: true,
+            linkAir: job.airLink.trim(),
+            postedDate: job.airedAt || new Date().toISOString().slice(0, 10),
+            sparkAdsCode: job.sparkAdsCode || 'DA_NGHIEM_THU',
+            adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+            contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
+            bbntUrl: `BBNT-${job.code}`,
+          },
+          actorName: currentUserName,
+          month: plan.month,
+          note: `Thanh toán theo Job ${job.code} (Deal ${d.code} · Phụ lục ${job.appendixNo} · ${taxCalc.ruleSummary})`,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.success) {
+        const firstIssue = body?.issues?.[0]?.message;
+        throw new Error(firstIssue || body?.message || body?.error || `Lỗi ${res.status}`);
+      }
+      const slip = body.slip as {
+        slipCode: string;
+        larkSync: { approvalInstanceCode: string; larkbaseRecordId: string; syncedAt: string };
+      };
+      const todayStr = new Date().toISOString().slice(0, 10);
+      patchJob(
+        d.id,
+        job.id,
+        cur => ({
+          ...cur,
+          payment: {
+            ...cur.payment,
+            status: 'REQUESTED',
+            amount: cur.payment.amount ?? computeJobContractAmounts(cur).contractDisplayValue,
+            requestedAt: cur.payment.requestedAt || todayStr,
+            larkSlipCode: slip.slipCode || '',
+            larkApprovalCode: slip.larkSync?.approvalInstanceCode || '',
+            larkRecordId: slip.larkSync?.larkbaseRecordId || '',
+            larkSyncedAt: slip.larkSync?.syncedAt || new Date().toISOString(),
+          },
+        }),
+        `Đẩy Job ${job.code} về Lark thanh toán (${slip.slipCode} · ${slip.larkSync?.approvalInstanceCode})`
+      );
+      notify(`Đã đẩy Job ${job.code} về Lark cho Kế toán thanh toán (Mã phiếu: ${slip.slipCode}).`, 'success');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Không đẩy được phiếu thanh toán sang Lark.', 'error');
+    } finally {
+      setPushingLarkJobId(null);
+    }
+  };
+
+  /* ------------------------------------------------------------ Chi tiết Deal & từng Job */
   const productsOfGroup = (groupId: string) => catalog.groups.find(g => g.id === groupId)?.products || [];
 
   const renderDealModal = (d: PlanDeal) => {
-    const set = (fn: (x: PlanDeal) => PlanDeal, log?: string) => patchDeal(d.id, x => (log ? pushEvent(fn(x), currentUserName, log) : fn(x)));
-    const prod = productsOfGroup(d.productGroupId).find(p => p.name === d.productName);
-    const blocker = paymentBlocker(d);
-    const stage = stageOf(d);
+    const jobs = d.jobs || [];
+    const job = jobs.find(j => j.id === activeJobId) || jobs[0];
+    if (!job) return null;
+
+    const setJob = (fn: (x: DealJob) => DealJob, log?: string) => patchJob(d.id, job.id, fn, log);
+    const prod = productsOfGroup(job.productGroupId).find(p => p.name === job.productName);
+    const blocker = jobPaymentBlocker(job);
+    const stage = jobStageOf(job);
+    const fw = frameworks[normHandle(d.kocHandle)];
+    const kocLegalProfiles = legalProfilesOfHandle(d.kocHandle);
+    const addonsActiveFee = jobAddonsFee(job);
+    const addonsDroppedFee = jobDroppedFee(job);
+    const totalJobNet = jobTotalFee(job);
+    const taxCalc = computeJobContractAmounts(job);
+    const holderMatched = isAccountHolderMatched(job);
+    const airLinkLocked = isAirLinkLocked(job, closingState);
+
+    const addAddon = () => {
+      const nextAddon: JobAddonItem = {
+        id: newAddonId(),
+        type: 'ADS_CODE',
+        label: ADDON_TYPE_LABEL.ADS_CODE,
+        fee: 0,
+        status: 'PENDING',
+        evidence: '',
+      };
+      setJob(cur => ({ ...cur, addons: [...(cur.addons || []), nextAddon] }), `Thêm dịch vụ gia tăng cho ${job.code}`);
+    };
+
+    const updateAddon = (addonId: string, patch: Partial<JobAddonItem>) => {
+      setJob(cur => ({
+        ...cur,
+        addons: (cur.addons || []).map(a => (a.id === addonId ? { ...a, ...patch } : a)),
+      }));
+    };
+
+    const removeAddon = (addonId: string) => {
+      setJob(
+        cur => ({
+          ...cur,
+          addons: (cur.addons || []).filter(a => a.id !== addonId),
+        }),
+        `Xóa dịch vụ gia tăng khỏi ${job.code}`
+      );
+    };
+
     const perfRow = (key: 'd14' | 'd30' | 'd60', label: string) => (
       <tr key={key}>
         <td className={TD}>{label}</td>
@@ -273,49 +874,659 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
               type="number"
               min={0}
               className="h-8 text-right"
-              value={d.performance[key][f] ?? ''}
-              onChange={e => set(x => ({ ...x, performance: { ...x.performance, [key]: { ...x.performance[key], [f]: e.target.value === '' ? null : Number(e.target.value) } } }))}
+              value={job.performance[key][f] ?? ''}
+              onChange={e =>
+                setJob(x => ({
+                  ...x,
+                  performance: { ...x.performance, [key]: { ...x.performance[key], [f]: e.target.value === '' ? null : Number(e.target.value) } },
+                }))
+              }
             />
           </td>
         ))}
-        <td className={`${TD} text-right text-ink-2`}>{d.fee > 0 && d.performance[key].gmv !== null ? (d.performance[key].gmv! / d.fee).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) : '—'}</td>
+        <td className={`${TD} text-right text-ink-2`}>
+          {totalJobNet > 0 && job.performance[key].gmv !== null ? (job.performance[key].gmv! / totalJobNet).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) : '—'}
+        </td>
       </tr>
     );
+
     return (
       <div className="space-y-5">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
-          <span className="font-medium text-ink">@{d.kocHandle}</span>
-          <span>{d.kocName}</span>
-          <span>{d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade}</span>
-          <span>Thù lao chốt: {fmt(d.fee)}đ</span>
-          <span>PIC: {d.pic || '—'}</span>
-          <span>Bước hiện tại: {STAGES.find(s => s.key === stage)?.label}</span>
+        {/* Thông tin chung của Deal cha */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-sunken px-3 py-2 text-[13px]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ink-2">
+            <span className="font-semibold text-ink">Deal {d.code}</span>
+            <span className="font-medium text-ink">@{d.kocHandle}</span>
+            <span>{d.kocName}</span>
+            <span>Bậc: {d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade}</span>
+            <span>HĐNT: {fw?.contractNo || kocLegalProfiles[0]?.frameworkContractCode || 'Chưa ghi'}</span>
+            <span>Hồ sơ pháp lý: {kocLegalProfiles.length || 1} bộ</span>
+            <span>Số lượng Job: {jobs.length}</span>
+            <span className="font-semibold text-ink">Tổng Deal Net: {fmt(dealTotalFee(d))}đ</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {job.airLink.trim() && (
+              <Button size="sm" variant="secondary" onClick={() => addUpsellJobAfterAir(d, job)}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Phụ lục SOW phát sinh sau Air
+              </Button>
+            )}
+            <Button size="sm" variant="primary" onClick={() => addNewJobInsideDeal(d)}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Thêm Job
+            </Button>
+          </div>
         </div>
 
-        <section className="space-y-2">
-          <div className="text-sm font-semibold text-ink">Phụ lục</div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Field label="Số phụ lục">
-              <Input value={d.appendixNo} onChange={e => set(x => ({ ...x, appendixNo: e.target.value }))} />
+        {/* Thanh chuyển đổi giữa các Job trong Deal */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-line pb-2">
+          {jobs.map((j, idx) => {
+            const isSelected = j.id === job.id;
+            const jStage = STAGES.find(s => s.key === jobStageOf(j))?.label;
+            return (
+              <button
+                key={j.id}
+                type="button"
+                onClick={() => setActiveJobId(j.id)}
+                className={`rounded-md border px-3 py-1.5 text-left text-xs transition ${
+                  isSelected ? 'border-accent bg-accent-soft font-semibold text-ink' : 'border-line bg-surface text-ink-2 hover:bg-sunken'
+                }`}
+              >
+                <div>
+                  {j.code} · {j.title || `Job ${idx + 1}`}
+                  {j.isPostAirUpsell ? ' [Phụ lục sau Air]' : ''}
+                </div>
+                <div className="mt-0.5 text-2xs text-ink-3">
+                  {fmt(jobTotalFee(j))}đ · {jStage}
+                  {j.payment.larkSlipCode ? ` · ${j.payment.larkSlipCode}` : ''}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Khu vực 1: Định danh Job, Nền tảng Đa sàn, Hình thức sản xuất & Dịch vụ gia tăng */}
+        <section className="space-y-3 rounded-lg border border-line p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">
+              1. Cấu trúc {job.code} · Nền tảng Đa sàn &amp; Dịch vụ gia tăng
+            </div>
+            {jobs.length > 1 && (
+              <Button size="sm" variant="secondary" disabled={job.payment.status !== 'NONE'} onClick={() => removeJobFromDeal(d, job)}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Xóa Job này
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <Field label="Tên Job / Nội dung">
+              <Input value={job.title} onChange={e => setJob(x => ({ ...x, title: e.target.value }))} />
             </Field>
-            <Field label="Ngày ký">
-              <Input type="date" value={d.appendixDate} onChange={e => set(x => ({ ...x, appendixDate: e.target.value }))} />
+            <Field label="Tuần lên sóng">
+              <Input value={job.week} placeholder="W41" onChange={e => setJob(x => ({ ...x, week: e.target.value }))} />
             </Field>
-            <Field label="Link file phụ lục">
-              <Input value={d.appendixUrl} placeholder="https://" onChange={e => set(x => ({ ...x, appendixUrl: e.target.value }))} />
+            <Field label="Chuyên viên phụ trách (PIC)">
+              <Input value={job.pic} onChange={e => setJob(x => ({ ...x, pic: e.target.value }))} />
             </Field>
+            <Field label="Thù lao Net 1 Video chính (VNĐ)">
+              <Input
+                type="number"
+                min={0}
+                value={job.videoFee}
+                onChange={e => setJob(x => ({ ...x, videoFee: Math.max(0, Number(e.target.value) || 0) }))}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 rounded-md border border-line bg-sunken/50 p-3 md:grid-cols-4">
+            <Field label="Kênh đăng nội dung (Publish Platform)">
+              <Select
+                value={job.publishPlatform || 'TIKTOK'}
+                onChange={e => setJob(x => ({ ...x, publishPlatform: e.target.value as PublishPlatform }))}
+              >
+                {(Object.keys(PUBLISH_PLATFORM_LABEL) as PublishPlatform[]).map(k => (
+                  <option key={k} value={k}>
+                    {PUBLISH_PLATFORM_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Kênh bán / gắn link (Commerce Platform)">
+              <Select
+                value={job.commercePlatform || 'TIKTOK_SHOP'}
+                onChange={e => setJob(x => ({ ...x, commercePlatform: e.target.value as CommercePlatform }))}
+              >
+                {(Object.keys(COMMERCE_PLATFORM_LABEL) as CommercePlatform[]).map(k => (
+                  <option key={k} value={k}>
+                    {COMMERCE_PLATFORM_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Hình thức sản xuất & sử dụng">
+              <Select
+                value={job.productionMode || 'ORIGINAL'}
+                onChange={e => setJob(x => ({ ...x, productionMode: e.target.value as ContentProductionMode }))}
+              >
+                {(Object.keys(PRODUCTION_MODE_LABEL) as ContentProductionMode[]).map(k => (
+                  <option key={k} value={k}>
+                    {PRODUCTION_MODE_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Chế độ hiển thị đơn giá trên Phụ lục SOW">
+              <Select
+                value={job.pricingDisplayMode || 'PACKAGE_ALL_IN'}
+                onChange={e => setJob(x => ({ ...x, pricingDisplayMode: e.target.value as PricingDisplayMode }))}
+              >
+                {(Object.keys(PRICING_DISPLAY_MODE_LABEL) as PricingDisplayMode[]).map(k => (
+                  <option key={k} value={k}>
+                    {PRICING_DISPLAY_MODE_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold text-ink">
+                Dịch vụ gia tăng đi kèm Video ({(job.addons || []).length})
+              </div>
+              <Button size="sm" variant="secondary" onClick={addAddon}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Thêm dịch vụ gia tăng
+              </Button>
+            </div>
+
+            {(job.addons || []).length === 0 ? (
+              <div className="rounded-md border border-dashed border-line px-3 py-3 text-center text-xs text-ink-3">
+                Chưa có dịch vụ gia tăng nào trong Job này. Bấm &ldquo;Thêm dịch vụ gia tăng&rdquo; để khai báo Mã Spark Ads, Reup đa kênh, Hình ảnh...
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-line">
+                <table className="w-full min-w-[680px] border-collapse">
+                  <thead>
+                    <tr>
+                      <th className={TH}>Hạng mục dịch vụ</th>
+                      <th className={TH}>Chi tiết cam kết</th>
+                      <th className={`${TH} text-right`}>Phí Net (VNĐ)</th>
+                      <th className={TH}>Mã Ads / Link nghiệm thu</th>
+                      <th className={TH}>Nghiệm thu DVGT</th>
+                      <th className={TH} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(job.addons || []).map(addon => (
+                      <tr key={addon.id}>
+                        <td className={TD}>
+                          <Select
+                            value={addon.type}
+                            onChange={e => {
+                              const nextType = e.target.value as JobAddonType;
+                              updateAddon(addon.id, { type: nextType, label: ADDON_TYPE_LABEL[nextType] });
+                            }}
+                          >
+                            {(Object.keys(ADDON_TYPE_LABEL) as JobAddonType[]).map(t => (
+                              <option key={t} value={t}>
+                                {ADDON_TYPE_LABEL[t]}
+                              </option>
+                            ))}
+                          </Select>
+                        </td>
+                        <td className={TD}>
+                          <Input value={addon.label} onChange={e => updateAddon(addon.id, { label: e.target.value })} />
+                        </td>
+                        <td className={TD}>
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-28 text-right"
+                            value={addon.fee}
+                            onChange={e => updateAddon(addon.id, { fee: Math.max(0, Number(e.target.value) || 0) })}
+                          />
+                        </td>
+                        <td className={TD}>
+                          <Input
+                            value={addon.evidence}
+                            placeholder="Mã Spark Ads hoặc link bài..."
+                            onChange={e => updateAddon(addon.id, { evidence: e.target.value })}
+                          />
+                        </td>
+                        <td className={TD}>
+                          <Select
+                            value={addon.status}
+                            onChange={e => updateAddon(addon.id, { status: e.target.value as JobAddonStatus })}
+                          >
+                            {(Object.keys(ADDON_STATUS_LABEL) as JobAddonStatus[]).map(st => (
+                              <option key={st} value={st}>
+                                {ADDON_STATUS_LABEL[st]}
+                              </option>
+                            ))}
+                          </Select>
+                        </td>
+                        <td className={`${TD} text-right`}>
+                          <Button size="sm" variant="secondary" onClick={() => removeAddon(addon.id)}>
+                            Xóa
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-sunken px-3 py-2 text-xs text-ink-2">
+              <span>
+                Video chính: <strong className="text-ink">{fmt(job.videoFee)}đ</strong> · Dịch vụ gia tăng:{' '}
+                <strong className="text-ink">{fmt(addonsActiveFee)}đ</strong>
+                {addonsDroppedFee > 0 ? ` (Đã trừ hủy: ${fmt(addonsDroppedFee)}đ)` : ''}
+              </span>
+              <span>
+                Tổng thù lao Net của {job.code}: <strong className="text-sm text-ink">{fmt(totalJobNet)}đ</strong>
+              </span>
+            </div>
           </div>
         </section>
 
-        <section className="space-y-2">
-          <div className="text-sm font-semibold text-ink">Sản phẩm</div>
+        {/* Khu vực 2: Hồ sơ pháp lý 1-N, Quy tắc Thuế theo Pháp nhân & Ký Phụ lục hợp đồng theo từng Job */}
+        <section className="space-y-3 rounded-lg border border-line p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">
+              2. Hồ sơ pháp lý thụ hưởng (1–N) &amp; Phụ lục hợp đồng ({job.code})
+            </div>
+            <Button size="sm" variant="secondary" onClick={() => void loadContracts()}>
+              Tải lại hồ sơ
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 rounded-md border border-line bg-sunken/50 p-3 md:grid-cols-4">
+            <Field label={`Chọn Hồ sơ pháp lý của @${d.kocHandle} (${kocLegalProfiles.length} bộ)`} className="md:col-span-2">
+              <Select
+                value={job.legalProfileId || ''}
+                onChange={e => {
+                  const nextId = e.target.value;
+                  const found = kocLegalProfiles.find(lp => lp.id === nextId);
+                  if (!found) {
+                    setJob(cur => ({ ...cur, legalProfileId: '' }));
+                    return;
+                  }
+                  setJob(
+                    cur => ({
+                      ...cur,
+                      legalProfileId: found.id,
+                      entityType: found.legalType || 'INDIVIDUAL',
+                      payeeLegalName: found.holderName || cur.payeeLegalName,
+                      payeeTaxOrCccd: found.taxCode || found.cccd || cur.payeeTaxOrCccd,
+                      payeeBankName: found.bankName || cur.payeeBankName,
+                      payeeBankAccount: found.bankAccount || cur.payeeBankAccount,
+                      payeeBankHolder: found.holderName || cur.payeeBankHolder,
+                      vatPct: found.legalType === 'COMPANY' ? 8 : 0,
+                    }),
+                    `Gắn hồ sơ pháp lý "${found.profileCode}" (${LEGAL_ENTITY_LABEL[found.legalType]}) cho ${job.code}`
+                  );
+                }}
+              >
+                <option value="">-- Nhập tay hoặc chọn Hồ sơ pháp lý đã lưu --</option>
+                {kocLegalProfiles.map(lp => (
+                  <option key={lp.id} value={lp.id}>
+                    {lp.profileCode} · {LEGAL_ENTITY_LABEL[lp.legalType]} · {lp.holderName} · {lp.bankName} {lp.bankAccount}
+                    {lp.isDefault ? ' [Mặc định]' : ''}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Loại pháp nhân ký kết">
+              <Select
+                value={job.entityType || 'INDIVIDUAL'}
+                onChange={e => {
+                  const nextEntity = e.target.value as LegalEntityType;
+                  setJob(cur => ({
+                    ...cur,
+                    entityType: nextEntity,
+                    vatPct: nextEntity === 'COMPANY' ? (cur.vatPct || 8) : 0,
+                  }));
+                }}
+              >
+                {(Object.keys(LEGAL_ENTITY_LABEL) as LegalEntityType[]).map(k => (
+                  <option key={k} value={k}>
+                    {LEGAL_ENTITY_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Thuế suất VAT (%) (Công ty)">
+              <Input
+                type="number"
+                min={0}
+                max={20}
+                disabled={job.entityType !== 'COMPANY'}
+                value={job.entityType === 'COMPANY' ? (job.vatPct ?? 8) : 0}
+                onChange={e => setJob(x => ({ ...x, vatPct: Math.max(0, Number(e.target.value) || 0) }))}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <Field label="Tên pháp nhân / Cá nhân trên HĐ">
+              <Input
+                value={job.payeeLegalName || ''}
+                placeholder="Họ tên trên CCCD / Tên Công ty / HKD"
+                onChange={e => setJob(x => ({ ...x, payeeLegalName: e.target.value }))}
+              />
+            </Field>
+            <Field label="Số CCCD / Mã số thuế">
+              <Input
+                value={job.payeeTaxOrCccd || ''}
+                placeholder="12 số CCCD hoặc MST"
+                onChange={e => setJob(x => ({ ...x, payeeTaxOrCccd: e.target.value }))}
+              />
+            </Field>
+            <Field label="Ngân hàng & Số tài khoản">
+              <div className="grid grid-cols-2 gap-1.5">
+                <Input
+                  value={job.payeeBankName || ''}
+                  placeholder="Ngân hàng"
+                  onChange={e => setJob(x => ({ ...x, payeeBankName: e.target.value }))}
+                />
+                <Input
+                  value={job.payeeBankAccount || ''}
+                  placeholder="Số tài khoản"
+                  onChange={e => setJob(x => ({ ...x, payeeBankAccount: e.target.value }))}
+                />
+              </div>
+            </Field>
+            <Field label="Tên chủ tài khoản nhận tiền">
+              <Input
+                value={job.payeeBankHolder || ''}
+                placeholder="NGUYEN VAN A"
+                onChange={e => setJob(x => ({ ...x, payeeBankHolder: e.target.value }))}
+              />
+            </Field>
+          </div>
+
+          {!holderMatched && (
+            <div className="grid grid-cols-1 gap-3 rounded-md border border-critical/50 bg-critical/5 p-2.5 md:grid-cols-2">
+              <div className="text-xs text-critical">
+                Chủ tài khoản ({job.payeeBankHolder || 'Trống'}) khác với Tên pháp nhân trên Hợp đồng ({job.payeeLegalName || 'Trống'}). Theo quy chuẩn Kế toán, bắt buộc phải đính kèm Giấy ủy quyền nhận thanh toán hợp lệ.
+              </div>
+              <Field label="Link Giấy ủy quyền nhận thay (bắt buộc khi lệch tên)">
+                <Input
+                  value={job.authorizationUrl || ''}
+                  placeholder="https://drive.google.com/..."
+                  onChange={e => setJob(x => ({ ...x, authorizationUrl: e.target.value }))}
+                />
+              </Field>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-sunken px-3 py-2 text-xs text-ink-2">
+            <div>
+              <span className="font-semibold text-ink">{LEGAL_ENTITY_LABEL[job.entityType || 'INDIVIDUAL']}:</span> {taxCalc.ruleSummary}
+            </div>
+            <div className="flex flex-wrap gap-3 tabular-nums">
+              <span>
+                Giá ghi trên HĐ/SOW: <strong className="text-ink">{fmt(taxCalc.contractDisplayValue)}đ</strong>
+              </span>
+              {taxCalc.pitTaxAmount > 0 && (
+                <span>
+                  Thuế TNCN 10% công ty nộp thay: <strong className="text-ink">{fmt(taxCalc.pitTaxAmount)}đ</strong>
+                </span>
+              )}
+              {taxCalc.vatAmount > 0 && (
+                <span>
+                  VAT ({job.vatPct ?? 8}%): <strong className="text-ink">{fmt(taxCalc.vatAmount)}đ</strong>
+                </span>
+              )}
+              <span>
+                Thực chuyển KOC/Agency: <strong className="text-ink">{fmt(taxCalc.contractDisplayValue)}đ</strong>
+              </span>
+              <span>
+                Tổng chi phí công ty: <strong className="text-ink">{fmt(taxCalc.grossPayoutOrInvoice)}đ</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <Field label="Số phụ lục của Job">
+              <Input
+                value={job.appendixNo}
+                placeholder={`PL-${job.code}`}
+                onChange={e => setJob(x => ({ ...x, appendixNo: e.target.value }))}
+              />
+            </Field>
+            <Field label="Ngày ký phụ lục">
+              <Input type="date" value={job.appendixDate} onChange={e => setJob(x => ({ ...x, appendixDate: e.target.value }))} />
+            </Field>
+            <Field label="Link file phụ lục đã ký">
+              <Input value={job.appendixUrl} placeholder="https://" onChange={e => setJob(x => ({ ...x, appendixUrl: e.target.value }))} />
+            </Field>
+          </div>
+
+          {contractsState === 'error' && <div className="text-xs text-ink-3">Không tải được hồ sơ từ mô-đun Hợp đồng.</div>}
+          <div className="overflow-x-auto rounded-lg border border-line">
+            <table className="w-full min-w-[520px] border-collapse">
+              <thead>
+                <tr>
+                  <th className={TH}>Tài liệu pháp lý</th>
+                  <th className={TH}>Trạng thái ký</th>
+                  <th className={TH} />
+                </tr>
+              </thead>
+              <tbody>
+                {documentsOfJob(d, job, contractRecords, contractRecords).map(x => (
+                  <tr key={x.document}>
+                    <td className={TD}>{DOCUMENT_LABEL[x.document]}</td>
+                    <td className={TD}>
+                      {x.label}
+                      {x.signedAt ? ` · ký ${x.signedAt}` : ''}
+                      {x.record ? <span className="ml-2 text-2xs text-ink-3">{x.record.title}</span> : null}
+                    </td>
+                    <td className={`${TD} text-right`}>
+                      <div className="flex justify-end gap-2">
+                        {x.document === 'SOW' && x.signed && x.record && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              const rec = x.record!;
+                              setJob(
+                                cur => ({ ...cur, appendixNo: numberOfRecord(rec), appendixDate: x.signedAt || cur.appendixDate }),
+                                `Lấy số và ngày ký phụ lục cho ${job.code} từ hồ sơ ${rec.id}`
+                              );
+                            }}
+                          >
+                            Lấy số và ngày ký
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant={x.record ? 'secondary' : 'primary'}
+                          disabled={!onOpenContract || !plan}
+                          onClick={() =>
+                            plan && onOpenContract?.(planJobToBookingDeal(d, job, plan, kocIdOfHandle(d.kocHandle), fw?.contractNo), x.document)
+                          }
+                        >
+                          {x.record ? 'Mở hồ sơ' : 'Soạn theo Job'}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Khu vực 3: Brief Content theo Plan, Sản phẩm, Hàng mẫu, SLA 2-3-5-7 ngày & Duyệt Kịch bản / Video Demo theo Job */}
+        <section className="space-y-3 rounded-lg border border-line p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">
+              3. Luồng Brief Content theo Plan, SLA 2-3-5-7 ngày &amp; Duyệt Kịch bản / Video Demo ({job.code})
+            </div>
+            {job.slotId && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  const s = slots.find(x => x.id === job.slotId);
+                  if (!s) return;
+                  const g = catalog.groups.find(x => x.id === s.productGroupId || (s.product && x.name === s.product));
+                  setJob(
+                    cur => ({
+                      ...cur,
+                      briefCode: s.briefCode || cur.briefCode,
+                      pillar: s.pillar || cur.pillar,
+                      angle: s.angle || cur.angle,
+                      hook: s.hook || cur.hook,
+                      usp: s.usp || cur.usp,
+                      cta: s.cta || cur.cta,
+                      briefUrl: s.briefUrl || cur.briefUrl,
+                      week: s.week || cur.week,
+                      pic: s.pic || cur.pic,
+                      productGroupId: g?.id || cur.productGroupId,
+                      productGroupName: g?.name || s.product || cur.productGroupName,
+                    }),
+                    `Đồng bộ Brief ${s.briefCode || s.id} từ Plan cho ${job.code}`
+                  );
+                  notify(`Đã đồng bộ Brief ${s.briefCode || ''} từ Plan vào ${job.code}.`, 'success');
+                }}
+              >
+                Đồng bộ lại từ Brief Plan
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-md border border-line bg-sunken/50 p-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Field
+                label={`Chọn dòng Định hướng / Brief mẫu từ Plan (${slots.length} dòng Brief · ${slots.reduce((sum, x) => sum + slotTargetQty(x), 0)} video)`}
+                className="md:col-span-2"
+              >
+                <Select
+                  value={job.slotId}
+                  onChange={e => {
+                    const nextSlotId = e.target.value;
+                    const s = slots.find(x => x.id === nextSlotId);
+                    if (!s) {
+                      setJob(cur => ({ ...cur, slotId: '' }));
+                      return;
+                    }
+                    const g = catalog.groups.find(x => x.id === s.productGroupId || (s.product && x.name === s.product));
+                    setJob(
+                      cur => ({
+                        ...cur,
+                        slotId: s.id,
+                        briefCode: s.briefCode || cur.briefCode,
+                        pillar: s.pillar || cur.pillar,
+                        angle: s.angle || cur.angle,
+                        hook: s.hook || cur.hook,
+                        usp: s.usp || cur.usp,
+                        cta: s.cta || cur.cta,
+                        briefUrl: s.briefUrl || cur.briefUrl,
+                        week: s.week || cur.week,
+                        pic: s.pic || cur.pic,
+                        productGroupId: g?.id || cur.productGroupId,
+                        productGroupName: g?.name || s.product || cur.productGroupName,
+                      }),
+                      `Gắn dòng Brief ${s.briefCode || s.id} vào ${job.code}`
+                    );
+                  }}
+                >
+                  <option value="">-- Chọn dòng Định hướng / Brief mẫu trong Plan --</option>
+                  {slots.map((s, idx) => {
+                    const code = s.briefCode || `BR-${String(idx + 1).padStart(2, '0')}`;
+                    const targetVideos = slotTargetQty(s);
+                    const usedJobs = slotUsageCountMap.get(s.id) || 0;
+                    const readyLabel = isBriefReady(s) ? 'Đủ Brief' : 'Chưa soạn';
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {code} · {s.week ? s.week.split(' ')[0] : 'Tuần ?'} · {s.row || 'Bậc ?'} ·{' '}
+                        {s.pillar || 'Chưa chọn trụ cột'} — {s.angle || 'Chưa có góc nội dung'} ({readyLabel}) [Đã gắn {usedJobs}/{targetVideos} video]
+                      </option>
+                    );
+                  })}
+                </Select>
+              </Field>
+              <Field label="Mã dòng Brief">
+                <Input
+                  value={job.briefCode}
+                  placeholder="BR-01"
+                  onChange={e => setJob(x => ({ ...x, briefCode: e.target.value }))}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Field label="Trụ cột nội dung (Content Pillar)">
+                <Input
+                  value={job.pillar}
+                  placeholder="Review trải nghiệm thật / Giải quyết vấn đề..."
+                  onChange={e => setJob(x => ({ ...x, pillar: e.target.value }))}
+                />
+              </Field>
+              <Field label="Góc tiếp cận (Content Angle)">
+                <Input
+                  value={job.angle}
+                  placeholder="So sánh trước - sau 7 ngày / Test độ kiềm dầu..."
+                  onChange={e => setJob(x => ({ ...x, angle: e.target.value }))}
+                />
+              </Field>
+              <Field label="Link file Brief chi tiết">
+                <Input
+                  value={job.briefUrl}
+                  placeholder="https://docs.google.com/..."
+                  onChange={e => setJob(x => ({ ...x, briefUrl: e.target.value }))}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <Field label="Câu mở đầu 3 giây đầu (Hook)">
+                <Textarea
+                  rows={2}
+                  value={job.hook}
+                  placeholder="Mở đầu giữ chân người xem 3s đầu..."
+                  onChange={e => setJob(x => ({ ...x, hook: e.target.value }))}
+                />
+              </Field>
+              <Field label="Điểm bán hàng chính (Key USP)">
+                <Textarea
+                  rows={2}
+                  value={job.usp}
+                  placeholder="Thành phần, công dụng, ưu đãi cần nhấn mạnh..."
+                  onChange={e => setJob(x => ({ ...x, usp: e.target.value }))}
+                />
+              </Field>
+              <Field label="Kêu gọi hành động (CTA)">
+                <Textarea
+                  rows={2}
+                  value={job.cta}
+                  placeholder="Bấm giỏ hàng góc trái nhận voucher..."
+                  onChange={e => setJob(x => ({ ...x, cta: e.target.value }))}
+                />
+              </Field>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Field label="Nhóm sản phẩm">
               <Select
-                value={d.productGroupId}
+                value={job.productGroupId}
                 onChange={e => {
                   const g = catalog.groups.find(x => x.id === e.target.value);
-                  set(x => ({ ...x, productGroupId: g?.id || '', productGroupName: g?.name || '', productName: '', cartUrl: '', affiliateUrl: '', commissionPct: null }));
+                  setJob(x => ({
+                    ...x,
+                    productGroupId: g?.id || '',
+                    productGroupName: g?.name || '',
+                    productName: '',
+                    cartUrl: '',
+                    affiliateUrl: '',
+                    commissionPct: null,
+                  }));
                 }}
               >
                 <option value="">Chọn nhóm</option>
@@ -327,9 +1538,13 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
               </Select>
             </Field>
             <Field label="Sản phẩm">
-              <Select value={d.productName} disabled={!d.productGroupId} onChange={e => set(x => ({ ...x, productName: e.target.value, cartUrl: '', affiliateUrl: '', commissionPct: null }))}>
+              <Select
+                value={job.productName}
+                disabled={!job.productGroupId}
+                onChange={e => setJob(x => ({ ...x, productName: e.target.value, cartUrl: '', affiliateUrl: '', commissionPct: null }))}
+              >
                 <option value="">Chọn sản phẩm</option>
-                {productsOfGroup(d.productGroupId).map(p => (
+                {productsOfGroup(job.productGroupId).map(p => (
                   <option key={p.id} value={p.name}>
                     {p.name}
                   </option>
@@ -337,7 +1552,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
               </Select>
             </Field>
             <Field label="Link giỏ hàng">
-              <Select value={d.cartUrl} disabled={!prod} onChange={e => set(x => ({ ...x, cartUrl: e.target.value }))}>
+              <Select value={job.cartUrl} disabled={!prod} onChange={e => setJob(x => ({ ...x, cartUrl: e.target.value }))}>
                 <option value="">Chọn link giỏ hàng</option>
                 {(prod?.cartLinks || []).map(l => (
                   <option key={l.id} value={l.url}>
@@ -348,11 +1563,11 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
             </Field>
             <Field label="Link affiliate">
               <Select
-                value={d.affiliateUrl}
+                value={job.affiliateUrl}
                 disabled={!prod}
                 onChange={e => {
                   const l = prod?.affiliateLinks.find(a => a.url === e.target.value);
-                  set(x => ({ ...x, affiliateUrl: l?.url || '', commissionPct: l ? l.commissionPct : null }));
+                  setJob(x => ({ ...x, affiliateUrl: l?.url || '', commissionPct: l ? l.commissionPct : null }));
                 }}
               >
                 <option value="">Chọn link affiliate</option>
@@ -364,14 +1579,24 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
               </Select>
             </Field>
           </div>
-          {d.affiliateUrl && <div className="text-xs text-ink-2">Hoa hồng đã chốt cho deal: {d.commissionPct === null ? '—' : `${d.commissionPct}%`}</div>}
-        </section>
+          {job.affiliateUrl && <div className="text-xs text-ink-2">Hoa hồng đã chốt cho Job: {job.commissionPct === null ? '—' : `${job.commissionPct}%`}</div>}
 
-        <section className="space-y-2">
-          <div className="text-sm font-semibold text-ink">Hàng mẫu và kịch bản</div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <Field label="Hàng mẫu">
-              <Select value={d.sample.status} onChange={e => set(x => ({ ...x, sample: { ...x.sample, status: e.target.value as SampleStatus, at: x.sample.at || new Date().toISOString().slice(0, 10) } }), `Hàng mẫu: ${SAMPLE_LABEL[e.target.value as SampleStatus]}`)}>
+          <div className="grid grid-cols-1 gap-3 border-t border-line pt-3 md:grid-cols-4">
+            <Field label="Hàng mẫu (SLA gửi ≤ 2 ngày)">
+              <Select
+                value={job.sample.status}
+                onChange={e => {
+                  const nextStatus = e.target.value as SampleStatus;
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  setJob(
+                    x => ({
+                      ...x,
+                      sample: { ...x.sample, status: nextStatus, at: x.sample.at || todayStr },
+                    }),
+                    `Hàng mẫu ${job.code}: ${SAMPLE_LABEL[nextStatus]}`
+                  );
+                }}
+              >
                 {(Object.keys(SAMPLE_LABEL) as SampleStatus[]).map(k => (
                   <option key={k} value={k}>
                     {SAMPLE_LABEL[k]}
@@ -379,11 +1604,26 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                 ))}
               </Select>
             </Field>
-            <Field label="Mã vận đơn">
-              <Input value={d.sample.trackingNo} onChange={e => set(x => ({ ...x, sample: { ...x.sample, trackingNo: e.target.value } }))} />
+            <Field label="Ngày giao/nhận SP (tính SLA 3–7 ngày)">
+              <Input
+                type="date"
+                value={job.sample.at || ''}
+                onChange={e => setJob(x => ({ ...x, sample: { ...x.sample, at: e.target.value } }))}
+              />
             </Field>
-            <Field label="Kịch bản">
-              <Select value={d.script.status} onChange={e => set(x => ({ ...x, script: { ...x.script, status: e.target.value as ScriptStatus, at: new Date().toISOString().slice(0, 10) } }), `Kịch bản: ${SCRIPT_LABEL[e.target.value as ScriptStatus]}`)}>
+            <Field label="Mã vận đơn">
+              <Input value={job.sample.trackingNo} onChange={e => setJob(x => ({ ...x, sample: { ...x.sample, trackingNo: e.target.value } }))} />
+            </Field>
+            <Field label="Duyệt Kịch bản">
+              <Select
+                value={job.script.status}
+                onChange={e =>
+                  setJob(
+                    x => ({ ...x, script: { ...x.script, status: e.target.value as ScriptStatus, at: new Date().toISOString().slice(0, 10) } }),
+                    `Kịch bản ${job.code}: ${SCRIPT_LABEL[e.target.value as ScriptStatus]}`
+                  )
+                }
+              >
                 {(Object.keys(SCRIPT_LABEL) as ScriptStatus[]).map(k => (
                   <option key={k} value={k}>
                     {SCRIPT_LABEL[k]}
@@ -391,38 +1631,135 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                 ))}
               </Select>
             </Field>
-            <Field label="Ghi chú kịch bản">
-              <Input value={d.script.note} onChange={e => set(x => ({ ...x, script: { ...x.script, note: e.target.value } }))} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <Field label="Link Kịch bản KOC gửi">
+              <Input
+                value={job.script.scriptUrl || ''}
+                placeholder="https://docs.google.com/..."
+                onChange={e => setJob(x => ({ ...x, script: { ...x.script, scriptUrl: e.target.value } }))}
+              />
+            </Field>
+            <Field label="Duyệt Video Demo (SLA ≤ 5 ngày từ duyệt KB)">
+              <Select
+                value={job.script.demoStatus || 'NONE'}
+                onChange={e =>
+                  setJob(
+                    x => ({ ...x, script: { ...x.script, demoStatus: e.target.value as ScriptStatus, at: new Date().toISOString().slice(0, 10) } }),
+                    `Video Demo ${job.code}: ${SCRIPT_LABEL[e.target.value as ScriptStatus]}`
+                  )
+                }
+              >
+                {(Object.keys(SCRIPT_LABEL) as ScriptStatus[]).map(k => (
+                  <option key={k} value={k}>
+                    {SCRIPT_LABEL[k]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Link Video Demo (Drive / CapCut)">
+              <Input
+                value={job.script.demoUrl || ''}
+                placeholder="https://drive.google.com/..."
+                onChange={e => setJob(x => ({ ...x, script: { ...x.script, demoUrl: e.target.value } }))}
+              />
+            </Field>
+            <Field label="Ghi chú góp ý Kịch bản / Video Demo">
+              <Input value={job.script.note} onChange={e => setJob(x => ({ ...x, script: { ...x.script, note: e.target.value } }))} />
             </Field>
           </div>
         </section>
 
-        <section className="space-y-2">
+        {/* Khu vực 4: Air, Khóa Link 7 ngày làm việc & Nghiệm thu theo Job */}
+        <section className="space-y-3 rounded-lg border border-line p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-ink">Air và nghiệm thu video</div>
-            <Button size="md" variant="primary" disabled={inspecting || !d.airLink.trim()} onClick={() => void runAcceptance(d)}>
-              {inspecting ? 'Đang kiểm tra…' : 'Nghiệm thu video'}
-            </Button>
+            <div className="text-sm font-semibold text-ink">
+              4. Air và Nghiệm thu {job.code}
+              {airLinkLocked ? ' · [ĐÃ KHÓA SỬA LINK AIR QUÁ 7 NGÀY LÀM VIỆC]' : ''}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(job.addons || []).some(a => a.status === 'PENDING') && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    setJob(
+                      cur => ({
+                        ...cur,
+                        addons: (cur.addons || []).map(a => (a.status === 'PENDING' ? { ...a, status: 'VERIFIED' } : a)),
+                      }),
+                      `Xác nhận hoàn tất các dịch vụ gia tăng của ${job.code}`
+                    )
+                  }
+                >
+                  Duyệt đạt tất cả DVGT
+                </Button>
+              )}
+              <Button
+                size="md"
+                variant="secondary"
+                icon={Camera}
+                onClick={() => setScreenshotTarget({ deal: d, job })}
+              >
+                Chụp ảnh sản phẩm cho BBNT
+              </Button>
+              <Button size="md" variant="primary" disabled={inspecting || !job.airLink.trim()} onClick={() => void runJobAcceptance(d, job)}>
+                {inspecting ? 'Đang kiểm tra…' : 'Nghiệm thu video'}
+              </Button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <Field label="Hạn air">
-              <Input type="date" value={d.deadline} onChange={e => set(x => ({ ...x, deadline: e.target.value }))} />
+              <Input type="date" value={job.deadline} onChange={e => setJob(x => ({ ...x, deadline: e.target.value }))} />
             </Field>
-            <Field label="Link air" className="md:col-span-2">
-              <Input value={d.airLink} placeholder="https://www.tiktok.com/@kênh/video/…" onChange={e => set(x => ({ ...x, airLink: e.target.value, acceptance: x.airLink === e.target.value ? x.acceptance : { ...x.acceptance, status: 'PENDING', checks: [], summary: '', confirmedBy: '', confirmedAt: '', confirmNote: '' } }))} />
+            <Field label="Ngày lên sóng thực tế (Aired At)">
+              <Input
+                type="date"
+                value={job.airedAt || ''}
+                disabled={airLinkLocked}
+                onChange={e => setJob(x => ({ ...x, airedAt: e.target.value }))}
+              />
+            </Field>
+            <Field label="Link video lên sóng (Khóa sau 7 ngày LV)">
+              <Input
+                value={job.airLink}
+                disabled={airLinkLocked}
+                placeholder="https://www.tiktok.com/@kênh/video/…"
+                onChange={e => {
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  setJob(x => ({
+                    ...x,
+                    airLink: e.target.value,
+                    airedAt: x.airedAt || (e.target.value.trim() ? todayStr : ''),
+                    acceptance:
+                      x.airLink === e.target.value
+                        ? x.acceptance
+                        : { ...x.acceptance, status: 'PENDING', checks: [], summary: '', confirmedBy: '', confirmedAt: '', confirmNote: '' },
+                  }));
+                }}
+              />
+            </Field>
+            <Field label="Mã Spark Ads (nếu có)">
+              <Input value={job.sparkAdsCode} placeholder="#SparkAds..." onChange={e => setJob(x => ({ ...x, sparkAdsCode: e.target.value }))} />
             </Field>
           </div>
-          {d.acceptance.status !== 'PENDING' && (
-            <div className="space-y-2 rounded-lg border border-line p-3">
+
+          {job.acceptance.status !== 'PENDING' && (
+            <div className="space-y-2 rounded-lg border border-line bg-sunken p-3">
               <div className="flex flex-wrap items-center gap-3 text-[13px]">
-                <span className={`font-medium ${d.acceptance.status === 'PASSED' ? 'text-ink' : 'text-critical'}`}>Kết quả: {ACCEPT_LABEL[d.acceptance.status]}</span>
-                {d.acceptance.views !== null && <span className="text-ink-2">{fmt(d.acceptance.views)} lượt xem</span>}
-                {d.acceptance.isOnTime !== null && <span className="text-ink-2">{d.acceptance.isOnTime ? 'Đúng hạn' : `Trễ ${d.acceptance.daysDelayed ?? '?'} ngày`}</span>}
-                {d.acceptance.confirmedBy && <span className="text-ink-2">Đã xác nhận bởi {d.acceptance.confirmedBy}</span>}
+                <span className={`font-medium ${job.acceptance.status === 'PASSED' ? 'text-ink' : 'text-critical'}`}>
+                  Kết quả Video: {ACCEPT_LABEL[job.acceptance.status]}
+                </span>
+                {job.acceptance.views !== null && <span className="text-ink-2">{fmt(job.acceptance.views)} lượt xem</span>}
+                {job.acceptance.isOnTime !== null && (
+                  <span className="text-ink-2">{job.acceptance.isOnTime ? 'Đúng hạn' : `Trễ ${job.acceptance.daysDelayed ?? '?'} ngày`}</span>
+                )}
+                {job.acceptance.confirmedBy && <span className="text-ink-2">Đã xác nhận bởi {job.acceptance.confirmedBy}</span>}
               </div>
-              {d.acceptance.summary && <div className="text-xs text-ink-2">{d.acceptance.summary}</div>}
+              {job.acceptance.summary && <div className="text-xs text-ink-2">{job.acceptance.summary}</div>}
               <ul className="space-y-1">
-                {d.acceptance.checks.map(c => (
+                {job.acceptance.checks.map(c => (
                   <li key={c.key} className="flex gap-2 text-[13px]">
                     <span className={c.passed ? 'text-ink-3' : 'text-critical'}>{c.passed ? '✓' : '✗'}</span>
                     <span className="text-ink">{c.label}</span>
@@ -430,7 +1767,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                   </li>
                 ))}
               </ul>
-              {d.acceptance.status !== 'PASSED' && !d.acceptance.confirmedBy && (
+              {job.acceptance.status !== 'PASSED' && !job.acceptance.confirmedBy && (
                 <div className="flex flex-wrap items-end gap-2 border-t border-line pt-2">
                   <Field label="Lý do xác nhận nghiệm thu dù chưa đạt" className="min-w-[260px] flex-1">
                     <Input value={confirmNote} onChange={e => setConfirmNote(e.target.value)} />
@@ -440,7 +1777,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                     variant="secondary"
                     disabled={!confirmNote.trim()}
                     onClick={() => {
-                      set(x => ({ ...x, acceptance: { ...x.acceptance, confirmedBy: currentUserName, confirmNote: confirmNote.trim() } }), `Xác nhận nghiệm thu dù ${ACCEPT_LABEL[d.acceptance.status].toLowerCase()}: ${confirmNote.trim()}`);
+                      setJob(
+                        x => ({ ...x, acceptance: { ...x.acceptance, confirmedBy: currentUserName, confirmNote: confirmNote.trim() } }),
+                        `Xác nhận nghiệm thu ${job.code} dù ${ACCEPT_LABEL[job.acceptance.status].toLowerCase()}: ${confirmNote.trim()}`
+                      );
                       setConfirmNote('');
                     }}
                   >
@@ -448,30 +1788,82 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                   </Button>
                 </div>
               )}
-              {d.acceptance.confirmNote && <div className="text-xs text-ink-2">Lý do xác nhận: {d.acceptance.confirmNote}</div>}
+              {job.acceptance.confirmNote && <div className="text-xs text-ink-2">Lý do xác nhận: {job.acceptance.confirmNote}</div>}
             </div>
           )}
         </section>
 
-        <section className="space-y-2">
-          <div className="text-sm font-semibold text-ink">Thanh toán</div>
+        {/* Khu vực 5: Đẩy về Lark theo Job để Kế toán thanh toán & Đính kèm Bill UNC (SLA 7 ngày) */}
+        <section className="space-y-3 rounded-lg border border-line p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">
+              5. Đẩy về Lark theo {job.code} để Kế toán thanh toán &amp; Đối soát Bill UNC (Bước: {STAGES.find(s => s.key === stage)?.label})
+            </div>
+            <Button
+              size="md"
+              variant="primary"
+              disabled={Boolean(blocker) || pushingLarkJobId === job.id}
+              title={blocker || undefined}
+              onClick={() => void pushJobToLarkPayment(d, job)}
+            >
+              <Send className="mr-1.5 h-3.5 w-3.5" />
+              {pushingLarkJobId === job.id
+                ? 'Đang đẩy về Lark…'
+                : job.payment.larkSlipCode
+                ? 'Đẩy lại phiếu Lark'
+                : 'Đẩy về Lark (Thanh toán Job)'}
+            </Button>
+          </div>
+
+          {job.payment.larkSlipCode && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-sunken px-3 py-2 text-xs text-ink">
+              <div>
+                Đã đồng bộ sang Lark cho Kế toán · Mã phiếu: <strong>{job.payment.larkSlipCode}</strong> · Mã duyệt:{' '}
+                <strong>{job.payment.larkApprovalCode || '—'}</strong> · Bản ghi Bảng 3.2: <strong>{job.payment.larkRecordId || '—'}</strong>
+              </div>
+              {job.payment.larkSyncedAt && <span className="text-ink-3">{job.payment.larkSyncedAt.slice(0, 16).replace('T', ' ')}</span>}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <Field label="Số tiền (Net)">
-              <Input type="number" min={0} value={d.payment.amount ?? ''} onChange={e => set(x => ({ ...x, payment: { ...x.payment, amount: e.target.value === '' ? null : Number(e.target.value) } }))} />
+            <Field label="Số tiền thực chuyển KOC/Agency">
+              <Input
+                type="number"
+                min={0}
+                value={job.payment.amount ?? taxCalc.contractDisplayValue}
+                onChange={e =>
+                  setJob(x => ({
+                    ...x,
+                    payment: { ...x.payment, amount: e.target.value === '' ? null : Number(e.target.value) },
+                  }))
+                }
+              />
             </Field>
-            <Field label="Trạng thái">
+            <Field label="Trạng thái thanh toán Job">
               <Select
-                value={d.payment.status}
+                value={job.payment.status}
                 onChange={e => {
                   const next = e.target.value as PaymentStatus;
                   if (next !== 'NONE') {
-                    const reason = paymentBlocker(d);
+                    const reason = jobPaymentBlocker({ ...job, payment: { ...job.payment, amount: job.payment.amount ?? taxCalc.contractDisplayValue } });
                     if (reason) {
                       notify(reason, 'warning');
                       return;
                     }
                   }
-                  set(x => ({ ...x, payment: { ...x.payment, status: next, requestedAt: next === 'REQUESTED' && !x.payment.requestedAt ? new Date().toISOString().slice(0, 10) : x.payment.requestedAt, paidAt: next === 'PAID' ? new Date().toISOString().slice(0, 10) : '' } }), `Thanh toán: ${PAY_LABEL[next]}`);
+                  setJob(
+                    x => ({
+                      ...x,
+                      payment: {
+                        ...x.payment,
+                        amount: x.payment.amount ?? taxCalc.contractDisplayValue,
+                        status: next,
+                        requestedAt: next === 'REQUESTED' && !x.payment.requestedAt ? new Date().toISOString().slice(0, 10) : x.payment.requestedAt,
+                        paidAt: next === 'PAID' ? new Date().toISOString().slice(0, 10) : '',
+                      },
+                    }),
+                    `Thanh toán ${job.code}: ${PAY_LABEL[next]}`
+                  );
                 }}
               >
                 {(Object.keys(PAY_LABEL) as PaymentStatus[]).map(k => (
@@ -481,15 +1873,48 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                 ))}
               </Select>
             </Field>
-            <Field label="Ghi chú" className="md:col-span-2">
-              <Input value={d.payment.note} onChange={e => set(x => ({ ...x, payment: { ...x.payment, note: e.target.value } }))} />
+            <Field label="Link Bill chuyển khoản (UNC Kế toán)">
+              <Input
+                value={job.payment.uncBillUrl || ''}
+                placeholder="https://drive.google.com/bill-unc..."
+                onChange={e => {
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  setJob(x => ({
+                    ...x,
+                    payment: {
+                      ...x.payment,
+                      uncBillUrl: e.target.value,
+                      uncSentToKocAt: e.target.value.trim() && !x.payment.uncSentToKocAt ? todayStr : x.payment.uncSentToKocAt,
+                    },
+                  }));
+                }}
+              />
+            </Field>
+            <Field label="Ngày gửi Bill UNC cho KOC">
+              <Input
+                type="date"
+                value={job.payment.uncSentToKocAt || ''}
+                onChange={e => setJob(x => ({ ...x, payment: { ...x.payment, uncSentToKocAt: e.target.value } }))}
+              />
             </Field>
           </div>
-          {blocker && d.payment.status === 'NONE' && <div className="text-xs text-ink-3">Chưa thanh toán được: {blocker}</div>}
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field label="Ghi chú thanh toán Job" className="md:col-span-2">
+              <Input value={job.payment.note} onChange={e => setJob(x => ({ ...x, payment: { ...x.payment, note: e.target.value } }))} />
+            </Field>
+          </div>
+
+          {blocker && job.payment.status === 'NONE' && <div className="text-xs text-critical">Điều kiện còn thiếu trước khi đẩy Lark thanh toán: {blocker}</div>}
         </section>
 
         <section className="space-y-2">
-          <div className="text-sm font-semibold text-ink">Hiệu suất</div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="text-sm font-semibold text-ink">Hiệu suất của {job.code} (Đối soát GMV &amp; Đơn hàng D14 / D30 / D60)</div>
+            <Button size="sm" variant="secondary" onClick={() => syncJobPerformanceFromUpaffiliate(d, job)}>
+              Đồng bộ GMV / Đơn hàng từ UpAffiliate
+            </Button>
+          </div>
           <div className="overflow-x-auto rounded-lg border border-line">
             <table className="w-full min-w-[480px] border-collapse">
               <thead>
@@ -498,7 +1923,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                   <th className={`${TH} text-right`}>Lượt xem</th>
                   <th className={`${TH} text-right`}>Đơn hàng</th>
                   <th className={`${TH} text-right`}>GMV</th>
-                  <th className={`${TH} text-right`}>GMV / thù lao</th>
+                  <th className={`${TH} text-right`}>GMV / thù lao Job</th>
                 </tr>
               </thead>
               <tbody>
@@ -511,7 +1936,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
         </section>
 
         <section className="space-y-1">
-          <div className="text-sm font-semibold text-ink">Lịch sử</div>
+          <div className="text-sm font-semibold text-ink">Lịch sử Deal & Job</div>
           <ul className="max-h-40 space-y-0.5 overflow-y-auto text-xs text-ink-2">
             {[...d.history].reverse().map((h, i) => (
               <li key={i}>
@@ -555,7 +1980,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
 
       <section className="min-w-0 space-y-4">
         {!plan ? (
-          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để theo dõi deal.</div>
+          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để quản lý Deal và các Job.</div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -566,16 +1991,36 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                   {saveLabel[status] ? ` · ${saveLabel[status]}` : ''}
                 </div>
               </div>
-              {status === 'error' && (
-                <Button size="sm" variant="secondary" onClick={saveNow}>
-                  Lưu lại
-                </Button>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {closingStatus && (
+                  <Button size="sm" variant="secondary" onClick={() => setClosingModalOpen(true)}>
+                    {closingStatus.locked ? 'Đã khóa sổ nghiệm thu tháng' : 'Cổng nghiệm thu cuối tháng'} · {closingStatus.phaseLabel}
+                  </Button>
+                )}
+                {status === 'error' && (
+                  <Button size="sm" variant="secondary" onClick={saveNow}>
+                    Lưu lại
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {closingStatus && (
+              <div className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs ${closingStatus.locked ? 'border-critical/60 bg-critical/5 text-critical' : 'border-line bg-sunken text-ink-2'}`}>
+                <div>
+                  <span className="font-semibold text-ink">Lịch Khóa Sổ &amp; Đối Soát E2E Tháng {plan.month}:</span> {closingStatus.phaseLabel}
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setClosingModalOpen(true)}>
+                  Cấu hình Khóa sổ &amp; Đối soát
+                </Button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
               {[
-                { label: 'Số deal', value: fmt(summary.count) },
+                { label: 'Số Deal', value: fmt(summary.count) },
+                { label: 'Tổng số Job / Video Plan', value: `${fmt(summary.jobsCount)}/${fmt(plannedTotalVideos || summary.jobsCount)}` },
+                { label: 'Job đã gắn dòng Brief', value: `${fmt(jobsWithBriefCount)}/${fmt(summary.jobsCount)} Job (${fmt(slots.length)} dòng Brief)` },
                 { label: 'Tổng thù lao chốt', value: `${fmt(summary.totalFee)}đ` },
                 { label: 'Đã thanh toán', value: `${fmt(summary.paid)}đ` },
                 { label: 'GMV 30 ngày', value: summary.gmv30 ? `${fmt(summary.gmv30)}đ` : '—' },
@@ -589,7 +2034,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
             <div className="flex flex-wrap gap-2 text-xs text-ink-2">
               {STAGES.map(s => (
                 <span key={s.key} className="rounded-md border border-line px-2 py-1">
-                  {s.label}: {summary.byStage[s.key]}
+                  {s.label}: {summary.byStage[s.key]} Job
                 </span>
               ))}
             </div>
@@ -606,7 +2051,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
             )}
 
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-ink">KOC đã chốt, chưa có deal ({confirmedNoDeal.length})</div>
+              <div className="text-sm font-semibold text-ink">KOC đã duyệt trên List KOC, chờ tạo Deal / Job ({confirmedNoDeal.length})</div>
               <div className="overflow-x-auto rounded-lg border border-line">
                 <table className="w-full min-w-[720px] border-collapse">
                   <thead>
@@ -614,7 +2059,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                       <th className={TH}>KOC</th>
                       <th className={TH}>Bậc</th>
                       <th className={`${TH} text-right`}>Thù lao chốt</th>
-                      <th className={TH}>Hợp đồng nguyên tắc</th>
+                      <th className={TH}>Hợp đồng nguyên tắc / Hồ sơ pháp lý (1–N)</th>
                       <th className={TH} />
                     </tr>
                   </thead>
@@ -622,14 +2067,17 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                     {confirmedNoDeal.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-3 py-6 text-center text-sm text-ink-3">
-                          Không có KOC nào đang chờ tạo deal.
+                          Không có KOC nào đang chờ tạo Deal.
                         </td>
                       </tr>
                     )}
                     {confirmedNoDeal.map(i => {
                       const fw = frameworks[normHandle(i.kocHandle)];
                       const st = frameworkState(fw);
-                      const blocker = createDealBlocker(i, fw, deals);
+                      const lps = legalProfilesOfHandle(i.kocHandle);
+                      const hasValid = hasValidKocProfile(i.kocHandle);
+                      const blocker = createDealBlocker(i, fw, deals, hasValid);
+                      const existingDealOfKoc = deals.find(d => normHandle(d.kocHandle) === normHandle(i.kocHandle));
                       return (
                         <tr key={i.id}>
                           <td className={TD}>
@@ -639,16 +2087,36 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
                           <td className={TD}>{itemGrade(i) === 'TAP UpAffiliate' ? 'FOC' : itemGrade(i)}</td>
                           <td className={`${TD} text-right`}>{fmt(itemFee(i))}đ</td>
                           <td className={TD}>
-                            <span className={st === 'VALID' ? 'text-ink' : 'text-critical'}>{FRAMEWORK_STATE_LABEL[st]}</span>
+                            <span className={hasValid ? 'text-ink' : 'text-critical'}>
+                              {st === 'VALID'
+                                ? FRAMEWORK_STATE_LABEL[st]
+                                : lps.length > 0
+                                ? `Đủ hồ sơ pháp lý (${lps.length} bộ: ${lps.map(x => LEGAL_ENTITY_LABEL[x.legalType]).join(', ')})`
+                                : FRAMEWORK_STATE_LABEL[st]}
+                            </span>
                             {fw?.contractNo && <span className="ml-2 text-2xs text-ink-3">{fw.contractNo}</span>}
+                            {fw?.hardcopyStatus && (
+                              <span className="ml-2 text-2xs text-ink-3">· {HARDCOPY_STATUS_LABEL[fw.hardcopyStatus]}</span>
+                            )}
                           </td>
                           <td className={`${TD} text-right`}>
                             <div className="flex justify-end gap-2">
                               <Button size="sm" variant="secondary" onClick={() => openFramework(i.kocHandle)}>
-                                {fw ? 'Sửa hợp đồng nguyên tắc' : 'Ghi hợp đồng nguyên tắc'}
+                                {fw ? 'Sửa HĐNT' : 'Ghi HĐNT'}
                               </Button>
+                              {existingDealOfKoc && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={Boolean(blocker)}
+                                  title={blocker || undefined}
+                                  onClick={() => addListingItemAsJobToDeal(i.id, existingDealOfKoc.id)}
+                                >
+                                  + Thêm Job vào {existingDealOfKoc.code}
+                                </Button>
+                              )}
                               <Button size="sm" variant="primary" disabled={Boolean(blocker)} title={blocker || undefined} onClick={() => makeDeal(i.id)}>
-                                Tạo deal
+                                Tạo Deal
                               </Button>
                             </div>
                           </td>
@@ -661,43 +2129,202 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-ink">Deal ({deals.length})</div>
+              <div className="text-sm font-semibold text-ink">
+                Danh sách Deal ({deals.length}) & các Job vận hành ({summary.jobsCount})
+              </div>
               <div className="overflow-x-auto rounded-lg border border-line">
-                <table className="w-full min-w-[900px] border-collapse">
+                <table className="w-full min-w-[980px] border-collapse">
                   <thead>
                     <tr>
-                      <th className={TH}>Mã deal</th>
-                      <th className={TH}>KOC</th>
-                      <th className={TH}>Bậc</th>
-                      <th className={TH}>Tuần</th>
-                      <th className={TH}>Sản phẩm</th>
-                      <th className={`${TH} text-right`}>Thù lao</th>
+                      <th className={TH}>Deal / Mã Job</th>
+                      <th className={TH}>KOC / Hạng mục Job</th>
+                      <th className={TH}>Brief Content / Tuần</th>
+                      <th className={TH}>Sản phẩm &amp; Kịch bản</th>
+                      <th className={TH}>Phụ lục &amp; Pháp nhân</th>
+                      <th className={`${TH} text-right`}>Thù lao Net</th>
                       <th className={TH}>Bước hiện tại</th>
                       <th className={TH}>Nghiệm thu</th>
-                      <th className={TH}>Thanh toán</th>
+                      <th className={TH}>Thanh toán / Lark</th>
+                      <th className={TH} />
                     </tr>
                   </thead>
                   <tbody>
                     {deals.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="px-3 py-8 text-center text-sm text-ink-3">
-                          Chưa có deal nào.
+                        <td colSpan={10} className="px-3 py-8 text-center text-sm text-ink-3">
+                          Chưa có Deal nào.
                         </td>
                       </tr>
                     )}
-                    {deals.map(d => (
-                      <tr key={d.id} className="cursor-pointer hover:bg-sunken" onClick={() => setOpenDealId(d.id)}>
-                        <td className={`${TD} font-medium`}>{d.code}</td>
-                        <td className={TD}>@{d.kocHandle}</td>
-                        <td className={TD}>{d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade}</td>
-                        <td className={TD}>{d.week ? d.week.split(' ')[0] : '—'}</td>
-                        <td className={TD}>{[d.productGroupName, d.productName].filter(Boolean).join(' · ') || '—'}</td>
-                        <td className={`${TD} text-right`}>{fmt(d.fee)}đ</td>
-                        <td className={TD}>{STAGES.find(s => s.key === stageOf(d))?.label}</td>
-                        <td className={TD}>{isAcceptanceCleared(d) ? 'Đã qua' : ACCEPT_LABEL[d.acceptance.status]}</td>
-                        <td className={TD}>{PAY_LABEL[d.payment.status]}</td>
-                      </tr>
-                    ))}
+                    {deals.map(d => {
+                      const jobs = d.jobs || [];
+                      const isExpanded = expandedDealIds[d.id] ?? true;
+                      const clearedJobsCount = jobs.filter(isJobAcceptanceCleared).length;
+                      const paidJobsCount = jobs.filter(j => j.payment.status === 'PAID').length;
+                      const briefedJobsCount = jobs.filter(j => Boolean(j.slotId || j.briefCode || j.angle?.trim())).length;
+                      return (
+                        <React.Fragment key={d.id}>
+                          {/* Dòng Deal Cha */}
+                          <tr className="bg-sunken/70 font-medium">
+                            <td className={TD}>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 font-semibold text-ink hover:underline"
+                                onClick={() => setExpandedDealIds(prev => ({ ...prev, [d.id]: !isExpanded }))}
+                              >
+                                {isExpanded ? <ChevronDown className="h-4 w-4 text-ink-3" /> : <ChevronRight className="h-4 w-4 text-ink-3" />}
+                                {d.code}
+                              </button>
+                            </td>
+                            <td className={TD}>
+                              <span className="font-semibold text-ink">@{d.kocHandle}</span>
+                              <span className="ml-2 text-xs text-ink-3">
+                                ({d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade} · {jobs.length} Job)
+                              </span>
+                            </td>
+                            <td className={TD}>
+                              <span className="text-xs text-ink-2">
+                                {briefedJobsCount}/{jobs.length} gắn Brief
+                              </span>
+                            </td>
+                            <td className={TD}>—</td>
+                            <td className={TD}>
+                              <span className="text-xs text-ink-2">
+                                {jobs.filter(j => j.appendixNo.trim()).length}/{jobs.length} phụ lục
+                              </span>
+                            </td>
+                            <td className={`${TD} text-right font-semibold`}>{fmt(dealTotalFee(d))}đ</td>
+                            <td className={TD}>{STAGES.find(s => s.key === stageOf(d))?.label}</td>
+                            <td className={TD}>
+                              {clearedJobsCount}/{jobs.length} Job đạt
+                            </td>
+                            <td className={TD}>
+                              {paidJobsCount}/{jobs.length} đã TT
+                            </td>
+                            <td className={`${TD} text-right`}>
+                              <div className="flex justify-end gap-1.5">
+                                <Button size="sm" variant="secondary" onClick={() => addNewJobInsideDeal(d)}>
+                                  + Thêm Job
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={() => openDealWithJob(d.id, jobs[0]?.id)}>
+                                  Chi tiết
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Các dòng Job Con thuộc Deal */}
+                          {isExpanded &&
+                            jobs.map(job => {
+                              const jStage = jobStageOf(job);
+                              const jCleared = isJobAcceptanceCleared(job);
+                              const jBlocker = jobPaymentBlocker(job);
+                              const addonsCount = (job.addons || []).filter(a => a.status !== 'DROPPED').length;
+                              const linkedSlot = job.slotId ? slots.find(s => s.id === job.slotId) : undefined;
+                              const displayBriefCode = job.briefCode || linkedSlot?.briefCode || '';
+                              const displayPillar = job.pillar || linkedSlot?.pillar || '';
+                              const displayAngle = job.angle || linkedSlot?.angle || '';
+                              return (
+                                <tr
+                                  key={job.id}
+                                  className="cursor-pointer hover:bg-sunken/40"
+                                  onClick={() => openDealWithJob(d.id, job.id)}
+                                >
+                                  <td className={`${TD} pl-7 text-xs font-medium text-ink-2`}>
+                                    <div>{job.code}</div>
+                                    {job.isPostAirUpsell && <div className="text-2xs text-accent">Phụ lục sau Air</div>}
+                                  </td>
+                                  <td className={TD}>
+                                    <div className="text-[13px] font-medium text-ink">{job.title}</div>
+                                    <div className="text-2xs text-ink-3">
+                                      {PUBLISH_PLATFORM_LABEL[job.publishPlatform || 'TIKTOK']} → {COMMERCE_PLATFORM_LABEL[job.commercePlatform || 'TIKTOK_SHOP']} ·{' '}
+                                      {addonsCount > 0 ? `+${addonsCount} DVGT (${fmt(jobAddonsFee(job))}đ)` : '1 Video'}
+                                    </div>
+                                  </td>
+                                  <td className={TD}>
+                                    {displayBriefCode || displayAngle ? (
+                                      <div>
+                                        <div className="text-xs font-semibold text-ink">
+                                          {displayBriefCode || 'Brief'}
+                                          {job.week ? ` · ${job.week.split(' ')[0]}` : ''}
+                                        </div>
+                                        <div className="max-w-[200px] truncate text-2xs text-ink-3">
+                                          {[displayPillar, displayAngle].filter(Boolean).join(' — ') || 'Đã gắn Brief'}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-critical">Chưa gắn Brief</span>
+                                    )}
+                                  </td>
+                                  <td className={TD}>
+                                    <div className="text-xs text-ink">
+                                      {[job.productGroupName, job.productName].filter(Boolean).join(' · ') || '—'}
+                                    </div>
+                                    <div className="text-2xs text-ink-3">
+                                      KB: {SCRIPT_LABEL[job.script.status]}
+                                      {job.script.demoStatus && job.script.demoStatus !== 'NONE'
+                                        ? ` · Demo: ${SCRIPT_LABEL[job.script.demoStatus]}`
+                                        : ''}
+                                    </div>
+                                  </td>
+                                  <td className={TD}>
+                                    <div>
+                                      {job.appendixNo ? (
+                                        <span className="text-xs font-medium text-ink">{job.appendixNo}</span>
+                                      ) : (
+                                        <span className="text-xs text-ink-3">Chưa ký</span>
+                                      )}
+                                    </div>
+                                    <div className="text-2xs text-ink-3">
+                                      {LEGAL_ENTITY_LABEL[job.entityType || 'INDIVIDUAL']}
+                                    </div>
+                                  </td>
+                                  <td className={`${TD} text-right tabular-nums`}>
+                                    <div>{fmt(jobTotalFee(job))}đ</div>
+                                    <div className="text-2xs text-ink-3">
+                                      HĐ: {fmt(computeJobContractAmounts(job).contractDisplayValue)}đ
+                                    </div>
+                                  </td>
+                                  <td className={TD}>{STAGES.find(s => s.key === jStage)?.label}</td>
+                                  <td className={TD}>
+                                    {jCleared ? (
+                                      <span className="font-medium text-ink">Đã đạt</span>
+                                    ) : (
+                                      <span className="text-ink-3">{ACCEPT_LABEL[job.acceptance.status]}</span>
+                                    )}
+                                  </td>
+                                  <td className={TD}>
+                                    <div>{PAY_LABEL[job.payment.status]}</div>
+                                    {job.payment.larkSlipCode && (
+                                      <div className="text-2xs text-ink-3">{job.payment.larkSlipCode}</div>
+                                    )}
+                                    {job.payment.uncBillUrl && (
+                                      <div className="text-2xs text-ink">Đã gửi UNC</div>
+                                    )}
+                                  </td>
+                                  <td className={`${TD} text-right`} onClick={e => e.stopPropagation()}>
+                                    <div className="flex justify-end gap-1.5">
+                                      {jCleared && job.payment.status === 'NONE' && !jBlocker && (
+                                        <Button
+                                          size="sm"
+                                          variant="primary"
+                                          disabled={pushingLarkJobId === job.id}
+                                          onClick={() => void pushJobToLarkPayment(d, job)}
+                                        >
+                                          Đẩy Lark
+                                        </Button>
+                                      )}
+                                      <Button size="sm" variant="secondary" onClick={() => openDealWithJob(d.id, job.id)}>
+                                        Vận hành Job
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -706,14 +2333,73 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
         )}
       </section>
 
-      <Modal open={Boolean(openDeal)} onClose={() => setOpenDealId(null)} title={openDeal ? `Deal ${openDeal.code}` : 'Deal'} size="xl">
+      <Modal open={Boolean(openDeal)} onClose={() => setOpenDealId(null)} title={openDeal ? `Quản lý Deal ${openDeal.code} & các Job` : 'Deal'} size="xl">
         {openDeal && renderDealModal(openDeal)}
+      </Modal>
+
+      <Modal
+        open={closingModalOpen}
+        onClose={() => setClosingModalOpen(false)}
+        title={`Cổng Khóa sổ Nghiệm thu & Đối soát (${plan?.month || ''})`}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button size="md" variant="primary" onClick={() => setClosingModalOpen(false)}>
+              Đóng
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-md border border-line bg-sunken p-3 text-xs text-ink-2">
+            <div className="font-semibold text-ink">Quy chuẩn Khóa sổ Nghiệm thu Cuối tháng (E2E v1.0.0 &amp; Các SLA B2C):</div>
+            <ul className="mt-1 list-disc space-y-1 pl-4">
+              <li><strong>Ngày 2 hàng tháng:</strong> Hoàn tất điền toàn bộ dữ liệu nghiệm thu tháng trước trên hệ thống.</li>
+              <li><strong>Ngày làm việc thứ 4:</strong> Kế toán gửi bảng tổng hợp lỗi Lần 1.</li>
+              <li><strong>Ngày làm việc thứ 5 (09:00 – 17:30):</strong> Mở cửa sổ chỉnh sửa thông tin Lần 1.</li>
+              <li><strong>Ngày làm việc thứ 10 – 11:</strong> Gửi bảng tổng hợp lỗi Lần 2 &amp; Mở cửa sổ chỉnh sửa Lần 2 trước khi khóa sổ vĩnh viễn.</li>
+            </ul>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field label="Chế độ cổng nghiệm thu tháng" className="md:col-span-2">
+              <Select
+                value={closingState.mode}
+                onChange={e =>
+                  patchClosingState(cur => ({
+                    ...cur,
+                    mode: e.target.value as ClosingWindowMode,
+                  }))
+                }
+              >
+                <option value="AUTO">Tự động theo lịch (Khóa sau ngày mùng 2 tháng kế tiếp)</option>
+                <option value="OPEN_ROUND_1">Kế toán mở cửa sổ sửa Lần 1 (Ngày LV thứ 5 · 09:00–17:30)</option>
+                <option value="OPEN_ROUND_2">Kế toán mở cửa sổ sửa Lần 2 (Ngày LV thứ 11 · 09:00–17:30)</option>
+                <option value="LOCKED">Khóa sổ nghiệm thu tháng</option>
+              </Select>
+            </Field>
+            <Field label="Ghi chú tổng hợp lỗi Lần 1 (Ngày LV thứ 4)">
+              <Textarea
+                rows={3}
+                value={closingState.round1ErrorLog || ''}
+                placeholder="Danh sách Job cần bổ sung chứng từ Lần 1..."
+                onChange={e => patchClosingState(cur => ({ ...cur, round1ErrorLog: e.target.value }))}
+              />
+            </Field>
+            <Field label="Ghi chú tổng hợp lỗi Lần 2 (Ngày LV thứ 10)">
+              <Textarea
+                rows={3}
+                value={closingState.round2ErrorLog || ''}
+                placeholder="Danh sách lỗi Brand/Kế toán phản hồi Lần 2..."
+                onChange={e => patchClosingState(cur => ({ ...cur, round2ErrorLog: e.target.value }))}
+              />
+            </Field>
+          </div>
+        </div>
       </Modal>
 
       <Modal
         open={Boolean(fwModal)}
         onClose={() => setFwModal(null)}
-        title={fwModal ? `Hợp đồng nguyên tắc @${normHandle(fwModal.handle)}` : 'Hợp đồng nguyên tắc'}
+        title={fwModal ? `Hợp đồng nguyên tắc & Bản cứng Kế toán @${normHandle(fwModal.handle)}` : 'Hợp đồng nguyên tắc'}
         footer={
           <div className="flex justify-end gap-2">
             <Button size="md" variant="secondary" onClick={() => setFwModal(null)}>
@@ -725,9 +2411,36 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
           </div>
         }
       >
+        {fwModal && signedFrameworkOf(fwModal.handle) && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-line px-3 py-2 text-[13px]">
+            <span className="text-ink">Có hợp đồng nguyên tắc đã ký trong mô-đun Hợp đồng: {signedFrameworkOf(fwModal.handle)!.record.title}</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                const f = signedFrameworkOf(fwModal.handle)!;
+                setFwForm(prev => ({ ...prev, contractNo: numberOfRecord(f.record), signedAt: f.signedAt || prev.signedAt, note: prev.note || `Từ hồ sơ ${f.record.id}` }));
+              }}
+            >
+              Điền từ hồ sơ
+            </Button>
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Field label="Số hợp đồng">
+          <Field label="Số hợp đồng nguyên tắc">
             <Input value={fwForm.contractNo} onChange={e => setFwForm({ ...fwForm, contractNo: e.target.value })} />
+          </Field>
+          <Field label="Loại pháp nhân ký HĐNT">
+            <Select
+              value={fwForm.entityType}
+              onChange={e => setFwForm({ ...fwForm, entityType: e.target.value as LegalEntityType })}
+            >
+              {(Object.keys(LEGAL_ENTITY_LABEL) as LegalEntityType[]).map(k => (
+                <option key={k} value={k}>
+                  {LEGAL_ENTITY_LABEL[k]}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="Ngày ký">
             <Input type="date" value={fwForm.signedAt} onChange={e => setFwForm({ ...fwForm, signedAt: e.target.value })} />
@@ -735,7 +2448,26 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
           <Field label="Hiệu lực đến">
             <Input type="date" value={fwForm.validTo} onChange={e => setFwForm({ ...fwForm, validTo: e.target.value })} />
           </Field>
-          <Field label="Link file hợp đồng">
+          <Field label="Trạng thái Bản cứng nộp Kế toán (Hạn ngày 15 tháng T+1)">
+            <Select
+              value={fwForm.hardcopyStatus}
+              onChange={e => setFwForm({ ...fwForm, hardcopyStatus: e.target.value as HardcopyStatus })}
+            >
+              {(Object.keys(HARDCOPY_STATUS_LABEL) as HardcopyStatus[]).map(k => (
+                <option key={k} value={k}>
+                  {HARDCOPY_STATUS_LABEL[k]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Hạn nộp bản cứng cho Kế toán">
+            <Input
+              type="date"
+              value={fwForm.hardcopyDueAt}
+              onChange={e => setFwForm({ ...fwForm, hardcopyDueAt: e.target.value })}
+            />
+          </Field>
+          <Field label="Link file hợp đồng" className="md:col-span-2">
             <Input value={fwForm.fileUrl} placeholder="https://" onChange={e => setFwForm({ ...fwForm, fileUrl: e.target.value })} />
           </Field>
           <Field label="Ghi chú" className="md:col-span-2">
@@ -743,6 +2475,39 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ currentUserName = 
           </Field>
         </div>
       </Modal>
+      <VideoProductScreenshotModal
+        open={Boolean(screenshotTarget)}
+        onClose={() => setScreenshotTarget(null)}
+        initialVideoUrl={screenshotTarget?.job.airLink || ''}
+        productName={
+          screenshotTarget?.job.productName ||
+          screenshotTarget?.job.productGroupName ||
+          screenshotTarget?.deal.productName ||
+          screenshotTarget?.deal.productGroupName ||
+          plan?.brandName ||
+          ''
+        }
+        brandName={plan?.brandName || ''}
+        dealId={screenshotTarget ? `${screenshotTarget.deal.id}:${screenshotTarget.job.id}` : undefined}
+        dealCode={screenshotTarget ? `${screenshotTarget.deal.code}-${screenshotTarget.job.code}` : undefined}
+        authorHandle={screenshotTarget?.deal.kocHandle}
+        existingScreenshots={
+          screenshotTarget
+            ? findSavedScreenshotsForContext({
+                dealId: `${screenshotTarget.deal.id}:${screenshotTarget.job.id}`,
+                dealCode: `${screenshotTarget.deal.code}-${screenshotTarget.job.code}`,
+                authorHandle: screenshotTarget.deal.kocHandle,
+                videoUrl: screenshotTarget.job.airLink,
+              })
+            : []
+        }
+        onApplyScreenshots={shots => {
+          notify(
+            `Đã lưu ${shots.length} ảnh chụp sản phẩm cho Biên bản nghiệm thu (${screenshotTarget?.job.code || ''}).`,
+            'success',
+          );
+        }}
+      />
     </div>
   );
 };

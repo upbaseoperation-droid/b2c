@@ -735,7 +735,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-50 bg-canvas/95 backdrop-blur-xs overflow-y-auto p-4 md:p-6 space-y-4'
+          ? 'fixed inset-0 z-50 bg-canvas overflow-y-auto p-4 md:p-6 space-y-4'
           : 'space-y-4'
       }
     >

@@ -1,17 +1,23 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Plus, Search, Send, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Download, Lightbulb, Plus, Search, Send, Trash2, UserPlus } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem, StorePortfolioItem } from '../../lib/types';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { CONTENT_PILLARS, pillarGroupOf } from '../../lib/contentPillars';
 import {
+  BRIEF_FORMAT_OPTIONS,
   CONTENT_ROWS,
   diagnoseContentPlan,
+  ensureSequentialBriefCodes,
+  formatBriefCode,
+  generateMissingSlotsFromBreakdown,
+  isBriefReady,
   isPlaced,
   newSlot,
   requiredGrid,
   slotSpecsFromBrandPlan,
+  slotTargetQty,
   syncSlotsFromBrandPlan,
   type ContentPlanData,
   type ContentRowKey,
@@ -20,6 +26,7 @@ import {
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { detectChannel, type BrandPlanData, type PlanChannel } from '../../lib/brandPlanRules';
 import { CreatorMatchModal } from './CreatorMatchModal';
+import { ContentCopilotModal } from '../content/ContentCopilotModal';
 import { BOOKING_LIST_COLUMNS, buildBookingListRows, defaultBookingTabName, resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 
 interface ContentPlanBoardProps {
@@ -94,7 +101,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
   const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
-  const slots = data.slots;
+  const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
 
   const req = useMemo(() => (plan ? requiredGrid(plan) : null), [plan]);
   const diag = useMemo(() => (plan ? diagnoseContentPlan(plan, slots) : null), [plan, slots]);
@@ -104,7 +111,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     return CONTENT_ROWS.filter(r => req.weeks.some(w => (req.grid[w]?.[r.key] || 0) > 0) || slots.some(s => s.row === r.key));
   }, [req, slots]);
 
-  const setSlots = (next: ContentSlot[]) => update({ ...data, slots: next });
+  const setSlots = (next: ContentSlot[]) => update({ ...data, slots: ensureSequentialBriefCodes(next) });
 
   // --- kéo thả ---
   const placeSlot = (id: string, week: string, row: ContentRowKey) => {
@@ -114,39 +121,127 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     setSlots(slots.map(s => (s.id === id ? { ...s, week: null, row: null, updatedAt: new Date().toISOString() } : s)));
   };
 
-  // --- thêm content ---
+  // --- khởi tạo các dòng Brief mẫu theo khung tuần × bậc KL (mỗi ô thiếu N video -> 1 dòng Brief có SL mục tiêu = N) ---
+  const handleGenerateAllPlanBriefs = () => {
+    if (!plan) return;
+    const { slots: next, addedCount, addedVideos } = generateMissingSlotsFromBreakdown(plan, slots, currentUserName);
+    if (addedCount === 0) {
+      notify(`Các dòng Brief đã phủ đủ tổng số video theo phân rã tuần.`, 'info');
+      return;
+    }
+    setSlots(next);
+    notify(`Đã khởi tạo ${addedCount} dòng Brief mẫu cho ${addedVideos} video mục tiêu.`, 'success');
+  };
+
+  // --- thêm dòng định hướng / brief mẫu ---
   const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ pillar: CONTENT_PILLARS[0].name, qty: 1, product: '', angle: '', week: '', row: '' as ContentRowKey | '' });
+  const [addForm, setAddForm] = useState({
+    pillar: CONTENT_PILLARS[0].name,
+    qty: 5,
+    product: '',
+    angle: '',
+    hook: '',
+    usp: '',
+    cta: '',
+    format: BRIEF_FORMAT_OPTIONS[0] as string,
+    briefUrl: '',
+    week: '',
+    row: '' as ContentRowKey | '',
+  });
 
   const openAdd = (week?: string, row?: ContentRowKey) => {
-    setAddForm(f => ({ ...f, qty: 1, week: week || '', row: row || '' }));
+    let defaultQty = 5;
+    if (week && row && req) {
+      const need = req.grid[week]?.[row] || 0;
+      const have = slots.filter(s => s.week === week && s.row === row).reduce((sum, s) => sum + slotTargetQty(s), 0);
+      defaultQty = Math.max(1, need - have || need || 1);
+    }
+    setAddForm(f => ({ ...f, qty: defaultQty, week: week || '', row: row || '' }));
     setAddOpen(true);
   };
 
   const confirmAdd = () => {
     if (!plan) return;
-    const qty = Math.max(1, Math.min(50, Math.floor(addForm.qty) || 1));
+    const qty = Math.max(1, Math.min(500, Math.floor(addForm.qty) || 1));
     const placed = addForm.week && addForm.row;
-    const created = Array.from({ length: qty }, () =>
-      newSlot({ pillar: addForm.pillar, angle: addForm.angle, product: addForm.product, week: placed ? addForm.week : null, row: placed ? (addForm.row as ContentRowKey) : null, createdBy: currentUserName })
-    );
-    setSlots([...slots, ...created]);
+    const created = newSlot({
+      targetQty: qty,
+      pillar: addForm.pillar,
+      angle: addForm.angle,
+      product: addForm.product,
+      hook: addForm.hook,
+      usp: addForm.usp,
+      cta: addForm.cta,
+      format: addForm.format,
+      briefUrl: addForm.briefUrl,
+      week: placed ? addForm.week : null,
+      row: placed ? (addForm.row as ContentRowKey) : null,
+      pic: plan.pic || currentUserName,
+      createdBy: currentUserName,
+    });
+    setSlots([...slots, created]);
     setAddOpen(false);
-    notify(`Đã thêm ${qty} content ${addForm.pillar}${placed ? ` vào ${weekShort(addForm.week)} ${addForm.row}` : ' vào kho chưa xếp'}.`, 'success');
+    notify(`Đã thêm 1 dòng Brief (${qty} video mục tiêu) · ${addForm.pillar}${placed ? ` vào ${weekShort(addForm.week)} ${addForm.row}` : ' vào kho chưa xếp'}.`, 'success');
   };
 
   // --- sửa / xóa ---
   const [editing, setEditing] = useState<ContentSlot | null>(null);
-  const [editForm, setEditForm] = useState({ pillar: '', product: '', angle: '', note: '' });
+  const [editForm, setEditForm] = useState({
+    briefCode: '',
+    targetQty: 1,
+    pillar: '',
+    product: '',
+    angle: '',
+    hook: '',
+    usp: '',
+    cta: '',
+    format: '',
+    briefUrl: '',
+    note: '',
+  });
   const [deleting, setDeleting] = useState<ContentSlot | null>(null);
 
   const openEdit = (s: ContentSlot) => {
     setEditing(s);
-    setEditForm({ pillar: s.pillar, product: s.product, angle: s.angle, note: s.note || '' });
+    setEditForm({
+      briefCode: s.briefCode || '',
+      targetQty: slotTargetQty(s),
+      pillar: s.pillar,
+      product: s.product,
+      angle: s.angle,
+      hook: s.hook || '',
+      usp: s.usp || '',
+      cta: s.cta || '',
+      format: s.format || BRIEF_FORMAT_OPTIONS[0],
+      briefUrl: s.briefUrl || '',
+      note: s.note || '',
+    });
   };
   const saveEdit = () => {
     if (!editing) return;
-    setSlots(slots.map(s => (s.id === editing.id ? { ...s, ...editForm, note: editForm.note || undefined, updatedAt: new Date().toISOString() } : s)));
+    const ready = Boolean(editForm.product.trim() && (editForm.angle.trim() || editForm.hook.trim() || editForm.usp.trim()));
+    setSlots(
+      slots.map(s =>
+        s.id === editing.id
+          ? {
+              ...s,
+              briefCode: editForm.briefCode.trim() || s.briefCode,
+              targetQty: Math.max(1, Math.min(500, Math.floor(editForm.targetQty) || 1)),
+              pillar: editForm.pillar,
+              product: editForm.product.trim(),
+              angle: editForm.angle.trim(),
+              hook: editForm.hook.trim() || undefined,
+              usp: editForm.usp.trim() || undefined,
+              cta: editForm.cta.trim() || undefined,
+              format: editForm.format.trim() || undefined,
+              briefUrl: editForm.briefUrl.trim() || undefined,
+              briefStatus: ready ? 'READY' : 'DRAFT',
+              note: editForm.note.trim() || undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : s
+      )
+    );
     setEditing(null);
   };
 
@@ -156,19 +251,36 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     const cur = req.weeks[wi];
     const sources = slots.filter(s => s.week === prev && s.row);
     if (sources.length === 0) {
-      notify('Tuần trước chưa có content để sao chép.', 'info');
+      notify('Tuần trước chưa có dòng Brief để sao chép.', 'info');
       return;
     }
-    const copies = sources.map(s => ({ ...newSlot({ pillar: s.pillar, angle: s.angle, product: s.product, week: cur, row: s.row, createdBy: currentUserName }) }));
+    const copies = sources.map(s => ({
+      ...newSlot({
+        targetQty: slotTargetQty(s),
+        pillar: s.pillar,
+        angle: s.angle,
+        product: s.product,
+        hook: s.hook,
+        usp: s.usp,
+        cta: s.cta,
+        format: s.format,
+        briefUrl: s.briefUrl,
+        note: s.note,
+        week: cur,
+        row: s.row,
+        pic: s.pic,
+        createdBy: currentUserName,
+      }),
+    }));
     setSlots([...slots, ...copies]);
-    notify(`Đã sao chép ${copies.length} content từ ${weekShort(prev)} sang ${weekShort(cur)}.`, 'success');
+    notify(`Đã sao chép ${copies.length} dòng Brief từ ${weekShort(prev)} sang ${weekShort(cur)}.`, 'success');
   };
 
   // --- gán KOC (thủ công hoặc theo điểm phù hợp) ---
   const [matchSlotId, setMatchSlotId] = useState<string | null>(null);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const matchSlot = slots.find(s => s.id === matchSlotId) || null;
   const usedHandles = useMemo(() => new Set(slots.filter(s => s.kocHandle).map(s => (s.kocHandle || '').replace(/^@/, '').toLowerCase())), [slots]);
-  const assignedCount = slots.filter(s => s.kocHandle).length;
 
   const assignKoc = (handle: string | null) => {
     if (!matchSlotId) return;
@@ -303,27 +415,39 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const groupOptions = Array.from(new Set(CONTENT_PILLARS.map(p => p.group)));
   const dragging = dragId ? slots.find(s => s.id === dragId) : undefined;
 
-  const chip = (s: ContentSlot) => (
-    <div
-      key={s.id}
-      draggable
-      onDragStart={e => {
-        setDragId(s.id);
-        e.dataTransfer.setData('text/plain', s.id);
-      }}
-      onDragEnd={() => setDragId(null)}
-      title={CONTENT_PILLARS.find(p => p.name === s.pillar)?.definition}
-      className="cursor-grab rounded border border-line bg-surface px-1.5 py-1 text-2xs active:cursor-grabbing"
-    >
-      <button type="button" onClick={() => openEdit(s)} className="block w-full text-left">
-        <div className="truncate font-medium text-ink">{s.pillar}</div>
-        <div className="truncate text-ink-3">{s.product || s.angle || 'Chưa ghi sản phẩm'}</div>
-        {s.pic && <div className="truncate text-ink-3">{s.pic}</div>}
-        {s.kocHandle && <div className="truncate font-medium text-accent">@{s.kocHandle.replace(/^@/, '')}</div>}
-        {!s.kocHandle && s.rejectedKoc && <div className="truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
-      </button>
-    </div>
-  );
+  const chip = (s: ContentSlot) => {
+    const ready = isBriefReady(s);
+    const code = formatBriefCode(s);
+    const qty = slotTargetQty(s);
+    return (
+      <div
+        key={s.id}
+        draggable
+        onDragStart={e => {
+          setDragId(s.id);
+          e.dataTransfer.setData('text/plain', s.id);
+        }}
+        onDragEnd={() => setDragId(null)}
+        title={CONTENT_PILLARS.find(p => p.name === s.pillar)?.definition}
+        className="cursor-grab rounded border border-line bg-surface px-1.5 py-1 text-2xs active:cursor-grabbing"
+      >
+        <button type="button" onClick={() => openEdit(s)} className="block w-full text-left">
+          <div className="flex items-center justify-between gap-1">
+            <span className="font-semibold text-ink">
+              {code} · {qty} video
+            </span>
+            <span className={`text-3xs ${ready ? 'text-positive' : 'text-ink-3'}`}>{ready ? 'Brief đủ' : 'Nháp'}</span>
+          </div>
+          <div className="truncate font-medium text-ink">{s.pillar}</div>
+          <div className="truncate text-ink-3">{s.product || s.angle || 'Chưa ghi sản phẩm'}</div>
+          {s.angle && s.product && <div className="truncate text-ink-3">{s.angle}</div>}
+          {s.pic && <div className="truncate text-ink-3">{s.pic}</div>}
+          {s.kocHandle && <div className="truncate font-medium text-accent">@{s.kocHandle.replace(/^@/, '')}</div>}
+          {!s.kocHandle && s.rejectedKoc && <div className="truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -364,7 +488,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
       <section className="min-w-0 space-y-4">
         {!plan || !req || !diag ? (
-          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để lập kế hoạch content.</div>
+          <div className="rounded-lg border border-dashed border-line px-6 py-16 text-center text-sm text-ink-3">Chọn một kế hoạch ở bên trái để lập các dòng Định hướng / Brief Content.</div>
         ) : (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -375,7 +499,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                   {saveLabel[status] ? ` · ${saveLabel[status]}` : ''}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {req.hasData && diag.placedVideos < diag.totalRequired && (
+                  <Button size="md" variant="secondary" onClick={handleGenerateAllPlanBriefs}>
+                    Khởi tạo dòng Brief theo khung tuần × bậc
+                  </Button>
+                )}
                 <Button size="md" variant="secondary" onClick={pullFromBrandPlan} disabled={pulling}>
                   {pulling ? 'Đang lấy…' : 'Lấy từ plan Brand'}
                 </Button>
@@ -388,17 +517,17 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                   </Button>
                 )}
                 <Button size="md" variant="primary" icon={Plus} onClick={() => openAdd()}>
-                  Thêm content
+                  Thêm dòng Brief
                 </Button>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {[
-                { label: 'Đã lập / cần (theo 4.1.1)', value: `${fmt(diag.totalSlots)} / ${fmt(diag.totalRequired)}` },
-                { label: 'Đã xếp vào tuần', value: fmt(diag.placed) },
-                { label: 'Chưa xếp', value: fmt(diag.unplaced) },
-                { label: 'Đã gán KOC', value: `${fmt(assignedCount)} / ${fmt(diag.totalSlots)}` },
+                { label: 'Số dòng Brief / Góc nội dung', value: `${fmt(diag.totalSlots)} dòng Brief` },
+                { label: 'Tổng SL Video theo Brief / Plan', value: `${fmt(diag.totalBriefVideos)} / ${fmt(diag.totalRequired)} video` },
+                { label: 'Dòng Brief đã đủ nội dung', value: `${fmt(diag.readyBriefs)} / ${fmt(diag.totalSlots)} dòng` },
+                { label: 'SL Video đã xếp vào tuần', value: `${fmt(diag.placedVideos)} / ${fmt(diag.totalRequired)} video` },
                 { label: 'Nhóm pillar nhiều nhất', value: diag.byPillarGroup[0] ? `${diag.byPillarGroup[0].group} (${Math.round(diag.byPillarGroup[0].share * 100)}%)` : '—' },
               ].map(c => (
                 <div key={c.label} className="rounded-lg border border-line bg-surface px-3 py-2">
@@ -410,7 +539,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
 
             {!req.hasData ? (
               <div className="rounded-lg border border-dashed border-line px-6 py-10 text-center text-sm text-ink-3">
-                Kế hoạch này chưa có số theo tuần trong bảng phân rã. Chuyên viên cần nhập tab Phân rã tuần trước khi xếp content vào tuần.
+                Kế hoạch này chưa có số theo tuần trong bảng phân rã. Chuyên viên cần nhập tab Phân rã tuần trước khi xếp dòng Brief vào tuần.
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-line bg-surface">
@@ -423,27 +552,30 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                           <div className="flex items-center justify-between gap-1">
                             <span>{w}</span>
                             {wi > 0 && (
-                              <button type="button" title="Sao chép content từ tuần trước" onClick={() => copyWeekFromPrevious(wi)} className="rounded p-1 text-ink-3 hover:bg-accent-soft hover:text-accent">
+                              <button type="button" title="Sao chép các dòng Brief từ tuần trước" onClick={() => copyWeekFromPrevious(wi)} className="rounded p-1 text-ink-3 hover:bg-accent-soft hover:text-accent">
                                 <Copy className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
                         </th>
                       ))}
-                      <th className="min-w-[80px] border-l border-line px-2 py-2 text-right font-medium text-ink">Tổng</th>
+                      <th className="min-w-[80px] border-l border-line px-2 py-2 text-right font-medium text-ink">Tổng Video</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rowsShown.map(row => {
                       const rowNeed = req.weeks.reduce((s, w) => s + (req.grid[w]?.[row.key] || 0), 0);
-                      const rowHave = slots.filter(s => s.row === row.key && isPlaced(s)).length;
+                      const rowHave = slots
+                        .filter(s => s.row === row.key && isPlaced(s))
+                        .reduce((sum, s) => sum + slotTargetQty(s), 0);
                       return (
                         <tr key={row.key} className="border-t border-line align-top">
                           <td className="sticky left-0 z-10 bg-surface px-3 py-2 font-medium text-ink">{row.label}</td>
                           {req.weeks.map(w => {
                             const need = req.grid[w]?.[row.key] || 0;
                             const cell = slots.filter(s => s.week === w && s.row === row.key);
-                            const tone = cell.length === need ? 'text-positive' : cell.length > need ? 'text-critical' : 'text-warning';
+                            const cellVideos = cell.reduce((sum, s) => sum + slotTargetQty(s), 0);
+                            const tone = cellVideos === need ? 'text-positive' : cellVideos > need ? 'text-critical' : 'text-warning';
                             const canDrop = Boolean(dragging);
                             return (
                               <td
@@ -460,10 +592,10 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                                 className={`border-l border-line p-1.5 ${canDrop ? 'bg-accent-soft/40' : ''}`}
                               >
                                 <div className="mb-1 flex items-center justify-between">
-                                  <span className={`text-2xs font-medium tabular-nums ${need === 0 && cell.length === 0 ? 'text-ink-3' : tone}`}>
-                                    {cell.length}/{need}
+                                  <span className={`text-2xs font-medium tabular-nums ${need === 0 && cellVideos === 0 ? 'text-ink-3' : tone}`}>
+                                    {cellVideos}/{need} video
                                   </span>
-                                  <button type="button" title="Thêm content vào ô này" onClick={() => openAdd(w, row.key)} className="rounded p-0.5 text-ink-3 hover:bg-accent-soft hover:text-accent">
+                                  <button type="button" title="Thêm dòng Brief vào ô này" onClick={() => openAdd(w, row.key)} className="rounded p-0.5 text-ink-3 hover:bg-accent-soft hover:text-accent">
                                     <Plus className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
@@ -496,7 +628,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                 className="rounded-lg border border-line bg-surface p-3"
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-ink">Kho content chưa xếp ({diag.unplaced})</span>
+                  <span className="text-xs font-medium text-ink">Kho dòng Brief chưa xếp tuần ({diag.unplaced})</span>
                   <Select value={backlogGroup} onChange={e => setBacklogGroup(e.target.value)} className="max-w-[180px]">
                     <option value="ALL">Mọi nhóm pillar</option>
                     {groupOptions.map(g => (
@@ -508,20 +640,20 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                 </div>
                 <div className="grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
                   {backlog.map(chip)}
-                  {backlog.length === 0 && <div className="col-span-full px-2 py-6 text-center text-xs text-ink-3">Không có content chưa xếp. Kéo content từ bảng về đây để bỏ xếp.</div>}
+                  {backlog.length === 0 && <div className="col-span-full px-2 py-6 text-center text-xs text-ink-3">Không có dòng Brief chưa xếp. Kéo từ bảng về đây để bỏ xếp tuần.</div>}
                 </div>
               </div>
 
               <div className="space-y-3 rounded-lg border border-line bg-surface p-3">
                 <div className="space-y-1.5">
-                  {diag.byPillarGroup.length === 0 && <div className="text-xs text-ink-3">Chưa có content nào.</div>}
+                  {diag.byPillarGroup.length === 0 && <div className="text-xs text-ink-3">Chưa có dòng Brief nào.</div>}
                   {diag.byPillarGroup.map(g => (
                     <div key={g.group} className="flex items-center gap-2 text-xs">
                       <span className="w-40 shrink-0 truncate text-ink-2">{g.group}</span>
                       <div className="h-2 flex-1 overflow-hidden rounded bg-sunken">
                         <div className="h-full bg-accent" style={{ width: `${Math.round(g.share * 100)}%` }} />
                       </div>
-                      <span className="w-14 shrink-0 text-right tabular-nums text-ink-3">{g.count} · {Math.round(g.share * 100)}%</span>
+                      <span className="w-20 shrink-0 text-right tabular-nums text-ink-3">{g.count} video · {Math.round(g.share * 100)}%</span>
                     </div>
                   ))}
                 </div>
@@ -545,15 +677,15 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       <Modal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Thêm content"
-        size="md"
+        title="Thêm dòng Định hướng / Brief Content"
+        size="lg"
         footer={
           <>
             <Button variant="ghost" onClick={() => setAddOpen(false)}>
               Đóng
             </Button>
             <Button variant="primary" onClick={confirmAdd}>
-              {`Thêm ${Math.max(1, Math.min(50, Math.floor(addForm.qty) || 1))} content`}
+              {`Lưu dòng Brief (${Math.max(1, Math.min(500, Math.floor(addForm.qty) || 1))} video)`}
             </Button>
           </>
         }
@@ -568,14 +700,29 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               ))}
             </Select>
           </Field>
-          <Field label="Số lượng">
+          <Field label="Số lượng video mục tiêu của dòng Brief">
             <Input inputMode="numeric" value={String(addForm.qty)} onChange={e => setAddForm({ ...addForm, qty: parseInt(e.target.value.replace(/\D/g, ''), 10) || 0 })} />
           </Field>
           <Field label="Sản phẩm">
             <Input value={addForm.product} onChange={e => setAddForm({ ...addForm, product: e.target.value })} />
           </Field>
-          <Field label="Góc nội dung">
+          <Field label="Định dạng quay">
+            <Select value={addForm.format} onChange={e => setAddForm({ ...addForm, format: e.target.value })}>
+              {BRIEF_FORMAT_OPTIONS.map(f => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Góc nội dung (Angle)" className="col-span-2">
             <Input value={addForm.angle} onChange={e => setAddForm({ ...addForm, angle: e.target.value })} />
+          </Field>
+          <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
+            <Input value={addForm.hook} onChange={e => setAddForm({ ...addForm, hook: e.target.value })} />
+          </Field>
+          <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
+            <Input value={addForm.usp} onChange={e => setAddForm({ ...addForm, usp: e.target.value })} />
           </Field>
           <Field label="Xếp vào tuần">
             <Select value={addForm.week} onChange={e => setAddForm({ ...addForm, week: e.target.value })}>
@@ -603,8 +750,8 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       <Modal
         open={Boolean(editing)}
         onClose={() => setEditing(null)}
-        title={editing ? editing.pillar : ''}
-        size="md"
+        title={editing ? `Dòng Brief ${formatBriefCode(editing)} (${slotTargetQty(editing)} video) · ${editing.pillar}` : 'Dòng Brief Content'}
+        size="lg"
         footer={
           <>
             {editing && (
@@ -636,12 +783,22 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               </Button>
             )}
             <Button variant="primary" onClick={saveEdit}>
-              Lưu
+              Lưu dòng Brief
             </Button>
           </>
         }
       >
         <div className="grid grid-cols-2 gap-3">
+          <Field label="Mã dòng Brief">
+            <Input value={editForm.briefCode} onChange={e => setEditForm({ ...editForm, briefCode: e.target.value })} />
+          </Field>
+          <Field label="Số lượng video mục tiêu của dòng Brief">
+            <Input
+              inputMode="numeric"
+              value={String(editForm.targetQty)}
+              onChange={e => setEditForm({ ...editForm, targetQty: parseInt(e.target.value.replace(/\D/g, ''), 10) || 1 })}
+            />
+          </Field>
           <Field label="Content pillar">
             <Select value={editForm.pillar} onChange={e => setEditForm({ ...editForm, pillar: e.target.value })}>
               {CONTENT_PILLARS.map(p => (
@@ -654,19 +811,72 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           <Field label="Sản phẩm">
             <Input value={editForm.product} onChange={e => setEditForm({ ...editForm, product: e.target.value })} />
           </Field>
-          <Field label="Góc nội dung" className="col-span-2">
-            <Input value={editForm.angle} onChange={e => setEditForm({ ...editForm, angle: e.target.value })} />
+          <Field label="Định dạng quay" className="col-span-2">
+            <Select value={editForm.format} onChange={e => setEditForm({ ...editForm, format: e.target.value })}>
+              {BRIEF_FORMAT_OPTIONS.map(f => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </Select>
           </Field>
-          <Field label="Ghi chú" className="col-span-2">
-            <Textarea rows={3} value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
+          <div className="col-span-2">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-xs font-medium text-ink">Góc nội dung (Angle)</span>
+              <button
+                type="button"
+                onClick={() => setCopilotOpen(true)}
+                className="inline-flex items-center gap-1 text-2xs font-medium text-accent hover:underline"
+              >
+                <Lightbulb className="h-3 w-3" />
+                Gợi ý góc quay & Hook 3s
+              </button>
+            </div>
+            <Input value={editForm.angle} onChange={e => setEditForm({ ...editForm, angle: e.target.value })} />
+          </div>
+          <Field label="Câu mở đầu 3 giây đầu (Hook 3s)" className="col-span-2">
+            <Input value={editForm.hook} onChange={e => setEditForm({ ...editForm, hook: e.target.value })} />
+          </Field>
+          <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
+            <Textarea rows={2} value={editForm.usp} onChange={e => setEditForm({ ...editForm, usp: e.target.value })} />
+          </Field>
+          <Field label="Lời kêu gọi hành động (CTA)">
+            <Input value={editForm.cta} onChange={e => setEditForm({ ...editForm, cta: e.target.value })} />
+          </Field>
+          <Field label="Link file Brief mẫu">
+            <Input value={editForm.briefUrl} placeholder="https://" onChange={e => setEditForm({ ...editForm, briefUrl: e.target.value })} />
+          </Field>
+          <Field label="Ghi chú hướng dẫn quay" className="col-span-2">
+            <Textarea rows={2} value={editForm.note} onChange={e => setEditForm({ ...editForm, note: e.target.value })} />
           </Field>
         </div>
       </Modal>
 
+      <ContentCopilotModal
+        open={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+        brandName={plan?.brandName}
+        productName={editForm.product}
+        initialPillar={editForm.pillar}
+        initialScript={editForm.note}
+        onApplyAngle={data => {
+          setEditForm(prev => ({
+            ...prev,
+            angle: data.angleName,
+            hook: data.hook || prev.hook,
+            usp: data.usp || prev.usp,
+            cta: data.cta || prev.cta,
+            note: (prev.note ? prev.note + '\n\n' : '') + `[Tình huống]: ${data.painPoint}`,
+          }));
+          notify(`Đã áp dụng góc tiếp cận vào Brief: ${data.angleName}`, 'success');
+        }}
+        onNotify={onNotify}
+      />
+
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Xóa content"
-        message={deleting ? `Xóa content "${deleting.pillar}" khỏi kế hoạch?` : ''}
+        title="Xóa Brief Content"
+        message={deleting ? `Xóa Brief "${formatBriefCode(deleting)} · ${deleting.pillar}" khỏi kế hoạch?` : ''}
         confirmLabel="Xóa"
         tone="danger"
         onConfirm={() => {

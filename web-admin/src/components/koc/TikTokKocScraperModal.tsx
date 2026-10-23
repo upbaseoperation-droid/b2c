@@ -472,7 +472,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
                     <span>@{r.handle}</span>
                     {sum && (
                       <span
-                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                        className={`px-1.5 py-0.5 rounded-full text-3xs font-semibold ${
                           sum.latestReview.verdict === 'NOT_SUITABLE' || sum.notSuitableCount > 0
                             ? 'bg-critical-soft text-critical'
                             : sum.latestReview.verdict === 'SUITABLE'

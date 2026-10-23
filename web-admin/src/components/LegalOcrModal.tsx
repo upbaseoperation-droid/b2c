@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Presence } from './ui';
+import React, { useState, useRef } from 'react';
+import { Modal } from '@/components/ui';
 import {
-  X,
   Upload,
   FileText,
   CheckCircle2,
@@ -18,13 +17,9 @@ import {
   ChevronUp,
   Eye,
   Info,
-  Sliders,
-  RotateCcw,
-  Save,
 } from 'lucide-react';
 import { OcrLegalExtractionResult, OcrExtractedFields } from '../lib/types';
 import { SAMPLE_OCR_PRESETS } from '../lib/ocrPresets';
-import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 
 interface LegalOcrModalProps {
   isOpen: boolean;
@@ -48,20 +43,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   const [showRawText, setShowRawText] = useState<boolean>(false);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
   const [ocrError, setOcrError] = useState<string | null>(null);
-  const [showOcrPromptEditor, setShowOcrPromptEditor] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Keyboard accessibility: ESC to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return <Presence show={false} />;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -178,49 +160,50 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   };
 
   return (
-    <Presence show>
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div data-motion-panel className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[90dvh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-line bg-sunken shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success-soft border border-success-line text-success flex items-center justify-center font-semibold">
-              <ShieldCheck className="w-5 h-5 text-success" />
-            </div>
-              <div>
-                <h3 className="text-sm font-semibold text-ink">
-                  Đọc ảnh giấy tờ pháp lý
-                </h3>
-              </div>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Đọc ảnh giấy tờ pháp lý"
+      size="xl"
+      footer={
+        <div className="w-full flex flex-wrap items-center justify-between gap-2">
+          <div className="text-xs text-muted flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+            Dữ liệu sau khi kiểm tra có thể bấm lưu trực tiếp vào Master Data hoặc hợp đồng.
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-hover transition cursor-pointer"
-              aria-label="Đóng"
+              className="px-4 py-2 bg-surface hover:bg-hover text-ink-2 border border-line-strong rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              Hủy
+            </button>
+
+            <button
+              type="button"
+              onClick={handleApply}
+              disabled={!extractionResult}
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-fg rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>Áp dụng dữ liệu vào hồ sơ KOC</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
-
+      }
+    >
+      <div className="space-y-5">
         {/* Preset Selector Bar */}
-        <div className="px-4 sm:px-6 py-2.5 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+        <div className="p-3 bg-sunken rounded-xl border border-line flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-ink-2">Dữ liệu mẫu thử nghiệm:</span>
             <div className="inline-flex flex-wrap rounded-lg border border-line bg-surface p-0.5">
               <button
                 type="button"
                 onClick={() => handleLoadPreset('CCCD_INDIVIDUAL')}
-                className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
+                className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
                   extractionResult?.documentType === 'CCCD' && !selectedFile
                     ? 'bg-primary text-primary-fg font-semibold'
                     : 'text-ink-2 hover:text-ink'
@@ -231,7 +214,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleLoadPreset('BUSINESS_COMPANY')}
-                className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
+                className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
                   extractionResult?.documentType === 'BUSINESS_LICENSE' && !selectedFile
                     ? 'bg-primary text-primary-fg font-semibold'
                     : 'text-ink-2 hover:text-ink'
@@ -242,7 +225,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <button
                 type="button"
                 onClick={() => handleLoadPreset('BUSINESS_HOUSEHOLD')}
-                className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
+                className={`px-2.5 py-1 rounded-md font-medium text-xs transition-colors ${
                   extractionResult?.documentType === 'BUSINESS_HOUSEHOLD' && !selectedFile
                     ? 'bg-primary text-primary-fg font-semibold'
                     : 'text-ink-2 hover:text-ink'
@@ -262,7 +245,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
 
         {ocrError && (
-          <div className="mx-4 sm:mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
+          <div className="p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-danger shrink-0" />
               <span>{ocrError}</span>
@@ -272,7 +255,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         )}
 
         {/* Modal Body: 2 Columns */}
-        <div className="p-4 sm:p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Upload / Preview Area */}
           <div className="lg:col-span-5 space-y-4">
             <div className="space-y-1.5">
@@ -286,7 +269,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('AUTO')}
-                className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
+                className={`flex-1 py-1 px-2 rounded-md font-medium transition-colors text-center ${
                   activeTab === 'AUTO' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
@@ -295,7 +278,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('CCCD')}
-                className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
+                className={`flex-1 py-1 px-2 rounded-md font-medium transition-colors text-center ${
                   activeTab === 'CCCD' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
@@ -304,7 +287,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('BUSINESS')}
-                className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
+                className={`flex-1 py-1 px-2 rounded-md font-medium transition-colors text-center ${
                   activeTab === 'BUSINESS' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
@@ -315,7 +298,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             {/* Upload Dropzone */}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition relative overflow-hidden group ${
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors relative overflow-hidden group ${
                 previewUrl
                   ? 'border-info-line bg-info-soft/20'
                   : 'border-line-strong hover:border-primary bg-sunken hover:bg-hover'
@@ -450,9 +433,9 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 <h4 className="text-sm font-semibold text-ink">
                   Chưa có dữ liệu giấy tờ nào được bóc tách
                 </h4>
-                <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
+                <div className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
                   Vui lòng tải ảnh CCCD / ĐKKD ở khung bên trái hoặc nhấp vào một trong các nút mẫu thử nghiệm phía trên để xem demo.
-                </p>
+                </div>
               </div>
             )}
 
@@ -462,9 +445,9 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 <h4 className="text-sm font-semibold text-ink">
                   Đang đọc thông tin từ ảnh chụp...
                 </h4>
-                <p className="text-xs text-ink-2 max-w-sm mx-auto leading-relaxed">
+                <div className="text-xs text-ink-2 max-w-sm mx-auto leading-relaxed">
                   Hệ thống đang đọc thông tin từ ảnh trên máy chủ Upbase, trích xuất số CCCD/MST, họ tên, ngày sinh và địa chỉ...
-                </p>
+                </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success-soft text-success text-2xs font-semibold border border-success-line">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Xử lý nội bộ — Không gửi dữ liệu ra bên ngoài
@@ -736,37 +719,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             )}
           </div>
         </div>
-
-        {/* Modal Footer */}
-        <div className="px-4 sm:px-6 py-4 border-t border-line bg-sunken flex flex-wrap items-center justify-between gap-2 shrink-0">
-          <div className="text-xs text-muted flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-            Dữ liệu sau khi kiểm tra có thể bấm lưu trực tiếp vào Master Data hoặc hợp đồng.
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-surface hover:bg-hover text-ink-2 border border-line-strong rounded-xl text-xs font-semibold transition cursor-pointer"
-            >
-              Hủy
-            </button>
-
-            <button
-              type="button"
-              onClick={handleApply}
-              disabled={!extractionResult}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover active:scale-[0.99] text-primary-fg rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span>Áp dụng dữ liệu vào hồ sơ KOC</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
-    </Presence>
+    </Modal>
   );
 };
-

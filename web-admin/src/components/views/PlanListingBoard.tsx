@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Plus, RefreshCw, Search } from 'lucide-react';
-import type { InputPlanBreakdownState, KocItem, KocListingItem } from '../../lib/types';
+import { Download, FileText, Plus, RefreshCw, Search } from 'lucide-react';
+import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle } from '../../lib/types';
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
 import type { ContentSlot } from '../../lib/contentPlanRules';
 import { defaultBookingTabName, resolveBrandBookingSheetUrl } from '../../lib/bookingList';
 import {
+  BATCH_CYCLE_SPECS,
   BOARD_COLUMNS,
   LARK_31_COLUMNS,
   canMove,
   columnOf,
   computeAlerts,
+  computeBatchProgress,
   computeProgress,
   createListingItem,
   isPlanListable,
@@ -22,6 +24,8 @@ import {
   moveItem,
   parsePastedKocs,
   toLark31Rows,
+  computeBrandSlaMetrics,
+  getItemSlaBadge,
   type BoardColumn,
   type QuotaKey,
 } from '../../lib/listingBoardRules';
@@ -53,6 +57,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<QuotaKey | null>(null);
+  const [batchFilter, setBatchFilter] = useState<ListingBatchCycle | null>(null);
   const [picFilter, setPicFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [planSlots, setPlanSlots] = useState<ContentSlot[]>([]);
@@ -94,6 +99,24 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   const plan = useMemo(() => listable.find(p => p.id === selectedId) || null, [listable, selectedId]);
   const { items, status, update, saveNow, reload } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
 
+  interface PullSessionReport {
+    pullAt: string;
+    tabName: string;
+    approved: number;
+    rejected: number;
+    considering: number;
+    unchanged: number;
+    reapproved: number;
+    approvedHandles: string[];
+    rejectedDetails: { handle: string; reason?: string }[];
+    consideringHandles: string[];
+    notOnSheet: string[];
+    slotTaken: string[];
+    duplicateConflicts: string[];
+  }
+  const [pullReport, setPullReport] = useState<PullSessionReport | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+
   // --- lấy kết quả Brand duyệt từ Google Sheet ---
   const [pullOpen, setPullOpen] = useState(false);
   const [pullForm, setPullForm] = useState({ sheetUrl: '', dot: 1, tab: '' });
@@ -130,6 +153,24 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
       }
       await reload();
       setPullOpen(false);
+
+      setPullReport({
+        pullAt: body.pullAt || new Date().toISOString(),
+        tabName: body.tabName || pullForm.tab,
+        approved: body.approved || 0,
+        rejected: body.rejected || 0,
+        considering: body.considering || 0,
+        unchanged: body.unchanged || 0,
+        reapproved: body.reapproved || 0,
+        approvedHandles: body.approvedHandles || [],
+        rejectedDetails: body.rejectedDetails || [],
+        consideringHandles: body.consideringHandles || [],
+        notOnSheet: body.notOnSheet || [],
+        slotTaken: body.slotTaken || [],
+        duplicateConflicts: body.duplicateConflicts || [],
+      });
+      setReportOpen(true);
+
       const parts = [
         `Brand duyệt mới ${body.approved}`,
         `từ chối ${body.rejected}`,
@@ -151,12 +192,20 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   };
 
   const progress = useMemo(() => (plan ? computeProgress(plan, items) : null), [plan, items]);
+  const batchProgress = useMemo(() => (plan ? computeBatchProgress(plan, items) : []), [plan, items]);
+  const brandSla = useMemo(() => computeBrandSlaMetrics(items, 48), [items]);
   const alerts = useMemo(() => (plan ? computeAlerts(plan, items) : []), [plan, items]);
-  // Content của kế hoạch: cho biết PIC và sản phẩm của từng KOC trên bảng
-  useEffect(() => {
+  const [prevPlanId, setPrevPlanId] = useState(plan?.id);
+  if (prevPlanId !== plan?.id) {
+    setPrevPlanId(plan?.id);
     setPlanSlots([]);
     setPicFilter('');
     setGroupFilter('');
+    setBatchFilter(null);
+  }
+
+  // Content của kế hoạch: cho biết PIC và sản phẩm của từng KOC trên bảng
+  useEffect(() => {
     if (!plan) return;
     let cancelled = false;
     (async () => {
@@ -180,10 +229,11 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   const shownItems = useMemo(
     () =>
       items
+        .filter(i => !batchFilter || (i.batchCycle || 'BATCH_10') === batchFilter)
         .filter(i => !tierFilter || (itemGrade(i) === 'TAP UpAffiliate' ? 'FOC' : itemGrade(i)) === tierFilter)
         .filter(i => !picFilter || (planSlots.find(s => s.id === i.planSlotId)?.pic || i.assignedStaffName || '').trim() === picFilter)
         .filter(i => !groupFilter || (planSlots.find(s => s.id === i.planSlotId)?.product || '').trim() === groupFilter),
-    [items, tierFilter, picFilter, groupFilter, planSlots]
+    [items, batchFilter, tierFilter, picFilter, groupFilter, planSlots]
   );
 
   // --- chuyển trạng thái ---
@@ -218,15 +268,17 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   const [addOpen, setAddOpen] = useState(false);
   const [addTab, setAddTab] = useState<'PICK' | 'PASTE'>('PICK');
   const [addGrade, setAddGrade] = useState<KlCode | 'TAP UpAffiliate'>('KL1');
+  const [addBatch, setAddBatch] = useState<ListingBatchCycle>('BATCH_10');
   const [pickSearch, setPickSearch] = useState('');
   const [picked, setPicked] = useState<string[]>([]);
   const [pasteText, setPasteText] = useState('');
 
-  const openAdd = (grade?: KlCode | 'TAP UpAffiliate') => {
+  const openAdd = (grade?: KlCode | 'TAP UpAffiliate', batch?: ListingBatchCycle) => {
     if (!plan || !progress) return;
     const withGap = progress.tiers.filter(t => t.gap > 0 && t.key !== 'FOC');
     const fallback = (withGap[0]?.key as KlCode | undefined) || 'KL1';
     setAddGrade(grade || fallback);
+    setAddBatch(batch || batchFilter || 'BATCH_10');
     setPicked([]);
     setPasteText('');
     setPickSearch('');
@@ -285,19 +337,26 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         fee: p.fee,
         actorId: currentUserId,
         actorName: currentUserName,
+        batchCycle: addBatch,
       })
     );
     update([...items, ...created]);
     setAddOpen(false);
     notify(
-      `Đã thêm ${created.length} KOC vào ${gradeText(addGrade)}${addPreview.duplicates ? `, bỏ qua ${addPreview.duplicates} KOC đã có` : ''}${addPreview.over ? '. Ngân sách bậc này đang vượt.' : '.'}`,
+      `Đã thêm ${created.length} KOC vào ${gradeText(addGrade)} (${BATCH_CYCLE_SPECS.find(b => b.key === addBatch)?.shortLabel || addBatch})${addPreview.duplicates ? `, bỏ qua ${addPreview.duplicates} KOC đã có` : ''}${addPreview.over ? '. Ngân sách bậc này đang vượt.' : '.'}`,
       addPreview.over ? 'warning' : 'success'
     );
   };
 
   // --- sửa một KOC ---
   const [editing, setEditing] = useState<KocListingItem | null>(null);
-  const [editForm, setEditForm] = useState({ proposedFee: 0, finalFee: 0, grade: 'KL1' as KlCode | 'TAP UpAffiliate', note: '' });
+  const [editForm, setEditForm] = useState({
+    proposedFee: 0,
+    finalFee: 0,
+    grade: 'KL1' as KlCode | 'TAP UpAffiliate',
+    batchCycle: 'BATCH_10' as ListingBatchCycle,
+    note: '',
+  });
 
   const openEdit = (item: KocListingItem) => {
     setEditing(item);
@@ -305,6 +364,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
       proposedFee: item.proposedFee || 0,
       finalFee: item.finalFee ?? 0,
       grade: itemGrade(item),
+      batchCycle: item.batchCycle || 'BATCH_10',
       note: item.negotiationNote || '',
     });
   };
@@ -319,6 +379,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
               proposedFee: editForm.proposedFee,
               finalFee: editForm.finalFee > 0 ? editForm.finalFee : undefined,
               salaryGrade: editForm.grade,
+              batchCycle: editForm.batchCycle,
               negotiationNote: editForm.note || undefined,
               updatedAt: new Date().toISOString(),
             }
@@ -439,6 +500,11 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                     Lưu lại
                   </Button>
                 )}
+                {pullReport && (
+                  <Button size="md" variant="ghost" icon={FileText} onClick={() => setReportOpen(true)}>
+                    Xem phiên vừa lấy
+                  </Button>
+                )}
                 <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()} disabled={items.length === 0}>
                   Lấy kết quả Brand
                 </Button>
@@ -451,7 +517,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {[
                 { label: 'Đã list / cần', value: `${fmt(progress.total.listed)} / ${fmt(progress.total.requiredQty)}`, bar: pct(progress.total.listed, progress.total.requiredQty) },
                 { label: 'Đã chốt / cần', value: `${fmt(progress.total.confirmed)} / ${fmt(progress.total.requiredQty)}`, bar: pct(progress.total.confirmed, progress.total.requiredQty) },
@@ -468,7 +534,61 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                   )}
                 </div>
               ))}
+              <div className={`rounded-lg border px-3 py-2 ${brandSla.pendingOverdue > 0 ? 'border-critical bg-critical-soft' : 'border-line bg-surface'}`}>
+                <div className="text-2xs text-ink-3">SLA Brand duyệt (48h)</div>
+                <div className="text-sm font-semibold tabular-nums text-ink">
+                  {brandSla.totalDecided > 0 ? `${brandSla.onTimeRatePct}% đúng hạn` : `${brandSla.totalPending} chờ duyệt`}
+                </div>
+                <div className="mt-1 text-2xs tabular-nums text-ink-2">
+                  {brandSla.pendingOverdue > 0 ? (
+                    <span className="font-medium text-critical">${brandSla.pendingOverdue} kênh quá hạn</span>
+                  ) : brandSla.totalDecided > 0 ? (
+                    `TB: ${brandSla.avgResponseHours}h phản hồi`
+                  ) : (
+                    'Không có kênh trễ'
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Tiến độ 3 Đợt Listing theo SLA B2C: Ngày 10 (60%) — Ngày 20 (30%) — Ngày 30 (10%) */}
+            {batchProgress.length > 0 && (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {batchProgress.map(bp => {
+                  const active = batchFilter === bp.key;
+                  const qtyPct = pct(bp.listedQty, bp.targetQty);
+                  return (
+                    <button
+                      key={bp.key}
+                      type="button"
+                      onClick={() => setBatchFilter(active ? null : bp.key)}
+                      className={`rounded-lg border px-3 py-2.5 text-left transition ${
+                        active ? 'border-accent bg-accent-soft' : 'border-line bg-surface hover:bg-sunken'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink">{bp.label}</span>
+                        <span className="text-xs font-semibold tabular-nums text-ink">
+                          {fmt(bp.listedQty)} / {fmt(bp.targetQty)} KOC ({qtyPct}%)
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-sunken">
+                        <div className="h-full bg-accent" style={{ width: `${qtyPct}%` }} />
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
+                        <span>
+                          Cam kết: <strong className="text-ink">{fmt(bp.committedBudget)}đ</strong> / {fmt(bp.targetBudget)}đ
+                        </span>
+                        <span>
+                          Đã chốt: <strong className="text-ink">{fmt(bp.confirmedQty)}</strong>
+                          {bp.key === 'BATCH_10' ? ` · KL cao (KL3–7): ${bp.highKlListedCount}` : ''}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="overflow-x-auto rounded-lg border border-line bg-surface">
               <table className="w-full min-w-[760px] text-xs">
@@ -554,10 +674,25 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 )}
               </div>
             )}
-            {tierFilter && (
-              <div className="flex items-center justify-between rounded-md bg-accent-soft px-3 py-1.5 text-xs text-ink-2">
-                <span>Đang lọc bậc {gradeText(tierFilter)}</span>
-                <button type="button" onClick={() => setTierFilter(null)} className="font-medium text-accent hover:underline">
+            {(tierFilter || batchFilter) && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-accent-soft px-3 py-1.5 text-xs text-ink-2">
+                <span>
+                  Đang lọc:{' '}
+                  {[
+                    batchFilter ? BATCH_CYCLE_SPECS.find(b => b.key === batchFilter)?.shortLabel || batchFilter : '',
+                    tierFilter ? `Bậc ${gradeText(tierFilter)}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTierFilter(null);
+                    setBatchFilter(null);
+                  }}
+                  className="font-medium text-accent hover:underline"
+                >
                   Bỏ lọc
                 </button>
               </div>
@@ -604,7 +739,12 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                             <button type="button" onClick={() => openEdit(it)} className="block w-full text-left">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="truncate font-medium text-ink">@{handle}</span>
-                                <span className="shrink-0 rounded bg-sunken px-1.5 py-0.5 text-2xs font-medium text-ink-2">{gradeText(itemGrade(it))}</span>
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <span className="rounded bg-sunken px-1.5 py-0.5 text-2xs font-medium text-ink-3">
+                                    {it.batchCycle === 'BATCH_20' ? 'Đợt 2' : it.batchCycle === 'BATCH_30' ? 'Đợt 3' : 'Đợt 1'}
+                                  </span>
+                                  <span className="rounded bg-sunken px-1.5 py-0.5 text-2xs font-medium text-ink-2">{gradeText(itemGrade(it))}</span>
+                                </div>
                               </div>
                               <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
                                 <span className="truncate">{it.kocName !== handle ? it.kocName : ' '}</span>
@@ -612,6 +752,25 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                               </div>
                               {(picOf(it) || productOf(it)) && <div className="mt-0.5 truncate text-2xs text-ink-3">{[picOf(it), productOf(it)].filter(Boolean).join(' · ')}</div>}
                               {col.key === 'DROPPED' && it.dropReason && <div className="mt-1 truncate text-2xs text-critical">{it.dropReason}</div>}
+                              {(() => {
+                                const sla = getItemSlaBadge(it, 48);
+                                if (!sla) return null;
+                                return (
+                                  <div className="mt-1">
+                                    <span
+                                      className={`inline-flex items-center rounded px-1.5 py-0.5 text-2xs font-medium ${
+                                        sla.variant === 'critical'
+                                          ? 'bg-critical-soft text-critical'
+                                          : sla.variant === 'warning'
+                                          ? 'bg-warning-soft text-warning'
+                                          : 'bg-success-soft text-success'
+                                      }`}
+                                    >
+                                      {sla.label}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
                             </button>
                             <div className="mt-1.5 flex items-center gap-1.5">
                               {next && (
@@ -637,6 +796,119 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         )}
       </section>
 
+
+      {/* Modal Báo cáo phiên lấy kết quả Brand duyệt */}
+      <Modal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Tổng hợp phiên lấy kết quả Brand duyệt"
+        size="lg"
+        footer={
+          <Button variant="primary" onClick={() => setReportOpen(false)}>
+            Đã xem xong
+          </Button>
+        }
+      >
+        {pullReport && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-2 text-xs text-ink-3">
+              <span>Tab Google Sheet: <strong className="text-ink">{pullReport.tabName}</strong></span>
+              <span>Thời gian lấy: <strong className="text-ink">{new Date(pullReport.pullAt).toLocaleTimeString('vi-VN')} {new Date(pullReport.pullAt).toLocaleDateString('vi-VN')}</strong></span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-success/30 bg-success-soft p-3">
+                <div className="text-2xs text-ink-3">Duyệt mới</div>
+                <div className="text-lg font-semibold text-success tabular-nums">{pullReport.approved}</div>
+              </div>
+              <div className="rounded-lg border border-critical/30 bg-critical-soft p-3">
+                <div className="text-2xs text-ink-3">Từ chối</div>
+                <div className="text-lg font-semibold text-critical tabular-nums">{pullReport.rejected}</div>
+              </div>
+              <div className="rounded-lg border border-warning/30 bg-warning-soft p-3">
+                <div className="text-2xs text-ink-3">Cân nhắc</div>
+                <div className="text-lg font-semibold text-warning tabular-nums">{pullReport.considering}</div>
+              </div>
+              <div className="rounded-lg border border-line bg-sunken/40 p-3">
+                <div className="text-2xs text-ink-3">Không đổi</div>
+                <div className="text-lg font-semibold text-ink tabular-nums">{pullReport.unchanged}</div>
+              </div>
+            </div>
+
+            {(pullReport.duplicateConflicts.length > 0 || pullReport.notOnSheet.length > 0 || pullReport.slotTaken.length > 0) && (
+              <div className="space-y-2 rounded-lg border border-critical/30 bg-critical-soft p-3 text-xs">
+                <div className="font-semibold text-critical">Cảnh báo dữ liệu trên Google Sheet:</div>
+                {pullReport.duplicateConflicts.length > 0 && (
+                  <div className="text-critical">
+                    • <strong>Mâu thuẫn kết quả:</strong> Kênh @{pullReport.duplicateConflicts.join(', @')} xuất hiện nhiều dòng trên sheet với các câu trả lời khác nhau (hệ thống đã lấy câu trả lời ở dòng cuối).
+                  </div>
+                )}
+                {pullReport.notOnSheet.length > 0 && (
+                  <div className="text-critical">
+                    • <strong>Mất dòng trên Sheet:</strong> Có {pullReport.notOnSheet.length} KOC đã gửi nhưng không tìm thấy trong tab này (@{pullReport.notOnSheet.slice(0, 5).join(', @')}{pullReport.notOnSheet.length > 5 ? '…' : ''}).
+                  </div>
+                )}
+                {pullReport.slotTaken.length > 0 && (
+                  <div className="text-warning">
+                    • <strong>Trùng vị trí content:</strong> Kênh @{pullReport.slotTaken.join(', @')} được Brand duyệt lại sau khi từ chối, nhưng vị trí content đã được gán KOC khác.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {pullReport.approvedHandles.length > 0 && (
+              <div className="space-y-1.5 rounded-lg border border-line bg-surface p-3 text-xs">
+                <div className="font-medium text-success">
+                  KOC được Brand duyệt ({pullReport.approvedHandles.length}):
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {pullReport.approvedHandles.map(h => (
+                    <span key={h} className="rounded bg-success-soft px-2 py-0.5 font-medium text-success">
+                      @{h}
+                    </span>
+                  ))}
+                </div>
+                <div className="text-2xs text-ink-3">Đã tự động chuyển sang cột Thương lượng KOC để chốt điều khoản.</div>
+              </div>
+            )}
+
+            {pullReport.rejectedDetails.length > 0 && (
+              <div className="space-y-2 rounded-lg border border-line bg-surface p-3 text-xs">
+                <div className="font-medium text-critical">
+                  KOC bị Brand từ chối ({pullReport.rejectedDetails.length}):
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-1 divide-y divide-line/60">
+                  {pullReport.rejectedDetails.map(item => (
+                    <div key={item.handle} className="flex items-start justify-between py-1">
+                      <span className="font-medium text-ink">@{item.handle}</span>
+                      <span className="text-ink-2 text-right text-2xs italic">
+                        {item.reason ? `Lý do: ${item.reason}` : 'Không ghi lý do'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-2xs text-ink-3">Đã tự động bỏ gán khỏi kế hoạch content để chuyên viên chọn KOC khác thay thế.</div>
+              </div>
+            )}
+
+            {pullReport.consideringHandles.length > 0 && (
+              <div className="space-y-1 rounded-lg border border-line bg-surface p-3 text-xs">
+                <div className="font-medium text-warning">
+                  KOC Brand đang cân nhắc ({pullReport.consideringHandles.length}):
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {pullReport.consideringHandles.map(h => (
+                    <span key={h} className="rounded bg-warning-soft px-2 py-0.5 font-medium text-warning">
+                      @{h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
       {/* Thêm KOC */}
       <Modal
         open={addOpen}
@@ -655,7 +927,16 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         }
       >
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <Field label="Đợt Listing (SLA 60% / 30% / 10%)">
+              <Select value={addBatch} onChange={e => setAddBatch(e.target.value as ListingBatchCycle)}>
+                {BATCH_CYCLE_SPECS.map(b => (
+                  <option key={b.key} value={b.key}>
+                    {b.shortLabel}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Field label="Bậc KL">
               <Select value={addGrade} onChange={e => setAddGrade(e.target.value as KlCode | 'TAP UpAffiliate')}>
                 {GRADE_OPTIONS.map(g => (
@@ -739,7 +1020,15 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
               ))}
             </Select>
           </Field>
-          <div />
+          <Field label="Đợt Listing">
+            <Select value={editForm.batchCycle} onChange={e => setEditForm({ ...editForm, batchCycle: e.target.value as ListingBatchCycle })}>
+              {BATCH_CYCLE_SPECS.map(b => (
+                <option key={b.key} value={b.key}>
+                  {b.shortLabel}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Giá net đề xuất (đ)">
             <Input inputMode="numeric" value={editForm.proposedFee ? fmt(editForm.proposedFee) : ''} onChange={e => setEditForm({ ...editForm, proposedFee: parseInt(e.target.value.replace(/\D/g, ''), 10) || 0 })} />
           </Field>

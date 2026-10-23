@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { Camera, Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { formatDate, formatNumber } from '../../lib/format';
+import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
+import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
 import {
   buildLinkAirCsv,
   LINK_AIR_PLATFORM_LABEL,
@@ -507,6 +509,8 @@ function LinkAirDetailModal({
 }) {
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [enrichingCart, setEnrichingCart] = useState(false);
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
+  const [savedScreenshotCount, setSavedScreenshotCount] = useState<number>(0);
 
   const needsCartEnrichment = Boolean(
     result &&
@@ -597,9 +601,18 @@ function LinkAirDetailModal({
       size="lg"
       title={`Kết quả kiểm tra · ${r.author.handle ? `@${r.author.handle}` : platformLabel}`}
       footer={
-        <Button variant="ghost" onClick={onClose}>
-          Đóng
-        </Button>
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Đóng
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Camera}
+            onClick={() => setScreenshotModalOpen(true)}
+          >
+            Chụp ảnh sản phẩm cho BBNT{savedScreenshotCount > 0 ? ` (${savedScreenshotCount})` : ''}
+          </Button>
+        </>
       }
     >
       <div className="grid gap-5">
@@ -843,9 +856,9 @@ function LinkAirDetailModal({
         {r.transcriptText && (
           <section className="grid gap-1.5">
             <h4 className="text-sm font-semibold text-ink">Phụ đề lời thoại tự động (WebVTT)</h4>
-            <p className="text-xs text-ink-2 whitespace-pre-line max-h-36 overflow-y-auto p-2.5 rounded-xl bg-surface-2/60 border border-line font-code leading-relaxed">
+            <div className="text-xs text-ink-2 whitespace-pre-line max-h-36 overflow-y-auto p-2.5 rounded-xl bg-surface-2/60 border border-line font-code leading-relaxed">
               {r.transcriptText}
-            </p>
+            </div>
           </section>
         )}
 
@@ -862,6 +875,20 @@ function LinkAirDetailModal({
 
         <p className="text-2xs text-ink-3 break-all">Link đã nhập: {r.inputUrl}</p>
       </div>
+      <VideoProductScreenshotModal
+        open={screenshotModalOpen}
+        onClose={() => setScreenshotModalOpen(false)}
+        initialVideoUrl={r.canonicalUrl || r.inputUrl}
+        productName={r.productTitle || ''}
+        authorHandle={r.author.handle || undefined}
+        existingScreenshots={findSavedScreenshotsForContext({
+          authorHandle: r.author.handle || undefined,
+          videoUrl: r.canonicalUrl || r.inputUrl,
+        })}
+        onApplyScreenshots={(items) => {
+          setSavedScreenshotCount(items.length);
+        }}
+      />
     </Modal>
   );
 }

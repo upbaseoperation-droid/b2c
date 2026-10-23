@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { klLabel } from '../../lib/klTiers';
 import { Modal, Button, Chips, Status } from '../ui';
 import {
-  Filter,
   AlertTriangle,
   Download,
   Send,
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   AlertCircle,
   History,
-  Award,
   Star,
   Eye,
   CheckSquare,

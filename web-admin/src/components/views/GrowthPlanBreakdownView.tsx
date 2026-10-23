@@ -445,7 +445,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   </div>
 
                   <h4 className="text-xs font-semibold text-slate-900 line-clamp-1">{demand.brandName}</h4>
-                  <p className="text-2xs text-slate-500 line-clamp-1 mt-0.5">{demand.title}</p>
+                  <div className="text-2xs text-slate-500 line-clamp-1 mt-0.5">{demand.title}</div>
                 </div>
 
                 <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-2xs">

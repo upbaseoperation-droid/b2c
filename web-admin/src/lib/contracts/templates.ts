@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
-import type { ContractCategory, ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate, TemplateVersionHistoryItem } from './types';
+import type { AcceptanceScreenshotItem, ContractCategory, ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate, TemplateVersionHistoryItem } from './types';
 import { requireCondition } from './domain';
 import prisma from '../prisma';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from './builtInTemplatesSnapshot';
@@ -775,7 +775,119 @@ export async function uploadTemplateDocx(
   return (await loadTemplate(id)).template;
 }
 
-export async function renderTemplate(id: string, expectedHash: string, values: Record<string, string>) {
+async function embedAcceptanceScreenshotsIntoDocxZip(
+  zip: JSZip,
+  screenshots: AcceptanceScreenshotItem[],
+) {
+  const validShots = (screenshots || []).filter(
+    s => typeof s?.imageDataUrl === 'string' && s.imageDataUrl.startsWith('data:image/'),
+  );
+  if (validShots.length === 0) return;
+  const docFile = zip.file('word/document.xml');
+  if (!docFile) return;
+
+  const relEntries: string[] = [];
+  const paragraphsXml: string[] = [
+    `<w:p><w:pPr><w:spacing w:before="220" w:after="100"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+      'HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU):',
+    )}</w:t></w:r></w:p>`,
+  ];
+
+  validShots.forEach((shot, idx) => {
+    const match = shot.imageDataUrl.match(/^data:image\/(png|jpe?g|webp);base64,([\s\S]+)$/i);
+    const noteText = shot.note || shot.captionQuote || '';
+    const captionLine = `Ảnh ${idx + 1} [Mốc ${shot.timeLabel || '00:00'}]${
+      shot.matchedTerm ? ` · Từ khóa/SP: ${shot.matchedTerm}` : ''
+    }${noteText ? ` — ${noteText}` : ''}`;
+
+    paragraphsXml.push(
+      `<w:p><w:pPr><w:spacing w:before="120" w:after="60"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        captionLine,
+      )}</w:t></w:r></w:p>`,
+    );
+
+    if (!match) return;
+    const rawExt = match[1].toLowerCase();
+    const ext = rawExt === 'png' ? 'png' : 'jpg';
+    const mediaFilename = `acceptance_screenshot_${idx + 1}.${ext}`;
+    const rId = `rIdUpbaseShot${idx + 1}`;
+    const docPrId = 9100 + idx;
+    const imgBuf = Buffer.from(match[2], 'base64');
+    if (imgBuf.byteLength < 32) return;
+
+    zip.file(`word/media/${mediaFilename}`, imgBuf);
+    relEntries.push(
+      `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${mediaFilename}"/>`,
+    );
+
+    const cx = 2286000; // ~6.0 cm
+    const cy = 4064000; // ~10.6 cm (tỉ lệ 9:16 khung hình dọc TikTok)
+    paragraphsXml.push(
+      `<w:p><w:pPr><w:spacing w:before="40" w:after="140"/></w:pPr><w:r><w:drawing>` +
+        `<wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">` +
+        `<wp:extent cx="${cx}" cy="${cy}"/>` +
+        `<wp:docPr id="${docPrId}" name="Screenshot ${idx + 1}" descr="${encodeXml(captionLine)}"/>` +
+        `<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr>` +
+        `<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">` +
+        `<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+        `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+        `<pic:nvPicPr><pic:cNvPr id="${docPrId}" name="${mediaFilename}"/><pic:cNvPicPr/></pic:nvPicPr>` +
+        `<pic:blipFill><a:blip r:embed="${rId}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+        `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>` +
+        `</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`,
+    );
+  });
+
+  if (relEntries.length > 0) {
+    const ctFile = zip.file('[Content_Types].xml');
+    if (ctFile) {
+      let ctXml = await ctFile.async('string');
+      if (!/Extension="jpg"/i.test(ctXml)) {
+        ctXml = ctXml.replace('</Types>', '<Default Extension="jpg" ContentType="image/jpeg"/></Types>');
+      }
+      if (!/Extension="png"/i.test(ctXml)) {
+        ctXml = ctXml.replace('</Types>', '<Default Extension="png" ContentType="image/png"/></Types>');
+      }
+      zip.file('[Content_Types].xml', ctXml);
+    }
+
+    const relsPath = 'word/_rels/document.xml.rels';
+    const relsFile = zip.file(relsPath);
+    if (relsFile) {
+      const relsXml = await relsFile.async('string');
+      const updatedRels = relsXml.replace('</Relationships>', `${relEntries.join('')}</Relationships>`);
+      zip.file(relsPath, updatedRels);
+    } else {
+      zip.file(
+        relsPath,
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relEntries.join('')}</Relationships>`,
+      );
+    }
+  }
+
+  const docXml = await docFile.async('string');
+  const injectedBlock = paragraphsXml.join('');
+  // Chèn ngay trước bảng chữ ký cuối cùng (nếu có ĐẠI DIỆN BÊN A), hoặc trước <w:sectPr / </w:body>
+  const tblMatches = [...docXml.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)];
+  const lastTbl = tblMatches.at(-1);
+  let nextDocXml: string;
+  if (lastTbl && lastTbl.index !== undefined && /ĐẠI DIỆN BÊN A|BÊN A/i.test(paragraphText(lastTbl[0]))) {
+    nextDocXml = docXml.slice(0, lastTbl.index) + injectedBlock + docXml.slice(lastTbl.index);
+  } else if (docXml.includes('<w:sectPr')) {
+    const sectIdx = docXml.lastIndexOf('<w:sectPr');
+    nextDocXml = docXml.slice(0, sectIdx) + injectedBlock + docXml.slice(sectIdx);
+  } else {
+    nextDocXml = docXml.replace('</w:body>', `${injectedBlock}</w:body>`);
+  }
+  zip.file('word/document.xml', nextDocXml);
+}
+
+export async function renderTemplate(
+  id: string,
+  expectedHash: string,
+  values: Record<string, string>,
+  acceptanceScreenshots?: AcceptanceScreenshotItem[],
+) {
   const { template, zip } = await loadTemplate(id, expectedHash); requireCondition(template.hash === expectedHash, 'File nguồn không khớp phiên bản.', 409);
   const texts: string[] = [];
   for (const part of Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort()) {
@@ -788,6 +900,9 @@ export async function renderTemplate(id: string, expectedHash: string, values: R
       texts.push(paragraphText(next)); return next;
     });
     zip.file(part, filled);
+  }
+  if (acceptanceScreenshots && acceptanceScreenshots.length > 0) {
+    await embedAcceptanceScreenshotsIntoDocxZip(zip, acceptanceScreenshots);
   }
   return { buffer: await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }), paragraphs: texts, template };
 }

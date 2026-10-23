@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ConfirmDialog, PageActions, StatRow, Stat, Button, Presence, Modal } from '../ui';
+import { ConfirmDialog, PageActions, StatRow, Stat, Button, Modal } from '../ui';
 import { 
   Layers, 
   Search, 
@@ -19,8 +19,6 @@ import {
   Grid3X3,
   Lightbulb,
   ArrowRight,
-  Info,
-  X
 } from 'lucide-react';
 import { ContentAngleItem, UserProfile, MasterContentPillar, PushProductItem, StorePortfolioItem } from '../../lib/types';
 import type { BrandProduct } from '../../lib/brands/types';
@@ -623,9 +621,6 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                 <Search className="w-6 h-6" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Không tìm thấy góc kịch bản nào</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Thử thay đổi bộ lọc hoặc thêm góc kịch bản mới cho sản phẩm này.
-              </p>
               <button
                 onClick={() => handleOpenCreateModal()}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition"

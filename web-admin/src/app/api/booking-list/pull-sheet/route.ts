@@ -75,11 +75,16 @@ export async function POST(request: NextRequest) {
     const duplicateConflicts = Array.from(seenDecisions.entries()).filter(([, s]) => s.size > 1).map(([h]) => h);
 
     const summary = {
+      pullAt: new Date().toISOString(),
+      tabName: (body.tab || '').trim(),
       approved: 0,
       rejected: 0,
       considering: 0,
       unchanged: 0,
       reapproved: 0,
+      approvedHandles: [] as string[],
+      consideringHandles: [] as string[],
+      rejectedDetails: [] as { handle: string; reason?: string }[],
       notOnSheet: [] as string[],
       rejectedHandles: [] as string[],
       restoredHandles: [] as string[],
@@ -94,6 +99,9 @@ export async function POST(request: NextRequest) {
       const notOnSheet: string[] = [];
       const rejectedHandles: string[] = [];
       const restoredHandles: string[] = [];
+      const approvedHandles: string[] = [];
+      const consideringHandles: string[] = [];
+      const rejectedDetails: { handle: string; reason?: string }[] = [];
       const items = rec.data.items.map(item => {
         const handle = normHandle(item.kocHandle || '');
         const d = decisions.get(handle);
@@ -106,16 +114,22 @@ export async function POST(request: NextRequest) {
         else if (r.restored) {
           c.reapproved += 1;
           restoredHandles.push(handle);
-        } else if (d.decision === 'APPROVED') c.approved += 1;
-        else if (d.decision === 'REJECTED') {
+        } else if (d.decision === 'APPROVED') {
+          c.approved += 1;
+          approvedHandles.push(handle);
+        } else if (d.decision === 'REJECTED') {
           c.rejected += 1;
           rejectedHandles.push(handle);
-        } else if (d.decision === 'CONSIDER') c.considering += 1;
+          rejectedDetails.push({ handle, reason: d.reason || undefined });
+        } else if (d.decision === 'CONSIDER') {
+          c.considering += 1;
+          consideringHandles.push(handle);
+        }
         return r.item;
       });
       try {
         await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items }));
-        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles });
+        Object.assign(summary, c, { notOnSheet, rejectedHandles, restoredHandles, approvedHandles, consideringHandles, rejectedDetails });
         break;
       } catch (err) {
         if (!(err instanceof RecordError && err.status === 409)) throw err;

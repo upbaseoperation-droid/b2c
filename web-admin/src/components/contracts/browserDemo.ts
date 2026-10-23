@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { assertCanSign, canRead, createContract, decideContract, editContract, event, requireCondition, submitContract } from '../../lib/contracts/domain';
-import type { ContractActor, ContractField, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractActor, ContractField, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
 import type { ContractBootstrap } from './api';
 import { OFFICIAL_TEMPLATES_SNAPSHOT } from '../../lib/contracts/builtInTemplatesSnapshot';
 import { numberToVietnameseWords } from '../../lib/contracts/contractRules';
@@ -341,6 +341,12 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     if (isKocOwnForm) {
       requireCondition(Boolean(customFile), 'Vui lòng tải lên file hợp đồng (.docx) của KOC.');
     }
+    let acceptanceScreenshots: AcceptanceScreenshotItem[] | undefined = existing?.acceptanceScreenshots;
+    if (Array.isArray(body.acceptanceScreenshots)) {
+      acceptanceScreenshots = (body.acceptanceScreenshots as AcceptanceScreenshotItem[])
+        .filter((item) => item && typeof item.imageDataUrl === 'string' && item.imageDataUrl.trim().length > 0)
+        .slice(0, 12);
+    }
     return {
       title: body.title,
       brand: body.brand,
@@ -357,6 +363,7 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim() : undefined,
       isKocOwnForm,
       customFile: isKocOwnForm ? customFile : undefined,
+      acceptanceScreenshots,
     };
   };
 
@@ -419,6 +426,12 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       else templates.push(customTpl);
       event(next, actor, 'NOTE', `Pháp chế đã lưu mẫu này thành Mẫu đã duyệt cho KOC ${record.partner || record.kocId}.`);
     }
+  } else if (body.action === 'UPDATE_ACCEPTANCE_SCREENSHOTS') {
+    requireCondition(Array.isArray(body.acceptanceScreenshots), 'Danh sách ảnh chụp không hợp lệ.');
+    next.acceptanceScreenshots = (body.acceptanceScreenshots as AcceptanceScreenshotItem[])
+      .filter((item) => item && typeof item.imageDataUrl === 'string' && item.imageDataUrl.trim().length > 0)
+      .slice(0, 12);
+    event(next, actor, 'NOTE', `Đã cập nhật ${next.acceptanceScreenshots.length} ảnh chụp màn hình sản phẩm đính kèm Biên bản nghiệm thu`);
   } else if (body.action === 'WITHDRAW') {
     requireCondition(
       record.ownerId === actor.id &&

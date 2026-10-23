@@ -1,5 +1,6 @@
 import { KocItem } from './types';
 import { REAL_FLAGSHIP_KOCS } from './realKocMasterData';
+import { REAL_POTENTIAL_NEW_KOCS } from './realPotentialKocData';
 
 // Danh bạ KOC / KOL chủ lực chuẩn hóa cho hệ thống UpBase B2C
 // Kết hợp 20 KOC hạt nhân + 254 KOC chủ lực chuẩn hóa từ Danh_Ba_Chuan_Hoa_Master_KOC_KOL_B2C_2026.xlsx & File 3.4 / 3.2
@@ -93,6 +94,26 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     workedPicsCount: 3,
     workedPicsList: 'Khánh Vy, Hoàng Hải Long, Trần Hải Phượng',
     contractDriveUrl: 'https://drive.google.com/drive/folders/1cL3f32-5G9w0xA9k4b7n9X',
+    alternatePayees: [
+      {
+        legalId: '001201004567',
+        holderName: 'PHẠM NGỌC HIẾU AN',
+        bankName: 'Techcombank',
+        bankAccount: '1903456789012',
+        taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+        dealsCount: 8,
+        latestBrand: 'Royal Ausnz',
+      },
+      {
+        legalId: '8549302194-001',
+        holderName: 'HỘ KINH DOANH MEGA URI MEDIA',
+        bankName: 'Techcombank',
+        bankAccount: '1903456789888',
+        taxAccountType: 'HKD xuất hóa đơn',
+        dealsCount: 3,
+        latestBrand: 'Kutieskin',
+      },
+    ],
   },
   {
     id: 'koc-2',
@@ -168,6 +189,26 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     historicalRoi: 4.2,
     totalPastGmv: 98000000,
     totalPastCost: 23500000,
+    alternatePayees: [
+      {
+        legalId: '079198003456',
+        holderName: 'LÊ THỊ BÍCH CHANH',
+        bankName: 'MB Bank',
+        bankAccount: '098877665588',
+        taxAccountType: '(Thuế TNCN 10%) Tài khoản cá nhân',
+        dealsCount: 2,
+        latestBrand: 'Kutieskin',
+      },
+      {
+        legalId: '0318920456',
+        holderName: 'CÔNG TY TNHH CHANH BEAUTY NETWORK',
+        bankName: 'Vietcombank',
+        bankAccount: '0071001239876',
+        taxAccountType: '(VAT 8%) Tài khoản doanh nghiệp',
+        dealsCount: 1,
+        latestBrand: 'Bye Bye Blemish',
+      },
+    ],
   },
   {
     id: 'koc-3',
@@ -878,7 +919,10 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     historicalRoi: 3.8
   },
 
-  // --- 254 KOC CHỦ LỰC CHUẨN HÓA TỪ DANH BẠ MASTER KOC B2C 2026 & FILE 3.4 / 3.2 ---
-  ...REAL_FLAGSHIP_KOCS
+  // --- 4.800 KOC CHỦ LỰC CHUẨN HÓA TỪ DANH BẠ MASTER KOC B2C 2026 & FILE 3.4 / 3.2 ---
+  ...REAL_FLAGSHIP_KOCS,
+
+  // --- KOC MỚI / TIỀM NĂNG CHƯA HỢP TÁC (BẢNG 2 - SHEET KOC_Tiem_Nang ERD) ---
+  ...REAL_POTENTIAL_NEW_KOCS,
 ];
 

@@ -22,9 +22,16 @@ import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
+import { detectSubjectKind } from '../../lib/contracts/contractRules';
+import { documentOfTemplate, type ContractDocument } from '../../lib/planDealLink';
 
 /** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
-export interface ContractIntent { dealId: string; nonce: number }
+export interface ContractIntent {
+  dealId: string;
+  nonce: number;
+  /** Loại tài liệu cần mở hoặc soạn của deal trong kế hoạch: hợp đồng nguyên tắc, SOW hoặc biên bản nghiệm thu. */
+  document?: ContractDocument;
+}
 
 type Screen =
   | { mode: 'list' }
@@ -91,8 +98,32 @@ export function ContractManagementView({
   const [handledIntent, setHandledIntent] = useState<number | null>(null);
   if (intent && data && handledIntent !== intent.nonce) {
     setHandledIntent(intent.nonce);
-    const existing = data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-    setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT' } });
+    const latest = (rs: ContractRecord[]) => [...rs].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    if (intent.document) {
+      // Deal của kế hoạch: mở hồ sơ đã có của đúng loại tài liệu, chưa có thì mở form soạn theo mẫu bản mới
+      const doc = intent.document;
+      const deal = deals.find(d => d.id === intent.dealId);
+      const koc = kocs.find(k => k.id === deal?.kocId);
+      const subject = detectSubjectKind(koc, deal);
+      const existing = latest(data.records.filter(r => r.dealId === intent.dealId && documentOfTemplate(r.templateId) === doc));
+      if (existing) setScreen({ mode: 'detail', id: existing.id });
+      else {
+        const templateId = doc === 'HDNT' ? `${subject}-HDNT` : doc === 'SOW' ? `${subject}-SOW` : `${subject}-VID-BBNT`;
+        if (!data.templates.some(t => t.id === templateId)) {
+          onNotify?.(subject === 'CTV' && doc === 'SOW' ? 'KOC thuộc nhóm CTV kênh không có SOW, chỉ có hợp đồng nguyên tắc và biên bản nghiệm thu theo tháng.' : `Chưa có mẫu ${templateId} trong danh mục biểu mẫu.`, 'warning');
+          setScreen({ mode: 'list' });
+        } else {
+          const sameKoc = (r: ContractRecord) => r.dealId === intent.dealId || Boolean(deal?.kocId && r.kocId === deal.kocId);
+          const framework = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && sameKoc(r)));
+          const sow = latest(data.records.filter(r => documentOfTemplate(r.templateId) === 'SOW' && r.dealId === intent.dealId));
+          const parentId = doc === 'SOW' ? framework?.id : doc === 'BBNT' ? sow?.id || framework?.id : undefined;
+          setScreen({ mode: 'form', init: { dealId: intent.dealId, kind: doc === 'BBNT' ? 'ACCEPTANCE' : 'CONTRACT', templateId, parentId } });
+        }
+      }
+    } else {
+      const existing = latest(data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)));
+      setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT' } });
+    }
   }
 
   const record = screen.mode === 'detail' || (screen.mode === 'form' && screen.editId)
@@ -402,6 +433,7 @@ export function ContractManagementView({
             values={quickViewDoc?.values || quickViewRecord.values}
             downloadHref={`/api/contracts/${quickViewRecord.id}/document`}
             signingPeople={quickViewRecord.signing.at(-1)?.people}
+            acceptanceScreenshots={quickViewRecord.acceptanceScreenshots}
             maxHeight="65vh"
           />
         )}

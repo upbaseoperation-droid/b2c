@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
+import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import type { ContentPlanData, ContentSlot } from '@/lib/contentPlanRules';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
@@ -11,9 +11,39 @@ const MAX_SLOTS = 3000;
 const keyOf = (planId: string) => `content-plan-${planId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)}`;
 
 // GET /api/content-plan?planId=... — kế hoạch content của một kế hoạch tháng
+// GET /api/content-plan?selfAll=1 — tổng hợp toàn bộ các ô row === 'SELF' từ tất cả kế hoạch tháng để liên thông sang SelfChannelCtvHubView
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
+  const selfAll = request.nextUrl.searchParams.get('selfAll');
+  if (selfAll === '1' || selfAll === 'true') {
+    try {
+      const plans = await listMonthlyPlans(actor);
+      const selfSlots: Array<{
+        planId: string;
+        storeName: string;
+        brandName: string;
+        month: string;
+        slot: ContentSlot;
+      }> = [];
+      for (const p of plans) {
+        const rec = await readRecord<ContentPlanData>(keyOf(p.plan.id), { slots: [] });
+        const slots = (rec.data.slots || []).filter(s => s.row === 'SELF');
+        for (const slot of slots) {
+          selfSlots.push({
+            planId: p.plan.id,
+            storeName: p.plan.storeName || p.plan.title,
+            brandName: p.plan.brandName,
+            month: p.plan.month,
+            slot,
+          });
+        }
+      }
+      return NextResponse.json({ selfSlots });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
   const planId = request.nextUrl.searchParams.get('planId') || '';
   if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
   try {

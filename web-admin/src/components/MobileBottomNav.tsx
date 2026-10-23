@@ -126,12 +126,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   strokeWidth={isActive ? 2.25 : 1.75}
                 />
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-2 px-1 min-w-[15px] h-[15px] rounded-full bg-critical text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-1 -right-2 px-1 min-w-[15px] h-[15px] rounded-full bg-critical text-white text-3xs font-semibold flex items-center justify-center shadow-xs">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] leading-tight mt-1 truncate max-w-full px-0.5">
+              <span className="text-3xs leading-tight mt-1 truncate max-w-full px-0.5">
                 {item.label}
               </span>
             </button>
@@ -146,7 +146,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           aria-label="Mở tất cả tính năng"
         >
           <Menu className="w-5 h-5" strokeWidth={1.75} />
-          <span className="text-[10px] leading-tight mt-1 truncate max-w-full px-0.5">
+          <span className="text-3xs leading-tight mt-1 truncate max-w-full px-0.5">
             Tất cả
           </span>
         </button>

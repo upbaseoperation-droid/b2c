@@ -305,9 +305,9 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-ink">{rule.tier}</span>
+                <span className="text-sm font-semibold text-ink">{rule.tier}</span>
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-mono font-bold border ${style.badgeBg}`}
+                  className={`px-2 py-0.5 rounded text-xs font-mono font-semibold border ${style.badgeBg}`}
                 >
                   ×{rule.multiplierLabel}
                 </span>
@@ -414,7 +414,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-surface-2/60 border-b border-line text-[11px] font-semibold uppercase tracking-wider text-ink-3">
+              <tr className="bg-surface-2/60 border-b border-line text-2xs font-semibold uppercase tracking-wider text-ink-3">
                 <th className="py-2.5 px-3 w-10 text-center">
                   <button
                     type="button"
@@ -478,7 +478,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                           <span className="font-semibold text-ink">{store.storeName}</span>
                           <ChannelTag channel={store.platform} />
                         </div>
-                        <div className="text-[11px] text-ink-3 mt-0.5 font-mono">
+                        <div className="text-2xs text-ink-3 mt-0.5 font-mono">
                           {store.storeOperationId || store.id} · Gói{' '}
                           {store.servicePackage || 'E2E-S'}
                         </div>
@@ -500,7 +500,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       <td className="py-2.5 px-3 align-middle">
                         <Person name={pic} size={18} />
                         {store.hasBookingLeader && store.bookingLeader && (
-                          <div className="text-[11px] text-ink-3 mt-0.5">
+                          <div className="text-2xs text-ink-3 mt-0.5">
                             TN: {store.bookingLeader}
                           </div>
                         )}
@@ -524,7 +524,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                                 } ${!isManager ? 'opacity-60 cursor-not-allowed' : ''}`}
                               >
                                 <span>{rule.tier}</span>{' '}
-                                <span className="font-mono text-[11px] opacity-90">
+                                <span className="font-mono text-2xs opacity-90">
                                   {rule.multiplierLabel}
                                 </span>
                               </button>

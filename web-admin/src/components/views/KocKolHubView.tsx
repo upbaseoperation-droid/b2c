@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { klLabel } from '../../lib/klTiers';
-import { Avatar, Presence, Status, Modal, Button } from '../ui';
+import { Avatar, Status, Modal, Button } from '../ui';
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import { LegalOcrModal } from '../LegalOcrModal';
 import {
@@ -18,7 +18,6 @@ import {
   Search,
   Play,
   Check,
-  X,
   DollarSign,
   ArrowRight,
   Layers,
@@ -607,8 +606,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
     );
   };
 
-  const handleSubmitVideoDemo = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitVideoDemo = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!submittingDeal || !submissionForm.videoUrl.trim()) {
       notify('Vui lòng nhập link video demo!', 'warning');
       return;
@@ -655,8 +654,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
     }
   };
 
-  const handleSaveChannelMetrics = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveChannelMetrics = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const updatedKoc: KocItem = {
       ...activeKoc,
       followers: Number(metricsForm.followers) || activeKoc.followers,
@@ -1230,7 +1229,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('OVERVIEW')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'OVERVIEW'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1243,7 +1242,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('PROFILE')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'PROFILE'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1269,7 +1268,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('ACTIVE_JOBS')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'ACTIVE_JOBS'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1282,7 +1281,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('CONTRACTS')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'CONTRACTS'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1295,7 +1294,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('HISTORY')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'HISTORY'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1308,7 +1307,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('PERFORMANCE')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'PERFORMANCE'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1321,7 +1320,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               onClick={() => setActiveTab('DISCUSSION')}
               className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'DISCUSSION'
-                  ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                  ? 'bg-primary text-white font-semibold shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
@@ -1838,14 +1837,11 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <h4 className="text-sm font-semibold text-slate-900">
                       Tất cả các mục đã được xác nhận hoàn tất!
                     </h4>
-                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                      Không còn lời mời mới, hợp đồng chờ ký hay kiện hàng nào chờ xác nhận.
-                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('ACTIVE_JOBS')}
-                    className="mt-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition"
+                    className="mt-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition"
                   >
                     <span>Xem công việc đang chạy</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -2110,7 +2106,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                     notes: ''
                                   });
                                 }}
-                                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-2xs"
+                                className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-2xs"
                               >
                                 <Video className="w-3.5 h-3.5" />
                                 Nộp Video
@@ -2242,7 +2238,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 notes: ''
                               });
                             }}
-                            className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5"
+                            className="w-full py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5"
                           >
                             <Play className="w-3.5 h-3.5" />
                             {d.tiktokVideoUrl ? 'Cập nhật lại video / mã Ads' : 'Nộp video & mã Spark Ads'}
@@ -3050,7 +3046,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               </div>
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
                 <span className="text-2xs text-slate-400 block font-sans">Đánh giá sao</span>
-                <strong className="text-amber-600 font-sans">{'★'.repeat(selectedHistoryDeal.ratingScore || 5)}</strong>
+                <strong className="text-ink font-mono inline-flex items-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-current text-warning" />
+                  <span>{(selectedHistoryDeal.ratingScore || 5).toFixed(1)} / 5.0</span>
+                </strong>
               </div>
             </div>
 
@@ -3139,7 +3138,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             </Button>
             <Button
               variant="primary"
-              onClick={(e) => handleSaveChannelMetrics(e as any)}
+              onClick={() => handleSaveChannelMetrics()}
             >
               Lưu &amp; Đồng bộ chỉ số
             </Button>
@@ -3295,7 +3294,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
             <Button
               variant="primary"
               icon={Send}
-              onClick={(e) => handleSubmitVideoDemo(e as any)}
+              onClick={() => handleSubmitVideoDemo()}
             >
               Xác nhận nộp video
             </Button>

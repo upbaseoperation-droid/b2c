@@ -412,18 +412,18 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             <div className="flex items-center justify-between gap-1">
               <span className="font-semibold">{st.title}</span>
               <span
-                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                className={`text-3xs font-semibold px-1.5 py-0.5 rounded ${
                   st.done
                     ? 'bg-emerald-100 text-emerald-800'
                     : st.active
-                    ? 'bg-sky-100 text-sky-800'
+                    ? 'bg-accent-soft text-accent'
                     : 'bg-surface text-ink-3'
                 }`}
               >
                 {st.done ? 'Đã duyệt' : st.active ? 'Đang xử lý' : 'Chờ tới lượt'}
               </span>
             </div>
-            <div className="text-[11px] text-ink-2 mt-0.5 truncate">{st.actor}</div>
+            <div className="text-2xs text-ink-2 mt-0.5 truncate">{st.actor}</div>
           </div>
         ))}
       </div>
@@ -699,7 +699,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                             <span className="font-code text-xs font-semibold text-ink">
                               Deal: {line.dealCode}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-[10px] text-ink-2">
+                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-code text-3xs text-ink-2">
                               HĐNT: {line.masterContractCode} · Phụ lục: {line.contractAppendixCode}
                             </span>
                             <Status tone={line.isEligible ? 'positive' : 'critical'}>
@@ -742,7 +742,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                         </div>
 
                         {/* Tóm tắt cấu trúc chi phí của Deal: Asset Video + Dịch vụ gia tăng - Khấu trừ phần hủy */}
-                        <div className="flex flex-wrap items-center gap-3 px-2.5 py-1.5 rounded bg-surface border border-line text-[11px] font-code text-ink-2">
+                        <div className="flex flex-wrap items-center gap-3 px-2.5 py-1.5 rounded bg-surface border border-line text-2xs font-code text-ink-2">
                           <span>
                             Asset Video: <strong>{formatVnd(line.videoAssetNetAmount ?? line.agreedNetAmount)}</strong>
                           </span>
@@ -781,7 +781,7 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                             <ul className="grid sm:grid-cols-2 gap-1.5 text-2xs text-ink-2">
                               {line.issues.map(iss => (
                                 <li key={iss.code} className="flex items-start gap-1.5">
-                                  <span className="text-critical font-bold">•</span>
+                                  <span className="text-critical font-semibold">•</span>
                                   <span>
                                     <strong className="text-ink">{iss.fieldLabel}:</strong> {iss.message}
                                   </span>

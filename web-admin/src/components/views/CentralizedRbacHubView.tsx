@@ -1527,7 +1527,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         <td className="py-1 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas border-r border-line max-w-[280px]">
                           <div
                             className="font-medium text-xs text-ink truncate flex items-center justify-between gap-1.5"
-                            title={`${item.featureName}${item.description ? `\n• ${item.description}` : ''}${item.securityNote ? `\n🔒 ${item.securityNote}` : ''}`}
+                            title={`${item.featureName}${item.description ? `\n• ${item.description}` : ''}${item.securityNote ? `\nLưu ý bảo mật: ${item.securityNote}` : ''}`}
                           >
                             <span className="truncate">{item.featureName.replace(/\s*\([^)]*\)$/, '')}</span>
                             {item.securityNote && (

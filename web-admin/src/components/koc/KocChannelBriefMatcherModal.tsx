@@ -10,9 +10,6 @@ import {
   Clock,
   FileText,
   AlertTriangle,
-  Sliders,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { REAL_B2C_42_BRANDS } from '../../lib/realB2cBrandsData';
 import type {
@@ -27,7 +24,6 @@ import {
 } from '../../lib/apiKeyConfig';
 import { formatNumber, formatVndShort } from '../../lib/format';
 import { Button, Modal, Status, Textarea } from '../ui';
-import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 interface KocChannelBriefMatcherModalProps {
   open?: boolean;
@@ -49,8 +45,6 @@ export const KocChannelBriefMatcherModal: React.FC<
   initialHandles = [],
   initialBrandName = 'Cocoon',
   onJobsChange,
-  onNotify,
-  onRunningCountChange,
 }) => {
   const isModalOpen = open ?? isOpen ?? false;
   const [handlesInput, setHandlesInput] = useState<string>(
@@ -65,8 +59,7 @@ export const KocChannelBriefMatcherModal: React.FC<
   const [maxBudgetInput, setMaxBudgetInput] = useState<string>('5000000');
   const [videoScanLimit, setVideoScanLimit] = useState<number>(40);
 
-  const [showPromptEditor, setShowPromptEditor] = useState<boolean>(false);
-  const [customPrompt, setCustomPrompt] = useState<string>(() => {
+  const [customPrompt] = useState<string>(() => {
     const cfg = loadApiWorkspaceConfig();
     return getEffectiveConfigForPurpose('KOC_MATCHING', cfg).purpose.systemInstruction;
   });
@@ -138,12 +131,18 @@ export const KocChannelBriefMatcherModal: React.FC<
   }, [brandName, onJobsChange]);
 
   useEffect(() => {
-    void fetchAllJobs();
+    const timer = setTimeout(() => {
+      void fetchAllJobs();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchAllJobs]);
 
   useEffect(() => {
     if (!isModalOpen) return;
-    void fetchAllJobs();
+    const timer = setTimeout(() => {
+      void fetchAllJobs();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [isModalOpen, fetchAllJobs]);
 
   const hasRunningJobs = useMemo(
@@ -492,7 +491,7 @@ export const KocChannelBriefMatcherModal: React.FC<
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className="h-full bg-accent transition-all duration-300"
+                      className="h-full bg-accent data-bar"
                       style={{ width: `${activeJob.progressPct}%` }}
                     />
                   </div>

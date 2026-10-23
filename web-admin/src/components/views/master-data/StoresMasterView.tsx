@@ -2,26 +2,16 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { 
-  Search, 
   Plus, 
-  X, 
   ExternalLink, 
-  Store, 
-  ChevronLeft, 
-  ChevronRight, 
-  RotateCcw, 
   Trash2, 
   Archive, 
-  AlertTriangle,
-  CheckCircle2,
   Check,
   UserCheck,
-  ShieldAlert,
-  ShieldCheck,
   Eye,
   Edit3,
-  Building2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Store
 } from 'lucide-react';
 import { 
   ActionMenu,
@@ -31,10 +21,10 @@ import {
   DataTable,
   EmptyState,
   FilterBar,
+  Modal,
   PageActions,
   Pagination,
   Panel,
-  Person,
   Presence,
   Select,
   Status,
@@ -45,7 +35,6 @@ import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/t
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
 import { StoreHandoverModal } from './StoreHandoverModal';
-import { formatVndShort } from '../../../lib/format';
 import { INITIAL_DEALS } from '../../../lib/mockData';
 
 interface StoresMasterViewProps {
@@ -945,138 +934,100 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       </Presence>
 
       {/* 6. MODAL: TẠO GIAN HÀNG MASTER DATA (CHỈ KHAI BÁO THUỘC BRAND NÀO & SÀN) */}
-      <Presence show={!!isQuickAddModalOpen}>
-      {isQuickAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-line max-w-lg w-full p-5 space-y-4 my-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-line">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-sunken text-ink flex items-center justify-center font-semibold">
-                  <Store className="w-5 h-5 text-ink-2" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-ink">
-                    Thêm Gian Hàng Mới (Dữ Liệu Gốc)
-                  </h3>
-                  
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQuickAddModalOpen(false)}
-                className="text-ink-3 hover:text-ink-2 p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleQuickAddStore} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1">
-                  Tên gian hàng vận hành *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: ClubClio TikTok Shop, Kutieskin Shopee Mall..."
-                  value={quickStoreName}
-                  onChange={(e) => setQuickStoreName(e.target.value)}
-                  className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-line-strong text-xs bg-canvas"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1">
-                  Thuộc Thương hiệu (Brand chủ quản) *
-                </label>
-                <select
-                  value={quickBrandName}
-                  onChange={(e) => setQuickBrandName(e.target.value)}
-                  className="w-full px-3 py-2 border border-line rounded-xl bg-white focus:outline-none focus:border-line-strong font-medium text-xs text-ink"
-                >
-                  {uniqueBrands.map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-ink-2 font-semibold mb-1">
-                  Sàn / Nền tảng vận hành *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {(['TikTok Shop', 'Shopee Mall', 'Lazada'] as const).map(p => {
-                    const isSelected = quickPlatform === p;
-                    return (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setQuickPlatform(p)}
-                        className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
-                          isSelected
-                            ? 'bg-ink text-white border-line-strong shadow-xs'
-                            : 'bg-white text-ink-2 border-line hover:bg-canvas'
-                        }`}
-                      >
-                        <ChannelTag channel={p} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
-                <button
-                  type="button"
-                  onClick={() => setIsQuickAddModalOpen(false)}
-                  className="px-4 py-2 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={!quickStoreName.trim()}
-                  className="px-4 py-2 bg-ink hover:bg-ink disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Tạo gian hàng vào Master Data
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={Boolean(isQuickAddModalOpen)}
+        onClose={() => setIsQuickAddModalOpen(false)}
+        title="Thêm Gian Hàng Mới (Dữ Liệu Gốc)"
+        size="md"
+      >
+        <form onSubmit={handleQuickAddStore} className="space-y-3.5 text-xs">
+          <div>
+            <label className="block text-ink-2 font-semibold mb-1">
+              Tên gian hàng vận hành *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="VD: ClubClio TikTok Shop, Kutieskin Shopee Mall..."
+              value={quickStoreName}
+              onChange={(e) => setQuickStoreName(e.target.value)}
+              className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-line-strong text-xs bg-canvas"
+              autoFocus
+            />
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div>
+            <label className="block text-ink-2 font-semibold mb-1">
+              Thuộc Thương hiệu (Brand chủ quản) *
+            </label>
+            <select
+              value={quickBrandName}
+              onChange={(e) => setQuickBrandName(e.target.value)}
+              className="w-full px-3 py-2 border border-line rounded-xl bg-white focus:outline-none focus:border-line-strong font-medium text-xs text-ink"
+            >
+              {uniqueBrands.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-ink-2 font-semibold mb-1">
+              Sàn / Nền tảng vận hành *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(['TikTok Shop', 'Shopee Mall', 'Lazada'] as const).map(p => {
+                const isSelected = quickPlatform === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setQuickPlatform(p)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      isSelected
+                        ? 'bg-ink text-white border-line-strong shadow-xs'
+                        : 'bg-white text-ink-2 border-line hover:bg-canvas'
+                    }`}
+                  >
+                    <ChannelTag channel={p} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
+            <button
+              type="button"
+              onClick={() => setIsQuickAddModalOpen(false)}
+              className="px-4 py-2 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={!quickStoreName.trim()}
+              className="px-4 py-2 bg-ink hover:bg-ink disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tạo gian hàng vào Master Data
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* 7. MODAL: SỬA THÔNG SỐ GIAN HÀNG */}
-      <Presence show={!!(isModalOpen && editingStore)}>
-      {isModalOpen && editingStore && (
-        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-line max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-line">
-              <div>
-                <h3 className="font-semibold text-sm text-ink">
-                  Cập nhật Gian hàng [{editingStore.storeName}]
-                </h3>
-                
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setEditingStore(null);
-                }}
-                className="text-ink-3 hover:text-ink-2 p-1 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
+      <Modal
+        open={Boolean(isModalOpen && editingStore)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingStore(null);
+        }}
+        title={editingStore ? `Cập nhật Gian hàng [${editingStore.storeName}]` : 'Cập nhật Gian hàng'}
+        size="lg"
+      >
+        <form onSubmit={handleSave} className="space-y-3.5 text-xs">
               {/* Group 1: Identity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1379,26 +1330,18 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   Lưu thông tin gian hàng
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+        </form>
+      </Modal>
 
-      {/* 7. MODAL: XÓA / OFFBOARD GIAN HÀNG */}
-      <Presence show={!!deletingStore}>
-      {deletingStore && (
-        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-2xl border border-line max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-critical-soft text-critical flex items-center justify-center shrink-0 border border-critical/20">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-base text-ink">Xác nhận xử lý gian hàng</h3>
-              </div>
-            </div>
-
+      {/* 8. MODAL: XÓA / OFFBOARD GIAN HÀNG */}
+      <Modal
+        open={Boolean(deletingStore)}
+        onClose={() => setDeletingStore(null)}
+        title="Xác nhận xử lý gian hàng"
+        size="sm"
+      >
+        {deletingStore && (
+          <div className="space-y-4">
             <div className="p-3 bg-canvas rounded-xl border border-line space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-ink">{deletingStore.storeName}</span>
@@ -1442,9 +1385,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
     </div>
   );
 };

@@ -667,7 +667,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               <button
                 type="button"
                 onClick={() => setFilterB2cOnly(true)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
                   filterB2cOnly
                     ? 'bg-white text-accent shadow-2xs'
                     : 'text-ink-2 hover:text-ink'
@@ -678,7 +678,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               <button
                 type="button"
                 onClick={() => setFilterB2cOnly(false)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
                   !filterB2cOnly
                     ? 'bg-white text-ink shadow-2xs'
                     : 'text-ink-2 hover:text-ink'

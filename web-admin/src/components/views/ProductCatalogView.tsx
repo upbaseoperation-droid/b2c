@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Input, Select } from '../ui';
+import { Button, ConfirmDialog, Input, Select } from '../ui';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import {
   AFFILIATE_TYPE_LABEL,
@@ -39,15 +39,19 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({ brandNam
   const brands = useMemo(() => Array.from(new Set(brandNames)).sort((a, b) => a.localeCompare(b)), [brandNames]);
   const [brand, setBrand] = useState('');
   const [groupId, setGroupId] = useState<string | null>(null);
+  const [pendingDeleteGroup, setPendingDeleteGroup] = useState<ProductGroup | null>(null);
+  const [pendingDeleteProduct, setPendingDeleteProduct] = useState<CatalogProduct | null>(null);
   const activeBrand = brand || brands[0] || '';
 
   const { data, status, update, saveNow } = usePlanRecord<BrandProductCatalog>('/api/product-catalog', activeBrand || null, EMPTY_PRODUCT_CATALOG, msg => notify(msg, 'warning'), 'brand');
   const issues = useMemo(() => validateProductCatalog(data), [data]);
   const errors = issues.filter(i => i.level === 'error').length;
 
-  useEffect(() => {
+  const [prevBrand, setPrevBrand] = useState(activeBrand);
+  if (prevBrand !== activeBrand) {
+    setPrevBrand(activeBrand);
     setGroupId(null);
-  }, [activeBrand]);
+  }
   const group = data.groups.find(g => g.id === groupId) || data.groups[0] || null;
   const legacyCount = legacyProducts.filter(p => p.brandName === activeBrand).length;
 
@@ -61,13 +65,19 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({ brandNam
     setGroupId(g.id);
   };
   const removeGroup = (g: ProductGroup) => {
-    if (g.products.length > 0 && !window.confirm(`Nhóm "${g.name || 'chưa đặt tên'}" có ${g.products.length} sản phẩm. Xóa nhóm sẽ xóa cả sản phẩm và link. Tiếp tục?`)) return;
+    if (g.products.length > 0) {
+      setPendingDeleteGroup(g);
+      return;
+    }
     setGroups(data.groups.filter(x => x.id !== g.id));
     setGroupId(null);
   };
   const removeProduct = (p: CatalogProduct) => {
     if (!group) return;
-    if ((p.cartLinks.length > 0 || p.affiliateLinks.length > 0) && !window.confirm(`Xóa "${p.name || 'sản phẩm'}" cùng các link của nó?`)) return;
+    if (p.cartLinks.length > 0 || p.affiliateLinks.length > 0) {
+      setPendingDeleteProduct(p);
+      return;
+    }
     patchGroup(group.id, { products: group.products.filter(x => x.id !== p.id) });
   };
 
@@ -319,6 +329,45 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({ brandNam
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteGroup)}
+        title="Xóa nhóm sản phẩm"
+        message={
+          pendingDeleteGroup
+            ? `Nhóm "${pendingDeleteGroup.name || 'chưa đặt tên'}" có ${pendingDeleteGroup.products.length} sản phẩm. Xóa nhóm sẽ xóa cả sản phẩm và link. Tiếp tục?`
+            : ''
+        }
+        confirmLabel="Xóa nhóm"
+        tone="danger"
+        onCancel={() => setPendingDeleteGroup(null)}
+        onConfirm={() => {
+          if (pendingDeleteGroup) {
+            setGroups(data.groups.filter(x => x.id !== pendingDeleteGroup.id));
+            setGroupId(null);
+          }
+          setPendingDeleteGroup(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDeleteProduct)}
+        title="Xóa sản phẩm"
+        message={
+          pendingDeleteProduct
+            ? `Xóa "${pendingDeleteProduct.name || 'sản phẩm'}" cùng các link của nó?`
+            : ''
+        }
+        confirmLabel="Xóa sản phẩm"
+        tone="danger"
+        onCancel={() => setPendingDeleteProduct(null)}
+        onConfirm={() => {
+          if (pendingDeleteProduct && group) {
+            patchGroup(group.id, { products: group.products.filter(x => x.id !== pendingDeleteProduct.id) });
+          }
+          setPendingDeleteProduct(null);
+        }}
+      />
     </div>
   );
 };

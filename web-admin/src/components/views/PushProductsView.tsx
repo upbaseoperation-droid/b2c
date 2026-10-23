@@ -1137,7 +1137,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <button
                 type="button"
                 onClick={() => setViewMode('BRAND_STORE_HIERARCHY')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
                   viewMode === 'BRAND_STORE_HIERARCHY'
                     ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -1149,7 +1149,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <button
                 type="button"
                 onClick={() => setViewMode('GRID')}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5 ${
                   viewMode === 'GRID'
                     ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -1625,7 +1625,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       {/* DETAIL / COLLABORATION ALIGNMENT DRAWER MODAL */}
       <Presence show={!!selectedProduct} exit="drawer">
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 flex justify-end animate-in fade-in duration-(--motion-base)">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-ink/40 flex justify-end animate-fade-in">
           <div data-motion-panel className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-(--motion-slow) ease-enter">
             {/* Drawer Header */}
             <div className="p-4 sm:p-6 border-b border-slate-200 bg-slate-50 flex items-center justify-between">

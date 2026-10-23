@@ -33,7 +33,6 @@ import type {
 import { formatVnd, formatVndShort } from '../../lib/format';
 import {
   BRAND_CHON_OPTIONS,
-  CONTENT_NOTE_SUGGESTIONS,
   CONTENT_TAG_OPTIONS,
   DE_XUAT_UPBASE_OPTIONS,
   DOT_LISTING_OPTIONS,
@@ -95,7 +94,7 @@ const UI_HEADER_OVERRIDES: Partial<Record<StaffListingColumnKey, string>> = {
 function getDisplayHeader(col: StaffListingColumnMeta): string {
   return (
     UI_HEADER_OVERRIDES[col.key] ||
-    col.header.replace(/[🎃🌸]/g, '').replace(/\s*\(Bổ sung thêm\)/gi, '').trim()
+    col.header.replace(/[\u{1F383}\u{1F338}]/gu, '').replace(/\s*\(Bổ sung thêm\)/gi, '').trim()
   );
 }
 
@@ -126,7 +125,7 @@ const FILL_MODE_BADGE: Record<
   },
   FORMULA: {
     label: 'Công thức',
-    className: 'bg-sky-50 text-sky-700 border-sky-200',
+    className: 'bg-accent-soft text-accent border-accent/25',
   },
   MANUAL_STAFF: {
     label: 'NV điền',
@@ -925,7 +924,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                     <FileSpreadsheet className="w-3 h-3 shrink-0" />
                     <span className="truncate max-w-[140px]">{sh.storeName}</span>
                     <span
-                      className={`px-1 rounded text-[10px] tabular-nums ${
+                      className={`px-1 rounded text-2xs tabular-nums ${
                         isCurrent ? 'bg-white/20 text-white' : 'bg-sunken text-ink-3'
                       }`}
                     >
@@ -1236,7 +1235,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                 <span className="px-1.5 py-0.5 rounded text-2xs border bg-emerald-50 text-emerald-700 border-emerald-200">
                   Tự động: Lấy từ Danh bạ
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-2xs border bg-sky-50 text-sky-700 border-sky-200">
+                <span className="px-1.5 py-0.5 rounded text-2xs border bg-accent-soft text-accent border-accent/25">
                   Công thức: Tự tính
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-2xs border bg-amber-50 text-amber-800 border-amber-200">
@@ -1295,7 +1294,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                         onChange={() => toggleColumnKey(col.key)}
                         className="rounded border-line shrink-0"
                       />
-                      <span className="font-mono text-[10px] text-ink-3 shrink-0">
+                      <span className="font-mono text-3xs text-ink-3 shrink-0">
                         [{col.excelCol}]
                       </span>
                       <span className="truncate" title={col.header}>
@@ -1303,7 +1302,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       </span>
                     </span>
                     <span
-                      className={`px-1 py-0.2 rounded text-[9px] border shrink-0 ${badge.className}`}
+                      className={`px-1 py-0.2 rounded text-3xs border shrink-0 ${badge.className}`}
                     >
                       {badge.label}
                     </span>
@@ -1353,11 +1352,11 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className="font-mono text-[10px] text-ink-3">
+                        <span className="font-mono text-3xs text-ink-3">
                           {col.excelCol}
                         </span>
                         <span
-                          className={`px-1 py-0.2 rounded text-[9px] font-medium border ${badge.className}`}
+                          className={`px-1 py-0.2 rounded text-3xs font-medium border ${badge.className}`}
                         >
                           {badge.label}
                         </span>
@@ -1537,7 +1536,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   row.deXuatUpBase === 'Must Have'
                                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                     : row.deXuatUpBase === 'Recommend'
-                                      ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                      ? 'bg-accent-soft text-accent border-accent/25'
                                       : 'bg-surface text-ink border-line'
                                 }`}
                               >
@@ -1577,10 +1576,10 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                   ))}
                                 </select>
                                 {row.chuyenListDuyetBook && (
-                                  <div className="flex items-center justify-between gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50/80 border border-emerald-200 rounded px-1.5 py-0.5">
+                                  <div className="flex items-center justify-between gap-1 text-3xs font-medium text-emerald-700 bg-emerald-50/80 border border-emerald-200 rounded px-1.5 py-0.5">
                                     <span>Đã sang List duyệt</span>
                                     {row.maBooking && (
-                                      <span className="font-mono font-bold">
+                                      <span className="font-mono font-semibold">
                                         {row.maBooking}
                                       </span>
                                     )}
@@ -1595,7 +1594,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
                               {row.maBooking ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-bold text-emerald-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-semibold text-emerald-800">
                                   {row.maBooking}
                                 </span>
                               ) : (
@@ -1630,7 +1629,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
                                   slaVal.startsWith('Trễ')
                                     ? 'bg-rose-50 text-rose-700 border-rose-200'
                                     : slaVal === 'Đúng hạn' || slaVal.startsWith('Sớm')
@@ -1649,12 +1648,12 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                           return (
                             <td key={col.key} className={`${cellBaseClass} bg-sunken/30`}>
                               <span
-                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold border ${
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold border ${
                                   payVal === 'Đã thanh toán'
                                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                     : payVal === 'Đủ điều kiện ĐNTT' ||
                                       payVal === 'Đã lập ĐNTT'
-                                    ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                    ? 'bg-accent-soft text-accent border-accent/25'
                                     : 'bg-surface text-ink-3 border-line'
                                 }`}
                               >
@@ -1837,7 +1836,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
                                 >
                                   <Mail className="w-3.5 h-3.5" />
                                   {isSent && (
-                                    <span className="text-[9px] font-semibold">Đã gửi</span>
+                                    <span className="text-3xs font-semibold">Đã gửi</span>
                                   )}
                                 </button>
                               </div>

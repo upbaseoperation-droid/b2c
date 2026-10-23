@@ -6,7 +6,7 @@ import { listContracts, getContract, saveContract, storageMode } from '@/lib/con
 import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate, saveTemplateMeta, parseAndStoreCustomDocx, readArchivedDocxBuffer, uploadTemplateDocx } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
-import type { ContractActor, ContractRecord, ReviewStep } from '@/lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractActor, ContractRecord, ReviewStep } from '@/lib/contracts/types';
 import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +52,13 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
     requireCondition(Boolean(customFile), 'Vui lòng tải lên file hợp đồng (.docx) của KOC.');
   }
 
+  let acceptanceScreenshots: AcceptanceScreenshotItem[] | undefined = existing?.acceptanceScreenshots;
+  if (Array.isArray(body.acceptanceScreenshots)) {
+    acceptanceScreenshots = (body.acceptanceScreenshots as AcceptanceScreenshotItem[])
+      .filter((item) => item && typeof item.imageDataUrl === 'string' && item.imageDataUrl.trim().length > 0)
+      .slice(0, 12);
+  }
+
   return {
     title, brand, partner, templateId: template.id, templateHash: template.hash, values,
     parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined,
@@ -61,6 +68,7 @@ async function parseInput(body: Record<string, unknown>, actor: ContractActor, e
     internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim().slice(0, 4000) : undefined,
     isKocOwnForm,
     customFile: isKocOwnForm ? customFile : undefined,
+    acceptanceScreenshots,
   };
 }
 export async function POST(req: NextRequest) {
@@ -159,6 +167,13 @@ export async function POST(req: NextRequest) {
       const notes = (body.legalNotes as string).trim();
       next.internalNotes = notes;
       event(next, actor, 'NOTE', `Cập nhật lưu ý Pháp chế: ${notes}`);
+    } else if (body.action === 'UPDATE_ACCEPTANCE_SCREENSHOTS') {
+      requireCondition(actor.id === record.ownerId || actor.roles.some(r => ['CREATOR', 'LEAD'].includes(r)), 'Không có quyền cập nhật ảnh chụp nghiệm thu.', 403);
+      requireCondition(Array.isArray(body.acceptanceScreenshots), 'Danh sách ảnh chụp không hợp lệ.');
+      next.acceptanceScreenshots = (body.acceptanceScreenshots as AcceptanceScreenshotItem[])
+        .filter((item) => item && typeof item.imageDataUrl === 'string' && item.imageDataUrl.trim().length > 0)
+        .slice(0, 12);
+      event(next, actor, 'NOTE', `Đã cập nhật ${next.acceptanceScreenshots.length} ảnh chụp màn hình sản phẩm đính kèm Biên bản nghiệm thu`);
     } else if (body.action === 'WITHDRAW') {
       requireCondition(actor.id === record.ownerId && ['IN_REVIEW', 'APPROVED'].includes(record.approval), 'Không thể thu hồi hồ sơ.', 403);
       requireCondition(!record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status)), 'Hồ sơ đã trình ký không thể thu hồi nội bộ.');

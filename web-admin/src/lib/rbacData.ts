@@ -2198,6 +2198,13 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
  * Chuyên viên thực thi không được mở mặc định; Admin vẫn có thể bật lại cho từng vai trò tại màn Phân quyền.
  */
 export const HIDDEN_SYSTEM_SCREENS: TabKey[] = [
+  'booking',
+  'approved-booking-list',
+  'sample-tracker',
+  'store-air-plan-report',
+  'push-products',
+  'stores',
+  'ctv-master',
   'workload-3d',
   'performance-p3',
   'audit-trail',
@@ -2251,8 +2258,6 @@ export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
 }
 
 const CORE_SYNCED_ROLE_TABS: TabKey[] = [
-  'store-air-plan-report',
-  'approved-booking-list',
   'tiktok-crawler',
   'market-research',
   'task-delegation',

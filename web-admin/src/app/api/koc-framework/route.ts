@@ -50,6 +50,14 @@ export async function PUT(request: NextRequest) {
     if (!contractNo) throw new RecordError('Cần nhập số hợp đồng nguyên tắc.', 400);
     if (!signedAt) throw new RecordError('Cần nhập ngày ký.', 400);
     if (validTo && validTo < signedAt) throw new RecordError('Ngày hết hiệu lực không được trước ngày ký.', 400);
+    const entityType =
+      body.entityType === 'HOUSEHOLD' || body.entityType === 'COMPANY' ? body.entityType : 'INDIVIDUAL';
+    const hardcopyStatus =
+      body.hardcopyStatus === 'HARDCOPY_PENDING' ||
+      body.hardcopyStatus === 'HARDCOPY_SENT_TO_KOC' ||
+      body.hardcopyStatus === 'HARDCOPY_RETURNED_TO_ACCOUNTING'
+        ? body.hardcopyStatus
+        : 'ESIGN_VERIFIED';
     const entry: FrameworkContract = {
       id,
       handle: id,
@@ -60,6 +68,15 @@ export async function PUT(request: NextRequest) {
       note: s(body.note, 500),
       updatedBy: actor.name,
       updatedAt: new Date().toISOString(),
+      entityType,
+      legalName: s(body.legalName, 160),
+      taxOrCccd: s(body.taxOrCccd, 60),
+      bankName: s(body.bankName, 120),
+      bankAccount: s(body.bankAccount, 80),
+      bankHolder: s(body.bankHolder, 160),
+      authorizationUrl: s(body.authorizationUrl, 1000),
+      hardcopyStatus,
+      hardcopyDueAt: day(body.hardcopyDueAt),
     };
     // Ghi theo từng KOC, thử lại khi người khác vừa lưu
     for (let attempt = 0; attempt < 4; attempt++) {

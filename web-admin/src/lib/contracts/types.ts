@@ -84,6 +84,20 @@ export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'
 export interface SigningPerson { name: string; email: string; action: number; status: string; at?: string }
 export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string; provider?: 'MISA' | 'DEMO' }
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
+export interface AcceptanceScreenshotItem {
+  id: string;
+  videoUrl: string;
+  videoId?: string;
+  authorHandle?: string;
+  timestampSec: number;
+  timeLabel: string;
+  matchedTerm?: string;
+  captionQuote?: string;
+  imageDataUrl: string;
+  capturedAt: string;
+  sourceMode: 'VIDEO_FRAME' | 'SUGGESTED_MOMENT' | 'CLIPBOARD_OR_UPLOAD';
+  note?: string;
+}
 export interface ContractRevision {
   version: number;
   values: Record<string, string>;
@@ -95,6 +109,7 @@ export interface ContractRevision {
     blocks?: DocBlock[];
     paragraphs?: string[];
   };
+  acceptanceScreenshots?: AcceptanceScreenshotItem[];
 }
 export interface ContractRecord {
   id: string; title: string; brand: string; partner: string; ownerId: string; ownerName: string;
@@ -121,4 +136,6 @@ export interface ContractRecord {
     blocks?: DocBlock[];
     paragraphs?: string[];
   };
+  /** Danh sách ảnh chụp màn hình video lúc sản phẩm xuất hiện đính kèm Biên bản nghiệm thu. */
+  acceptanceScreenshots?: AcceptanceScreenshotItem[];
 }

@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatVndShort } from '../lib/format';
-import { ConfirmDialog, Presence, Status } from './ui';
+import { ConfirmDialog, Modal, Presence, Status } from './ui';
 import { 
-  X, 
+  X,
   CheckCircle2, 
-  AlertCircle, 
-  Calendar, 
   DollarSign, 
   Video, 
   Target, 
@@ -15,23 +13,18 @@ import {
   ExternalLink, 
   Check, 
   Edit3, 
-  Send, 
   Sparkles,
-  TrendingUp,
-  User,
   Filter,
   Search,
   MessageSquare,
   AlertTriangle,
   Zap,
-  ArrowRight,
   Shield
 } from 'lucide-react';
 import { 
   StaffDetailedPlanItem, 
   MonthlyStaffAllocation, 
   KocTier, 
-  SalaryGrade,
   StaffPlanStatus,
   UserProfile
 } from '../lib/types';
@@ -78,19 +71,6 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
       setManagerFeedback(staffAllocation.managerNote);
     }
   }, [staffAllocation]);
-
-  // ESC key listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen || !staffAllocation) return <Presence show={false} />;
 
@@ -147,56 +127,71 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   };
 
   return (
-    <Presence show>
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-(--motion-base)"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div data-motion-panel
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Kế hoạch triển khai chi tiết — ${staffAllocation.staffName}`}
-        className="bg-surface border border-line rounded-xl shadow-2xl w-full max-w-6xl max-h-[90dvh] flex flex-col overflow-hidden text-ink animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-      >
-        
-        {/* ========================================================================= */}
-        {/* 1. MODAL HEADER                                                           */}
-        {/* ========================================================================= */}
-        <div className="px-4 sm:px-6 py-4 border-b border-line bg-canvas flex items-center justify-between shrink-0">
+    <>
+      <Modal
+        open={isOpen}
+        onClose={onClose}
+        size="2xl"
+        title={
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-accent-soft border border-line text-accent font-semibold flex items-center justify-center text-sm shadow-2xs shrink-0">
+            <div className="w-8 h-8 rounded-md bg-accent-soft border border-line text-accent font-semibold flex items-center justify-center text-xs shadow-2xs shrink-0">
               {staffAllocation.staffName.split(' ').map(n => n[0]).join('').slice(0, 2)}
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-semibold text-ink tracking-tight">
-                  Kế hoạch triển khai chi tiết — {staffAllocation.staffName}
-                </h3>
-                <span className="text-xs text-ink-3 font-code">
-                  · {staffAllocation.month}
-                </span>
-                <span className="text-xs text-ink-2">
-                  · {staffAllocation.roleTitle}
-                </span>
-                <span className="text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2">
-                  Nhãn: {staffAllocation.assignedBrands.join(", ")}
-                </span>
-              </div>
-              
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>Kế hoạch triển khai chi tiết — {staffAllocation.staffName}</span>
+              <span className="text-xs text-ink-3 font-code">· {staffAllocation.month}</span>
+              <span className="text-xs text-ink-2">· {staffAllocation.roleTitle}</span>
+              <span className="text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2">
+                Nhãn: {staffAllocation.assignedBrands.join(', ')}
+              </span>
             </div>
           </div>
+        }
+        footer={
+          <div className="w-full flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-ink-2">
+              Trạng thái hiện tại: <strong className="text-ink">{approvedCount}/{totalPlannedVideos} clips đã duyệt</strong> ({pendingApprovalCount} chờ duyệt)
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!isManager ? (
+              <span className="text-xs text-warning bg-warning-soft border border-line px-3 py-1.5 rounded-md flex items-center gap-1.5 font-medium">
+                <Shield className="w-3.5 h-3.5" />
+                Chế độ xem (chỉ trưởng phòng mới có quyền phê duyệt hoặc yêu cầu điều chỉnh kế hoạch)
+              </span>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setIsConfirmingRevision(true)}
+                  className="px-3.5 py-2 rounded-md font-semibold text-xs bg-critical-soft text-critical border border-line transition flex items-center gap-1.5 shadow-2xs"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-critical" />
+                  Yêu cầu điều chỉnh kế hoạch
+                </button>
+
+                <button
+                  onClick={() => setIsConfirmingApproveAll(true)}
+                  className="px-4 py-2 rounded-md font-semibold text-xs bg-positive text-white transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Phê duyệt toàn bộ kế hoạch
+                </button>
+
+                {onConvertPlanToDeals && (
+                  <button
+                    onClick={() => setIsConfirmingConvertDeals(true)}
+                    className="px-4 py-2 rounded-md font-semibold text-xs bg-accent text-white transition flex items-center gap-1.5 shadow-sm"
+                    title="Khởi tạo danh sách Deal Booking từ các slot đã duyệt để bắt đầu liên hệ và gửi mẫu"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    Tạo {approvedCount} Deals tác nghiệp
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        </div>
+        }
+      >
+        <div className="-m-5 flex flex-col">
 
         {/* ========================================================================= */}
         {/* 2. SUMMARY KPI & MATRIX RECONCILIATION BAR                                */}
@@ -623,55 +618,10 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
             />
           </div>
         </div>
-
-        {/* ========================================================================= */}
-        {/* 5. MODAL FOOTER & MASTER APPROVAL ACTIONS                                 */}
-        {/* ========================================================================= */}
-        <div className="px-4 sm:px-6 py-4 border-t border-line bg-canvas flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="text-xs text-ink-2">
-            Trạng thái hiện tại: <strong className="text-ink">{approvedCount}/{totalPlannedVideos} clips đã duyệt</strong> ({pendingApprovalCount} chờ duyệt)
-          </div>
-
-          {!isManager ? (
-            <span className="text-xs text-warning bg-warning-soft border border-line px-3 py-1.5 rounded-md flex items-center gap-1.5 font-medium">
-              <Shield className="w-3.5 h-3.5" />
-              Chế độ xem (chỉ trưởng phòng mới có quyền phê duyệt hoặc yêu cầu điều chỉnh kế hoạch)
-            </span>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setIsConfirmingRevision(true)}
-                className="px-3.5 py-2 rounded-md font-semibold text-xs bg-critical-soft text-critical border border-line transition flex items-center gap-1.5 shadow-2xs"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-critical" />
-                Yêu cầu điều chỉnh kế hoạch
-              </button>
-
-              <button
-                onClick={() => setIsConfirmingApproveAll(true)}
-                className="px-4 py-2 rounded-md font-semibold text-xs bg-positive text-white transition flex items-center gap-1.5 shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Phê duyệt toàn bộ kế hoạch
-              </button>
-
-              {onConvertPlanToDeals && (
-                <button
-                  onClick={() => setIsConfirmingConvertDeals(true)}
-                  className="px-4 py-2 rounded-md font-semibold text-xs bg-accent text-white transition flex items-center gap-1.5 shadow-sm"
-                  title="Khởi tạo danh sách Deal Booking từ các slot đã duyệt để bắt đầu liên hệ và gửi mẫu"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  Tạo {approvedCount} Deals tác nghiệp
-                </button>
-              )}
-            </div>
-          )}
         </div>
+      </Modal>
 
-      </div>
-
-      {/* AI Staff Reviewer Modal */}
+      {/* Hộp thoại gợi ý nhận xét nhân sự */}
       {isAiReviewOpen && (
         <AiStaffReviewModal
           isOpen={isAiReviewOpen}
@@ -727,7 +677,6 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           }}
         />
       )}
-    </div>
-    </Presence>
+    </>
   );
 };

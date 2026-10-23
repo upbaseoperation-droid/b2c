@@ -9,11 +9,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   ShieldAlert,
-  Sliders,
   ChevronDown,
   ChevronUp,
-  RotateCcw,
-  Save,
   Clock,
 } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
@@ -29,7 +26,6 @@ import {
   Field,
   Input,
   Select,
-  Textarea,
 } from '../ui';
 import {
   ApiProviderId,
@@ -37,14 +33,11 @@ import {
   loadApiWorkspaceConfig,
   getEffectiveConfigForPurpose,
   getDefaultPurposeRoute,
-  updatePurposeSystemInstruction,
-  resetPurposeSystemInstruction,
   API_CONFIG_UPDATED_EVENT,
 } from '../../lib/apiKeyConfig';
 import { executeOperationalReport, OperationalReportResult } from '../../lib/operationalReportService';
 import { evaluateKocCollaborationHistory, KocRiskCategory } from '../../lib/kocHistoryEvaluator';
 import { formatVnd, formatVndShort } from '../../lib/format';
-import { InlinePurposeApiSetup } from '../InlinePurposeApiSetup';
 
 export interface KocHistoryEvaluationModalProps {
   open: boolean;
@@ -83,9 +76,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
   const [selectedProvider, setSelectedProvider] = useState<ApiProviderId>('GOOGLE');
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.8-flash');
   const [editablePrompt, setEditablePrompt] = useState<string>('');
-  const [showPromptSetup, setShowPromptSetup] = useState<boolean>(false);
   const [showContextPreview, setShowContextPreview] = useState<boolean>(false);
-  const [promptToast, setPromptToast] = useState<string | null>(null);
 
   const [isRunningReport, setIsRunningReport] = useState<boolean>(false);
   const [llmReport, setLlmReport] = useState<OperationalReportResult | null>(null);
@@ -105,7 +96,10 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
 
   const defaultRoute = useMemo(() => getDefaultPurposeRoute('KOC_HISTORY_EVALUATION'), []);
 
-  useEffect(() => {
+  const syncKey = `${open}-${koc?.id || ''}-${initialBrandName}-${initialProposedFee ?? ''}-${configVersion}`;
+  const [prevSyncKey, setPrevSyncKey] = useState<string>(syncKey);
+  if (prevSyncKey !== syncKey) {
+    setPrevSyncKey(syncKey);
     if (open && koc) {
       setTargetBrandName(initialBrandName || koc.brandName || '');
       setProposedFeeInput(
@@ -120,16 +114,7 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
       setEditablePrompt(effectiveRoute.purpose.systemInstruction || defaultRoute.systemInstruction);
       setLlmReport(null);
     }
-  }, [
-    open,
-    koc,
-    initialBrandName,
-    initialProposedFee,
-    effectiveRoute.primaryProvider,
-    effectiveRoute.primaryModel,
-    effectiveRoute.purpose.systemInstruction,
-    defaultRoute.systemInstruction,
-  ]);
+  }
 
   const parsedProposedFee = useMemo(() => {
     const raw = parseInt(proposedFeeInput.replace(/[^0-9]/g, ''), 10);
@@ -147,30 +132,12 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
     });
   }, [open, koc, deals, duplicates, targetBrandName, parsedProposedFee]);
 
-  const availableModels = useMemo(() => {
-    return PROVIDER_MODELS_CATALOG[selectedProvider] || [];
-  }, [selectedProvider]);
-
   const handleProviderChange = (prov: ApiProviderId) => {
     setSelectedProvider(prov);
     const models = PROVIDER_MODELS_CATALOG[prov] || [];
     if (models.length > 0) {
       setSelectedModel(models[0].id);
     }
-  };
-
-  const handleSavePromptDefault = () => {
-    const updated = updatePurposeSystemInstruction('KOC_HISTORY_EVALUATION', editablePrompt);
-    setEditablePrompt(updated.systemInstruction);
-    setPromptToast('Đã lưu câu lệnh (Prompt) làm mặc định cho Báo cáo thẩm định KOC');
-    setTimeout(() => setPromptToast(null), 2500);
-  };
-
-  const handleResetPromptDefault = () => {
-    const reset = resetPurposeSystemInstruction('KOC_HISTORY_EVALUATION');
-    setEditablePrompt(reset.systemInstruction);
-    setPromptToast('Đã khôi phục câu lệnh (Prompt) mặc định');
-    setTimeout(() => setPromptToast(null), 2500);
   };
 
   const handleRunReport = async (promptOverride?: string) => {
@@ -275,14 +242,14 @@ export const KocHistoryEvaluationModal: React.FC<KocHistoryEvaluationModalProps>
           <div className="flex items-center gap-4 shrink-0">
             <div className="px-3.5 py-2 rounded-xl bg-surface border border-line text-center">
               <div className="text-2xs text-ink-3 font-medium">Điểm phù hợp</div>
-              <div className="text-xl font-bold text-ink tabular-nums">
+              <div className="text-xl font-semibold text-ink tabular-nums">
                 {evaluation.suitabilityScore}
                 <span className="text-xs font-normal text-ink-3">/100</span>
               </div>
             </div>
             <div className="px-3.5 py-2 rounded-xl bg-surface border border-line text-center">
               <div className="text-2xs text-ink-3 font-medium">Cảnh báo rủi ro</div>
-              <div className="text-xl font-bold text-ink tabular-nums">
+              <div className="text-xl font-semibold text-ink tabular-nums">
                 {evaluation.riskFlags.length}
                 <span className="text-xs font-normal text-ink-3"> mục</span>
               </div>

@@ -2,7 +2,7 @@
 
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import React, { useState, useMemo, useRef } from 'react';
-import { ActionMenu, Avatar, Button, PageActions, Presence, Select, Status, TabItem, Tabs, Toolbar } from '../ui';
+import { ActionMenu, Avatar, Button, Modal, PageActions, Select, Status, TabItem, Tabs, Toolbar } from '../ui';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -31,8 +31,7 @@ import {
   QrCode,
   Sparkles,
   FileCheck2,
-  Link2,
-  X
+  Link2
 } from 'lucide-react';
 import {
   Contributor,
@@ -852,6 +851,101 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     );
   };
 
+  // Action: Đồng bộ trực tiếp các ô row === 'SELF' từ Kế hoạch Content (/api/content-plan?selfAll=1) sang danh sách đầu việc kênh Brand
+  const handleSyncSelfSlotsFromContentPlan = async () => {
+    try {
+      const res = await fetch('/api/content-plan?selfAll=1', { cache: 'no-store' });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body || !Array.isArray(body.selfSlots)) {
+        throw new Error(body?.error || 'Không tải được dữ liệu Kế hoạch Content.');
+      }
+      const incoming = body.selfSlots as Array<{
+        planId: string;
+        storeName: string;
+        brandName: string;
+        month: string;
+        slot: {
+          id: string;
+          briefCode?: string;
+          targetQty?: number;
+          pillar: string;
+          angle: string;
+          product: string;
+          hook?: string;
+          usp?: string;
+          cta?: string;
+          format?: string;
+          pic?: string;
+          week: string | null;
+        };
+      }>;
+      if (incoming.length === 0) {
+        notify('Chưa có ô Self channel (SELF) nào trong Kế hoạch Content tháng để đồng bộ.', 'info');
+        return;
+      }
+      const existingSlotIds = new Set(tasks.map(t => t.id));
+      const newTasks: SelfChannelVideoTask[] = [];
+      for (const item of incoming) {
+        const s = item.slot;
+        const taskId = `task-sc-cplan-${s.id}`;
+        if (existingSlotIds.has(taskId)) continue;
+        const matchedBrand =
+          MULTI_BRAND_ALLOCATIONS.find(b => b.brandName.toLowerCase().includes(item.brandName.toLowerCase())) ||
+          MULTI_BRAND_ALLOCATIONS[0];
+        const matchedPillar =
+          matchedBrand.pillars.find(p => p.name.toLowerCase().includes((s.pillar || '').toLowerCase())) ||
+          matchedBrand.pillars[0] ||
+          DEFAULT_CONTENT_PILLARS[0];
+        const seq = tasks.length + newTasks.length + 1;
+        newTasks.push({
+          id: taskId,
+          taskCode: s.briefCode || `SC-CP-${String(seq).padStart(3, '0')}`,
+          title: `[${item.storeName} · ${s.week || item.month}] ${s.angle || s.pillar || 'Video Self Channel'}`,
+          brandId: matchedBrand.brandId,
+          brandName: item.brandName || matchedBrand.brandName,
+          storeId: item.planId,
+          storeName: item.storeName,
+          planMonth: item.month,
+          videoFormat: s.format || 'Talking Head + B-roll',
+          contentPic: s.pic || 'Quỳnh Như',
+          partnershipPic: 'Việt Hoàng',
+          partnershipStatus: 'WAITING_PARTNERSHIP',
+          pillarId: matchedPillar.id,
+          pillarName: s.pillar || matchedPillar.name,
+          pillarCode: matchedPillar.code,
+          linkedSku: s.product || matchedPillar.coreSkuIds?.[0] || 'SKU-MAIN',
+          productName: s.product || matchedPillar.name,
+          remuneration: matchedPillar.unitCostPerVideo || 700000,
+          deadline: '2026-10-25',
+          brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+          brandOrientationStatus: 'PENDING',
+          sampleShippingStatus: 'PENDING_SHIP',
+          status: 'OPEN_TASK',
+          scriptContent:
+            s.hook || s.usp
+              ? {
+                  hook: s.hook || '',
+                  body: s.usp || s.angle || '',
+                  cta: s.cta || 'Nhấn giỏ hàng góc trái màn hình',
+                  submittedAt: new Date().toISOString(),
+                }
+              : undefined,
+          feedbackLogs: [],
+          createdAt: new Date().toISOString(),
+        });
+      }
+      if (newTasks.length === 0) {
+        notify(`Toàn bộ ${incoming.length} ô Self channel trong Kế hoạch Content đã có mặt trong danh sách việc.`, 'info');
+        return;
+      }
+      updateTasks(prev => [...newTasks, ...prev]);
+      setActiveTab('ACTIVE_JOBS');
+      notify(`Đã đồng bộ ${newTasks.length} đầu việc Self channel từ Kế hoạch Content sang Quản lý CTV & Video kênh Brand!`, 'success');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Lỗi đồng bộ Kế hoạch Content.', 'error');
+    }
+  };
+
   // Action: Bước 2 SOP — Duyệt Định hướng & VJ với Brand (hoặc Auto-Pass sau 72h)
   const handleBrandOrientationDecision = (task: SelfChannelVideoTask, mode: 'APPROVED' | 'AUTO_PASSED_72H') => {
     const updated: SelfChannelVideoTask = {
@@ -1234,6 +1328,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         <PageActions>
           <ActionMenu
             items={[
+              { label: 'Đồng bộ ô SELF từ Kế hoạch Content', icon: Layers, onSelect: () => { void handleSyncSelfSlotsFromContentPlan(); } },
               { label: 'Nhận chỉ tiêu kế hoạch tháng', icon: Sparkles, onSelect: () => setIsSyncPlanModalOpen(true) },
               { label: 'Chỉ tiêu Plan Final & phân quyền', icon: ShieldCheck, onSelect: () => setActiveTab('PLAN_FINAL_RBAC') },
               { label: 'Danh bạ & tồn mẫu VJ', icon: Users, onSelect: () => setActiveTab('CONTRIBUTORS') },
@@ -1432,7 +1527,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <button
                     type="button"
                     onClick={onOpenInputPlan}
-                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer"
+                    className="h-8 px-3 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition cursor-pointer"
                   >
                     Mở Sổ Kế Hoạch Tháng
                   </button>
@@ -3396,1060 +3491,920 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
       {/* MODAL 1: TẠO HOẶC GIAO TASK VIDEO (CÓ CHECK ĐƠN GẤP < 5 NGÀY)    */}
       {/* ============================================================== */}
-      <Presence show={!!isCreateTaskModalOpen}>
-      {isCreateTaskModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-600" />
-                {selectedTask
-                  ? `Phân bổ VJ & Điều phối: ${selectedTask.taskCode}`
-                  : 'Giao việc sản xuất Video kênh Brand (Self-Channel)'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCreateTaskModalOpen(false);
-                  setSelectedTask(null);
+      <Modal
+        open={Boolean(isCreateTaskModalOpen)}
+        onClose={() => {
+          setIsCreateTaskModalOpen(false);
+          setSelectedTask(null);
+        }}
+        title={
+          selectedTask
+            ? `Phân bổ VJ & Điều phối: ${selectedTask.taskCode}`
+            : 'Giao việc sản xuất Video kênh Brand (Self-Channel)'
+        }
+        size="lg"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsCreateTaskModalOpen(false);
+                setSelectedTask(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="submit"
+              form="self-channel-create-task-form"
+              variant="primary"
+              icon={Check}
+            >
+              {selectedTask ? 'Lưu & Giao việc' : 'Khởi tạo đầu việc'}
+            </Button>
+          </>
+        }
+      >
+        <form id="self-channel-create-task-form" onSubmit={handleCreateTask} className="space-y-4 text-xs">
+          <div className="space-y-1">
+            <label className="font-semibold text-slate-700 block">Tiêu đề / Góc kịch bản video *</label>
+            <input
+              type="text"
+              required
+              placeholder="VD: Test thực tế bôi dịu chàm sữa sau 72h..."
+              value={newTaskForm.title}
+              onChange={(e) => setNewTaskForm(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Trụ cột nội dung (Content Pillar) *</label>
+              <select
+                value={newTaskForm.pillarId}
+                onChange={(e) => {
+                  const pid = e.target.value;
+                  const p = activeAllocation.pillars.find(item => item.id === pid);
+                  setNewTaskForm(prev => ({
+                    ...prev,
+                    pillarId: pid,
+                    linkedSku: p?.coreSkuIds?.[0] || prev.linkedSku,
+                    remuneration: p ? p.unitCostPerVideo : prev.remuneration
+                  }));
                 }}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
               >
-                <X className="w-4 h-4" />
-              </button>
+                {activeAllocation.pillars.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({formatVnd(p.unitCostPerVideo)})
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <form onSubmit={handleCreateTask} className="p-6 space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Tiêu đề / Góc kịch bản video *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Test thực tế bôi dịu chàm sữa sau 72h..."
-                  value={newTaskForm.title}
-                  onChange={(e) => setNewTaskForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Định dạng Video (Format)</label>
+              <select
+                value={newTaskForm.videoFormat}
+                onChange={(e) => setNewTaskForm(prev => ({ ...prev, videoFormat: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              >
+                <option value="Review voice">Review voice (Lồng tiếng chuyên sâu)</option>
+                <option value="Unbox Voice">Unbox Voice (Đập hộp &amp; Test chất)</option>
+                <option value="POV">POV (Tình huống gia đình / Đời thường)</option>
+                <option value="Nhạc text">Nhạc text (Bắt trend / Biến hình)</option>
+                <option value="Daily">Daily (Hàng ngày lên kênh)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Mã SKU sản phẩm *</label>
+              <input
+                type="text"
+                required
+                value={newTaskForm.linkedSku}
+                onChange={(e) => setNewTaskForm(prev => ({ ...prev, linkedSku: e.target.value.toUpperCase() }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50 focus:bg-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Thù lao Gross (VNĐ) *</label>
+              <input
+                type="number"
+                value={newTaskForm.remuneration}
+                onChange={(e) => setNewTaskForm(prev => ({ ...prev, remuneration: Number(e.target.value) }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-blue-700 bg-slate-50 focus:bg-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Hạn bàn giao *</label>
+              <input
+                type="date"
+                required
+                value={newTaskForm.deadline}
+                onChange={(e) => setNewTaskForm(prev => ({ ...prev, deadline: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Phân công nội bộ: Chuyên viên Content (Dưới quyền Việt Hoàng) & Partnership Leader (Việt Hoàng) */}
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">
+                Chuyên viên Content (Lên đề bài &amp; Duyệt kịch bản)
+              </label>
+              <select
+                value={newTaskForm.contentPic}
+                onChange={(e) => setNewTaskForm(prev => ({ ...prev, contentPic: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-900"
+              >
+                {SELF_CHANNEL_CONTENT_MEMBERS.map(m => (
+                  <option key={m.id} value={m.name}>
+                    {m.name} (Báo cáo: Việt Hoàng)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">
+                Leader Partnership (Liên hệ &amp; Chốt CTV)
+              </label>
+              <div className="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50/70 text-blue-900 font-semibold flex items-center justify-between">
+                <span>{SELF_CHANNEL_PARTNERSHIP_LEADER.name} (Leader)</span>
+                <span className="text-2xs font-medium text-blue-700">Chuyên trách CTV</span>
               </div>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Trụ cột nội dung (Content Pillar) *</label>
-                  <select
-                    value={newTaskForm.pillarId}
-                    onChange={(e) => {
-                      const pid = e.target.value;
-                      const p = activeAllocation.pillars.find(item => item.id === pid);
-                      setNewTaskForm(prev => ({
-                        ...prev,
-                        pillarId: pid,
-                        linkedSku: p?.coreSkuIds?.[0] || prev.linkedSku,
-                        remuneration: p ? p.unitCostPerVideo : prev.remuneration
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                  >
-                    {activeAllocation.pillars.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({formatVnd(p.unitCostPerVideo)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">
+                Partnership chỉ định CTV / VJ thực hiện
+              </label>
+              <select
+                value={newTaskForm.contributorId}
+                onChange={(e) => {
+                  const cid = e.target.value;
+                  const ctv = contributors.find(c => c.id === cid);
+                  setNewTaskForm(prev => ({
+                    ...prev,
+                    contributorId: cid,
+                    remuneration: ctv?.unitRateAllInOne || prev.remuneration
+                  }));
+                }}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              >
+                <option value="">-- Chưa chỉ định (Gửi yêu cầu để Việt Hoàng liên hệ CTV) --</option>
+                {contributors.map(c => {
+                  const hasSku = (c.onHandProducts || []).some(
+                    s => s.toUpperCase() === newTaskForm.linkedSku.trim().toUpperCase()
+                  );
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({hasSku ? 'Sẵn mẫu tại nhà' : 'Chưa có mẫu'} •{' '}
+                      {formatVnd(c.unitRateAllInOne || 1500000)})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Định dạng Video (Format)</label>
-                  <select
-                    value={newTaskForm.videoFormat}
-                    onChange={(e) => setNewTaskForm(prev => ({ ...prev, videoFormat: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                  >
-                    <option value="Review voice">Review voice (Lồng tiếng chuyên sâu)</option>
-                    <option value="Unbox Voice">Unbox Voice (Đập hộp &amp; Test chất)</option>
-                    <option value="POV">POV (Tình huống gia đình / Đời thường)</option>
-                    <option value="Nhạc text">Nhạc text (Bắt trend / Biến hình)</option>
-                    <option value="Daily">Daily (Hàng ngày lên kênh)</option>
-                  </select>
-                </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Phương thức duyệt với Nhãn hàng</label>
+              <select
+                value={newTaskForm.brandApprovalMode}
+                onChange={(e) =>
+                  setNewTaskForm(prev => ({
+                    ...prev,
+                    brandApprovalMode: e.target.value as BrandApprovalMode
+                  }))
+                }
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              >
+                <option value="BRAND_REVIEW_REQUIRED">Trình Brand duyệt VJ &amp; góc kịch bản (SLA 48h)</option>
+                <option value="UPBASE_DELEGATED">Brand ủy quyền — Upbase chủ động duyệt</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Cảnh báo kiểm soát SLA Đơn gấp < 5 ngày */}
+          {createTaskUrgencyCheck.isUrgentUnder5Days && (
+            <div
+              className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                createTaskUrgencyCheck.isBlockedByUrgentNoStock
+                  ? 'bg-rose-50 border-rose-200 text-rose-800'
+                  : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}
+            >
+              <div className="font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  Đơn hàng gấp dưới 5 ngày (Còn {createTaskUrgencyCheck.daysLeft} ngày đến hạn bàn giao)
+                </span>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Mã SKU sản phẩm *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newTaskForm.linkedSku}
-                    onChange={(e) => setNewTaskForm(prev => ({ ...prev, linkedSku: e.target.value.toUpperCase() }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50 focus:bg-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Thù lao Gross (VNĐ) *</label>
-                  <input
-                    type="number"
-                    value={newTaskForm.remuneration}
-                    onChange={(e) => setNewTaskForm(prev => ({ ...prev, remuneration: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-blue-700 bg-slate-50 focus:bg-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Hạn bàn giao *</label>
-                  <input
-                    type="date"
-                    required
-                    value={newTaskForm.deadline}
-                    onChange={(e) => setNewTaskForm(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Phân công nội bộ: Chuyên viên Content (Dưới quyền Việt Hoàng) & Partnership Leader (Việt Hoàng) */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">
-                    Chuyên viên Content (Lên đề bài &amp; Duyệt kịch bản)
-                  </label>
-                  <select
-                    value={newTaskForm.contentPic}
-                    onChange={(e) => setNewTaskForm(prev => ({ ...prev, contentPic: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-900"
-                  >
-                    {SELF_CHANNEL_CONTENT_MEMBERS.map(m => (
-                      <option key={m.id} value={m.name}>
-                        {m.name} (Báo cáo: Việt Hoàng)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">
-                    Leader Partnership (Liên hệ &amp; Chốt CTV)
-                  </label>
-                  <div className="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50/70 text-blue-900 font-semibold flex items-center justify-between">
-                    <span>{SELF_CHANNEL_PARTNERSHIP_LEADER.name} (Leader)</span>
-                    <span className="text-2xs font-medium text-blue-700">Chuyên trách CTV</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">
-                    Partnership chỉ định CTV / VJ thực hiện
-                  </label>
-                  <select
-                    value={newTaskForm.contributorId}
-                    onChange={(e) => {
-                      const cid = e.target.value;
-                      const ctv = contributors.find(c => c.id === cid);
-                      setNewTaskForm(prev => ({
-                        ...prev,
-                        contributorId: cid,
-                        remuneration: ctv?.unitRateAllInOne || prev.remuneration
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                  >
-                    <option value="">-- Chưa chỉ định (Gửi yêu cầu để Việt Hoàng liên hệ CTV) --</option>
-                    {contributors.map(c => {
-                      const hasSku = (c.onHandProducts || []).some(
-                        s => s.toUpperCase() === newTaskForm.linkedSku.trim().toUpperCase()
-                      );
-                      return (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({hasSku ? 'Sẵn mẫu tại nhà' : 'Chưa có mẫu'} •{' '}
-                          {formatVnd(c.unitRateAllInOne || 1500000)})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Phương thức duyệt với Nhãn hàng</label>
-                  <select
-                    value={newTaskForm.brandApprovalMode}
-                    onChange={(e) =>
-                      setNewTaskForm(prev => ({
-                        ...prev,
-                        brandApprovalMode: e.target.value as BrandApprovalMode
-                      }))
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                  >
-                    <option value="BRAND_REVIEW_REQUIRED">Trình Brand duyệt VJ &amp; góc kịch bản (SLA 48h)</option>
-                    <option value="UPBASE_DELEGATED">Brand ủy quyền — Upbase chủ động duyệt</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Cảnh báo kiểm soát SLA Đơn gấp < 5 ngày */}
-              {createTaskUrgencyCheck.isUrgentUnder5Days && (
-                <div
-                  className={`p-3 rounded-xl border text-xs space-y-1.5 ${
-                    createTaskUrgencyCheck.isBlockedByUrgentNoStock
-                      ? 'bg-rose-50 border-rose-200 text-rose-800'
-                      : 'bg-amber-50 border-amber-200 text-amber-800'
-                  }`}
-                >
-                  <div className="font-semibold flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>
-                      Đơn hàng gấp dưới 5 ngày (Còn {createTaskUrgencyCheck.daysLeft} ngày đến hạn bàn giao)
-                    </span>
-                  </div>
-                  {createTaskUrgencyCheck.isBlockedByUrgentNoStock ? (
-                    <p className="text-2xs leading-relaxed">
-                      Chốt chặn SLA: VJ <strong>{createTaskUrgencyCheck.selectedCtv?.name}</strong> hiện{' '}
-                      <strong>chưa có sẵn mã {newTaskForm.linkedSku} tại nhà</strong>, không kịp thời gian gửi hàng mẫu
-                      vật lý (48h). Vui lòng chọn VJ đang cầm sẵn mẫu bên dưới hoặc lùi hạn bàn giao!
-                    </p>
-                  ) : (
-                    <p className="text-2xs">
-                      Đơn hàng gấp yêu cầu giao cho VJ đã cầm sẵn sản phẩm mẫu <strong>{newTaskForm.linkedSku}</strong>{' '}
-                      tại nhà.
-                    </p>
-                  )}
-
-                  {createTaskUrgencyCheck.readyVjsWithSku.length > 0 && (
-                    <div className="pt-1 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-2xs font-medium">Chọn nhanh VJ sẵn mẫu {newTaskForm.linkedSku}:</span>
-                      {createTaskUrgencyCheck.readyVjsWithSku.map(vj => (
-                        <button
-                          key={vj.id}
-                          type="button"
-                          onClick={() =>
-                            setNewTaskForm(prev => ({
-                              ...prev,
-                              contributorId: vj.id,
-                              remuneration: vj.unitRateAllInOne || prev.remuneration
-                            }))
-                          }
-                          className="px-2 py-0.5 rounded bg-white border border-emerald-300 text-emerald-800 font-semibold text-2xs hover:bg-emerald-50"
-                        >
-                          {vj.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {createTaskUrgencyCheck.isBlockedByUrgentNoStock ? (
+                <p className="text-2xs leading-relaxed">
+                  Chốt chặn SLA: VJ <strong>{createTaskUrgencyCheck.selectedCtv?.name}</strong> hiện{' '}
+                  <strong>chưa có sẵn mã {newTaskForm.linkedSku} tại nhà</strong>, không kịp thời gian gửi hàng mẫu
+                  vật lý (48h). Vui lòng chọn VJ đang cầm sẵn mẫu bên dưới hoặc lùi hạn bàn giao!
+                </p>
+              ) : (
+                <p className="text-2xs">
+                  Đơn hàng gấp yêu cầu giao cho VJ đã cầm sẵn sản phẩm mẫu <strong>{newTaskForm.linkedSku}</strong>{' '}
+                  tại nhà.
+                </p>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreateTaskModalOpen(false);
-                    setSelectedTask(null);
-                  }}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs flex items-center gap-1.5"
-                >
-                  <Check className="w-4 h-4" />
-                  <span>{selectedTask ? 'Lưu & Giao việc' : 'Khởi tạo đầu việc'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+              {createTaskUrgencyCheck.readyVjsWithSku.length > 0 && (
+                <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-2xs font-medium">Chọn nhanh VJ sẵn mẫu {newTaskForm.linkedSku}:</span>
+                  {createTaskUrgencyCheck.readyVjsWithSku.map(vj => (
+                    <button
+                      key={vj.id}
+                      type="button"
+                      onClick={() =>
+                        setNewTaskForm(prev => ({
+                          ...prev,
+                          contributorId: vj.id,
+                          remuneration: vj.unitRateAllInOne || prev.remuneration
+                        }))
+                      }
+                      className="px-2 py-0.5 rounded bg-white border border-emerald-300 text-emerald-800 font-semibold text-2xs hover:bg-emerald-50"
+                    >
+                      {vj.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </form>
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 2: NHẬN CHỈ TIÊU TỪ KẾ HOẠCH THÁNG (SYNC PLAN MODAL)      */}
       {/* ============================================================== */}
-      <Presence show={!!isSyncPlanModalOpen}>
-      {isSyncPlanModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  Nhận chỉ tiêu Video kênh Brand từ Kế hoạch tháng 10/2026
-                </h3>
-                
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSyncPlanModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSyncFromMonthlyPlan} className="p-6 space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Chọn Thương hiệu / Gian hàng nhận chỉ tiêu</label>
-                <select
-                  value={syncPlanBrandId}
-                  onChange={(e) => setSyncPlanBrandId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                >
-                  {MULTI_BRAND_ALLOCATIONS.map(b => (
-                    <option key={b.brandId} value={b.brandId}>
-                      {b.brandName} — Chỉ tiêu: {b.targetSelfChannelVideos} video ({formatVnd(b.budgetSelfChannel)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Định dạng Video cần sinh</label>
-                  <select
-                    value={syncVideoFormat}
-                    onChange={(e) => setSyncVideoFormat(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                  >
-                    <option value="Review voice">Review voice</option>
-                    <option value="Unbox Voice">Unbox Voice</option>
-                    <option value="POV">POV gia đình</option>
-                    <option value="Nhạc text">Nhạc text</option>
-                    <option value="Daily">Daily</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Số lượng slot tạo đợt này</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={15}
-                    value={syncBatchQty}
-                    onChange={(e) => setSyncBatchQty(Number(e.target.value) || 1)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold bg-slate-50"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsSyncPlanModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
-                >
-                  Sinh {syncBatchQty} slot công việc
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={Boolean(isSyncPlanModalOpen)}
+        onClose={() => setIsSyncPlanModalOpen(false)}
+        title="Nhận chỉ tiêu Video kênh Brand từ Kế hoạch tháng 10/2026"
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsSyncPlanModalOpen(false)}>
+              Đóng
+            </Button>
+            <Button type="submit" form="self-channel-sync-plan-form" variant="primary">
+              Sinh {syncBatchQty} slot công việc
+            </Button>
+          </>
+        }
+      >
+        <form id="self-channel-sync-plan-form" onSubmit={handleSyncFromMonthlyPlan} className="space-y-4 text-xs">
+          <div className="space-y-1">
+            <label className="font-semibold text-slate-700 block">Chọn Thương hiệu / Gian hàng nhận chỉ tiêu</label>
+            <select
+              value={syncPlanBrandId}
+              onChange={(e) => setSyncPlanBrandId(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+            >
+              {MULTI_BRAND_ALLOCATIONS.map(b => (
+                <option key={b.brandId} value={b.brandId}>
+                  {b.brandName} — Chỉ tiêu: {b.targetSelfChannelVideos} video ({formatVnd(b.budgetSelfChannel)})
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-      )}
-      </Presence>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Định dạng Video cần sinh</label>
+              <select
+                value={syncVideoFormat}
+                onChange={(e) => setSyncVideoFormat(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+              >
+                <option value="Review voice">Review voice</option>
+                <option value="Unbox Voice">Unbox Voice</option>
+                <option value="POV">POV gia đình</option>
+                <option value="Nhạc text">Nhạc text</option>
+                <option value="Daily">Daily</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Số lượng slot tạo đợt này</label>
+              <input
+                type="number"
+                min={1}
+                max={15}
+                value={syncBatchQty}
+                onChange={(e) => setSyncBatchQty(Number(e.target.value) || 1)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold bg-slate-50"
+              />
+            </div>
+          </div>
+        </form>
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 3: CẬP NHẬT VẬN ĐƠN HÀNG MẪU (SLA 48H)                    */}
       {/* ============================================================== */}
-      <Presence show={!!(isSampleShippingModalOpen && selectedTask)}>
-      {isSampleShippingModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Truck className="w-4 h-4 text-blue-600" />
-                Hậu cần gửi hàng mẫu (SLA 48h): {selectedTask.taskCode}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsSampleShippingModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+      <Modal
+        open={Boolean(isSampleShippingModalOpen && selectedTask)}
+        onClose={() => setIsSampleShippingModalOpen(false)}
+        title={selectedTask ? `Hậu cần gửi hàng mẫu (SLA 48h): ${selectedTask.taskCode}` : 'Hậu cần gửi hàng mẫu (SLA 48h)'}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsSampleShippingModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button type="submit" form="self-channel-sample-shipping-form" variant="primary">
+              Lưu trạng thái mẫu
+            </Button>
+          </>
+        }
+      >
+        {selectedTask && (
+          <form id="self-channel-sample-shipping-form" onSubmit={handleSaveSampleShipping} className="space-y-4 text-xs">
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Trạng thái hàng mẫu</label>
+              <select
+                value={sampleForm.status}
+                onChange={(e) =>
+                  setSampleForm(prev => ({ ...prev, status: e.target.value as SampleShippingStatus }))
+                }
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
               >
-                <X className="w-4 h-4" />
-              </button>
+                <option value="ON_HAND_AT_HOME">VJ đã có sẵn mẫu tại nhà (Không cần gửi)</option>
+                <option value="PENDING_SHIP">Chờ kho / Brand gửi mẫu (SLA 48h)</option>
+                <option value="SHIPPING">Đang giao hàng (Đã có mã vận đơn)</option>
+                <option value="DELIVERED">VJ đã nhận được hàng mẫu (Tự động cộng vào tồn mẫu VJ)</option>
+              </select>
             </div>
 
-            <form onSubmit={handleSaveSampleShipping} className="p-6 space-y-4 text-xs">
+            {(sampleForm.status === 'SHIPPING' || sampleForm.status === 'DELIVERED') && (
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Trạng thái hàng mẫu</label>
-                <select
-                  value={sampleForm.status}
-                  onChange={(e) =>
-                    setSampleForm(prev => ({ ...prev, status: e.target.value as SampleShippingStatus }))
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                >
-                  <option value="ON_HAND_AT_HOME">VJ đã có sẵn mẫu tại nhà (Không cần gửi)</option>
-                  <option value="PENDING_SHIP">Chờ kho / Brand gửi mẫu (SLA 48h)</option>
-                  <option value="SHIPPING">Đang giao hàng (Đã có mã vận đơn)</option>
-                  <option value="DELIVERED">VJ đã nhận được hàng mẫu (Tự động cộng vào tồn mẫu VJ)</option>
-                </select>
+                <label className="font-semibold text-slate-700 block">Mã vận đơn (SPX / GHN / ViettelPost)</label>
+                <input
+                  type="text"
+                  placeholder="VD: SPXVN048291823"
+                  value={sampleForm.trackingCode}
+                  onChange={(e) => setSampleForm(prev => ({ ...prev, trackingCode: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
+                />
               </div>
-
-              {(sampleForm.status === 'SHIPPING' || sampleForm.status === 'DELIVERED') && (
-                <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Mã vận đơn (SPX / GHN / ViettelPost)</label>
-                  <input
-                    type="text"
-                    placeholder="VD: SPXVN048291823"
-                    value={sampleForm.trackingCode}
-                    onChange={(e) => setSampleForm(prev => ({ ...prev, trackingCode: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsSampleShippingModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Lưu trạng thái mẫu
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+            )}
+          </form>
+        )}
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 4: DUYỆT KỊCH BẢN (SCRIPT REVIEW MODAL - SLA 24H)         */}
       {/* ============================================================== */}
-      <Presence show={!!(isScriptReviewModalOpen && selectedTask)}>
-      {isScriptReviewModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-600" />
-                Duyệt Kịch bản chi tiết (SLA 24h): {selectedTask.taskCode}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsScriptReviewModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      <Modal
+        open={Boolean(isScriptReviewModalOpen && selectedTask)}
+        onClose={() => setIsScriptReviewModalOpen(false)}
+        title={selectedTask ? `Duyệt Kịch bản chi tiết (SLA 24h): ${selectedTask.taskCode}` : 'Duyệt Kịch bản chi tiết (SLA 24h)'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsScriptReviewModalOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              variant={scriptVerdict === 'APPROVED' ? 'primary' : 'danger'}
+              icon={Send}
+              onClick={handleSaveScriptReview}
+            >
+              Xác nhận phản hồi
+            </Button>
+          </>
+        }
+      >
+        {selectedTask && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
+              <span>VJ: <strong className="text-ink">{selectedTask.contributorName}</strong></span>
+              <span>·</span>
+              <span className="text-ink truncate">{selectedTask.title}</span>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2.5">
+              <span className="font-semibold text-slate-800 block text-xs">Nội dung kịch bản VJ đã nộp:</span>
+              <div className="space-y-2">
+                <div>
+                  <span className="font-semibold text-blue-700 block text-2xs">1. Hook 3 giây đầu:</span>
+                  <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
+                    {selectedTask.scriptContent?.hook || 'Chưa nộp'}
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-700 block text-2xs">2. Thân bài / Demo sản phẩm:</span>
+                  <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5 whitespace-pre-line">
+                    {selectedTask.scriptContent?.body || 'Chưa nộp'}
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-700 block text-2xs">3. Kêu gọi hành động (CTA):</span>
+                  <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
+                    {selectedTask.scriptContent?.cta || 'Chưa nộp'}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              <div className="flex items-center gap-2 flex-wrap text-2xs text-ink-3 pb-2 border-b border-line">
-                <span>VJ: <strong className="text-ink">{selectedTask.contributorName}</strong></span>
-                <span>·</span>
-                <span className="text-ink truncate">{selectedTask.title}</span>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2.5">
-                <span className="font-semibold text-slate-800 block text-xs">Nội dung kịch bản VJ đã nộp:</span>
-                <div className="space-y-2">
-                  <div>
-                    <span className="font-semibold text-blue-700 block text-2xs">1. Hook 3 giây đầu:</span>
-                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
-                      {selectedTask.scriptContent?.hook || 'Chưa nộp'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-700 block text-2xs">2. Thân bài / Demo sản phẩm:</span>
-                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5 whitespace-pre-line">
-                      {selectedTask.scriptContent?.body || 'Chưa nộp'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-700 block text-2xs">3. Kêu gọi hành động (CTA):</span>
-                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
-                      {selectedTask.scriptContent?.cta || 'Chưa nộp'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-1">
-                <label className="font-semibold text-slate-700 block">Quyết định duyệt kịch bản:</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setScriptVerdict('APPROVED')}
-                    className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                      scriptVerdict === 'APPROVED'
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
-                    Duyệt kịch bản (Cho bấm máy)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScriptVerdict('REVISE')}
-                    className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                      scriptVerdict === 'REVISE'
-                        ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                    Yêu cầu sửa kịch bản
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Góp ý cụ thể</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi chú cụ thể các câu thoại cần sửa, góc quay bổ sung..."
-                  value={scriptFeedbackText}
-                  onChange={(e) => setScriptFeedbackText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="space-y-2 pt-1">
+              <label className="font-semibold text-slate-700 block">Quyết định duyệt kịch bản:</label>
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsScriptReviewModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveScriptReview}
-                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-2xs transition flex items-center gap-1.5 ${
-                    scriptVerdict === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                  onClick={() => setScriptVerdict('APPROVED')}
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                    scriptVerdict === 'APPROVED'
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <Send className="w-3.5 h-3.5" /> Xác nhận phản hồi
+                  <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
+                  Duyệt kịch bản (Cho bấm máy)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScriptVerdict('REVISE')}
+                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                    scriptVerdict === 'REVISE'
+                      ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
+                  Yêu cầu sửa kịch bản
                 </button>
               </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Góp ý cụ thể</label>
+              <textarea
+                rows={2}
+                placeholder="Ghi chú cụ thể các câu thoại cần sửa, góc quay bổ sung..."
+                value={scriptFeedbackText}
+                onChange={(e) => setScriptFeedbackText(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              />
+            </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 5: VÒNG 1 — DUYỆT QA VIDEO NỘI BỘ & LƯU DRIVE GIAN HÀNG  */}
       {/* ============================================================== */}
-      <Presence show={!!(isVideoQaModalOpen && selectedTask)}>
-      {isVideoQaModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
-                Vòng 1 — Duyệt QA Nội bộ &amp; Lưu Drive Gian hàng: {selectedTask.taskCode}
-              </h3>
+      <Modal
+        open={Boolean(isVideoQaModalOpen && selectedTask)}
+        onClose={() => setIsVideoQaModalOpen(false)}
+        title={selectedTask ? `Vòng 1 — Duyệt QA Nội bộ & Lưu Drive Gian hàng: ${selectedTask.taskCode}` : 'Vòng 1 — Duyệt QA Nội bộ'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsVideoQaModalOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              variant={videoVerdict === 'APPROVED' ? 'primary' : 'danger'}
+              icon={CheckCheck}
+              onClick={handleSaveVideoQa}
+            >
+              Lưu kết quả QA Vòng 1
+            </Button>
+          </>
+        }
+      >
+        {selectedTask && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-slate-800 block">Link Video Demo VJ đã nộp:</span>
+                <a
+                  href={selectedTask.videoDeliverables?.draftVideoUrl || '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-2xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                >
+                  {selectedTask.videoDeliverables?.draftVideoUrl || 'Đang cập nhật link'}{' '}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <span className="text-2xs font-semibold text-slate-700 font-mono">
+                {selectedTask.videoDeliverables?.durationSeconds || 45}s
+              </span>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+              <span className="font-semibold text-slate-800 block">
+                Checklist Kiểm định chất lượng nội bộ Content B2C:
+              </span>
+              <div className="space-y-1.5 text-2xs">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={videoChecklist.hookCompliant}
+                    onChange={(e) => setVideoChecklist(prev => ({ ...prev, hookCompliant: e.target.checked }))}
+                    className="rounded text-blue-600"
+                  />
+                  <span>3 giây đầu gây tò mò / giật hook đúng kịch bản</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={videoChecklist.productAppearance}
+                    onChange={(e) => setVideoChecklist(prev => ({ ...prev, productAppearance: e.target.checked }))}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Sản phẩm xuất hiện rõ nét, ánh sáng và màu sắc chân thực, file sạch không dính watermark</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={videoChecklist.audioClear}
+                    onChange={(e) => setVideoChecklist(prev => ({ ...prev, audioClear: e.target.checked }))}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Âm thanh, giọng lồng tiếng to rõ, nhạc nền không lấn át lời nói</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={videoChecklist.guidelinesFollowed}
+                    onChange={(e) => setVideoChecklist(prev => ({ ...prev, guidelinesFollowed: e.target.checked }))}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Tuân thủ đúng quy tắc Do &amp; Don&apos;ts và không vi phạm từ khóa cấm của sàn</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">
+                Link Thư mục Drive tổng của Gian hàng (Bàn giao cho Brand &amp; Media)
+              </label>
+              <input
+                type="url"
+                value={storeDriveFolderInput}
+                onChange={(e) => setStoreDriveFolderInput(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono text-2xs bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setIsVideoQaModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+                onClick={() => setVideoVerdict('APPROVED')}
+                className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                  videoVerdict === 'APPROVED'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
               >
-                <X className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
+                Đạt QA Nội bộ (Trình Brand)
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoVerdict('REVISE')}
+                className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                  videoVerdict === 'REVISE'
+                    ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
+                Yêu cầu VJ dựng lại
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-slate-800 block">Link Video Demo VJ đã nộp:</span>
-                  <a
-                    href={selectedTask.videoDeliverables?.draftVideoUrl || '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-2xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
-                  >
-                    {selectedTask.videoDeliverables?.draftVideoUrl || 'Đang cập nhật link'}{' '}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <span className="text-2xs font-semibold text-slate-700 font-mono">
-                  {selectedTask.videoDeliverables?.durationSeconds || 45}s
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                <span className="font-semibold text-slate-800 block">
-                  Checklist Kiểm định chất lượng nội bộ Content B2C:
-                </span>
-                <div className="space-y-1.5 text-2xs">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={videoChecklist.hookCompliant}
-                      onChange={(e) => setVideoChecklist(prev => ({ ...prev, hookCompliant: e.target.checked }))}
-                      className="rounded text-blue-600"
-                    />
-                    <span>3 giây đầu gây tò mò / giật hook đúng kịch bản</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={videoChecklist.productAppearance}
-                      onChange={(e) => setVideoChecklist(prev => ({ ...prev, productAppearance: e.target.checked }))}
-                      className="rounded text-blue-600"
-                    />
-                    <span>Sản phẩm xuất hiện rõ nét, ánh sáng và màu sắc chân thực, file sạch không dính watermark</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={videoChecklist.audioClear}
-                      onChange={(e) => setVideoChecklist(prev => ({ ...prev, audioClear: e.target.checked }))}
-                      className="rounded text-blue-600"
-                    />
-                    <span>Âm thanh, giọng lồng tiếng to rõ, nhạc nền không lấn át lời nói</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={videoChecklist.guidelinesFollowed}
-                      onChange={(e) => setVideoChecklist(prev => ({ ...prev, guidelinesFollowed: e.target.checked }))}
-                      className="rounded text-blue-600"
-                    />
-                    <span>Tuân thủ đúng quy tắc Do &amp; Don&apos;ts và không vi phạm từ khóa cấm của sàn</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">
-                  Link Thư mục Drive tổng của Gian hàng (Bàn giao cho Brand &amp; Media)
-                </label>
-                <input
-                  type="url"
-                  value={storeDriveFolderInput}
-                  onChange={(e) => setStoreDriveFolderInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono text-2xs bg-slate-50 focus:bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setVideoVerdict('APPROVED')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                    videoVerdict === 'APPROVED'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
-                  Đạt QA Nội bộ (Trình Brand)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVideoVerdict('REVISE')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                    videoVerdict === 'REVISE'
-                      ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                  Yêu cầu VJ dựng lại
-                </button>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Nhận xét QA nội bộ</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi rõ đoạn giây cần cắt, text cần sửa hoặc ghi chú bàn giao..."
-                  value={videoFeedbackText}
-                  onChange={(e) => setVideoFeedbackText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsVideoQaModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveVideoQa}
-                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-2xs transition flex items-center gap-1.5 ${
-                    videoVerdict === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                  }`}
-                >
-                  <CheckCheck className="w-3.5 h-3.5" /> Lưu kết quả QA Vòng 1
-                </button>
-              </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Nhận xét QA nội bộ</label>
+              <textarea
+                rows={2}
+                placeholder="Ghi rõ đoạn giây cần cắt, text cần sửa hoặc ghi chú bàn giao..."
+                value={videoFeedbackText}
+                onChange={(e) => setVideoFeedbackText(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              />
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 6: VÒNG 2 — BRAND NGHIỆM THU & GẮN LINK BÀI ĐĂNG KÊNH      */}
       {/* ============================================================== */}
-      <Presence show={!!(isBrandAcceptModalOpen && selectedTask)}>
-      {isBrandAcceptModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-blue-600" />
-                Vòng 2 — Brand Nghiệm thu &amp; Đăng kênh: {selectedTask.taskCode}
-              </h3>
+      <Modal
+        open={Boolean(isBrandAcceptModalOpen && selectedTask)}
+        onClose={() => setIsBrandAcceptModalOpen(false)}
+        title={selectedTask ? `Vòng 2 — Brand Nghiệm thu & Đăng kênh: ${selectedTask.taskCode}` : 'Vòng 2 — Brand Nghiệm thu & Đăng kênh'}
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsBrandAcceptModalOpen(false)}>
+              Đóng
+            </Button>
+            <Button variant="primary" onClick={handleSaveBrandAcceptance}>
+              Xác nhận hoàn tất
+            </Button>
+          </>
+        }
+      >
+        {selectedTask && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+              <div className="flex justify-between text-2xs">
+                <span className="text-slate-500">QA Nội bộ duyệt bởi:</span>
+                <span className="font-semibold text-slate-800">
+                  {selectedTask.videoDeliverables?.internalQaApprovedBy || 'Content B2C'}
+                </span>
+              </div>
+              <div className="flex justify-between text-2xs">
+                <span className="text-slate-500">Thư mục Drive Gian hàng:</span>
+                <a
+                  href={selectedTask.videoDeliverables?.storeDriveFolderUrl || '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 hover:underline font-mono"
+                >
+                  Mở Drive tổng
+                </a>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">
+                Link bài đăng thực tế trên kênh TikTok / Shopee Video của Brand *
+              </label>
+              <input
+                type="url"
+                placeholder="https://www.tiktok.com/@brand.official/video/..."
+                value={publishedChannelUrlInput}
+                onChange={(e) => setPublishedChannelUrlInput(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono text-2xs bg-slate-50 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setIsBrandAcceptModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+                onClick={() => setBrandAcceptVerdict('APPROVED')}
+                className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                  brandAcceptVerdict === 'APPROVED'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
               >
-                <X className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
+                Nghiệm thu &amp; Đủ điều kiện chi
+              </button>
+              <button
+                type="button"
+                onClick={() => setBrandAcceptVerdict('REVISE')}
+                className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
+                  brandAcceptVerdict === 'REVISE'
+                    ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
+                    : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
+                Brand yêu cầu sửa lại
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                <div className="flex justify-between text-2xs">
-                  <span className="text-slate-500">QA Nội bộ duyệt bởi:</span>
-                  <span className="font-semibold text-slate-800">
-                    {selectedTask.videoDeliverables?.internalQaApprovedBy || 'Content B2C'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-2xs">
-                  <span className="text-slate-500">Thư mục Drive Gian hàng:</span>
-                  <a
-                    href={selectedTask.videoDeliverables?.storeDriveFolderUrl || '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline font-mono"
-                  >
-                    Mở Drive tổng
-                  </a>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">
-                  Link bài đăng thực tế trên kênh TikTok / Shopee Video của Brand *
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://www.tiktok.com/@brand.official/video/..."
-                  value={publishedChannelUrlInput}
-                  onChange={(e) => setPublishedChannelUrlInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono text-2xs bg-slate-50 focus:bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBrandAcceptVerdict('APPROVED')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                    brandAcceptVerdict === 'APPROVED'
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
-                  Nghiệm thu &amp; Đủ điều kiện chi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBrandAcceptVerdict('REVISE')}
-                  className={`p-3 rounded-xl border text-center font-semibold transition-colors ${
-                    brandAcceptVerdict === 'REVISE'
-                      ? 'border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                  Brand yêu cầu sửa lại
-                </button>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Ghi chú nghiệm thu</label>
-                <textarea
-                  rows={2}
-                  value={brandAcceptComment}
-                  onChange={(e) => setBrandAcceptComment(e.target.value)}
-                  placeholder="Ghi chú nghiệm thu của Brand hoặc mã bàn giao chạy Ads..."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsBrandAcceptModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Đóng
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveBrandAcceptance}
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
-                >
-                  Xác nhận hoàn tất
-                </button>
-              </div>
+            <div className="space-y-1">
+              <label className="font-semibold text-slate-700 block">Ghi chú nghiệm thu</label>
+              <textarea
+                rows={2}
+                value={brandAcceptComment}
+                onChange={(e) => setBrandAcceptComment(e.target.value)}
+                placeholder="Ghi chú nghiệm thu của Brand hoặc mã bàn giao chạy Ads..."
+                className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
+              />
             </div>
           </div>
-        </div>
-      )}
-      </Presence>
+        )}
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 7: CỔNG CTV NỘP KỊCH BẢN / LINK VIDEO DEMO               */}
       {/* ============================================================== */}
-      <Presence show={!!(isCtvSubmitModalOpen && selectedTask)}>
-      {isCtvSubmitModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">
-                {ctvSubmitType === 'SCRIPT'
-                  ? `Nộp Kịch bản chi tiết: ${selectedTask.taskCode}`
-                  : `Nộp Link Video Demo (Google Drive): ${selectedTask.taskCode}`}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsCtvSubmitModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCtvSubmitDeliverable} className="p-6 space-y-4 text-xs">
-              {ctvSubmitType === 'SCRIPT' ? (
-                <>
+      <Modal
+        open={Boolean(isCtvSubmitModalOpen && selectedTask)}
+        onClose={() => setIsCtvSubmitModalOpen(false)}
+        title={
+          selectedTask
+            ? ctvSubmitType === 'SCRIPT'
+              ? `Nộp Kịch bản chi tiết: ${selectedTask.taskCode}`
+              : `Nộp Link Video Demo (Google Drive): ${selectedTask.taskCode}`
+            : 'Nộp bài CTV'
+        }
+        size="md"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsCtvSubmitModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button type="submit" form="self-channel-ctv-submit-form" variant="primary">
+              Gửi bài nộp
+            </Button>
+          </>
+        }
+      >
+        {selectedTask && (
+          <form id="self-channel-ctv-submit-form" onSubmit={handleCtvSubmitDeliverable} className="space-y-4 text-xs">
+            {ctvSubmitType === 'SCRIPT' ? (
+              <>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 block">1. Hook 3 giây đầu *</label>
+                  <input
+                    type="text"
+                    required
+                    value={ctvScriptForm.hook}
+                    onChange={(e) => setCtvScriptForm(prev => ({ ...prev, hook: e.target.value }))}
+                    placeholder="Câu mở đầu giữ chân người xem..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 block">2. Thân bài &amp; Cảnh quay thực nghiệm *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={ctvScriptForm.body}
+                    onChange={(e) => setCtvScriptForm(prev => ({ ...prev, body: e.target.value }))}
+                    placeholder="Mô tả chi tiết cảnh quay, lời thoại và USP sản phẩm..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 block">3. Kêu gọi hành động (CTA)</label>
+                  <input
+                    type="text"
+                    value={ctvScriptForm.cta}
+                    onChange={(e) => setCtvScriptForm(prev => ({ ...prev, cta: e.target.value }))}
+                    placeholder="Nhấn giỏ hàng góc trái..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700 block">Link Google Drive chứa file Video *</label>
+                  <input
+                    type="url"
+                    required
+                    value={ctvVideoForm.draftVideoUrl}
+                    onChange={(e) => setCtvVideoForm(prev => ({ ...prev, draftVideoUrl: e.target.value }))}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="font-semibold text-slate-700 block">1. Hook 3 giây đầu *</label>
+                    <label className="font-semibold text-slate-700 block">Thời lượng (giây)</label>
                     <input
-                      type="text"
-                      required
-                      value={ctvScriptForm.hook}
-                      onChange={(e) => setCtvScriptForm(prev => ({ ...prev, hook: e.target.value }))}
-                      placeholder="Câu mở đầu giữ chân người xem..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="font-semibold text-slate-700 block">2. Thân bài &amp; Cảnh quay thực nghiệm *</label>
-                    <textarea
-                      rows={3}
-                      required
-                      value={ctvScriptForm.body}
-                      onChange={(e) => setCtvScriptForm(prev => ({ ...prev, body: e.target.value }))}
-                      placeholder="Mô tả chi tiết cảnh quay, lời thoại và USP sản phẩm..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="font-semibold text-slate-700 block">3. Kêu gọi hành động (CTA)</label>
-                    <input
-                      type="text"
-                      value={ctvScriptForm.cta}
-                      onChange={(e) => setCtvScriptForm(prev => ({ ...prev, cta: e.target.value }))}
-                      placeholder="Nhấn giỏ hàng góc trái..."
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-1">
-                    <label className="font-semibold text-slate-700 block">Link Google Drive chứa file Video *</label>
-                    <input
-                      type="url"
-                      required
-                      value={ctvVideoForm.draftVideoUrl}
-                      onChange={(e) => setCtvVideoForm(prev => ({ ...prev, draftVideoUrl: e.target.value }))}
-                      placeholder="https://drive.google.com/..."
+                      type="number"
+                      value={ctvVideoForm.durationSeconds}
+                      onChange={(e) =>
+                        setCtvVideoForm(prev => ({ ...prev, durationSeconds: Number(e.target.value) }))
+                      }
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="font-semibold text-slate-700 block">Thời lượng (giây)</label>
-                      <input
-                        type="number"
-                        value={ctvVideoForm.durationSeconds}
-                        onChange={(e) =>
-                          setCtvVideoForm(prev => ({ ...prev, durationSeconds: Number(e.target.value) }))
-                        }
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono bg-slate-50"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="font-semibold text-slate-700 block">Caption gợi ý đăng kênh</label>
-                      <input
-                        type="text"
-                        value={ctvVideoForm.captionSuggested}
-                        onChange={(e) => setCtvVideoForm(prev => ({ ...prev, captionSuggested: e.target.value }))}
-                        placeholder="#kutieskin #chamsocdabe..."
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700 block">Caption gợi ý đăng kênh</label>
+                    <input
+                      type="text"
+                      value={ctvVideoForm.captionSuggested}
+                      onChange={(e) => setCtvVideoForm(prev => ({ ...prev, captionSuggested: e.target.value }))}
+                      placeholder="#kutieskin #chamsocdabe..."
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50"
+                    />
                   </div>
-                </>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCtvSubmitModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Gửi bài nộp
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      </Presence>
+                </div>
+              </>
+            )}
+          </form>
+        )}
+      </Modal>
 
       {/* ============================================================== */}
       {/* MODAL 8: LẬP PHIẾU ĐỀ NGHỊ THANH TOÁN (DNTT) & MÃ QR           */}
       {/* ============================================================== */}
-      <Presence show={!!(isDnttModalOpen && dnttTargetCtv)}>
-      {isDnttModalOpen && dnttTargetCtv && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-emerald-600" />
-                Phiếu Đề Nghị Thanh Toán (DNTT) — {dnttTargetCtv.name}
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsDnttModalOpen(false);
-                  setDnttTargetCtv(null);
-                }}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <Modal
+        open={Boolean(isDnttModalOpen && dnttTargetCtv)}
+        onClose={() => {
+          setIsDnttModalOpen(false);
+          setDnttTargetCtv(null);
+        }}
+        title={dnttTargetCtv ? `Phiếu Đề Nghị Thanh Toán (DNTT) — ${dnttTargetCtv.name}` : 'Phiếu Đề Nghị Thanh Toán (DNTT)'}
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsDnttModalOpen(false);
+                setDnttTargetCtv(null);
+              }}
+            >
+              Đóng
+            </Button>
+            <Button
+              variant="primary"
+              icon={CheckCircle2}
+              onClick={handleConfirmDnttBatchPayout}
+            >
+              Xác nhận Lập DNTT &amp; Đã giải ngân
+            </Button>
+          </>
+        }
+      >
+        {dnttTargetCtv && (() => {
+          const unpaidTasks = tasks.filter(
+            t =>
+              t.status === 'ACCEPTED_COMPLETED' &&
+              (t.contributorId === dnttTargetCtv.id ||
+                t.contributorName
+                  ?.toLowerCase()
+                  .includes(dnttTargetCtv.name.split('(')[0].trim().toLowerCase()))
+          );
+          const grossTotal = unpaidTasks.reduce((s, t) => s + t.remuneration, 0);
+          const pitTax = grossTotal >= 2000000 ? Math.round(grossTotal * 0.1) : 0;
+          const netTotal = grossTotal - pitTax;
 
-            {(() => {
-              const unpaidTasks = tasks.filter(
-                t =>
-                  t.status === 'ACCEPTED_COMPLETED' &&
-                  (t.contributorId === dnttTargetCtv.id ||
-                    t.contributorName
-                      ?.toLowerCase()
-                      .includes(dnttTargetCtv.name.split('(')[0].trim().toLowerCase()))
-              );
-              const grossTotal = unpaidTasks.reduce((s, t) => s + t.remuneration, 0);
-              const pitTax = grossTotal >= 2000000 ? Math.round(grossTotal * 0.1) : 0;
-              const netTotal = grossTotal - pitTax;
+          return (
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div className="font-semibold text-slate-800">
+                  Danh sách video nghiệm thu đưa vào đợt thanh toán ({unpaidTasks.length} video):
+                </div>
+                <div className="divide-y divide-slate-200/60">
+                  {unpaidTasks.map(u => (
+                    <div key={u.id} className="py-1.5 flex items-center justify-between text-2xs">
+                      <div>
+                        <span className="font-mono font-semibold text-slate-700">{u.taskCode}</span> —{' '}
+                        <span className="text-slate-700">{u.title}</span>
+                      </div>
+                      <span className="font-mono font-semibold text-slate-900">{formatVnd(u.remuneration)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-              return (
-                <div className="p-6 space-y-4 text-xs">
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="font-semibold text-slate-800">
-                      Danh sách video nghiệm thu đưa vào đợt thanh toán ({unpaidTasks.length} video):
-                    </div>
-                    <div className="divide-y divide-slate-200/60">
-                      {unpaidTasks.map(u => (
-                        <div key={u.id} className="py-1.5 flex items-center justify-between text-2xs">
-                          <div>
-                            <span className="font-mono font-semibold text-slate-700">{u.taskCode}</span> —{' '}
-                            <span className="text-slate-700">{u.title}</span>
-                          </div>
-                          <span className="font-mono font-semibold text-slate-900">{formatVnd(u.remuneration)}</span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="p-3.5 rounded-xl border border-slate-200 text-center space-y-1.5">
+                  <div className="w-24 h-24 mx-auto rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center">
+                    <QrCode className="w-16 h-16 text-slate-800" />
                   </div>
+                  <p className="font-mono font-semibold text-slate-900 text-xs">{dnttTargetCtv.bankAccount}</p>
+                  <p className="text-2xs text-slate-500">
+                    {dnttTargetCtv.bankName} • {dnttTargetCtv.bankAccountName}
+                  </p>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                    <div className="p-3.5 rounded-xl border border-slate-200 text-center space-y-1.5">
-                      <div className="w-24 h-24 mx-auto rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center">
-                        <QrCode className="w-16 h-16 text-slate-800" />
-                      </div>
-                      <p className="font-mono font-semibold text-slate-900 text-xs">{dnttTargetCtv.bankAccount}</p>
-                      <p className="text-2xs text-slate-500">
-                        {dnttTargetCtv.bankName} • {dnttTargetCtv.bankAccountName}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">CCCD pháp lý:</span>
-                        <span className="font-mono font-medium text-slate-800">{dnttTargetCtv.cccd}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Mã số thuế TNCN:</span>
-                        <span className="font-mono font-medium text-slate-800">{dnttTargetCtv.taxCode || '—'}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-slate-100">
-                        <span className="text-slate-600">Tổng thù lao Gross:</span>
-                        <span className="font-mono font-semibold text-slate-900">{formatVnd(grossTotal)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-600">Khấu trừ thuế TNCN (10%):</span>
-                        <span className="font-mono font-semibold text-rose-600">
-                          {pitTax > 0 ? `- ${formatVnd(pitTax)}` : '0 đ (< 2M)'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-slate-200 text-sm">
-                        <span className="font-semibold text-slate-900">Thực nhận (Net):</span>
-                        <span className="font-mono font-semibold text-emerald-700">{formatVnd(netTotal)}</span>
-                      </div>
-                    </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">CCCD pháp lý:</span>
+                    <span className="font-mono font-medium text-slate-800">{dnttTargetCtv.cccd}</span>
                   </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDnttModalOpen(false);
-                        setDnttTargetCtv(null);
-                      }}
-                      className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100"
-                    >
-                      Đóng
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleConfirmDnttBatchPayout}
-                      className="px-5 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5"
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Xác nhận Lập DNTT &amp; Đã giải ngân
-                    </button>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Mã số thuế TNCN:</span>
+                    <span className="font-mono font-medium text-slate-800">{dnttTargetCtv.taxCode || '—'}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-slate-100">
+                    <span className="text-slate-600">Tổng thù lao Gross:</span>
+                    <span className="font-mono font-semibold text-slate-900">{formatVnd(grossTotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Khấu trừ thuế TNCN (10%):</span>
+                    <span className="font-mono font-semibold text-rose-600">
+                      {pitTax > 0 ? `- ${formatVnd(pitTax)}` : '0 đ (< 2M)'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-slate-200 text-sm">
+                    <span className="font-semibold text-slate-900">Thực nhận (Net):</span>
+                    <span className="font-mono font-semibold text-emerald-700">{formatVnd(netTotal)}</span>
                   </div>
                 </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-      </Presence>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

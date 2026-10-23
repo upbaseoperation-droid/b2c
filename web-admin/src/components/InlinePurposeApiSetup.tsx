@@ -210,14 +210,14 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
         <div className="flex items-center gap-2">
           <Sliders className="w-4 h-4 text-accent shrink-0" />
-          <span className="font-bold text-ink">{effective.purpose.title}</span>
+          <span className="font-semibold text-ink">{effective.purpose.title}</span>
           <span className="px-2 py-0.5 rounded bg-surface border border-line text-2xs font-semibold text-ink-2">
             {effective.purpose.departmentTag}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`px-2 py-0.5 rounded-full text-2xs font-bold border ${
+            className={`px-2 py-0.5 rounded-full text-2xs font-semibold border ${
               effective.hasActiveExternalKey || primaryProvider === 'INTERNAL'
                 ? 'bg-success-soft text-success border-success-line'
                 : 'bg-warning-soft text-warning border-warning-line'
@@ -231,7 +231,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
       {/* Hàng 1: Nhà cung cấp chính, Mô hình chính & Luồng dự phòng */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-ink-2 block">Nhà cung cấp chính</label>
+          <label className="text-2xs font-semibold text-ink-2 block">Nhà cung cấp chính</label>
           <select
             value={primaryProvider}
             onChange={(e) => handlePrimaryProviderChange(e.target.value as ApiProviderId)}
@@ -245,7 +245,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-ink-2 block">Mô hình xử lý chính</label>
+          <label className="text-2xs font-semibold text-ink-2 block">Mô hình xử lý chính</label>
           <select
             value={primaryModel}
             onChange={(e) => setPrimaryModel(e.target.value)}
@@ -260,7 +260,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-ink-2 block">Nhà cung cấp dự phòng</label>
+          <label className="text-2xs font-semibold text-ink-2 block">Nhà cung cấp dự phòng</label>
           <select
             value={fallbackProvider}
             onChange={(e) => handleFallbackProviderChange(e.target.value as ApiProviderId)}
@@ -274,7 +274,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
         </div>
 
         <div className="space-y-1">
-          <label className="text-2xs font-bold text-ink-2 block">Mô hình dự phòng</label>
+          <label className="text-2xs font-semibold text-ink-2 block">Mô hình dự phòng</label>
           <select
             value={fallbackModel}
             onChange={(e) => setFallbackModel(e.target.value)}
@@ -293,7 +293,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
       {primaryProvider !== 'INTERNAL' && (
         <div className="space-y-1.5 pt-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="text-2xs font-bold text-ink flex items-center gap-1.5">
+            <label className="text-2xs font-semibold text-ink flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-accent" />
               <span>
                 Khóa API ({PROVIDER_META[primaryProvider]?.shortName}) — Định dạng:{' '}
@@ -339,7 +339,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
             <button
               type="button"
               onClick={handleSaveAll}
-              className="h-8 px-3.5 rounded-lg bg-primary hover:bg-primary-hover text-primary-fg font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              className="h-8 px-3.5 rounded-lg bg-primary hover:bg-primary-hover text-primary-fg font-semibold text-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Lưu cấu hình API</span>
@@ -376,7 +376,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
       {showPromptEditor && (
         <div className="space-y-1.5 pt-2 border-t border-line">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <label className="text-2xs font-bold text-ink">
+            <label className="text-2xs font-semibold text-ink">
               Câu lệnh chỉ dẫn (System Prompt) của nghiệp vụ:
             </label>
             <div className="flex items-center gap-1.5">
@@ -397,7 +397,7 @@ export const InlinePurposeApiSetup: React.FC<InlinePurposeApiSetupProps> = ({
               <button
                 type="button"
                 onClick={handleSaveAll}
-                className="px-2.5 py-1 rounded bg-accent-soft hover:bg-accent/20 text-accent border border-accent-line text-2xs font-bold flex items-center gap-1 cursor-pointer"
+                className="px-2.5 py-1 rounded bg-accent-soft hover:bg-accent/20 text-accent border border-accent-line text-2xs font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <Save className="w-3 h-3" />
                 Lưu cấu hình & câu lệnh

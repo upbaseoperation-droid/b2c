@@ -75,21 +75,11 @@ export const NAV_GROUPS: NavGroupDefinition[] = [
     ],
   },
   {
-    id: 'brand',
-    label: 'Brand & Gian hàng',
-    tabs: [
-      { key: 'brand-knowledge', label: TAB_LABELS['brand-knowledge'] },
-      { key: 'stores', label: TAB_LABELS.stores },
-      { key: 'push-products', label: TAB_LABELS['push-products'] },
-    ],
-  },
-  {
     id: 'research',
-    label: 'Nghiên cứu & Crawler',
+    label: 'Nghiên cứu & Đối thủ',
     tabs: [
       { key: 'market-research', label: TAB_LABELS['market-research'] },
       { key: 'tiktok-crawler', label: TAB_LABELS['tiktok-crawler'] },
-      { key: 'koc-master', label: TAB_LABELS['koc-master'] },
     ],
   },
 ];
@@ -112,6 +102,16 @@ export const TAB_ALIASES: Partial<Record<TabKey, TabKey>> = {
   'dashboard-air-sync': 'dashboard-team-sla',
   leaderboard: 'dashboard-staff',
   'content-angles': 'brand-knowledge',
+  booking: 'koc-listing',
+  'approved-booking-list': 'koc-listing',
+  'sample-tracker': 'koc-listing',
+  'store-air-plan-report': 'dashboard-bi',
+  'push-products': 'master-data',
+  stores: 'master-data',
+  'ctv-master': 'self-channel-hub',
+  'workload-3d': 'manager',
+  'performance-p3': 'manager',
+  'audit-trail': 'partner-access',
 };
 
 export function resolveNavGroupTabKey(tab: TabKey): TabKey {

@@ -266,6 +266,24 @@ export interface BrandPlanRow {
 export type BrandPlanApprovalStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'CHANGES';
 export const APPROVAL_LABEL: Record<BrandPlanApprovalStatus, string> = { DRAFT: 'Nháp', PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', CHANGES: 'Cần sửa' };
 
+/**
+ * Cơ chế "1 Dự Án — 1 Strategy Owner" (Định hướng Marketing B2C _ Cơ cấu team.md):
+ * - BRAND_TEAM: Brand lớn (≥ 1 tỷ / có Brand Team): Brand Team làm Strategy Owner tổng thể; Content Team book KOL KL5–KL7 & Hero Content; Booking Team book KOC KL1–KL4 & FOC.
+ * - CONTENT_TEAM: Brand vừa & nhỏ (< 1 tỷ / không có Brand Team): Content Team làm Strategy Owner toàn diện; Content Team book KOL KL5–KL7; Booking Team book KOC KL1–KL4 & FOC.
+ */
+export type StrategyOwnerMode = 'BRAND_TEAM' | 'CONTENT_TEAM';
+export const STRATEGY_OWNER_MODE_LABEL: Record<StrategyOwnerMode, string> = {
+  BRAND_TEAM: 'Brand lớn (Có Brand Team làm Strategy Owner)',
+  CONTENT_TEAM: 'Brand vừa & nhỏ (Content Team làm Strategy Owner)',
+};
+
+export function getTierBookingOwnerLabel(kl: string, source: ContentSource): string {
+  if (source === 'SELF' || source === 'LIVE_SELF') return 'Content & Partnership';
+  if (kl === 'KL5' || kl === 'KL6' || kl === 'KL7') return 'Content Team book (KOL)';
+  if (kl === 'KL1' || kl === 'KL2' || kl === 'KL3' || kl === 'KL4' || kl === 'TAP') return 'Booking Team book (KOC/FOC)';
+  return 'Booking / Content';
+}
+
 export interface BrandPlanApproval {
   status: BrandPlanApprovalStatus;
   submittedBy: string;
@@ -278,6 +296,7 @@ export interface BrandPlanApproval {
 export const EMPTY_APPROVAL: BrandPlanApproval = { status: 'DRAFT', submittedBy: '', submittedAt: '', decidedBy: '', decidedAt: '', note: '' };
 export interface BrandPlanData {
   approval: BrandPlanApproval;
+  strategyOwnerMode?: StrategyOwnerMode;
   planner: string;
   statusNote: string;
   direction: Record<string, string>;
@@ -294,6 +313,7 @@ export interface BrandPlanData {
 
 export const EMPTY_BRAND_PLAN: BrandPlanData = {
   approval: EMPTY_APPROVAL,
+  strategyOwnerMode: 'CONTENT_TEAM',
   planner: '',
   statusNote: '',
   direction: {},
@@ -409,8 +429,10 @@ export function sanitizeBrandPlan(input: Partial<BrandPlanData> | undefined): Br
     pic: s(r?.pic, 120),
     note: s(r?.note, 500),
   }));
+  const strategyOwnerMode: StrategyOwnerMode = input?.strategyOwnerMode === 'BRAND_TEAM' ? 'BRAND_TEAM' : 'CONTENT_TEAM';
   return {
     approval,
+    strategyOwnerMode,
     planner: s(input?.planner, 200),
     statusNote: s(input?.statusNote, 300),
     direction: rec(input?.direction),

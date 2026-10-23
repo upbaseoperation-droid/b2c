@@ -105,6 +105,9 @@ export function usePlanRecord<T>(endpoint: string, planId: string | null, empty:
         } else {
           dirtyRef.current = false;
           setStatus('saved');
+          if (typeof window !== 'undefined' && endpoint === '/api/deal-board') {
+            window.dispatchEvent(new CustomEvent('upbase-deal-board-updated'));
+          }
         }
       } catch (err) {
         savingRef.current = false;

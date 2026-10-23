@@ -109,7 +109,7 @@ export const KocChannelReviewBadge: React.FC<{
             key={b.brandScope}
             type="button"
             onClick={onClick}
-            className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer border ${
+            className={`inline-flex items-center gap-1 h-5 px-2 rounded-full text-2xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer border ${
               tone === 'critical'
                 ? 'bg-critical-soft text-critical border-critical/30 hover:bg-critical hover:text-white'
                 : tone === 'warning'
@@ -362,7 +362,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
               {r.reasonTags.map((t) => (
                 <span
                   key={t}
-                  className="px-1.5 py-0.5 rounded bg-sunken/80 border border-line text-[11px] text-ink-2"
+                  className="px-1.5 py-0.5 rounded bg-sunken/80 border border-line text-2xs text-ink-2"
                 >
                   {t}
                 </span>
@@ -596,7 +596,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                   </Field>
 
                   <Field label="Kết luận đánh giá cho Brand *">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {KOC_REVIEW_VERDICT_OPTIONS.map((opt) => {
                         const isSelected = verdict === opt.key;
                         const shortBtnLabel =
@@ -814,11 +814,11 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                                         · {rev.reviewerRole}
                                       </span>
                                     )}
-                                    {isJustSaved && (
-                                      <span className="px-1.5 py-0.5 rounded bg-accent text-white text-[10px] font-semibold">
-                                        Mới lưu
-                                      </span>
-                                    )}
+                                      {isJustSaved && (
+                                        <span className="px-1.5 py-0.5 rounded bg-accent text-white text-3xs font-semibold">
+                                          Mới lưu
+                                        </span>
+                                      )}
                                   </div>
                                   <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 tabular-nums">
                                     <Clock className="w-3 h-3 text-ink-3 shrink-0" />
@@ -868,7 +868,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
                               </div>
                             )}
 
-                            <div className="text-[11px] text-ink-3 flex items-center justify-between">
+                            <div className="text-2xs text-ink-3 flex items-center justify-between">
                               <span>Nguồn ghi nhận: {rev.sourceScreen}</span>
                             </div>
                           </div>

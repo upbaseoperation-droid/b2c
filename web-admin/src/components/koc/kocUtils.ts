@@ -3,7 +3,14 @@
  * phát hiện hồ sơ trùng, quyền xem số đầy đủ, trạng thái booking.
  */
 
-import type { BookingDealItem, KocItem, UserProfile } from '../../lib/types';
+import type {
+  BookingDealItem,
+  KocBookingReadiness,
+  KocItem,
+  KocLegalProfile,
+  KocPayeeProfile,
+  UserProfile,
+} from '../../lib/types';
 import type { StatusTone } from '../ui';
 
 /* ------------------------------------------------------------- Pháp lý */
@@ -16,20 +23,55 @@ export const LEGAL_TYPE_LABEL: Record<LegalType, string> = {
   COMPANY: 'Công ty',
 };
 
-export function legalTypeOf(k: KocItem): LegalType {
-  if (k.ocrDocumentType === 'BUSINESS_LICENSE') return 'COMPANY';
-  if (k.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HOUSEHOLD';
-  if (k.taxAccountType?.toLowerCase().includes('doanh nghiệp') || /CONG TY|CTY|TNHH|CO PHAN/i.test(k.companyName || k.realName || '')) {
+export const READINESS_LABEL: Record<KocBookingReadiness, { label: string; tone: StatusTone }> = {
+  SẴN_SÀNG_BOOKING: { label: 'Sẵn sàng booking', tone: 'positive' },
+  TIẾP_CẬN_BỔ_SUNG_PHÁP_LÝ: { label: 'Có liên hệ · Bổ sung pháp lý', tone: 'info' },
+  CẦN_XIN_LIÊN_HỆ: { label: 'Cần xin SĐT/Zalo', tone: 'warning' },
+  CHỜ_TIẾP_CẬN: { label: 'Chờ tiếp cận', tone: 'neutral' },
+};
+
+/**
+ * Xác định loại pháp nhân từ tên đơn vị thụ hưởng hoặc chế độ thuế.
+ */
+export function inferLegalTypeFromText(holderName?: string, taxAccountType?: string): LegalType {
+  const tax = (taxAccountType || '').toLowerCase();
+  const holder = (holderName || '').toUpperCase();
+  if (
+    tax.includes('doanh nghiệp') ||
+    tax.includes('vat') ||
+    /CONG TY|CÔNG TY|CTY|TNHH|CO PHAN|CỔ PHẦN|MEDIA|NETWORK|ENTERTAINMENT|AGENCY|GROUP/.test(holder)
+  ) {
     return 'COMPANY';
   }
-  if (k.taxAccountType?.toLowerCase().includes('hộ kinh doanh')) {
+  if (
+    tax.includes('hộ kinh doanh') ||
+    tax.includes('hkd') ||
+    /HO KINH DOANH|HỘ KINH DOANH|HKD/.test(holder)
+  ) {
     return 'HOUSEHOLD';
   }
   return 'INDIVIDUAL';
 }
 
+export function legalTypeOf(k: KocItem): LegalType {
+  if (k.legalProfiles && k.legalProfiles.length > 0) {
+    const def = k.legalProfiles.find((p) => p.isDefault) || k.legalProfiles[0];
+    if (def) return def.legalType;
+  }
+  if (k.ocrDocumentType === 'BUSINESS_LICENSE') return 'COMPANY';
+  if (k.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HOUSEHOLD';
+  return inferLegalTypeFromText(k.companyName || k.realName, k.taxAccountType);
+}
+
 /** Số định danh dùng để ký hợp đồng: MST cho hộ kinh doanh / công ty, CCCD cho cá nhân. */
 export function legalIdOf(k: KocItem): string {
+  if (k.legalProfiles && k.legalProfiles.length > 0) {
+    const def = k.legalProfiles.find((p) => p.isDefault) || k.legalProfiles[0];
+    if (def) {
+      const idVal = def.legalType !== 'INDIVIDUAL' ? def.taxCode || def.cccd : def.cccd || def.taxCode;
+      if (idVal && idVal.trim()) return idVal.trim();
+    }
+  }
   const digits = (s?: string) => (s || '').replace(/\D/g, '');
   if (legalTypeOf(k) !== 'INDIVIDUAL' && digits(k.taxCode).length >= 7) return k.taxCode!.trim();
   const cccd = digits(k.cccd);
@@ -39,6 +81,222 @@ export function legalIdOf(k: KocItem): string {
 }
 
 export const hasLegalId = (k: KocItem) => legalIdOf(k) !== '';
+
+/**
+ * Trả về danh sách Hồ sơ pháp lý (1 KOC -> N KocLegalProfile) theo chuẩn ERD `creator_legal_profile`.
+ * Tự động chuẩn hóa từ `k.legalProfiles`, `k.alternatePayees` và thông tin pháp lý gốc của KOC.
+ */
+export function getKocLegalProfiles(k: KocItem): KocLegalProfile[] {
+  if (k.legalProfiles && k.legalProfiles.length > 0) {
+    return k.legalProfiles;
+  }
+
+  const profiles: KocLegalProfile[] = [];
+  const payees = k.alternatePayees || [];
+
+  if (payees.length > 0) {
+    payees.forEach((p, idx) => {
+      const lType = inferLegalTypeFromText(p.holderName, p.taxAccountType);
+      const cleanId = (p.legalId || '').trim();
+      const isTaxCode =
+        lType !== 'INDIVIDUAL' ||
+        cleanId.includes('-') ||
+        cleanId.length === 10 ||
+        cleanId.length === 13;
+      const defaultTaxLabel =
+        p.taxAccountType ||
+        (lType === 'COMPANY'
+          ? '(VAT 8%) Tài khoản doanh nghiệp'
+          : lType === 'HOUSEHOLD'
+            ? 'HKD xuất hóa đơn'
+            : '(Thuế TNCN 10%) Tài khoản cá nhân');
+
+      let relationshipNote = 'Chính chủ KOC';
+      if (lType === 'COMPANY') relationshipNote = 'Pháp nhân Công ty / MCN đại diện';
+      else if (lType === 'HOUSEHOLD') relationshipNote = 'Hộ kinh doanh cá thể';
+      else if (
+        idx > 0 &&
+        k.realName &&
+        p.holderName &&
+        p.holderName.trim().toLowerCase() !== k.realName.trim().toLowerCase()
+      ) {
+        relationshipNote = 'Người thân / Đại diện nhận ủy quyền';
+      }
+
+      const hasSignedContract = Boolean(k.contractDriveUrl) && idx === 0;
+      const numCode = k.id.replace(/\D/g, '') || '01';
+
+      profiles.push({
+        id: `${k.id}-lp-${idx + 1}`,
+        profileCode: `HSPL-0${idx + 1}`,
+        legalType: lType,
+        isDefault: idx === 0,
+        status: idx === 0 ? 'ACTIVE' : 'ACTIVE',
+        taxAccountType: defaultTaxLabel,
+        holderName: p.holderName || k.companyName || k.realName || k.stageName,
+        representativeName: lType !== 'INDIVIDUAL' ? k.legalRepresentative || k.realName : undefined,
+        relationshipNote,
+        cccd: !isTaxCode ? cleanId : idx === 0 ? k.cccd : undefined,
+        cccdIssueDate: idx === 0 ? k.issueDate : undefined,
+        cccdIssuePlace: idx === 0 ? k.issuePlace : undefined,
+        taxCode: isTaxCode ? cleanId : idx === 0 && k.taxCode !== 'Chưa có' ? k.taxCode : undefined,
+        registeredAddress: idx === 0 ? k.permanentAddress || k.shippingAddress : undefined,
+        bankName: p.bankName || (idx === 0 ? k.bankName : undefined),
+        bankAccount: p.bankAccount || (idx === 0 ? k.bankAccount : undefined),
+        isOcrVerified: idx === 0 ? Boolean(k.isOcrVerified) : true,
+        frameworkContractCode:
+          hasSignedContract || (p.dealsCount && p.dealsCount > 0)
+            ? `HĐNT-2026-${numCode.padStart(4, '0')}-${idx + 1}`
+            : undefined,
+        frameworkContractStatus: hasSignedContract
+          ? 'ĐÃ_KÝ'
+          : p.dealsCount && p.dealsCount > 0
+            ? 'ĐÃ_KÝ'
+            : 'CHƯA_KÝ',
+        frameworkContractDriveUrl: idx === 0 ? k.contractDriveUrl : undefined,
+        dealsUsedCount: p.dealsCount || (idx === 0 ? k.totalPastDeals : undefined),
+        latestBrandUsed: p.latestBrand || (idx === 0 ? k.brandName : undefined),
+      });
+    });
+    return profiles;
+  }
+
+  // Trường hợp KOC chưa có mảng alternatePayees nhưng có thông tin pháp lý/ngân hàng gốc
+  const primaryLegalId = legalIdOf(k);
+  const hasBank = Boolean(k.bankAccount && k.bankAccount.trim());
+  if (primaryLegalId || hasBank) {
+    const lType = legalTypeOf(k);
+    const defaultTaxLabel =
+      k.taxAccountType ||
+      (lType === 'COMPANY'
+        ? '(VAT 8%) Tài khoản doanh nghiệp'
+        : lType === 'HOUSEHOLD'
+          ? 'HKD xuất hóa đơn'
+          : '(Thuế TNCN 10%) Tài khoản cá nhân');
+    const numCode = k.id.replace(/\D/g, '') || '01';
+    const hasSigned = Boolean(k.contractDriveUrl || (k.totalPastDeals && k.totalPastDeals > 0 && primaryLegalId));
+
+    profiles.push({
+      id: `${k.id}-lp-1`,
+      profileCode: 'HSPL-01',
+      legalType: lType,
+      isDefault: true,
+      status: primaryLegalId && hasBank ? 'ACTIVE' : 'PENDING_VERIFY',
+      taxAccountType: defaultTaxLabel,
+      holderName:
+        (lType !== 'INDIVIDUAL' ? k.companyName || k.realName : k.realName) || k.stageName,
+      representativeName: lType !== 'INDIVIDUAL' ? k.legalRepresentative || k.realName : undefined,
+      relationshipNote:
+        lType === 'COMPANY'
+          ? 'Pháp nhân Công ty / MCN đại diện'
+          : lType === 'HOUSEHOLD'
+            ? 'Hộ kinh doanh cá thể'
+            : 'Chính chủ KOC',
+      cccd: k.cccd && k.cccd !== 'Chưa có' ? k.cccd : undefined,
+      cccdIssueDate: k.issueDate,
+      cccdIssuePlace: k.issuePlace,
+      taxCode: k.taxCode && k.taxCode !== 'Chưa có' ? k.taxCode : undefined,
+      registeredAddress: k.permanentAddress || k.shippingAddress,
+      bankName: k.bankName,
+      bankAccount: k.bankAccount,
+      isOcrVerified: Boolean(k.isOcrVerified),
+      frameworkContractCode: hasSigned ? `HĐNT-2026-${numCode.padStart(4, '0')}-1` : undefined,
+      frameworkContractStatus: hasSigned ? 'ĐÃ_KÝ' : 'CHƯA_KÝ',
+      frameworkContractDriveUrl: k.contractDriveUrl,
+      dealsUsedCount: k.totalPastDeals || undefined,
+      latestBrandUsed: k.brandName || undefined,
+    });
+  }
+
+  return profiles;
+}
+
+export function getDefaultLegalProfile(k: KocItem): KocLegalProfile | undefined {
+  const list = getKocLegalProfiles(k);
+  if (list.length === 0) return undefined;
+  return list.find((p) => p.isDefault) || list[0];
+}
+
+/**
+ * Đồng bộ danh sách `KocLegalProfile[]` ngược lại các trường gốc trên `KocItem`
+ * để đảm bảo đồng nhất 100% giữa bảng danh sách, hồ sơ chi tiết, hợp đồng và duyệt chi (RULE-SYNC-01).
+ */
+export function syncKocWithLegalProfiles(
+  koc: KocItem,
+  profiles: KocLegalProfile[],
+): KocItem {
+  if (profiles.length === 0) {
+    return {
+      ...koc,
+      legalProfiles: [],
+      alternatePayees: [],
+      cccd: '',
+      taxCode: undefined,
+      bankName: undefined,
+      bankAccount: '',
+    };
+  }
+
+  // Đảm bảo luôn có đúng 1 hồ sơ isDefault = true
+  const hasDef = profiles.some((p) => p.isDefault);
+  const normalized = profiles.map((p, idx) => ({
+    ...p,
+    profileCode: p.profileCode || `HSPL-0${idx + 1}`,
+    isDefault: hasDef ? p.isDefault : idx === 0,
+  }));
+
+  // Đưa hồ sơ mặc định lên đầu danh sách alternatePayees để tương thích ngược
+  const sorted = [...normalized].sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
+  const def = sorted[0];
+
+  const alternatePayees: KocPayeeProfile[] = sorted.map((p) => ({
+    legalId: (p.legalType !== 'INDIVIDUAL' ? p.taxCode || p.cccd : p.cccd || p.taxCode) || '',
+    holderName: p.holderName,
+    bankName: p.bankName,
+    bankAccount: p.bankAccount,
+    taxAccountType: p.taxAccountType,
+    dealsCount: p.dealsUsedCount,
+    latestBrand: p.latestBrandUsed,
+  }));
+
+  return {
+    ...koc,
+    legalProfiles: normalized,
+    alternatePayees,
+    realName: def.legalType === 'INDIVIDUAL' ? def.holderName || koc.realName : def.representativeName || def.holderName || koc.realName,
+    companyName: def.legalType !== 'INDIVIDUAL' ? def.holderName : undefined,
+    cccd: def.cccd || '',
+    taxCode: def.taxCode || undefined,
+    taxAccountType: def.taxAccountType || undefined,
+    issueDate: def.cccdIssueDate || koc.issueDate,
+    issuePlace: def.cccdIssuePlace || koc.issuePlace,
+    permanentAddress: def.registeredAddress || koc.permanentAddress,
+    bankName: def.bankName || undefined,
+    bankAccount: def.bankAccount || '',
+    contractDriveUrl: def.frameworkContractDriveUrl || koc.contractDriveUrl,
+    ocrDocumentType:
+      def.legalType === 'COMPANY'
+        ? 'BUSINESS_LICENSE'
+        : def.legalType === 'HOUSEHOLD'
+          ? 'BUSINESS_HOUSEHOLD'
+          : 'CCCD',
+    isOcrVerified: Boolean(def.cccd || def.taxCode || def.isOcrVerified),
+  };
+}
+
+/**
+ * Phân biệt KOC thuộc Bảng 1 (KOC Cũ kèm lịch sử - COOPERATED) hay Bảng 2 (KOC Mới / Tiềm năng - NEW).
+ */
+export function isCooperatedKoc(k: KocItem, allDeals?: BookingDealItem[]): boolean {
+  if (k.datasetType === 'COOPERATED') return true;
+  if (k.datasetType === 'NEW') {
+    const activeDealsCount = allDeals ? dealsOfKoc(allDeals, k).length : 0;
+    return activeDealsCount > 0 || (k.totalPastDeals || 0) > 0;
+  }
+  if ((k.totalPastDeals || 0) > 0) return true;
+  if (allDeals && dealsOfKoc(allDeals, k).length > 0) return true;
+  return false;
+}
 
 /** Che số nhạy cảm, chỉ giữ 4 số cuối: 8549302194 → •••• 2194 */
 export function mask(value?: string): string {

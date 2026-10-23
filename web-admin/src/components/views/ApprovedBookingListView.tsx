@@ -30,15 +30,12 @@ import type {
   DealContractAppendixStatus,
   DealRightsTermItem,
   KocItem,
-  SalaryGrade,
   StorePortfolioItem,
 } from '../../lib/types';
 import { formatVnd, formatVndShort } from '../../lib/format';
 import {
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
-  DINH_DANG_NGHIEM_THU_OPTIONS,
   LOAI_TAI_KHOAN_THANH_TOAN_OPTIONS,
-  PHAN_LOAI_VIDEO_OPTIONS,
   autoMapVideoAcceptanceByKocChannel,
   buildBookingDealFromApprovedItem,
   buildDefaultAddonServicesForDeal,
@@ -62,14 +59,13 @@ import {
 } from '../../lib/approvedBookingList';
 import {
   loadStaffSheetCollection,
-  makeSheetKey,
   normalizeTikTokId,
 } from '../../lib/staffBrandListingSheet';
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
 import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
-import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select, Status } from '../ui';
+import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select } from '../ui';
 
 export interface ApprovedBookingListViewProps {
   kocs: KocItem[];
@@ -134,10 +130,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
     loadApprovedBookingList(kocs, stores, deals, currentUserName)
   );
 
-  useEffect(() => {
+  const [prevInitKey, setPrevInitKey] = useState(`${initialStoreName || ''}|${initialMonthKey || ''}`);
+  const currentInitKey = `${initialStoreName || ''}|${initialMonthKey || ''}`;
+  if (prevInitKey !== currentInitKey) {
+    setPrevInitKey(currentInitKey);
     if (initialStoreName) setSelectedStore(initialStoreName);
     if (initialMonthKey) setSelectedMonth(initialMonthKey);
-  }, [initialStoreName, initialMonthKey]);
+  }
 
   useEffect(() => {
     const refresh = () => {
@@ -1422,7 +1421,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
             <div className="flex items-center gap-1" title={`${stats.boCreatedCount} đã tạo BO · ${stats.pendingBoCount} chờ tạo BO`}>
               <span className="text-ink-3">Duyệt:</span>
               <strong className="text-ink tabular-nums">{stats.total} KOC</strong>
-              <span className="text-[11px] text-ink-3 tabular-nums">
+              <span className="text-2xs text-ink-3 tabular-nums">
                 ({stats.boCreatedCount} BO)
               </span>
             </div>
@@ -1432,7 +1431,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               <strong className="text-ink tabular-nums">
                 {formatVndShort(stats.totalFinalNet)}
               </strong>
-              <span className="text-[11px] text-ink-3 tabular-nums">
+              <span className="text-2xs text-ink-3 tabular-nums">
                 (Gross {formatVndShort(stats.totalGross)})
               </span>
             </div>
@@ -1449,7 +1448,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
               <strong className="text-ink tabular-nums">
                 {formatVndShort(stats.totalGmv30d)}
               </strong>
-              <span className="text-[11px] font-semibold text-emerald-700 tabular-nums">
+              <span className="text-2xs font-semibold text-emerald-700 tabular-nums">
                 · ROI {stats.avgRoi}x
               </span>
             </div>
@@ -1624,53 +1623,53 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   />
                 </th>
                 <th className="sticky left-[38px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[142px] min-w-[142px] max-w-[142px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 1 · Deal &amp; Phụ lục</div>
+                  <div className="text-2xs font-mono text-ink-3">Cột 1 · Deal &amp; Phụ lục</div>
                   <div className="font-semibold text-ink truncate">Mã Deal &amp; Phụ lục</div>
                 </th>
                 <th className="sticky left-[180px] z-30 bg-sunken px-2.5 py-1.5 border-r border-line w-[168px] min-w-[168px] max-w-[168px] text-left shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 2 · KOC</div>
+                  <div className="text-2xs font-mono text-ink-3">Cột 2 · KOC</div>
                   <div className="font-semibold text-ink truncate">ID kênh &amp; Link</div>
                 </th>
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 3 &amp; 4 · Gian hàng</div>
+                  <div className="text-2xs font-mono text-ink-3">Cột 3 &amp; 4 · Gian hàng</div>
                   <div className="font-semibold text-ink">Store / Brand · Đợt</div>
                 </th>
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[170px] text-left">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 31 &amp; 89 · Nội dung</div>
+                  <div className="text-2xs font-mono text-ink-3">Cột 31 &amp; 89 · Nội dung</div>
                   <div className="font-semibold text-ink">Sản phẩm &amp; Pillar</div>
                 </th>
 
                 {/* Nhóm cột nhân viên điền: Ngày air chốt, Giá cuối cùng, Tạm ứng, Tạo BO */}
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-amber-50">
-                  <div className="text-[10px] font-mono text-amber-800 font-semibold">
+                  <div className="text-2xs font-mono text-amber-800 font-semibold">
                     NV ĐIỀN · Cột 61
                   </div>
                   <div className="font-semibold text-ink">Ngày air chốt</div>
                 </th>
                 {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
                   <th className="px-2.5 py-1.5 border-r border-line min-w-[115px] text-right">
-                    <div className="text-[10px] font-mono text-ink-3">Sheet Listing</div>
+                    <div className="text-2xs font-mono text-ink-3">Sheet Listing</div>
                     <div className="font-semibold text-ink">Giá đề xuất Net</div>
                   </th>
                 )}
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[145px] text-right bg-amber-50">
-                  <div className="text-[10px] font-mono text-amber-800 font-semibold">
+                  <div className="text-2xs font-mono text-amber-800 font-semibold">
                     NV ĐIỀN · Cột 18
                   </div>
                   <div className="font-semibold text-ink">Giá chốt cuối (Net)</div>
                 </th>
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[130px] text-right">
-                  <div className="text-[10px] font-mono text-sky-700">Công thức / 0.9</div>
+                  <div className="text-2xs font-mono text-accent">Công thức / 0.9</div>
                   <div className="font-semibold text-ink">Gross &amp; Bậc KL</div>
                 </th>
                 <th className="px-2.5 py-1.5 border-r border-line min-w-[135px] text-right">
-                  <div className="text-[10px] font-mono text-ink-3">Cột 40 &amp; 42</div>
+                  <div className="text-2xs font-mono text-ink-3">Cột 40 &amp; 42</div>
                   <div className="font-semibold text-ink">Tạm ứng / Còn trả</div>
                 </th>
 
                 {viewColumnMode !== 'ACCEPTANCE_FOCUS' && (
                   <th className="px-2.5 py-1.5 border-r border-line min-w-[180px] text-left">
-                    <div className="text-[10px] font-mono text-ink-3">Cột 17 &amp; 20</div>
+                    <div className="text-2xs font-mono text-ink-3">Cột 17 &amp; 20</div>
                     <div className="font-semibold text-ink">Loại TK thuế &amp; Hợp tác</div>
                   </th>
                 )}
@@ -1679,54 +1678,54 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 {viewColumnMode !== 'BOOKING_FOCUS' && (
                   <>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[235px] text-left bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         NGHIỆM THU · Cột 9
                       </div>
                       <div className="font-semibold text-ink">Link video nghiệm thu</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[140px] text-left bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         NGHIỆM THU · Cột 6 &amp; 7
                       </div>
                       <div className="font-semibold text-ink">Ngày air thực tế</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[120px] text-left bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         SLA · Cột 39
                       </div>
                       <div className="font-semibold text-ink">Đúng / Trễ hạn</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[155px] text-left bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         ADS · Cột 45
                       </div>
                       <div className="font-semibold text-ink">Mã Spark Ads</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[205px] text-right bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         HIỆU QUẢ · Cột 68–70
                       </div>
                       <div className="font-semibold text-ink">Views · Đơn · GMV 30d</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[150px] text-right bg-emerald-50">
-                      <div className="text-[10px] font-mono text-emerald-800 font-semibold">
+                      <div className="text-2xs font-mono text-emerald-800 font-semibold">
                         ROI · Cột 71–76
                       </div>
                       <div className="font-semibold text-ink">GPM · ROI · Đánh giá</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[165px] text-left">
-                      <div className="text-[10px] font-mono text-ink-3">Cột 22 &amp; 30</div>
+                      <div className="text-2xs font-mono text-ink-3">Cột 22 &amp; 30</div>
                       <div className="font-semibold text-ink">Thanh toán &amp; ND CK</div>
                     </th>
                     <th className="px-2.5 py-1.5 border-r border-line min-w-[175px] text-left">
-                      <div className="text-[10px] font-mono text-ink-3">Cột 23–26</div>
+                      <div className="text-2xs font-mono text-ink-3">Cột 23–26</div>
                       <div className="font-semibold text-ink">Ngân hàng &amp; CCCD</div>
                     </th>
                   </>
                 )}
 
                 <th className="px-2.5 py-1.5 text-center min-w-[145px]">
-                  <div className="text-[10px] font-mono text-ink-3">Thao tác</div>
+                  <div className="text-2xs font-mono text-ink-3">Thao tác</div>
                   <div className="font-semibold text-ink">Tạo BO / Nghiệm thu</div>
                 </th>
               </tr>
@@ -1798,14 +1797,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       >
                         {item.bookingOrderCreated && item.maBooking ? (
                           <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-bold text-emerald-800">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 font-mono text-xs font-semibold text-emerald-800">
                               <CheckCircle2 className="w-3 h-3 shrink-0" />
                               <span className="truncate">{item.maBooking}</span>
                             </span>
-                            <div className="text-[10px] font-mono text-ink-2 truncate" title={`HĐNT: ${item.masterContractCode || '—'} · Phụ lục Deal: ${item.contractAppendixCode || '—'}`}>
+                            <div className="text-2xs font-mono text-ink-2 truncate" title={`HĐNT: ${item.masterContractCode || '—'} · Phụ lục Deal: ${item.contractAppendixCode || '—'}`}>
                               {item.contractAppendixCode || `PL-${item.maBooking}-01`} ({item.contractAppendixStatus || 'CHỜ_KÝ'})
                             </div>
-                            <div className="flex items-center justify-between gap-1 text-[10px] text-ink-3">
+                            <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
                               <span className="truncate">
                                 1 Video + {(item.addonServices || []).length} DV kèm
                               </span>
@@ -1820,14 +1819,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[11px] font-medium text-amber-800">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-2xs font-medium text-amber-800">
                               Chờ tạo Deal
                             </span>
                             <div>
                               <button
                                 type="button"
                                 onClick={() => openDealBuilderModal(item)}
-                                className="text-[11px] font-semibold text-accent hover:underline"
+                                className="text-2xs font-semibold text-accent hover:underline"
                               >
                                 + Tạo Deal &amp; Phụ lục
                               </button>
@@ -1850,7 +1849,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             placeholder="Nhập @id_kênh..."
                             className="w-full h-7 px-2 rounded border border-line bg-surface font-semibold text-xs text-ink"
                           />
-                          <div className="flex items-center justify-between gap-1 text-[11px] text-ink-3">
+                          <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
                             <span className="truncate max-w-[100px]" title={item.tenKenh}>
                               {item.tenKenh || item.tepKenh}
                             </span>
@@ -1873,10 +1872,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <div className="font-semibold text-ink truncate max-w-[175px]" title={item.storeName}>
                           {item.storeName}
                         </div>
-                        <div className="text-[11px] text-ink-3">
+                        <div className="text-2xs text-ink-3">
                           {item.brandName} · {item.thangPlan} · {item.dot}
                         </div>
-                        <div className="text-[10px] text-ink-3">
+                        <div className="text-2xs text-ink-3">
                           PIC: {item.nguoiPhuTrach}
                         </div>
                       </td>
@@ -1892,7 +1891,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           placeholder="Sản phẩm..."
                           className="w-full h-7 px-2 rounded border border-line bg-surface text-xs text-ink"
                         />
-                        <div className="text-[11px] text-ink-3 truncate" title={item.pillarContent}>
+                        <div className="text-2xs text-ink-3 truncate" title={item.pillarContent}>
                           Pillar: {item.pillarContent}
                         </div>
                       </td>
@@ -1907,7 +1906,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           }
                           className="w-full h-7 px-2 rounded border border-amber-300 bg-surface font-mono text-xs text-ink focus:outline-none focus:border-ink"
                         />
-                        <div className="text-[10px] text-ink-3 mt-0.5">
+                        <div className="text-2xs text-ink-3 mt-0.5">
                           Tuần KH: {computeWeekLabelFromDate(item.plannedAirDate) || '—'}
                         </div>
                       </td>
@@ -1931,16 +1930,16 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               Number(e.target.value) || 0
                             )
                           }
-                          className="w-full h-7 px-2 rounded border border-amber-300 bg-surface text-right font-mono font-bold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
+                          className="w-full h-7 px-2 rounded border border-amber-300 bg-surface text-right font-mono font-semibold text-xs text-ink tabular-nums focus:outline-none focus:border-ink"
                         />
-                        <div className="text-[10px] text-right font-mono text-ink-3 mt-0.5">
+                        <div className="text-2xs text-right font-mono text-ink-3 mt-0.5">
                           Video: {formatVndShort(item.videoAssetNetCost ?? item.chiPhiBookingNetCuoi)}
                           {(item.addonServicesNetCost || 0) > 0
                             ? ` · DV: +${formatVndShort(item.addonServicesNetCost || 0)}`
                             : ' · DV: Gộp gói'}
                         </div>
                         {(item.khauTruHangMucHuy || 0) > 0 && (
-                          <div className="text-[10px] text-right font-mono text-rose-700 font-semibold">
+                          <div className="text-2xs text-right font-mono text-rose-700 font-semibold">
                             Khấu trừ phần hủy: -{formatVndShort(item.khauTruHangMucHuy || 0)}
                           </div>
                         )}
@@ -1951,7 +1950,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <div className="font-mono font-semibold text-xs text-ink tabular-nums">
                           {formatVnd(item.chiPhiGrossKemThue)}
                         </div>
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-sunken border border-line font-mono text-[10px] font-semibold text-ink-2 mt-0.5">
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-sunken border border-line font-mono text-2xs font-semibold text-ink-2 mt-0.5">
                           {item.klGrade}
                         </span>
                       </td>
@@ -1959,7 +1958,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       {/* Cột 40 & 42: Số tiền tạm ứng & Còn phải thanh toán */}
                       <td className="px-2.5 py-2 border-r border-line align-middle text-right space-y-1">
                         <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                          <span className="text-[10px] text-ink-3 shrink-0">Cọc</span>
+                          <span className="text-2xs text-ink-3 shrink-0">Cọc</span>
                           <input
                             type="number"
                             value={item.soTienTamUngTruoc}
@@ -1974,7 +1973,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             className="w-full bg-transparent text-right font-mono text-xs text-ink tabular-nums focus:outline-none"
                           />
                         </div>
-                        <div className="text-[10px] font-mono font-semibold text-ink tabular-nums">
+                        <div className="text-2xs font-mono font-semibold text-ink tabular-nums">
                           Còn trả: {formatVnd(item.soTienCanThanhToan)}
                         </div>
                       </td>
@@ -1999,7 +1998,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               </option>
                             ))}
                           </select>
-                          <div className="flex items-center gap-1 text-[10px] text-ink-3">
+                          <div className="flex items-center gap-1 text-2xs text-ink-3">
                             <span>Hợp tác: {item.hinhThucHopTac}</span>
                             <span>·</span>
                             <span>{item.dinhDangNghiemThu}</span>
@@ -2029,24 +2028,24 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                         href={item.linkAir}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-[11px] font-semibold text-emerald-700 hover:underline"
+                                        className="text-2xs font-semibold text-emerald-700 hover:underline"
                                       >
                                         Mở video ↗
                                       </a>
                                       <button
                                         type="button"
                                         onClick={() => openDeepVideoInspector(item)}
-                                        className="text-[10px] font-semibold text-accent hover:underline"
+                                        className="text-2xs font-semibold text-accent hover:underline"
                                         title="Kiểm tra 5 tiêu chí Brief, Hook 3s & Giỏ hàng TikTok Shop"
                                       >
                                         · Đối soát Brief &amp; Giỏ
                                       </button>
                                     </div>
-                                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-2xs font-semibold">
                                       B1: Đã nghiệm thu Video
                                     </span>
                                   </div>
-                                  <div className="flex items-center justify-between gap-1 text-[10px]">
+                                  <div className="flex items-center justify-between gap-1 text-2xs">
                                     <span
                                       className={
                                         item.sequentialAcceptanceStage === '3_DA_NGHIEM_THU_TOAN_DEAL'
@@ -2068,7 +2067,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-between gap-1 text-[10px] text-ink-3">
+                                <div className="flex items-center justify-between gap-1 text-2xs text-ink-3">
                                   <span>B1: Chưa có Video · B2: Đang khóa</span>
                                   <button
                                     type="button"
@@ -2096,7 +2095,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                               }
                               className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
                             />
-                            <div className="text-[10px] font-mono text-ink-3 mt-0.5">
+                            <div className="text-2xs font-mono text-ink-3 mt-0.5">
                               Tuần real: <strong>{item.tuanReal || '—'}</strong> · Tháng:{' '}
                               {item.thangAirReal || '—'}
                             </div>
@@ -2139,7 +2138,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           <td className="px-2.5 py-2 border-r border-line align-middle text-right bg-emerald-50/20 space-y-1">
                             <div className="grid grid-cols-2 gap-1">
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                                <span className="text-[9px] text-ink-3 shrink-0">View</span>
+                                <span className="text-3xs text-ink-3 shrink-0">View</span>
                                 <input
                                   type="number"
                                   value={item.views30d}
@@ -2151,11 +2150,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     )
                                   }
                                   title="Views 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-[11px] text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </div>
                               <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                                <span className="text-[9px] text-ink-3 shrink-0">Đơn</span>
+                                <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
                                 <input
                                   type="number"
                                   value={item.orders30d}
@@ -2167,12 +2166,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     )
                                   }
                                   title="Số đơn hàng 30 ngày"
-                                  className="w-full min-w-0 bg-transparent text-right font-mono text-[11px] text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-full min-w-0 bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </div>
                             </div>
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-[9px] font-medium text-emerald-800 shrink-0">
+                              <span className="text-3xs font-medium text-emerald-800 shrink-0">
                                 GMV
                               </span>
                               <input
@@ -2193,19 +2192,19 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                           {/* Cột 71-76: GPM, ROI 30d & Đánh giá hiệu quả video */}
                           <td className="px-2.5 py-2 border-r border-line align-middle text-right bg-emerald-50/20 space-y-0.5">
-                            <div className="font-mono font-bold text-xs text-ink tabular-nums">
+                            <div className="font-mono font-semibold text-xs text-ink tabular-nums">
                               ROI: {item.roi30d.toFixed(2)}x
                             </div>
-                            <div className="text-[10px] font-mono text-ink-3 tabular-nums">
+                            <div className="text-2xs font-mono text-ink-3 tabular-nums">
                               GPM: {formatVnd(item.gpm30d)}
                             </div>
                             <span
-                              className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold truncate max-w-[140px] ${
+                              className={`inline-block px-1.5 py-0.2 rounded text-2xs font-semibold truncate max-w-[140px] ${
                                 item.danhGiaHieuQuaVideo.startsWith('Winner')
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : item.danhGiaHieuQuaVideo.startsWith('Đạt KPI') ||
                                     item.danhGiaHieuQuaVideo.startsWith('FOC Hiệu quả')
-                                  ? 'bg-sky-100 text-sky-800'
+                                  ? 'bg-accent-soft text-accent'
                                   : item.danhGiaHieuQuaVideo.startsWith('Cần tối ưu')
                                   ? 'bg-rose-100 text-rose-800'
                                   : 'bg-sunken text-ink-3'
@@ -2232,7 +2231,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   : item.trangThaiPhieuThanhToan === 'Đủ điều kiện ĐNTT' ||
                                     item.trangThaiPhieuThanhToan === 'Đã lập ĐNTT'
-                                  ? 'bg-sky-50 text-sky-800 border-sky-200'
+                                  ? 'bg-accent-soft text-accent border-accent/25'
                                   : 'bg-surface text-ink border-line'
                               }`}
                             >
@@ -2242,13 +2241,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 </option>
                               ))}
                             </select>
-                            <div className="text-[10px] font-mono text-ink-2 truncate">
+                            <div className="text-2xs font-mono text-ink-2 truncate">
                               TT theo Deal: <strong>{formatVnd(item.soTienCanThanhToan)}</strong>
                             </div>
                             {item.larkApprovalInstanceCode ? (
-                              <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="flex items-center justify-between gap-1 text-2xs">
                                 <span
-                                  className="px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 font-mono font-semibold truncate"
+                                  className="px-1.5 py-0.2 rounded bg-accent-soft text-accent font-mono font-semibold truncate"
                                   title={item.larkApprovalRouteSummary || item.larkApprovalInstanceCode}
                                 >
                                   {item.larkSlipCode || item.larkApprovalInstanceCode}
@@ -2262,7 +2261,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="flex items-center justify-between gap-1 text-2xs">
                                 <span
                                   className="font-mono text-ink-3 truncate max-w-[115px]"
                                   title={item.noiDungChuyenKhoan}
@@ -2283,14 +2282,14 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           </td>
 
                           {/* Cột 23-26: Ngân hàng, STK, CCCD */}
-                          <td className="px-2.5 py-2 border-r border-line align-middle text-[11px]">
+                          <td className="px-2.5 py-2 border-r border-line align-middle text-2xs">
                             <div className="font-medium text-ink truncate max-w-[170px]">
                               {item.tenTaiKhoanNganHang || '—'}
                             </div>
                             <div className="font-mono text-ink-2">
                               {item.soTaiKhoan || '—'} · {item.nganHang || '—'}
                             </div>
-                            <div className="font-mono text-[10px] text-ink-3">
+                            <div className="font-mono text-2xs text-ink-3">
                               CCCD: {item.soCccd || '—'}
                             </div>
                           </td>
@@ -2348,7 +2347,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 <button
                                   type="button"
                                   onClick={() => openDeepVideoInspector(item)}
-                                  className="inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-accent hover:underline"
+                                  className="inline-flex items-center justify-center gap-1 text-2xs font-semibold text-accent hover:underline"
                                 >
                                   <Eye className="w-3 h-3" />
                                   <span>Soi Brief &amp; Giỏ hàng</span>
@@ -2452,28 +2451,28 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 />
               </Field>
             </div>
-            <div className="lg:col-span-5 grid grid-cols-4 gap-1.5">
+            <div className="lg:col-span-5 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
-                <div className="text-[10px] text-ink-3">Khớp BO</div>
-                <div className="text-xs font-bold text-ink tabular-nums">
+                <div className="text-2xs text-ink-3">Khớp BO</div>
+                <div className="text-xs font-semibold text-ink tabular-nums">
                   {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} video
                 </div>
               </div>
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
-                <div className="text-[10px] text-ink-3">Đúng hạn SLA</div>
-                <div className="text-xs font-bold text-emerald-700 tabular-nums">
+                <div className="text-2xs text-ink-3">Đúng hạn SLA</div>
+                <div className="text-xs font-semibold text-emerald-700 tabular-nums">
                   {acceptanceModalStats.onTimeCount}/{acceptanceModalStats.total}
                 </div>
               </div>
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
-                <div className="text-[10px] text-ink-3">Tổng GMV 30d</div>
-                <div className="text-xs font-bold text-emerald-800 tabular-nums">
+                <div className="text-2xs text-ink-3">Tổng GMV 30d</div>
+                <div className="text-xs font-semibold text-emerald-800 tabular-nums">
                   {formatVndShort(acceptanceModalStats.totalGmv)}
                 </div>
               </div>
               <div className="px-2.5 py-1.5 rounded border border-line bg-surface">
-                <div className="text-[10px] text-ink-3">ROI bình quân</div>
-                <div className="text-xs font-bold text-ink tabular-nums">
+                <div className="text-2xs text-ink-3">ROI bình quân</div>
+                <div className="text-xs font-semibold text-ink tabular-nums">
                   {acceptanceModalStats.avgRoi}x ({acceptanceModalStats.winnerCount} Win)
                 </div>
               </div>
@@ -2501,7 +2500,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 Bảng đối soát &amp; chỉnh sửa trực tiếp trường nghiệm thu (
                 {acceptanceModalStats.matchedCount}/{acceptanceModalStats.total} dòng đã gắn BO)
               </span>
-              <span className="text-[11px] text-ink-3">
+              <span className="text-2xs text-ink-3">
                 Chỉnh trực tiếp Ngày air, Mã Spark Ads, Views, Đơn, GMV ngay trên từng dòng bên dưới
               </span>
             </div>
@@ -2571,11 +2570,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                       <tr key={idx} className="hover:bg-sunken/30 align-top">
                         {/* Cột 1: Kênh KOC & Link Video + Kết quả quét thực tế */}
                         <td className="px-2.5 py-2 border-r border-line space-y-1">
-                          <div className="font-mono font-bold text-ink">
+                          <div className="font-mono font-semibold text-ink">
                             @{row.channelHandle || m?.idKenh || 'Chưa rõ'}
                           </div>
                           {row.videoId && (
-                            <div className="font-mono text-[10px] text-ink-3">
+                            <div className="font-mono text-2xs text-ink-3">
                               ID: {row.videoId}
                             </div>
                           )}
@@ -2585,7 +2584,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 href={row.linkAir}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[11px] font-semibold text-emerald-700 hover:underline"
+                                className="text-2xs font-semibold text-emerald-700 hover:underline"
                               >
                                 Mở video ↗
                               </a>
@@ -2593,13 +2592,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             <button
                               type="button"
                               onClick={() => openDeepVideoInspector(m, row.linkAir)}
-                              className="text-[10px] font-semibold text-accent hover:underline"
+                              className="text-2xs font-semibold text-accent hover:underline"
                             >
                               Soi kịch bản &amp; giỏ
                             </button>
                           </div>
                           {insp && (
-                            <div className="pt-1 border-t border-line space-y-0.5 text-[10px]">
+                            <div className="pt-1 border-t border-line space-y-0.5 text-2xs">
                               <div className="flex items-center gap-1 flex-wrap">
                                 <span
                                   className={`px-1.5 py-0.2 rounded font-semibold ${
@@ -2675,7 +2674,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             )}
                           </select>
                           {m ? (
-                            <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-700 font-medium">
+                            <div className="flex items-center justify-between gap-1 text-2xs text-emerald-700 font-medium">
                               <span>
                                 ✓ BO:{' '}
                                 <strong className="font-mono">
@@ -2683,12 +2682,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                 </strong>{' '}
                                 · {m.sanPham}
                               </span>
-                              <span className="font-mono font-bold text-ink">
+                              <span className="font-mono font-semibold text-ink">
                                 Net: {formatVnd(finalCost)}
                               </span>
                             </div>
                           ) : (
-                            <div className="text-[10px] text-amber-700">
+                            <div className="text-2xs text-amber-700">
                               Chưa có trong List duyệt — sẽ tự tìm từ Sheet Listing Brand
                             </div>
                           )}
@@ -2704,7 +2703,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             }
                             className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
                           />
-                          <div className="flex items-center justify-between gap-1 text-[10px] font-mono">
+                          <div className="flex items-center justify-between gap-1 text-2xs font-mono">
                             <span className="text-ink-3">
                               KH: {m?.plannedAirDate || '—'} ({computeWeekLabelFromDate(row.actualAirDate)})
                             </span>
@@ -2734,7 +2733,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             placeholder="#SPARK-..."
                             className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
                           />
-                          <div className="text-[10px] text-ink-3">
+                          <div className="text-2xs text-ink-3">
                             {row.sparkAdsCode ? 'Đã có mã ủy quyền Ads' : 'Chưa nhập mã Ads'}
                           </div>
                         </td>
@@ -2743,7 +2742,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <td className="px-2.5 py-2 border-r border-line space-y-1">
                           <div className="grid grid-cols-2 gap-1">
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-[9px] text-ink-3 shrink-0">View</span>
+                              <span className="text-3xs text-ink-3 shrink-0">View</span>
                               <input
                                 type="number"
                                 value={row.views30d}
@@ -2754,11 +2753,11 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     Number(e.target.value) || 0
                                   )
                                 }
-                                className="w-full bg-transparent text-right font-mono text-[11px] text-ink tabular-nums focus:outline-none"
+                                className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
                               />
                             </div>
                             <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                              <span className="text-[9px] text-ink-3 shrink-0">Đơn</span>
+                              <span className="text-3xs text-ink-3 shrink-0">Đơn</span>
                               <input
                                 type="number"
                                 value={row.orders30d}
@@ -2769,12 +2768,12 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     Number(e.target.value) || 0
                                   )
                                 }
-                                className="w-full bg-transparent text-right font-mono text-[11px] text-ink tabular-nums focus:outline-none"
+                                className="w-full bg-transparent text-right font-mono text-2xs text-ink tabular-nums focus:outline-none"
                               />
                             </div>
                           </div>
                           <div className="flex items-center justify-between gap-1 h-6 px-1.5 rounded border border-line bg-surface">
-                            <span className="text-[9px] font-medium text-emerald-800 shrink-0">
+                            <span className="text-3xs font-medium text-emerald-800 shrink-0">
                               GMV
                             </span>
                             <input
@@ -2794,20 +2793,20 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
 
                         {/* Cột 6: ROI · GPM · Đánh giá hiệu quả · ĐNTT */}
                         <td className="px-2.5 py-2 text-right space-y-0.5">
-                          <div className="font-mono font-bold text-xs text-ink tabular-nums">
+                          <div className="font-mono font-semibold text-xs text-ink tabular-nums">
                             ROI: {roi > 0 ? `${roi}x` : '0.00x'}{' '}
-                            <span className="text-[10px] font-normal text-ink-3">
+                            <span className="text-2xs font-normal text-ink-3">
                               (GPM {formatVndShort(gpm)})
                             </span>
                           </div>
                           <div>
                             <span
-                              className={`inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold ${
+                              className={`inline-block px-1.5 py-0.2 rounded text-2xs font-semibold ${
                                 effectivenessLabel.startsWith('Winner')
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : effectivenessLabel.startsWith('Đạt KPI') ||
                                     effectivenessLabel.startsWith('FOC Hiệu quả')
-                                  ? 'bg-sky-100 text-sky-800'
+                                  ? 'bg-accent-soft text-accent'
                                   : effectivenessLabel.startsWith('Cần tối ưu')
                                   ? 'bg-rose-100 text-rose-800'
                                   : 'bg-sunken text-ink-3'
@@ -2817,7 +2816,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             </span>
                           </div>
                           {m && (
-                            <div className="text-[10px] font-mono text-emerald-700 font-semibold">
+                            <div className="text-2xs font-mono text-emerald-700 font-semibold">
                               Đủ ĐK ĐNTT · Còn trả: {formatVndShort(remainPay)}
                             </div>
                           )}
@@ -2837,7 +2836,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                 <Layers className="w-3.5 h-3.5 text-accent" />
                 Bước 2: Nghiệm thu Dịch vụ gia tăng &amp; Quyền lợi theo Deal (Mở khóa sau khi Bước 1 có Video)
               </span>
-              <span className="text-[11px] font-mono text-ink-2">
+              <span className="text-2xs font-mono text-ink-2">
                 Kế toán đối soát &amp; thanh toán theo từng Deal (Phụ lục Deal)
               </span>
             </div>
@@ -2881,17 +2880,17 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-line">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-bold text-ink">
+                        <span className="font-mono font-semibold text-ink">
                           Deal: {m.maBooking || 'Sẽ cấp mã BO'} · @{m.idKenh}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-[10px] text-ink-2">
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs text-ink-2">
                           HĐNT: {m.masterContractCode || generateMasterContractCode(m.idKenh, m.kocId)}
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-[10px] text-ink-2">
+                        <span className="px-1.5 py-0.5 rounded bg-surface border border-line font-mono text-2xs text-ink-2">
                           Phụ lục: {m.contractAppendixCode || `PL-${m.maBooking || 'DEAL'}-01`}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+                      <div className="flex flex-wrap items-center gap-2 font-mono text-2xs">
                         <span>Video: {formatVnd(videoCost)}</span>
                         <span>+ DV kèm: {formatVnd(addonsCost)}</span>
                         {droppedCost > 0 && (
@@ -2899,7 +2898,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             - Khấu trừ hủy: {formatVnd(droppedCost)}
                           </span>
                         )}
-                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
                           Kế toán thanh toán Deal: {formatVnd(effectiveDealPayable)}
                         </span>
                       </div>
@@ -2933,13 +2932,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                   <Unlock className="w-3 h-3 text-emerald-600 shrink-0" />
                                   {addon.termLabel}
                                 </span>
-                                <span className="font-mono text-[10px] text-ink-3">
+                                <span className="font-mono text-2xs text-ink-3">
                                   {addon.allocatedCostVnd
                                     ? formatVnd(addon.allocatedCostVnd)
                                     : 'Gộp trong gói Deal'}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-12 gap-1.5 items-center">
+                              <div className="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
                                 <input
                                   type="text"
                                   value={
@@ -2966,7 +2965,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     }));
                                   }}
                                   placeholder="Mã Spark Ads / Link bài Reup / Link bàn giao file..."
-                                  className="col-span-7 h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
+                                  className="sm:col-span-7 h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-ink"
                                 />
                                 <select
                                   value={effectiveStatus}
@@ -2986,7 +2985,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                       [m.id]: nextList,
                                     }));
                                   }}
-                                  className={`col-span-5 h-7 px-1.5 rounded border text-xs font-semibold ${
+                                  className={`sm:col-span-5 h-7 px-1.5 rounded border text-xs font-semibold ${
                                     effectiveStatus === 'VERIFIED'
                                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                       : effectiveStatus === 'DROPPED'
@@ -3182,7 +3181,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                             preset.days
                           )
                         }
-                        className={`px-2 py-1 rounded border text-[11px] font-semibold transition-colors ${
+                        className={`px-2 py-1 rounded border text-2xs font-semibold transition-colors ${
                           active
                             ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                             : 'bg-sunken border-line text-ink-2 hover:bg-surface'
@@ -3204,9 +3203,9 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   {dealDraftAddons.map((addon, idx) => (
                     <div
                       key={addon.id || idx}
-                      className="grid grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center p-2 rounded border border-line bg-sunken/30"
                     >
-                      <div className="col-span-5">
+                      <div className="sm:col-span-5">
                         <input
                           type="text"
                           value={addon.termLabel}
@@ -3221,8 +3220,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           className="w-full h-7 px-2 rounded border border-line bg-surface font-medium text-xs text-ink"
                         />
                       </div>
-                      <div className="col-span-3 flex items-center gap-1">
-                        <span className="text-[10px] text-ink-3 shrink-0">Thời hạn:</span>
+                      <div className="sm:col-span-3 flex items-center gap-1">
+                        <span className="text-2xs text-ink-3 shrink-0">Thời hạn:</span>
                         <input
                           type="number"
                           value={addon.durationDays}
@@ -3236,10 +3235,10 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           }}
                           className="w-14 h-7 px-1.5 rounded border border-line bg-surface font-mono text-xs text-right text-ink"
                         />
-                        <span className="text-[10px] text-ink-3">ngày</span>
+                        <span className="text-2xs text-ink-3">ngày</span>
                       </div>
-                      <div className="col-span-3 flex items-center gap-1">
-                        <span className="text-[10px] text-ink-3 shrink-0">Phí Net:</span>
+                      <div className="sm:col-span-3 flex items-center gap-1">
+                        <span className="text-2xs text-ink-3 shrink-0">Phí Net:</span>
                         <input
                           type="number"
                           value={addon.allocatedCostVnd || 0}
@@ -3254,7 +3253,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                           className="w-full h-7 px-2 rounded border border-line bg-surface font-mono text-xs text-right font-semibold text-ink"
                         />
                       </div>
-                      <div className="col-span-1 text-right">
+                      <div className="sm:col-span-1 text-right">
                         <button
                           type="button"
                           onClick={() =>
@@ -3285,7 +3284,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                   )}
                   )
                 </div>
-                <div className="px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 font-bold text-emerald-800">
+                <div className="px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 font-semibold text-emerald-800">
                   Tổng giá trị Deal (Ghi trên Phụ lục):{' '}
                   {formatVnd(
                     dealDraftVideoNetCost +

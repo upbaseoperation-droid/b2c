@@ -41,6 +41,10 @@ import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
 import { formatSocialChannelUrl } from '../../lib/kocSocialDiscovery';
 import { syncKocContactToStaffSheets } from '../../lib/staffBrandListingSheet';
 import { useKocChannelReviews } from '../../lib/kocChannelReviewService';
+import {
+  getUpaffiliateCreatorId,
+  getUpaffiliateSyncStatus,
+} from '../../lib/upaffiliateKocSyncService';
 import { KocChannelReviewBadge, KocChannelReviewModal } from './KocChannelReviewModal';
 import {
   Avatar,
@@ -69,22 +73,27 @@ import {
 import type { Column, TabItem } from '../ui';
 import {
   LEGAL_TYPE_LABEL,
+  READINESS_LABEL,
   calculateKocPerformanceStats,
   canRevealSensitive,
   dealStatusOf,
   dealStepOf,
   dealsOfKoc,
   formatFollowers,
+  getKocLegalProfiles,
   hasLegalId,
+  isCooperatedKoc,
   isDealOpen,
   legalIdOf,
   legalTypeOf,
   mask,
   picOfDeal,
+  syncKocWithLegalProfiles,
   type DuplicateMatch,
   type KocPerformanceSummary,
 } from './kocUtils';
 import { KocHistoryEvaluationModal } from './KocHistoryEvaluationModal';
+import { KocLegalProfilesSection } from './KocLegalProfilesSection';
 import { KocVideoWeeklyHistoryPanel } from './KocVideoWeeklyHistoryPanel';
 
 const cx = (...p: Array<string | false | null | undefined>) => p.filter(Boolean).join(' ');
@@ -134,7 +143,7 @@ export function classificationOf(k: KocItem): string {
     .join(' · ');
 }
 
-type MainTabKey = 'METRICS' | 'HISTORY' | 'ACTIVE_DEALS';
+type MainTabKey = 'METRICS' | 'HISTORY' | 'LEGAL_PROFILES' | 'ACTIVE_DEALS';
 
 export function KocProfile({
   koc,
@@ -159,8 +168,12 @@ export function KocProfile({
   );
 
   const stats = useMemo(() => calculateKocPerformanceStats(deals || [], koc), [deals, koc]);
+  const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
+  const isCooperated = useMemo(() => isCooperatedKoc(koc, deals), [koc, deals]);
 
-  const [activeTab, setActiveTab] = useState<MainTabKey>('HISTORY');
+  const [activeTab, setActiveTab] = useState<MainTabKey>(() =>
+    isCooperatedKoc(koc, deals) ? 'HISTORY' : 'METRICS',
+  );
   const [selectedCollabDetail, setSelectedCollabDetail] = useState<BookingDealItem | null>(null);
   const [vietQrDeal, setVietQrDeal] = useState<KocItem | null>(null);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
@@ -183,9 +196,11 @@ export function KocProfile({
   const missingDocs = !hasLegalId(koc);
   const handle = koc.channelId.replace(/^@/, '');
   const openCount = stats.runningDeals;
+  const totalHistoryCount = Math.max(kocDeals.length, koc.totalPastDeals || 0);
 
   const tabItems: TabItem<MainTabKey>[] = [
-    { key: 'HISTORY', label: 'Lịch sử & Hiệu quả hợp tác', count: kocDeals.length },
+    { key: 'HISTORY', label: 'Lịch sử & Hiệu quả hợp tác', count: totalHistoryCount },
+    { key: 'LEGAL_PROFILES', label: 'Hồ sơ pháp lý & Thụ hưởng (1–N)', count: legalProfiles.length },
     { key: 'METRICS', label: 'Chỉ số kênh & TikTok Seller' },
     { key: 'ACTIVE_DEALS', label: 'Booking đang chạy', count: openCount > 0 ? openCount : undefined },
   ];
@@ -244,6 +259,38 @@ export function KocProfile({
                   summary={channelReviewSummary}
                   onClick={() => setChannelReviewModalOpen(true)}
                 />
+                <Status tone={isCooperated ? 'positive' : 'info'}>
+                  {isCooperated ? `KOC Đã hợp tác (${totalHistoryCount} deal)` : 'KOC Mới / Tiềm năng'}
+                </Status>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-line bg-sunken text-ink-2 text-2xs font-code">
+                  <span>{getUpaffiliateCreatorId(koc)}</span>
+                  <span className="text-ink-3">·</span>
+                  <span
+                    className={
+                      getUpaffiliateSyncStatus(koc) === 'SYNCED'
+                        ? 'text-positive font-semibold'
+                        : 'text-warning font-semibold'
+                    }
+                  >
+                    {getUpaffiliateSyncStatus(koc) === 'SYNCED'
+                      ? 'UpAffiliate'
+                      : 'Chờ đồng bộ'}
+                  </span>
+                </span>
+                {!isCooperated && koc.bookingReadiness && (
+                  <Status tone={READINESS_LABEL[koc.bookingReadiness].tone}>
+                    {READINESS_LABEL[koc.bookingReadiness].label}
+                  </Status>
+                )}
+                {legalProfiles.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('LEGAL_PROFILES')}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-accent/30 bg-accent-soft text-accent text-2xs font-semibold hover:bg-accent-soft/80 cursor-pointer"
+                  >
+                    <span>{legalProfiles.length} Hồ sơ pháp lý</span>
+                  </button>
+                )}
                 {missingDocs && <Status tone="warning">Thiếu giấy tờ</Status>}
                 {duplicates.length > 0 && <Status tone="warning">Nghi trùng</Status>}
               </div>
@@ -378,7 +425,7 @@ export function KocProfile({
                       {rev.reviewerName}
                       {rev.reviewerRole ? <span className="font-normal text-ink-3"> ({rev.reviewerRole})</span> : null}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-surface-2 border border-line text-ink font-semibold text-[10px]">
+                    <span className="px-1.5 py-0.5 rounded bg-surface-2 border border-line text-ink font-semibold text-3xs">
                       Brand: {rev.brandScope || 'Toàn hệ thống B2C'}
                     </span>
                     <Status
@@ -461,6 +508,15 @@ export function KocProfile({
                 />
               )}
 
+              {activeTab === 'LEGAL_PROFILES' && (
+                <KocLegalProfilesSection
+                  koc={koc}
+                  currentUser={currentUser}
+                  onUpdateKoc={onUpdateKoc}
+                  onScanDocs={onScanDocs}
+                />
+              )}
+
               {activeTab === 'METRICS' && (
                 <TikTokSellerMetricsSection
                   koc={koc}
@@ -493,6 +549,7 @@ export function KocProfile({
             onScanDocs={onScanDocs}
             onUpdateKoc={onUpdateKoc}
             onOpenQr={() => setVietQrDeal(koc)}
+            onOpenLegalTab={() => setActiveTab('LEGAL_PROFILES')}
           />
           <OperationalNotesPanel koc={koc} />
         </aside>
@@ -921,9 +978,9 @@ function TikTokSellerMetricsSection({
           </div>
 
           <h4 className="text-xs font-semibold text-ink pt-2">Ngành hàng trọng tâm</h4>
-          <p className="text-xs text-ink-2">
+          <div className="text-xs text-ink-2">
             {topCats.length > 0 ? topCats.join(' · ') : 'Chưa cập nhật'}
-          </p>
+          </div>
         </div>
 
         {/* Khán giả & Nhân khẩu học */}
@@ -2001,18 +2058,21 @@ function LegalPaymentPanel({
   onScanDocs,
   onUpdateKoc,
   onOpenQr,
+  onOpenLegalTab,
 }: {
   koc: KocItem;
   currentUser?: UserProfile;
   onScanDocs?: (k: KocItem) => void;
   onUpdateKoc?: (updated: KocItem, message?: string) => void;
   onOpenQr?: () => void;
+  onOpenLegalTab?: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
   const [isEditingLegal, setIsEditingLegal] = useState(false);
   const allowed = canRevealSensitive(currentUser, koc);
   const type = legalTypeOf(koc);
   const legalId = legalIdOf(koc);
+  const legalProfiles = useMemo(() => getKocLegalProfiles(koc), [koc]);
   const show = (v: string) => (revealed ? v : mask(v));
 
   const [draftLegalType, setDraftLegalType] = useState<'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY'>(type);
@@ -2283,27 +2343,63 @@ function LegalPaymentPanel({
           {koc.sharedMcnInfo && (
             <InfoRow label="Đầu mối dùng chung">{koc.sharedMcnInfo}</InfoRow>
           )}
-          {koc.alternatePayees && koc.alternatePayees.length > 1 && (
-            <InfoRow label={`Lịch sử CCCD / TK thụ hưởng (${koc.alternatePayees.length})`}>
+          {legalProfiles.length > 0 && (
+            <InfoRow label={`Hồ sơ pháp lý đã đăng ký (${legalProfiles.length})`}>
               <div className="space-y-1.5 mt-0.5">
-                {koc.alternatePayees.map((p, idx) => (
+                {legalProfiles.map((p, idx) => (
                   <div
-                    key={`${p.legalId}-${idx}`}
-                    className="p-2 rounded border border-line bg-sunken/30 text-2xs space-y-0.5"
+                    key={p.id || idx}
+                    className={`p-2 rounded border text-2xs space-y-0.5 ${
+                      p.isDefault
+                        ? 'border-accent/40 bg-accent-soft/20'
+                        : 'border-line bg-sunken/30'
+                    }`}
                   >
                     <div className="font-medium text-ink flex items-center justify-between gap-2">
-                      <span>{p.holderName || 'Chưa rõ tên chủ TK'}</span>
-                      {idx === 0 && (
-                        <span className="text-accent font-semibold">Mặc định</span>
-                      )}
+                      <span className="truncate">
+                        <b className="font-mono">{p.profileCode}</b> · {LEGAL_TYPE_LABEL[p.legalType]} · {p.holderName}
+                      </span>
+                      {p.isDefault ? (
+                        <span className="text-accent font-semibold shrink-0">Mặc định</span>
+                      ) : onUpdateKoc ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = legalProfiles.map((item) => ({
+                              ...item,
+                              isDefault: item.id === p.id,
+                            }));
+                            const updated = syncKocWithLegalProfiles(koc, next);
+                            syncKocContactToStaffSheets(updated);
+                            onUpdateKoc(
+                              updated,
+                              `Đã chuyển hồ sơ pháp lý mặc định sang ${p.profileCode} (${p.holderName})`,
+                            );
+                          }}
+                          className="text-accent hover:underline font-medium shrink-0 cursor-pointer"
+                        >
+                          Đặt mặc định
+                        </button>
+                      ) : null}
                     </div>
                     <div className="text-ink-2">
-                      CCCD/MST: <span className="num font-medium">{show(p.legalId)}</span>
+                      {p.legalType === 'INDIVIDUAL' ? 'CCCD' : 'MST'}:{' '}
+                      <span className="num font-medium">{show(p.taxCode || p.cccd || '')}</span>
                       {p.bankName ? ` · ${p.bankName}` : ''}
                       {p.bankAccount ? ` (${show(p.bankAccount)})` : ''}
                     </div>
                   </div>
                 ))}
+                {onOpenLegalTab && (
+                  <button
+                    type="button"
+                    onClick={onOpenLegalTab}
+                    className="inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline pt-0.5 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Quản lý &amp; Thêm hồ sơ pháp lý ({legalProfiles.length})
+                  </button>
+                )}
               </div>
             </InfoRow>
           )}

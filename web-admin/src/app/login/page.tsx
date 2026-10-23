@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowRight, Building, Users, Video, Mail, BarChart3, Layers } from 'lucide-react';
 import { USERS } from '@/lib/mockData';
@@ -89,7 +89,15 @@ function LoginContent() {
 
   const [activePortalTab, setActivePortalTab] = useState<'INTERNAL' | 'GMAIL_PARTNER'>('INTERNAL');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<string>(USERS[0].id);
+  const [selectedUser, setSelectedUser] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedId = localStorage.getItem('upbase_selected_user_id');
+      if (savedId && USERS.some(u => u.id === savedId)) {
+        return savedId;
+      }
+    }
+    return USERS[0].id;
+  });
   const [sandboxError, setSandboxError] = useState<string | null>(null);
   const [staffIdentifierInput, setStaffIdentifierInput] = useState<string>('');
 
@@ -97,16 +105,6 @@ function LoginContent() {
   const [partnerEmail, setPartnerEmail] = useState('');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>(INITIAL_THIRD_PARTY_ACCOUNTS[0]?.id || '');
   const [partnerError, setPartnerError] = useState<string | null>(null);
-
-  // Đồng bộ vai trò đang chọn trước đó nếu có (không tự động đá khỏi trang /login để người dùng đổi role)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedId = localStorage.getItem('upbase_selected_user_id');
-      if (savedId && USERS.some(u => u.id === savedId)) {
-        setSelectedUser(savedId);
-      }
-    }
-  }, []);
 
   const handleLarkLogin = () => {
     setIsLoading(true);
@@ -131,7 +129,7 @@ function LoginContent() {
       const data = await res.json();
       if (data.success) {
         if (typeof window !== 'undefined') {
-          window.location.href = returnTo || '/';
+          window.location.assign(returnTo || '/');
         } else {
           router.push(returnTo);
         }
@@ -175,7 +173,7 @@ function LoginContent() {
           localStorage.setItem('upbase_selected_user_id', data.user.id);
         }
         if (typeof window !== 'undefined') {
-          window.location.href = returnTo || '/';
+          window.location.assign(returnTo || '/');
         } else {
           router.push(returnTo);
         }
@@ -218,7 +216,7 @@ function LoginContent() {
           localStorage.setItem('upbase_selected_user_id', data.user.id);
         }
         if (typeof window !== 'undefined') {
-          window.location.href = returnTo || '/';
+          window.location.assign(returnTo || '/');
         } else {
           router.push(returnTo);
         }

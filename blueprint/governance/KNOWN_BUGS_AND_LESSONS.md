@@ -598,6 +598,26 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra các bảng phụ `inlineReviewColumns` và nâng độ rộng lên 230px, đảm bảo toàn bộ các màn hình hiển thị ID KOC không bị cắt cụt.
 
 ---
+
+### BUG-036 — Bất Đồng Bộ UI/UX Giữa Các Phân Hệ (Cỡ Chữ Dưới 12px, Màu Ngoài Chuẩn, Hộp Thoại Tự Dựng, Phụ Đề Giải Thích Dư Thừa)
+- **Ngày phát hiện:** 24/10/2026
+- **Phân hệ / File liên quan:** 66 tệp giao diện trên toàn bộ `web-admin/src/components` và `web-admin/src/app` (`ApprovedBookingListView.tsx`, `AirBookingReportHubView.tsx`, `SelfChannelCtvHubView.tsx`, `BrandHubView.tsx`, `KocKolHubView.tsx`, `TikTokCrawlerHubView.tsx`, `TikTokCrawlCreativeLoader.tsx`, `StoresMasterView.tsx`, `EmployeePlanInspectorModal.tsx`, `KalodataSyncModal.tsx`, `LegalOcrModal.tsx`, `ScriptReviewModal.tsx`, `ImportExcelModal.tsx`, `ContentView.tsx`, `SampleTrackerView.tsx`...).
+- **Triệu chứng:**
+  1. Nhiều màn hình sử dụng cỡ chữ tuỳ ý dưới 12px (`text-[9px]`, `text-[10px]`, `text-[11px]`) và độ đậm `font-bold` dày đặc làm giao diện nặng nề, khó đọc.
+  2. Tồn tại các bảng màu nằm ngoài Design System (`indigo-*`, `purple-*`, `teal-*`, `sky-*`, `orange-*`) và các nút dùng nền tối cũ (`bg-slate-900`, `bg-slate-800`) thay vì token ngữ nghĩa (`bg-primary`, `bg-accent`, `bg-ink`).
+  3. 16 hộp thoại tự dựng bằng `<div className="fixed inset-0 z-50...">` (8 hộp thoại trong `SelfChannelCtvHubView.tsx`, 3 trong `StoresMasterView.tsx`, cùng `EmployeePlanInspectorModal`, `KalodataSyncModal`, `LegalOcrModal`, `ScriptReviewModal`, `ImportExcelModal`) và 13 điểm gọi `window.confirm`/`alert` trình duyệt gây thiếu đồng nhất trải nghiệm đóng/mở và phím `Escape`.
+  4. Một số màn hình (`AirBookingReportHubView.tsx`) lặp lại thẻ `<h1>` trùng với `TopHeader`, hoặc đặt dòng chữ giải thích xám (`<p>`, `description`, `hint`) ngay dưới tiêu đề khung/trường nhập liệu.
+  5. Cột hành động cố định bên phải (`sticky right-0`) trên `ContentView.tsx` và `SampleTrackerView.tsx` dùng nền bán trong suốt (`bg-white/95`, `bg-surface/95`) làm lộ chữ của các cột bên dưới khi cuộn ngang.
+- **Nguyên nhân gốc (Root Cause):** Các màn hình phát triển qua nhiều giai đoạn chưa được quét kiểm toán tự động đồng bộ theo chuẩn `DESIGN_SYSTEM.md` và `GEMINI.md` Mục 1.
+- **Cách khắc phục:**
+  1. Chuẩn hóa 100% cỡ chữ nhỏ về token `text-3xs` / `text-2xs` (tối thiểu 12px) và hạ toàn bộ `font-bold` về `font-semibold`.
+  2. Thay thế toàn bộ màu ngoài chuẩn (`indigo`, `purple`, `teal`, `sky`, `orange`) và nền tối cũ (`bg-slate-900`/`800`) sang hệ token ngữ nghĩa (`primary`, `accent`, `positive`, `warning`, `danger`, `ink`, `surface`, `sunken`).
+  3. Chuyển đổi toàn bộ 16 hộp thoại tự dựng sang component `<Modal>` chuẩn và thay toàn bộ `window.confirm`/`alert` bằng `<ConfirmDialog>` và thông báo `onNotify`.
+  4. Xóa thẻ `<h1>` trùng lặp trong `AirBookingReportHubView.tsx`, gỡ bỏ toàn bộ dòng phụ đề `<p>` / `description` / `hint` dưới tiêu đề và trường nhập liệu.
+  5. Đổi nền các ô `sticky right-0` sang nền đặc (`bg-surface group-hover:bg-canvas`), gỡ bỏ `animate-ping`/`animate-pulse`/`transition-all`/`backdrop-blur` ngoài chuẩn và bổ sung responsive breakpoint cho các lưới đa cột trên thiết bị di động.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã chạy trình quét tự động và ESLint (`no-restricted-syntax`) trên toàn bộ 107+ tệp `.tsx` trong `src/components` và `src/app`, đạt **0 lỗi `no-restricted-syntax`**, **0 lỗi TypeScript (`tsc --noEmit`)** và build sản phẩm (`npm run build`) thành công.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

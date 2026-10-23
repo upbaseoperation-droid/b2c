@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     }
     const requested = Number(req.nextUrl.searchParams.get('version') || record.version);
     const snapshot = requested === record.version
-      ? { values: record.values, customFile: record.customFile }
+      ? { values: record.values, customFile: record.customFile, acceptanceScreenshots: record.acceptanceScreenshots }
       : record.versions.find(v => v.version === requested);
     requireCondition(snapshot, 'Không tìm thấy phiên bản tài liệu.', 404);
 
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       }
     }
 
-    const output = await renderTemplate(record.templateId, record.templateHash, snapshot.values);
+    const output = await renderTemplate(record.templateId, record.templateHash, snapshot.values, snapshot.acceptanceScreenshots);
     if (req.nextUrl.searchParams.get('preview') === '1') {
       return NextResponse.json(
         {

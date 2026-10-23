@@ -925,7 +925,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
 
                       {/* 4. Ma trận 5 cột tuần */}
                       <td className="py-3 px-3">
-                        <div className="grid grid-cols-5 gap-1 min-w-[235px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 min-w-[235px]">
                           {compactWeeks.map((cw) => {
                             const hasActivity = cw.air > 0 || cw.plan > 0;
                             const isGood = cw.air > 0 && cw.air >= cw.plan * 0.7;

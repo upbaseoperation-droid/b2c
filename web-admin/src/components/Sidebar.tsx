@@ -90,26 +90,18 @@ const NAV = {
   cockpit: { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
   dashboard: { key: 'dashboard-bi', label: groupLabel('dashboard'), icon: LayoutDashboard, group: 'dashboard' },
   inputPlan: { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-  delegation: { key: 'manager', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
-  brand: { key: 'brand-knowledge', label: groupLabel('brand'), icon: BookOpen, group: 'brand' },
-  research: { key: 'market-research', label: groupLabel('research'), icon: Search, group: 'research' },
-  campaigns: { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-  pushProducts: { key: 'push-products', label: 'Sản phẩm trọng tâm', icon: TrendingUp },
-  booking: { key: 'booking', label: 'Quản lý Booking', icon: Users },
   content: { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+  delegation: { key: 'manager', label: groupLabel('delegation'), icon: ClipboardList, group: 'delegation' },
+  campaigns: { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
   kocListing: { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-  approvedBookingList: { key: 'approved-booking-list', label: 'List duyệt book', icon: FileSpreadsheet },
-  storeAirPlanReport: { key: 'store-air-plan-report', label: 'Báo cáo Kế hoạch & Air Video', icon: BarChart3 },
-  selfChannel: { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Clapperboard },
-  kocMaster: { key: 'koc-master', label: 'Danh bạ KOC', icon: Contact },
-  ctvMaster: { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
+  selfChannel: { key: 'self-channel-hub', label: 'Video kênh Brand & CTV', icon: Clapperboard },
   contracts: { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
-  samples: { key: 'sample-tracker', label: 'Hàng mẫu & Ads', icon: Package },
-  performance: { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+  kocMaster: { key: 'koc-master', label: 'Danh bạ KOC', icon: Contact },
+  brand: { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+  research: { key: 'market-research', label: groupLabel('research'), icon: Search, group: 'research' },
   masterData: { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
   cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
-  audit: { key: 'audit-trail', label: 'Nhật ký kiểm toán', icon: ShieldCheck },
 } satisfies Record<string, NavItem>;
 
 /** Màn đặt ở chân menu (cạnh tài khoản) thay vì chiếm một dòng trong danh sách. */
@@ -127,10 +119,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         items: [
           { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
           NAV.kocListing,
-          NAV.pushProducts,
           NAV.content,
           NAV.campaigns,
-          NAV.samples,
           NAV.dashboard,
         ],
       },
@@ -145,7 +135,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', icon: Users },
           NAV.content,
           NAV.contracts,
-          NAV.samples,
         ],
       },
     ];
@@ -158,8 +147,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         items: [
           { ...NAV.selfChannel, label: 'Cộng tác viên video', icon: Video },
           NAV.content,
-          NAV.samples,
-          NAV.pushProducts,
         ],
       },
     ];
@@ -177,16 +164,16 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
   return [
     { items: [NAV.cockpit, NAV.dashboard] },
     {
-      title: 'Kế hoạch & Phân bổ',
-      items: [NAV.inputPlan, NAV.delegation, NAV.campaigns, NAV.brand, NAV.research],
+      title: 'Kế hoạch & Điều phối',
+      items: [NAV.inputPlan, NAV.content, NAV.delegation, NAV.campaigns],
     },
     {
-      title: 'Booking & Nội dung',
-      items: [NAV.kocListing, NAV.approvedBookingList, NAV.storeAirPlanReport, NAV.booking, NAV.content, NAV.selfChannel, NAV.ctvMaster],
+      title: 'Booking & Thực thi',
+      items: [NAV.kocListing, NAV.selfChannel, contractsNav],
     },
     {
-      title: 'Hợp đồng & Pháp lý',
-      items: [contractsNav],
+      title: 'Dữ liệu & Nghiên cứu',
+      items: [NAV.kocMaster, NAV.brand, NAV.research],
     },
     {
       title: 'Hệ thống',

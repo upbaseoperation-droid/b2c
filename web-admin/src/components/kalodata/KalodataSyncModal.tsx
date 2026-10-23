@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Presence } from '../ui';
+import { Modal } from '@/components/ui';
 import {
-  X,
   RefreshCw,
   Search,
   CheckCircle2,
@@ -14,7 +13,6 @@ import {
   Users,
   DollarSign,
   Layers,
-  ShieldCheck,
   Check,
 } from 'lucide-react';
 import {
@@ -196,35 +194,47 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
     }
   };
 
-  if (!isOpen) return <Presence show={false} />;
-
   return (
-    <Presence show>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-      <div data-motion-panel className="relative w-full max-w-4xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92dvh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-        {/* Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-line flex items-center justify-between bg-sunken">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-fg flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-ink">
-                Đồng bộ số liệu thương mại từ Kalodata
-              </h3>
-            </div>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title="Đồng bộ số liệu thương mại từ Kalodata"
+      size="xl"
+      footer={
+        <div className="w-full flex flex-wrap items-center justify-between gap-2.5">
+          <div className="text-2xs text-muted">
+            {result?.syncedAt
+              ? `Cập nhật lúc: ${new Date(result.syncedAt).toLocaleTimeString('vi-VN')} - ${new Date(result.syncedAt).toLocaleDateString('vi-VN')}`
+              : 'Nguồn dữ liệu: Kalodata E-commerce Analytics'}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 text-muted hover:text-ink rounded-lg hover:bg-hover transition shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:text-ink bg-sunken hover:bg-hover transition-colors"
+            >
+              Đóng
+            </button>
+
+            {targetKoc && result && (
+              <button
+                type="button"
+                onClick={handleApplyToKoc}
+                disabled={isApplying}
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{isApplying ? 'Đang cập nhật...' : 'Cập nhật vào hồ sơ KOC'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-5">
         {/* Thanh tìm kiếm & bộ lọc chu kỳ */}
-        <div className="p-4 sm:p-6 border-b border-line bg-surface space-y-3">
+        <div className="p-4 bg-surface rounded-xl border border-line space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted font-semibold text-xs">
@@ -240,7 +250,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                   }
                 }}
                 placeholder="Nhập ID kênh TikTok (VD: megauriviu, chanhbeauty...)"
-                className="w-full pl-8 pr-4 py-2.5 bg-sunken border border-line-strong rounded-xl text-xs text-ink font-medium placeholder-muted focus:outline-none focus:border-primary focus:bg-surface transition"
+                className="w-full pl-8 pr-4 py-2.5 bg-sunken border border-line-strong rounded-xl text-xs text-ink font-medium placeholder-muted focus:outline-none focus:border-primary focus:bg-surface transition-colors"
               />
             </div>
 
@@ -254,7 +264,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                     setPeriod(p);
                     if (result) handleFetchData(handle, p);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     period === p
                       ? 'bg-surface text-primary'
                       : 'text-ink-2 hover:text-ink'
@@ -270,7 +280,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               type="button"
               onClick={() => handleFetchData()}
               disabled={loading}
-              className="px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-fg rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shrink-0"
+              className="px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-fg rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors shrink-0"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>{loading ? 'Đang tra cứu...' : 'Tra cứu số liệu'}</span>
@@ -302,7 +312,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
         </div>
 
         {/* Nội dung kết quả */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-sunken">
+        <div className="space-y-6">
           {loading ? (
             <div className="py-16 text-center space-y-3">
               <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto" />
@@ -450,7 +460,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                       </div>
                       <div className="w-full bg-sunken rounded-full h-2">
                         <div
-                          className="bg-primary h-2 rounded-full transition-all"
+                          className="bg-primary h-2 rounded-full data-bar"
                           style={{ width: `${result.metrics.gmvShareVideo}%` }}
                         />
                       </div>
@@ -468,7 +478,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                       </div>
                       <div className="w-full bg-sunken rounded-full h-2">
                         <div
-                          className="bg-info h-2 rounded-full transition-all"
+                          className="bg-info h-2 rounded-full data-bar"
                           style={{ width: `${result.metrics.gmvShareLive}%` }}
                         />
                       </div>
@@ -486,7 +496,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                       </div>
                       <div className="w-full bg-sunken rounded-full h-2">
                         <div
-                          className="bg-muted h-2 rounded-full transition-all"
+                          className="bg-muted h-2 rounded-full data-bar"
                           style={{ width: `${result.metrics.gmvShareProductCard}%` }}
                         />
                       </div>
@@ -511,11 +521,11 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                     </div>
                     <div className="w-full bg-sunken rounded-full h-2.5 flex overflow-hidden">
                       <div
-                        className="bg-primary h-full"
+                        className="bg-primary h-full data-bar"
                         style={{ width: `${result.audience.femaleRatio}%` }}
                       />
                       <div
-                        className="bg-info h-full"
+                        className="bg-info h-full data-bar"
                         style={{ width: `${result.audience.maleRatio}%` }}
                       />
                     </div>
@@ -613,40 +623,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
             </div>
           )}
         </div>
-
-        {/* Footer actions */}
-        <div className="px-4 sm:px-6 py-3.5 border-t border-line bg-surface flex flex-wrap items-center justify-between gap-2.5">
-          <div className="text-2xs text-muted">
-            {result?.syncedAt
-              ? `Cập nhật lúc: ${new Date(result.syncedAt).toLocaleTimeString('vi-VN')} - ${new Date(result.syncedAt).toLocaleDateString('vi-VN')}`
-              : 'Nguồn dữ liệu: Kalodata E-commerce Analytics'}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:text-ink bg-sunken hover:bg-hover transition"
-            >
-              Đóng
-            </button>
-
-            {targetKoc && result && (
-              <button
-                type="button"
-                onClick={handleApplyToKoc}
-                disabled={isApplying}
-                className="px-5 py-2 rounded-xl text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>{isApplying ? 'Đang cập nhật...' : 'Cập nhật vào hồ sơ KOC'}</span>
-              </button>
-            )}
-          </div>
-        </div>
       </div>
-    </div>
-    </Presence>
+    </Modal>
   );
 };
-

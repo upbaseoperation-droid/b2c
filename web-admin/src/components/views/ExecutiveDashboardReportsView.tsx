@@ -61,6 +61,7 @@ import {
 } from '../../lib/b2cAnalyticsDataset';
 import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDataset';
 import { WeeklyAirSyncDashboardSection } from './WeeklyAirSyncDashboardSection';
+import { StorePipelineFunnelOverview } from './StorePipelineFunnelOverview';
 
 interface ExecutiveDashboardReportsViewProps {
   currentUser: UserProfile;
@@ -75,6 +76,7 @@ interface ExecutiveDashboardReportsViewProps {
 
 type DashboardMainTab =
   | 'OVERVIEW_FINANCE'
+  | 'STORE_PIPELINE'
   | 'STORE_SELLER'
   | 'VIDEO_CREATIVE'
   | 'TEAM_SLA'
@@ -84,6 +86,7 @@ const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
   'dashboard-bi': 'OVERVIEW_FINANCE',
   'dashboard-brand': 'OVERVIEW_FINANCE',
   'dashboard-finance': 'OVERVIEW_FINANCE',
+  overview: 'STORE_PIPELINE',
   'dashboard-store': 'STORE_SELLER',
   'dashboard-video': 'VIDEO_CREATIVE',
   'dashboard-team-sla': 'TEAM_SLA',
@@ -93,6 +96,7 @@ const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
 
 const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
   OVERVIEW_FINANCE: 'dashboard-brand',
+  STORE_PIPELINE: 'overview',
   STORE_SELLER: 'dashboard-store',
   VIDEO_CREATIVE: 'dashboard-video',
   TEAM_SLA: 'dashboard-team-sla',
@@ -102,6 +106,9 @@ const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
 const KL_ORDER = ['TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
 
 export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsViewProps> = ({
+  currentUser,
+  deals = [],
+  kocs = [],
   storePortfolios,
   activeSidebarTab,
   onNotify,
@@ -1171,6 +1178,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     const purposeId = isStaffTab ? ('STAFF_REVIEW' as const) : ('PLAN_ADS_ANALYSIS' as const);
     const tabTitleMap: Record<DashboardMainTab, string> = {
       OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu, Ngân sách & Đối soát Kế toán (Gross/Net)',
+      STORE_PIPELINE: 'Dashboard B2C — Tiến độ Phễu Vận Hành 69 Gian Hàng (0 → 18)',
       STORE_SELLER: 'Dashboard B2C — 69 Gian hàng & TikTok Seller',
       VIDEO_CREATIVE: 'Dashboard B2C — Hiệu quả Video Booking (Paid/FOC) & Ads Creative',
       TEAM_SLA: 'Dashboard B2C — Lịch Air Tuần (W40–W45), Độ Đồng Loạt & Tiến Độ Video',
@@ -1228,6 +1236,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       <Tabs<DashboardMainTab>
         items={[
           { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
+          { key: 'STORE_PIPELINE', label: 'Tiến độ 69 gian hàng' },
           { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
           { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
           { key: 'TEAM_SLA', label: 'Lịch đăng video' },
@@ -1236,6 +1245,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         value={activeTab}
         onChange={handleSelectDashboardSection}
       />
+
+      {/* ========================================================================= */}
+      {/* TAB TIẾN ĐỘ PHỄU 69 GIAN HÀNG (QUY TRÌNH 0 → 18)                           */}
+      {/* ========================================================================= */}
+      {activeTab === 'STORE_PIPELINE' && (
+        <StorePipelineFunnelOverview
+          currentUser={currentUser}
+          storePortfolios={stores}
+          deals={deals}
+          kocs={kocs}
+          onNavigateToTab={(tab, ctx) => onNavigateToTab?.(tab)}
+          onNotify={onNotify}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}

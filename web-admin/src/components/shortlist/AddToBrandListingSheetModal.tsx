@@ -396,7 +396,7 @@ export const AddToBrandListingSheetModal: React.FC<AddToBrandListingSheetModalPr
                   }}
                   className="bg-surface border border-line-strong rounded-lg shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in zoom-in-95 duration-100"
                 >
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-3 bg-sunken/60 border-b border-line">
+                  <div className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-3 bg-sunken/60 border-b border-line">
                     Sản phẩm gợi ý của {activeStoreObj?.brandName || 'Brand'}
                   </div>
                   <div className="overflow-y-auto py-1 divide-y divide-line/40">

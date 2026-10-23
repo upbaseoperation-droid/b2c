@@ -1,19 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Presence } from './ui';
+import { Modal, Presence } from './ui';
 import {
-  X,
   CheckCircle,
   RotateCcw,
   Clock,
-  FileText,
   CheckSquare,
   MessageSquare,
   ShieldAlert,
   AlertTriangle,
   Sliders,
-  Save,
   RefreshCw,
 } from 'lucide-react';
 import { ScriptReviewItem } from '../lib/types';
@@ -28,7 +25,6 @@ import {
   getEffectiveConfigForPurpose,
 } from '../lib/apiKeyConfig';
 import { executeOperationalReport, OperationalReportResult } from '../lib/operationalReportService';
-import { InlinePurposeApiSetup } from './InlinePurposeApiSetup';
 
 interface ScriptReviewModalProps {
   isOpen: boolean;
@@ -53,12 +49,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   const [selectedBrandName, setSelectedBrandName] = useState<string>('');
 
   // Thiết lập câu lệnh (Prompt) & Nhận xét kịch bản (SCRIPT_REVIEW)
-  const [showPromptEditor, setShowPromptEditor] = useState<boolean>(false);
   const [scriptPrompt, setScriptPrompt] = useState<string>(() => {
     const cfg = loadApiWorkspaceConfig();
     return getEffectiveConfigForPurpose('SCRIPT_REVIEW', cfg).purpose.systemInstruction;
   });
-  const [promptToast, setPromptToast] = useState<string | null>(null);
   const [isRunningLlmReview, setIsRunningLlmReview] = useState<boolean>(false);
   const [llmReviewResult, setLlmReviewResult] = useState<OperationalReportResult | null>(null);
 
@@ -184,50 +178,53 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   };
 
   return (
-    <Presence show>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-review-title"
-      >
-        <div
-          data-motion-panel
-          className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl max-h-[90dvh] flex flex-col shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
-        >
-          {/* Header - Enterprise Light */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 bg-slate-50/80 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shadow-2xs shrink-0">
-                <FileText className="w-5 h-5 text-accent" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 id="script-review-title" className="text-sm font-semibold text-slate-900">
-                    Duyệt kịch bản KOC
-                  </h3>
-                  <span className="text-2xs font-mono text-ink-3">
-                    {script.dealCode}
-                  </span>
-                </div>
-                
-              </div>
-            </div>
+    <Modal
+      open={Boolean(isOpen && script)}
+      onClose={onClose}
+      title={`Duyệt kịch bản KOC · ${script.dealCode}`}
+      size="lg"
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+          <span className="text-xs text-slate-600">
+            Trạng thái hiện tại:{' '}
+            <strong className="text-slate-900">
+              {script.status === 'PENDING' ? 'Chờ duyệt' : script.status === 'APPROVED' ? 'Đã duyệt' : 'Cần sửa'}
+            </strong>
+          </span>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {!isRevisionMode && script.status === 'PENDING' && (
+              <button
+                onClick={() => setIsRevisionMode(true)}
+                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-2xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Yêu cầu chỉnh sửa</span>
+              </button>
+            )}
+
+            {script.status === 'PENDING' && (
+              <button
+                onClick={handleApprove}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Duyệt kịch bản &amp; kích hoạt ký hợp đồng</span>
+              </button>
+            )}
+
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              aria-label="Đóng cửa sổ"
+              className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition shadow-2xs"
             >
-              <X className="w-5 h-5" />
+              Đóng
             </button>
           </div>
-
-          {/* Body Content */}
-          <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-            {/* Metadata Bar + Brand Profile Selector */}
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {/* Metadata Bar + Brand Profile Selector */}
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
               <div className="flex flex-wrap items-center gap-3">
                 <span>KOC: <strong className="text-slate-900">{script.kocName}</strong> ({script.campaignTitle})</span>
@@ -602,48 +599,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Footer Actions - Enterprise Light */}
-          <div className="px-4 sm:px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
-            <span className="text-xs text-slate-600">
-              Trạng thái hiện tại:{' '}
-              <strong className="text-slate-900">
-                {script.status === 'PENDING' ? 'Chờ duyệt' : script.status === 'APPROVED' ? 'Đã duyệt' : 'Cần sửa'}
-              </strong>
-            </span>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {!isRevisionMode && script.status === 'PENDING' && (
-                <button
-                  onClick={() => setIsRevisionMode(true)}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg border border-slate-300 transition flex items-center gap-1.5 shadow-2xs"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Yêu cầu chỉnh sửa</span>
-                </button>
-              )}
-
-              {script.status === 'PENDING' && (
-                <button
-                  onClick={handleApprove}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Duyệt kịch bản &amp; kích hoạt ký hợp đồng</span>
-                </button>
-              )}
-
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition shadow-2xs"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
-    </Presence>
+    </Modal>
   );
 };

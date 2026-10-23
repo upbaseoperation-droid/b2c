@@ -6,12 +6,14 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Columns2, FileScan, FileUp, Scale, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, Columns2, FileScan, FileUp, Scale, Trash2, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
-import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
+import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
+import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
+import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 import { parseDocxInBrowser } from './docxClientParser';
@@ -33,6 +35,7 @@ export interface ContractFormPayload {
   customFileBase64?: string;
   customFileBlocks?: DocBlock[];
   customFileParagraphs?: string[];
+  acceptanceScreenshots?: AcceptanceScreenshotItem[];
 }
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
@@ -103,6 +106,17 @@ export function ContractForm({
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrNotice, setOcrNotice] = useState('');
   const ocrInputRef = useRef<HTMLInputElement | null>(null);
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
+  const [acceptanceScreenshots, setAcceptanceScreenshots] = useState<AcceptanceScreenshotItem[]>(() =>
+    record?.acceptanceScreenshots && record.acceptanceScreenshots.length > 0
+      ? record.acceptanceScreenshots
+      : findSavedScreenshotsForContext({
+          dealId: initialDeal?.id,
+          dealCode: initialDeal?.dealCode,
+          kocId: initialDeal?.kocId || initialParent?.kocId,
+          videoUrl: initialDeal?.tiktokVideoUrl,
+        })
+  );
 
   const [isKocOwnForm, setIsKocOwnForm] = useState<boolean>(record?.isKocOwnForm ?? init?.isKocOwnForm ?? false);
   const [customFile, setCustomFile] = useState<{
@@ -185,6 +199,15 @@ export function ContractForm({
     setBrand(d.brandName); setPartner(partnerName(k, d));
     if (d.totalValue && !customContractValue) setCustomContractValue(formatMoneyInput(String(d.totalValue)));
     if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
+    const savedShots = findSavedScreenshotsForContext({
+      dealId: d.id,
+      dealCode: d.dealCode,
+      kocId: d.kocId,
+      videoUrl: d.tiktokVideoUrl,
+    });
+    if (savedShots.length > 0 && acceptanceScreenshots.length === 0) {
+      setAcceptanceScreenshots(savedShots);
+    }
     const nextTemplate = templateFor(k, kind, d, data.templates);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
     else if (template) { const result = prefill(fields, values, { koc: k, deal: d, existingRecords: data.records }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
@@ -341,7 +364,9 @@ export function ContractForm({
   };
 
   const templates = data.templates.filter(t => t.kind === kind && t.active !== false);
-  const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (!dealId || !r.dealId || r.dealId === dealId));
+  // SOW phải gắn với hợp đồng nguyên tắc gốc của KOC
+  const isSow = templateId.endsWith('-SOW');
+  const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (isSow ? r.templateId.endsWith('-HDNT') : !dealId || !r.dealId || r.dealId === dealId));
   const dealOptions = useMemo(() => {
     const slice = deals.slice(0, 200);
     if (deal && !slice.some(d => d.id === deal.id)) {
@@ -406,7 +431,8 @@ export function ContractForm({
     Boolean(title.trim()) &&
     Boolean(brand.trim()) &&
     Boolean(partner.trim()) &&
-    (!isKocOwnForm || Boolean(customFile));
+    (!isKocOwnForm || Boolean(customFile)) &&
+    (!isSow || Boolean(parentId));
 
   return (
     <form
@@ -434,6 +460,7 @@ export function ContractForm({
           customFileBase64: isKocOwnForm ? customFile?.base64 : undefined,
           customFileBlocks: isKocOwnForm ? customFile?.blocks : undefined,
           customFileParagraphs: isKocOwnForm ? customFile?.paragraphs : undefined,
+          acceptanceScreenshots,
         });
       }}
     >
@@ -457,6 +484,16 @@ export function ContractForm({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {kind === 'ACCEPTANCE' && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Camera}
+              onClick={() => setScreenshotModalOpen(true)}
+            >
+              Chụp ảnh sản phẩm từ video{acceptanceScreenshots.length > 0 ? ` (${acceptanceScreenshots.length})` : ''}
+            </Button>
+          )}
           {!isKocOwnForm && (
             <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
               Đọc ảnh CCCD / ĐKKD
@@ -594,8 +631,8 @@ export function ContractForm({
                     />
                   </Field>
                 )}
-                {kind === 'ACCEPTANCE' && (
-                  <Field label="Hợp đồng gốc" htmlFor="ct-parent" className="md:col-span-2">
+                {(kind === 'ACCEPTANCE' || isSow) && (
+                  <Field label={isSow ? 'Hợp đồng nguyên tắc' : 'Hợp đồng gốc'} htmlFor="ct-parent" className="md:col-span-2">
                     <Select
                       id="ct-parent"
                       value={parentId}
@@ -607,8 +644,8 @@ export function ContractForm({
                           if (!brand.trim()) setBrand(pRec.brand);
                           if (!partner.trim()) setPartner(pRec.partner);
                           if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
-                          if (!title.trim()) setTitle(['Nghiệm thu video', pRec.partner, pRec.brand].filter(Boolean).join(' · '));
-                          const inferredTpl = inferAcceptanceTemplate(pRec.templateId);
+                          if (!title.trim()) setTitle([isSow ? 'SOW booking video' : 'Nghiệm thu video', pRec.partner, pRec.brand].filter(Boolean).join(' · '));
+                          const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
                           if (inferredTpl && inferredTpl !== templateId) {
                             setTemplate(null);
                             setValues({});
@@ -617,7 +654,7 @@ export function ContractForm({
                         }
                       }}
                     >
-                      <option value="">Chọn hợp đồng</option>
+                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc' : 'Chọn hợp đồng'}</option>
                       {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                     </Select>
                   </Field>
@@ -751,6 +788,68 @@ export function ContractForm({
               </div>
             </Panel>
           ))}
+
+          {(kind === 'ACCEPTANCE' || acceptanceScreenshots.length > 0) && (
+            <Panel
+              title="Hình ảnh chụp màn hình sản phẩm trong video (Đính kèm BBNT)"
+              actions={
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={Camera}
+                  onClick={() => setScreenshotModalOpen(true)}
+                >
+                  {acceptanceScreenshots.length > 0 ? 'Chụp thêm / Quản lý ảnh' : 'Chụp ảnh sản phẩm từ video'}
+                </Button>
+              }
+            >
+              {acceptanceScreenshots.length === 0 ? (
+                <div className="p-4 rounded-xl border border-dashed border-line bg-surface-2/40 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-2">
+                  <span>
+                    Chưa có ảnh chụp màn hình lúc sản phẩm xuất hiện trong video. Bấm nút bên phải để cắt khung hình từ link video TikTok hoặc dán ảnh chụp màn hình vào Biên bản nghiệm thu.
+                  </span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {acceptanceScreenshots.map((shot, idx) => (
+                    <div
+                      key={shot.id || idx}
+                      className="flex items-start gap-2.5 p-2.5 rounded-xl border border-line bg-surface-2/50"
+                    >
+                      <img
+                        src={shot.imageDataUrl}
+                        alt={shot.note || shot.timeLabel}
+                        className="w-16 h-24 rounded-lg object-cover border border-line bg-black shrink-0"
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-code text-2xs font-semibold">
+                            Ảnh #{idx + 1} · Mốc {shot.timeLabel}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAcceptanceScreenshots(prev => prev.filter(x => x.id !== shot.id))
+                            }
+                            className="text-ink-3 hover:text-critical p-0.5"
+                            title="Gỡ ảnh khỏi BBNT"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-xs font-medium text-ink line-clamp-2">
+                          {shot.note || `Khung hình sản phẩm tại giây ${shot.timeLabel}`}
+                        </p>
+                        {shot.matchedTerm && (
+                          <p className="text-2xs text-ink-3 truncate">SP: {shot.matchedTerm}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
+          )}
         </div>
 
         {template && showSplitPreview && (
@@ -769,6 +868,7 @@ export function ContractForm({
               maxHeight="calc(100vh - 140px)"
               compactToolbar
               isTemplatePreview={isKocOwnForm}
+              acceptanceScreenshots={acceptanceScreenshots}
             />
           </div>
         )}
@@ -849,6 +949,20 @@ export function ContractForm({
           </div>
         </div>
       </Modal>
+
+      <VideoProductScreenshotModal
+        open={screenshotModalOpen}
+        onClose={() => setScreenshotModalOpen(false)}
+        initialVideoUrl={deal?.tiktokVideoUrl || ''}
+        dealId={deal?.id}
+        dealCode={deal?.dealCode}
+        kocId={koc?.id}
+        authorHandle={koc?.channelId || deal?.kocChannelId}
+        brandName={brand || deal?.brandName}
+        productName={deal?.productName}
+        existingScreenshots={acceptanceScreenshots}
+        onApplyScreenshots={items => setAcceptanceScreenshots(items)}
+      />
     </form>
   );
 }

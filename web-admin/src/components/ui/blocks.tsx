@@ -688,7 +688,7 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
                   return (
                     <React.Fragment key={`${opt.value}-${idx}`}>
                       {showGroupHeader && (
-                        <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-ink-3 bg-sunken/60">
+                        <div className="px-2.5 py-1 text-3xs font-semibold text-ink-3 bg-sunken/60">
                           {opt.group}
                         </div>
                       )}

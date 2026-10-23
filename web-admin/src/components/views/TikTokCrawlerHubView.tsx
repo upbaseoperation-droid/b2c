@@ -257,7 +257,10 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   }, []);
 
   useEffect(() => {
-    void fetchDailyHistory();
+    const timer = setTimeout(() => {
+      void fetchDailyHistory();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchDailyHistory, activeTab]);
 
   const saveDailyHistorySession = useCallback(
@@ -306,7 +309,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         // ignore
       }
     },
-    [currentUser?.name]
+    [currentUser]
   );
 
   const deleteHistoryEntry = useCallback(
@@ -447,14 +450,14 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   const [inlineReviewSearch, setInlineReviewSearch] = useState('');
   const { reviews: channelReviews, getChannelSummary } = useKocChannelReviews();
 
-  const openChannelReviewModal = useCallback(
-    (target: KocChannelReviewTarget | null, mode: 'CHANNEL_DETAIL' | 'ALL_HISTORY' = 'CHANNEL_DETAIL') => {
-      setChannelReviewTarget(target);
-      setChannelReviewInitialMode(mode);
-      setChannelReviewModalOpen(true);
-    },
-    []
-  );
+  const openChannelReviewModal = (
+    target: KocChannelReviewTarget | null,
+    mode: 'CHANNEL_DETAIL' | 'ALL_HISTORY' = 'CHANNEL_DETAIL'
+  ) => {
+    setChannelReviewTarget(target);
+    setChannelReviewInitialMode(mode);
+    setChannelReviewModalOpen(true);
+  };
   const notifiedCompletedJobsRef = useRef<Set<string>>(new Set());
   const runningBriefJobsCount = useMemo(
     () =>
@@ -1755,7 +1758,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     }
 
     return {
-      id: `koc-tt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: `koc-tt-${c.handle.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
       channelId: c.handle,
       channelLink: c.channelUrl,
       stageName: c.nickname || c.handle,
@@ -1905,7 +1908,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             if (onNavigateToKocMaster) onNavigateToKocMaster(matchedKoc.id);
           }}
           title={`Đã có trên Upaffiliate Master · ${matchedKoc.salaryGrade || ''} · ${matchedKoc.bookingPic || ''}`}
-          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-positive-soft text-positive border border-positive/30 hover:bg-positive hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-positive-soft text-positive border border-positive/30 hover:bg-positive hover:text-white transition-colors text-2xs font-medium whitespace-nowrap shrink-0 cursor-pointer"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
           <span>✓ Upaffiliate Master</span>
@@ -1923,7 +1926,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             setPendingStagingModalOpen(true);
           }}
           title={`Chưa có trên Upaffiliate · Đã lưu bảng tạm lúc ${new Date(inStaging.discoveredAt).toLocaleDateString('vi-VN')} · Nhấp để mở bảng tạm`}
-          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-soft text-accent border border-accent/30 hover:bg-accent hover:text-white transition-colors text-[11px] font-medium whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-soft text-accent border border-accent/30 hover:bg-accent hover:text-white transition-colors text-2xs font-medium whitespace-nowrap shrink-0 cursor-pointer"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
           <span>+ Đã lưu bảng tạm</span>
@@ -1935,7 +1938,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     return (
       <span
         title="Chưa có trên Upaffiliate"
-        className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 bg-sunken text-ink-2 border border-line"
+        className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-2xs font-medium whitespace-nowrap shrink-0 bg-sunken text-ink-2 border border-line"
       >
         <span className="w-1.5 h-1.5 rounded-full bg-ink-3 shrink-0" />
         <span>Chưa có trên Upaffiliate</span>
@@ -1974,16 +1977,16 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-bold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0 break-all"
+              className="text-xs font-semibold text-ink hover:text-accent inline-flex items-center gap-1 min-w-0 break-all"
               title={`@${cleanHandle}`}
             >
-              <span className="font-code text-xs font-bold text-ink hover:text-accent break-all">@{cleanHandle}</span>
+              <span className="font-code text-xs font-semibold text-ink hover:text-accent break-all">@{cleanHandle}</span>
               <ExternalLink className="w-3 h-3 text-ink-3 shrink-0" />
             </a>
             {params.verified && (
               <span
                 title="Kênh có tích xanh TikTok"
-                className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-positive text-white text-[9px] font-bold shrink-0"
+                className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-positive text-white text-3xs font-semibold shrink-0"
               >
                 ✓
               </span>
@@ -2040,7 +2043,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   sourceScreen: tabShortLabel[activeTab] || 'Crawler KOC',
                 });
               }}
-              className={`text-left text-[11px] hover:underline grid gap-0.5 cursor-pointer ${
+              className={`text-left text-2xs hover:underline grid gap-0.5 cursor-pointer ${
                 reviewSummary.latestReview.verdict === 'NOT_SUITABLE'
                   ? 'text-critical'
                   : reviewSummary.latestReview.verdict === 'SUITABLE'
@@ -2078,7 +2081,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <span className="text-xs font-semibold text-ink">
             {formatFollowers(params.followers)} flw
           </span>
-          <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-[10px] font-medium text-ink-2">
+          <span className="px-1.5 py-0.2 rounded bg-surface-2 border border-line text-3xs font-medium text-ink-2">
             {tierBadge}
           </span>
         </div>
@@ -2168,7 +2171,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             <button
               type="button"
               onClick={() => openForVerdict('SUITABLE')}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-[11px] font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-positive/30 bg-positive-soft text-positive text-2xs font-semibold hover:bg-positive-soft/80 transition cursor-pointer"
               title="Đánh giá kênh Phù hợp với Brand"
             >
               <Check className="w-3 h-3 shrink-0" />
@@ -2177,7 +2180,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
             <button
               type="button"
               onClick={() => openForVerdict('NOT_SUITABLE')}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-[11px] font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-critical/30 bg-critical-soft text-critical text-2xs font-semibold hover:bg-critical-soft/80 transition cursor-pointer"
               title="Đánh giá kênh Không phù hợp với Brand"
             >
               <XCircle className="w-3 h-3 shrink-0" />
@@ -2202,7 +2205,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         <button
           type="button"
           onClick={() => openForVerdict()}
-          className="text-left text-[11px] leading-snug grid gap-0.5 hover:underline cursor-pointer"
+          className="text-left text-2xs leading-snug grid gap-0.5 hover:underline cursor-pointer"
           title={`Ý kiến: ${reviewSummary.latestReview.note || reviewSummary.latestReview.reasonTags.join(', ')}`}
         >
           <span className="truncate font-medium text-ink-2">
@@ -2225,7 +2228,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                   : reviewSummary.channelHandle || null
               )
             }
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-accent/35 bg-accent-soft text-accent text-[10px] font-semibold hover:bg-accent-soft/80 transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-accent/35 bg-accent-soft text-accent text-3xs font-semibold hover:bg-accent-soft/80 transition cursor-pointer"
             title="Xem nhanh toàn bộ lịch sử đánh giá của kênh ngay tại dòng"
           >
             <History className="w-2.5 h-2.5" />
@@ -2234,7 +2237,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <button
             type="button"
             onClick={() => openForVerdict('SUITABLE')}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-[10px] font-semibold hover:bg-positive-soft transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-positive/30 bg-positive-soft/60 text-positive text-3xs font-semibold hover:bg-positive-soft transition cursor-pointer"
           >
             <Check className="w-2.5 h-2.5" />
             <span>+ Phù hợp</span>
@@ -2242,7 +2245,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
           <button
             type="button"
             onClick={() => openForVerdict('NOT_SUITABLE')}
-            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-[10px] font-semibold hover:bg-critical-soft transition cursor-pointer"
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-critical/30 bg-critical-soft/60 text-critical text-3xs font-semibold hover:bg-critical-soft transition cursor-pointer"
           >
             <XCircle className="w-2.5 h-2.5" />
             <span>+ K.Phù hợp</span>
@@ -2251,7 +2254,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
 
         {isQuickExpanded && (
           <div className="mt-1 rounded-md border border-line bg-sunken/40 p-2 space-y-1.5 max-h-48 overflow-y-auto">
-            <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-ink-2">
+            <div className="flex items-center justify-between gap-1 text-3xs font-semibold text-ink-2">
               <span>Lịch sử ĐG ({reviewSummary.totalReviews} lượt)</span>
               <button
                 type="button"
@@ -2266,7 +2269,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
               return (
                 <div
                   key={rev.id}
-                  className="rounded border border-line bg-surface p-1.5 text-[10px] leading-snug space-y-0.5"
+                  className="rounded border border-line bg-surface p-1.5 text-3xs leading-snug space-y-0.5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span className="font-semibold text-ink">
@@ -2881,15 +2884,17 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
   }, []);
 
   const yesterdayVnDateKey = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
     try {
       return new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Ho_Chi_Minh',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
-      }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      }).format(d);
     } catch {
-      return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      return d.toISOString().slice(0, 10);
     }
   }, []);
 
@@ -2906,94 +2911,87 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     [todayVnDateKey, yesterdayVnDateKey]
   );
 
-  const applyHistoryEntry = useCallback(
-    (item: TikTokCrawlerDailyHistoryItem) => {
-      setActiveHistoryId(item.id);
-      setExpandedWeeklyTableByTab({});
-      if (item.tab === 'HANDLE_SCRAPE') {
-        setScraperInitialHandle(item.rawInput);
-        setScraperModalOpen(true);
-        return;
-      }
-      if (activeTab !== item.tab) {
-        setActiveTab(item.tab);
-      }
+  const applyHistoryEntry = (item: TikTokCrawlerDailyHistoryItem) => {
+    setActiveHistoryId(item.id);
+    setExpandedWeeklyTableByTab({});
+    if (item.tab === 'HANDLE_SCRAPE') {
+      setScraperInitialHandle(item.rawInput);
+      setScraperModalOpen(true);
+      return;
+    }
+    if (activeTab !== item.tab) {
+      setActiveTab(item.tab);
+    }
 
-      if (item.tab === 'COMPETITOR_KOCS') {
-        setCompetitorInput(item.rawInput);
-        setCompError(null);
-        setCompProfile(item.compProfile ?? null);
-        const list = Array.isArray(item.compResults) ? item.compResults : [];
-        setCompResults(list);
-        setCompRequestedCount(list.length || item.resultCount);
-        setCompFilter('ALL');
-        setCompSearchQuery('');
-      } else if (item.tab === 'HASHTAG_DISCOVERY') {
-        setHashtagInput(item.rawInput);
-        setTagError(null);
-        const list = Array.isArray(item.tagResults) ? item.tagResults : [];
-        setTagResults(list);
-        setTagRequestedCount(list.length || item.resultCount);
-        setTagFilter('ALL');
-        setTagSearchQuery('');
-      } else if (item.tab === 'COMMENTS_AND_TRENDING') {
-        setVideoCommentUrl(item.rawInput);
-        setCommentError(null);
-        setCommentData(item.commentData ?? null);
-        setCommentRequestedCount(item.commentData?.comments?.length || item.resultCount);
-        setCommentFilter('ALL');
-        setCommentSearch('');
-      } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
-        const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
-        setTrendingCategory(cat);
-        const list = Array.isArray(item.trendingCreators) ? item.trendingCreators : [];
-        setTrendingCreators(list);
-        setTrendingRequestedCount(list.length || item.resultCount);
-        setTrendingFilter('ALL');
-        setTrendingSearch('');
-      } else if (item.tab === 'LINK_AIR_CHECK') {
-        setLinkAirRestorePayload({
-          nonce: Date.now(),
-          rawInput: item.rawInput,
-          results: Array.isArray(item.linkAirResults) ? item.linkAirResults : [],
-          expect: item.linkAirExpect,
-        });
-      }
-    },
-    [activeTab]
-  );
+    if (item.tab === 'COMPETITOR_KOCS') {
+      setCompetitorInput(item.rawInput);
+      setCompError(null);
+      setCompProfile(item.compProfile ?? null);
+      const list = Array.isArray(item.compResults) ? item.compResults : [];
+      setCompResults(list);
+      setCompRequestedCount(list.length || item.resultCount);
+      setCompFilter('ALL');
+      setCompSearchQuery('');
+    } else if (item.tab === 'HASHTAG_DISCOVERY') {
+      setHashtagInput(item.rawInput);
+      setTagError(null);
+      const list = Array.isArray(item.tagResults) ? item.tagResults : [];
+      setTagResults(list);
+      setTagRequestedCount(list.length || item.resultCount);
+      setTagFilter('ALL');
+      setTagSearchQuery('');
+    } else if (item.tab === 'COMMENTS_AND_TRENDING') {
+      setVideoCommentUrl(item.rawInput);
+      setCommentError(null);
+      setCommentData(item.commentData ?? null);
+      setCommentRequestedCount(item.commentData?.comments?.length || item.resultCount);
+      setCommentFilter('ALL');
+      setCommentSearch('');
+    } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
+      const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
+      setTrendingCategory(cat);
+      const list = Array.isArray(item.trendingCreators) ? item.trendingCreators : [];
+      setTrendingCreators(list);
+      setTrendingRequestedCount(list.length || item.resultCount);
+      setTrendingFilter('ALL');
+      setTrendingSearch('');
+    } else if (item.tab === 'LINK_AIR_CHECK') {
+      setLinkAirRestorePayload((prev) => ({
+        nonce: (prev?.nonce ?? 0) + 1,
+        rawInput: item.rawInput,
+        results: Array.isArray(item.linkAirResults) ? item.linkAirResults : [],
+        expect: item.linkAirExpect,
+      }));
+    }
+  };
 
-  const rerunHistoryEntry = useCallback(
-    (item: TikTokCrawlerDailyHistoryItem) => {
-      setExpandedWeeklyTableByTab({});
-      if (item.tab === 'HANDLE_SCRAPE') {
-        setScraperInitialHandle(item.rawInput);
-        setScraperModalOpen(true);
-        return;
-      }
-      if (activeTab !== item.tab) {
-        setActiveTab(item.tab);
-      }
-      if (item.tab === 'COMPETITOR_KOCS') {
-        setCompetitorInput(item.rawInput);
-        void runCompetitorCrawl(item.rawInput, period, { targetCount: compTargetCount });
-      } else if (item.tab === 'HASHTAG_DISCOVERY') {
-        setHashtagInput(item.rawInput);
-        void runHashtagCrawl(item.rawInput, period, { targetCount: tagTargetCount });
-      } else if (item.tab === 'COMMENTS_AND_TRENDING') {
-        setVideoCommentUrl(item.rawInput);
-        void runVideoCommentsCrawl(item.rawInput, { targetCount: commentTargetCount });
-      } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
-        const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
-        setTrendingCategory(cat);
-        void runTrendingCreatorsCrawl(cat, { targetCount: trendingTargetCount });
-      } else if (item.tab === 'LINK_AIR_CHECK') {
-        applyHistoryEntry(item);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeTab, period, compTargetCount, tagTargetCount, commentTargetCount, trendingTargetCount, applyHistoryEntry]
-  );
+  const rerunHistoryEntry = (item: TikTokCrawlerDailyHistoryItem) => {
+    setExpandedWeeklyTableByTab({});
+    if (item.tab === 'HANDLE_SCRAPE') {
+      setScraperInitialHandle(item.rawInput);
+      setScraperModalOpen(true);
+      return;
+    }
+    if (activeTab !== item.tab) {
+      setActiveTab(item.tab);
+    }
+    if (item.tab === 'COMPETITOR_KOCS') {
+      setCompetitorInput(item.rawInput);
+      void runCompetitorCrawl(item.rawInput, period, { targetCount: compTargetCount });
+    } else if (item.tab === 'HASHTAG_DISCOVERY') {
+      setHashtagInput(item.rawInput);
+      void runHashtagCrawl(item.rawInput, period, { targetCount: tagTargetCount });
+    } else if (item.tab === 'COMMENTS_AND_TRENDING') {
+      setVideoCommentUrl(item.rawInput);
+      void runVideoCommentsCrawl(item.rawInput, { targetCount: commentTargetCount });
+    } else if (item.tab === 'CHANNEL_AND_VIDEO_TOOLS') {
+      const cat = (item.trendingCategory || item.rawInput || 'ALL') as TrendingKocCategoryKey;
+      setTrendingCategory(cat);
+      void runTrendingCreatorsCrawl(cat, { targetCount: trendingTargetCount });
+    } else if (item.tab === 'LINK_AIR_CHECK') {
+      applyHistoryEntry(item);
+    }
+  };
 
   const tabShortLabel: Record<CrawlerHistoryTabKey, string> = {
     COMPETITOR_KOCS: 'KOC của đối thủ',
@@ -3143,7 +3141,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
                 {rev.reasonTags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-1.5 py-0.5 rounded bg-sunken border border-line text-[10px] text-ink-2"
+                    className="px-1.5 py-0.5 rounded bg-sunken border border-line text-3xs text-ink-2"
                   >
                     {tag}
                   </span>

@@ -11,6 +11,7 @@ import {
   FileText,
   Clock,
   ShoppingBag,
+  Camera,
 } from 'lucide-react';
 import { BookingDealItem, PublicationItemModel } from '../../lib/types';
 import {
@@ -18,6 +19,8 @@ import {
   buildVideoInspectionCsv,
 } from '../../lib/tiktokVideoInspector';
 import { formatNumber } from '../../lib/format';
+import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
+import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
 import {
   Button,
   DataTable,
@@ -74,6 +77,8 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
   const [selectedVideoId, setSelectedVideoId] = useState<string>('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [acceptedVideoIds, setAcceptedVideoIds] = useState<Set<string>>(new Set());
+  const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
+  const [savedScreenshotCount, setSavedScreenshotCount] = useState<number>(0);
 
   const currentInitialKey = `${isOpen}:${initialDeal?.dealCode || ''}:${initialUrl}`;
   const [prevInitialKey, setPrevInitialKey] = useState<string>(currentInitialKey);
@@ -509,6 +514,13 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
         <>
           <Button variant="ghost" onClick={onClose}>
             Đóng
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Camera}
+            onClick={() => setScreenshotModalOpen(true)}
+          >
+            Chụp ảnh sản phẩm cho BBNT{savedScreenshotCount > 0 ? ` (${savedScreenshotCount})` : ''}
           </Button>
           {results.length > 0 && (
             <Button variant="secondary" icon={Download} onClick={handleExportCsv}>
@@ -1249,6 +1261,37 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
           </div>
         )}
       </div>
+      <VideoProductScreenshotModal
+        open={screenshotModalOpen}
+        onClose={() => setScreenshotModalOpen(false)}
+        initialVideoUrl={
+          activeInspection?.resolvedUrl ||
+          rawUrlsInput.split(/\r?\n/)[0]?.trim() ||
+          selectedDealObj?.tiktokVideoUrl ||
+          ''
+        }
+        productName={
+          activeInspection?.cartAnchorVerification.detectedProductTitle ||
+          selectedDealObj?.brandName ||
+          ''
+        }
+        brandName={selectedDealObj?.brandName || ''}
+        dealId={selectedDealObj?.id}
+        dealCode={selectedDealCode || activeInspection?.matchedDealCode || selectedDealObj?.dealCode}
+        authorHandle={activeInspection?.authorHandle || expectedHandleInput || selectedDealObj?.kocChannelId}
+        existingScreenshots={findSavedScreenshotsForContext({
+          dealId: selectedDealObj?.id,
+          dealCode: selectedDealCode || activeInspection?.matchedDealCode || selectedDealObj?.dealCode,
+          authorHandle: activeInspection?.authorHandle || expectedHandleInput || selectedDealObj?.kocChannelId,
+          videoUrl:
+            activeInspection?.resolvedUrl ||
+            rawUrlsInput.split(/\r?\n/)[0]?.trim() ||
+            selectedDealObj?.tiktokVideoUrl,
+        })}
+        onApplyScreenshots={(items) => {
+          setSavedScreenshotCount(items.length);
+        }}
+      />
     </Modal>
   );
 };
