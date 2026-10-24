@@ -3,8 +3,8 @@ import { createMonthlyPlan, listMonthlyPlans, saveMonthlyPlan, PlanStoreError, t
 import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
 import { parsePlanOrderWorkbook, PlanOrderFileError } from '@/lib/server/planOrderUpload';
 import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
-import { validateBreakdown, hasBreakdownData } from '@/lib/planBreakdownRules';
-import type { InputPlanBreakdownState } from '@/lib/types';
+import { validateBreakdown, hasBreakdownData, comparePlanWithNewReference41 } from '@/lib/planBreakdownRules';
+import type { InputPlanBreakdownState, PlanDiscussionMessage } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../_shared';
 
 export const dynamic = 'force-dynamic';
@@ -54,12 +54,28 @@ export async function POST(request: NextRequest) {
 
     const summary = parsed.plans.map(p => {
       const ex = findExisting(existingPlans, p);
+      const isGrowthLocked = p.reference41?.isGrowthLocked !== false;
+      const growthLockLabel = p.reference41?.growthLockLabel || (isGrowthLocked ? 'Đã chốt' : 'Chưa chốt');
       let relation: 'new' | 'draft' | 'locked' = 'new';
       let mismatches = 0;
+      let mismatchDetails: string[] = [];
+      let lockedHasDiff = false;
+      let diffSummary: string[] = [];
       if (ex) {
         relation = EDITABLE_STATUS.has(ex.plan.status || 'DRAFT') ? 'draft' : 'locked';
-        if (relation === 'draft' && hasBreakdownData(validateBreakdown({ ...ex.plan, reference41: p.reference41 }).rows)) {
-          mismatches = validateBreakdown({ ...ex.plan, reference41: p.reference41 }).issues.filter(i => i.needsNote).length;
+        const diff = p.reference41 ? comparePlanWithNewReference41(ex.plan, p.reference41) : { hasDiff: false, diffSummary: [] };
+        diffSummary = diff.diffSummary;
+        if (relation === 'draft') {
+          const v = validateBreakdown({ ...ex.plan, reference41: p.reference41 });
+          if (hasBreakdownData(v.rows)) {
+            const needNotes = v.issues.filter(i => i.needsNote);
+            mismatches = needNotes.length;
+            mismatchDetails = needNotes.map(i => i.message);
+          } else if (diff.hasDiff) {
+            mismatchDetails = diff.diffSummary;
+          }
+        } else {
+          lockedHasDiff = diff.hasDiff;
         }
       }
       return {
@@ -71,8 +87,14 @@ export async function POST(request: NextRequest) {
         bookingLeader: p.bookingLeader ?? null,
         totalTargetBudget: p.totalTargetBudget,
         totalTargetContents: p.totalTargetContents,
+        isGrowthLocked,
+        growthLockLabel,
+        existingStatus: ex?.plan.status,
         relation,
         mismatches,
+        mismatchDetails,
+        lockedHasDiff,
+        diffSummary,
       };
     });
 
@@ -89,8 +111,15 @@ export async function POST(request: NextRequest) {
     let created = 0;
     let compared = 0;
     let locked = 0;
+    let lockedFlagged = 0;
+    let unconfirmedCount = 0;
     const mismatched: { storeName: string; count: number }[] = [];
+    const lockedDiffs: { storeName: string; diffSummary: string[] }[] = [];
+
     for (const plan of parsed.plans) {
+      if (plan.reference41?.isGrowthLocked === false) {
+        unconfirmedCount += 1;
+      }
       const ex = findExisting(existingPlans, plan);
       if (!ex) {
         await createMonthlyPlan(plan, actor);
@@ -98,15 +127,66 @@ export async function POST(request: NextRequest) {
         continue;
       }
       if (!EDITABLE_STATUS.has(ex.plan.status || 'DRAFT')) {
-        locked += 1;
+        const diff = plan.reference41 ? comparePlanWithNewReference41(ex.plan, plan.reference41) : { hasDiff: false, diffSummary: [] };
+        if (diff.hasDiff && plan.reference41) {
+          try {
+            const warnMsg: PlanDiscussionMessage = {
+              id: `DISC-41DIFF-${Date.now()}-${ex.plan.id}`,
+              authorName: actor.name,
+              authorRole: 'SYSTEM',
+              authorTitle: 'Đối soát Plan 4.1',
+              content: `Tải lên file 4.1 Plan order tổng mới có thay đổi số liệu so với bản đã duyệt: ${diff.diffSummary.join('; ')}. Hệ thống giữ nguyên bản đã duyệt và gắn cờ "Lệch 4.1 mới" chờ Quản lý mở khóa cập nhật.`,
+              type: 'BUDGET_ADJUST',
+              timestamp: new Date().toISOString(),
+              tags: ['Lệch 4.1 mới'],
+            };
+            const nextLocked: InputPlanBreakdownState = {
+              ...ex.plan,
+              pendingReference41: plan.reference41,
+              discussions: [warnMsg, ...(ex.plan.discussions || [])],
+            };
+            await saveMonthlyPlan(ex.plan.id, nextLocked, ex.revision, actor);
+            lockedFlagged += 1;
+            lockedDiffs.push({ storeName: ex.plan.storeName || ex.plan.title, diffSummary: diff.diffSummary });
+          } catch {
+            locked += 1;
+          }
+        } else {
+          if (ex.plan.pendingReference41) {
+            try {
+              await saveMonthlyPlan(ex.plan.id, { ...ex.plan, pendingReference41: undefined }, ex.revision, actor);
+            } catch {
+              // Bỏ qua nếu đang có xung đột đồng thời
+            }
+          }
+          locked += 1;
+        }
         continue;
       }
       try {
-        const next: InputPlanBreakdownState = { ...ex.plan, reference41: plan.reference41 };
+        const existingCheck = validateBreakdown(ex.plan);
+        const isDraftEmpty = !hasBreakdownData(existingCheck.rows) && (ex.plan.items || []).every(i => (i.qty || 0) === 0);
+        const next: InputPlanBreakdownState = {
+          ...ex.plan,
+          reference41: plan.reference41,
+          pendingReference41: undefined,
+          ...(isDraftEmpty
+            ? {
+                totalTargetBudget: plan.totalTargetBudget,
+                totalTargetContents: plan.totalTargetContents,
+                budgetAffiliate: plan.budgetAffiliate,
+                budgetSelfChannel: plan.budgetSelfChannel,
+                targetGmv: plan.targetGmv || ex.plan.targetGmv,
+              }
+            : {}),
+        };
         await saveMonthlyPlan(ex.plan.id, next, ex.revision, actor);
         compared += 1;
-        const count = validateBreakdown(next).issues.filter(i => i.needsNote).length;
-        if (count > 0 && hasBreakdownData(validateBreakdown(next).rows)) mismatched.push({ storeName: ex.plan.storeName || ex.plan.title, count });
+        const vNext = validateBreakdown(next);
+        const count = vNext.issues.filter(i => i.needsNote).length;
+        if (count > 0 && hasBreakdownData(vNext.rows)) {
+          mismatched.push({ storeName: ex.plan.storeName || ex.plan.title, count });
+        }
       } catch (err) {
         if (err instanceof PlanStoreError && (err.code === 'CONFLICT' || err.code === 'LOCKED')) {
           locked += 1;
@@ -120,7 +200,10 @@ export async function POST(request: NextRequest) {
       created,
       compared,
       locked,
+      lockedFlagged,
+      unconfirmedCount,
       mismatched,
+      lockedDiffs,
       skipped: parsed.skipped,
       warnings: parsed.warnings,
     });

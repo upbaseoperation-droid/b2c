@@ -48,7 +48,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Quản Trị Hệ Thống (Admin)',
     scopeType: 'INTERNAL',
     badgeColor: 'bg-red-50 text-red-700 border-red-200',
-    description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C, Growth, Media được phép đăng nhập hệ thống; phân quyền hệ thống.',
+    description: 'Xác định phòng ban và nhân sự thuộc Marketing B2C được phép đăng nhập hệ thống; phân quyền hệ thống.',
     defaultLandingTab: 'cockpit',
     userCount: 2
   },
@@ -80,7 +80,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'Chuyên Viên (MKT / Growth / Media)',
     scopeType: 'INTERNAL',
     badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-    description: 'Tác nghiệp trực tiếp trên Brand/Gian hàng được Trưởng phòng phân công (Booking, Content, Brand, Growth, Media).',
+    description: 'Tác nghiệp trực tiếp trên Brand/Gian hàng được Trưởng phòng phân công (Booking, Content, Brand).',
     defaultLandingTab: 'cockpit',
     userCount: 260
   },
@@ -1285,7 +1285,7 @@ export const INITIAL_DEPARTMENT_ACCESS_RULES: DepartmentAccessRule[] = [
     autoAllowLogin: false,
     staffCount: 221,
     allowedCount: 2,
-    description: 'Các phòng ban dự án khác ngoài 3 khối Marketing B2C, Growth, Media — Mặc định khóa cổng đăng nhập.'
+    description: 'Các phòng ban ngoài Marketing B2C (gồm Growth, Media) — Mặc định khóa cổng đăng nhập.'
   }
 ];
 
@@ -1484,7 +1484,7 @@ export function classifyMasterStaffMember(
     managerName: 'Ngoài phạm vi B2C',
     ruleId,
     accessSource: allowFromBlockedRule ? 'DEPT_RULE' : 'BLOCKED_DEPT',
-    reason: `Thuộc phòng ban "${dept || team || 'Khác'}" ngoài 3 khối Marketing B2C, Growth, Media — Chặn đăng nhập mặc định`
+    reason: `Thuộc phòng ban "${dept || team || 'Khác'}" ngoài Marketing B2C — Chặn đăng nhập mặc định`
   };
 }
 
@@ -1500,7 +1500,7 @@ export const INITIAL_RBAC_AUDIT_LOGS: RbacAuditLogItem[] = [
     actorRole: 'ADMIN',
     actionType: 'LOGIN_BLOCKED',
     targetUserOrEntity: 'staff_hn782@upbase.vn (Dương Quỳnh Anh - Team Livestream)',
-    description: 'Chặn đăng nhập tự động: Nhân sự thuộc bộ phận Livestream, không nằm trong 3 khối Marketing B2C, Growth, Media được Admin cấp quyền.',
+    description: 'Chặn đăng nhập tự động: Nhân sự thuộc bộ phận Livestream, không thuộc Marketing B2C được Admin cấp quyền.',
     ipAddress: '118.70.182.44',
     deviceInfo: 'Chrome 128 / Windows 11',
     status: 'WARNING'
@@ -1526,7 +1526,7 @@ export const INITIAL_RBAC_AUDIT_LOGS: RbacAuditLogItem[] = [
     actorRole: 'ADMIN',
     actionType: 'DEPT_RULE_UPDATE',
     targetUserOrEntity: 'Khối Growth (Nguyễn Thị Thu Thủy) & Khối Media (Nguyễn Đức Quảng)',
-    description: 'Kích hoạt cổng đăng nhập cho 3 khối Marketing B2C, Growth, Media và bổ nhiệm Trưởng phòng quản lý quân số từng khối.',
+    description: 'Kích hoạt cổng đăng nhập cho khối Marketing B2C và bổ nhiệm Trưởng phòng quản lý quân số.',
     ipAddress: '118.70.182.44',
     deviceInfo: 'Chrome 128 / macOS',
     status: 'SUCCESS'

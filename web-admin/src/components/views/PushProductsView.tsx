@@ -80,9 +80,7 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     currentUser.role === 'BRAND_MEMBER' || currentUser.role === 'MANAGER' ? 'GROWTH' : 'B2C'
   );
   const [activeAuthorName, setActiveAuthorName] = useState<string>(
-    currentUser.role === 'BRAND_MEMBER' || currentUser.role === 'MANAGER'
-      ? 'Hoàng Long (Growth Lead)'
-      : 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)'
+    currentUser.name
   );
 
   // Time Horizon View: Available (Hiện tại) | Future (Tương lai các tháng sau) | History (Lịch sử)
@@ -564,7 +562,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           action: 'Chốt duyệt & khóa sản phẩm thúc đẩy',
           actorName: activeAuthorName,
           actorRole: activeRole,
-          description: `Hai bên Growth & B2C đã đạt đồng thuận. Khóa duyệt SKU ${product.sku} cho chu kỳ ${formatDate(product.startDate)} → ${formatDate(product.endDate)}.`
+          description: `Hai bên Brand / Quản lý & B2C đã đạt đồng thuận. Khóa duyệt SKU ${product.sku} cho chu kỳ ${formatDate(product.startDate)} → ${formatDate(product.endDate)}.`
         }
       ]
     };
@@ -814,7 +812,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           id: `comm-${Date.now()}`,
           authorName: activeAuthorName,
           authorRole: activeRole,
-          content: `Growth khởi tạo đề xuất sản phẩm thúc đẩy mới cho gian hàng ${storeName}. Đề nghị B2C đánh giá tệp KOC và phản biện điều kiện mẫu/giá!`,
+          content: `Brand / Quản lý khởi tạo đề xuất sản phẩm thúc đẩy mới cho gian hàng ${storeName}. Đề nghị B2C đánh giá tệp KOC và phản biện điều kiện mẫu/giá!`,
           type: 'COMMENT',
           createdAt: new Date().toISOString()
         }
@@ -919,8 +917,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             type="button"
             onClick={() => {
               setActiveRole('GROWTH');
-              setActiveAuthorName('Hoàng Long (Growth Lead)');
-              notify('Chuyển sang góc nhìn: Growth Team', 'info');
+              setActiveAuthorName(currentUser.name);
+              notify('Chuyển sang góc nhìn: Brand / Quản lý', 'info');
             }}
             className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${
               activeRole === 'GROWTH'
@@ -929,7 +927,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
-            Growth
+            Brand / Quản lý
           </button>
           <button
             type="button"

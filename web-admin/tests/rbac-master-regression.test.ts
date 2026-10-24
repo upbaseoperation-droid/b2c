@@ -63,8 +63,6 @@ test('Audit 1: Ma trận phân quyền tính năng nghiệp vụ có đủ đị
   const requiredRoles: UserRole[] = [
     'ADMIN',
     'MANAGER',
-    'GROWTH_MANAGER',
-    'MEDIA_MANAGER',
     'LEADER',
     'MEMBER',
     'LEGAL',
@@ -195,8 +193,6 @@ test('Audit 5: Phân quyền màn hình (Role Allowed Tabs) tuân thủ chặt c
   // 1. Chỉ Quản lý cấp cao mới thấy cấu hình hệ thống (api-settings)
   assert.equal(isTabAllowedForRole('ADMIN', 'api-settings'), true);
   assert.equal(isTabAllowedForRole('MANAGER', 'api-settings'), true);
-  assert.equal(isTabAllowedForRole('GROWTH_MANAGER', 'api-settings'), true);
-  assert.equal(isTabAllowedForRole('MEDIA_MANAGER', 'api-settings'), true);
   assert.equal(isTabAllowedForRole('LEADER', 'api-settings'), false, 'Leader không thấy api-settings');
   assert.equal(isTabAllowedForRole('BOOKING_MEMBER', 'api-settings'), false, 'Specialist không thấy api-settings');
   assert.equal(isTabAllowedForRole('BRAND_PARTNER', 'api-settings'), false, 'Đối tác không thấy api-settings');

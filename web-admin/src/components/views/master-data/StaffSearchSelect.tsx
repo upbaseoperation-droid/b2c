@@ -13,7 +13,7 @@ export interface StaffSearchSelectProps {
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
-  departmentHint?: 'ACCOUNT' | 'GROWTH' | 'BOOKING' | 'CONTENT' | 'MEDIA' | string;
+  departmentHint?: 'ACCOUNT' | 'BOOKING' | 'CONTENT' | string;
   className?: string;
 }
 
@@ -85,10 +85,8 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
       const pos = (s.position || s.roleTitle || '').toUpperCase();
 
       if (hint === 'ACCOUNT') return role.includes('ACCOUNT') || dept.includes('ACCOUNT') || pos.includes('ACCOUNT') || team.includes('ACCOUNT');
-      if (hint === 'GROWTH') return role.includes('GROWTH') || dept.includes('GROWTH') || pos.includes('GROWTH') || team.includes('GROWTH');
       if (hint === 'BOOKING') return role.includes('BOOKING') || dept.includes('BOOKING') || pos.includes('BOOKING') || team.includes('BOOKING') || pos.includes('CREATOR') || dept.includes('MCN');
       if (hint === 'CONTENT') return role.includes('CONTENT') || dept.includes('CONTENT') || pos.includes('CONTENT') || pos.includes('SCRIPT');
-      if (hint === 'MEDIA') return role.includes('MEDIA') || dept.includes('MEDIA') || pos.includes('MEDIA') || pos.includes('ADS');
       return role.includes(hint) || dept.includes(hint);
     };
 

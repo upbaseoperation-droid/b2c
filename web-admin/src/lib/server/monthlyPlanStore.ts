@@ -399,7 +399,8 @@ export async function saveMonthlyPlan(
       if (!isLeaderStep) await assertPlanAccess(stored, actor, 'approve');
     }
     const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
-    if (existing.isVersionLocked && sameVersion) {
+    const isManagerApplyingPending41 = isGlobalManager && Boolean(stored.pendingReference41) && !plan.pendingReference41;
+    if (existing.isVersionLocked && sameVersion && !isManagerApplyingPending41) {
       if (!plan.isVersionLocked) {
         throw new PlanStoreError(
           'LOCKED',

@@ -1323,7 +1323,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
                 >
                   {staffList
-                    .filter((s) => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER')
+                    .filter((s) => s.role === 'ACCOUNT' || s.role === 'MANAGER')
                     .map((s) => (
                       <option key={s.id} value={s.name}>
                         {s.name}

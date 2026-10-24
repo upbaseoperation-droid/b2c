@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
               staffName: masterStaff.name,
               staffCode: masterStaff.staffCode || masterStaff.id,
               department: masterStaff.department || masterStaff.team || 'Phòng ban khác',
-              error: `Chặn đăng nhập (403): Nhân sự ${masterStaff.name} (${masterStaff.staffCode}) thuộc phòng "${masterStaff.department || masterStaff.team || 'Khác'}" không thuộc 3 khối được phép vào hệ thống (Marketing B2C, Growth, Media). Chỉ Admin mới có quyền mở khóa ngoại lệ.`
+              error: `Chặn đăng nhập (403): Nhân sự ${masterStaff.name} (${masterStaff.staffCode}) thuộc phòng "${masterStaff.department || masterStaff.team || 'Khác'}" không thuộc khối Marketing B2C. Chỉ Admin mới có quyền mở khóa ngoại lệ.`
             },
             { status: 403 }
           );

@@ -103,7 +103,7 @@ const PIPELINE_STAGES: Array<{
     step: 4,
     shortLabel: 'B4 · Lên sóng & Ads',
     label: '4. Lên sóng & Mã Ads',
-    team: 'Content · Growth',
+    team: 'Content',
     tone: 'warning',
     nextStage: '5_SETTLEMENT',
     nextActionLabel: 'Sang B5 (Quyết toán)',
@@ -113,7 +113,7 @@ const PIPELINE_STAGES: Array<{
     step: 5,
     shortLabel: 'B5 · Quyết toán & GMV',
     label: '5. Quyết toán & Hiệu quả',
-    team: 'Kế toán · Growth',
+    team: 'Kế toán',
     tone: 'positive',
   },
 ];
@@ -151,7 +151,7 @@ function resolveDealPipelineStage(deal: BookingDealItem): PipelineStageKey {
     deal.status === 'VIDEO_VERIFIED' ||
     deal.pipelineText === 'On Air' ||
     deal.pipelineText === 'Làm ĐNTT' ||
-    deal.pipelineText === 'Bàn giao Growth Ads'
+    (deal.pipelineText === 'Đã nhập mã Spark Ads' || deal.pipelineText === 'Bàn giao Growth Ads')
   ) {
     return '4_AIR_GROWTH';
   }
@@ -276,7 +276,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       status = 'VIDEO_VERIFIED';
       statusLabel = 'Đã Lên Sóng (Chờ Mã Ads / ĐNTT)';
       pipelineText = 'Làm ĐNTT';
-      holdingTeam = 'GROWTH';
+      holdingTeam = 'BOOKING';
     } else if (targetStage === '5_SETTLEMENT') {
       brandApprovalStatus = 'ĐÃ_DUYỆT';
       status = 'FINAL_PAID';
@@ -506,7 +506,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     setSampleModalDeal(null);
   };
 
-  // State for Growth Handoff Modal (Bàn giao quét mã Spark Ads & setup Ads)
+  // Hộp thoại nhập mã Spark Ads sau khi video đạt (dữ liệu cũ dùng tên trường growth*)
   const [handoffDeal, setHandoffDeal] = useState<BookingDealItem | null>(null);
   const [rejectingDeal, setRejectingDeal] = useState<BookingDealItem | null>(null);
   const [approvingDeal, setApprovingDeal] = useState<BookingDealItem | null>(null);
@@ -531,7 +531,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       tiktokVideoUrl: deal.tiktokVideoUrl || deal.videoUrl || 'https://www.tiktok.com/@creator/video/7418920192',
       authDuration: deal.sparkAdsExpiryDays ? `${deal.sparkAdsExpiryDays} ngày` : '60 ngày',
       clientCommitmentStatus: 'ĐÃ_CHỐT_NGÂN_SÁCH_ADS',
-      growthNote: `Video đã được Brand duyệt đạt chuẩn. Đề xuất team Growth triển khai quét mã Ads và gắn sản phẩm giỏ hàng TikTok Shop.`
+      growthNote: ''
     });
   };
 
@@ -542,18 +542,18 @@ export const BookingView: React.FC<BookingViewProps> = ({
       ...handoffDeal,
       growthHandoffStatus: 'ĐÃ_GIAO_MÃ_ADS',
       currentStage: '4_AIR_GROWTH',
-      holdingTeam: 'GROWTH',
-      holdingReason: 'Team Growth đang quét mã Ads & setup campaign',
+      holdingTeam: 'BOOKING',
+      holdingReason: 'Đã nhận mã Spark Ads, chờ làm ĐNTT',
       adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
       sparkAdsCode: handoffForm.sparkAdsCode,
       sparkAdsExpiryDays: expiryDays,
       tiktokVideoUrl: handoffForm.tiktokVideoUrl,
-      pipelineText: 'Bàn giao Growth Ads'
+      pipelineText: 'Đã nhập mã Spark Ads'
     };
 
     applyDealUpdate(updated);
     onNotify?.(
-      `Đã lưu mã Spark Ads [${handoffForm.sparkAdsCode}] và bàn giao sang team Growth (${handoffDeal.dealCode})`,
+      `Đã lưu mã Spark Ads [${handoffForm.sparkAdsCode}] cho ${handoffDeal.dealCode}`,
       'success'
     );
     setHandoffDeal(null);
@@ -1195,7 +1195,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   };
 
   const bookingDealsSubTabNode = useMemo(() => {
-    const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
+    const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', FINANCE: 'Kế toán' };
     const totalDealsInScope = dealFilterCounts.all;
     const top20SharePct = dealFilterCounts.totalGmv > 0
       ? ((dealFilterCounts.top20Gmv / dealFilterCounts.totalGmv) * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
@@ -1338,7 +1338,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   type="button"
                   onClick={() => handleOpenGrowthHandoff(d)}
                   className="text-ink-3 hover:text-accent font-medium"
-                  title="Nhập mã Spark Ads & bàn giao Growth (Bước 4)"
+                  title="Nhập mã Spark Ads (Bước 4)"
                 >
                   + Cấp mã Ads
                 </button>
@@ -2529,7 +2529,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
                   sparkAdsCode: sparkCode,
                   growthHandoffStatus: 'ĐÃ_GIAO_MÃ_ADS',
-                  pipelineText: 'Bàn giao Growth Ads',
+                  pipelineText: 'Đã nhập mã Spark Ads',
                 });
               }
             }}
@@ -2662,11 +2662,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
       <Modal
         open={!!handoffDeal}
         onClose={() => setHandoffDeal(null)}
-        title="Bàn giao cho team Growth"
+        title="Nhập mã Spark Ads"
         footer={
           <>
             <Button variant="ghost" onClick={() => setHandoffDeal(null)}>Hủy</Button>
-            <Button variant="primary" icon={Check} onClick={handleConfirmGrowthHandoff}>Bàn giao</Button>
+            <Button variant="primary" icon={Check} onClick={handleConfirmGrowthHandoff}>Lưu mã Ads</Button>
           </>
         }
       >
@@ -2693,7 +2693,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </Select>
           </Field>
         </div>
-        <Field label="Ghi chú cho Growth" htmlFor="handoff-note">
+        <Field label="Ghi chú" htmlFor="handoff-note">
           <Textarea id="handoff-note" rows={2} value={handoffForm.growthNote} onChange={e => setHandoffForm(prev => ({ ...prev, growthNote: e.target.value }))} />
         </Field>
       </Modal>

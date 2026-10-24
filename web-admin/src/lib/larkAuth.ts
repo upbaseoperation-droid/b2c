@@ -264,7 +264,7 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     const classified = classifyMasterStaffMember(masterMember, INITIAL_DEPARTMENT_ACCESS_RULES, {});
     if (!classified.canLogin) {
       throw new Error(
-        `Từ chối truy cập (403): Nhân sự ${masterMember.name} (${masterMember.staffCode}) thuộc phòng "${masterMember.department || masterMember.team || 'Khác'}" không nằm trong 3 khối được phép truy cập (Marketing B2C, Growth, Media). Vui lòng liên hệ Admin nếu cần cấp quyền ngoại lệ.`
+        `Từ chối truy cập (403): Nhân sự ${masterMember.name} (${masterMember.staffCode}) thuộc phòng "${masterMember.department || masterMember.team || 'Khác'}" không thuộc khối Marketing B2C. Liên hệ Admin nếu cần cấp quyền ngoại lệ.`
       );
     }
 
