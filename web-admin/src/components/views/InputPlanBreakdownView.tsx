@@ -65,6 +65,7 @@ import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
 import {
   TIER_KEYS,
   checkBreakdownForSubmit,
+  comparePlanWithNewReference41,
   distributeItemsToWeeks,
   hasBreakdownData,
   resolveWeekRows,
@@ -273,7 +274,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return () => window.clearTimeout(timer);
   }, [monthlyPlans, planState, onPlansChange]);
 
-  // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
+  // Vai trò thao tác trên kế hoạch: Booking PIC hoặc Trưởng phòng
   const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
 
@@ -1341,6 +1342,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             else setActiveTab('ALL_SUMMARY');
           } else {
             setFocusedStaffFilter('ALL');
+            if (selected.reference41 || (selected.weeklyBreakdown && selected.weeklyBreakdown.length > 0)) {
+              setActiveTab('WEEKLY_MATRIX');
+            }
           }
           setIsShowingStudio(true);
         }}
@@ -1701,7 +1705,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
           >
             <SendHorizonal className="w-3.5 h-3.5" />
-            <span>Gửi duyệt</span>
+            <span>{planState.reference41?.isGrowthLocked === false ? 'Chờ Chốt 4.1' : 'Gửi duyệt'}</span>
           </button>
         )}
       </PageActions>
@@ -1709,6 +1713,92 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 2. THANH QUY TRÌNH 5 BƯỚC GỌN 1 DÒNG                                      */}
       {/* ========================================================================= */}
+      {/* CẢNH BÁO ĐỐI SOÁT PLAN 4.1 (CHƯA CHỐT HOẶC ĐÃ DUYỆT NHƯNG LỆCH 4.1 MỚI) */}
+      {planState.pendingReference41 && (() => {
+        const pendingDiff = comparePlanWithNewReference41(planState, planState.pendingReference41);
+        return (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-950 flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="font-semibold text-rose-800">
+                Cảnh báo đối soát: File 4.1 Plan order tổng mới tải lên thay đổi số liệu so với bản đã duyệt (Đang giữ nguyên bản đã duyệt)
+              </div>
+              <div className="text-rose-700">
+                Chênh lệch ghi nhận: <strong>{pendingDiff.diffSummary.join(' · ') || 'Có thay đổi thông số 4.1'}</strong>
+              </div>
+            </div>
+            {isLeadUser && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextRef = planState.pendingReference41!;
+                    const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
+                    const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
+                    const actorName = currentUser?.name || 'Giám đốc Marketing B2C';
+                    const unlockMsg: PlanDiscussionMessage = {
+                      id: `DISC-UNLOCK41-${Date.now()}`,
+                      authorName: actorName,
+                      authorRole: 'LEAD',
+                      authorTitle: 'Quản lý B2C',
+                      content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (${pendingDiff.diffSummary.join('; ')}). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
+                      type: 'REVISION_REQUEST',
+                      timestamp: new Date().toISOString(),
+                      tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
+                    };
+                    const updated: InputPlanBreakdownState = {
+                      ...planState,
+                      reference41: nextRef,
+                      pendingReference41: undefined,
+                      totalTargetBudget: nextBudget,
+                      totalTargetContents: nextContents,
+                      budgetAffiliate: nextRef.affCostNet,
+                      budgetSelfChannel: nextRef.selfCostNet,
+                      isVersionLocked: false,
+                      status: 'REVISION_REQUESTED',
+                      revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
+                      discussions: [unlockMsg, ...(planState.discussions || [])],
+                      updatedAt: new Date().toISOString(),
+                    };
+                    setPlanState(updated);
+                    setMonthlyPlans(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+                    notify(`Đã mở khóa và cập nhật hạn mức theo file 4.1 mới cho "${planState.storeName || planState.brandName}".`);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 font-semibold text-xs transition cursor-pointer"
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Mở khóa &amp; Cập nhật theo 4.1 mới</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated: InputPlanBreakdownState = {
+                      ...planState,
+                      pendingReference41: undefined,
+                      updatedAt: new Date().toISOString(),
+                    };
+                    setPlanState(updated);
+                    setMonthlyPlans(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+                    notify('Đã bỏ qua cảnh báo lệch 4.1 mới và giữ nguyên bản đã duyệt.');
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-white hover:bg-rose-100 text-rose-800 px-2.5 py-1.5 font-semibold text-xs transition cursor-pointer"
+                >
+                  <span>Giữ nguyên bản đã duyệt</span>
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {planState.reference41?.isGrowthLocked === false && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <strong>Cảnh báo cột &ldquo;Chốt plan&rdquo;:</strong> Dòng Plan order 4.1 của gian hàng này đang ở trạng thái{' '}
+            <strong>{planState.reference41.growthLockLabel || 'Chưa chốt'}</strong> (số tạm tính). Hệ thống chỉ cho phép <strong>Lưu Nháp</strong> và khóa gửi duyệt phân rã 4.1.1 cho đến khi tải lên bản 4.1 đã chốt.
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200/90 px-3 py-1.5 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
         <div className="inline-flex max-w-full items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
           <button
@@ -1747,7 +1837,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            3. Phân rã tuần
+            3. Tổng quan 4.1 &amp; Phân rã 4.1.1
           </button>
           <button
             type="button"

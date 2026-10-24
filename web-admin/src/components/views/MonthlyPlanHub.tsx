@@ -25,6 +25,7 @@ import {
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import { PlanOrderUploadModal } from './PlanOrderUploadModal';
+import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
 import { getBreakdownHealth } from '../../lib/planBreakdownRules';
 import {
   Plus,
@@ -345,6 +346,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   // Tab chuyển góc nhìn: Ma trận gian hàng vs Kế hoạch theo Brand (3 vị trí) vs Hệ số gian hàng (Bảng 2) vs Kế hoạch theo nhân sự vs Danh mục kế hoạch
   const [rawActiveHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'BRAND_PLANS' | 'STORE_COEFFICIENTS' | 'PERSONAL_PLANS' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
+  const [expandedStoreId, setExpandedStoreId] = useState<string | null>(null);
   const activeHubTab =
     !canViewTeamPlansAndCoefficients && (rawActiveHubTab === 'PERSONAL_PLANS' || rawActiveHubTab === 'STORE_COEFFICIENTS')
       ? 'STORE_GOVERNANCE'
@@ -444,7 +446,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [personalSearchQuery, setPersonalSearchQuery] = useState<string>('');
 
   // Lọc cho Ma trận gian hàng (mặc định lọc gian B2C làm kế hoạch)
-  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MULTI_VERSION' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('B2C_ONLY');
+  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MULTI_VERSION' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT' | 'PENDING_41_DIFF' | 'UNCONFIRMED_41'>('B2C_ONLY');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
@@ -635,6 +637,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const revisionRequested = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'REVISION_REQUESTED');
     const draft = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'DRAFT' || !item.plan.status));
     const multiVersion = b2cList.filter((item: StoreGovernanceItem) => item.plan && getPlanVersionSnapshots(item.plan).length > 1);
+    const pending41Diff = b2cList.filter((item: StoreGovernanceItem) => Boolean(item.plan?.pendingReference41));
+    const unconfirmed41 = b2cList.filter((item: StoreGovernanceItem) => item.plan?.reference41?.isGrowthLocked === false);
 
     const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
     const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
@@ -662,6 +666,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       countRevisionRequested: revisionRequested.length,
       countDraft: draft.length,
       countMultiVersion: multiVersion.length,
+      countPending41Diff: pending41Diff.length,
+      countUnconfirmed41: unconfirmed41.length,
       coveragePct,
       approvedPct,
       totalBudget,
@@ -685,6 +691,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
       if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
       if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
+      if (storeGovernanceFilter === 'PENDING_41_DIFF' && !item.plan?.pendingReference41) return false;
+      if (storeGovernanceFilter === 'UNCONFIRMED_41' && item.plan?.reference41?.isGrowthLocked !== false) return false;
 
       if (storeSearchQuery.trim()) {
         const q = storeSearchQuery.toLowerCase();
@@ -1311,6 +1319,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   <Chips
                     items={[
                       { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
+                      ...(governanceStats.countPending41Diff > 0
+                        ? [{ key: 'PENDING_41_DIFF' as const, label: 'Lệch 4.1 mới', count: governanceStats.countPending41Diff }]
+                        : []),
+                      ...(governanceStats.countUnconfirmed41 > 0
+                        ? [{ key: 'UNCONFIRMED_41' as const, label: '4.1 Chưa chốt', count: governanceStats.countUnconfirmed41 }]
+                        : []),
                       { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval },
                       { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
                       { key: 'MISSING_PLAN', label: 'Chưa lập', count: governanceStats.countMissingPlan },
@@ -1371,17 +1385,22 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         return parts.length >= 2 ? parts.slice(-2).join(' ') : fullName;
                       };
 
+                      const isExpanded = expandedStoreId === store.id;
+
                       return (
+                        <React.Fragment key={store.id}>
                         <tr
-                          key={store.id}
                           data-flip={store.id}
                           className={cx(
                             'group hover:bg-canvas transition-colors',
                             plan && 'cursor-pointer',
+                            isExpanded && 'bg-indigo-50/50',
                             !isB2c && 'bg-sunken/30 text-ink-3'
                           )}
                           onClick={() => {
-                            if (plan) onSelectPlan(plan);
+                            if (plan) {
+                              setExpandedStoreId(prev => (prev === store.id ? null : store.id));
+                            }
                           }}
                         >
                           {/* 1. GIAN HÀNG & PHIÊN BẢN */}
@@ -1632,6 +1651,51 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               ) : plan ? (
                                 <>
                                   {getStatusBadge(plan.status)}
+                                  {plan.pendingReference41 ? (
+                                    <>
+                                      <Status tone="critical">Lệch 4.1 mới</Status>
+                                      {currentUser && isStaffGlobalAdminOrManager(currentUser) && onUpdatePlan && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const nextRef = plan.pendingReference41!;
+                                            const nextBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
+                                            const nextContents = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
+                                            const actorName = currentUser.name || 'Giám đốc Marketing B2C';
+                                            const unlockMsg: PlanDiscussionMessage = {
+                                              id: `DISC-UNLOCK41-${Date.now()}`,
+                                              authorName: actorName,
+                                              authorRole: 'LEAD',
+                                              authorTitle: 'Quản lý B2C',
+                                              content: `Quản lý (${actorName}) đã mở khóa kế hoạch đã duyệt và cập nhật theo số liệu Bảng 4.1 mới (Tổng Net: ${formatVndShort(nextBudget)}, Tổng nội dung: ${nextContents} video). Chuyển về trạng thái Cần sửa để chuyên viên điều chỉnh phân rã tuần.`,
+                                              type: 'REVISION_REQUEST',
+                                              timestamp: new Date().toISOString(),
+                                              tags: ['Cập nhật 4.1 mới', 'Mở khóa'],
+                                            };
+                                            onUpdatePlan(plan.id, {
+                                              reference41: nextRef,
+                                              pendingReference41: undefined,
+                                              totalTargetBudget: nextBudget,
+                                              totalTargetContents: nextContents,
+                                              budgetAffiliate: nextRef.affCostNet,
+                                              budgetSelfChannel: nextRef.selfCostNet,
+                                              isVersionLocked: false,
+                                              status: 'REVISION_REQUESTED',
+                                              revisionNotes: 'Mở khóa cập nhật theo Bảng 4.1 Plan order tổng mới',
+                                              discussions: [unlockMsg, ...(plan.discussions || [])],
+                                            });
+                                            notify(`Đã mở khóa và cập nhật mốc 4.1 mới cho gian hàng "${store.storeName}".`);
+                                          }}
+                                          className="h-6 px-2 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer"
+                                          title="Mở khóa kế hoạch đã duyệt và áp dụng số liệu 4.1 mới"
+                                        >
+                                          Mở khóa 4.1
+                                        </button>
+                                      )}
+                                    </>
+                                  ) : plan.reference41?.isGrowthLocked === false ? (
+                                    <Status tone="warning">4.1 Chưa chốt</Status>
+                                  ) : null}
                                   {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
                                     <button
                                       type="button"
@@ -1652,14 +1716,29 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       Duyệt
                                     </Button>
                                   ) : (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => onSelectPlan(plan)}
-                                      className="h-6 px-2 text-2xs font-medium shrink-0"
-                                    >
-                                      Phân rã
-                                    </Button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => setExpandedStoreId(prev => (prev === store.id ? null : store.id))}
+                                        className={cx(
+                                          'h-6 px-2 rounded border text-2xs font-semibold shrink-0 whitespace-nowrap transition cursor-pointer',
+                                          isExpanded
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                                        )}
+                                        title="Mở/Đóng Bảng tổng quan 4.1 & Bảng chi tiết tuần 4.1.1 ngay bên dưới dòng này"
+                                      >
+                                        {isExpanded ? 'Đóng chi tiết' : 'Chi tiết 4.1.1'}
+                                      </button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => onSelectPlan(plan)}
+                                        className="h-6 px-2 text-2xs font-medium shrink-0"
+                                      >
+                                        Mở 5 bước
+                                      </Button>
+                                    </>
                                   )}
                                 </>
                               ) : (
@@ -1676,6 +1755,53 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
                         </tr>
+                        {isExpanded && plan && (
+                          <tr className="bg-slate-50/70 border-b-2 border-indigo-200">
+                            <td colSpan={8} className="p-4">
+                              <div className="space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-2.5">
+                                  <div className="flex items-center gap-2.5">
+                                    <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-2xs font-bold text-white">
+                                      ĐANG MỞ CHI TIẾT
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-900">
+                                      {store.storeName} ({plan.month}) — Đối soát Bảng tổng quan 4.1 &amp; Bảng chi tiết tuần 4.1.1
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => onSelectPlan(plan)}
+                                      className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1 text-2xs font-semibold text-white transition cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                      <span>Mở không gian 5 bước đầy đủ</span>
+                                      <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedStoreId(null)}
+                                      className="rounded-lg border border-slate-300 bg-white hover:bg-slate-100 px-2.5 py-1 text-2xs font-semibold text-slate-700 transition cursor-pointer"
+                                    >
+                                      Thu gọn
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <PlanWeeklyBreakdown
+                                  plan={plan}
+                                  readOnly={Boolean(plan.isVersionLocked)}
+                                  onChange={patch => {
+                                    if (onUpdatePlan) {
+                                      onUpdatePlan(plan.id, patch);
+                                    }
+                                  }}
+                                  onNotify={notify}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        </React.Fragment>
                       );
                     })
                   )}

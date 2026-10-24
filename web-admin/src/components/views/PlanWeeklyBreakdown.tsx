@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Copy, Eraser, Layers, Radio, Share2, Sparkles, TrendingUp, Users, Video } from 'lucide-react';
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Copy,
+  Eraser,
+  Layers,
+  Radio,
+  Share2,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Video,
+  Eye,
+} from 'lucide-react';
 import type {
   InputPlanBreakdownState,
   PlanMultiPlatformKey,
@@ -229,6 +242,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   const [activeTab, setActiveTab] = useState<WorkstreamTab>('ALL');
   const [selectedStaffSlice, setSelectedStaffSlice] = useState<string>('ALL_STORE');
   const refs = useRef(new Map<string, HTMLInputElement>());
+  const detailAnchorRef = useRef<HTMLDivElement>(null);
 
   const { issues, comparison, rows: storeRows } = useMemo(() => validateBreakdown(plan), [plan]);
   const staffSlices = useMemo(() => plan.staffWeeklySlices || [], [plan.staffWeeklySlices]);
@@ -238,7 +252,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     [selectedStaffSlice, staffSlices]
   );
 
-  // Khi đang lọc xem riêng 1 chuyên viên, bảng hiển thị lát cắt của chuyên viên đó (chế độ chỉ đọc để tránh ghi đè tổng gian hàng)
   const rows = useMemo(() => {
     if (activeSliceObj) {
       return resolveWeekRows({ month: plan.month, weeklyBreakdown: activeSliceObj.weeklyBreakdown });
@@ -459,7 +472,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     Livestream: { qtyKey: 'live', budgetKey: 'liveBudget' },
   };
 
-  // Lấy số tham chiếu Bảng 4.1 cho từng dòng lẻ (KL1..KL7 hoặc TAP Brand / TAP / TAP UpAffiliate)
   const getRowRef41Qty = (def: RowDef): number | null => {
     if (!ref41) return null;
     if (def.kind === 'tier' && def.tier && ref41.tiers) {
@@ -527,7 +539,6 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     </th>
   );
 
-  // Tính tổng Đa sàn từ Bảng 4.1 để hiện badge trên Tab
   const ref41MultiTotals = useMemo(() => {
     const mp = ref41?.multiPlatform;
     if (!mp) return { affQty: 0, reupQty: 0, costNet: 0 };
@@ -544,13 +555,11 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     );
   }, [ref41]);
 
-  // Tính tổng KL4+ thực nhập để đối chiếu với Số video KL4 trở lên trên 4.1
   const kl4PlusPlanned = useMemo(
     () => (['KL4', 'KL5', 'KL6', 'KL7'] as PlanTierKey[]).reduce((s, k) => s + (totals.tiers[k]?.qty || 0), 0),
     [totals]
   );
 
-  // Các section hiển thị trong bảng tuần tùy theo Tab được chọn
   const visibleSections = useMemo(() => {
     if (activeTab === 'CAST_KL') return ['Video Cast trả phí'];
     if (activeTab === 'FOC_SAMPLE') return ['Suất FOC (0đ)'];
@@ -560,116 +569,428 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   }, [activeTab]);
 
   const rolePics = ref41?.rolePics;
+
+  // Dữ liệu 5 dòng chuẩn cho BẢNG TỔNG QUAN ĐỐI SOÁT 4.1 VS 4.1.1 (Cố định ở nửa trên)
+  const overviewMatrixRows = useMemo(() => {
+    const r = ref41;
+    const castRefQty = r?.cast || 0;
+    const castRefNet = r?.affCostNet || 0;
+    const focRefQty = r?.foc || 0;
+    const selfRefQty = r?.selfVideos || 0;
+    const selfRefNet = r?.selfCostNet || 0;
+    const multiRefQty = ref41MultiTotals.affQty + ref41MultiTotals.reupQty + (r?.tiktokReup || 0);
+    const multiRefNet = ref41MultiTotals.costNet;
+    const liveRefQty = (r?.liveSessions || 0) + (r?.liveSelf?.inhouse3h || 0) + (r?.liveSelf?.ctv2h || 0) + (r?.liveSelf?.brand2h || 0);
+    const liveRefNet = (r?.liveCostNet || 0) + (r?.liveSelf?.totalCostNet || 0);
+
+    const multiPlannedQty = totals.multiTotalAffQty + totals.multiTotalReupQty;
+    const multiPlannedNet = totals.multiTotalBudget;
+    const livePlannedQty = totals.liveSessions + totals.liveSelfInhouse + totals.liveSelfCtv + totals.liveSelfBrand;
+    const livePlannedNet = totals.liveBudget + totals.liveSelfBudget;
+
+    return [
+      {
+        id: 'CAST_KL' as WorkstreamTab,
+        code: '01',
+        title: '1. Video KOC trả phí (Cast KL1–KL7)',
+        subDetail: TIER_KEYS.map(k => {
+          const p = totals.tiers[k]?.qty || 0;
+          const t41 = r?.tiers?.[k] || 0;
+          if (p === 0 && t41 === 0) return null;
+          return `${k}: ${p}/${t41}`;
+        })
+          .filter(Boolean)
+          .join(' · ') || 'Chưa chia bậc KL1–KL7',
+        picText: rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—',
+        refQty: castRefQty,
+        plannedQty: totals.castQty,
+        unitLabel: 'video',
+        refBudgetNet: castRefNet,
+        plannedBudgetNet: totals.castBudget,
+        extraTag:
+          (r?.kl4PlusTarget || 0) > 0
+            ? `KL4+: ${kl4PlusPlanned}/${r?.kl4PlusTarget} video`
+            : undefined,
+      },
+      {
+        id: 'FOC_SAMPLE' as WorkstreamTab,
+        code: '02',
+        title: '2. Suất gửi mẫu miễn phí (FOC 0đ)',
+        subDetail: `TAP Brand: ${totals.focByType.tapBrand}/${r?.focBreakdown?.tapBrand || 0} · TAP: ${totals.focByType.tap}/${r?.focBreakdown?.tap || 0} · TAP UpAffiliate: ${totals.focByType.tapUp}/${r?.focBreakdown?.tapUp || 0}`,
+        picText: rolePics?.focPics?.length ? rolePics.focPics.join(', ') : focRefQty > 0 ? 'Trần Thị Hảo' : '—',
+        refQty: focRefQty,
+        plannedQty: totals.focQty,
+        unitLabel: 'mẫu',
+        refBudgetNet: 0,
+        plannedBudgetNet: 0,
+        extraTag: '0đ Cast',
+      },
+      {
+        id: 'SELF_CHANNEL' as WorkstreamTab,
+        code: '03',
+        title: '3. Video kênh tự xây (Self-channel)',
+        subDetail: SELF_TYPES.map(st => {
+          const q = totals.selfByType[st.key] || 0;
+          return q > 0 ? `${st.label}: ${q}` : null;
+        })
+          .filter(Boolean)
+          .join(' · ') || 'Review voice · Video AI · Remix · Video to live · Nhạc text',
+        picText: rolePics?.contentPics?.length ? rolePics.contentPics.join(', ') : plan.primaryPic || '—',
+        refQty: selfRefQty,
+        plannedQty: totals.selfQty,
+        unitLabel: 'video',
+        refBudgetNet: selfRefNet,
+        plannedBudgetNet: totals.selfBudget,
+      },
+      {
+        id: 'MULTI_PLATFORM' as WorkstreamTab,
+        code: '04',
+        title: '4. Khối Đa sàn (Shopee · Threads · FB · IG)',
+        subDetail: MULTI_PLATFORMS.map(mp => {
+          const m = totals.multiPlatform[mp.key];
+          const mr = r?.multiPlatform?.[mp.key];
+          const q = m.affQty + m.reupQty;
+          const qr = (mr?.affQty || 0) + (mr?.reupQty || 0);
+          return `${mp.shortLabel}: ${q}/${qr}`;
+        }).join(' · '),
+        picText: rolePics?.bookingPics?.[0] || plan.primaryPic || '—',
+        refQty: multiRefQty,
+        plannedQty: multiPlannedQty,
+        unitLabel: 'video',
+        refBudgetNet: multiRefNet,
+        plannedBudgetNet: multiPlannedNet,
+        extraTag: (r?.tiktokReup || 0) > 0 ? `TikTok Reup 4.1: ${r?.tiktokReup}` : undefined,
+      },
+      {
+        id: 'LIVE_GMV' as WorkstreamTab,
+        code: '05',
+        title: '5. Livestream (Affiliate & Kênh Brand)',
+        subDetail: `Live Aff: ${totals.liveSessions}/${r?.liveSessions || 0} · Inhouse 3h: ${totals.liveSelfInhouse}/${r?.liveSelf?.inhouse3h || 0} · CTV 2h: ${totals.liveSelfCtv}/${r?.liveSelf?.ctv2h || 0}`,
+        picText: rolePics?.livePics?.length ? rolePics.livePics.join(', ') : '—',
+        refQty: liveRefQty,
+        plannedQty: livePlannedQty,
+        unitLabel: 'phiên',
+        refBudgetNet: liveRefNet,
+        plannedBudgetNet: livePlannedNet,
+      },
+    ];
+  }, [ref41, ref41MultiTotals, totals, rolePics, plan.primaryPic, plan.pic, kl4PlusPlanned]);
+
+  const overviewGrandTotals = useMemo(() => {
+    return overviewMatrixRows.reduce(
+      (acc, r) => ({
+        refQty: acc.refQty + r.refQty,
+        plannedQty: acc.plannedQty + r.plannedQty,
+        refBudgetNet: acc.refBudgetNet + r.refBudgetNet,
+        plannedBudgetNet: acc.plannedBudgetNet + r.plannedBudgetNet,
+      }),
+      { refQty: 0, plannedQty: 0, refBudgetNet: 0, plannedBudgetNet: 0 }
+    );
+  }, [overviewMatrixRows]);
+
+  const handleSelectWorkstreamFromOverview = (tab: WorkstreamTab) => {
+    setActiveTab(prev => (prev === tab ? 'ALL' : tab));
+    if (detailAnchorRef.current) {
+      detailAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
   let flatIndex = -1;
 
   return (
     <div className="space-y-4">
-      {/* KHỐI 1: ĐỘI NGŨ PHỤ TRÁCH ĐA VAI TRÒ (4.1) & TIẾN ĐỘ NHẬP THEO CHUYÊN VIÊN (4.1.1) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
-              <Users className="h-4 w-4" />
-            </span>
-            <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
-              Đội ngũ phụ trách gian hàng &amp; Tiến độ nhập theo chuyên viên
-            </h4>
+      {/* ========================================================================= */}
+      {/* TẦNG 1: KHỐI ĐỘI NGŨ PIC & BẢNG TỔNG QUAN ĐỐI SOÁT 4.1 VS 4.1.1           */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        {/* CỘT TRÁI (8/12): BẢNG TỔNG QUAN ĐỐI SOÁT 5 MẢNG (BẢNG 4.1 VS ĐÃ PHÂN RÃ 4.1.1) */}
+        <div className="xl:col-span-8 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-900 text-white text-2xs font-bold">
+                  4.1
+                </span>
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-900">
+                  Bảng Tổng Quan Đối Soát Hạn Mức 4.1 &amp; Tiến Độ Phân Rã 4.1.1
+                </h4>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {!effectiveReadOnly && hasRef && (
+                  <button
+                    type="button"
+                    onClick={handleDistributeFromRef41}
+                    className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
+                  >
+                    Khớp 100% theo Bảng 4.1
+                  </button>
+                )}
+                {activeTab !== 'ALL' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ALL')}
+                    className="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-2xs font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                  >
+                    Hiện tất cả bảng chi tiết
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/50 text-2xs font-semibold text-slate-600">
+                    <th className="px-3.5 py-2 text-left">Hạng mục tổng quan (Bấm để lọc bảng chi tiết)</th>
+                    <th className="px-2.5 py-2 text-left">PIC phụ trách</th>
+                    <th className="border-l border-slate-200 px-2.5 py-2 text-right">Chỉ tiêu 4.1</th>
+                    <th className="px-2.5 py-2 text-right">Đã chia 4.1.1</th>
+                    <th className="border-l border-slate-200 px-2.5 py-2 text-right">Ngân sách Net 4.1</th>
+                    <th className="px-2.5 py-2 text-right">Net đã chia</th>
+                    <th className="border-l border-slate-200 px-3 py-2 text-right">Đối soát</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {overviewMatrixRows.map(row => {
+                    const qtyDiff = row.plannedQty - row.refQty;
+                    const budDiff = row.plannedBudgetNet - row.refBudgetNet;
+                    const isQtyMatched = qtyDiff === 0;
+                    const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
+                    const isAllMatched = isQtyMatched && isBudMatched;
+                    const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
+                    const isFocused = activeTab === row.id;
+
+                    return (
+                      <tr
+                        key={row.id}
+                        onClick={() => handleSelectWorkstreamFromOverview(row.id)}
+                        className={`cursor-pointer transition ${
+                          isFocused
+                            ? 'bg-indigo-50/70 hover:bg-indigo-50'
+                            : 'hover:bg-slate-50/80'
+                        }`}
+                      >
+                        <td className="px-3.5 py-2.5 align-top">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900">{row.title}</span>
+                            {row.extraTag && (
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs font-semibold text-slate-700">
+                                {row.extraTag}
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 text-2xs text-slate-500">{row.subDetail}</div>
+                        </td>
+                        <td className="px-2.5 py-2.5 align-top">
+                          <span className="inline-block max-w-[130px] truncate font-medium text-slate-800" title={row.picText}>
+                            {row.picText}
+                          </span>
+                        </td>
+                        <td className="border-l border-slate-100 px-2.5 py-2.5 text-right align-top tabular-nums font-semibold text-slate-700">
+                          {fmt(row.refQty)} <span className="text-2xs font-normal text-slate-400">{row.unitLabel}</span>
+                        </td>
+                        <td className="px-2.5 py-2.5 text-right align-top tabular-nums font-bold text-slate-900">
+                          {fmt(row.plannedQty)} <span className="text-2xs font-normal text-slate-400">{row.unitLabel}</span>
+                        </td>
+                        <td className="border-l border-slate-100 px-2.5 py-2.5 text-right align-top tabular-nums text-slate-600">
+                          {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : '0đ'}
+                        </td>
+                        <td className="px-2.5 py-2.5 text-right align-top tabular-nums font-semibold text-indigo-900">
+                          {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : '0đ'}
+                        </td>
+                        <td className="border-l border-slate-100 px-3 py-2.5 text-right align-top tabular-nums">
+                          {isEmpty ? (
+                            <span className="text-2xs text-slate-400">Không phát sinh</span>
+                          ) : isAllMatched ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-2xs font-semibold text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="h-3 w-3" /> Khớp 4.1
+                            </span>
+                          ) : (
+                            <div className="space-y-0.5">
+                              {!isQtyMatched && (
+                                <div className={`text-2xs font-semibold ${qtyDiff > 0 ? 'text-rose-600' : 'text-amber-700'}`}>
+                                  SL: {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)}
+                                </div>
+                              )}
+                              {!isBudMatched && (
+                                <div className={`text-2xs font-semibold ${budDiff > 0 ? 'text-rose-600' : 'text-amber-700'}`}>
+                                  Net: {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-slate-200 bg-slate-50 font-bold text-slate-900">
+                    <td className="px-3.5 py-2.5" colSpan={2}>
+                      Tổng cộng toàn gian hàng ({plan.storeName || plan.brandName})
+                    </td>
+                    <td className="border-l border-slate-200 px-2.5 py-2.5 text-right tabular-nums">
+                      {fmt(overviewGrandTotals.refQty)}
+                    </td>
+                    <td className="px-2.5 py-2.5 text-right tabular-nums text-indigo-700">
+                      {fmt(overviewGrandTotals.plannedQty)}
+                    </td>
+                    <td className="border-l border-slate-200 px-2.5 py-2.5 text-right tabular-nums">
+                      {fmt(overviewGrandTotals.refBudgetNet)}đ
+                    </td>
+                    <td className="px-2.5 py-2.5 text-right tabular-nums text-indigo-700">
+                      {fmt(overviewGrandTotals.plannedBudgetNet)}đ
+                    </td>
+                    <td className="border-l border-slate-200 px-3 py-2.5 text-right tabular-nums">
+                      {overviewGrandTotals.plannedQty === overviewGrandTotals.refQty &&
+                      Math.abs(overviewGrandTotals.plannedBudgetNet - overviewGrandTotals.refBudgetNet) <= 2000 ? (
+                        <span className="text-emerald-700">Khớp 100%</span>
+                      ) : (
+                        <span className="text-amber-700 inline-flex items-center gap-1">
+                          <AlertTriangle className="h-3.5 w-3.5" /> Cần rà soát
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 text-2xs">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
-              Cơ chế duyệt:{' '}
-              {plan.hasBookingLeader && plan.bookingLeader
-                ? `Qua Trưởng nhóm (${plan.bookingLeader})`
-                : 'Trình trực tiếp GĐ Marketing (Đặng Thị Yến Nhi)'}
-            </span>
-          </div>
+
+          {/* Dải chỉ tiêu Doanh thu GMV / NMV & GMV 30 ngày đặt gọn dưới đáy Bảng Tổng Quan */}
+          {ref41?.gmvTargets && (
+            <div className="border-t border-slate-200 bg-slate-50/60 px-3.5 py-2.5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-2xs">
+                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                  <div className="text-slate-500">(Plan) NMV</div>
+                  <div className="font-bold tabular-nums text-slate-900">
+                    {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                  <div className="text-slate-500">GMV Video Aff</div>
+                  <div className="font-bold tabular-nums text-emerald-700">
+                    {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                  <div className="text-slate-500">GMV Self-channel</div>
+                  <div className="font-bold tabular-nums text-indigo-700">
+                    {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                  <div className="text-slate-500">GMV Live Self</div>
+                  <div className="font-bold tabular-nums text-teal-700">
+                    {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
+                      ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
+                      : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1.5">
+                  <div className="text-amber-800">GMV 30d Tháng trước</div>
+                  <div className="font-bold tabular-nums text-amber-950">
+                    {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 py-1.5">
+                  <div className="text-emerald-800">GMV 30d Tháng này</div>
+                  <div className="font-bold tabular-nums text-emerald-950">
+                    {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Lưới thẻ nhân sự theo vai trò từ Bảng 4.1 */}
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-lg border border-slate-200/80 bg-slate-50/60 px-2.5 py-2">
-            <div className="text-2xs font-medium text-slate-500">Growth PIC (Giao Order)</div>
-            <div className="mt-0.5 text-xs font-semibold text-slate-900 truncate">
-              {rolePics?.growthPics?.length ? rolePics.growthPics.join(', ') : '—'}
+        {/* CỘT PHẢI (4/12): KHỐI ĐỘI NGŨ PHỤ TRÁCH (TÁCH RIÊNG) & LÁT CẮT CHUYÊN VIÊN 4.1.1 */}
+        <div className="xl:col-span-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs flex flex-col justify-between space-y-3">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-50 text-indigo-700">
+                  <Users className="h-3.5 w-3.5" />
+                </span>
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                  Tổ Đội Phụ Trách (PIC)
+                </h4>
+              </div>
+              <span className="rounded bg-slate-100 px-2 py-0.5 text-2xs font-semibold text-slate-700">
+                {plan.hasBookingLeader && plan.bookingLeader
+                  ? `Leader: ${plan.bookingLeader}`
+                  : 'Duyệt trực tiếp GĐ'}
+              </span>
             </div>
-            {rolePics?.growthSupports?.length ? (
-              <div className="mt-0.5 text-2xs text-slate-500 truncate">Hỗ trợ: {rolePics.growthSupports.join(', ')}</div>
-            ) : null}
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5">
+                <div className="text-2xs text-slate-500">Growth PIC (Giao Order)</div>
+                <div className="font-semibold text-slate-900 truncate">
+                  {rolePics?.growthPics?.length ? rolePics.growthPics.join(', ') : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5">
+                <div className="text-2xs text-slate-500">Account PIC</div>
+                <div className="font-semibold text-slate-900 truncate">
+                  {rolePics?.accountPics?.length ? rolePics.accountPics.join(', ') : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-2.5 py-1.5">
+                <div className="text-2xs text-emerald-700">Booking PIC (Paid)</div>
+                <div className="font-semibold text-emerald-950 truncate">
+                  {rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-2.5 py-1.5">
+                <div className="text-2xs text-amber-800">Chuyên viên FOC (0đ)</div>
+                <div className="font-semibold text-amber-950 truncate">
+                  {rolePics?.focPics?.length ? rolePics.focPics.join(', ') : ref41 && ref41.foc > 0 ? 'Trần Thị Hảo' : '—'}
+                </div>
+              </div>
+              <div className="col-span-2 rounded-lg border border-purple-200/80 bg-purple-50/40 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                <span className="text-2xs text-purple-700 shrink-0">Content &amp; Livestream PIC:</span>
+                <span className="font-semibold text-purple-950 truncate">
+                  {[...(rolePics?.contentPics || []), ...(rolePics?.livePics || [])].filter(Boolean).join(', ') || '—'}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200/80 bg-slate-50/60 px-2.5 py-2">
-            <div className="text-2xs font-medium text-slate-500">Account PIC</div>
-            <div className="mt-0.5 text-xs font-semibold text-slate-900 truncate">
-              {rolePics?.accountPics?.length ? rolePics.accountPics.join(', ') : '—'}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-indigo-200/80 bg-indigo-50/40 px-2.5 py-2">
-            <div className="text-2xs font-medium text-indigo-700">Trưởng nhóm B2C (Leader)</div>
-            <div className="mt-0.5 text-xs font-semibold text-indigo-950 truncate">
-              {plan.hasBookingLeader && plan.bookingLeader ? plan.bookingLeader : 'Không có Leader'}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-2.5 py-2">
-            <div className="text-2xs font-medium text-emerald-700">Chuyên viên Booking (Paid)</div>
-            <div className="mt-0.5 text-xs font-semibold text-emerald-950 truncate">
-              {rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—'}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-2.5 py-2">
-            <div className="text-2xs font-medium text-amber-800">Chuyên viên FOC (0đ)</div>
-            <div className="mt-0.5 text-xs font-semibold text-amber-950 truncate">
-              {rolePics?.focPics?.length ? rolePics.focPics.join(', ') : ref41 && ref41.foc > 0 ? 'Trần Thị Hảo' : '—'}
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-purple-200/80 bg-purple-50/40 px-2.5 py-2">
-            <div className="text-2xs font-medium text-purple-700">Content &amp; Livestream PIC</div>
-            <div className="mt-0.5 text-xs font-semibold text-purple-950 truncate">
-              {[...(rolePics?.contentPics || []), ...(rolePics?.livePics || [])].filter(Boolean).join(', ') || '—'}
-            </div>
-          </div>
-        </div>
-
-        {/* Bộ chọn lát cắt tiến độ nhập 4.1.1 theo từng chuyên viên */}
-        {staffSlices.length > 0 && (
-          <div className="pt-1">
-            <div className="mb-1.5 flex items-center justify-between text-2xs font-semibold text-slate-600">
-              <span>Lát cắt dữ liệu đã nhập trên Bảng 4.1.1 theo từng chuyên viên ({staffSlices.length} nhân sự):</span>
+          {/* Lát cắt tiến độ nhập theo từng chuyên viên trên 4.1.1 */}
+          <div className="border-t border-slate-100 pt-2.5 space-y-1.5">
+            <div className="flex items-center justify-between text-2xs font-semibold text-slate-600">
+              <span>Lọc bảng tuần theo chuyên viên ({staffSlices.length || 1} người):</span>
               {activeSliceObj && (
                 <button
                   type="button"
                   onClick={() => setSelectedStaffSlice('ALL_STORE')}
                   className="text-indigo-600 hover:underline cursor-pointer"
                 >
-                  Quay lại Tổng hợp toàn gian hàng
+                  Xem toàn gian hàng
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+
+            <div className="space-y-1.5 max-h-[195px] overflow-y-auto pr-0.5">
               <button
                 type="button"
                 onClick={() => setSelectedStaffSlice('ALL_STORE')}
-                className={`flex flex-col justify-between rounded-lg border px-3 py-2 text-left transition cursor-pointer ${
+                className={`w-full flex items-center justify-between rounded-lg border px-2.5 py-2 text-left transition cursor-pointer ${
                   selectedStaffSlice === 'ALL_STORE'
                     ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
                     : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-slate-900">Tổng hợp toàn gian hàng</span>
-                  <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-2xs font-semibold text-indigo-800">
-                    Chỉnh sửa &amp; Khớp 4.1
-                  </span>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Tổng hợp toàn gian hàng</div>
+                  <div className="text-2xs text-slate-500 tabular-nums">
+                    Cast: {fmt(storeTotals.castQty)} · FOC: {fmt(storeTotals.focQty)} · Self: {fmt(storeTotals.selfQty)}
+                  </div>
                 </div>
-                <div className="mt-1.5 flex flex-wrap gap-2 text-2xs text-slate-600 tabular-nums">
-                  <span>Cast: <b>{fmt(storeTotals.castQty)}</b></span>
-                  <span>FOC: <b>{fmt(storeTotals.focQty)}</b></span>
-                  <span>Self: <b>{fmt(storeTotals.selfQty)}</b></span>
-                  <span>Net: <b>{fmt(storeTotals.totalBudget)}đ</b></span>
-                </div>
+                <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-2xs font-semibold text-indigo-800 tabular-nums">
+                  {fmt(storeTotals.totalBudget)}đ
+                </span>
               </button>
 
               {staffSlices.map(slice => {
@@ -680,573 +1001,500 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     key={slice.staffName}
                     type="button"
                     onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
-                    className={`flex flex-col justify-between rounded-lg border px-3 py-2 text-left transition cursor-pointer ${
+                    className={`w-full flex items-center justify-between rounded-lg border px-2.5 py-2 text-left transition cursor-pointer ${
                       isSelected
                         ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600'
                         : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-bold text-slate-900 truncate">{slice.staffName}</span>
-                      <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-2xs font-medium text-slate-700">
-                        {slice.roleLabel || 'Chuyên viên'} · {slice.rowCount} dòng
-                      </span>
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900 truncate">{slice.staffName}</span>
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs text-slate-600 shrink-0">
+                          {slice.roleLabel}
+                        </span>
+                      </div>
+                      <div className="text-2xs text-slate-600 tabular-nums truncate">
+                        {st.castQty > 0 ? `Cast: ${fmt(st.castQty)} · ` : ''}
+                        {st.focQty > 0 ? `FOC: ${fmt(st.focQty)} mẫu · ` : ''}
+                        {st.selfQty > 0 ? `Self: ${fmt(st.selfQty)} · ` : ''}
+                        {st.multiTotalAffQty + st.multiTotalReupQty > 0
+                          ? `Đa sàn: ${fmt(st.multiTotalAffQty + st.multiTotalReupQty)}`
+                          : ''}
+                      </div>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-2 text-2xs text-slate-600 tabular-nums">
-                      {st.castQty > 0 && (
-                        <span className="text-emerald-800">
-                          Cast: <b>{fmt(st.castQty)}</b> ({fmt(st.castBudget)}đ)
-                        </span>
-                      )}
-                      {st.focQty > 0 && (
-                        <span className="text-amber-800">
-                          FOC: <b>{fmt(st.focQty)}</b> mẫu
-                        </span>
-                      )}
-                      {st.selfQty > 0 && (
-                        <span className="text-purple-800">
-                          Self: <b>{fmt(st.selfQty)}</b> ({fmt(st.selfBudget)}đ)
-                        </span>
-                      )}
-                      {st.multiTotalAffQty + st.multiTotalReupQty > 0 && (
-                        <span className="text-blue-800">
-                          Đa sàn: <b>{fmt(st.multiTotalAffQty + st.multiTotalReupQty)}</b>
-                        </span>
-                      )}
-                    </div>
+                    <span className="shrink-0 text-2xs font-semibold text-slate-700 tabular-nums">
+                      {slice.rowCount} tuần
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* KHỐI 2: THẺ ĐỐI CHIẾU TỔNG QUAN BẢNG 4.1 */}
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-7">
-        {hasRef
-          ? comparison.map(c => (
-              <div
-                key={c.key}
-                className={`rounded-lg border px-3 py-2 ${
-                  c.matched ? 'border-line bg-surface' : 'border-warning bg-warning-soft'
-                }`}
-              >
-                <div className="text-2xs text-ink-3">{c.label}</div>
-                <div className="text-sm font-semibold tabular-nums text-ink">
-                  {fmt(c.planned)}
-                  <span className="font-normal text-ink-3"> / {fmt(c.reference)}</span>
-                </div>
-                <div className="text-2xs">
-                  {c.matched ? (
-                    <span className="text-positive font-medium">Khớp bảng 4.1</span>
-                  ) : (
-                    <span className="text-warning font-medium">
-                      {c.diff > 0 ? 'Thừa' : 'Thiếu'} {fmt(Math.abs(c.diff))}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          : [
-              { label: 'Video Cast trả phí', v: totals.castQty },
-              { label: 'Ngân sách Cast (Net)', v: totals.castBudget },
-              { label: 'Suất FOC', v: totals.focQty },
-              { label: 'Video self channel', v: totals.selfQty },
-              { label: 'Ngân sách self channel (Net)', v: totals.selfBudget },
-              { label: 'Phiên livestream', v: totals.liveSessions },
-            ].map(c => (
-              <div key={c.label} className="rounded-lg border border-line bg-surface px-3 py-2">
-                <div className="text-2xs text-ink-3">{c.label}</div>
-                <div className="text-sm font-semibold tabular-nums text-ink">{fmt(c.v)}</div>
-              </div>
-            ))}
-      </div>
-
-      {/* KHỐI 3: THANH CHUYỂN KHỐI NGHIỆP VỤ (TÁCH RIÊNG TỪNG KHỐI, KHÔNG DÀN HÀNG NGANG) */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(
-            [
-              {
-                id: 'ALL' as WorkstreamTab,
-                label: 'Tất cả khối',
-                icon: Layers,
-                badge: `${fmt(totals.castQty + totals.focQty + totals.selfQty)} video`,
-              },
-              {
-                id: 'CAST_KL' as WorkstreamTab,
-                label: '1. KOC Trả Phí (KL1–KL7)',
-                icon: Video,
-                badge: `${fmt(totals.castQty)}/${fmt(ref41?.cast || 0)}`,
-              },
-              {
-                id: 'FOC_SAMPLE' as WorkstreamTab,
-                label: '2. Suất FOC (0đ)',
-                icon: Sparkles,
-                badge: `${fmt(totals.focQty)}/${fmt(ref41?.foc || 0)}`,
-              },
-              {
-                id: 'SELF_CHANNEL' as WorkstreamTab,
-                label: '3. Kênh Tự Xây',
-                icon: TrendingUp,
-                badge: `${fmt(totals.selfQty)}/${fmt(ref41?.selfVideos || 0)}`,
-              },
-              {
-                id: 'MULTI_PLATFORM' as WorkstreamTab,
-                label: '4. Đa Sàn (Shopee · Threads · FB · IG)',
-                icon: Share2,
-                badge: `${fmt(totals.multiTotalAffQty + totals.multiTotalReupQty)}/${fmt(
-                  ref41MultiTotals.affQty + ref41MultiTotals.reupQty
-                )}`,
-              },
-              {
-                id: 'LIVE_GMV' as WorkstreamTab,
-                label: '5. Livestream & GMV',
-                icon: Radio,
-                badge: `${fmt(totals.liveSessions + totals.liveSelfInhouse + totals.liveSelfCtv)} phiên`,
-              },
-            ] as const
-          ).map(tab => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                  active
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
-                <span
-                  className={`rounded px-1.5 py-0.5 text-2xs tabular-nums ${
-                    active ? 'bg-slate-700 text-slate-100' : 'bg-slate-100 text-slate-600'
+      {/* ========================================================================= */}
+      {/* TẦNG 2: BẢNG CHI TIẾT PHÂN RÃ TUẦN 4.1.1 (W45–W49) THEO TỪNG KHỐI         */}
+      {/* ========================================================================= */}
+      <div ref={detailAnchorRef} className="space-y-3 pt-1">
+        {/* Thanh chuyển nhanh giữa Xem tất cả khối chi tiết vs Xem từng khối */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/90 p-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="px-2 text-2xs font-bold uppercase tracking-wide text-slate-500 inline-flex items-center gap-1">
+              <Eye className="h-3.5 w-3.5" /> Bảng chi tiết 4.1.1:
+            </span>
+            {(
+              [
+                {
+                  id: 'ALL' as WorkstreamTab,
+                  label: 'Hiện tất cả khối chi tiết',
+                  icon: Layers,
+                },
+                {
+                  id: 'CAST_KL' as WorkstreamTab,
+                  label: '1. KOC Trả Phí (KL1–KL7)',
+                  icon: Video,
+                },
+                {
+                  id: 'FOC_SAMPLE' as WorkstreamTab,
+                  label: '2. Suất FOC (0đ)',
+                  icon: Sparkles,
+                },
+                {
+                  id: 'SELF_CHANNEL' as WorkstreamTab,
+                  label: '3. Kênh Tự Xây',
+                  icon: TrendingUp,
+                },
+                {
+                  id: 'MULTI_PLATFORM' as WorkstreamTab,
+                  label: '4. Đa Sàn (4 khối)',
+                  icon: Share2,
+                },
+                {
+                  id: 'LIVE_GMV' as WorkstreamTab,
+                  label: '5. Livestream',
+                  icon: Radio,
+                },
+              ] as const
+            ).map(tab => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    active
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  {tab.badge}
-                </span>
-              </button>
-            );
-          })}
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {!effectiveReadOnly && (
+              <div className="flex flex-wrap items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleDistributeFromStep2('EVEN')}
+                  className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                >
+                  Chia đều từ Bước 2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
+                  className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                >
+                  Dồn Mega W2–W3
+                </button>
+              </div>
+            )}
+            <label className="flex cursor-pointer items-center gap-1.5 text-2xs font-medium text-ink-2">
+              <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
+              Nhập theo Gross
+            </label>
+          </div>
         </div>
 
-        {/* Công cụ nạp nhanh & chế độ Gross/Net */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {!effectiveReadOnly && (
-            <div className="flex flex-wrap items-center gap-1">
+        {!effectiveReadOnly && isEmptyBreakdown && hasStep2Items && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs text-blue-950">
+            <span className="font-medium">
+              Bảng tuần đang trống — Nạp ngay số lượng &amp; ngân sách đã chia ở Bước 2 xuống các tuần:
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => handleDistributeFromStep2('EVEN')}
-                className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                className="rounded-md bg-blue-600 px-2.5 py-1 text-2xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
               >
-                Chia đều từ Bước 2
+                Chia đều các tuần
               </button>
               <button
                 type="button"
                 onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
-                className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                className="rounded-md border border-blue-300 bg-white px-2.5 py-1 text-2xs font-semibold text-blue-800 hover:bg-blue-100 transition cursor-pointer"
               >
-                Dồn Mega W2–W3
+                Dồn trọng tâm W2–W3
               </button>
-              {hasRef && (
-                <button
-                  type="button"
-                  onClick={handleDistributeFromRef41}
-                  className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
-                >
-                  Khớp 100% theo Bảng 4.1
-                </button>
-              )}
             </div>
-          )}
-          <label className="flex cursor-pointer items-center gap-1.5 text-2xs font-medium text-ink-2">
-            <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
-            Nhập theo Gross
-          </label>
-        </div>
-      </div>
-
-      {!effectiveReadOnly && isEmptyBreakdown && hasStep2Items && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs text-blue-950">
-          <span className="font-medium">
-            Bảng tuần đang trống — Nạp ngay số lượng &amp; ngân sách đã chia ở Bước 2 xuống các tuần:
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleDistributeFromStep2('EVEN')}
-              className="rounded-md bg-blue-600 px-2.5 py-1 text-2xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
-            >
-              Chia đều các tuần
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
-              className="rounded-md border border-blue-300 bg-white px-2.5 py-1 text-2xs font-semibold text-blue-800 hover:bg-blue-100 transition cursor-pointer"
-            >
-              Dồn trọng tâm W2–W3
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* KHỐI 4A: BẢNG PHÂN RÃ TUẦN CHO KOC TRẢ PHÍ (KL1–KL7), SUẤT FOC (0Đ) VÀ VIDEO SELF-CHANNEL */}
-      {visibleSections.length > 0 && (
-        <div className="space-y-2">
-          {/* Thanh tóm tắt hạn mức KL4+ nếu đang xem KOC Trả Phí */}
-          {(activeTab === 'ALL' || activeTab === 'CAST_KL') && ref41 && (ref41.kl4PlusTarget || 0) > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs text-indigo-950">
-              <span>
-                Chỉ tiêu chất lượng Cast trên Bảng 4.1 — <b>Số video KL4 trở lên (KL4–KL7)</b>:
-              </span>
-              <span className="font-semibold tabular-nums">
-                Đã phân rã: {fmt(kl4PlusPlanned)} / Bảng 4.1: {fmt(ref41.kl4PlusTarget || 0)} video (
-                {kl4PlusPlanned >= (ref41.kl4PlusTarget || 0) ? (
-                  <span className="text-emerald-700">Đạt chuẩn KL4+</span>
-                ) : (
-                  <span className="text-amber-700">
-                    Còn thiếu {fmt((ref41.kl4PlusTarget || 0) - kl4PlusPlanned)} video KL4+
-                  </span>
-                )}
-                )
-              </span>
-            </div>
-          )}
+        {/* KHỐI CHI TIẾT 1–3: KOC TRẢ PHÍ (KL1–KL7), SUẤT FOC (0Đ) VÀ VIDEO SELF-CHANNEL */}
+        {visibleSections.length > 0 && (
+          <div className="space-y-2">
+            {(activeTab === 'ALL' || activeTab === 'CAST_KL') && ref41 && (ref41.kl4PlusTarget || 0) > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs text-indigo-950">
+                <span>
+                  Chỉ tiêu chất lượng Cast trên Bảng 4.1 — <b>Số video KL4 trở lên (KL4–KL7)</b>:
+                </span>
+                <span className="font-semibold tabular-nums">
+                  Đã phân rã: {fmt(kl4PlusPlanned)} / Bảng 4.1: {fmt(ref41.kl4PlusTarget || 0)} video (
+                  {kl4PlusPlanned >= (ref41.kl4PlusTarget || 0) ? (
+                    <span className="text-emerald-700">Đạt chuẩn KL4+</span>
+                  ) : (
+                    <span className="text-amber-700">
+                      Còn thiếu {fmt((ref41.kl4PlusTarget || 0) - kl4PlusPlanned)} video KL4+
+                    </span>
+                  )}
+                  )
+                </span>
+              </div>
+            )}
 
-          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-            <table className="w-full min-w-[1150px] border-collapse text-xs">
-              <thead className="bg-surface text-ink-3">
-                <tr className="border-b border-line">
-                  <th className="sticky left-0 z-10 min-w-[180px] bg-surface px-3 py-2 text-left font-medium text-ink">
-                    Chỉ tiêu
-                  </th>
-                  {rows.map((r, wi) => weekHeader(r, wi))}
-                  <th colSpan={2} className="min-w-[165px] border-l border-line px-2 py-2 text-center font-medium text-ink">
-                    Tổng phân rã
-                  </th>
-                  {hasRef && (
-                    <th colSpan={2} className="min-w-[155px] border-l border-line px-2 py-2 text-center font-medium text-ink">
-                      Bảng 4.1
+            <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+              <table className="w-full min-w-[1150px] border-collapse text-xs">
+                <thead className="bg-surface text-ink-3">
+                  <tr className="border-b border-line">
+                    <th className="sticky left-0 z-10 min-w-[180px] bg-surface px-3 py-2 text-left font-medium text-ink">
+                      Chỉ tiêu chi tiết theo tuần
                     </th>
-                  )}
-                  {hasRef && (
-                    <th colSpan={2} className="min-w-[130px] border-l border-line px-2 py-2 text-center font-medium text-ink">
-                      Chênh
+                    {rows.map((r, wi) => weekHeader(r, wi))}
+                    <th colSpan={2} className="min-w-[165px] border-l border-line px-2 py-2 text-center font-medium text-ink">
+                      Tổng phân rã
                     </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {visibleSections.map(section => {
-                  const defs = ROWS.filter(r => r.section === section);
-                  const sub = subtotal(section);
-                  const refKeys = subtotalRefs[section] || {};
-                  const qtyRef = refKeys.qtyKey ? cmp(refKeys.qtyKey) : undefined;
-                  const budgetRef = refKeys.budgetKey ? cmp(refKeys.budgetKey) : undefined;
-                  const secQty = sub.reduce((s, x) => s + x.qty, 0);
-                  const secBudget = sub.reduce((s, x) => s + x.budget, 0);
-                  return (
-                    <React.Fragment key={section}>
-                      <tr className="bg-accent-soft/40">
-                        <td
-                          colSpan={2 + rows.length * 2 + (hasRef ? 4 : 0)}
-                          className="sticky left-0 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-2"
-                        >
-                          {section}
-                        </td>
-                      </tr>
-                      {defs.map(def => {
-                        flatIndex += 1;
-                        const r = flatIndex;
-                        const t = totalCell(def);
-                        const rowRefQty = getRowRef41Qty(def);
-                        return (
-                          <tr key={def.id} className="border-t border-line">
-                            <td className="sticky left-0 z-10 bg-surface px-3 py-1 text-ink-2">{def.label}</td>
-                            {rows.map((row, wi) => {
-                              const qty = readQty(row, def);
-                              const budget = readBudget(row, def);
-                              return (
-                                <React.Fragment key={row.week}>
-                                  <td className="border-l border-line px-1 py-1">
-                                    {def.hasQty ? renderInput(r, def, wi, 0) : <span className="block" />}
+                    {hasRef && (
+                      <th colSpan={2} className="min-w-[155px] border-l border-line px-2 py-2 text-center font-medium text-ink">
+                        Bảng 4.1
+                      </th>
+                    )}
+                    {hasRef && (
+                      <th colSpan={2} className="min-w-[130px] border-l border-line px-2 py-2 text-center font-medium text-ink">
+                        Chênh
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleSections.map(section => {
+                    const defs = ROWS.filter(r => r.section === section);
+                    const sub = subtotal(section);
+                    const refKeys = subtotalRefs[section] || {};
+                    const qtyRef = refKeys.qtyKey ? cmp(refKeys.qtyKey) : undefined;
+                    const budgetRef = refKeys.budgetKey ? cmp(refKeys.budgetKey) : undefined;
+                    const secQty = sub.reduce((s, x) => s + x.qty, 0);
+                    const secBudget = sub.reduce((s, x) => s + x.budget, 0);
+                    return (
+                      <React.Fragment key={section}>
+                        <tr className="bg-accent-soft/40">
+                          <td
+                            colSpan={2 + rows.length * 2 + (hasRef ? 4 : 0)}
+                            className="sticky left-0 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-2"
+                          >
+                            {section}
+                          </td>
+                        </tr>
+                        {defs.map(def => {
+                          flatIndex += 1;
+                          const r = flatIndex;
+                          const t = totalCell(def);
+                          const rowRefQty = getRowRef41Qty(def);
+                          return (
+                            <tr key={def.id} className="border-t border-line">
+                              <td className="sticky left-0 z-10 bg-surface px-3 py-1 text-ink-2">{def.label}</td>
+                              {rows.map((row, wi) => {
+                                const qty = readQty(row, def);
+                                const budget = readBudget(row, def);
+                                return (
+                                  <React.Fragment key={row.week}>
+                                    <td className="border-l border-line px-1 py-1">
+                                      {def.hasQty ? renderInput(r, def, wi, 0) : <span className="block" />}
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      {def.hasBudget ? (
+                                        <div>
+                                          {renderInput(r, def, wi, 1)}
+                                          {def.kind === 'tier' && qty > 0 && budget > 0 && (
+                                            <div className="pr-1 text-right text-2xs text-ink-3">{fmt(budget / qty)}đ/video</div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="block" />
+                                      )}
+                                    </td>
+                                  </React.Fragment>
+                                );
+                              })}
+                              <td className="border-l border-line px-2 py-1 text-right tabular-nums font-medium text-ink">
+                                {def.hasQty ? fmt(t.qty) : ''}
+                              </td>
+                              <td className="px-2 py-1 text-right tabular-nums text-ink">
+                                {def.hasBudget ? fmt(t.budget) : ''}
+                              </td>
+                              {hasRef && (
+                                <>
+                                  <td className="border-l border-line px-2 py-1 text-right tabular-nums text-ink-2">
+                                    {rowRefQty !== null ? fmt(rowRefQty) : ''}
                                   </td>
-                                  <td className="px-1 py-1">
-                                    {def.hasBudget ? (
-                                      <div>
-                                        {renderInput(r, def, wi, 1)}
-                                        {def.kind === 'tier' && qty > 0 && budget > 0 && (
-                                          <div className="pr-1 text-right text-2xs text-ink-3">{fmt(budget / qty)}đ/video</div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <span className="block" />
-                                    )}
+                                  <td className="px-2 py-1 text-right tabular-nums text-ink-3" />
+                                  <td className="border-l border-line px-2 py-1 text-right tabular-nums">
+                                    {renderInlineDiff(t.qty, rowRefQty)}
                                   </td>
-                                </React.Fragment>
-                              );
-                            })}
-                            <td className="border-l border-line px-2 py-1 text-right tabular-nums font-medium text-ink">
-                              {def.hasQty ? fmt(t.qty) : ''}
+                                  <td className="px-2 py-1 text-right tabular-nums" />
+                                </>
+                              )}
+                            </tr>
+                          );
+                        })}
+                        {defs.length > 1 ? (
+                          <tr className="border-t border-line bg-surface font-semibold">
+                            <td className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-ink">
+                              Cộng {section.toLowerCase()}
                             </td>
-                            <td className="px-2 py-1 text-right tabular-nums text-ink">
-                              {def.hasBudget ? fmt(t.budget) : ''}
+                            {sub.map((x, wi) => (
+                              <React.Fragment key={rows[wi].week}>
+                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
+                                  {x.qty ? fmt(x.qty) : ''}
+                                </td>
+                                <td className="px-2 py-1.5 text-right tabular-nums text-ink">
+                                  {x.budget ? fmt(x.budget) : ''}
+                                </td>
+                              </React.Fragment>
+                            ))}
+                            <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
+                              {fmt(secQty)}
+                            </td>
+                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
+                              {section === 'Suất FOC (0đ)' ? '' : fmt(secBudget)}
                             </td>
                             {hasRef && (
                               <>
-                                <td className="border-l border-line px-2 py-1 text-right tabular-nums text-ink-2">
-                                  {rowRefQty !== null ? fmt(rowRefQty) : ''}
+                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink-2">
+                                  {qtyRef ? fmt(qtyRef.reference) : ''}
                                 </td>
-                                <td className="px-2 py-1 text-right tabular-nums text-ink-3" />
-                                <td className="border-l border-line px-2 py-1 text-right tabular-nums">
-                                  {renderInlineDiff(t.qty, rowRefQty)}
+                                <td className="px-2 py-1.5 text-right tabular-nums text-ink-2">
+                                  {budgetRef ? fmt(budgetRef.reference) : ''}
                                 </td>
-                                <td className="px-2 py-1 text-right tabular-nums" />
+                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums">
+                                  {diffCell(refKeys.qtyKey)}
+                                </td>
+                                <td className="px-2 py-1.5 text-right tabular-nums">
+                                  {diffCell(refKeys.budgetKey)}
+                                </td>
                               </>
                             )}
                           </tr>
-                        );
-                      })}
-                      {defs.length > 1 ? (
-                        <tr className="border-t border-line bg-surface font-semibold">
-                          <td className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-ink">
-                            Cộng {section.toLowerCase()}
-                          </td>
-                          {sub.map((x, wi) => (
-                            <React.Fragment key={rows[wi].week}>
-                              <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
-                                {x.qty ? fmt(x.qty) : ''}
-                              </td>
-                              <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                                {x.budget ? fmt(x.budget) : ''}
-                              </td>
-                            </React.Fragment>
-                          ))}
-                          <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
-                            {fmt(secQty)}
-                          </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                            {section === 'Suất FOC (0đ)' ? '' : fmt(secBudget)}
-                          </td>
-                          {hasRef && (
-                            <>
-                              <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink-2">
-                                {qtyRef ? fmt(qtyRef.reference) : ''}
-                              </td>
-                              <td className="px-2 py-1.5 text-right tabular-nums text-ink-2">
-                                {budgetRef ? fmt(budgetRef.reference) : ''}
-                              </td>
-                              <td className="border-l border-line px-2 py-1.5 text-right tabular-nums">
-                                {diffCell(refKeys.qtyKey)}
-                              </td>
-                              <td className="px-2 py-1.5 text-right tabular-nums">
-                                {diffCell(refKeys.budgetKey)}
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      ) : null}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* KHỐI 4B: KHỐI ĐA SÀN (CHIA RIÊNG TỪNG KHỐI SÀN: SHOPEE · THREADS · FACEBOOK · INSTAGRAM) */}
-      {(activeTab === 'ALL' || activeTab === 'MULTI_PLATFORM') && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2">
-            <div className="flex items-center gap-2">
-              <Share2 className="h-4 w-4 text-slate-700" />
-              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
-                Khối Đa Sàn — Tách riêng từng nền tảng (Shopee · Threads · Facebook · Instagram)
-              </h4>
+                        ) : null}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs tabular-nums">
-              {ref41 && (ref41.tiktokReup || 0) > 0 && (
-                <span className="rounded-md bg-slate-200/80 px-2 py-0.5 font-semibold text-slate-800">
-                  Hạn mức Video Reup TikTok (Bảng 4.1): {fmt(ref41.tiktokReup || 0)} video
+          </div>
+        )}
+
+        {/* KHỐI CHI TIẾT 4: KHỐI ĐA SÀN (CHIA RIÊNG 4 KHỐI SÀN: SHOPEE · THREADS · FACEBOOK · INSTAGRAM) */}
+        {(activeTab === 'ALL' || activeTab === 'MULTI_PLATFORM') && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2">
+              <div className="flex items-center gap-2">
+                <Share2 className="h-4 w-4 text-slate-700" />
+                <h4 className="text-xs font-bold uppercase tracking-wide text-slate-800">
+                  Chi tiết Khối Đa Sàn — Tách riêng 4 nền tảng (Shopee · Threads · Facebook · Instagram)
+                </h4>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs tabular-nums">
+                {ref41 && (ref41.tiktokReup || 0) > 0 && (
+                  <span className="rounded-md bg-slate-200/80 px-2 py-0.5 font-semibold text-slate-800">
+                    Hạn mức Video Reup TikTok (Bảng 4.1): {fmt(ref41.tiktokReup || 0)} video
+                  </span>
+                )}
+                <span className="text-slate-600">
+                  Tổng Đa sàn đã chia: <b>{fmt(totals.multiTotalAffQty)}</b> Video Affiliate ·{' '}
+                  <b>{fmt(totals.multiTotalReupQty)}</b> Video Reup · Ngân sách Net:{' '}
+                  <b>{fmt(totals.multiTotalBudget)}đ</b>
                 </span>
-              )}
-              <span className="text-slate-600">
-                Tổng Đa sàn đã chia: <b>{fmt(totals.multiTotalAffQty)}</b> Video Affiliate ·{' '}
-                <b>{fmt(totals.multiTotalReupQty)}</b> Video Reup · Ngân sách Net:{' '}
-                <b>{fmt(totals.multiTotalBudget)}đ</b>
-              </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+              {MULTI_PLATFORMS.map(mp => {
+                const pTot = totals.multiPlatform[mp.key];
+                const pRef = ref41?.multiPlatform?.[mp.key];
+                const refAff = pRef?.affQty || 0;
+                const refReup = pRef?.reupQty || 0;
+                const refNet = pRef?.costNet || 0;
+
+                return (
+                  <div
+                    key={mp.key}
+                    className={`rounded-xl border ${mp.borderClass} bg-white shadow-xs overflow-hidden`}
+                  >
+                    <div className={`flex flex-wrap items-center justify-between gap-2 border-b ${mp.borderClass} ${mp.headerBg} px-3.5 py-2`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${mp.badgeClass}`}>
+                          {mp.shortLabel}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-800">{mp.label}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
+                        <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
+                          Affiliate: <b>{fmt(pTot.affQty)}</b>
+                          {hasRef ? ` / ${fmt(refAff)}` : ''}
+                        </span>
+                        <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
+                          Reup: <b>{fmt(pTot.reupQty)}</b>
+                          {hasRef ? ` / ${fmt(refReup)}` : ''}
+                        </span>
+                        <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
+                          Ngân sách Net: <b>{fmt(pTot.budgetNet)}đ</b>
+                          {hasRef ? ` / ${fmt(refNet)}đ` : ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50/50 text-2xs text-slate-500">
+                            <th className="px-3 py-1.5 text-left font-semibold text-slate-700 min-w-[130px]">
+                              Chỉ tiêu {mp.shortLabel}
+                            </th>
+                            {rows.map(r => (
+                              <th key={r.week} className="border-l border-slate-100 px-2 py-1.5 text-center font-semibold text-slate-700 min-w-[76px]">
+                                {shortWeek(r.week)}
+                              </th>
+                            ))}
+                            <th className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold text-slate-800 min-w-[78px]">
+                              Tổng
+                            </th>
+                            {hasRef && (
+                              <th className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold text-slate-600 min-w-[78px]">
+                                Bảng 4.1
+                              </th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-slate-100">
+                            <td className="px-3 py-1.5 font-medium text-slate-700">Số video Affiliate</td>
+                            {rows.map((r, wi) => {
+                              const v = r.multiPlatform?.[mp.key]?.affQty || 0;
+                              return (
+                                <td key={r.week} className="border-l border-slate-100 p-1">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    disabled={effectiveReadOnly}
+                                    value={v ? fmt(v) : ''}
+                                    placeholder="0"
+                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'affQty', parseNumber(e.target.value))}
+                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
+                                  />
+                                </td>
+                              );
+                            })}
+                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {fmt(pTot.affQty)}
+                            </td>
+                            {hasRef && (
+                              <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
+                                {fmt(refAff)}
+                              </td>
+                            )}
+                          </tr>
+
+                          <tr className="border-b border-slate-100">
+                            <td className="px-3 py-1.5 font-medium text-slate-700">
+                              Ngân sách ({grossMode ? 'Gross' : 'Net'})
+                            </td>
+                            {rows.map((r, wi) => {
+                              const netVal = r.multiPlatform?.[mp.key]?.budgetNet || 0;
+                              const shown = grossMode ? grossFromNet(netVal) : netVal;
+                              return (
+                                <td key={r.week} className="border-l border-slate-100 p-1">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    disabled={effectiveReadOnly}
+                                    value={shown ? fmt(shown) : ''}
+                                    placeholder="0"
+                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'budgetNet', parseNumber(e.target.value))}
+                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
+                                  />
+                                </td>
+                              );
+                            })}
+                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {fmt(pTot.budgetNet)}
+                            </td>
+                            {hasRef && (
+                              <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
+                                {fmt(refNet)}
+                              </td>
+                            )}
+                          </tr>
+
+                          <tr>
+                            <td className="px-3 py-1.5 font-medium text-slate-700">Số video Reup (0đ)</td>
+                            {rows.map((r, wi) => {
+                              const v = r.multiPlatform?.[mp.key]?.reupQty || 0;
+                              return (
+                                <td key={r.week} className="border-l border-slate-100 p-1">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    disabled={effectiveReadOnly}
+                                    value={v ? fmt(v) : ''}
+                                    placeholder="0"
+                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'reupQty', parseNumber(e.target.value))}
+                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
+                                  />
+                                </td>
+                              );
+                            })}
+                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {fmt(pTot.reupQty)}
+                            </td>
+                            {hasRef && (
+                              <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
+                                {fmt(refReup)}
+                              </td>
+                            )}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        )}
 
+        {/* KHỐI CHI TIẾT 5: LIVESTREAM (AFFILIATE VS KÊNH BRAND INHOUSE 3H / CTV 2H) */}
+        {(activeTab === 'ALL' || activeTab === 'LIVE_GMV') && (
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-            {MULTI_PLATFORMS.map(mp => {
-              const pTot = totals.multiPlatform[mp.key];
-              const pRef = ref41?.multiPlatform?.[mp.key];
-              const refAff = pRef?.affQty || 0;
-              const refReup = pRef?.reupQty || 0;
-              const refNet = pRef?.costNet || 0;
-
-              return (
-                <div
-                  key={mp.key}
-                  className={`rounded-xl border ${mp.borderClass} bg-white shadow-xs overflow-hidden`}
-                >
-                  <div className={`flex flex-wrap items-center justify-between gap-2 border-b ${mp.borderClass} ${mp.headerBg} px-3.5 py-2`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${mp.badgeClass}`}>
-                        {mp.shortLabel}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-800">{mp.label}</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
-                      <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
-                        Affiliate: <b>{fmt(pTot.affQty)}</b>
-                        {hasRef ? ` / ${fmt(refAff)}` : ''}
-                      </span>
-                      <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
-                        Reup: <b>{fmt(pTot.reupQty)}</b>
-                        {hasRef ? ` / ${fmt(refReup)}` : ''}
-                      </span>
-                      <span className="rounded bg-white/90 px-2 py-0.5 font-medium text-slate-700 border border-slate-200/70">
-                        Ngân sách Net: <b>{fmt(pTot.budgetNet)}đ</b>
-                        {hasRef ? ` / ${fmt(refNet)}đ` : ''}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-100 bg-slate-50/50 text-2xs text-slate-500">
-                          <th className="px-3 py-1.5 text-left font-semibold text-slate-700 min-w-[130px]">
-                            Chỉ tiêu {mp.shortLabel}
-                          </th>
-                          {rows.map(r => (
-                            <th key={r.week} className="border-l border-slate-100 px-2 py-1.5 text-center font-semibold text-slate-700 min-w-[76px]">
-                              {shortWeek(r.week)}
-                            </th>
-                          ))}
-                          <th className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold text-slate-800 min-w-[78px]">
-                            Tổng
-                          </th>
-                          {hasRef && (
-                            <th className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold text-slate-600 min-w-[78px]">
-                              Bảng 4.1
-                            </th>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Dòng 1: Số video Affiliate */}
-                        <tr className="border-b border-slate-100">
-                          <td className="px-3 py-1.5 font-medium text-slate-700">Số video Affiliate</td>
-                          {rows.map((r, wi) => {
-                            const v = r.multiPlatform?.[mp.key]?.affQty || 0;
-                            return (
-                              <td key={r.week} className="border-l border-slate-100 p-1">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  disabled={effectiveReadOnly}
-                                  value={v ? fmt(v) : ''}
-                                  placeholder="0"
-                                  onChange={e => setMultiPlatformCell(wi, mp.key, 'affQty', parseNumber(e.target.value))}
-                                  className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                />
-                              </td>
-                            );
-                          })}
-                          <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                            {fmt(pTot.affQty)}
-                          </td>
-                          {hasRef && (
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                              {fmt(refAff)}
-                            </td>
-                          )}
-                        </tr>
-
-                        {/* Dòng 2: Ngân sách Affiliate Net */}
-                        <tr className="border-b border-slate-100">
-                          <td className="px-3 py-1.5 font-medium text-slate-700">
-                            Ngân sách ({grossMode ? 'Gross' : 'Net'})
-                          </td>
-                          {rows.map((r, wi) => {
-                            const netVal = r.multiPlatform?.[mp.key]?.budgetNet || 0;
-                            const shown = grossMode ? grossFromNet(netVal) : netVal;
-                            return (
-                              <td key={r.week} className="border-l border-slate-100 p-1">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  disabled={effectiveReadOnly}
-                                  value={shown ? fmt(shown) : ''}
-                                  placeholder="0"
-                                  onChange={e => setMultiPlatformCell(wi, mp.key, 'budgetNet', parseNumber(e.target.value))}
-                                  className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                />
-                              </td>
-                            );
-                          })}
-                          <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                            {fmt(pTot.budgetNet)}
-                          </td>
-                          {hasRef && (
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                              {fmt(refNet)}
-                            </td>
-                          )}
-                        </tr>
-
-                        {/* Dòng 3: Số video Reup */}
-                        <tr>
-                          <td className="px-3 py-1.5 font-medium text-slate-700">Số video Reup (0đ)</td>
-                          {rows.map((r, wi) => {
-                            const v = r.multiPlatform?.[mp.key]?.reupQty || 0;
-                            return (
-                              <td key={r.week} className="border-l border-slate-100 p-1">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  disabled={effectiveReadOnly}
-                                  value={v ? fmt(v) : ''}
-                                  placeholder="0"
-                                  onChange={e => setMultiPlatformCell(wi, mp.key, 'reupQty', parseNumber(e.target.value))}
-                                  className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                />
-                              </td>
-                            );
-                          })}
-                          <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                            {fmt(pTot.reupQty)}
-                          </td>
-                          {hasRef && (
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                              {fmt(refReup)}
-                            </td>
-                          )}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* KHỐI 4C: KHỐI LIVESTREAM (AFFILIATE VS KÊNH BRAND INHOUSE 3H / CTV 2H) & CHỈ TIÊU GMV */}
-      {(activeTab === 'ALL' || activeTab === 'LIVE_GMV') && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-            {/* Thẻ 1: Livestream Affiliate (Ngoại sàn) */}
+            {/* Thẻ 1: Livestream Affiliate */}
             <div className="rounded-xl border border-rose-200 bg-white shadow-xs overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-200 bg-rose-50/70 px-3.5 py-2">
                 <div className="flex items-center gap-2">
@@ -1357,13 +1605,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             </div>
 
-            {/* Thẻ 2: Livestream Kênh Brand (Self-channel: Inhouse 3h / CTV ngoài 2h / Brand 2h) */}
+            {/* Thẻ 2: Livestream Kênh Brand (Inhouse 3h / CTV 2h) */}
             <div className="rounded-xl border border-teal-200 bg-white shadow-xs overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-teal-200 bg-teal-50/70 px-3.5 py-2">
                 <div className="flex items-center gap-2">
                   <Radio className="h-4 w-4 text-teal-700" />
                   <span className="text-xs font-bold uppercase tracking-wide text-teal-950">
-                    Livestream Kênh Brand (Inhouse 3h · CTV 2h · Brand 2h)
+                    Livestream Kênh Brand (Inhouse 3h · CTV 2h)
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-2xs tabular-nums">
@@ -1494,59 +1742,8 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Thẻ 3: Chỉ tiêu GMV Mục tiêu (Bảng 4.1) & Đối sánh GMV 30 ngày (Bảng 4.1.1) */}
-          {ref41?.gmvTargets && (
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
-              <div className="mb-2.5 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wide text-slate-800">
-                  Chỉ tiêu Doanh thu GMV / NMV (Bảng 4.1) &amp; Đà tăng trưởng GMV 30 ngày (Bảng 4.1.1)
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                  <div className="text-2xs text-slate-500">(Plan) NMV toàn gian</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-slate-900">
-                    {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                  <div className="text-2xs text-slate-500">(Plan) GMV Video Affiliate</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-emerald-800">
-                    {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                  <div className="text-2xs text-slate-500">(Plan) GMV Video Self-channel</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-indigo-800">
-                    {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2">
-                  <div className="text-2xs text-slate-500">Doanh thu Live Self (Inhouse + CTV)</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-teal-800">
-                    {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
-                      ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
-                      : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2">
-                  <div className="text-2xs text-amber-800">(Last month) GMV 30 ngày</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-amber-950">
-                    {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2">
-                  <div className="text-2xs text-emerald-800">(This month) GMV 30 ngày</div>
-                  <div className="mt-0.5 text-xs font-bold tabular-nums text-emerald-950">
-                    {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {(errors.length > 0 || warnings.length > 0) && (
         <div className="space-y-2 rounded-lg border border-line bg-surface px-4 py-3 text-xs">
