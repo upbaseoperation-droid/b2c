@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
     const minFollowers = searchParams.get('minFollowers') ? Number(searchParams.get('minFollowers')) : undefined;
     const maxFollowers = searchParams.get('maxFollowers') ? Number(searchParams.get('maxFollowers')) : undefined;
     const minGmv = searchParams.get('minGmv') ? Number(searchParams.get('minGmv')) : undefined;
-    const sortBy = (searchParams.get('sortBy') as any) || 'gmv';
+    const rawSortBy = searchParams.get('sortBy');
+    const sortBy: KalodataDiscoverFilter['sortBy'] =
+      rawSortBy === 'gmv' || rawSortBy === 'followers' || rawSortBy === 'itemsSold' || rawSortBy === 'gpm'
+        ? rawSortBy
+        : 'gmv';
     const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
     const pageSize = searchParams.get('pageSize') ? Number(searchParams.get('pageSize')) : 20;
 
@@ -47,12 +51,12 @@ export async function GET(request: NextRequest) {
       page,
       pageSize
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
         message: 'Lỗi trong quá trình tìm kiếm danh sách Creator từ Kalodata',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

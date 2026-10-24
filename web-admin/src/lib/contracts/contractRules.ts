@@ -9,7 +9,7 @@
  */
 
 import type { BookingDealItem, KocItem } from '../types';
-import type { ContractCategory, ContractField, LegalTemplate } from './types';
+import type { LegalTemplate } from './types';
 import { legalTypeOf, type LegalType } from '../../components/koc/kocUtils';
 
 export type SubjectKind = 'IND' | 'HKD' | 'COM' | 'CTV';
@@ -136,17 +136,18 @@ export function numberToVietnameseWords(amount: number): string {
 
 /** Nhận diện chủ thể hợp đồng: IND (Cá nhân), HKD (Hộ kinh doanh), COM (Công ty), CTV (Cộng tác viên) */
 export function detectSubjectKind(koc?: KocItem, deal?: BookingDealItem): SubjectKind {
+  const extendedKoc = koc as (KocItem & { partnerType?: string; legalType?: LegalType }) | undefined;
   // 1. Kiểm tra đối tượng CTV
   const isCtv =
-    (koc as any)?.partnerType === 'CTV' ||
+    extendedKoc?.partnerType === 'CTV' ||
     (koc?.kocCategory && /CTV|Cộng tác viên/i.test(koc.kocCategory)) ||
     (deal?.bookingFormat && /CTV/i.test(deal.bookingFormat)) ||
     (koc?.niche && /CTV/i.test(koc.niche));
   if (isCtv) return 'CTV';
 
   if (!koc) return 'IND';
-  if ((koc as any)?.legalType === 'COMPANY' || koc.ocrDocumentType === 'BUSINESS_LICENSE') return 'COM';
-  if ((koc as any)?.legalType === 'HOUSEHOLD' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HKD';
+  if (extendedKoc?.legalType === 'COMPANY' || koc.ocrDocumentType === 'BUSINESS_LICENSE') return 'COM';
+  if (extendedKoc?.legalType === 'HOUSEHOLD' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD') return 'HKD';
   const type: LegalType = legalTypeOf(koc);
   if (type === 'COMPANY') return 'COM';
   if (type === 'HOUSEHOLD') return 'HKD';
@@ -232,7 +233,7 @@ export function evaluateContractRules({
 
   // 2. BR-01: Ngưỡng 50M
   const isHighValueKoc = effectiveTotal >= 50000000;
-  let templateCompliance = {
+  const templateCompliance = {
     useKolTemplateAllowed: isHighValueKoc,
     requiresUpbaseExceptionApproval: false,
     note: isHighValueKoc

@@ -88,13 +88,14 @@ export async function parseAdsExcelFile(
   kocsMaster: KocMasterItem[] = [],
   deals: BookingDealItem[] = []
 ): Promise<AdsReportParseResult> {
+  void deals;
   const workbook = new ExcelJS.Workbook();
 
   if (typeof filePathOrBuffer === 'string') {
     await workbook.xlsx.readFile(filePathOrBuffer);
   } else {
     // Buffer
-    await workbook.xlsx.load(filePathOrBuffer as any);
+    await workbook.xlsx.load(filePathOrBuffer as unknown as ExcelJS.Buffer);
   }
 
   // Map KOC master để tra cứu nhanh
@@ -106,7 +107,7 @@ export async function parseAdsExcelFile(
   });
 
   // Tìm sheet chính
-  let worksheet = workbook.getWorksheet('Data') || workbook.getWorksheet('Sheet1') || workbook.getWorksheet(1);
+  const worksheet = workbook.getWorksheet('Data') || workbook.getWorksheet('Sheet1') || workbook.getWorksheet(1);
   if (!worksheet) {
     throw new Error('Không tìm thấy sheet dữ liệu trong file Excel báo cáo Ads.');
   }
@@ -130,8 +131,6 @@ export async function parseAdsExcelFile(
   let totalCost = 0;
   let totalGmv = 0;
   let totalOrders = 0;
-  let totalImpressions = 0;
-  let totalClicks = 0;
 
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Bỏ qua header
@@ -206,8 +205,6 @@ export async function parseAdsExcelFile(
     totalCost += cost;
     totalGmv += gmv;
     totalOrders += orders;
-    totalImpressions += impressions;
-    totalClicks += clicks;
 
     // Authorization summary
     const cleanAuth = authType === '-' || !authType ? 'N/A' : authType;

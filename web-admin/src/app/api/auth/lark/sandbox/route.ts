@@ -162,9 +162,9 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Lỗi đăng nhập' },
+      { success: false, error: error instanceof Error ? error.message : 'Lỗi đăng nhập' },
       { status: 500 }
     );
   }

@@ -734,6 +734,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
                 {(executiveSearchQuery || executivePlanStatusFilter !== 'ALL' || executivePicFilter !== 'ALL') && (
                   <button
+                    type="button"
                     onClick={() => {
                       setExecutiveSearchQuery('');
                       setExecutivePlanStatusFilter('ALL');

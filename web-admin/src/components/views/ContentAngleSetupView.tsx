@@ -571,6 +571,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           {/* View Mode Switcher */}
           <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs max-w-full overflow-x-auto">
             <button
+              type="button"
               onClick={() => setViewMode('CARDS')}
               title="Xem dạng thẻ kịch bản"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
@@ -581,6 +582,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <span className="hidden sm:inline">Thẻ brief</span>
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('MATRIX')}
               title="Xem ma trận phủ sản phẩm x trụ cột"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
@@ -591,6 +593,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <span className="hidden sm:inline">Ma trận phủ SP</span>
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('TABLE')}
               title="Xem dạng bảng chi tiết"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
@@ -623,6 +626,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Không tìm thấy góc kịch bản nào</h3>
               <button
+                type="button"
                 onClick={() => handleOpenCreateModal()}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition"
               >
@@ -691,6 +695,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                           Mở đầu 3 giây
                         </span>
                         <button
+                          type="button"
                           onClick={() => handleCopyHook(angle.hookIdea, angle.id)}
                           className="hover:text-ink flex items-center gap-1 cursor-pointer bg-white/80 px-1.5 py-0.5 rounded border border-line"
                           title="Sao chép câu mở đầu này"
@@ -755,6 +760,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                       <div className="flex items-center gap-1">
                         {onSelectAngleForBooking && (
                           <button
+                            type="button"
                             onClick={() => onSelectAngleForBooking(angle)}
                             className="px-2 py-1 rounded bg-primary text-white font-semibold hover:bg-primary-hover transition"
                             title="Chọn góc này cho booking deal"
@@ -763,6 +769,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                           </button>
                         )}
                         <button
+                          type="button"
                           onClick={() => handleOpenEditModal(angle)}
                           className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
                           title="Sửa góc kịch bản"
@@ -770,6 +777,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteAngle(angle.id, angle.name)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
                           title="Xóa góc kịch bản"
@@ -864,6 +872,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                                 </div>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() => handleOpenCreateModal(product, pillar)}
                                   className="px-2.5 py-1 rounded-lg bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-2xs font-semibold border border-amber-200/80 transition flex items-center justify-center gap-1 mx-auto"
                                   title={`Thêm góc kịch bản ${pillar.name} cho sản phẩm này`}
@@ -953,12 +962,14 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     <td className="p-3.5 pr-6 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          type="button"
                           onClick={() => handleOpenEditModal(angle)}
                           className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteAngle(angle.id, angle.name)}
                           className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                         >

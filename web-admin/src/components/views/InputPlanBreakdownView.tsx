@@ -326,7 +326,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             totalTargetContents: planState.totalTargetContents,
             targetGmv: planState.targetGmv,
             coreMetricsLayer1: planState.coreMetricsLayer1,
-            items: JSON.parse(JSON.stringify(planState.items || [])),
+            items: structuredClone(planState.items || []),
           }
         : s
     );
@@ -335,7 +335,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       planState.totalTargetBudget > 0 ? snap.totalTargetBudget / planState.totalTargetBudget : 1;
     const restoredItems =
       snap.items && snap.items.length > 0
-        ? JSON.parse(JSON.stringify(snap.items))
+        ? structuredClone(snap.items)
         : (planState.items || []).map(item => {
             const nextQty = Math.max(0, Math.round(item.qty * budgetRatio));
             const nextBudget = Math.round(item.totalBudget * budgetRatio);

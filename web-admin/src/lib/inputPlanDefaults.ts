@@ -1,4 +1,4 @@
-import { InputPlanRowItem, InputPlanBreakdownState, SalaryGrade } from './types';
+import { InputPlanRowItem, InputPlanBreakdownState } from './types';
 
 export const BENCHMARK_COSTS: Record<string, number> = {
   'TAP UpAffiliate': 0,
@@ -529,7 +529,7 @@ export function autoBalancePlanItems(
   }
 
   // Calculate target quantities
-  let calculated = items.map(item => {
+  const calculated = items.map(item => {
     const key = item.category === 'PLATFORM_FORMAT' && item.tierCode === 'Reup'
       ? `${item.platform}_Reup`
       : item.category === 'PLATFORM_FORMAT' && item.tierCode === 'Affiliate'
@@ -551,7 +551,7 @@ export function autoBalancePlanItems(
   });
 
   // Adjust sum of qty to match totalContents exactly
-  let currentTotalQty = calculated.reduce((sum, r) => sum + r.qty, 0);
+  const currentTotalQty = calculated.reduce((sum, r) => sum + r.qty, 0);
   const diffQty = totalContents - currentTotalQty;
   if (diffQty !== 0) {
     // Add or subtract from KL1 / KL2 (the most flexible buffer)

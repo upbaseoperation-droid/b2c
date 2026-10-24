@@ -205,10 +205,13 @@ export function usePlanChat({
   // ---------- Đổi kế hoạch: đặt lại trạng thái ----------
   useEffect(() => {
     cursorRef.current = null;
-    setMessages(mergeMessages([], initialMessages ?? []));
-    setTypingMap({});
-    setOnlineUsers([]);
-    setError(null);
+    const initMsgs = initialMessages ?? [];
+    queueMicrotask(() => {
+      setMessages(mergeMessages([], initMsgs));
+      setTypingMap({});
+      setOnlineUsers([]);
+      setError(null);
+    });
     if (planId) void fetchMessages();
     // initialMessages chỉ dùng làm dữ liệu ban đầu khi đổi kế hoạch
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,19 +220,29 @@ export function usePlanChat({
   // Kế hoạch được tải lại (tin hệ thống mới đi kèm payload) -> gộp thêm, không trùng
   const initialKey = useMemo(() => (initialMessages ?? []).map(m => m.id).join('|'), [initialMessages]);
   useEffect(() => {
-    if (initialMessages?.length) setMessages(prev => mergeMessages(prev, initialMessages));
+    if (initialMessages?.length) {
+      const incoming = initialMessages;
+      queueMicrotask(() => {
+        setMessages(prev => mergeMessages(prev, incoming));
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKey]);
 
   // ---------- Mốc đã đọc ----------
   useEffect(() => {
     if (!readKey) {
-      setLastReadAt(null);
+      queueMicrotask(() => {
+        setLastReadAt(null);
+      });
       return;
     }
     const stored = readStorage(readKey);
     const parsed = stored ? Date.parse(stored) : NaN;
-    setLastReadAt(Number.isNaN(parsed) ? null : parsed);
+    const nextReadAt = Number.isNaN(parsed) ? null : parsed;
+    queueMicrotask(() => {
+      setLastReadAt(nextReadAt);
+    });
   }, [readKey]);
 
   // Lần đầu (chưa có mốc): coi tin hiện có là đã đọc để không báo số lớn với dữ liệu cũ
@@ -238,7 +251,9 @@ export function usePlanChat({
     if (readStorage(readKey)) return;
     const latest = Math.max(...messages.map(timeOf));
     writeStorage(readKey, new Date(latest).toISOString());
-    setLastReadAt(latest);
+    queueMicrotask(() => {
+      setLastReadAt(latest);
+    });
   }, [readKey, lastReadAt, messages]);
 
   const markRead = useCallback(() => {

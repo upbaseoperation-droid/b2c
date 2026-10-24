@@ -954,15 +954,15 @@ export async function fetchLiveTikTokVideoMetadata(rawUrl: string): Promise<{
             }
           }
 
+          const anchorInfo = extractTikTokShopAnchorInfo(itemStruct);
+          const { hasCartAnchor, diagnosis } = anchorInfo;
           let {
-            hasCartAnchor,
             cartAnchorTitle,
             cartAnchorUrl,
             cartProductId,
             cartSellerId,
             cartProducts,
-            diagnosis,
-          } = extractTikTokShopAnchorInfo(itemStruct);
+          } = anchorInfo;
 
           const authorHandleClean = String(author.uniqueId || urlHandle || oembedAuthorHandle || '').toLowerCase().replace(/^@+/, '');
           const authorSecUid = typeof author.secUid === 'string' && author.secUid.trim() ? author.secUid.trim() : undefined;

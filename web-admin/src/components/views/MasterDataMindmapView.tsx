@@ -858,13 +858,13 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <span className="text-ink-3 flex items-center gap-1">
                       <Store className="w-3 h-3 text-accent" /> {stores.length} Shops
                     </span>
-                    <button className="text-accent hover:text-accent font-semibold flex items-center gap-0.5">
+                    <span className="text-accent hover:text-accent font-semibold flex items-center gap-0.5">
                       {expandedNodes.has('root') ? (
                         <><span>Thu gọn</span> <ChevronDown className="w-3.5 h-3.5" /></>
                       ) : (
                         <><span>Xổ ra</span> <ChevronRight className="w-3.5 h-3.5" /></>
                       )}
-                    </button>
+                    </span>
                   </div>
                 </div>
               </div>

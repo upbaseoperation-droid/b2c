@@ -644,7 +644,15 @@ async function verifyLiveSocialCandidate(
         if (!res.ok) {
           return cand.sourceLabel.includes('danh bạ') ? cand : null;
         }
-        const json: any = await res.json();
+        const json = (await res.json()) as {
+          error?: number;
+          data?: {
+            name?: string;
+            follower_count?: number;
+            item_count?: number;
+            description?: string;
+          };
+        };
         if (json?.error !== 0 || !json?.data) {
           return null;
         }
@@ -1117,10 +1125,22 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
             break;
           }
 
-          const data: any = await res.json();
+          const data = (await res.json()) as {
+            candidates?: Array<{
+              content?: { parts?: Array<{ text?: string }> };
+              groundingMetadata?: {
+                groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
+              };
+            }>;
+            usageMetadata?: {
+              promptTokenCount?: number;
+              candidatesTokenCount?: number;
+              totalTokenCount?: number;
+            };
+          };
           const replyText =
             data?.candidates?.[0]?.content?.parts
-              ?.map((p: any) => p?.text || '')
+              ?.map((p) => p?.text || '')
               .join('\n') || '';
 
           const groundingUrls: string[] = [];
@@ -1199,7 +1219,14 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
         signal: AbortSignal.timeout(8000),
       });
       if (res.ok) {
-        const data: any = await res.json();
+        const data = (await res.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+          usage?: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+            total_tokens?: number;
+          };
+        };
         const replyText = data?.choices?.[0]?.message?.content || '';
         const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
         const promptTokens =
@@ -1259,7 +1286,13 @@ Nếu nền tảng nào không có thông tin đáng tin cậy thì để mảng
         signal: AbortSignal.timeout(8000),
       });
       if (res.ok) {
-        const data: any = await res.json();
+        const data = (await res.json()) as {
+          content?: Array<{ text?: string }>;
+          usage?: {
+            input_tokens?: number;
+            output_tokens?: number;
+          };
+        };
         const replyText = data?.content?.[0]?.text || '';
         const parsed = parseJsonCandidatesFromLlmReply(replyText, `Mô hình ${modelId}`);
         const promptTokens =

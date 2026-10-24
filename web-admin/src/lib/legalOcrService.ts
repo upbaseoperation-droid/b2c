@@ -34,7 +34,7 @@ function getTesseractOptions() {
   };
 }
 
-let cachedWorker: any = null;
+let cachedWorker: Awaited<ReturnType<typeof createWorker>> | null = null;
 
 async function getOrInitWorker() {
   if (cachedWorker) return cachedWorker;
@@ -82,9 +82,10 @@ export async function processLegalOcr(params: {
   // 2. Chạy Tesseract OCR Engine trực tiếp trên máy chủ nội bộ (100% Offline)
   try {
     return await extractWithTesseract(imageBase64, fileName, documentTypeHint);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Tesseract Local OCR Execution Error]:', error);
-    throw new Error(`Lỗi nhận diện Tesseract OCR: ${error.message || 'Không thể đọc được ảnh'}`);
+    const errMsg = error instanceof Error ? error.message : 'Không thể đọc được ảnh';
+    throw new Error(`Lỗi nhận diện Tesseract OCR: ${errMsg}`);
   }
 }
 
@@ -113,13 +114,13 @@ async function extractWithTesseract(
   try {
     const result = await Promise.race([worker.recognize(imageBuffer), timeoutPromise]);
     data = result.data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Nếu gặp lỗi worker, reset cached worker để yêu cầu sau tạo lại sạch
     try {
       if (cachedWorker) {
         await cachedWorker.terminate();
       }
-    } catch (_) {}
+    } catch {}
     cachedWorker = null;
     throw err;
   }

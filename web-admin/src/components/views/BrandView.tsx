@@ -497,6 +497,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
         {onNavigateToCtvHub && (
           <button
+            type="button"
             onClick={onNavigateToCtvHub}
             className="px-3.5 py-2 text-xs font-semibold rounded-md transition flex items-center gap-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shrink-0"
             title="Mở danh sách cộng tác viên sản xuất video kênh tự xây"
@@ -1025,6 +1026,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 .map((g) => (
                   <button
                     key={g.id}
+                    type="button"
                     onClick={() => setSelectedBrandName(g.brandName)}
                     className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 shrink-0 ${
                       selectedBrandName === g.brandName
@@ -1068,6 +1070,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
                 {onNavigateToBrandKnowledge && (
                   <button
+                    type="button"
                     onClick={() => onNavigateToBrandKnowledge(currentGuideline.brandName)}
                     className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded border border-slate-300 shadow-2xs flex items-center gap-1.5 transition"
                   >
@@ -1076,6 +1079,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setIsAddKeywordModalOpen(true)}
                   className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"
                 >
@@ -1151,6 +1155,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   {(['ALL', 'CRITICAL_BANNED', 'COMPETITOR_WARNING', 'SENSITIVE_POLICY'] as const).map(sev => (
                     <button
                       key={sev}
+                      type="button"
                       onClick={() => setSeverityFilter(sev)}
                       className={`px-2 py-0.5 rounded text-2xs font-medium transition-colors ${
                         severityFilter === sev
@@ -1230,6 +1235,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                                 {kw.alternativeSuggestion}
                               </span>
                               <button
+                                type="button"
                                 onClick={() => handleCopySuggestion(kw.id, kw.alternativeSuggestion!)}
                                 title="Sao chép từ thay thế"
                                 className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-800 transition"
@@ -1247,6 +1253,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         </td>
                         <td className="py-3 px-3 text-right">
                           <button
+                            type="button"
                             onClick={() => handleDeleteKeyword(currentGuideline.id, kw.id)}
                             className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition"
                             title="Xóa từ khóa khỏi danh sách"
@@ -1369,6 +1376,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={() => setApprovalSubTab('ROUND_1_KOC')}
                 className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 ${
                   approvalSubTab === 'ROUND_1_KOC'
@@ -1386,6 +1394,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => setApprovalSubTab('ROUND_2_SCRIPT')}
                 className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 ${
                   approvalSubTab === 'ROUND_2_SCRIPT'
@@ -1503,6 +1512,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             {item.status === 'PENDING' ? (
                               <div className="flex items-center justify-end gap-2">
                                 <button
+                                  type="button"
                                   onClick={() => handleApproveItem(item.id)}
                                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1 shadow-sm"
                                 >
@@ -1510,6 +1520,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                                   <span>Duyệt</span>
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => setRejectModalItem(item)}
                                   className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-300 rounded font-semibold text-xs transition flex items-center gap-1"
                                 >
@@ -1568,6 +1579,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           <div className="flex items-center gap-1.5">
                             {item.scriptContent && (
                               <button
+                                type="button"
                                 onClick={() => handleAiInspectScript(item)}
                                 className="px-2.5 py-1.5 bg-accent-soft hover:bg-sunken text-accent border border-line rounded font-semibold text-xs transition flex items-center gap-1.5"
                                 title="Kiểm tra kịch bản theo quy chuẩn thương hiệu"
@@ -1577,6 +1589,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               </button>
                             )}
                             <button
+                              type="button"
                               onClick={() => handleApproveItem(item.id)}
                               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
                             >
@@ -1584,6 +1597,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               <span>Duyệt kịch bản</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setRejectModalItem(item)}
                               className="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-300 rounded font-semibold text-xs transition flex items-center gap-1.5"
                             >

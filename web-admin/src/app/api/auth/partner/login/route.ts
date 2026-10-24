@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Lỗi xác thực tài khoản Gmail đối tác' },
+      { success: false, error: error instanceof Error ? error.message : 'Lỗi xác thực tài khoản Gmail đối tác' },
       { status: 500 }
     );
   }

@@ -69,8 +69,8 @@ function DiscussionWorkspace({ root, family, actorId, initialRoom, onRooms, rend
     });
   }, [actorId]);
   return <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4" aria-label="Trao đổi và ý kiến">
-    <div><h3 className="font-semibold text-slate-900">Trao đổi &amp; ý kiến</h3><p className="mt-1 text-sm text-slate-500">Gửi ý kiến, link Drive hoặc ghi lại kết luận đã trao đổi bên ngoài. Quyết định duyệt được lưu riêng trong lịch sử.</p></div>
-    {error && <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error} <button className="underline" onClick={() => void refresh()}>Thử lại</button></div>}
+    <div><h3 className="font-semibold text-slate-900">Trao đổi &amp; ý kiến</h3></div>
+    {error && <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error} <button type="button" className="underline" onClick={() => void refresh()}>Thử lại</button></div>}
     {!loaded && <p role="status" className="text-sm text-slate-500">Đang tải cuộc trao đổi…</p>}
     {loaded && !error && !rooms.length && <p className="text-sm text-slate-500">Chưa có cuộc trao đổi được phân công cho bạn trong phạm vi này.</p>}
     {!!rooms.length && <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -164,12 +164,12 @@ function ThreadPane({ roomKey, onRead, onSaved }: { roomKey: string; onRead: (ke
     finally { if (mounted.current) setSending(false); }
   }
   return <div ref={panel} className="space-y-3">
-    {error && <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}{!pending && <button className="ml-2 underline" onClick={() => void refresh()}>Tải lại</button>}</div>}
+    {error && <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}{!pending && <button type="button" className="ml-2 underline" onClick={() => void refresh()}>Tải lại</button>}</div>}
     {!data && <p className="text-sm text-slate-500">Đang tải lịch sử…</p>}
     {data && <>
       <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-semibold text-slate-900">{data.title}</h4>{data.thread.proposalVersion && <span className="rounded bg-blue-50 px-2 py-1 text-sm text-blue-700">{DECISION_LABELS[data.thread.decision]}</span>}</div>
       <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-lg bg-slate-50 p-3" aria-label="Lịch sử trao đổi">
-        {data.hasMore && <button className={buttonClass} disabled={olderLoading} onClick={() => void older()}>{olderLoading ? 'Đang tải…' : 'Xem ý kiến cũ hơn'}</button>}
+        {data.hasMore && <button type="button" className={buttonClass} disabled={olderLoading} onClick={() => void older()}>{olderLoading ? 'Đang tải…' : 'Xem ý kiến cũ hơn'}</button>}
         {!data.thread.entries.length && <p className="text-sm text-slate-500">Chưa có ý kiến. Bạn có thể bắt đầu trao đổi hoặc ghi lại kết luận từ Zalo, email, cuộc họp.</p>}
         {data.thread.entries.map(entry => <article key={entry.clientId} id={`message-${entry.clientId}`} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
           <div className="flex flex-wrap justify-between gap-1"><strong>{entry.authorName}</strong><time className="text-xs text-slate-500" dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString('vi-VN')}</time></div>

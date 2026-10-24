@@ -191,7 +191,9 @@ export function useMonthlyPlanSync({
   useEffect(() => {
     if (!readyRef.current) return;
     if (!getDirtyPlans().length) return;
-    setStatus(prev => (prev === 'saving' ? prev : 'dirty'));
+    queueMicrotask(() => {
+      setStatus(prev => (prev === 'saving' ? prev : 'dirty'));
+    });
     const timer = setTimeout(() => {
       void flush();
     }, debounceMs);

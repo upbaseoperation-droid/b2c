@@ -43,12 +43,12 @@ export async function GET(request: NextRequest) {
       data: detail,
       syncResult
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
         message: 'Lỗi trong quá trình tra cứu dữ liệu Creator từ Kalodata',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

@@ -258,6 +258,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <span className="text-slate-500 font-medium">Lọc:</span>
           <button
+            type="button"
             onClick={() => setFilterType('ALL')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'ALL' ? 'bg-ink text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -266,6 +267,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Tất cả ({discussions.length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('GROWTH')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'GROWTH' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -274,6 +276,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Growth ({discussions.filter(m => m.authorRole === 'GROWTH').length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('MEDIA')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'MEDIA' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -282,6 +285,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Media ({discussions.filter(m => m.authorRole === 'MEDIA').length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('BOOKING')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'BOOKING' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -290,6 +294,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Booking B2C ({discussions.filter(m => m.authorRole === 'BOOKING').length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('LEAD')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'LEAD' ? 'bg-ink text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -298,6 +303,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Trưởng phòng ({discussions.filter(m => m.authorRole === 'LEAD').length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('REVISION')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'REVISION' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -306,6 +312,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             Yêu Cầu Hiệu Chỉnh ({discussions.filter(m => m.type === 'REVISION_REQUEST').length})
           </button>
           <button
+            type="button"
             onClick={() => setFilterType('APPROVAL')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
               filterType === 'APPROVAL' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -318,7 +325,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         {selectedTag && (
           <div className="flex items-center gap-1 text-2xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
             <span>Tag: #{selectedTag}</span>
-            <button onClick={() => setSelectedTag('')} className="text-slate-400 hover:text-slate-700 ml-1">✕</button>
+            <button type="button" onClick={() => setSelectedTag('')} className="text-slate-400 hover:text-slate-700 ml-1">✕</button>
           </div>
         )}
       </div>
@@ -425,6 +432,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                     {msg.tags.map(tg => (
                       <button
                         key={tg}
+                        type="button"
                         onClick={() => setSelectedTag(tg === selectedTag ? '' : tg)}
                         className={`text-2xs px-2 py-0.5 rounded-full font-medium transition-colors ${
                           selectedTag === tg

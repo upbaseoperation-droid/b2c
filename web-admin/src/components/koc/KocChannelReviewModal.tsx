@@ -486,7 +486,7 @@ export const KocChannelReviewModal: React.FC<KocChannelReviewModalProps> = ({
       hour12: false,
     }).format(now);
     return `${t} - ${d}`;
-  }, [open]);
+  }, []);
 
   return (
     <Modal

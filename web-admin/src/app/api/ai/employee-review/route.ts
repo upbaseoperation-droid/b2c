@@ -269,10 +269,10 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
     const fallbackResult = generateDomainEmployeeReview(body);
     return NextResponse.json(fallbackResult);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in employee review API:', error);
     return NextResponse.json(
-      { error: error?.message || 'Lỗi tổng hợp nhận xét nhân viên' },
+      { error: error instanceof Error ? error.message : 'Lỗi tổng hợp nhận xét nhân viên' },
       { status: 500 }
     );
   }
@@ -282,7 +282,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
 // Helper: Enterprise Deterministic Assessment
 // -------------------------------------------------------------------------
 function generateDomainEmployeeReview(req: AiEmployeeReviewRequest): AiEmployeeReviewResponse {
-  const { staffName, role, allocationData, slaData, workloadP3Data, reviewType } = req;
+  const { staffName, allocationData, slaData, workloadP3Data } = req;
 
   const fillRateVideos = allocationData?.fillRateVideos || 90;
   const onTimeRate = slaData?.onTimeRate || 92;

@@ -157,15 +157,19 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
       const jsonMatch = res.outputText?.match(/\{[\s\S]*\}/);
       if (res.ok && jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]) as Record<string, string>;
-        if (parsed.hook && parsed.usp) {
-          setNewAngleName(parsed.angle || chosen?.name || `${newPillar} - ${newProductName}`);
-          setNewHook(parsed.hook);
-          setNewPainPoint(parsed.painPoint || chosen?.painPoint || '');
-          setNewUsp(parsed.usp);
-          setNewCta(parsed.cta || (disclaimer ? `${chosen?.callToAction || ''} (${disclaimer})` : chosen?.callToAction || ''));
-          setIsGeneratingBrief(false);
-          return;
+        try {
+          const parsed = JSON.parse(jsonMatch[0]) as Record<string, string>;
+          if (parsed.hook && parsed.usp) {
+            setNewAngleName(parsed.angle || chosen?.name || `${newPillar} - ${newProductName}`);
+            setNewHook(parsed.hook);
+            setNewPainPoint(parsed.painPoint || chosen?.painPoint || '');
+            setNewUsp(parsed.usp);
+            setNewCta(parsed.cta || (disclaimer ? `${chosen?.callToAction || ''} (${disclaimer})` : chosen?.callToAction || ''));
+            setIsGeneratingBrief(false);
+            return;
+          }
+        } catch {
+          // Bỏ qua nếu chuỗi JSON không hợp lệ
         }
       }
     } catch {

@@ -291,6 +291,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             {(['ALL', 'W1', 'W2', 'W3', 'W4'] as const).map(w => (
               <button
                 key={w}
+                type="button"
                 onClick={() => setSelectedWeekFilter(w)}
                 className={`px-2.5 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedWeekFilter === w ? 'bg-primary text-white shadow-2xs' : 'text-ink-2 hover:text-ink'
@@ -421,6 +422,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                           </Button>
                         )}
                         <button
+                          type="button"
                           onClick={() => setDeletingSlotItem(item)}
                           title="Xóa slot khỏi plan"
                           aria-label={`Xóa slot KOC ${item.kocStageName}`}

@@ -269,7 +269,9 @@ export async function POST(req: NextRequest) {
     const uspKeywords: string[] = Array.isArray(body?.uspKeywords) ? body.uspKeywords : [];
 
     let resolvedUrl = rawUrl;
-    let { handle: urlHandle, videoId: urlVideoId } = extractHandleAndVideoIdFromUrl(resolvedUrl);
+    const initialExtracted = extractHandleAndVideoIdFromUrl(resolvedUrl);
+    const urlHandle = initialExtracted.handle;
+    let urlVideoId = initialExtracted.videoId;
 
     let authorHandle = urlHandle || '';
     let authorNickname = urlHandle || 'KOC';
@@ -280,7 +282,7 @@ export async function POST(req: NextRequest) {
     let originCoverUrl = '';
     let cartAnchorTitle = '';
     let subtitleSegments: TikTokSubtitleSegment[] = [];
-    let onScreenStickers: string[] = [];
+    const onScreenStickers: string[] = [];
     const candidateStreamUrls: string[] = [];
     let sessionCookies: string | undefined;
 
@@ -362,7 +364,7 @@ export async function POST(req: NextRequest) {
               video.downloadAddr,
               ...(Array.isArray(video?.PlayAddrStruct?.UrlList) ? video.PlayAddrStruct.UrlList : []),
               ...(Array.isArray(video?.bitrateInfo)
-                ? video.bitrateInfo.flatMap((b: any) =>
+                ? video.bitrateInfo.flatMap((b: { PlayAddr?: { UrlList?: unknown[] } }) =>
                     Array.isArray(b?.PlayAddr?.UrlList) ? b.PlayAddr.UrlList : []
                   )
                 : []),

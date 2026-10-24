@@ -640,6 +640,25 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm chứng lại bằng kịch bản quét mẫu lỗi lịch sử, ESLint (`0 errors`), TypeScript (`tsc --noEmit` 0 lỗi) và `npm run build` thành công.
 
 ---
+
+### BUG-038 — Lỗi React Compiler Trong Hooks Dùng Chung (`src/lib`), Kiểu `any` Trên API Routes & Nút Bấm Thiếu `type="button"` Trong Biểu Mẫu
+- **Ngày phát hiện:** 24/10/2026
+- **Phân hệ / File liên quan:** 45 tệp trên `web-admin/src/app/api/**`, `web-admin/src/lib/**` và `web-admin/src/components/**` (`usePlanRecord.ts`, `usePlanChat.ts`, `useMonthlyPlanSync.ts`, `useBrandProfiles.ts`, `kocChannelReviewService.ts`, `ImportExcelModal.tsx`, `MasterDataMindmapView.tsx`, `BrandView.tsx`, `ContentAngleSetupView.tsx`, `PlanDiscussionHub.tsx`...).
+- **Triệu chứng:**
+  1. **React Compiler (`react-hooks/immutability` & `react-hooks/set-state-in-effect` trong `src/lib`):** Hook `usePlanRecord.ts` gọi đệ quy `void flush(id)` bên trong chính `useCallback` của `flush` trước khi biến được khởi tạo xong; 4 hook dùng chung (`useBrandProfiles.ts`, `kocChannelReviewService.ts`, `useMonthlyPlanSync.ts`, `usePlanChat.ts`) gọi `setState` đồng bộ trong thân `useEffect`.
+  2. **Kiểu `any` & `prefer-const` trong `src/app/api` và `src/lib`:** 36 vị trí dùng `any` (trong `catch (err: any)`, ép kiểu phản hồi API Kalodata/Shopee/LLM, `contractRules.ts`...) và 9 vị trí `let` không gán lại.
+  3. **Click-path & Biểu mẫu (`DEAD_BUTTON_NO_ONCLICK`, `BUTTON_IN_FORM_FILE_NO_TYPE`, `UNPROTECTED_JSON_PARSE_IN_UI`):**
+     - 2 thẻ `<button>` lồng bên trong `<div onClick={...}>` tại `ImportExcelModal.tsx` và `MasterDataMindmapView.tsx` không có `onClick` riêng.
+     - 44 thẻ `<button>` chuyển tab/bộ lọc nằm trong các tệp có `<form>` thiếu thuộc tính tường minh `type="button"`, dễ gây submit form ngoài ý muốn.
+     - Sao chép sâu bằng `JSON.parse(JSON.stringify(...))` trong `InputPlanBreakdownView.tsx` và `PlanWeeklyBreakdown.tsx`, cùng `JSON.parse` chưa bọc `try/catch` riêng trong `ContentView.tsx`.
+- **Nguyên nhân gốc (Root Cause):** Các đợt kiểm toán trước tập trung vào `src/components` mà chưa quét ESLint toàn cục vào tầng `src/lib` và `src/app/api`, đồng thời chưa quét tự động thuộc tính `type="button"` trên các thẻ `<button>` nguyên bản.
+- **Cách khắc phục:**
+  1. Sử dụng `flushRef` trong `usePlanRecord.ts` để gọi đệ quy an toàn khi retry 409 conflict; chuyển việc đồng bộ state trong `useBrandProfiles.ts`, `kocChannelReviewService.ts`, `useMonthlyPlanSync.ts`, `usePlanChat.ts` sang `queueMicrotask` có kiểm tra cờ `cancelled`.
+  2. Thay thế toàn bộ 36 vị trí `any` trên 19 tệp API Routes & Services bằng kiểu `unknown` (kèm `instanceof Error` / `RecordError`) hoặc interface cụ thể, đạt **0 lỗi, 0 cảnh báo ESLint** trên toàn bộ 29 tệp `src/app/api` và `src/lib`.
+  3. Đổi 2 nút giả lồng trong thẻ có `onClick` sang `<span>`, bổ sung `type="button"` cho toàn bộ 44 nút hành động/bộ lọc, thay `JSON.parse(JSON.stringify(...))` bằng `structuredClone(...)` và bọc `try/catch` quanh `JSON.parse` trong `ContentView.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm chứng lại với `pass4_deep_audit.mjs` (**0 phát hiện lỗi**) và `npx eslint` trên toàn bộ 45 tệp (**0 errors**).
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

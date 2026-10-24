@@ -124,10 +124,10 @@ export async function GET(req: NextRequest) {
       success: true,
       reports: list
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json({
       success: false,
-      error: err.message || 'Lỗi khi lấy danh sách báo cáo Ads.'
+      error: err instanceof Error ? err.message : 'Lỗi khi lấy danh sách báo cáo Ads.'
     }, { status: 500 });
   }
 }
@@ -165,8 +165,8 @@ export async function POST(req: NextRequest) {
       let filePath: string;
       try {
         filePath = getSafeReportFilePath(fileName);
-      } catch (pathErr: any) {
-        return NextResponse.json({ success: false, error: pathErr.message }, { status: 400 });
+      } catch (pathErr: unknown) {
+        return NextResponse.json({ success: false, error: pathErr instanceof Error ? pathErr.message : 'Đường dẫn file không hợp lệ' }, { status: 400 });
       }
 
       if (!fs.existsSync(filePath)) {
@@ -259,11 +259,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: false, error: 'Định dạng yêu cầu không hợp lệ' }, { status: 400 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error parsing ads report:', err);
     return NextResponse.json({
       success: false,
-      error: err.message || 'Lỗi xử lý file báo cáo Ads.'
+      error: err instanceof Error ? err.message : 'Lỗi xử lý file báo cáo Ads.'
     }, { status: 500 });
   }
 }

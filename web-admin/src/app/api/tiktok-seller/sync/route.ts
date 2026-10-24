@@ -26,11 +26,11 @@ export async function GET(req: NextRequest) {
       success: true,
       dbStatus: status
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: err.message || 'Lỗi khi truy vấn trạng thái DB TikTok Seller.'
+        error: err instanceof Error ? err.message : 'Lỗi khi truy vấn trạng thái DB TikTok Seller.'
       },
       { status: 500 }
     );
@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
       success: true,
       syncResult: result
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: err.message || 'Lỗi khi đồng bộ dữ liệu TikTok Seller xuống DB.'
+        error: err instanceof Error ? err.message : 'Lỗi khi đồng bộ dữ liệu TikTok Seller xuống DB.'
       },
       { status: 500 }
     );

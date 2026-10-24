@@ -42,6 +42,10 @@ export interface CatalogProduct {
 export interface ProductGroup {
   id: string;
   name: string;
+  /** Điểm nhấn sản phẩm / Thông điệp USP bắt buộc khi làm Brief & SOW */
+  usp?: string;
+  /** Claim cấm / Từ khóa cấm / Hạn chế nội dung (Do & Don't) của nhóm sản phẩm */
+  forbiddenClaims?: string;
   products: CatalogProduct[];
 }
 
@@ -53,7 +57,7 @@ export const EMPTY_PRODUCT_CATALOG: BrandProductCatalog = { groups: [] };
 
 export const newCatalogId = (p: string) => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-export const newGroup = (name = ''): ProductGroup => ({ id: newCatalogId('PG'), name, products: [] });
+export const newGroup = (name = ''): ProductGroup => ({ id: newCatalogId('PG'), name, usp: '', forbiddenClaims: '', products: [] });
 export const newProduct = (): CatalogProduct => ({ id: newCatalogId('PR'), name: '', sku: '', status: 'ACTIVE', cartLinks: [], affiliateLinks: [] });
 export const newCartLink = (): CartLink => ({ id: newCatalogId('CL'), platform: 'TikTok Shop', storeName: '', url: '', note: '' });
 export const newAffiliateLink = (): AffiliateLink => ({
@@ -89,6 +93,8 @@ export function sanitizeProductCatalog(input: Partial<BrandProductCatalog> | und
   const groups = (Array.isArray(input?.groups) ? input!.groups! : []).slice(0, 200).map(g => ({
     id: s(g?.id, 40) || newCatalogId('PG'),
     name: s(g?.name, 120),
+    usp: s(g?.usp, 1000),
+    forbiddenClaims: s(g?.forbiddenClaims, 1000),
     products: (Array.isArray(g?.products) ? g.products : []).slice(0, 500).map(p => ({
       id: s(p?.id, 40) || newCatalogId('PR'),
       name: s(p?.name, 200),
@@ -190,7 +196,7 @@ export function importLegacyProducts(catalog: BrandProductCatalog, brandName: st
   for (const g of catalog.groups) for (const p of g.products) known.add(p.sku.trim().toLowerCase() || `name:${normName(p.name)}`);
   const incoming = legacy.filter(p => p.brandName === brandName);
   const GROUP_NAME = 'Chưa phân nhóm';
-  let group = catalog.groups.find(g => normName(g.name) === normName(GROUP_NAME));
+  const group = catalog.groups.find(g => normName(g.name) === normName(GROUP_NAME));
   const created: CatalogProduct[] = [];
   let skipped = 0;
   for (const l of incoming) {

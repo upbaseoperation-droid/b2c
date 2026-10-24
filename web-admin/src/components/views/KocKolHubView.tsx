@@ -1169,7 +1169,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     Cast chuẩn: <strong className="text-slate-800 font-mono">{formatVndShort(activeKoc.rateCardVideo || 3000000)}</strong> • Followers: <strong className="text-slate-800 font-mono">{formatFollowers(activeKoc.followers)}</strong> • Ngân hàng: <strong className="text-slate-700">{activeKoc.bankName || 'Chưa cập nhật'} ({activeKoc.bankAccount || '—'})</strong> • Địa chỉ nhận mẫu: <span className="text-slate-700">{addressForm.address}</span> (
-                    <button onClick={() => setActiveTab('PROFILE')} className="text-blue-600 hover:underline font-medium">
+                    <button type="button" onClick={() => setActiveTab('PROFILE')} className="text-blue-600 hover:underline font-medium">
                       Quản lý hồ sơ
                     </button>
                     )

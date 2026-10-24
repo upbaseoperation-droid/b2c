@@ -484,14 +484,16 @@ export async function POST(req: NextRequest) {
       },
       { headers }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
       {
         success: false,
         error:
           err instanceof RecordError
             ? err.message
-            : err?.message || 'Lỗi khi ghi nhận dữ liệu lịch sử KOC & Video Ads.',
+            : err instanceof Error
+              ? err.message
+              : 'Lỗi khi ghi nhận dữ liệu lịch sử KOC & Video Ads.',
       },
       { status: err instanceof RecordError ? err.status : 400, headers }
     );

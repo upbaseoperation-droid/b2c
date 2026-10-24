@@ -22,6 +22,7 @@ export function usePlanRecord<T>(endpoint: string, planId: string | null, empty:
   const dirtyRef = useRef(false);
   const conflictRetryRef = useRef(0);
   const notifyRef = useRef(onNotify);
+  const flushRef = useRef<(id: string) => Promise<void>>(async () => {});
   useEffect(() => {
     notifyRef.current = onNotify;
   });
@@ -78,7 +79,7 @@ export function usePlanRecord<T>(endpoint: string, planId: string | null, empty:
           }
           conflictRetryRef.current += 1;
           if (conflictRetryRef.current <= 3) {
-            void flush(id);
+            void flushRef.current(id);
           } else {
             conflictRetryRef.current = 0;
             setStatus('error');
@@ -101,7 +102,7 @@ export function usePlanRecord<T>(endpoint: string, planId: string | null, empty:
         conflictRetryRef.current = 0;
         savingRef.current = false;
         if (latestRef.current !== snapshot) {
-          void flush(id);
+          void flushRef.current(id);
         } else {
           dirtyRef.current = false;
           setStatus('saved');
@@ -119,15 +120,23 @@ export function usePlanRecord<T>(endpoint: string, planId: string | null, empty:
   );
 
   useEffect(() => {
+    flushRef.current = flush;
+  }, [flush]);
+
+  useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     dirtyRef.current = false;
     savingRef.current = false;
     if (!planId) {
-      setData(emptyRef.current);
-      setStatus('idle');
+      queueMicrotask(() => {
+        setData(emptyRef.current);
+        setStatus('idle');
+      });
       return;
     }
-    void load(planId);
+    queueMicrotask(() => {
+      void load(planId);
+    });
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };

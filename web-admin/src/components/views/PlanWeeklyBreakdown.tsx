@@ -45,7 +45,7 @@ const ROWS: RowDef[] = [
   { id: 'live', kind: 'live', label: 'Livestream affiliate', hasQty: true, hasBudget: true, section: 'Livestream' },
 ];
 
-const clone = (rows: PlanWeekRow[]): PlanWeekRow[] => JSON.parse(JSON.stringify(rows));
+const clone = (rows: PlanWeekRow[]): PlanWeekRow[] => structuredClone(rows);
 const fmt = (v: number) => Math.round(v).toLocaleString('vi-VN');
 
 function readQty(row: PlanWeekRow, def: RowDef): number {

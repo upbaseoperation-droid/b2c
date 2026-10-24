@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
           }
         });
         dbUpdated = true;
-      } catch (dbErr) {
+      } catch {
         // Nếu không tìm thấy bằng id, thử tìm bằng channelId
         try {
           const clean = channelId.trim().toLowerCase().replace('@', '');
@@ -77,12 +77,12 @@ export async function POST(request: NextRequest) {
       updates: syncResult.suggestedUpdates,
       dbUpdated
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
         message: 'Lỗi trong quá trình đồng bộ số liệu từ Kalodata',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

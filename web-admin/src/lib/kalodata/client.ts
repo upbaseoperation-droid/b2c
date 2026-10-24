@@ -152,8 +152,8 @@ export class KalodataClient {
       }
 
       const raw = await response.json();
-      const items: any[] = raw.data?.list || raw.list || [];
-      return items.map((item) => this.transformOpenApiResponse(item, item.handle || '', '30d'));
+      const items: Record<string, unknown>[] = raw.data?.list || raw.list || [];
+      return items.map((item) => this.transformOpenApiResponse(item, String(item.handle || ''), '30d'));
     } catch (err) {
       console.error('[Kalodata API] Lỗi tìm kiếm creator:', err);
       return Object.values(MOCK_KALODATA_CREATORS);
@@ -192,24 +192,24 @@ export class KalodataClient {
    * Ánh xạ phản hồi từ Kalodata Open API sang cấu trúc chuẩn của Upbase
    */
   private transformOpenApiResponse(
-    raw: any,
+    raw: Record<string, unknown>,
     handle: string,
     period: KalodataPeriod
   ): KalodataCreatorDetail {
-    const profile = raw.profile || raw.creator || raw;
-    const metrics = raw.metrics || raw.data || raw;
-    const audience = raw.audience || {};
+    const profile = (raw.profile || raw.creator || raw) as Record<string, unknown>;
+    const metrics = (raw.metrics || raw.data || raw) as Record<string, unknown>;
+    const audience = (raw.audience || {}) as Record<string, unknown>;
 
     return {
       profile: {
-        creatorId: profile.creator_id || profile.id || `kalo_${handle}`,
-        handle: profile.username || profile.handle || handle,
-        nickname: profile.nickname || profile.display_name || handle,
-        avatarUrl: profile.avatar || profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+        creatorId: String(profile.creator_id || profile.id || `kalo_${handle}`),
+        handle: String(profile.username || profile.handle || handle),
+        nickname: String(profile.nickname || profile.display_name || handle),
+        avatarUrl: String(profile.avatar || profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80'),
         followers: Number(profile.follower_count || profile.followers || 0),
-        region: profile.region || this.config.region,
-        category: profile.main_category || profile.category || 'Mỹ phẩm & Tiêu dùng',
-        bio: profile.bio || profile.description,
+        region: String(profile.region || this.config.region),
+        category: String(profile.main_category || profile.category || 'Mỹ phẩm & Tiêu dùng'),
+        bio: profile.bio || profile.description ? String(profile.bio || profile.description) : undefined,
         isVerified: Boolean(profile.verified)
       },
       metrics: {
@@ -235,15 +235,15 @@ export class KalodataClient {
         age35Plus: Number(audience.age_35_plus || 15)
       },
       topProducts: Array.isArray(raw.top_products)
-        ? raw.top_products.map((p: any) => ({
-            productId: p.product_id || p.id,
-            productName: p.product_name || p.title,
-            categoryName: p.category_name || 'Hàng tiêu dùng',
+        ? raw.top_products.map((p: Record<string, unknown>) => ({
+            productId: String(p.product_id || p.id || ''),
+            productName: String(p.product_name || p.title || ''),
+            categoryName: String(p.category_name || 'Hàng tiêu dùng'),
             gmv: Number(p.gmv || 0),
             salesCount: Number(p.sales_count || p.units || 0),
             commissionRate: Number(p.commission_rate || 15),
-            productImageUrl: p.image_url,
-            shopName: p.shop_name
+            productImageUrl: p.image_url ? String(p.image_url) : undefined,
+            shopName: p.shop_name ? String(p.shop_name) : undefined
           }))
         : [],
       dataSource: 'LIVE_API',

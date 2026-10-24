@@ -17,12 +17,12 @@ export async function GET(request: NextRequest) {
       success: true,
       data: status
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
         message: 'Lỗi khi kiểm tra trạng thái kết nối Kalodata',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     );

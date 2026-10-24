@@ -65,12 +65,9 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                   <span className="text-2xs text-muted mt-1 max-w-xs leading-relaxed">
                     Hỗ trợ file xuất từ TikTok Shop Seller Center, Shopee Affiliate, hoặc B2C Booking.xlsx
                   </span>
-                  <button
-                    type="button"
-                    className="mt-4 px-4 py-2 bg-surface hover:bg-hover text-ink-2 text-xs font-semibold rounded-lg border border-line-strong transition"
-                  >
+                  <span className="mt-4 inline-block px-4 py-2 bg-surface hover:bg-hover text-ink-2 text-xs font-semibold rounded-lg border border-line-strong transition">
                     Bấm để chọn file hoặc kiểm tra thử
-                  </button>
+                  </span>
                 </>
               )}
             </div>

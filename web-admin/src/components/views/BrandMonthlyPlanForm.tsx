@@ -282,7 +282,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
             <span className="rounded border border-line bg-surface px-2 py-1 font-medium text-ink">
               {ownerMode === 'BRAND_TEAM'
                 ? 'Brand Team: Strategy Owner tổng thể · Content Team: Book KOL KL5–KL7 & Hero Content · Booking Team: Book KOC KL1–KL4 & FOC'
-                : 'Content Team: Strategy Owner toàn diện · Content Team: Book KOL KL5–KL7 · Booking Team: Book KOC KL1–KL4 & FOC'}
+                : 'Content Team: Strategy Owner tổng thể · Content Team: Book KOL KL5–KL7 · Booking Team: Book KOC KL1–KL4 & FOC'}
             </span>
             <span className="rounded border border-line bg-surface px-2 py-1 text-ink-2">
               {hasBookingLeader

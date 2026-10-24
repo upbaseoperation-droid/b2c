@@ -1505,7 +1505,7 @@ export function saveStaffAccessOverrides(overrides: Record<string, StaffAccessOv
 export function getSavedDeptAccessRules(
   fallback: DepartmentAccessRule[] = INITIAL_DEPARTMENT_ACCESS_RULES
 ): DepartmentAccessRule[] {
-  return serverPolicy?.deptRules || INITIAL_DEPARTMENT_ACCESS_RULES;
+  return serverPolicy?.deptRules || fallback;
 }
 
 export function saveDeptAccessRules(rules: DepartmentAccessRule[]): void {
@@ -2254,7 +2254,8 @@ export const DATA_SCOPE_LABEL: Record<DataScope, string> = Object.fromEntries(
 ) as Record<DataScope, string>;
 
 export function getSavedRoleDataScope(): Record<UserRole, DataScope> {
-  return { ...ROLE_DEFAULT_DATA_SCOPE, ...((serverPolicy as any)?.roleDataScope || {}) };
+  const policyWithScope = serverPolicy as (AccessPolicy & { roleDataScope?: Partial<Record<UserRole, DataScope>> }) | null;
+  return { ...ROLE_DEFAULT_DATA_SCOPE, ...(policyWithScope?.roleDataScope || {}) };
 }
 
 const CORE_SYNCED_ROLE_TABS: TabKey[] = [

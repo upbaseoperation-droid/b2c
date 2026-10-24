@@ -353,7 +353,7 @@ export async function syncB2cStoresAndTikTokSellerToDb(): Promise<TikTokDbSyncSu
       },
       message: `Đã ghi nhận thành công vào PostgreSQL: ${storeCount} gian hàng B2C, ${connCount} kết nối TikTok Seller, ${campaignCount} chiến dịch PGM/LGM và ${videoCount} bản ghi đối soát Video.`
     };
-  } catch (err: any) {
+  } catch {
     // Trường hợp môi trường dev/offline chưa kết nối tới cụm PostgreSQL từ xa
     return {
       storageMode: 'LOCAL_SNAPSHOT_FALLBACK',

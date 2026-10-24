@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       }
       const savedCsrf = request.cookies.get('lark_oauth_state')?.value;
       if (!savedCsrf || !stateObj.csrf || savedCsrf !== stateObj.csrf) return NextResponse.redirect(new URL('/login?error=invalid_state', appBaseUrl));
-    } catch (e) {
+    } catch {
       return NextResponse.redirect(new URL('/login?error=invalid_state', appBaseUrl));
     }
   } else return NextResponse.redirect(new URL('/login?error=missing_state', appBaseUrl));
@@ -71,11 +71,11 @@ export async function GET(request: NextRequest) {
     response.cookies.delete('lark_oauth_state');
 
     return response;
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[Lark SSO Callback Exchange Error]:', err);
     const errorUrl = new URL('/login', appBaseUrl);
     errorUrl.searchParams.set('error', 'exchange_failed');
-    errorUrl.searchParams.set('message', err.message || 'Lỗi xác thực với máy chủ Lark');
+    errorUrl.searchParams.set('message', err instanceof Error ? err.message : 'Lỗi xác thực với máy chủ Lark');
     return NextResponse.redirect(errorUrl);
   }
 }

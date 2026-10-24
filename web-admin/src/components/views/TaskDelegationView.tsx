@@ -544,7 +544,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       }
       return true;
     });
-  }, [tasks, sourceFilter, categoryFilter, staffFilter, urgencyFilter, searchQuery, getTaskSource]);
+  }, [tasks, sourceFilter, categoryFilter, staffFilter, urgencyFilter, searchQuery, getTaskSource, canManageSetup, currentUser.name]);
 
   // Unified Staff workload calculation (28 members) synchronized with Workload3dMapView
   const computedStaffWorkloads = useMemo(() => {
@@ -643,7 +643,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       passCount,
       totalStaffCount: computedStaffWorkloads.length,
     };
-  }, [tasks, computedStaffWorkloads]);
+  }, [tasks, computedStaffWorkloads, getTaskSource]);
 
   const inspectedStaffRow = useMemo(() => {
     if (!inspectingStaffMember) return null;

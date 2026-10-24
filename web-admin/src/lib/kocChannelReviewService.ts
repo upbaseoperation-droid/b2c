@@ -538,7 +538,9 @@ export function useKocChannelReviews() {
   }, []);
 
   useEffect(() => {
-    void refreshReviews();
+    queueMicrotask(() => {
+      void refreshReviews();
+    });
   }, [refreshReviews]);
 
   useEffect(() => {

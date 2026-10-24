@@ -1608,12 +1608,14 @@ export function KocListingBatchHubView({
                             {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
                               <div className="flex items-center gap-1">
                                 <button
+                                  type="button"
                                   onClick={() => setApprovingItem(item)}
                                   className="px-1.5 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
                                 >
                                   Duyệt
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => setRejectingItem(item)}
                                   className="px-1.5 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                                 >
@@ -1701,6 +1703,7 @@ export function KocListingBatchHubView({
 
                               {canFinalApprove ? (
                                 <button
+                                  type="button"
                                   onClick={() => handleFinalApprove(item)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors cursor-pointer"
                                 >

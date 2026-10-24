@@ -3610,7 +3610,7 @@ export interface AuditLogEntry {
   entityId: string;
   entityName?: string;
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'REASSIGN' | 'SUBMIT' | 'ACTIVATE_BACKUP';
-  changedFields?: Record<string, { oldValue: any; newValue: any }>;
+  changedFields?: Record<string, { oldValue: unknown; newValue: unknown }>;
   actorId: string;
   actorName: string;
   actorRole: UserRole;

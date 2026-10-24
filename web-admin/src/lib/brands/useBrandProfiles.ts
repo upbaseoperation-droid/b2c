@@ -118,13 +118,17 @@ export function useBrandProfiles(userId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const userChanged = Boolean(userId && cachedUserId && userId !== cachedUserId);
-    if (!sharedCache || userChanged) {
-      setLoading(true);
-    } else {
-      setState(sharedCache);
-      setLoading(false);
-    }
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (!sharedCache || userChanged) {
+        setLoading(true);
+      } else {
+        setState(sharedCache);
+        setLoading(false);
+      }
+    });
     const handleUpdate = (next: BrandProfilesCacheState) => {
       setState(next);
       setLoading(false);
@@ -132,7 +136,6 @@ export function useBrandProfiles(userId?: string) {
     };
     listeners.add(handleUpdate);
 
-    let cancelled = false;
     fetchBrandProfilesShared(userChanged, userId)
       .then(next => {
         if (!cancelled) {

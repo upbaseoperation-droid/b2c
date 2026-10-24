@@ -2,7 +2,7 @@
 // UPBASE B2C MARKETING OPERATIONS HUB — LARK OAUTH 2.0 / SSO SERVICE
 // ==============================================================================
 import crypto from 'crypto';
-import { UserProfile, UserRole } from './types';
+import { UserProfile } from './types';
 import { USERS } from './mockData';
 import { UPBASE_STAFF_MASTER } from './importedMasterData';
 import { classifyMasterStaffMember, INITIAL_DEPARTMENT_ACCESS_RULES } from './rbacData';
@@ -377,7 +377,11 @@ export function decodeSessionToken(token: string): UserProfile | null {
  * Kiểm tra xác thực phiên từ NextRequest trong các API route
  * Trả về UserProfile nếu hợp lệ và chữ ký HMAC đúng, ngược lại trả về null
  */
-export function getAuthenticatedUser(request: any): UserProfile | null {
+export function getAuthenticatedUser(request: {
+  cookies?: {
+    get?: (name: string) => { value?: string } | undefined;
+  };
+}): UserProfile | null {
   try {
     const token = request.cookies?.get?.(SESSION_COOKIE_NAME)?.value;
     if (!token) return null;
