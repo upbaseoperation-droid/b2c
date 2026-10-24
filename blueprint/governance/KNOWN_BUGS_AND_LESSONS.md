@@ -759,7 +759,7 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 
 ### BUG-043 — Công Cụ Cắt Khung Hình KOC Cầm Sản Phẩm Từ Link Air (`video-frame`) Dò Sai Từ Khóa Tiếng Việt Có Dấu & Bỏ Sót Đoạn Cận Cảnh Cầm Sản Phẩm Ở Giữa/Cuối Video
 - **Ngày phát hiện:** 24/10/2026 (Khi kiểm thử trực tiếp trên Link Air thực tế `BO260859267` — `https://www.tiktok.com/@soanhtran98/video/7594065944612179221`).
-- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/app/api/integrations/tiktok-koc/video-frame/route.ts`, `web-admin/src/components/contracts/VideoProductScreenshotModal.tsx`.
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/app/api/integrations/tiktok-koc/video-frame/route.ts`, `web-admin/src/components/contracts/VideoProductScreenshotModal.tsx`, `web-admin/src/components/contracts/ContractForm.tsx`, `web-admin/src/components/contracts/ContractDocumentViewer.tsx`, `web-admin/src/lib/contracts/templates.ts`.
 - **Triệu chứng & Nguyên nhân gốc (Root Cause):**
   1. **Cắt đứt từ tiếng Việt có dấu và nhận nhầm từ phổ thông làm tên riêng thương hiệu (`detectProductMentionMoments` trong `tiktokVideoInspector.ts`):**
      - Biểu thức chính quy `\b[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*){1,2}\b` chỉ khớp ký tự ASCII nên cắt đứt từ tiếng Việt ngay trước nguyên âm có dấu (ví dụ `"Dung Dịch"` bị cắt thành `"Dung D"`).
@@ -772,12 +772,33 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   1. Trong `tiktokVideoInspector.ts`: Tách từ theo khoảng trắng/dấu câu trước khi ghép cụm tên riêng Latin thuần ASCII (`isPureLatinProperToken`); bổ sung các âm tiết phổ thông (`dung`, `dich`, `sinh`, `ngay`, `thom`, `mat`...) vào `GENERIC_TITLE_STOPWORDS`; tách trực tiếp các vế của `productName` kèm bảng viết tắt `PRODUCT_SHORTHAND_EXPANSIONS` (`HLC` → `hoa lan chuông`, `DDVS` → `dung dịch vệ sinh`, `KCN` → `kem chống nắng`, `SRM` → `sữa rửa mặt`) và bắt buộc khớp theo ranh giới từ (` ${cand.folded} `).
   2. Trong `video-frame/route.ts`:
      - Chuyển sang truy vấn song song (`Promise.allSettled`) cả 3 nguồn (`oEmbed`, `SSR WAF`, `TikWM`) kèm bộ nhớ đệm metadata 10 phút và ưu tiên luồng `H.264` trước `ByteVC1/HEVC`, giảm thời gian phân tích từ ~9–12s xuống ~1.5s (3ms khi ấm cache).
+     - Bóc tách đồng thời bộ dữ liệu nghiệm thu toàn diện (`inspectionMeta: VideoAcceptanceInspectionMeta`): thông tin bài đăng (`@authorHandle`, ngày đăng, thời lượng, giỏ hàng TikTok Shop), chỉ số tương tác thực tế (`viewsCount`, `likesCount`, `commentsCount`, `sharesCount`, `savesCount`, `engagementRate`), và đối soát kịch bản/phụ đề với từ khóa sản phẩm cùng danh mục từ hạn chế sàn (`scanBlacklistViolations`, `scriptVerdict`).
      - Phân hạng 3 mức ưu tiên cho mốc phụ đề: `HOLDING_SHOWCASE` (cầm SP trên tay: `đang dùng`, `xài em`, `chai này`, `em này`, `2 chai`, `trên tay`, `cầm` — 96đ) > `TEXTURE_DEMO` (test chất: `bôi`, `thoa`, `test`, `tạo bọt` — 88đ) > `VERBAL_MENTION` (nhắc tên — 76đ), cắt tại `startSec + 1.0s` và `endSec + 1.5s`.
      - Bổ sung nhánh cắt khung hình trực tiếp trên máy chủ qua `ffmpeg` (`GET /api/integrations/tiktok-koc/video-frame?streamToken=...&captureSec=...`, có cache theo giây) để cắt ảnh thực tế ngay cả khi trình duyệt không giải mã được codec video.
-  3. Trong `VideoProductScreenshotModal.tsx`:
-     - Hỗ trợ cắt 8 khung hình song song từ máy chủ hoặc `<video>` + `<canvas>`, chấm điểm độ nét biên (`analyzeCanvasFrameQuality`) và tự động nhích `+0.45s` nếu gặp khung hình tối đen lúc chuyển cảnh.
-     - Bổ sung nút **Tự chọn 2 ảnh rõ nhất**, nút **Quét ±2s (Cắt 6 khung liên tiếp quanh mốc đang xem)**, tuỳ chọn **Zoom cận cảnh sản phẩm (1.25x)** và nút **Tải ảnh `.JPG` về máy** trên từng ảnh nghiệm thu.
+  3. Trong `VideoProductScreenshotModal.tsx`, `ContractForm.tsx`, `ContractDocumentViewer.tsx` & `templates.ts`:
+     - Hiển thị bảng đối soát 3 cột (**1. Thông tin bài đăng**, **2. Chỉ số tương tác tại thời điểm nghiệm thu**, **3. Đối soát kịch bản & Từ khóa**) ngay trên trình cắt khung hình; hỗ trợ cắt 8 khung hình song song, chấm điểm độ nét biên (`analyzeCanvasFrameQuality`), nút **Tự chọn 2 ảnh rõ nhất**, **Quét ±2s**, **Zoom cận cảnh 1.25x** và **Tải ảnh `.JPG`**.
+     - Khi bấm **Lưu & Chèn vào BBNT**, tự động điền thông tin Link Air (`airDate`, `channelLink`, `product`, `Link video`) vào biểu mẫu BBNT và chèn cả bảng **Thông tin Link Air, Chỉ số tương tác & Đối soát kịch bản** lẫn ảnh KOC cầm sản phẩm vào bản xem trước/in A4 (`ContractDocumentViewer.tsx`) và file Word `.docx` xuất ra (`embedAcceptanceScreenshotsIntoDocxZip` trong `templates.ts`).
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm thử thực tế trên luồng MP4 của Link Air `BO260859267`, kiểm tra ESLint, `tsc --noEmit` và `npm run build` đạt 0 lỗi.
+
+---
+
+### BUG-044 — Luồng Nghiệm Thu Chưa Dựng Bản Nháp BBNT Theo Phụ Lục SOW Của Từng Job (Gồm Video Chính + Các Dịch Vụ Đi Kèm) Để Nhân Sự Kiểm Tra Trước Khi Chốt
+- **Ngày phát hiện:** 24/10/2026 (Yêu cầu nghiệp vụ: *"phần luồng làm biên bản nghiệm thu cũng cần đưa ra nháp để ng dùng check nhé, nghiệm thu ăn theo phụ lục nên nó theo job, bao gồm video và dịch vụ đi kèm"*).
+- **Phân hệ / File liên quan:** `web-admin/src/components/contracts/contractUi.ts`, `web-admin/src/components/contracts/ContractForm.tsx`, `web-admin/src/components/contracts/DraftBbntPreviewModal.tsx`, `web-admin/src/components/views/PlanDealBoard.tsx`, `web-admin/src/components/views/ApprovedBookingListView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Chọn nhầm mẫu BBNT cũ và gộp tổng tiền vào dòng Video (`contractUi.ts`):**
+     - `templateFor()` khi `kind === 'ACCEPTANCE'` từng mặc định trả về `${subjectKind}-BBNT` (`IND-BBNT`, `HKD-BBNT`, `COM-BBNT` — mẫu cũ theo hợp đồng lẻ) thay vì bộ mẫu BBNT Ver052026 gắn theo Phụ lục SOW (`IND-VID-BBNT`, `HKD-VID-BBNT`, `COM-VID-BBNT`).
+     - Trong `prefill()`, `f.source === 'lineTotal'` được điền bằng `totalAmount` (tổng giá trị cả Job) cho cả ô `group === 'SCOPE'` (Hạng mục 1: Sản xuất & đăng tải Video review), còn các ô Hạng mục 2 (`Cấp mã code để chạy quảng cáo video trong vòng · Thành tiền`) và Hạng mục 3 (`Sử dụng hình ảnh và video trong · Thành tiền`) bị bỏ trống, khiến BBNT không bóc tách riêng tiền Video chính và tiền các Dịch vụ đi kèm theo Phụ lục SOW.
+  2. **Thiếu bước xem và kiểm tra Bản nháp BBNT theo từng Job ngay tại màn Nghiệm thu (`PlanDealBoard.tsx`, `ApprovedBookingListView.tsx`, `ContractForm.tsx`):**
+     - Nhân sự bấm nghiệm thu trên từng Job ở `PlanDealBoard.tsx` hoặc hộp thoại Nghiệm thu 2 bước ở `ApprovedBookingListView.tsx` chỉ thấy các nút trạng thái rời rạc, chưa có hộp thoại **Xem & Kiểm tra Bản nháp BBNT chuẩn A4** kế thừa từ Phụ lục SOW của Job đó để đối soát từng hạng mục (1 Video chính + các Dịch vụ đi kèm, khấu trừ hủy dịch vụ, thuế TNCN/VAT, tạm ứng, số tiền còn thanh toán, thông tin Link Air và ảnh KOC cầm sản phẩm) trước khi xác nhận lưu BBNT.
+- **Cách khắc phục:**
+  1. Trong `contractUi.ts`:
+     - Cập nhật `templateFor()` chọn `${subjectKind}-VID-BBNT` cho luồng `ACCEPTANCE` của Job Video gắn Phụ lục SOW.
+     - Bổ sung `buildJobAcceptanceBreakdown()` và `syncValuesFromJobAcceptanceBreakdown()` để bóc tách rõ **Hạng mục 1 (Video chính)** (`videoItem.feeNetVnd`, `airLink`, `airDate`) và **Hạng mục 2..N (Dịch vụ đi kèm theo Phụ lục SOW)** (`ADS_CODE`, `IMAGE_USAGE`, `EXCLUSIVITY`, `CROSS_POST_REUP`, `LINK_BIO_CART`) kèm trạng thái nghiệm thu (`VERIFIED` / `PENDING` / `DROPPED`), tự động tính lại tổng Net (`activeTotalNetVnd = Video + Dịch vụ đi kèm hoàn thành`), khấu trừ hủy dịch vụ (`droppedAddonsCostVnd`), thuế TNCN 10% / VAT 8–10% và số tiền còn phải thanh toán.
+     - Tách riêng `f.source === 'lineTotal'` theo `f.group === 'SCOPE'` (`videoLineAmount`) và `f.group === 'MONEY'` (`totalAmount`) để bảng nghiệm thu trên `IND-VID-BBNT`, `HKD-VID-BBNT`, `COM-VID-BBNT` hiển thị chính xác thành tiền từng dòng.
+  2. Tạo mới `DraftBbntPreviewModal.tsx` và tích hợp vào `PlanDealBoard.tsx` (khu vực 2 Tài liệu pháp lý & khu vực 4 Air và Nghiệm thu Job), `ApprovedBookingListView.tsx` (hộp thoại Nghiệm thu 2 bước & cột thao tác dòng Deal) và `ContractForm.tsx`:
+     - Cho phép nhân viên kiểm tra, chỉnh sửa trực tiếp đơn giá/trạng thái từng hạng mục (Video chính + Dịch vụ đi kèm), mở công cụ lấy thông tin Link Air & cắt ảnh sản phẩm, xem trực tiếp trên **Bản nháp BBNT A4 (`ContractDocumentViewer`)** và bấm **Xác nhận & Lưu Bản nháp BBNT** hoặc chuyển sang trình soạn thảo chi tiết.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra đồng bộ giữa `PlanDealBoard`, `ApprovedBookingListView` và `ContractForm`, vượt qua `tsc --noEmit`, `eslint` và `npm run build` với `0 errors`.
 
 ---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)

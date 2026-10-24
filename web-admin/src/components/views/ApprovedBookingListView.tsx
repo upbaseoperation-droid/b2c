@@ -64,6 +64,7 @@ import {
 import type { TikTokVideoInspectionResult } from '../../lib/tiktokVideoInspector';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
 import { LarkPaymentRequestModal } from '../booking/LarkPaymentRequestModal';
+import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
 import type { LarkPaymentRequestSlip } from '../../lib/larkPaymentRequestEngine';
 import { ActionMenu, Button, Field, Input, Modal, PageActions, Segmented, Select } from '../ui';
 
@@ -648,6 +649,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [stage2AddonEdits, setStage2AddonEdits] = useState<
     Record<string, DealRightsTermItem[]>
   >({});
+  const [draftBbntPreviewDeal, setDraftBbntPreviewDeal] =
+    useState<BookingDealItem | null>(null);
 
   // Hộp thoại đối soát sâu Kịch bản & Giỏ hàng TikTok Shop (TikTokVideoInspectorModal)
   const [inspectorTargetItem, setInspectorTargetItem] =
@@ -2333,6 +2336,18 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                                     ? 'Nghiệm thu phần khác'
                                     : 'Nghiệm thu Video (B1)'}
                               </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={FileText}
+                                onClick={() =>
+                                  setDraftBbntPreviewDeal(
+                                    buildBookingDealFromApprovedItem(item)
+                                  )
+                                }
+                              >
+                                Xem nháp BBNT (Phụ lục)
+                              </Button>
                               {(item.sequentialAcceptanceStage ===
                                 '3_DA_NGHIEM_THU_TOAN_DEAL' ||
                                 item.soTienTamUngTruoc > 0 ||
@@ -2908,6 +2923,28 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
                         <span className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
                           Kế toán thanh toán Deal: {formatVnd(effectiveDealPayable)}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const mergedItem: ApprovedBookingListItem = {
+                              ...m,
+                              linkAir: row.linkAir || m.linkAir,
+                              actualAirDate: row.actualAirDate || m.actualAirDate,
+                              sparkAdsCode: row.sparkAdsCode || m.sparkAdsCode,
+                              videoAssetNetCost: videoCost,
+                              addonServicesNetCost: addonsCost,
+                              khauTruHangMucHuy: droppedCost,
+                              addonServices: currentAddons,
+                            };
+                            setDraftBbntPreviewDeal(
+                              buildBookingDealFromApprovedItem(mergedItem)
+                            );
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent/15 hover:bg-accent/25 border border-accent/30 text-accent font-sans font-semibold text-2xs transition-colors"
+                        >
+                          <FileText className="w-3 h-3" />
+                          Xem &amp; Kiểm tra nháp BBNT (Theo Phụ lục)
+                        </button>
                       </div>
                     </div>
 
@@ -3334,6 +3371,28 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
         kocs={kocs}
         currentUserName={currentUserName}
         onSuccessUpdateDeals={handleLarkPaymentSuccess}
+      />
+
+      <DraftBbntPreviewModal
+        open={Boolean(draftBbntPreviewDeal)}
+        onClose={() => setDraftBbntPreviewDeal(null)}
+        deal={draftBbntPreviewDeal}
+        koc={
+          draftBbntPreviewDeal
+            ? kocs.find(
+                (k) =>
+                  k.id === draftBbntPreviewDeal.kocId ||
+                  normalizeTikTokId(k.channelId).toLowerCase() ===
+                    normalizeTikTokId(draftBbntPreviewDeal.kocChannelId || '').toLowerCase()
+              )
+            : undefined
+        }
+        onSavedRecord={(rec) => {
+          onNotify?.(
+            `Đã lưu bản nháp Biên bản nghiệm thu (${rec.title}) vào Quản lý Hợp đồng.`,
+            'success'
+          );
+        }}
       />
     </div>
   );

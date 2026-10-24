@@ -8,13 +8,26 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Camera, Columns2, FileScan, FileUp, Scale, Trash2, Upload } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
-import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
-import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
+import type { AcceptanceScreenshotItem, ContractField, ContractRecord, DocBlock, LegalTemplate, VideoAcceptanceInspectionMeta } from '../../lib/contracts/types';
+import { Button, Field, Input, Modal, Panel, Segmented, Select, Status, Textarea } from '../ui';
+import { formatNumber } from '../../lib/format';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
-import { GROUP_ORDER, formatMoneyInput, inferAcceptanceTemplateId, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
+import {
+  GROUP_ORDER,
+  buildJobAcceptanceBreakdown,
+  formatMoneyInput,
+  inferAcceptanceTemplateId,
+  isAcceptance,
+  partnerName,
+  prefill,
+  syncValuesFromJobAcceptanceBreakdown,
+  templateFor,
+  uniqueFields,
+  type JobAcceptanceAddonRow,
+} from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 import { parseDocxInBrowser } from './docxClientParser';
 
@@ -62,7 +75,32 @@ export function ContractForm({
   onSave: (payload: ContractFormPayload) => void;
 }) {
   const editing = !!record;
-  const initialParent = data.records.find(r => r.id === (record?.parentId || init?.parentId));
+  const findBestParentForAcceptance = (d?: BookingDealItem, k?: KocItem): ContractRecord | undefined => {
+    if (!d && !k) return undefined;
+    // Ưu tiên Phụ lục SOW của chính Job đó
+    if (d) {
+      const sowByDeal = data.records.find(
+        r => r.templateId.endsWith('-SOW') && (r.dealId === d.id || (d.dealCode && r.dealCode === d.dealCode)),
+      );
+      if (sowByDeal) return sowByDeal;
+    }
+    // Kế tiếp: HĐNT hoặc HĐ của Deal/KOC
+    return data.records.find(
+      r =>
+        !isAcceptance(r.templateId) &&
+        ((d && (r.dealId === d.id || (d.dealCode && r.dealCode === d.dealCode))) ||
+          (k?.id && r.kocId === k.id)),
+    );
+  };
+
+  const initialParent =
+    data.records.find(r => r.id === (record?.parentId || init?.parentId)) ||
+    ((record ? isAcceptance(record.templateId) : init?.kind === 'ACCEPTANCE')
+      ? findBestParentForAcceptance(
+          deals.find(d => d.id === (record?.dealId || init?.dealId)),
+          findKoc(kocs, deals.find(d => d.id === (record?.dealId || init?.dealId))),
+        )
+      : undefined);
   const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId || initialParent?.dealId));
   const [dealId, setDealId] = useState(initialDeal?.id || '');
   const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
@@ -76,7 +114,7 @@ export function ContractForm({
       (initialDeal
         ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT', initialDeal, data.templates)
         : init?.kind === 'ACCEPTANCE' && initialParent
-          ? inferAcceptanceTemplate(initialParent.templateId) || 'IND-BBNT'
+          ? inferAcceptanceTemplate(initialParent.templateId) || 'IND-VID-BBNT'
           : ''),
   );
   const [title, setTitle] = useState(
@@ -89,7 +127,7 @@ export function ContractForm({
   );
   const [brand, setBrand] = useState(record?.brand || initialDeal?.brandName || initialParent?.brand || data.actor.brands[0] || '');
   const [partner, setPartner] = useState(record?.partner || (initialDeal ? partnerName(findKoc(kocs, initialDeal), initialDeal) : initialParent?.partner || ''));
-  const [parentId, setParentId] = useState(record?.parentId || init?.parentId || '');
+  const [parentId, setParentId] = useState(record?.parentId || init?.parentId || initialParent?.id || '');
   const [values, setValues] = useState<Record<string, string>>(record?.values || {});
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
   const [hasCustomTerms, setHasCustomTerms] = useState<boolean>(record?.hasCustomTerms ?? false);
@@ -153,6 +191,18 @@ export function ContractForm({
   const primaryKocTemplate = kocTemplates[0];
   const kocLegalNotes = primaryKocTemplate?.legalNotes;
 
+  const initialBreakdown = useMemo(
+    () => buildJobAcceptanceBreakdown(initialDeal, findKoc(kocs, initialDeal), initialParent),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const [draftVideoFee, setDraftVideoFee] = useState<number>(initialBreakdown.videoItem.feeNetVnd);
+  const [draftAddons, setDraftAddons] = useState<JobAcceptanceAddonRow[]>(initialBreakdown.addonItems);
+  const jobAcceptanceBreakdown = useMemo(
+    () => buildJobAcceptanceBreakdown(deal, koc, parentRecord, draftAddons, draftVideoFee),
+    [deal, koc, parentRecord, draftAddons, draftVideoFee],
+  );
+
   // Tải mẫu (kèm vị trí ô). Hồ sơ đang sửa dùng đúng bản mẫu đã khóa của hồ sơ.
   useEffect(() => {
     if (!templateId) return;
@@ -187,6 +237,21 @@ export function ContractForm({
   const required = fields.filter(f => f.required);
   const requiredDone = required.filter(f => values[f.key]?.trim()).length;
 
+  const applyJobBreakdownToDraftValues = (
+    nextVideoFee: number,
+    nextAddons: JobAcceptanceAddonRow[],
+    targetDeal = deal,
+    targetKoc = koc,
+    targetParent = parentRecord,
+  ) => {
+    setDraftVideoFee(nextVideoFee);
+    setDraftAddons(nextAddons);
+    if (fields.length > 0) {
+      const nextBd = buildJobAcceptanceBreakdown(targetDeal, targetKoc, targetParent, nextAddons, nextVideoFee);
+      setValues(prev => syncValuesFromJobAcceptanceBreakdown(fields, prev, nextBd));
+    }
+  };
+
   const autoTitle = (k: KocItem | undefined, d: BookingDealItem | undefined, kd: 'CONTRACT' | 'ACCEPTANCE') =>
     [kd === 'CONTRACT' ? 'Hợp đồng video' : 'Nghiệm thu video', k?.stageName || d?.kocStageName, d?.brandName].filter(Boolean).join(' · ');
 
@@ -197,6 +262,13 @@ export function ContractForm({
     setBrand(d.brandName); setPartner(partnerName(k, d));
     if (d.totalValue && !customContractValue) setCustomContractValue(formatMoneyInput(String(d.totalValue)));
     if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
+    const matchedParent = kind === 'ACCEPTANCE' ? (findBestParentForAcceptance(d, k) || parentRecord) : parentRecord;
+    if (kind === 'ACCEPTANCE' && matchedParent && matchedParent.id !== parentId) {
+      setParentId(matchedParent.id);
+    }
+    const freshBd = buildJobAcceptanceBreakdown(d, k, matchedParent);
+    setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+    setDraftAddons(freshBd.addonItems);
     const savedShots = findSavedScreenshotsForContext({
       dealId: d.id,
       dealCode: d.dealCode,
@@ -208,15 +280,27 @@ export function ContractForm({
     }
     const nextTemplate = templateFor(k, kind, d, data.templates);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
-    else if (template) { const result = prefill(fields, values, { koc: k, deal: d, brand: d.brandName, existingRecords: data.records, parentRecord, parentFields: parentTemplate ? uniqueFields(parentTemplate) : [] }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
+    else if (template) {
+      const matchedParentTpl = matchedParent ? data.templates.find(t => t.id === matchedParent.templateId) : undefined;
+      const result = prefill(fields, {}, { koc: k, deal: d, brand: d.brandName, existingRecords: data.records, parentRecord: matchedParent, parentFields: matchedParentTpl ? uniqueFields(matchedParentTpl) : [] });
+      setValues(result.values); setPrefilled(new Set(result.filled));
+    }
   };
 
   const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
     setKind(k);
     if (title === autoTitle(koc, deal, kind)) setTitle(autoTitle(koc, deal, k));
+    if (k === 'ACCEPTANCE') {
+      const bestP = findBestParentForAcceptance(deal, koc);
+      if (bestP) setParentId(bestP.id);
+      const freshBd = buildJobAcceptanceBreakdown(deal, koc, bestP || parentRecord);
+      setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+      setDraftAddons(freshBd.addonItems);
+    } else {
+      setParentId('');
+    }
     const next = deal ? templateFor(koc, k, deal, data.templates) : (data.templates.find(t => t.kind === k)?.id || '');
     setTemplate(null); setValues({}); setTemplateId(next);
-    if (k === 'CONTRACT') setParentId('');
   };
 
   const switchSourceMode = (nextOwnForm: boolean) => {
@@ -502,7 +586,7 @@ export function ContractForm({
               icon={Camera}
               onClick={() => setScreenshotModalOpen(true)}
             >
-              Chụp ảnh sản phẩm từ video{acceptanceScreenshots.length > 0 ? ` (${acceptanceScreenshots.length})` : ''}
+              Lấy thông tin Link Air & cắt ảnh nghiệm thu{acceptanceScreenshots.length > 0 ? ` (${acceptanceScreenshots.length})` : ''}
             </Button>
           )}
           {!isKocOwnForm && (
@@ -660,7 +744,7 @@ export function ContractForm({
                   </Field>
                 )}
                 {(kind === 'ACCEPTANCE' || isSow) && (
-                  <Field label={isSow ? 'Hợp đồng nguyên tắc' : 'Hợp đồng gốc'} htmlFor="ct-parent" className="md:col-span-2">
+                  <Field label={isSow ? 'Hợp đồng nguyên tắc' : 'Phụ lục SOW / Hợp đồng gốc của Job'} htmlFor="ct-parent" className="md:col-span-2">
                     <Select
                       id="ct-parent"
                       value={parentId}
@@ -673,6 +757,9 @@ export function ContractForm({
                           if (!partner.trim()) setPartner(pRec.partner);
                           if (pRec.dealId && !dealId) chooseDeal(pRec.dealId);
                           if (!title.trim()) setTitle([isSow ? 'SOW booking video' : 'Nghiệm thu video', pRec.partner, pRec.brand].filter(Boolean).join(' · '));
+                          const freshBd = buildJobAcceptanceBreakdown(deal, koc, pRec);
+                          setDraftVideoFee(freshBd.videoItem.feeNetVnd);
+                          setDraftAddons(freshBd.addonItems);
                           const inferredTpl = isSow ? '' : inferAcceptanceTemplate(pRec.templateId);
                           if (inferredTpl && inferredTpl !== templateId) {
                             setTemplate(null);
@@ -680,7 +767,7 @@ export function ContractForm({
                             setTemplateId(inferredTpl);
                           } else if (template) {
                             const pTpl = data.templates.find(t => t.id === pRec.templateId);
-                            const result = prefill(fields, values, {
+                            const result = prefill(fields, {}, {
                               koc,
                               deal,
                               brand: brand || pRec.brand,
@@ -689,12 +776,12 @@ export function ContractForm({
                               parentFields: pTpl ? uniqueFields(pTpl) : [],
                             });
                             setValues(result.values);
-                            setPrefilled(new Set([...prefilled, ...result.filled]));
+                            setPrefilled(new Set(result.filled));
                           }
                         }
                       }}
                     >
-                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc' : 'Chọn hợp đồng'}</option>
+                      <option value="">{isSow ? 'Chọn hợp đồng nguyên tắc' : 'Chọn Phụ lục SOW / Hợp đồng của Job'}</option>
                       {parents.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}
                     </Select>
                   </Field>
@@ -793,6 +880,252 @@ export function ContractForm({
             </div>
           </Panel>
 
+          {kind === 'ACCEPTANCE' && (
+            <Panel
+              title="Kiểm tra Bản nháp Nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)"
+              actions={
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const nextList: JobAcceptanceAddonRow[] = [
+                        ...draftAddons,
+                        {
+                          id: `addon-${Date.now()}`,
+                          termType: 'CROSS_POST_REUP',
+                          termLabel: 'Đăng chéo kênh phụ / Dịch vụ bổ sung theo Phụ lục',
+                          durationDays: 30,
+                          evidenceCodeOrUrl: '',
+                          allocatedCostVnd: 0,
+                          acceptanceStatus: 'VERIFIED',
+                        },
+                      ];
+                      applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                    }}
+                  >
+                    + Thêm dịch vụ đi kèm
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => applyJobBreakdownToDraftValues(draftVideoFee, draftAddons)}
+                  >
+                    Đồng bộ vào Bản nháp A4
+                  </Button>
+                </div>
+              }
+            >
+              <div className="space-y-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-line bg-sunken/50">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-accent/15 text-accent font-mono font-semibold">
+                      Job: {jobAcceptanceBreakdown.jobCode}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-surface border border-line font-mono text-ink-2">
+                      Phụ lục SOW: {jobAcceptanceBreakdown.appendixCode}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-surface border border-line font-mono text-ink-2">
+                      HĐNT: {jobAcceptanceBreakdown.masterContractCode}
+                    </span>
+                  </div>
+                  <Status tone="positive">
+                    Nghiệm thu theo Phụ lục Job (1 Video + {draftAddons.length} dịch vụ đi kèm)
+                  </Status>
+                </div>
+
+                {/* Hạng mục 1: Video chính */}
+                <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold text-ink">
+                      1. Hạng mục Video chính: Sản xuất và đăng tải Video review ({jobAcceptanceBreakdown.videoItem.productName || brand || 'Sản phẩm chiến dịch'})
+                    </span>
+                    <Status tone="positive">Hoàn thành</Status>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-end">
+                    <Field label="Ngày đăng tải thực tế (Air Date)">
+                      <Input
+                        value={jobAcceptanceBreakdown.videoItem.airDate || '—'}
+                        readOnly
+                        className="font-mono bg-sunken/40"
+                      />
+                    </Field>
+                    <Field label="Link bài đăng (Link Air)">
+                      <Input
+                        value={jobAcceptanceBreakdown.videoItem.videoUrl || 'Chưa điền link video'}
+                        readOnly
+                        className="font-mono bg-sunken/40"
+                      />
+                    </Field>
+                    <Field label="Thành tiền Video chính (VNĐ - Net)">
+                      <Input
+                        inputMode="numeric"
+                        className="font-mono tabular-nums font-semibold"
+                        value={formatMoneyInput(String(draftVideoFee || 0))}
+                        onChange={e => {
+                          const nextFee = Number(e.target.value.replace(/\D/g, '')) || 0;
+                          applyJobBreakdownToDraftValues(nextFee, draftAddons);
+                        }}
+                      />
+                    </Field>
+                  </div>
+                </div>
+
+                {/* Hạng mục 2..N: Các dịch vụ đi kèm trong Phụ lục Job */}
+                <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-semibold text-ink">
+                      2. Các dịch vụ đi kèm theo Phụ lục SOW ({draftAddons.length} hạng mục)
+                    </span>
+                    <span className="text-2xs font-mono text-ink-2">
+                      Phí dịch vụ đạt nghiệm thu: {formatNumber(jobAcceptanceBreakdown.financials.activeAddonsNet)}đ
+                      {jobAcceptanceBreakdown.financials.droppedDeduction > 0
+                        ? ` · Khấu trừ hủy: -${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
+                        : ''}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {draftAddons.map((addon, idx) => (
+                      <div
+                        key={addon.id || idx}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-2 rounded-lg border border-line bg-sunken/30"
+                      >
+                        <div className="md:col-span-4">
+                          <Input
+                            value={addon.termLabel}
+                            onChange={e => {
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, termLabel: e.target.value } : a,
+                              );
+                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                            }}
+                            placeholder="Tên dịch vụ đi kèm..."
+                          />
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min={1}
+                            value={addon.durationDays}
+                            onChange={e => {
+                              const days = Math.max(1, Number(e.target.value) || 30);
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, durationDays: days } : a,
+                              );
+                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                            }}
+                            className="font-mono text-right"
+                          />
+                          <span className="text-2xs text-ink-3 shrink-0">ngày</span>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            value={addon.evidenceCodeOrUrl}
+                            onChange={e => {
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, evidenceCodeOrUrl: e.target.value } : a,
+                              );
+                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                            }}
+                            placeholder="Mã Spark Ads / Link..."
+                            className="font-mono"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            inputMode="numeric"
+                            value={addon.allocatedCostVnd > 0 ? formatMoneyInput(String(addon.allocatedCostVnd)) : '0'}
+                            onChange={e => {
+                              const cost = Number(e.target.value.replace(/\D/g, '')) || 0;
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, allocatedCostVnd: cost } : a,
+                              );
+                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                            }}
+                            placeholder="0 (Gộp gói)"
+                            className="font-mono text-right"
+                          />
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-1">
+                          <Select
+                            value={addon.acceptanceStatus}
+                            onChange={e => {
+                              const st = e.target.value as JobAcceptanceAddonRow['acceptanceStatus'];
+                              const nextList = draftAddons.map((a, i) =>
+                                i === idx ? { ...a, acceptanceStatus: st } : a,
+                              );
+                              applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                            }}
+                          >
+                            <option value="VERIFIED">Hoàn thành</option>
+                            <option value="PENDING_ACCEPTANCE">Chờ bàn giao</option>
+                            <option value="DROPPED">Hủy - Khấu trừ</option>
+                          </Select>
+                          {draftAddons.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextList = draftAddons.filter((_, i) => i !== idx);
+                                applyJobBreakdownToDraftValues(draftVideoFee, nextList);
+                              }}
+                              className="text-ink-3 hover:text-critical p-1 shrink-0"
+                              title="Xóa dịch vụ"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tóm tắt quyết toán nghiệm thu theo Phụ lục Job */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-lg border border-line bg-sunken/60 font-mono">
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Tổng Phụ lục SOW</span>
+                    <strong className="text-ink">{formatNumber(jobAcceptanceBreakdown.financials.plannedTotalNet)}đ</strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Khấu trừ hủy DV</span>
+                    <strong className={jobAcceptanceBreakdown.financials.droppedDeduction > 0 ? 'text-critical' : 'text-ink-2'}>
+                      {jobAcceptanceBreakdown.financials.droppedDeduction > 0
+                        ? `-${formatNumber(jobAcceptanceBreakdown.financials.droppedDeduction)}đ`
+                        : '0đ'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">Nghiệm thu Net</span>
+                    <strong className="text-ink">{formatNumber(jobAcceptanceBreakdown.financials.acceptedTotalNet)}đ</strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">
+                      {jobAcceptanceBreakdown.subjectKind === 'COM'
+                        ? `VAT (${deal?.vatRatePercent ?? 8}%)`
+                        : jobAcceptanceBreakdown.subjectKind === 'HKD'
+                          ? 'Thuế HKD (0đ)'
+                          : 'Thuế TNCN (10%)'}
+                    </span>
+                    <strong className="text-ink">
+                      {formatNumber(
+                        jobAcceptanceBreakdown.subjectKind === 'COM'
+                          ? jobAcceptanceBreakdown.financials.vatTax
+                          : jobAcceptanceBreakdown.financials.pitTax,
+                      )}đ
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-2xs text-ink-3 block">
+                      Còn trả (Sau tạm ứng {formatNumber(jobAcceptanceBreakdown.financials.advanceAmount)}đ)
+                    </span>
+                    <strong className="text-positive">{formatNumber(jobAcceptanceBreakdown.financials.remainingPayable)}đ</strong>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          )}
+
           {!isKocOwnForm && template && groups.map(g => (
             <Panel key={g.key} title={g.title}>
               <div className="grid gap-3.5 md:grid-cols-2">
@@ -831,7 +1164,7 @@ export function ContractForm({
 
           {(kind === 'ACCEPTANCE' || acceptanceScreenshots.length > 0) && (
             <Panel
-              title="Hình ảnh chụp màn hình sản phẩm trong video (Đính kèm BBNT)"
+              title="Kiểm tra Link Air, Chỉ số tương tác, Kịch bản & Hình ảnh nghiệm thu"
               actions={
                 <Button
                   size="sm"
@@ -839,55 +1172,118 @@ export function ContractForm({
                   icon={Camera}
                   onClick={() => setScreenshotModalOpen(true)}
                 >
-                  {acceptanceScreenshots.length > 0 ? 'Chụp thêm / Quản lý ảnh' : 'Chụp ảnh sản phẩm từ video'}
+                  {acceptanceScreenshots.length > 0
+                    ? 'Kiểm tra lại Link Air / Quản lý ảnh'
+                    : 'Lấy thông tin Link Air & cắt ảnh nghiệm thu'}
                 </Button>
               }
             >
-              {acceptanceScreenshots.length === 0 ? (
-                <div className="p-4 rounded-xl border border-dashed border-line bg-surface-2/40 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-2">
-                  <span>
-                    Chưa có ảnh chụp màn hình lúc sản phẩm xuất hiện trong video. Bấm nút bên phải để cắt khung hình từ link video TikTok hoặc dán ảnh chụp màn hình vào Biên bản nghiệm thu.
-                  </span>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {acceptanceScreenshots.map((shot, idx) => (
-                    <div
-                      key={shot.id || idx}
-                      className="flex items-start gap-2.5 p-2.5 rounded-xl border border-line bg-surface-2/50"
-                    >
-                      <img
-                        src={shot.imageDataUrl}
-                        alt={shot.note || shot.timeLabel}
-                        className="w-16 h-24 rounded-lg object-cover border border-line bg-black shrink-0"
-                      />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-code text-2xs font-semibold">
-                            Ảnh #{idx + 1} · Mốc {shot.timeLabel}
+              {(() => {
+                const inspectionMeta = acceptanceScreenshots.find(s => s.inspectionMeta)?.inspectionMeta;
+                return (
+                  <div className="space-y-3">
+                    {inspectionMeta && (
+                      <div className="p-3 rounded-xl border border-line bg-surface-2/60 space-y-2 text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-ink">
+                              Kết quả kiểm tra Link Air: @{inspectionMeta.authorHandle}
+                            </span>
+                            <Status
+                              tone={
+                                inspectionMeta.scriptVerdict === 'VI_PHẠM_TỪ_CẤM'
+                                  ? 'critical'
+                                  : inspectionMeta.scriptVerdict === 'ĐẠT_CHUẨN'
+                                    ? 'positive'
+                                    : 'warning'
+                              }
+                            >
+                              {inspectionMeta.scriptVerdict === 'VI_PHẠM_TỪ_CẤM'
+                                ? 'Cảnh báo từ cấm'
+                                : inspectionMeta.scriptVerdict === 'ĐẠT_CHUẨN'
+                                  ? 'Kịch bản đạt chuẩn'
+                                  : 'Cần kiểm tra kịch bản'}
+                            </Status>
+                            <Status tone={inspectionMeta.hasCartAnchor ? 'positive' : 'warning'}>
+                              {inspectionMeta.hasCartAnchor ? 'Đã gắn giỏ hàng' : 'Chưa gắn giỏ hàng'}
+                            </Status>
+                          </div>
+                          <span className="text-2xs font-code text-ink-2">
+                            Ngày đăng: {inspectionMeta.publishedTimeFormatted || '—'} · {inspectionMeta.durationSeconds}s
                           </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAcceptanceScreenshots(prev => prev.filter(x => x.id !== shot.id))
-                            }
-                            className="text-ink-3 hover:text-critical p-0.5"
-                            title="Gỡ ảnh khỏi BBNT"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         </div>
-                        <p className="text-xs font-medium text-ink line-clamp-2">
-                          {shot.note || `Khung hình sản phẩm tại giây ${shot.timeLabel}`}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-ink-2">
+                          <span>
+                            Views: <strong className="text-ink font-code">{formatNumber(inspectionMeta.viewsCount)}</strong>
+                          </span>
+                          <span>
+                            Tim: <strong className="text-ink font-code">{formatNumber(inspectionMeta.likesCount)}</strong>
+                          </span>
+                          <span>
+                            Bình luận: <strong className="text-ink font-code">{formatNumber(inspectionMeta.commentsCount)}</strong>
+                          </span>
+                          <span>
+                            Chia sẻ: <strong className="text-ink font-code">{formatNumber(inspectionMeta.sharesCount)}</strong>
+                          </span>
+                          <span>
+                            ER: <strong className="text-accent font-code">{inspectionMeta.engagementRate}%</strong>
+                          </span>
+                        </div>
+                        <p className="text-2xs text-ink-2">
+                          Đối soát nội dung: <span className="text-ink font-medium">{inspectionMeta.scriptSummaryNote}</span>
                         </p>
-                        {shot.matchedTerm && (
-                          <p className="text-2xs text-ink-3 truncate">SP: {shot.matchedTerm}</p>
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+
+                    {acceptanceScreenshots.length === 0 ? (
+                      <div className="p-4 rounded-xl border border-dashed border-line bg-surface-2/40 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-2">
+                        <span>
+                          Chưa có thông tin kiểm tra Link Air và ảnh chụp sản phẩm. Bấm nút bên phải để lấy thông tin bài đăng, kiểm tra chỉ số, đối soát kịch bản và cắt ảnh KOC cầm sản phẩm đưa vào Biên bản nghiệm thu.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {acceptanceScreenshots.map((shot, idx) => (
+                          <div
+                            key={shot.id || idx}
+                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-line bg-surface-2/50"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={shot.imageDataUrl}
+                              alt={shot.note || shot.timeLabel}
+                              className="w-16 h-24 rounded-lg object-cover border border-line bg-black shrink-0"
+                            />
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="px-1.5 py-0.5 rounded bg-positive-soft text-positive font-code text-2xs font-semibold">
+                                  Ảnh #{idx + 1} · Mốc {shot.timeLabel}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAcceptanceScreenshots(prev => prev.filter(x => x.id !== shot.id))
+                                  }
+                                  className="text-ink-3 hover:text-critical p-0.5"
+                                  title="Gỡ ảnh khỏi BBNT"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <p className="text-xs font-medium text-ink line-clamp-2">
+                                {shot.note || `Khung hình sản phẩm tại giây ${shot.timeLabel}`}
+                              </p>
+                              {shot.matchedTerm && (
+                                <p className="text-2xs text-ink-3 truncate">SP: {shot.matchedTerm}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </Panel>
           )}
         </div>
@@ -1001,7 +1397,39 @@ export function ContractForm({
         brandName={brand || deal?.brandName}
         productName={deal?.productName}
         existingScreenshots={acceptanceScreenshots}
-        onApplyScreenshots={items => setAcceptanceScreenshots(items)}
+        onApplyScreenshots={(items: AcceptanceScreenshotItem[], inspectionMeta?: VideoAcceptanceInspectionMeta) => {
+          setAcceptanceScreenshots(items);
+          if (inspectionMeta && fields.length > 0) {
+            setValues(prev => {
+              const next = { ...prev };
+              for (const f of fields) {
+                const fTitle = (f.title || f.label || '').toLowerCase();
+                if (f.source === 'airDate' && inspectionMeta.publishedDateVn && !next[f.key]?.trim()) {
+                  next[f.key] = inspectionMeta.publishedDateVn;
+                } else if (f.source === 'channelLink' && inspectionMeta.authorHandle && !next[f.key]?.trim()) {
+                  next[f.key] = `https://www.tiktok.com/@${inspectionMeta.authorHandle.replace(/^@/, '')}`;
+                } else if (
+                  f.source === 'product' &&
+                  (inspectionMeta.matchedProductTerms[0] || inspectionMeta.cartAnchorTitle) &&
+                  !next[f.key]?.trim()
+                ) {
+                  next[f.key] =
+                    deal?.productName ||
+                    inspectionMeta.matchedProductTerms[0] ||
+                    inspectionMeta.cartAnchorTitle ||
+                    '';
+                } else if (
+                  (fTitle.includes('link video') || fTitle === 'dòng 1 · link') &&
+                  inspectionMeta.resolvedUrl &&
+                  !next[f.key]?.trim()
+                ) {
+                  next[f.key] = inspectionMeta.resolvedUrl;
+                }
+              }
+              return next;
+            });
+          }
+        }}
       />
     </form>
   );

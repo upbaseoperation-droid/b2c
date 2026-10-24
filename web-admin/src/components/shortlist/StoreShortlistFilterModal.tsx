@@ -422,7 +422,6 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
         brandApprovalStatus: 'BRAND_PENDING',
         kocNegotiationStatus: 'NOT_CONTACTED',
         overallStatus: 'DRAFT',
-        expectedAirDate: '2026-10-25',
         assignedStaffId: 'staff-booking',
         assignedStaffName:
           matchedPlanRow?.assignedStaff || selectedStore.b2cOwnerName || currentUserName,

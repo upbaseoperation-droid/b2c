@@ -919,7 +919,7 @@ export default function App() {
         totalValue: fee,
         advanceAmount: Math.round(fee * 0.5),
         finalAmount: Math.round(fee * 0.5),
-        deadlinePost: listingItem.expectedAirDate || '2026-10-15',
+        deadlinePost: listingItem.expectedAirDate || '',
         viewsCount: 0,
         affiliateGmv: 0,
         gmv30: 0,

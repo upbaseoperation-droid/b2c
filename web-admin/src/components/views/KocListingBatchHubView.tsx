@@ -214,7 +214,7 @@ export function KocListingBatchHubView({
     pillarName: 'Chăm sóc da bé mẩn ngứa',
     videoFormat: 'Review & Hướng dẫn sử dụng',
     proposedFee: 4500000,
-    expectedAirDate: '2026-10-25'
+    expectedAirDate: ''
   });
 
   // Unique list of stores combining listings + monthlyPlans + B2C stores
@@ -810,7 +810,7 @@ export function KocListingBatchHubView({
           createdAt: nowIso,
         }
       ],
-      expectedAirDate: newKocForm.expectedAirDate,
+      expectedAirDate: newKocForm.expectedAirDate || undefined,
       assignedStaffId: 'STAFF-101',
       assignedStaffName: matchedRow?.assignedStaff || currentUserName,
       createdAt: nowIso,
@@ -930,7 +930,7 @@ export function KocListingBatchHubView({
             createdAt: nowIso,
           }
         ],
-        expectedAirDate: item.expectedAirDate || '2026-10-25',
+        expectedAirDate: item.expectedAirDate || undefined,
         assignedStaffId: item.assignedStaffId || 'STAFF-101',
         assignedStaffName: item.assignedStaffName || currentUserName,
         createdAt: item.createdAt || nowIso,
@@ -957,6 +957,7 @@ export function KocListingBatchHubView({
         ...matchedIncoming,
         id: existing.id,
         discussions: existing.discussions || matchedIncoming.discussions,
+        expectedAirDate: matchedIncoming.expectedAirDate || existing.expectedAirDate,
         updatedAt: nowIso,
       };
     });

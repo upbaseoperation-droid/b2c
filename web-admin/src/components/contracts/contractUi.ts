@@ -153,11 +153,195 @@ export function templateFor(
   if (docStage === 'SOW') {
     return subjectKind === 'CTV' ? 'CTV-HDNT' : `${subjectKind}-SOW`;
   }
-  if (docStage === 'BBNT') {
-    return `${subjectKind}-VID-BBNT`;
+  if (docStage === 'BBNT' || (kind === 'ACCEPTANCE' && subjectKind !== 'CTV')) {
+    const vidBbntId = `${subjectKind}-VID-BBNT`;
+    if (templates.length === 0 || templates.some(t => t.id === vidBbntId)) {
+      return vidBbntId;
+    }
   }
 
   return `${subjectKind}-${kind === 'CONTRACT' ? 'HD' : 'BBNT'}`;
+}
+
+export interface JobAcceptanceAddonRow {
+  id: string;
+  termType: 'ADS_CODE' | 'IMAGE_USAGE' | 'EXCLUSIVITY' | 'CROSS_POST_REUP' | 'LINK_BIO_CART';
+  termLabel: string;
+  durationDays: number;
+  evidenceCodeOrUrl: string;
+  allocatedCostVnd: number;
+  acceptanceStatus: 'VERIFIED' | 'PENDING_ACCEPTANCE' | 'DROPPED';
+}
+
+export interface JobAcceptanceBreakdown {
+  jobCode: string;
+  appendixCode: string;
+  masterContractCode: string;
+  subjectKind: SubjectKind;
+  videoItem: {
+    productName: string;
+    brandName: string;
+    airDate: string;
+    videoUrl: string;
+    feeNetVnd: number;
+    quantity: number;
+  };
+  addonItems: JobAcceptanceAddonRow[];
+  financials: {
+    plannedTotalNet: number;
+    videoNet: number;
+    activeAddonsNet: number;
+    droppedDeduction: number;
+    acceptedTotalNet: number;
+    pitTax: number;
+    vatTax: number;
+    grossTotal: number;
+    advanceAmount: number;
+    remainingPayable: number;
+    amountInWords: string;
+  };
+}
+
+const formatYmdToVnDate = (raw?: string): string => {
+  if (!raw) return '';
+  const m = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return raw.trim();
+};
+
+const extractDocDateFromCode = (code?: string): string => {
+  if (!code) return '';
+  const m = code.trim().match(/^(\d{2})[./-]?(\d{2})[./-]?(\d{2})\b/);
+  if (m) return `${m[1]}.${m[2]}.${m[3]}`;
+  return '';
+};
+
+/**
+ * Tổng hợp bảng kê nghiệm thu theo Phụ lục của từng Job (gồm 1 Video chính + các Dịch vụ đi kèm).
+ */
+export function buildJobAcceptanceBreakdown(
+  deal?: BookingDealItem,
+  koc?: KocItem,
+  parentRecord?: ContractRecord,
+  customAddons?: JobAcceptanceAddonRow[],
+  customVideoFee?: number,
+): JobAcceptanceBreakdown {
+  const subjectKind = detectSubjectKind(koc, deal);
+  const jobCode = deal?.dealCode || parentRecord?.dealCode || 'JOB-01';
+  const parentDocDate = parentRecord?.values['token:[dd.mm.yy]'] || '';
+  const parentBrand = parentRecord?.values['token:[BRAND]'] || (deal?.brandName || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const parentKocToken = parentRecord?.values['token:[ID KOC]'] || (koc?.channelId || deal?.kocChannelId || '').replace(/^@/, '');
+
+  const appendixCode =
+    deal?.contractAppendixCode ||
+    (parentRecord?.templateId.endsWith('-SOW') && parentDocDate && parentKocToken
+      ? `${parentDocDate}/SOW/UPBASE-${parentBrand || 'BRAND'}-${parentKocToken}`
+      : `PL-${jobCode}`);
+
+  const masterContractCode =
+    deal?.masterContractCode ||
+    (parentRecord?.values['token:[Ngày HĐNT]'] && parentKocToken
+      ? `${parentRecord.values['token:[Ngày HĐNT]']}/HĐNT/UPBASE-${parentKocToken}`
+      : `HĐNT-${parentKocToken || 'KOC'}`);
+
+  const addonItems: JobAcceptanceAddonRow[] = customAddons
+    ? customAddons
+    : deal?.rightsTerms && deal.rightsTerms.length > 0
+      ? deal.rightsTerms.map((rt, idx) => ({
+          id: rt.id || `addon-${idx + 1}`,
+          termType: rt.termType,
+          termLabel: rt.termLabel,
+          durationDays: rt.durationDays || 30,
+          evidenceCodeOrUrl: rt.evidenceCodeOrUrl || (rt.termType === 'ADS_CODE' ? deal?.sparkAdsCode || '' : ''),
+          allocatedCostVnd: Number(rt.allocatedCostVnd) || 0,
+          acceptanceStatus:
+            rt.acceptanceStatus === 'DROPPED'
+              ? 'DROPPED'
+              : rt.acceptanceStatus === 'VERIFIED' || (rt.termType === 'ADS_CODE' && Boolean(deal?.sparkAdsCode || rt.evidenceCodeOrUrl))
+                ? 'VERIFIED'
+                : 'PENDING_ACCEPTANCE',
+        }))
+      : [
+          {
+            id: 'default-ads-code',
+            termType: 'ADS_CODE',
+            termLabel: 'Cấp mã code chạy quảng cáo video (Spark Ads)',
+            durationDays: deal?.sparkAdsExpiryDays || 30,
+            evidenceCodeOrUrl: deal?.sparkAdsCode || '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: deal?.sparkAdsCode ? 'VERIFIED' : 'VERIFIED',
+          },
+          {
+            id: 'default-image-usage',
+            termType: 'IMAGE_USAGE',
+            termLabel: 'Sử dụng hình ảnh và video gốc kể từ ngày đăng tải',
+            durationDays: 90,
+            evidenceCodeOrUrl: deal?.tiktokVideoUrl || '',
+            allocatedCostVnd: 0,
+            acceptanceStatus: 'VERIFIED',
+          },
+        ];
+
+  const totalAddonsAllocated = addonItems.reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const activeAddonsNet = addonItems
+    .filter(a => a.acceptanceStatus !== 'DROPPED')
+    .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+  const droppedDeduction = addonItems
+    .filter(a => a.acceptanceStatus === 'DROPPED')
+    .reduce((s, a) => s + (Number(a.allocatedCostVnd) || 0), 0);
+
+  const rawDealTotal = Number(deal?.totalValue || 0);
+  const videoNet =
+    customVideoFee !== undefined
+      ? customVideoFee
+      : deal?.videoAssetCostVnd && deal.videoAssetCostVnd > 0
+        ? deal.videoAssetCostVnd
+        : Math.max(0, rawDealTotal - totalAddonsAllocated);
+
+  const plannedTotalNet = videoNet + totalAddonsAllocated;
+  const acceptedTotalNet = Math.max(0, videoNet + activeAddonsNet);
+
+  const tax = calculateContractTax({
+    subjectKind,
+    baseAmount: acceptedTotalNet,
+    vatRatePercent: deal?.vatRatePercent,
+    isNetPayment: true,
+  });
+
+  const advanceAmount = Number(deal?.advanceAmount || 0);
+  const remainingPayable =
+    subjectKind === 'COM'
+      ? Math.max(0, tax.grossTotalContract - advanceAmount)
+      : Math.max(0, tax.netAmountToReceive - advanceAmount);
+
+  return {
+    jobCode,
+    appendixCode,
+    masterContractCode,
+    subjectKind,
+    videoItem: {
+      productName: deal?.productName || deal?.brandName || '',
+      brandName: deal?.brandName || parentRecord?.brand || '',
+      airDate: formatYmdToVnDate(deal?.postedDate || deal?.deadlinePost || ''),
+      videoUrl: deal?.tiktokVideoUrl || '',
+      feeNetVnd: videoNet,
+      quantity: deal?.committedOutputsCount || 1,
+    },
+    addonItems,
+    financials: {
+      plannedTotalNet,
+      videoNet,
+      activeAddonsNet,
+      droppedDeduction,
+      acceptedTotalNet,
+      pitTax: tax.pitDeductionAmount,
+      vatTax: tax.vatAmount,
+      grossTotal: tax.grossTotalContract,
+      advanceAmount,
+      remainingPayable,
+      amountInWords: tax.amountInWords,
+    },
+  };
 }
 
 /** Tên đối tác hiển thị trên hồ sơ: tên pháp lý nếu có, không thì tên kênh. */
@@ -203,27 +387,43 @@ export function prefill(
     ? parentRecord.values['token:[dd.mm.yy]']
     : todayDocDate;
 
+  // Tự động tìm Phụ lục SOW của Job (nếu chưa truyền parentRecord trực tiếp)
+  const sowRecord: ContractRecord | undefined = (() => {
+    if (parentRecord?.templateId.endsWith('-SOW')) return parentRecord;
+    if (deal?.id || deal?.dealCode) {
+      const found = existingRecords.find(
+        r =>
+          r.templateId.endsWith('-SOW') &&
+          ((deal.id && r.dealId === deal.id) || (deal.dealCode && r.dealCode === deal.dealCode)),
+      );
+      if (found) return found;
+    }
+    return undefined;
+  })();
+
+  const effectiveParentRecord = parentRecord || sowRecord;
+
   // Tự động tra cứu danh sách trường của hồ sơ gốc (SOW hoặc HĐNT) và HĐNT khung (nếu parent là SOW)
   const resolvedParentFields: ContractField[] =
     ctx.parentFields && ctx.parentFields.length > 0
       ? ctx.parentFields
-      : parentRecord && OFFICIAL_TEMPLATES_SNAPSHOT[parentRecord.templateId]
-        ? uniqueFields(OFFICIAL_TEMPLATES_SNAPSHOT[parentRecord.templateId])
+      : effectiveParentRecord && OFFICIAL_TEMPLATES_SNAPSHOT[effectiveParentRecord.templateId]
+        ? uniqueFields(OFFICIAL_TEMPLATES_SNAPSHOT[effectiveParentRecord.templateId])
         : [];
 
   const frameworkRecord: ContractRecord | undefined = (() => {
-    if (parentRecord?.templateId.endsWith('-HDNT')) return parentRecord;
-    if (parentRecord?.parentId) {
-      const found = existingRecords.find(r => r.id === parentRecord.parentId);
+    if (effectiveParentRecord?.templateId.endsWith('-HDNT')) return effectiveParentRecord;
+    if (effectiveParentRecord?.parentId) {
+      const found = existingRecords.find(r => r.id === effectiveParentRecord.parentId);
       if (found) return found;
     }
-    if (koc || parentRecord) {
+    if (koc || effectiveParentRecord) {
       return existingRecords.find(
         r =>
           r.templateId.endsWith('-HDNT') &&
           ((koc?.id && r.kocId === koc.id) ||
-            (parentRecord?.kocId && r.kocId === parentRecord.kocId) ||
-            (parentRecord?.partner && r.partner === parentRecord.partner)),
+            (effectiveParentRecord?.kocId && r.kocId === effectiveParentRecord.kocId) ||
+            (effectiveParentRecord?.partner && r.partner === effectiveParentRecord.partner)),
       );
     }
     return undefined;
@@ -236,30 +436,44 @@ export function prefill(
 
   // Hỗ trợ kế thừa giá trị theo source từ hợp đồng gốc (SOW -> HĐNT)
   const parentValueBySource = (src: NonNullable<ContractField['source']>): string => {
-    if (parentRecord) {
-      const pf = resolvedParentFields.find(x => x.source === src && parentRecord.values[x.key]?.trim());
-      if (pf) return parentRecord.values[pf.key].trim();
+    if (effectiveParentRecord) {
+      const pf = resolvedParentFields.find(x => x.source === src && effectiveParentRecord.values[x.key]?.trim());
+      if (pf) return effectiveParentRecord.values[pf.key].trim();
     }
-    if (frameworkRecord && frameworkRecord.id !== parentRecord?.id) {
+    if (frameworkRecord && frameworkRecord.id !== effectiveParentRecord?.id) {
       const ff = frameworkFields.find(x => x.source === src && frameworkRecord.values[x.key]?.trim());
       if (ff) return frameworkRecord.values[ff.key].trim();
     }
     return '';
   };
 
+  const parentValueByTitleContains = (keyword1: string, keyword2?: string): string => {
+    if (!effectiveParentRecord) return '';
+    const pf = resolvedParentFields.find(x => {
+      const t = (x.title || x.label || '').toLowerCase();
+      return t.includes(keyword1) && (!keyword2 || t.includes(keyword2)) && effectiveParentRecord.values[x.key]?.trim();
+    });
+    return pf ? effectiveParentRecord.values[pf.key].trim() : '';
+  };
+
   const parentMoneyFallback = (() => {
     const raw =
-      parentValueBySource('lineTotal') ||
       parentValueBySource('netTotal') ||
-      parentRecord?.values['token:[Tổng tiền trước thuế/sau thuế]'] ||
+      parentValueBySource('lineTotal') ||
+      effectiveParentRecord?.values['token:[Tổng tiền trước thuế/sau thuế]'] ||
       '';
     const num = Number(raw.replace(/[^\d]/g, ''));
     return Number.isFinite(num) && num > 0 ? num : 0;
   })();
 
-  const droppedDeduction = deal?.droppedCostVnd || 0;
+  const breakdown = buildJobAcceptanceBreakdown(deal, koc, effectiveParentRecord);
+  const droppedDeduction = deal?.droppedCostVnd ?? breakdown.financials.droppedDeduction;
   const totalAmount = Math.max(0, (deal?.totalValue || parentMoneyFallback || 0) - droppedDeduction);
-  const unitPrice = quantity > 1 && totalAmount ? Math.round(totalAmount / quantity) : totalAmount;
+  const videoLineAmount =
+    deal?.videoAssetCostVnd && deal.videoAssetCostVnd > 0
+      ? deal.videoAssetCostVnd
+      : Math.max(0, totalAmount - breakdown.financials.activeAddonsNet);
+  const unitPrice = quantity > 1 && videoLineAmount ? Math.round(videoLineAmount / quantity) : videoLineAmount;
 
   // Tính thuế và tổng giá trị hợp đồng theo quy định BR-09
   const tax = calculateContractTax({
@@ -272,22 +486,22 @@ export function prefill(
   // Tạm ứng lần 1 (ưu tiên deal.advanceAmount hoặc kế thừa từ SOW/HĐ gốc, mặc định 50% khi >= 2M)
   const parentAdvanceNum = Number((parentValueBySource('advanceAmount') || '').replace(/[^\d]/g, ''));
   const advanceAmount =
-    deal?.advanceAmount !== undefined && deal.advanceAmount > 0
+    deal?.advanceAmount !== undefined && deal.advanceAmount >= 0
       ? deal.advanceAmount
       : parentAdvanceNum > 0
         ? parentAdvanceNum
         : totalAmount >= 2000000
           ? Math.round(totalAmount * 0.5)
-          : totalAmount;
+          : 0;
 
   const getUniqueKocIdToken = () => {
-    if (parentRecord?.values['token:[ID KOC]']?.trim()) {
-      return parentRecord.values['token:[ID KOC]'].trim();
+    if (effectiveParentRecord?.values['token:[ID KOC]']?.trim()) {
+      return effectiveParentRecord.values['token:[ID KOC]'].trim();
     }
     if (frameworkRecord?.values['token:[ID KOC]']?.trim()) {
       return frameworkRecord.values['token:[ID KOC]'].trim();
     }
-    const rawId = koc ? koc.channelId.replace(/^@/, '') : '';
+    const rawId = koc ? koc.channelId.replace(/^@/, '') : (deal?.kocChannelId || '').replace(/^@/, '');
     if (!rawId) return '';
     if (deal?.dealCode) {
       return `${rawId}-${deal.dealCode}`;
@@ -308,17 +522,20 @@ export function prefill(
       ? [koc.cccd, koc.issueDate && `cấp ngày ${koc.issueDate}`, koc.issuePlace && `tại ${koc.issuePlace}`].filter(Boolean).join(' ')
       : koc?.cccd || parentValueBySource('cccd') || '';
 
-  const effectiveBrand = ctx.brand || deal?.brandName || parentRecord?.brand || frameworkRecord?.brand || '';
+  const effectiveBrand = ctx.brand || deal?.brandName || effectiveParentRecord?.brand || frameworkRecord?.brand || '';
   const brandCode =
-    parentRecord?.values['token:[BRAND]']?.trim() ||
+    effectiveParentRecord?.values['token:[BRAND]']?.trim() ||
     effectiveBrand.toUpperCase().replace(/[^A-Z0-9]/g, '') ||
     'BRAND';
 
   const source = (f: ContractField): string => {
+    const title = (f.title || f.label || '').toLowerCase();
+    const context = (f.context || '').toLowerCase();
+
     // 1. Phân loại theo source có sẵn (ưu tiên KOC/Deal, dự phòng từ SOW / HĐNT gốc)
     switch (f.source) {
       case 'partyName':
-        return (koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '') || parentValueBySource('partyName') || parentRecord?.partner || frameworkRecord?.partner || '';
+        return (koc ? (type === 'INDIVIDUAL' ? koc.realName : koc.companyName || koc.realName || '') : '') || parentValueBySource('partyName') || effectiveParentRecord?.partner || frameworkRecord?.partner || '';
       case 'ownerName':
         return koc?.legalRepresentative || koc?.realName || koc?.stageName || parentValueBySource('ownerName') || '';
       case 'representative':
@@ -345,17 +562,17 @@ export function prefill(
       }
       case 'bankAccountName':
         return (
-          parentRecord?.values['token:[Tên chủ tài khoản]'] ||
+          effectiveParentRecord?.values['token:[Tên chủ tài khoản]'] ||
           frameworkRecord?.values['token:[Tên chủ tài khoản]'] ||
           parentValueBySource('bankAccountName') ||
           (koc ? (type === 'COMPANY' ? koc.companyName || koc.realName : koc.realName) : '') ||
-          parentRecord?.partner ||
+          effectiveParentRecord?.partner ||
           ''
         );
       case 'bankAccountNumber':
         return (
           koc?.bankAccount ||
-          parentRecord?.values['token:[Số tài khoản]'] ||
+          effectiveParentRecord?.values['token:[Số tài khoản]'] ||
           frameworkRecord?.values['token:[Số tài khoản]'] ||
           parentValueBySource('bankAccountNumber') ||
           ''
@@ -363,7 +580,7 @@ export function prefill(
       case 'bankName':
         return (
           koc?.bankName ||
-          parentRecord?.values['token:[Tại Ngân hàng]'] ||
+          effectiveParentRecord?.values['token:[Tại Ngân hàng]'] ||
           frameworkRecord?.values['token:[Tại Ngân hàng]'] ||
           parentValueBySource('bankName') ||
           ''
@@ -371,7 +588,11 @@ export function prefill(
       case 'brand':
         return f.key === 'token:[BRAND]' ? brandCode : (effectiveBrand || parentValueBySource('brand') || '');
       case 'airDate':
-        return deal?.deadlinePost || parentValueBySource('airDate') || `${dd}/${mm}/${d.getFullYear()}`;
+        return (
+          formatYmdToVnDate(deal?.postedDate || deal?.deadlinePost) ||
+          parentValueBySource('airDate') ||
+          `${dd}/${mm}/${d.getFullYear()}`
+        );
       case 'kocId':
         return getUniqueKocIdToken();
       case 'docDate':
@@ -379,15 +600,18 @@ export function prefill(
       case 'parentContractDate':
         return (
           frameworkRecord?.values['token:[dd.mm.yy]'] ||
-          parentRecord?.values['token:[Ngày HĐNT]'] ||
-          parentRecord?.values['token:[dd.mm.yy]'] ||
+          effectiveParentRecord?.values['token:[Ngày HĐNT]'] ||
+          extractDocDateFromCode(deal?.masterContractCode) ||
+          effectiveParentRecord?.values['token:[dd.mm.yy]'] ||
           todayDocDate
         );
       case 'parentSowDate':
         return (
-          (parentRecord?.templateId.endsWith('-SOW') ? parentRecord.values['token:[dd.mm.yy]'] : '') ||
-          parentRecord?.values['token:[Ngày SOW]'] ||
-          parentRecord?.values['token:[dd.mm.yy]'] ||
+          (sowRecord ? sowRecord.values['token:[dd.mm.yy]'] : '') ||
+          (effectiveParentRecord?.templateId.endsWith('-SOW') ? effectiveParentRecord.values['token:[dd.mm.yy]'] : '') ||
+          effectiveParentRecord?.values['token:[Ngày SOW]'] ||
+          extractDocDateFromCode(deal?.contractAppendixCode) ||
+          effectiveParentRecord?.values['token:[dd.mm.yy]'] ||
           todayDocDate
         );
       case 'signDay':
@@ -403,6 +627,11 @@ export function prefill(
       case 'quantity':
         return (quantity ? String(quantity) : '') || parentValueBySource('quantity');
       case 'lineTotal':
+        // Trong bảng hạng mục (SCOPE), lineTotal là đơn giá thành tiền của Hạng mục 1 (Video review);
+        // trong bảng tổng hợp (MONEY) của COM-VID-BBNT, lineTotal là Tổng giá trị chưa gồm VAT của cả Job.
+        if (f.group === 'SCOPE') {
+          return money(videoLineAmount) || money(totalAmount) || parentValueBySource('lineTotal');
+        }
         return money(totalAmount) || parentValueBySource('lineTotal');
       case 'netTotal':
         return money(tax.netAmountToReceive) || parentValueBySource('netTotal');
@@ -416,15 +645,45 @@ export function prefill(
         return money(advanceAmount) || parentValueBySource('advanceAmount') || (totalAmount > 0 ? '0' : '');
       case 'adjustmentAmount':
         return droppedDeduction > 0 ? money(droppedDeduction) : (parentValueBySource('adjustmentAmount') || (totalAmount > 0 ? '0' : ''));
-      case 'remainingAmount':
-        return money(Math.max(0, tax.netAmountToReceive - advanceAmount)) || parentValueBySource('remainingAmount') || (totalAmount > 0 ? '0' : '');
+      case 'remainingAmount': {
+        const remainBase = subjectKind === 'COM' ? tax.grossTotalContract : tax.netAmountToReceive;
+        return money(Math.max(0, remainBase - advanceAmount)) || parentValueBySource('remainingAmount') || (totalAmount > 0 ? '0' : '');
+      }
       case 'amountInWords':
         return tax.amountInWords || parentValueBySource('amountInWords');
     }
 
-    // 2. Tự động nhận diện các ô thuế, tổng tiền, chữ ký, tiến độ từ ngữ cảnh biểu mẫu
-    const title = (f.title || f.label || '').toLowerCase();
-    const context = (f.context || '').toLowerCase();
+    // 2. Tự động nhận diện các ô hạng mục dịch vụ đi kèm, thuế, tổng tiền từ ngữ cảnh biểu mẫu
+    // Thành tiền Hạng mục 2: Cấp mã code quảng cáo video (Spark Ads)
+    if (
+      (title.includes('cấp mã code') || context.includes('cấp mã code')) &&
+      (title.includes('thành tiền') || f.kind === 'money')
+    ) {
+      const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
+      if (adsRight) {
+        if (adsRight.acceptanceStatus === 'DROPPED') return '0';
+        if (adsRight.allocatedCostVnd > 0) return money(adsRight.allocatedCostVnd);
+      }
+      return parentValueByTitleContains('cấp mã code', 'thành tiền') || (totalAmount > 0 ? '0' : '');
+    }
+
+    // Thành tiền Hạng mục 3: Sử dụng hình ảnh và video
+    if (
+      (title.includes('sử dụng hình ảnh') || context.includes('sử dụng hình ảnh')) &&
+      (title.includes('thành tiền') || f.kind === 'money')
+    ) {
+      const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
+      if (imgRight) {
+        if (imgRight.acceptanceStatus === 'DROPPED') return '0';
+        if (imgRight.allocatedCostVnd > 0) return money(imgRight.allocatedCostVnd);
+      }
+      return parentValueByTitleContains('sử dụng hình ảnh', 'thành tiền') || (totalAmount > 0 ? '0' : '');
+    }
+
+    // Tổng giá trị nghiệm thu (Điều 2 COM-VID-BBNT có trường chưa gắn source)
+    if (title.includes('tổng giá trị nghiệm thu') && title.includes('thành tiền')) {
+      return title.includes('vat') ? money(tax.grossTotalContract) : money(tax.netAmountToReceive);
+    }
 
     // Thuế TNCN
     if (title.includes('thuế tncn') && title.includes('trích nộp')) {
@@ -458,14 +717,14 @@ export function prefill(
     if (title.includes('hạn tạm ứng') || title.includes('hạn thanh toán')) {
       return '05';
     }
-    // Mã quảng cáo (Spark Ads)
+    // Mã quảng cáo (Spark Ads) - Số ngày
     if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
-      const adsRight = deal?.rightsTerms?.find(rt => rt.termType === 'ADS_CODE');
+      const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
       return String(adsRight?.durationDays || deal?.sparkAdsExpiryDays || 30);
     }
-    // Thời hạn sử dụng hình ảnh
+    // Thời hạn sử dụng hình ảnh - Số ngày
     if (title.includes('sử dụng hình ảnh') && (title.includes('số ngày') || context.includes('ngày kể từ ngày') || context.includes('ngày từ ngày'))) {
-      const imgRight = deal?.rightsTerms?.find(rt => rt.termType === 'IMAGE_USAGE');
+      const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
       return String(imgRight?.durationDays || 90);
     }
     // Thời hạn sử dụng hình ảnh livestream (tháng)
@@ -519,6 +778,77 @@ export function prefill(
     }
   }
   return { values: next, filled };
+}
+
+/**
+ * Đồng bộ ngược số liệu từ Bảng kiểm nghiệm thu theo Phụ lục Job (Video + Dịch vụ đi kèm)
+ * vào các ô của bản nháp Biên bản nghiệm thu (A4).
+ */
+export function syncValuesFromJobAcceptanceBreakdown(
+  fields: ContractField[],
+  prevValues: Record<string, string>,
+  breakdown: JobAcceptanceBreakdown,
+): Record<string, string> {
+  const next = { ...prevValues };
+  const adsRight = breakdown.addonItems.find(rt => rt.termType === 'ADS_CODE');
+  const imgRight = breakdown.addonItems.find(rt => rt.termType === 'IMAGE_USAGE');
+  const fin = breakdown.financials;
+
+  for (const f of fields) {
+    const title = (f.title || f.label || '').toLowerCase();
+    const context = (f.context || '').toLowerCase();
+
+    if (f.source === 'product' && breakdown.videoItem.productName) {
+      next[f.key] = breakdown.videoItem.productName;
+    } else if (f.source === 'airDate' && breakdown.videoItem.airDate) {
+      next[f.key] = breakdown.videoItem.airDate;
+    } else if (f.source === 'lineTotal') {
+      next[f.key] = f.group === 'SCOPE'
+        ? (money(fin.videoNet) || '0')
+        : (money(fin.acceptedTotalNet) || '0');
+    } else if (f.source === 'netTotal') {
+      next[f.key] = money(fin.acceptedTotalNet) || '0';
+    } else if (f.source === 'pitAmount') {
+      next[f.key] = money(fin.pitTax) || '0';
+    } else if (f.source === 'vatAmount') {
+      next[f.key] = money(fin.vatTax) || '0';
+    } else if (f.source === 'grossTotal') {
+      next[f.key] = money(fin.grossTotal) || '0';
+    } else if (f.source === 'advanceAmount') {
+      next[f.key] = money(fin.advanceAmount) || '0';
+    } else if (f.source === 'adjustmentAmount') {
+      next[f.key] = money(fin.droppedDeduction) || '0';
+    } else if (f.source === 'remainingAmount') {
+      next[f.key] = money(fin.remainingPayable) || '0';
+    } else if (f.source === 'amountInWords' || title.includes('bằng chữ') || context.includes('bằng chữ')) {
+      next[f.key] = fin.amountInWords;
+    } else if (
+      (title.includes('cấp mã code') || context.includes('cấp mã code')) &&
+      (title.includes('thành tiền') || f.kind === 'money')
+    ) {
+      if (adsRight) {
+        next[f.key] = adsRight.acceptanceStatus === 'DROPPED' ? '0' : (money(adsRight.allocatedCostVnd) || '0');
+      }
+    } else if (
+      (title.includes('sử dụng hình ảnh') || context.includes('sử dụng hình ảnh')) &&
+      (title.includes('thành tiền') || f.kind === 'money')
+    ) {
+      if (imgRight) {
+        next[f.key] = imgRight.acceptanceStatus === 'DROPPED' ? '0' : (money(imgRight.allocatedCostVnd) || '0');
+      }
+    } else if (title.includes('mã quảng cáo') || context.includes('mã code để chạy quảng cáo')) {
+      if (adsRight?.durationDays) next[f.key] = String(adsRight.durationDays);
+    } else if (
+      title.includes('sử dụng hình ảnh') &&
+      (title.includes('số ngày') || context.includes('ngày kể từ ngày') || context.includes('ngày từ ngày'))
+    ) {
+      if (imgRight?.durationDays) next[f.key] = String(imgRight.durationDays);
+    } else if (title.includes('tổng giá trị nghiệm thu') && title.includes('thành tiền')) {
+      next[f.key] = title.includes('vat') ? (money(fin.grossTotal) || '0') : (money(fin.acceptedTotalNet) || '0');
+    }
+  }
+
+  return next;
 }
 
 /** Ô tiền: chỉ giữ chữ số, hiển thị dấu chấm ngăn nghìn. */

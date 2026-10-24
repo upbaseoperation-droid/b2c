@@ -766,7 +766,7 @@ export const StaffBrandListingSheetWorkspace: React.FC<
         pillarName: r.sanPham || r.contentTag || 'Sản phẩm chiến dịch',
         proposedFee: Number(r.giaNetVideo) || 0,
         finalFee: Number(r.giaNetVideo) || 0,
-        expectedAirDate: r.ngayAirPlan || '2026-10-25',
+        expectedAirDate: r.ngayAirPlan || undefined,
         brandApprovalStatus,
         brandFeedbackNote: r.lyDoTuChoi || r.contentNote || '',
         kocNegotiationStatus,

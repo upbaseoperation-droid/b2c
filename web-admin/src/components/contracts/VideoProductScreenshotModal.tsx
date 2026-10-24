@@ -15,7 +15,10 @@ import {
   Upload,
   ZoomIn,
 } from 'lucide-react';
-import type { AcceptanceScreenshotItem } from '../../lib/contracts/types';
+import type {
+  AcceptanceScreenshotItem,
+  VideoAcceptanceInspectionMeta,
+} from '../../lib/contracts/types';
 import type {
   SuggestedVideoFrameMoment,
   VideoMomentCategory,
@@ -24,6 +27,7 @@ import {
   findSavedScreenshotsForContext,
   saveScreenshotsForContext,
 } from '../../lib/acceptanceScreenshotStore';
+import { formatNumber } from '../../lib/format';
 import { Button, Field, Input, Modal, Status } from '../ui';
 
 export interface VideoProductScreenshotModalProps {
@@ -37,7 +41,10 @@ export interface VideoProductScreenshotModalProps {
   brandName?: string;
   productName?: string;
   existingScreenshots?: AcceptanceScreenshotItem[];
-  onApplyScreenshots?: (items: AcceptanceScreenshotItem[]) => void;
+  onApplyScreenshots?: (
+    items: AcceptanceScreenshotItem[],
+    inspectionMeta?: VideoAcceptanceInspectionMeta
+  ) => void;
 }
 
 interface CandidateFrameItem {
@@ -154,6 +161,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     videoId: string;
     authorHandle: string;
     authorNickname: string;
+    caption?: string;
     durationSeconds: number;
     publishedTimeFormatted: string;
     cartAnchorTitle: string;
@@ -165,6 +173,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     firstProductMentionTerm?: string;
     firstProductMentionQuote?: string;
     suggestedMoments: SuggestedVideoFrameMoment[];
+    inspectionMeta?: VideoAcceptanceInspectionMeta;
   } | null>(null);
 
   const [activeVideoSrc, setActiveVideoSrc] = useState<string | null>(null);
@@ -981,6 +990,14 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
   };
 
   const handleSaveAndApply = () => {
+    const activeInspectionMeta =
+      resolvedMeta?.inspectionMeta ||
+      selectedScreenshots.find((s) => s.inspectionMeta)?.inspectionMeta;
+    const enrichedItems = selectedScreenshots.map((shot, idx) =>
+      idx === 0 && activeInspectionMeta
+        ? { ...shot, inspectionMeta: activeInspectionMeta }
+        : shot
+    );
     saveScreenshotsForContext(
       {
         dealId,
@@ -990,17 +1007,21 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         videoUrl: resolvedMeta?.resolvedUrl || videoUrlInput.trim(),
         videoId: resolvedMeta?.videoId,
       },
-      selectedScreenshots
+      enrichedItems
     );
-    onApplyScreenshots?.(selectedScreenshots);
+    onApplyScreenshots?.(enrichedItems, activeInspectionMeta);
     onClose();
   };
+
+  const activeInspectionMeta =
+    resolvedMeta?.inspectionMeta ||
+    selectedScreenshots.find((s) => s.inspectionMeta)?.inspectionMeta;
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title="Chụp khung hình sản phẩm từ video để đưa vào Biên bản nghiệm thu"
+      title="Kiểm tra Link Air, đối soát kịch bản & cắt ảnh nghiệm thu"
       size="xl"
       footer={
         <div className="flex flex-wrap items-center justify-between w-full gap-2">
@@ -1008,6 +1029,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
             Đã chọn{' '}
             <strong className="text-ink font-semibold">{selectedScreenshots.length}</strong> ảnh
             minh chứng sản phẩm
+            {activeInspectionMeta ? ' · Kèm bảng thông tin Link Air & chỉ số' : ''}
           </span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -1019,8 +1041,8 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               onClick={handleSaveAndApply}
               disabled={selectedScreenshots.length === 0}
             >
-              Đưa {selectedScreenshots.length > 0 ? `${selectedScreenshots.length} ảnh ` : ''}vào
-              Biên bản nghiệm thu
+              Đưa thông tin & {selectedScreenshots.length > 0 ? `${selectedScreenshots.length} ảnh ` : 'ảnh '}
+              vào Biên bản nghiệm thu
             </Button>
           </div>
         </div>
@@ -1137,6 +1159,148 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                   Mốc nhắc SP đầu tiên: {formatSecToMmSs(resolvedMeta.firstProductAppearanceSec)}
                 </Status>
               )}
+          </div>
+        )}
+
+        {/* Bảng thông tin Link Air, Chỉ số tương tác & Đối soát kịch bản/giỏ hàng */}
+        {activeInspectionMeta && (
+          <div className="rounded-xl border border-line bg-surface p-3.5 space-y-3 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-ink">
+                  Thông tin Link Air, Chỉ số tương tác & Đối soát kịch bản
+                </span>
+                <Status
+                  tone={
+                    activeInspectionMeta.scriptVerdict === 'VI_PHẠM_TỪ_CẤM'
+                      ? 'critical'
+                      : activeInspectionMeta.scriptVerdict === 'ĐẠT_CHUẨN'
+                        ? 'positive'
+                        : 'warning'
+                  }
+                >
+                  {activeInspectionMeta.scriptVerdict === 'VI_PHẠM_TỪ_CẤM'
+                    ? 'Cảnh báo từ cấm'
+                    : activeInspectionMeta.scriptVerdict === 'ĐẠT_CHUẨN'
+                      ? 'Đạt chuẩn kịch bản'
+                      : 'Cần kiểm tra thủ công'}
+                </Status>
+                <Status tone={activeInspectionMeta.hasCartAnchor ? 'positive' : 'warning'}>
+                  {activeInspectionMeta.hasCartAnchor
+                    ? `Đã gắn giỏ hàng${activeInspectionMeta.cartAnchorTitle ? `: ${activeInspectionMeta.cartAnchorTitle.slice(0, 32)}` : ''}`
+                    : 'Chưa gắn giỏ hàng'}
+                </Status>
+              </div>
+              <a
+                href={activeInspectionMeta.resolvedUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-2xs font-code text-accent hover:underline"
+              >
+                Mở bài đăng gốc ↗
+              </a>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {/* Cột 1: Thông tin bài đăng */}
+              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
+                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                  1. Thông tin bài đăng
+                </span>
+                <p className="text-ink">
+                  Kênh đăng:{' '}
+                  <strong className="font-semibold">
+                    @{activeInspectionMeta.authorHandle}
+                  </strong>{' '}
+                  ({activeInspectionMeta.authorNickname})
+                </p>
+                <p className="text-ink-2">
+                  Mã Video ID:{' '}
+                  <span className="font-code text-ink">{activeInspectionMeta.videoId || '—'}</span>
+                </p>
+                <p className="text-ink-2">
+                  Ngày đăng Air:{' '}
+                  <strong className="text-ink">
+                    {activeInspectionMeta.publishedTimeFormatted || '—'}
+                  </strong>{' '}
+                  · Thời lượng:{' '}
+                  <strong className="text-ink">{activeInspectionMeta.durationSeconds}s</strong>
+                </p>
+                {activeInspectionMeta.caption && (
+                  <p className="text-2xs text-ink-3 line-clamp-2 pt-0.5">
+                    Mô tả: {activeInspectionMeta.caption}
+                  </p>
+                )}
+              </div>
+
+              {/* Cột 2: Chỉ số tương tác thực tế */}
+              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1.5">
+                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                  2. Chỉ số tương tác tại thời điểm nghiệm thu
+                </span>
+                <div className="grid grid-cols-3 gap-1.5 text-center pt-0.5">
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Lượt xem</span>
+                    <strong className="font-code text-ink text-xs tabular-nums">
+                      {formatNumber(activeInspectionMeta.viewsCount)}
+                    </strong>
+                  </div>
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Thả tim</span>
+                    <strong className="font-code text-ink text-xs tabular-nums">
+                      {formatNumber(activeInspectionMeta.likesCount)}
+                    </strong>
+                  </div>
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Bình luận</span>
+                    <strong className="font-code text-ink text-xs tabular-nums">
+                      {formatNumber(activeInspectionMeta.commentsCount)}
+                    </strong>
+                  </div>
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Chia sẻ</span>
+                    <strong className="font-code text-ink text-xs tabular-nums">
+                      {formatNumber(activeInspectionMeta.sharesCount)}
+                    </strong>
+                  </div>
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Lượt lưu</span>
+                    <strong className="font-code text-ink text-xs tabular-nums">
+                      {formatNumber(activeInspectionMeta.savesCount)}
+                    </strong>
+                  </div>
+                  <div className="rounded bg-surface px-1.5 py-1 border border-line/70">
+                    <span className="text-3xs text-ink-3 block">Tương tác (ER)</span>
+                    <strong className="font-code text-accent text-xs tabular-nums">
+                      {activeInspectionMeta.engagementRate}%
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cột 3: Đối soát kịch bản, lời thoại & từ cấm */}
+              <div className="rounded-lg border border-line bg-surface-2/40 p-2.5 space-y-1">
+                <span className="text-2xs font-semibold text-ink-2 uppercase tracking-wide block">
+                  3. Đối soát kịch bản & Từ khóa
+                </span>
+                <p className="text-ink font-medium">{activeInspectionMeta.scriptSummaryNote}</p>
+                {activeInspectionMeta.hashtags.length > 0 && (
+                  <p className="text-2xs text-ink-2 truncate">
+                    Hashtag: {activeInspectionMeta.hashtags.slice(0, 6).join(' ')}
+                  </p>
+                )}
+                {activeInspectionMeta.transcriptSnippet && (
+                  <p className="text-2xs text-ink-3 line-clamp-2 italic">
+                    Lời thoại: &ldquo;{activeInspectionMeta.transcriptSnippet}&rdquo;
+                  </p>
+                )}
+                {activeInspectionMeta.violatedWords.length > 0 && (
+                  <p className="text-2xs text-critical font-semibold">
+                    Từ cần lưu ý: {activeInspectionMeta.violatedWords.map((v) => v.word).join(', ')}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

@@ -9,11 +9,14 @@ import {
   decodeTikTokVideoIdTimestamp,
   detectProductMentionMoments,
   extractHandleAndVideoIdFromUrl,
+  extractHashtagsAndMentions,
   formatVnDateTime,
   parseWebVttToSegments,
+  scanBlacklistViolations,
   type TikTokProductMentionMoment,
   type TikTokSubtitleSegment,
 } from '@/lib/tiktokVideoInspector';
+import type { VideoAcceptanceInspectionMeta } from '@/lib/contracts/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,9 +37,17 @@ interface CachedVideoRawMeta {
   caption: string;
   durationSeconds: number;
   publishedTimeFormatted: string;
+  publishedDateVn: string;
   coverUrl: string;
   originCoverUrl: string;
+  hasCartAnchor: boolean;
   cartAnchorTitle: string;
+  cartProductCount: number;
+  viewsCount: number;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  savesCount: number;
   subtitleSegments: TikTokSubtitleSegment[];
   onScreenStickers: string[];
   candidateStreamUrls: string[];
@@ -508,9 +519,17 @@ export async function POST(req: NextRequest) {
       let caption = '';
       let durationSeconds = 22;
       let publishedTimeFormatted = '';
+      let publishedDateVn = '';
       let coverUrl = '';
       let originCoverUrl = '';
+      let hasCartAnchor = false;
       let cartAnchorTitle = '';
+      let cartProductCount = 0;
+      let viewsCount = 0;
+      let likesCount = 0;
+      let commentsCount = 0;
+      let sharesCount = 0;
+      let savesCount = 0;
       let subtitleSegments: TikTokSubtitleSegment[] = [];
       const onScreenStickers: string[] = [];
       const h264StreamUrls: string[] = [];
@@ -549,7 +568,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Kết quả SSR HTML (lấy phụ đề WebVTT, giỏ hàng và luồng phát H.264)
+      // 2. Kết quả SSR HTML (lấy phụ đề WebVTT, giỏ hàng, chỉ số tương tác và luồng phát H.264)
       if (htmlTask.status === 'fulfilled' && htmlTask.value) {
         const fetched = htmlTask.value;
         resolvedUrl = fetched.finalUrl?.split('?')[0] || resolvedUrl;
@@ -578,6 +597,7 @@ export async function POST(req: NextRequest) {
                   : decodeTikTokVideoIdTimestamp(urlVideoId) || null;
               if (pubDate) {
                 publishedTimeFormatted = formatVnDateTime(pubDate).formatted;
+                publishedDateVn = publishedTimeFormatted.split(' ')[0] || '';
               }
 
               authorHandle = String(itemStruct.author?.uniqueId || authorHandle || '').toLowerCase();
@@ -585,6 +605,13 @@ export async function POST(req: NextRequest) {
                 itemStruct.author?.nickname || authorNickname || authorHandle
               );
               caption = String(itemStruct.desc || caption || '').trim();
+
+              const stats = itemStruct.stats || itemStruct.statsV2 || {};
+              viewsCount = Math.max(viewsCount, Number(stats.playCount || 0));
+              likesCount = Math.max(likesCount, Number(stats.diggCount || 0));
+              commentsCount = Math.max(commentsCount, Number(stats.commentCount || 0));
+              sharesCount = Math.max(sharesCount, Number(stats.shareCount || 0));
+              savesCount = Math.max(savesCount, Number(stats.collectCount || 0));
 
               const video = itemStruct.video || {};
               if (Number(video.duration) > 0) {
@@ -639,7 +666,13 @@ export async function POST(req: NextRequest) {
               }
 
               const anchorInfo = extractTikTokShopAnchorInfo(itemStruct);
+              hasCartAnchor = Boolean(anchorInfo.hasCartAnchor || anchorInfo.cartAnchorTitle);
               cartAnchorTitle = anchorInfo.cartAnchorTitle || '';
+              cartProductCount = Array.isArray(anchorInfo.cartProducts)
+                ? anchorInfo.cartProducts.length
+                : hasCartAnchor
+                  ? 1
+                  : 0;
 
               const captionInfos: Array<{
                 languageCodeName?: string;
@@ -692,7 +725,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 3. Kết quả TikWM (luồng MP4 H.264 trực tiếp không khóa cookie)
+      // 3. Kết quả TikWM (luồng MP4 H.264 trực tiếp không khóa cookie + chỉ số tương tác dự phòng)
       if (tikwmTask.status === 'fulfilled' && tikwmTask.value?.data) {
         const data = tikwmTask.value.data;
         const playUrl = data.play || data.wmplay || data.hdplay;
@@ -714,12 +747,23 @@ export async function POST(req: NextRequest) {
         if (Number(data.duration) > 0 && durationSeconds === 22) {
           durationSeconds = Number(data.duration);
         }
+        viewsCount = Math.max(viewsCount, Number(data.play_count || 0));
+        likesCount = Math.max(likesCount, Number(data.digg_count || 0));
+        commentsCount = Math.max(commentsCount, Number(data.comment_count || 0));
+        sharesCount = Math.max(sharesCount, Number(data.share_count || 0));
+        savesCount = Math.max(savesCount, Number(data.collect_count || data.download_count || 0));
+        if (!publishedTimeFormatted && Number(data.create_time) > 0) {
+          const dt = new Date(Number(data.create_time) * 1000);
+          publishedTimeFormatted = formatVnDateTime(dt).formatted;
+          publishedDateVn = publishedTimeFormatted.split(' ')[0] || '';
+        }
       }
 
       if (!publishedTimeFormatted && urlVideoId) {
         const decoded = decodeTikTokVideoIdTimestamp(urlVideoId);
         if (decoded) {
           publishedTimeFormatted = formatVnDateTime(decoded).formatted;
+          publishedDateVn = publishedTimeFormatted.split(' ')[0] || '';
         }
       }
 
@@ -732,9 +776,17 @@ export async function POST(req: NextRequest) {
         caption,
         durationSeconds,
         publishedTimeFormatted,
+        publishedDateVn,
         coverUrl,
         originCoverUrl,
+        hasCartAnchor,
         cartAnchorTitle,
+        cartProductCount,
+        viewsCount,
+        likesCount,
+        commentsCount,
+        sharesCount,
+        savesCount,
         subtitleSegments,
         onScreenStickers,
         candidateStreamUrls: dedupedStreams,
@@ -763,6 +815,77 @@ export async function POST(req: NextRequest) {
       productName: productName || meta.cartAnchorTitle,
       brandName,
     });
+
+    // 5. Tổng hợp thông tin nghiệm thu Link Air: Chỉ số tương tác, Kịch bản, Hashtag, Từ cấm & Giỏ hàng
+    const { hashtags } = extractHashtagsAndMentions(meta.caption);
+    const fullTranscript = meta.subtitleSegments.map((s) => s.text).join(' ');
+    const combinedCheckText = [
+      meta.caption,
+      fullTranscript,
+      ...meta.onScreenStickers,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const violatedWords = scanBlacklistViolations(combinedCheckText);
+    const matchedProductTerms = Array.from(
+      new Set(
+        mentionDetection.productMentionMoments
+          .map((m) => m.matchedTerm)
+          .filter((t): t is string => Boolean(t && t.trim()))
+      )
+    );
+    const engagementRate =
+      meta.viewsCount > 0
+        ? Math.round(
+            ((meta.likesCount + meta.commentsCount + meta.sharesCount) / meta.viewsCount) * 10000
+          ) / 100
+        : 0;
+    const wordCount = fullTranscript
+      ? fullTranscript.trim().split(/\s+/).filter(Boolean).length
+      : 0;
+    const scriptVerdict: VideoAcceptanceInspectionMeta['scriptVerdict'] =
+      violatedWords.length > 0
+        ? 'VI_PHẠM_TỪ_CẤM'
+        : matchedProductTerms.length > 0 || meta.hasCartAnchor
+          ? 'ĐẠT_CHUẨN'
+          : 'CẦN_KIỂM_TRA';
+    const scriptSummaryNote =
+      violatedWords.length > 0
+        ? `Phát hiện ${violatedWords.length} từ cần lưu ý chính sách (${violatedWords.map((v) => v.word).join(', ')})`
+        : matchedProductTerms.length > 0
+          ? `KOC nhắc tên sản phẩm ${mentionDetection.productMentionMoments.length} lần (${matchedProductTerms.join(', ')}) · Không vi phạm từ cấm`
+          : meta.subtitleSegments.length > 0
+            ? `Đã bóc tách ${meta.subtitleSegments.length} câu thoại (${wordCount} từ) · Không vi phạm từ cấm`
+            : 'Video nhạc nền / chưa có phụ đề rời · Không phát hiện từ cấm trong mô tả';
+
+    const inspectionMeta: VideoAcceptanceInspectionMeta = {
+      resolvedUrl: meta.resolvedUrl,
+      videoId: meta.videoId || '',
+      authorHandle: meta.authorHandle || 'koc',
+      authorNickname: meta.authorNickname || meta.authorHandle || 'KOC',
+      publishedTimeFormatted: meta.publishedTimeFormatted,
+      publishedDateVn:
+        meta.publishedDateVn || (meta.publishedTimeFormatted || '').split(' ')[0] || '',
+      durationSeconds: meta.durationSeconds,
+      caption: meta.caption,
+      hashtags,
+      hasCartAnchor: Boolean(meta.hasCartAnchor || meta.cartAnchorTitle),
+      cartAnchorTitle: meta.cartAnchorTitle || undefined,
+      cartProductCount: meta.cartProductCount,
+      viewsCount: meta.viewsCount,
+      likesCount: meta.likesCount,
+      commentsCount: meta.commentsCount,
+      sharesCount: meta.sharesCount,
+      savesCount: meta.savesCount,
+      engagementRate,
+      hasSubtitles: meta.subtitleSegments.length > 0,
+      transcriptSnippet: fullTranscript ? fullTranscript.slice(0, 360) : undefined,
+      wordCount,
+      matchedProductTerms,
+      violatedWords,
+      scriptVerdict,
+      scriptSummaryNote,
+    };
 
     let streamProxyUrl: string | null = null;
     let streamToken: string | null = null;
@@ -810,6 +933,7 @@ export async function POST(req: NextRequest) {
         productMentionMoments: mentionDetection.productMentionMoments,
         suggestedMoments,
         subtitleSegments: meta.subtitleSegments,
+        inspectionMeta,
       },
     });
   } catch (err) {

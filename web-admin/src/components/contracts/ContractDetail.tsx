@@ -181,7 +181,7 @@ export function ContractDetail({
               disabled={busy}
               onClick={() => setScreenshotModalOpen(true)}
             >
-              Chụp ảnh sản phẩm từ video{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
+              Lấy thông tin Link Air & cắt ảnh nghiệm thu{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
             </Button>
           )}
           {isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') && (

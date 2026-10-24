@@ -21,6 +21,7 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import type { AcceptanceScreenshotItem, ContractField, DocBlock, DocParagraph, DocTable, SigningPerson } from '../../lib/contracts/types';
+import { formatNumber } from '../../lib/format';
 import { Button, Modal } from '../ui';
 
 export interface ContractDocumentViewerProps {
@@ -451,36 +452,73 @@ export function ContractDocumentViewer({
 
   const renderAcceptanceScreenshotsBlock = () => {
     if (!acceptanceScreenshots || acceptanceScreenshots.length === 0) return null;
+    const inspectionMeta = acceptanceScreenshots.find(s => s.inspectionMeta)?.inspectionMeta;
+
     return (
-      <div className="doc-screenshot-section my-5 pt-3 border-t border-[#333]">
-        <p className="font-semibold uppercase text-[14px] text-[#111] mb-2">
-          HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU)
-        </p>
-        <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
-          {acceptanceScreenshots.map((shot, sIdx) => (
-            <div
-              key={shot.id || sIdx}
-              className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-[12.5px] leading-snug"
-            >
-              <div className="bg-black rounded-xs overflow-hidden mb-2 flex items-center justify-center max-h-[240px]">
-                <img
-                  src={shot.imageDataUrl}
-                  alt={shot.note || `Khung hình sản phẩm mốc ${shot.timeLabel}`}
-                  className="max-h-[240px] w-auto object-contain mx-auto"
-                />
-              </div>
-              <p className="font-semibold text-[#111]">
-                Ảnh #{sIdx + 1}: Khung hình sản phẩm tại giây {shot.timeLabel}
-                {shot.matchedTerm ? ` — ${shot.matchedTerm}` : ''}
-              </p>
-              {shot.note && <p className="text-[#333] mt-0.5">Ghi chú: {shot.note}</p>}
-              {shot.videoUrl && (
-                <p className="text-2xs text-[#555] font-mono break-all mt-0.5">
-                  Link video: {shot.videoUrl}
+      <div className="doc-screenshot-section my-5 pt-3 border-t border-[#333] space-y-3">
+        {inspectionMeta && (
+          <div className="border border-[#333] p-3 bg-[#faf9f5] rounded-xs text-[13px] leading-snug space-y-1.5">
+            <p className="font-semibold uppercase text-[13.5px] text-[#111]">
+              THÔNG TIN LINK AIR, CHỈ SỐ TƯƠNG TÁC & ĐỐI SOÁT KỊCH BẢN NGHIỆM THU
+            </p>
+            <p className="text-[#222]">
+              <strong className="font-semibold">• Link bài đăng (Link Air):</strong>{' '}
+              <span className="font-mono break-all">{inspectionMeta.resolvedUrl}</span>
+            </p>
+            <p className="text-[#222]">
+              <strong className="font-semibold">• Kênh đăng tải:</strong> @{inspectionMeta.authorHandle} ({inspectionMeta.authorNickname}) ·{' '}
+              <strong className="font-semibold">Mã Video ID:</strong> {inspectionMeta.videoId || '—'} ·{' '}
+              <strong className="font-semibold">Ngày giờ đăng:</strong> {inspectionMeta.publishedTimeFormatted || '—'} ·{' '}
+              <strong className="font-semibold">Thời lượng:</strong> {inspectionMeta.durationSeconds} giây
+            </p>
+            <p className="text-[#222]">
+              <strong className="font-semibold">• Chỉ số tương tác tại thời điểm nghiệm thu:</strong>{' '}
+              Lượt xem: <strong>{formatNumber(inspectionMeta.viewsCount)}</strong> · Thả tim: <strong>{formatNumber(inspectionMeta.likesCount)}</strong> · Bình luận: <strong>{formatNumber(inspectionMeta.commentsCount)}</strong> · Chia sẻ: <strong>{formatNumber(inspectionMeta.sharesCount)}</strong> · Lượt lưu: <strong>{formatNumber(inspectionMeta.savesCount)}</strong> (ER: <strong>{inspectionMeta.engagementRate}%</strong>)
+            </p>
+            <p className="text-[#222]">
+              <strong className="font-semibold">• Giỏ hàng TikTok Shop:</strong>{' '}
+              {inspectionMeta.hasCartAnchor
+                ? `Đã gắn giỏ hàng (${inspectionMeta.cartAnchorTitle || 'Sản phẩm chiến dịch'})`
+                : 'Chưa gắn giỏ hàng trên bài đăng'}
+            </p>
+            <p className="text-[#222]">
+              <strong className="font-semibold">• Đối soát kịch bản & nội dung:</strong>{' '}
+              {inspectionMeta.scriptSummaryNote}
+              {inspectionMeta.hashtags.length > 0 ? ` · Hashtag: ${inspectionMeta.hashtags.slice(0, 6).join(' ')}` : ''}
+            </p>
+          </div>
+        )}
+
+        <div>
+          <p className="font-semibold uppercase text-[14px] text-[#111] mb-2">
+            HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU)
+          </p>
+          <div className="doc-screenshot-grid grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+            {acceptanceScreenshots.map((shot, sIdx) => (
+              <div
+                key={shot.id || sIdx}
+                className="doc-screenshot-card border border-[#333] p-2.5 bg-[#faf9f5] rounded-xs text-[12.5px] leading-snug"
+              >
+                <div className="bg-black rounded-xs overflow-hidden mb-2 flex items-center justify-center max-h-[240px]">
+                  <img
+                    src={shot.imageDataUrl}
+                    alt={shot.note || `Khung hình sản phẩm mốc ${shot.timeLabel}`}
+                    className="max-h-[240px] w-auto object-contain mx-auto"
+                  />
+                </div>
+                <p className="font-semibold text-[#111]">
+                  Ảnh #{sIdx + 1}: Khung hình sản phẩm tại giây {shot.timeLabel}
+                  {shot.matchedTerm ? ` — ${shot.matchedTerm}` : ''}
                 </p>
-              )}
-            </div>
-          ))}
+                {shot.note && <p className="text-[#333] mt-0.5">Ghi chú: {shot.note}</p>}
+                {shot.videoUrl && (
+                  <p className="text-2xs text-[#555] font-mono break-all mt-0.5">
+                    Link video: {shot.videoUrl}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

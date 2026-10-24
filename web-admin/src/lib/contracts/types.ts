@@ -117,6 +117,38 @@ export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'
 export interface SigningPerson { name: string; email: string; action: number; status: string; at?: string }
 export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string; provider?: 'MISA' | 'DEMO' }
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
+export interface VideoAcceptanceInspectionMeta {
+  resolvedUrl: string;
+  videoId: string;
+  authorHandle: string;
+  authorNickname: string;
+  publishedTimeFormatted: string;
+  publishedDateVn: string;
+  durationSeconds: number;
+  caption: string;
+  hashtags: string[];
+  hasCartAnchor: boolean;
+  cartAnchorTitle?: string;
+  cartProductCount?: number;
+  viewsCount: number;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  savesCount: number;
+  engagementRate: number;
+  hasSubtitles: boolean;
+  transcriptSnippet?: string;
+  wordCount?: number;
+  matchedProductTerms: string[];
+  violatedWords: Array<{
+    word: string;
+    category: 'CHÍNH_SÁCH_SÀN' | 'Y_TẾ_QUÁ_ĐÀ' | 'ĐỐI_THỦ';
+    suggestion: string;
+  }>;
+  scriptVerdict: 'ĐẠT_CHUẨN' | 'CẦN_KIỂM_TRA' | 'VI_PHẠM_TỪ_CẤM';
+  scriptSummaryNote: string;
+}
+
 export interface AcceptanceScreenshotItem {
   id: string;
   videoUrl: string;
@@ -130,6 +162,7 @@ export interface AcceptanceScreenshotItem {
   capturedAt: string;
   sourceMode: 'VIDEO_FRAME' | 'SUGGESTED_MOMENT' | 'CLIPBOARD_OR_UPLOAD';
   note?: string;
+  inspectionMeta?: VideoAcceptanceInspectionMeta;
 }
 export interface ContractRevision {
   version: number;

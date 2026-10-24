@@ -861,12 +861,64 @@ async function embedAcceptanceScreenshotsIntoDocxZip(
   const docFile = zip.file('word/document.xml');
   if (!docFile) return;
 
+  const inspectionMeta = validShots.find(s => s.inspectionMeta)?.inspectionMeta;
+  const fmtInt = (n?: number) =>
+    typeof n === 'number' && Number.isFinite(n) ? new Intl.NumberFormat('vi-VN').format(n) : '0';
+
   const relEntries: string[] = [];
-  const paragraphsXml: string[] = [
-    `<w:p><w:pPr><w:spacing w:before="220" w:after="100"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+  const paragraphsXml: string[] = [];
+
+  if (inspectionMeta) {
+    paragraphsXml.push(
+      `<w:p><w:pPr><w:spacing w:before="220" w:after="80"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        'THÔNG TIN LINK AIR, CHỈ SỐ TƯƠNG TÁC & ĐỐI SOÁT KỊCH BẢN NGHIỆM THU:',
+      )}</w:t></w:r></w:p>`,
+      `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        '• Link bài đăng (Link Air): ',
+      )}</w:t></w:r><w:r><w:t xml:space="preserve">${encodeXml(
+        inspectionMeta.resolvedUrl || '',
+      )}</w:t></w:r></w:p>`,
+      `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        '• Kênh & Thời gian đăng: ',
+      )}</w:t></w:r><w:r><w:t xml:space="preserve">${encodeXml(
+        `@${inspectionMeta.authorHandle} (${inspectionMeta.authorNickname}) · Mã Video ID: ${
+          inspectionMeta.videoId || '—'
+        } · Ngày đăng: ${inspectionMeta.publishedTimeFormatted || '—'} · Thời lượng: ${
+          inspectionMeta.durationSeconds
+        } giây`,
+      )}</w:t></w:r></w:p>`,
+      `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        '• Chỉ số tương tác tại thời điểm nghiệm thu: ',
+      )}</w:t></w:r><w:r><w:t xml:space="preserve">${encodeXml(
+        `Lượt xem: ${fmtInt(inspectionMeta.viewsCount)} · Thả tim: ${fmtInt(
+          inspectionMeta.likesCount,
+        )} · Bình luận: ${fmtInt(inspectionMeta.commentsCount)} · Chia sẻ: ${fmtInt(
+          inspectionMeta.sharesCount,
+        )} · Lượt lưu: ${fmtInt(inspectionMeta.savesCount)} (ER: ${
+          inspectionMeta.engagementRate
+        }%)`,
+      )}</w:t></w:r></w:p>`,
+      `<w:p><w:pPr><w:spacing w:before="40" w:after="80"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
+        '• Giỏ hàng & Đối soát kịch bản: ',
+      )}</w:t></w:r><w:r><w:t xml:space="preserve">${encodeXml(
+        `${
+          inspectionMeta.hasCartAnchor
+            ? `Đã gắn giỏ hàng (${inspectionMeta.cartAnchorTitle || 'Sản phẩm chiến dịch'})`
+            : 'Chưa gắn giỏ hàng'
+        } · ${inspectionMeta.scriptSummaryNote}${
+          inspectionMeta.hashtags.length > 0
+            ? ` · Hashtag: ${inspectionMeta.hashtags.slice(0, 6).join(' ')}`
+            : ''
+        }`,
+      )}</w:t></w:r></w:p>`,
+    );
+  }
+
+  paragraphsXml.push(
+    `<w:p><w:pPr><w:spacing w:before="180" w:after="100"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${encodeXml(
       'HÌNH ẢNH CHỤP MÀN HÌNH VIDEO LÚC SẢN PHẨM XUẤT HIỆN (MINH CHỨNG NGHIỆM THU):',
     )}</w:t></w:r></w:p>`,
-  ];
+  );
 
   validShots.forEach((shot, idx) => {
     const match = shot.imageDataUrl.match(/^data:image\/(png|jpe?g|webp);base64,([\s\S]+)$/i);

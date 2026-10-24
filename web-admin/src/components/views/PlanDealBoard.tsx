@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Camera, ChevronDown, ChevronRight, Plus, Search, Send, Trash2 } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, FileText, Plus, Search, Send, Trash2 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
 import { getVietnamDateYmd } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
+import { DraftBbntPreviewModal } from '../contracts/DraftBbntPreviewModal';
 import { getKocLegalProfiles } from '../koc/kocUtils';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { useListingBoard } from '../../lib/useListingBoard';
@@ -223,6 +224,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   const [slots, setSlots] = useState<ContentSlot[]>([]);
   const [catalog, setCatalog] = useState<BrandProductCatalog>({ groups: [] });
   const [screenshotTarget, setScreenshotTarget] = useState<{
+    deal: PlanDeal;
+    job: DealJob;
+  } | null>(null);
+  const [draftBbntTarget, setDraftBbntTarget] = useState<{
     deal: PlanDeal;
     job: DealJob;
   } | null>(null);
@@ -2096,6 +2101,16 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                             Lấy số và ngày ký
                           </Button>
                         )}
+                        {x.document === 'BBNT' && plan && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={FileText}
+                            onClick={() => setDraftBbntTarget({ deal: d, job })}
+                          >
+                            Xem nháp BBNT
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant={x.record ? 'secondary' : 'primary'}
@@ -2598,6 +2613,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   Duyệt đạt tất cả DVGT
                 </Button>
               )}
+              <Button
+                size="md"
+                variant="secondary"
+                icon={FileText}
+                onClick={() => setDraftBbntTarget({ deal: d, job })}
+              >
+                Xem &amp; Kiểm tra nháp BBNT (Theo Phụ lục)
+              </Button>
               <Button
                 size="md"
                 variant="secondary"
@@ -3815,6 +3838,33 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             'success',
           );
         }}
+      />
+
+      <DraftBbntPreviewModal
+        open={Boolean(draftBbntTarget && plan)}
+        onClose={() => setDraftBbntTarget(null)}
+        deal={
+          draftBbntTarget && plan
+            ? planJobToBookingDeal(
+                draftBbntTarget.deal,
+                draftBbntTarget.job,
+                plan,
+                kocIdOfHandle(draftBbntTarget.deal.kocHandle),
+                frameworks[normHandle(draftBbntTarget.deal.kocHandle)]?.contractNo,
+              )
+            : null
+        }
+        koc={draftBbntTarget ? kocOfHandle(draftBbntTarget.deal.kocHandle) : undefined}
+        existingRecords={contractRecords}
+        onSavedRecord={rec => {
+          setContractRecords(prev => [rec, ...prev.filter(x => x.id !== rec.id)]);
+          notify(`Đã lưu bản nháp BBNT (${rec.title}) cho ${draftBbntTarget?.job.code || 'Job'}.`, 'success');
+        }}
+        onOpenFullEditor={
+          onOpenContract
+            ? targetDeal => onOpenContract(targetDeal, 'BBNT')
+            : undefined
+        }
       />
     </div>
   );
