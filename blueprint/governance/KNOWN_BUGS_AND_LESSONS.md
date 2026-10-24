@@ -801,6 +801,30 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm tra đồng bộ giữa `PlanDealBoard`, `ApprovedBookingListView` và `ContractForm`, vượt qua `tsc --noEmit`, `eslint` và `npm run build` với `0 errors`.
 
 ---
+
+### BUG-045 — Cụm Điều Hướng Gian Hàng & Phiên Bản (`PageHeaderNav`) Bị Bóp Nghẹt Thành Cột Dọc 20px Trên Thanh `TopHeader`, Vòng Lặp `"Đang lưu..."` Khi Mở Kế Hoạch Tháng & Dữ Liệu Cũ Hiển Thị Chuyên Viên Làm Leader
+- **Ngày phát hiện:** 24/10/2026 (Người dùng gửi ảnh chụp màn hình thực tế tại `b2c-theta.vercel.app` trên màn hình **Kế hoạch tháng**).
+- **Phân hệ / File liên quan:** `web-admin/src/components/TopHeader.tsx`, `web-admin/src/components/ui/blocks.tsx`, `web-admin/src/components/views/InputPlanBreakdownView.tsx`, `web-admin/src/components/views/PlanApprovalStepper.tsx`, `web-admin/src/lib/useMonthlyPlanSync.ts`, `web-admin/src/lib/server/monthlyPlanStore.ts`, `web-admin/src/lib/monthlyPlanData.ts`, `web-admin/src/lib/types.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Cụm `PageHeaderNav` bị ép thành khe hẹp 20px và xếp chồng dọc bị cắt chữ trên `TopHeader`:**
+     - Trên `TopHeader.tsx`, Khối 3 (chứa `Segmented` groupTabs và `<PageHeaderNavSlot />`) đặt `sm:w-auto sm:flex-1 overflow-x-auto` (`flex-basis: 0%`, `min-width: 0`), trong khi Khối 1 (`Kế hoạch tháng`) và Khối 2 (Huy hiệu `Toàn hệ thống (69 gian hàng)` + `PageActionsSlot` 5 nút + Bộ chọn `Vai trò: ...` + Nút đăng xuất) chiếm gần hết chiều ngang (~1000px).
+     - Do Khối 3 có `flex-basis: 0%`, Flexbox không ngắt Khối 2 xuống dòng mà ép Khối 3 co lại còn ~20px chiều ngang. Bên trong Khối 3, `PageHeaderNavSlot` (`blocks.tsx`) và thẻ `<div className="flex items-center gap-2 min-w-0 flex-wrap">` (`InputPlanBreakdownView.tsx`) lại bật `flex-wrap`, khiến các nút `< Danh sách`, ô `<select>` chọn gian hàng và nút phiên bản `v1.0` bị rớt thành 4 tầng dọc bên trong khe 20px và bị `overflow-x-auto` cắt mất chữ.
+  2. **Huy hiệu `Đang lưu...` quay liên tục ngay khi mở màn hình Kế hoạch tháng (`useMonthlyPlanSync.ts` & `InputPlanBreakdownView.tsx`):**
+     - `useMonthlyPlanSync` gọi `rememberStored(stored)` trên dữ liệu thô vừa tải từ `/api/monthly-plans`, sau đó callback `onLoaded` trong `InputPlanBreakdownView.tsx` lại gọi `enrichPlanWithVersions(p, idx)` tạo đối tượng mới có thêm `versionSnapshots` và `items` chuẩn hóa rồi mới `setMonthlyPlans(enriched)`. Vì chuỗi JSON sau khi làm giàu khác với chuỗi đã lưu trong `lastSavedRef.current`, cả 69 kế hoạch bị đánh dấu `dirty` ngay lập tức và kích hoạt hàng loạt lệnh `PUT /api/monthly-plans/[id]`.
+  3. **Hiển thị `Leader: Lê Thanh Hải` trên gian hàng `4PM_TikTok_E2E-S` từ bản ghi DB cũ:**
+     - Bản ghi kế hoạch lưu trong DB từ đợt seed cũ còn giữ `bookingLeader: 'Lê Thanh Hải'` (trong khi theo `GEMINI.md` Mục 3, `Lê Thanh Hải` là Chuyên viên và chỉ `Nguyễn Thị Ngọc Tâm` là Trưởng nhóm của 8 gian hàng).
+- **Cách khắc phục:**
+  1. Trong `TopHeader.tsx`, `blocks.tsx` và `InputPlanBreakdownView.tsx`:
+     - Bỏ `sm:flex-1` (`flex-basis: 0%`) trên Khối 3 của `TopHeader.tsx`, chuyển sang `sm:w-auto shrink-0 max-w-full` và đặt `ml-auto` cho Khối 2 để Khối 3 luôn giữ nguyên kích thước tự nhiên của các nút điều hướng, không bao giờ bị ép nhỏ.
+     - Bỏ `flex-wrap min-w-0` trên `PageHeaderNavSlot` (`blocks.tsx`) và thẻ `<div className="flex items-center gap-1.5 sm:gap-2 shrink-0">` trong `<PageHeaderNav>` (`InputPlanBreakdownView.tsx`).
+     - Thu gọn huy hiệu phạm vi toàn cục `Toàn hệ thống (69 gian hàng)` sang `hidden 2xl:flex` để nhường diện tích ngang trên màn hình laptop (vì bộ chọn vai trò kế bên đã hiển thị rõ tên & chức danh).
+  2. Trong `useMonthlyPlanSync.ts` và `InputPlanBreakdownView.tsx`:
+     - Cho phép `onLoaded` trả về danh sách `enriched` đã chuẩn hóa và gọi `rememberStored` trên chính bản `enriched` đó trước khi bật `readyRef.current = true`, triệt tiêu hoàn toàn hiện tượng tự báo `dirty` và gọi `PUT` hàng loạt khi vừa mở trang.
+  3. Trong `monthlyPlanStore.ts`, `monthlyPlanData.ts`, `InputPlanBreakdownView.tsx` và `PlanApprovalStepper.tsx`:
+     - Chuẩn hóa `bookingLeader` và `hasBookingLeader` qua `resolveStoreBookingLeader(storeName || brandName, bookingLeader)` ngay khi đọc từ DB (`toStored`) và khi hiển thị, đảm bảo chỉ 8 gian hàng của `Nguyễn Thị Ngọc Tâm` có Trưởng nhóm sơ duyệt, các gian còn lại hiển thị đúng `Không có leader`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát toàn bộ 24 điểm sử dụng `<PageActions>` và `<PageHeaderNav>` trên khắp các màn hình, kiểm tra `tsc --noEmit` và `npm run build` đạt `0 errors`.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

@@ -79,6 +79,7 @@ import { filterScopedPlans } from '../../lib/rbacScope';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanSyncBadge } from './PlanSyncBadge';
+import { resolveStoreBookingLeader } from '../../lib/larkPaymentRequestEngine';
 import {
   ConfirmDialog,
   Modal,
@@ -398,6 +399,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       );
       setMonthlyPlans(enriched);
       setPlanState(prev => enriched.find(p => p.id === prev.id) || enriched[0] || prev);
+      return enriched;
     },
     onReplacePlan: (plan) => {
       setMonthlyPlans(prev => prev.map(p => (p.id === plan.id ? plan : p)));
@@ -1450,7 +1452,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const userRole = currentUser?.role || '';
   const isLeadUser = ['ADMIN', 'MANAGER'].includes(userRole) || currentRole === 'LEAD';
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
-  const hasLeader = Boolean(planState.hasBookingLeader !== undefined ? planState.hasBookingLeader : planState.bookingLeader);
+  const resolvedBookingLeader = resolveStoreBookingLeader(planState.storeName || planState.brandName, planState.bookingLeader);
+  const hasLeader = Boolean(resolvedBookingLeader);
   const isPlanLeaderUser = hasLeader && Boolean(planState.bookingLeader) && (currentUser?.name || '').trim().toLowerCase() === (planState.bookingLeader || '').trim().toLowerCase();
   const studioVersionSnapshots = getPlanVersionSnapshots(planState);
   const activeVersionCode = planState.currentVersionCode || 'v1.0';
@@ -1470,7 +1473,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* 1. ĐẨY ĐIỀU HƯỚNG GIAN HÀNG & PHIÊN BẢN LÊN TOPHEADER CẠNH TIÊU ĐỀ        */}
       {/* ========================================================================= */}
       <PageHeaderNav>
-        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <span className="text-slate-300 hidden sm:inline">|</span>
           <button
             type="button"
@@ -1495,7 +1498,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[220px] truncate"
+            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[165px] xl:max-w-[210px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
@@ -1779,7 +1782,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <span>
               Leader:{' '}
               <strong className="text-slate-900">
-                {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
+                {hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
               </strong>
             </span>
           </span>

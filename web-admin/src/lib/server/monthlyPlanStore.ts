@@ -1,3 +1,4 @@
+import { resolveStoreBookingLeader } from '../larkPaymentRequestEngine';
 import { isPlanManagedByUser, isBrandManagedByUser, isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../rbacScope';
 import { brandKey } from '../brands/types';
 import { actionAllowed } from './accessPolicy';
@@ -57,11 +58,14 @@ type PlanRow = Prisma.MonthlyPlanGetPayload<{ include: typeof planInclude }>;
 
 function toStored(row: PlanRow): StoredMonthlyPlan {
   const base = row.data as unknown as InputPlanBreakdownState;
+  const resolvedLeader = resolveStoreBookingLeader(base.storeName || base.brandName, base.bookingLeader);
   return {
     revision: row.revision,
     plan: {
       ...base,
       id: row.id,
+      hasBookingLeader: Boolean(resolvedLeader),
+      bookingLeader: resolvedLeader,
       status: row.status as InputPlanBreakdownState['status'],
       currentVersionCode: row.currentVersionCode,
       isVersionLocked: row.isVersionLocked,

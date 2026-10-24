@@ -1,3 +1,4 @@
+import { resolveStoreBookingLeader } from './larkPaymentRequestEngine';
 ﻿import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
@@ -1591,7 +1592,8 @@ export function buildPersonalWorkPackages(
 }
 
 export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
-  const basePlan = enrichPlanWithMultiStaffWorkstreams(rawPlan, idx);
+  const resolvedLeader = resolveStoreBookingLeader(rawPlan.storeName || rawPlan.brandName, rawPlan.bookingLeader);
+  const basePlan = enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
   const matchedCamp = basePlan.campaignId
     ? INITIAL_CAMPAIGNS.find(c => c.id === basePlan.campaignId)
     : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month, INITIAL_CAMPAIGNS);
