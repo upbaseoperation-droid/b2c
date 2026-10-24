@@ -383,7 +383,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     setIsBrandModalOpen(true);
   };
 
-  const handleSaveStoreAssignment = (storeId: string, b2cOwners: string[], notes: string) => {
+  const [transferActiveJobs, setTransferActiveJobs] = useState(true);
+
+  const handleSaveStoreAssignment = async (
+    storeId: string,
+    b2cOwners: string[],
+    notes: string,
+    shouldTransferJobs = true
+  ) => {
     const targetStore = storePortfolios.find((s) => s.id === storeId);
     if (!targetStore) return;
 
@@ -410,6 +417,48 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
     onUpdateStore(updated);
 
+    let transferredCount = 0;
+    if (isPicChanged && shouldTransferJobs) {
+      try {
+        const pRes = await fetch('/api/monthly-plans', { cache: 'no-store' });
+        const pBody = await pRes.json().catch(() => null);
+        const allPlans = ((pBody?.plans as Array<{ plan: { id: string; storeName?: string; brandName?: string } }>) || []).map(p => p.plan);
+        const matchedPlans = allPlans.filter(
+          p =>
+            (p.storeName || '').toLowerCase() === (targetStore.storeName || '').toLowerCase() ||
+            (p.brandName || '').toLowerCase() === (targetStore.brandName || '').toLowerCase()
+        );
+        for (const mp of matchedPlans) {
+          const dRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(mp.id)}`, { cache: 'no-store' });
+          const dBody = await dRes.json().catch(() => null);
+          const board = dBody?.data as { deals?: Array<{ id: string; pic?: string; jobs?: Array<{ id: string; pic?: string; payment?: { status?: string } }> }> } | undefined;
+          if (dRes.ok && board?.deals && board.deals.length > 0) {
+            let changed = false;
+            const nextDeals = board.deals.map(deal => {
+              const nextJobs = (deal.jobs || []).map(job => {
+                if (job.payment?.status !== 'PAID') {
+                  transferredCount += 1;
+                  changed = true;
+                  return { ...job, pic: nextOwner };
+                }
+                return job;
+              });
+              return changed ? { ...deal, pic: nextOwner, jobs: nextJobs } : deal;
+            });
+            if (changed) {
+              await fetch('/api/deal-board', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId: mp.id, data: { ...board, deals: nextDeals } }),
+              });
+            }
+          }
+        }
+      } catch {
+        /* không chặn bàn giao khi không đọc được deal-board */
+      }
+    }
+
     if (isPicChanged) {
       const matchedRoster = B2C_28_STAFF_WORKLOAD_ROSTER.find((r) => r.name === nextOwner);
       setAssignmentHistory((prev) => [
@@ -426,7 +475,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           assignedBy: currentUser.id,
           assignedByName: currentUser.name,
           reason: notes || `Điều chuyển gian hàng từ ${prevOwner} sang ${nextOwner}`,
-          handoverNotes: `Bàn giao trực tiếp từ ${prevOwner} sang ${nextOwner}`,
+          handoverNotes: shouldTransferJobs
+            ? `Bàn giao trực tiếp từ ${prevOwner} sang ${nextOwner} (Chuyển giao ${transferredCount} Job chưa tất toán)`
+            : `Bàn giao từ ${prevOwner} sang ${nextOwner} (Giữ nguyên Job cũ cho PIC cũ tất toán)`,
         },
         ...prev,
       ]);
@@ -434,7 +485,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
     notify(
       isPicChanged
-        ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${b2cOwners.join(' & ')}`
+        ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${b2cOwners.join(' & ')}${
+            shouldTransferJobs && transferredCount > 0 ? ` (Đã chuyển giao ${transferredCount} Job đang chạy dở)` : ''
+          }`
         : `Đã cập nhật phân công gian hàng "${updated.storeName}"`
     );
     setEditingStore(null);
@@ -1359,6 +1412,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               />
             </div>
 
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-2 text-xs text-ink">
+              <input
+                type="checkbox"
+                checked={transferActiveJobs}
+                onChange={(e) => setTransferActiveJobs(e.target.checked)}
+              />
+              <span>Chuyển giao cả các KOC / Job đang chạy dở (chưa tất toán) trong tháng cho PIC mới</span>
+            </label>
+
             <div className="pt-3 border-t border-line flex items-center justify-end gap-2">
               <Button type="button" variant="secondary" size="sm" onClick={() => setEditingStore(null)}>
                 Hủy
@@ -1371,7 +1433,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 onClick={() => {
                   const notes = (document.getElementById('store-notes-input') as HTMLTextAreaElement)?.value || '';
                   const owners = editingStore.b2cOwners || [editingStore.b2cOwnerName];
-                  handleSaveStoreAssignment(editingStore.id, owners, notes);
+                  void handleSaveStoreAssignment(editingStore.id, owners, notes, transferActiveJobs);
                 }}
               >
                 Xác nhận bàn giao

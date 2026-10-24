@@ -5,13 +5,14 @@ import { KL_TIERS, type KlCode } from './klTiers';
 import { CONTENT_PILLARS, pillarGroupOf } from './contentPillars';
 import type { BrandPlanPillar, BrandPlanRow, PlanChannel } from './brandPlanRules';
 
-export type ContentRowKey = KlCode | 'FOC' | 'SELF';
+export type ContentRowKey = KlCode | 'FOC' | 'SELF' | 'LIVE_AFF';
 export type ContentBriefStatus = 'DRAFT' | 'READY';
 
 export const CONTENT_ROWS: { key: ContentRowKey; label: string }[] = [
   ...KL_TIERS.map(t => ({ key: t.code as ContentRowKey, label: t.label })),
   { key: 'FOC', label: 'FOC (0đ)' },
   { key: 'SELF', label: 'Self channel' },
+  { key: 'LIVE_AFF', label: 'Livestream Affiliate' },
 ];
 
 export const BRIEF_FORMAT_OPTIONS = [
@@ -31,10 +32,14 @@ export interface ContentSlot {
   pillar: string;
   angle: string;
   product: string;
+  productName?: string;
+  kocFee?: number;
   /** Câu mở đầu 3 giây đầu (Hook 3s) trong Brief gửi KOC. */
   hook?: string;
   /** Điểm nhấn sản phẩm / Thông điệp USP bắt buộc trong video. */
   usp?: string;
+  /** Claim cấm / Từ khóa cấm (Do & Don't) kế thừa từ Nhóm sản phẩm thúc đẩy. */
+  forbiddenClaims?: string;
   /** Lời kêu gọi hành động (CTA) & hướng dẫn gắn giỏ hàng. */
   cta?: string;
   /** Định dạng sản xuất video. */
@@ -45,11 +50,13 @@ export interface ContentSlot {
   briefStatus?: ContentBriefStatus;
   /** Tuần đã xếp, null nếu chưa xếp. */
   week: string | null;
-  /** Hàng đã xếp (bậc KL, FOC hoặc self channel). */
+  /** Hàng đã xếp (bậc KL, FOC, self channel hoặc livestream affiliate). */
   row: ContentRowKey | null;
   note?: string;
-  /** Gán ở bước creator matching. */
+  /** KOC đầu tiên / chính (giữ tương thích ngược). */
   kocHandle?: string;
+  /** Danh sách nhiều KOC được gán vào cùng 1 dòng Brief (1 Brief BR-xx có targetQty = N video chứa được N+ KOC). */
+  kocHandles?: string[];
   /** KOC Brand đã từ chối cho content này; nếu Brand duyệt lại thì KOC được gán lại. */
   rejectedKoc?: { handle: string; reason?: string; at: string };
   /** PIC phụ trách content này (lấy từ plan tháng của Brand). */
@@ -79,6 +86,60 @@ export const isPlaced = (s: ContentSlot): boolean => Boolean(s.week && s.row);
 
 /** Số lượng video mục tiêu của 1 dòng Brief / Angle (mặc định = 1 nếu chưa khai báo). */
 export const slotTargetQty = (s: ContentSlot): number => Math.max(1, Math.floor(s.targetQty || 1));
+
+const cleanHandleStr = (h: string) => h.replace(/^@/, '').trim();
+
+/** Lấy danh sách toàn bộ KOC handles đã gán vào dòng Brief này (hỗ trợ cả `kocHandles[]` và `kocHandle` đơn). */
+export function slotKocHandles(s: ContentSlot): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const push = (raw?: string) => {
+    if (!raw) return;
+    for (const part of raw.split(/[,;\n]+/)) {
+      const h = cleanHandleStr(part);
+      if (!h) continue;
+      const k = h.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(h);
+    }
+  };
+  if (Array.isArray(s.kocHandles)) {
+    for (const h of s.kocHandles) push(h);
+  }
+  push(s.kocHandle);
+  return out;
+}
+
+/** Thêm 1 hoặc nhiều KOC (phân tách bằng dấu phẩy/xuống dòng) vào dòng Brief `ContentSlot`. */
+export function addKocToSlot(s: ContentSlot, rawHandle: string): ContentSlot {
+  const current = slotKocHandles(s);
+  const seen = new Set(current.map(h => h.toLowerCase()));
+  for (const part of rawHandle.split(/[,;\n]+/)) {
+    const h = cleanHandleStr(part);
+    if (!h || seen.has(h.toLowerCase())) continue;
+    seen.add(h.toLowerCase());
+    current.push(h);
+  }
+  return {
+    ...s,
+    kocHandle: current[0] || undefined,
+    kocHandles: current,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/** Gỡ 1 KOC khỏi dòng Brief `ContentSlot`. */
+export function removeKocFromSlot(s: ContentSlot, handleToRemove: string): ContentSlot {
+  const target = cleanHandleStr(handleToRemove).toLowerCase();
+  const next = slotKocHandles(s).filter(h => h.toLowerCase() !== target);
+  return {
+    ...s,
+    kocHandle: next[0] || undefined,
+    kocHandles: next,
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 /** Kiểm tra 1 dòng Brief Content đã có đủ thông tin cốt lõi (Sản phẩm + Góc nội dung Angle) để giao cho Job/KOC chưa. */
 export const isBriefReady = (s: ContentSlot): boolean =>
@@ -122,6 +183,7 @@ export function newSlot(input: {
   product?: string;
   hook?: string;
   usp?: string;
+  forbiddenClaims?: string;
   cta?: string;
   format?: string;
   briefUrl?: string;
@@ -129,6 +191,7 @@ export function newSlot(input: {
   week?: string | null;
   row?: ContentRowKey | null;
   pic?: string;
+  productGroupId?: string;
   createdBy: string;
 }): ContentSlot {
   const now = new Date().toISOString();
@@ -137,6 +200,7 @@ export function newSlot(input: {
   const product = input.product?.trim() || '';
   const hook = input.hook?.trim() || '';
   const usp = input.usp?.trim() || '';
+  const forbiddenClaims = input.forbiddenClaims?.trim() || '';
   const targetQty = Math.max(1, Math.floor(input.targetQty || 1));
   return {
     id: `CS-${Date.now().toString(36)}-${seq}-${Math.random().toString(36).slice(2, 6)}`,
@@ -147,6 +211,7 @@ export function newSlot(input: {
     product,
     hook: hook || undefined,
     usp: usp || undefined,
+    forbiddenClaims: forbiddenClaims || undefined,
     cta: input.cta?.trim() || undefined,
     format: input.format?.trim() || undefined,
     briefUrl: input.briefUrl?.trim() || undefined,
@@ -155,6 +220,7 @@ export function newSlot(input: {
     week: input.week ?? null,
     row: input.row ?? null,
     pic: input.pic?.trim() || undefined,
+    productGroupId: input.productGroupId?.trim() || undefined,
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
@@ -176,6 +242,8 @@ export function requiredGrid(plan: InputPlanBreakdownState): { weeks: string[]; 
     if (foc > 0) cell.FOC = foc;
     const self = SELF_TYPES.reduce((s, t) => s + (r.self?.[t.key] || 0), 0);
     if (self > 0) cell.SELF = self;
+    const liveAff = r.live?.sessions || 0;
+    if (liveAff > 0) cell.LIVE_AFF = liveAff;
     if (Object.keys(cell).length > 0) hasData = true;
     grid[r.week] = cell;
   }
@@ -309,25 +377,33 @@ export interface BrandPlanSlotSpec {
   angle: string;
   product: string;
   productGroupId?: string;
+  usp?: string;
+  forbiddenClaims?: string;
   pic: string;
 }
 
 const KL_CODES = new Set<string>(KL_TIERS.map(t => t.code));
 
 /**
- * Mỗi dòng Chi tiết Content của sàn đang xét tương ứng 1 dòng Định hướng / Brief mẫu có `targetQty = qty` (số lượng video mục tiêu).
- * Video affiliate theo bậc KL, TAP vào hàng FOC; video self vào hàng Self channel. Livestream không có trong lưới này.
+ * Mỗi dòng Chi tiết Content của sàn đang xét tương ứng 1 dòng Định hướng / Brief mẫu có `targetQty = qty` (số lượng video/phiên live mục tiêu).
+ * Video affiliate theo bậc KL, TAP vào hàng FOC; video self vào hàng Self channel; livestream affiliate vào hàng LIVE_AFF.
+ * Chỉ bỏ qua Livestream self-channel (Inhouse/CTV theo ca quản lý ngoài Ops Hub).
  */
-export function slotSpecsFromBrandPlan(rows: BrandPlanRow[], pillars: BrandPlanPillar[], channel: PlanChannel, groups: { id: string; name: string }[] = []): { specs: BrandPlanSlotSpec[]; skipped: { live: number; noWeek: number; noTier: number } } {
+export function slotSpecsFromBrandPlan(
+  rows: BrandPlanRow[],
+  pillars: BrandPlanPillar[],
+  channel: PlanChannel,
+  groups: { id: string; name: string; usp?: string; forbiddenClaims?: string }[] = []
+): { specs: BrandPlanSlotSpec[]; skipped: { live: number; noWeek: number; noTier: number } } {
   const specs: BrandPlanSlotSpec[] = [];
   const skipped = { live: 0, noWeek: 0, noTier: 0 };
   const pillarName = (id: string) => pillars.find(p => p.id === id)?.name || '';
-  const groupName = (id: string) => groups.find(g => g.id === id)?.name || '';
+  const groupObj = (id: string) => groups.find(g => g.id === id);
   for (const r of rows) {
     if (r.channel !== channel) continue;
     const qty = Math.floor(r.qty || 0);
     if (qty <= 0) continue;
-    if (r.source === 'LIVE_AFF' || r.source === 'LIVE_SELF') {
+    if (r.source === 'LIVE_SELF') {
       skipped.live += qty;
       continue;
     }
@@ -337,12 +413,14 @@ export function slotSpecsFromBrandPlan(rows: BrandPlanRow[], pillars: BrandPlanP
     }
     let row: ContentRowKey | null = null;
     if (r.source === 'SELF') row = 'SELF';
+    else if (r.source === 'LIVE_AFF') row = 'LIVE_AFF';
     else if (r.kl === 'TAP') row = 'FOC';
     else if (KL_CODES.has(r.kl)) row = r.kl as ContentRowKey;
     if (!row) {
       skipped.noTier += qty;
       continue;
     }
+    const grp = groupObj(r.productGroupId);
     specs.push({
       planRowId: r.id,
       planRowIndex: 0,
@@ -351,8 +429,10 @@ export function slotSpecsFromBrandPlan(rows: BrandPlanRow[], pillars: BrandPlanP
       row,
       pillar: pillarName(r.pillarId),
       angle: r.angle.trim(),
-      product: [groupName(r.productGroupId), r.sku.trim()].filter(Boolean).join(' · '),
+      product: [grp?.name || '', r.sku.trim()].filter(Boolean).join(' · '),
       productGroupId: r.productGroupId || undefined,
+      usp: grp?.usp?.trim() || undefined,
+      forbiddenClaims: grp?.forbiddenClaims?.trim() || undefined,
       pic: r.pic.trim(),
     });
   }
@@ -391,7 +471,7 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
     const k = keyOf(s.planRowId, s.planRowIndex);
     const spec = specByKey.get(k);
     if (!spec) {
-      if (s.kocHandle) {
+      if (slotKocHandles(s).length > 0) {
         keptOrphans++;
         next.push(s);
       } else removed++;
@@ -412,6 +492,8 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       pillar: spec.pillar || s.pillar,
       pic: spec.pic || s.pic,
       productGroupId: spec.productGroupId || s.productGroupId,
+      usp: s.usp || spec.usp,
+      forbiddenClaims: s.forbiddenClaims || spec.forbiddenClaims,
     };
     const changed =
       merged.targetQty !== s.targetQty ||
@@ -421,7 +503,9 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       merged.angle !== s.angle ||
       merged.pillar !== s.pillar ||
       merged.pic !== s.pic ||
-      merged.productGroupId !== s.productGroupId;
+      merged.productGroupId !== s.productGroupId ||
+      merged.usp !== s.usp ||
+      merged.forbiddenClaims !== s.forbiddenClaims;
     if (changed) {
       updated++;
       merged.updatedAt = now;
@@ -436,6 +520,8 @@ export function syncSlotsFromBrandPlan(slots: ContentSlot[], specs: BrandPlanSlo
       pillar: spec.pillar,
       angle: spec.angle,
       product: spec.product,
+      usp: spec.usp,
+      forbiddenClaims: spec.forbiddenClaims,
       week: spec.week,
       row: spec.row,
       createdBy: actor,

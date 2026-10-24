@@ -1,31 +1,42 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, FileText, Plus, RefreshCw, Search } from 'lucide-react';
+import { CheckCircle2, Copy, Download, FileText, MessageSquare, Plus, RefreshCw, Search, Send } from 'lucide-react';
 import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycle } from '../../lib/types';
-import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
 import type { ContentSlot } from '../../lib/contentPlanRules';
-import { defaultBookingTabName, resolveBrandBookingSheetUrl } from '../../lib/bookingList';
+import {
+  BOOKING_LIST_COLUMNS,
+  buildBookingListRowsFromListingItems,
+  defaultBookingTabName,
+  resolveBrandBookingSheetUrl,
+} from '../../lib/bookingList';
 import {
   BATCH_CYCLE_SPECS,
   BOARD_COLUMNS,
+  KOC_REJECTION_REASONS_CATALOG,
   LARK_31_COLUMNS,
+  buildBrandPriceChangeMessage,
+  buildZaloGroupDealConfirmMessage,
   canMove,
+  checkKocDuplicateAndPriceWarning,
   columnOf,
   computeAlerts,
   computeBatchProgress,
+  computeBrandSlaMetrics,
+  computeListingPipelineState,
   computeProgress,
   createListingItem,
+  getItemSlaBadge,
   isPlanListable,
+  isPlanOfficiallyApproved,
   itemFee,
   itemGrade,
   moveItem,
   parsePastedKocs,
   toLark31Rows,
-  computeBrandSlaMetrics,
-  getItemSlaBadge,
   type BoardColumn,
   type QuotaKey,
 } from '../../lib/listingBoardRules';
@@ -116,6 +127,69 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
   }
   const [pullReport, setPullReport] = useState<PullSessionReport | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+
+  // --- đẩy danh sách KOC trực tiếp từ Bảng Điều phối Listing lên Google Sheet của Brand ---
+  const [pushOpen, setPushOpen] = useState(false);
+  const [pushForm, setPushForm] = useState({ sheetUrl: '', dot: 1, tab: '' });
+  const [pushing, setPushing] = useState(false);
+  const [sheetCfg, setSheetCfg] = useState<{ configured: boolean; serviceAccountEmail: string | null } | null>(null);
+
+  const openPush = async () => {
+    if (!plan) return;
+    setPushForm({ sheetUrl: resolveBrandBookingSheetUrl(plan), dot: 1, tab: defaultBookingTabName(plan, 1) });
+    setPushOpen(true);
+    fetch('/api/booking-list/push-sheet', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(b => setSheetCfg({ configured: Boolean(b.configured), serviceAccountEmail: b.serviceAccountEmail ?? null }))
+      .catch(() => setSheetCfg({ configured: false, serviceAccountEmail: null }));
+    try {
+      const res = await fetch(`/api/content-plan?planId=${encodeURIComponent(plan.id)}`, { cache: 'no-store' });
+      const body = await res.json();
+      if (res.ok && body?.data) {
+        setPushForm(f => ({ ...f, sheetUrl: body.data.sheetUrl || f.sheetUrl, tab: body.data.tabName || f.tab }));
+      }
+    } catch {
+      /* giữ giá trị mặc định */
+    }
+  };
+
+  const pushToSheetFromListing = async () => {
+    if (!plan) return;
+    const rows = buildBookingListRowsFromListingItems(plan, items, planSlots, kocs);
+    if (rows.length === 0) {
+      notify('Chưa có KOC nào trên bảng để đẩy lên Google Sheet.', 'warning');
+      return;
+    }
+    setPushing(true);
+    try {
+      const res = await fetch('/api/booking-list/push-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          sheetUrl: pushForm.sheetUrl.trim(),
+          tab: pushForm.tab.trim(),
+          columns: [...BOOKING_LIST_COLUMNS],
+          rows,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        notify(body?.error || `Lỗi ${res.status}`, 'error');
+        return;
+      }
+      await reload();
+      setPushOpen(false);
+      notify(
+        `Đã đẩy ${body.added} dòng mới lên Google Sheet${body.updated ? `, cập nhật ${body.updated} dòng` : ''}${body.skipped ? `, bỏ qua ${body.skipped} dòng đã có` : ''}.`,
+        'success'
+      );
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Không đẩy được lên Google Sheet.', 'error');
+    } finally {
+      setPushing(false);
+    }
+  };
 
   // --- lấy kết quả Brand duyệt từ Google Sheet ---
   const [pullOpen, setPullOpen] = useState(false);
@@ -236,8 +310,17 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
     [items, batchFilter, tierFilter, picFilter, groupFilter, planSlots]
   );
 
-  // --- chuyển trạng thái ---
+  // --- chuyển trạng thái, từ chối theo 21 lý do chuẩn (§3.2), trình lại Brand (§3.3) & mẫu Zalo chốt Deal (§3.4) ---
   const [dropTarget, setDropTarget] = useState<KocListingItem | null>(null);
+  const [dropReasonCode, setDropReasonCode] = useState<string>(KOC_REJECTION_REASONS_CATALOG[0].code);
+  const [dropCustomNote, setDropCustomNote] = useState<string>('');
+  const [resubmitBrandTarget, setResubmitBrandTarget] = useState<KocListingItem | null>(null);
+  const [resubmitForm, setResubmitForm] = useState<{ newFee: number; kpiCommitmentNote: string }>({ newFee: 0, kpiCommitmentNote: '' });
+  const [zaloTemplateTarget, setZaloTemplateTarget] = useState<KocListingItem | null>(null);
+  const [zaloTemplateForm, setZaloTemplateForm] = useState<{ airDate: string; sowSummary: string }>({
+    airDate: '',
+    sowSummary: '01 Video TikTok gắn giỏ hàng + Mã Spark Ads 60 ngày',
+  });
 
   const applyMove = (id: string, to: BoardColumn, reason?: string) => {
     const item = items.find(i => i.id === id);
@@ -258,6 +341,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
       return;
     }
     if (to === 'DROPPED') {
+      setDropReasonCode(KOC_REJECTION_REASONS_CATALOG[0].code);
+      setDropCustomNote('');
       setDropTarget(item);
       return;
     }
@@ -494,7 +579,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                   {statusLabel[status] ? ` · ${statusLabel[status]}` : ''}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {status === 'error' && (
                   <Button size="sm" variant="secondary" onClick={saveNow}>
                     Lưu lại
@@ -505,6 +590,9 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                     Xem phiên vừa lấy
                   </Button>
                 )}
+                <Button size="md" variant="secondary" icon={Send} onClick={() => void openPush()} disabled={items.length === 0}>
+                  Đẩy lên Google Sheet
+                </Button>
                 <Button size="md" variant="secondary" icon={RefreshCw} onClick={() => void openPull()} disabled={items.length === 0}>
                   Lấy kết quả Brand
                 </Button>
@@ -516,6 +604,12 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 </Button>
               </div>
             </div>
+
+            {!isPlanOfficiallyApproved(plan) && (
+              <div className="rounded-lg border border-warning/40 bg-warning-soft px-3.5 py-2 text-xs text-warning">
+                Kế hoạch 4.1.1 đang ở trạng thái <strong>{plan.status || 'DRAFT'}</strong> — Hệ thống mở khóa cho phép chuyên viên lập sớm Danh sách KOC Đợt 1 (ngày 10–20/T-1) và đẩy Google Sheet xin Brand duyệt trước.
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               {[
@@ -541,7 +635,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 </div>
                 <div className="mt-1 text-2xs tabular-nums text-ink-2">
                   {brandSla.pendingOverdue > 0 ? (
-                    <span className="font-medium text-critical">${brandSla.pendingOverdue} kênh quá hạn</span>
+                    <span className="font-medium text-critical">{brandSla.pendingOverdue} kênh quá hạn</span>
                   ) : brandSla.totalDecided > 0 ? (
                     `TB: ${brandSla.avgResponseHours}h phản hồi`
                   ) : (
@@ -725,6 +819,8 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                       {cards.map(it => {
                         const next = NEXT_ACTION[col.key];
                         const handle = (it.kocHandle || '').replace(/^@/, '');
+                        const pipe = computeListingPipelineState(it);
+                        const warnCheck = checkKocDuplicateAndPriceWarning(it.kocHandle, itemFee(it), items.filter(x => x.id !== it.id), kocs);
                         return (
                           <div
                             key={it.id}
@@ -748,9 +844,22 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                               </div>
                               <div className="mt-0.5 flex items-center justify-between text-2xs text-ink-3">
                                 <span className="truncate">{it.kocName !== handle ? it.kocName : ' '}</span>
-                                <span className="tabular-nums">{itemFee(it) ? `${fmt(itemFee(it))}đ` : 'Chưa có giá'}</span>
+                                <span className="tabular-nums">{itemFee(it) ? `${fmt(itemFee(it))}đ` : '0đ (FOC)'}</span>
                               </div>
                               {(picOf(it) || productOf(it)) && <div className="mt-0.5 truncate text-2xs text-ink-3">{[picOf(it), productOf(it)].filter(Boolean).join(' · ')}</div>}
+                              <div className="mt-1 flex flex-wrap items-center gap-1">
+                                <span className="rounded bg-accent-soft px-1.5 py-0.5 text-3xs font-medium text-accent">
+                                  {pipe.code}: {pipe.subStatusLabel}
+                                </span>
+                                <span className="rounded bg-sunken px-1.5 py-0.5 text-3xs text-ink-2">
+                                  {pipe.ballLabel}
+                                </span>
+                              </div>
+                              {warnCheck.priceHikeWarning && (
+                                <div className="mt-1 rounded bg-warning-soft px-1.5 py-0.5 text-3xs text-warning">
+                                  {warnCheck.priceHikeWarning}
+                                </div>
+                              )}
                               {col.key === 'DROPPED' && it.dropReason && <div className="mt-1 truncate text-2xs text-critical">{it.dropReason}</div>}
                               {(() => {
                                 const sla = getItemSlaBadge(it, 48);
@@ -772,10 +881,49 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                                 );
                               })()}
                             </button>
-                            <div className="mt-1.5 flex items-center gap-1.5">
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
                               {next && (
                                 <button type="button" onClick={() => handleMove(it.id, next.to)} className="rounded bg-accent-soft px-2 py-0.5 text-2xs font-medium text-accent hover:bg-accent hover:text-white">
                                   {next.label}
+                                </button>
+                              )}
+                              {(col.key === 'DRAFT' || col.key === 'WAIT_BRAND') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleMove(it.id, 'CONFIRMED')}
+                                  className="rounded bg-success-soft px-2 py-0.5 text-2xs font-medium text-success hover:bg-success hover:text-white"
+                                  title="Chốt thẳng cho KOC FOC 0đ hoặc KOL do Brand chỉ định"
+                                >
+                                  Chốt thẳng
+                                </button>
+                              )}
+                              {col.key === 'NEGOTIATING' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setResubmitForm({ newFee: itemFee(it), kpiCommitmentNote: 'Cam kết duy trì view ổn định + hỗ trợ mã Spark Ads 60 ngày' });
+                                    setResubmitBrandTarget(it);
+                                  }}
+                                  className="rounded bg-warning-soft px-2 py-0.5 text-2xs font-medium text-warning hover:bg-warning hover:text-white"
+                                  title="KOC tăng giá hoặc đổi lịch -> Tạo tin nhắn thuyết phục & trình lại Brand duyệt"
+                                >
+                                  Trình lại Brand
+                                </button>
+                              )}
+                              {(col.key === 'NEGOTIATING' || col.key === 'CONFIRMED') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setZaloTemplateForm({
+                                      airDate: '',
+                                      sowSummary: '01 Video TikTok gắn giỏ hàng + Mã Spark Ads 60 ngày',
+                                    });
+                                    setZaloTemplateTarget(it);
+                                  }}
+                                  className="rounded bg-sunken px-2 py-0.5 text-2xs font-medium text-ink-2 hover:bg-accent-soft hover:text-accent"
+                                  title="Mở mẫu tin nhắn mở nhóm Zalo & xác nhận chốt Deal (§3.4)"
+                                >
+                                  Mẫu Zalo
                                 </button>
                               )}
                               {col.key !== 'DROPPED' && col.key !== 'CONFIRMED' && (
@@ -1041,20 +1189,268 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         </div>
       </Modal>
 
-      {/* Cho rớt: bắt buộc lý do */}
-      <ConfirmDialog
+      {/* Cho rớt: chọn 1 trong 21 lý do chuẩn Mục 3.2 kèm gợi ý đàm phán */}
+      <Modal
         open={Boolean(dropTarget)}
-        title="Cho KOC rớt khỏi kế hoạch"
-        message={dropTarget ? `@${(dropTarget.kocHandle || '').replace(/^@/, '')} sẽ không tính vào chỉ tiêu và ngân sách.` : ''}
-        confirmLabel="Cho rớt"
-        tone="danger"
-        reason={{ label: 'Lý do', placeholder: 'Ví dụ: Brand từ chối, KOC không nhận giá, hết hàng mẫu', required: true }}
-        onConfirm={reason => {
-          if (dropTarget) applyMove(dropTarget.id, 'DROPPED', reason);
-          setDropTarget(null);
-        }}
-        onCancel={() => setDropTarget(null)}
-      />
+        onClose={() => setDropTarget(null)}
+        title={dropTarget ? `Cho rớt @${(dropTarget.kocHandle || '').replace(/^@/, '')} (Pipeline 19)` : 'Cho KOC rớt khỏi kế hoạch'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDropTarget(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (!dropTarget) return;
+                const spec = KOC_REJECTION_REASONS_CATALOG.find(r => r.code === dropReasonCode);
+                const fullReason = `${spec ? `[${spec.code}] ${spec.label}` : dropReasonCode}${dropCustomNote.trim() ? ` — ${dropCustomNote.trim()}` : ''}`;
+                applyMove(dropTarget.id, 'DROPPED', fullReason);
+                setDropTarget(null);
+              }}
+            >
+              Xác nhận cho rớt
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <Field label="Chọn lý do từ chối / rớt chuẩn (21 lý do Mục 3.2)">
+            <Select value={dropReasonCode} onChange={e => setDropReasonCode(e.target.value)}>
+              {KOC_REJECTION_REASONS_CATALOG.map(r => (
+                <option key={r.code} value={r.code}>
+                  {r.code} ({r.group}) — {r.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {(() => {
+            const spec = KOC_REJECTION_REASONS_CATALOG.find(r => r.code === dropReasonCode);
+            if (!spec) return null;
+            return (
+              <div className="rounded-md border border-warning/40 bg-warning-soft px-3 py-2 text-xs text-ink">
+                <div className="font-semibold text-warning">Hướng xử lý / Đàm phán gợi ý trước khi cho rớt:</div>
+                <div className="mt-0.5 text-ink-2">{spec.negotiationPlaybook}</div>
+              </div>
+            );
+          })()}
+          <Field label="Ghi chú chi tiết bổ sung">
+            <Textarea rows={2} value={dropCustomNote} onChange={e => setDropCustomNote(e.target.value)} />
+          </Field>
+        </div>
+      </Modal>
+
+      {/* Đẩy danh sách KOC trực tiếp từ Bảng điều phối lên Google Sheet */}
+      <Modal
+        open={pushOpen}
+        onClose={() => setPushOpen(false)}
+        title="Đẩy danh sách KOC lên Google Sheet của Brand"
+        size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPushOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              variant="primary"
+              icon={Send}
+              disabled={pushing || !sheetCfg?.configured || !pushForm.sheetUrl.trim() || !pushForm.tab.trim()}
+              onClick={() => void pushToSheetFromListing()}
+            >
+              {pushing ? 'Đang đẩy…' : 'Đẩy lên Google Sheet'}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {sheetCfg && !sheetCfg.configured && (
+            <div className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
+              Chưa cấu hình tài khoản dịch vụ Google. Vui lòng dùng nút Xuất file 3.1 hoặc nhờ quản trị khai báo biến môi trường Google Service Account.
+            </div>
+          )}
+          {sheetCfg?.configured && (
+            <div className="rounded-md bg-sunken px-3 py-2 text-xs text-ink-2">
+              Sheet của Brand cần chia sẻ quyền chỉnh sửa cho <strong>{sheetCfg.serviceAccountEmail}</strong>. Hệ thống so khớp theo cặp (ID kênh + Mã Brief).
+            </div>
+          )}
+          <Field label="Link Google Sheet của Brand">
+            <Input value={pushForm.sheetUrl} onChange={e => setPushForm({ ...pushForm, sheetUrl: e.target.value })} placeholder="https://docs.google.com/spreadsheets/d/..." />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Đợt">
+              <Select
+                value={String(pushForm.dot)}
+                onChange={e => {
+                  const dot = parseInt(e.target.value, 10) || 1;
+                  setPushForm({ ...pushForm, dot, tab: plan ? defaultBookingTabName(plan, dot) : pushForm.tab });
+                }}
+              >
+                <option value="1">Đợt 1</option>
+                <option value="2">Đợt 2</option>
+                <option value="3">Đợt 3</option>
+              </Select>
+            </Field>
+            <Field label="Tên tab">
+              <Input value={pushForm.tab} onChange={e => setPushForm({ ...pushForm, tab: e.target.value })} />
+            </Field>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Trình lại Brand khi KOC tăng giá / đổi lịch (Mục 3.3) */}
+      <Modal
+        open={Boolean(resubmitBrandTarget)}
+        onClose={() => setResubmitBrandTarget(null)}
+        title={resubmitBrandTarget ? `Trình lại Brand duyệt giá mới — @${(resubmitBrandTarget.kocHandle || '').replace(/^@/, '')}` : 'Trình lại Brand'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setResubmitBrandTarget(null)}>
+              Đóng
+            </Button>
+            <Button
+              variant="secondary"
+              icon={Copy}
+              onClick={() => {
+                if (!resubmitBrandTarget || !plan) return;
+                const msg = buildBrandPriceChangeMessage({
+                  brandName: plan.brandName,
+                  kocHandle: resubmitBrandTarget.kocHandle,
+                  oldFee: itemFee(resubmitBrandTarget),
+                  newFee: resubmitForm.newFee,
+                  kpiCommitmentNote: resubmitForm.kpiCommitmentNote,
+                });
+                void navigator.clipboard.writeText(msg);
+                notify('Đã sao chép tin nhắn thuyết phục Brand (§3.3).', 'success');
+              }}
+            >
+              Sao chép tin nhắn gửi Brand
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (!resubmitBrandTarget) return;
+                const updated = items.map(i =>
+                  i.id === resubmitBrandTarget.id
+                    ? {
+                        ...(moveItem(i, 'WAIT_BRAND', currentUserName).item || i),
+                        proposedFee: resubmitForm.newFee,
+                        finalFee: resubmitForm.newFee,
+                        negotiationNote: `Trình lại Brand duyệt giá mới ${fmt(resubmitForm.newFee)}đ (${resubmitForm.kpiCommitmentNote})`,
+                      }
+                    : i
+                );
+                update(updated);
+                setResubmitBrandTarget(null);
+                notify('Đã cập nhật giá đề xuất mới và chuyển KOC về cột Chờ Brand duyệt lại.', 'success');
+              }}
+            >
+              Cập nhật giá & Chuyển về Chờ Brand duyệt
+            </Button>
+          </>
+        }
+      >
+        {resubmitBrandTarget && plan && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Giá cũ Brand đã duyệt (đ)">
+                <Input disabled value={fmt(itemFee(resubmitBrandTarget))} />
+              </Field>
+              <Field label="Giá mới KOC báo lại (đ)">
+                <Input
+                  inputMode="numeric"
+                  value={resubmitForm.newFee ? fmt(resubmitForm.newFee) : ''}
+                  onChange={e => setResubmitForm({ ...resubmitForm, newFee: parseInt(e.target.value.replace(/\D/g, ''), 10) || 0 })}
+                />
+              </Field>
+              <Field label="Lý do / Cam kết chỉ số KPI để thuyết phục Brand" className="col-span-2">
+                <Input value={resubmitForm.kpiCommitmentNote} onChange={e => setResubmitForm({ ...resubmitForm, kpiCommitmentNote: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Mẫu tin nhắn gửi Brand (Mục 3.3)">
+              <Textarea
+                rows={4}
+                readOnly
+                value={buildBrandPriceChangeMessage({
+                  brandName: plan.brandName,
+                  kocHandle: resubmitBrandTarget.kocHandle,
+                  oldFee: itemFee(resubmitBrandTarget),
+                  newFee: resubmitForm.newFee,
+                  kpiCommitmentNote: resubmitForm.kpiCommitmentNote,
+                })}
+              />
+            </Field>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal Mẫu tin nhắn mở nhóm Zalo & xác nhận chốt Deal (Mục 3.4) */}
+      <Modal
+        open={Boolean(zaloTemplateTarget)}
+        onClose={() => setZaloTemplateTarget(null)}
+        title={zaloTemplateTarget ? `Mẫu tin nhắn mở nhóm Zalo & Chốt Deal — @${(zaloTemplateTarget.kocHandle || '').replace(/^@/, '')}` : 'Mẫu Zalo Chốt Deal'}
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setZaloTemplateTarget(null)}>
+              Đóng
+            </Button>
+            <Button
+              variant="primary"
+              icon={Copy}
+              onClick={() => {
+                if (!zaloTemplateTarget || !plan) return;
+                const msg = buildZaloGroupDealConfirmMessage({
+                  brandName: plan.brandName,
+                  storeName: plan.storeName || plan.title,
+                  kocName: zaloTemplateTarget.kocName || zaloTemplateTarget.kocHandle,
+                  kocHandle: zaloTemplateTarget.kocHandle,
+                  productName: productOf(zaloTemplateTarget) || plan.brandName,
+                  finalFee: itemFee(zaloTemplateTarget),
+                  airDate: zaloTemplateForm.airDate,
+                  sowSummary: zaloTemplateForm.sowSummary,
+                  picName: picOf(zaloTemplateTarget) || currentUserName,
+                });
+                void navigator.clipboard.writeText(msg);
+                notify('Đã sao chép tin nhắn mở nhóm Zalo & xác nhận chốt Deal (§3.4).', 'success');
+              }}
+            >
+              Sao chép tin nhắn Zalo
+            </Button>
+          </>
+        }
+      >
+        {zaloTemplateTarget && plan && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Ngày dự kiến lên sóng (Air)">
+                <Input type="date" value={zaloTemplateForm.airDate} onChange={e => setZaloTemplateForm({ ...zaloTemplateForm, airDate: e.target.value })} />
+              </Field>
+              <Field label="Hạng mục SOW thỏa thuận">
+                <Input value={zaloTemplateForm.sowSummary} onChange={e => setZaloTemplateForm({ ...zaloTemplateForm, sowSummary: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Nội dung tin nhắn chuẩn gửi vào nhóm Zalo (Mục 3.4)">
+              <Textarea
+                rows={9}
+                readOnly
+                value={buildZaloGroupDealConfirmMessage({
+                  brandName: plan.brandName,
+                  storeName: plan.storeName || plan.title,
+                  kocName: zaloTemplateTarget.kocName || zaloTemplateTarget.kocHandle,
+                  kocHandle: zaloTemplateTarget.kocHandle,
+                  productName: productOf(zaloTemplateTarget) || plan.brandName,
+                  finalFee: itemFee(zaloTemplateTarget),
+                  airDate: zaloTemplateForm.airDate,
+                  sowSummary: zaloTemplateForm.sowSummary,
+                  picName: picOf(zaloTemplateTarget) || currentUserName,
+                })}
+              />
+            </Field>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={pullOpen}

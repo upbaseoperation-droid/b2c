@@ -28,6 +28,7 @@ import {
   Clapperboard,
   Contact,
   Cloud,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -94,10 +95,12 @@ const NAV = {
   masterData: { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
   partnerAccess: { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
   cloudflareAdmin: { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', icon: Cloud },
+  workToolkit: { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
 } satisfies Record<string, NavItem>;
 
 /** Màn đặt ở chân menu (cạnh tài khoản) thay vì chiếm một dòng trong danh sách. */
 const FOOTER_ITEMS: NavItem[] = [
+  { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', icon: Wrench },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
   { key: 'api-settings', label: 'Cấu hình API', icon: Sliders },
 ];
@@ -154,7 +157,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
       : NAV.contracts;
 
   return [
-    { items: [NAV.cockpit, NAV.dashboard] },
+    { items: [NAV.cockpit, NAV.dashboard, NAV.workToolkit] },
     {
       title: 'Kế hoạch & Điều phối',
       items: [NAV.inputPlan, NAV.content, NAV.delegation, NAV.campaigns],

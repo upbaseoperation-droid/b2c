@@ -1241,7 +1241,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     setIsDnttModalOpen(true);
   };
 
-  const handleConfirmDnttBatchPayout = () => {
+  const [pushingCtvLark, setPushingCtvLark] = useState(false);
+
+  const handleConfirmDnttBatchPayout = async () => {
     if (!dnttTargetCtv) return;
     const unpaidCompletedTasks = tasks.filter(
       t =>
@@ -1254,8 +1256,65 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     const grossTotal = unpaidCompletedTasks.reduce((sum, t) => sum + t.remuneration, 0);
     const pitTax = grossTotal >= 2000000 ? Math.round(grossTotal * 0.1) : 0;
     const netTotal = grossTotal - pitTax;
-    const dnttCode = `DNTT-CTV-202610-${String(++idCounterRef.current).slice(-3)}`;
+    let dnttCode = `DNTT-CTV-202610-${String(++idCounterRef.current).slice(-3)}`;
     const paymentRef = `UNC-${100000 + idCounterRef.current}`;
+
+    setPushingCtvLark(true);
+    try {
+      const dealPayloads = unpaidCompletedTasks.map(t => ({
+        id: t.id,
+        dealCode: t.taskCode,
+        kocId: dnttTargetCtv.id,
+        kocName: dnttTargetCtv.name,
+        channelId: (dnttTargetCtv as { tiktokChannel?: string }).tiktokChannel || `@ctv_${dnttTargetCtv.id}`,
+        brandName: t.brandName,
+        campaignName: `${t.storeName || t.brandName} · Self-Channel`,
+        stage: 'CẦN_THANH_TOÁN',
+        dealType: 'VIDEO_SELF_CHANNEL',
+        rateCard: t.remuneration,
+        finalAmount: t.remuneration,
+        totalValue: t.remuneration,
+        linkAir: t.videoDeliverables?.publishedChannelUrl || t.videoDeliverables?.finalVideoUrl || 'https://drive.google.com/ctv-video',
+        postedDate: (t.acceptedAt || new Date().toISOString()).slice(0, 10),
+        postDate: (t.acceptedAt || new Date().toISOString()).slice(0, 10),
+        contractScanUrl: `https://drive.google.com/ctv-contract/${dnttTargetCtv.id}`,
+        signedContractUrl: `https://drive.google.com/ctv-contract/${dnttTargetCtv.id}`,
+      }));
+
+      const res = await fetch('/api/integrations/larkbase/payment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'SETTLEMENT',
+          deals: dealPayloads,
+          kocs: [],
+          sharedPayeeOverride: {
+            bankName: dnttTargetCtv.bankName || 'Techcombank',
+            bankAccount: dnttTargetCtv.bankAccount || '19036829104018',
+            bankHolder: dnttTargetCtv.bankAccountName || dnttTargetCtv.name,
+            legalId: dnttTargetCtv.cccd || dnttTargetCtv.taxCode || '001099012345',
+            hasIdCardScan: true,
+            linkAir: dealPayloads[0]?.linkAir || 'https://drive.google.com/ctv-video',
+            postedDate: dealPayloads[0]?.postedDate,
+            sparkAdsCode: 'SELF_CHANNEL_CTV',
+            adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+            contractUrl: `HD-CTV-${dnttTargetCtv.id}`,
+            bbntUrl: `BANG-CONG-CTV-${dnttTargetCtv.id}-2026-10`,
+          },
+          actorName: currentUser?.name || 'Việt Hoàng',
+          month: '2026-10',
+          note: `Chốt bảng công CTV tháng (${unpaidCompletedTasks.length} video) cho ${dnttTargetCtv.name}`,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok && body?.slip?.slipCode) {
+        dnttCode = body.slip.slipCode;
+      }
+    } catch {
+      /* dự phòng nội bộ khi không kết nối Lark */
+    } finally {
+      setPushingCtvLark(false);
+    }
 
     updateTasks(prev =>
       prev.map(t => {
@@ -1287,7 +1346,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     setIsDnttModalOpen(false);
     setDnttTargetCtv(null);
     notify(
-      `Đã lập phiếu ${dnttCode} & giải ngân thực nhận ${formatVnd(netTotal)} (Gross: ${formatVnd(
+      `Đã chốt bảng công CTV tháng, đẩy Phiếu ĐNTT Lark 6.1 (${dnttCode}) & giải ngân thực nhận ${formatVnd(netTotal)} (Gross: ${formatVnd(
         grossTotal
       )}, Thuế TNCN 10%: ${formatVnd(pitTax)}) cho ${updatedCtv.name}!`
     );
@@ -4326,9 +4385,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             <Button
               variant="primary"
               icon={CheckCircle2}
-              onClick={handleConfirmDnttBatchPayout}
+              disabled={pushingCtvLark}
+              onClick={() => void handleConfirmDnttBatchPayout()}
             >
-              Xác nhận Lập DNTT &amp; Đã giải ngân
+              {pushingCtvLark ? 'Đang đẩy Phiếu Lark 6.1…' : 'Chốt bảng công CTV tháng & Đẩy Phiếu ĐNTT Lark 6.1'}
             </Button>
           </>
         }

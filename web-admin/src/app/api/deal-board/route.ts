@@ -81,21 +81,11 @@ export async function PUT(request: NextRequest) {
     const incoming = sanitizeDealBoard(body.data);
     const saved = await updateRecord<DealBoardData>(keyOf(body.planId), EMPTY_DEAL_BOARD, body.revision, async previous => {
       const before = new Map(sanitizeDealBoard(previous).deals.map(d => [d.id, d]));
-      const frameworks = await readRecord<{ items: FrameworkContract[] }>('koc-framework-contracts', { items: [] });
-      const fwById = new Map((frameworks.data.items || []).map(i => [i.id, i]));
       const codes = new Set<string>();
       const deals = incoming.deals.map(d => {
         const old = before.get(d.id);
         if (!d.code || codes.has(d.code)) throw new RecordError(`Mã deal ${d.code || '(trống)'} trống hoặc bị trùng.`, 400);
         codes.add(d.code);
-        // Deal mới: KOC phải có hợp đồng nguyên tắc hợp lệ HOẶC đã gắn Hồ sơ pháp lý 1–N hợp lệ
-        if (!old) {
-          const hasProfile = Boolean(d.jobs?.[0]?.legalProfileId);
-          const st = frameworkState(fwById.get(normHandle(d.kocHandle)));
-          if (!hasProfile && st !== 'VALID') {
-            throw new RecordError(`Không tạo được deal ${d.code}: ${FRAMEWORK_STATE_LABEL[st]} (@${normHandle(d.kocHandle)}).`, 400);
-          }
-        }
         const oldJobMap = new Map((old?.jobs || []).map(j => [j.id, j]));
         const jobCodes = new Set<string>();
         const jobs = (d.jobs || []).map(j => {

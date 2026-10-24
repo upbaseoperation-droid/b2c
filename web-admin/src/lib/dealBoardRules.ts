@@ -31,6 +31,8 @@ export interface FrameworkContract {
   authorizationUrl?: string;
   hardcopyStatus?: 'ESIGN_VERIFIED' | 'HARDCOPY_PENDING' | 'HARDCOPY_SENT_TO_KOC' | 'HARDCOPY_RETURNED_TO_ACCOUNTING';
   hardcopyDueAt?: string;
+  /** Danh sách các kênh KOC (@handle) trực thuộc cùng 1 Hợp đồng nguyên tắc MCN / Agency */
+  coveredHandles?: string[];
 }
 
 export const normHandle = (h: string) =>
@@ -60,10 +62,74 @@ export const FRAMEWORK_STATE_LABEL: Record<FrameworkState, string> = {
   VALID: 'Đã có hợp đồng nguyên tắc',
 };
 
-export type SampleStatus = 'NONE' | 'NOT_NEEDED' | 'SENT' | 'RECEIVED';
+export type SampleStatus = 'NONE' | 'NOT_NEEDED' | 'SENT' | 'RECEIVED' | 'OUT_OF_STOCK' | 'ISSUE';
 export type ScriptStatus = 'NONE' | 'NOT_NEEDED' | 'SUBMITTED' | 'CHANGES' | 'APPROVED';
 export type AcceptanceStatus = 'PENDING' | 'PASSED' | 'REVIEW' | 'FAILED';
 export type PaymentStatus = 'NONE' | 'REQUESTED' | 'PAID';
+export type AdvancePaymentStatus = 'NONE' | 'REQUIRED' | 'REQUESTED' | 'APPROVED' | 'PAID';
+export type ContractReviewStatus = 'NOT_NEEDED' | 'NOT_REQUIRED' | 'PENDING' | 'APPROVED' | 'CHANGES';
+export type DraftInvoiceStatus = 'NONE' | 'NOT_REQUIRED' | 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CHANGES';
+export type JobLifecycleStatus = 'ACTIVE' | 'REPLACED' | 'REPLACED_KOC' | 'ROLLED_OVER' | 'ROLLED_OVER_NEXT_MONTH' | 'CANCELLED';
+
+export interface JobAdvancePayment {
+  status: AdvancePaymentStatus;
+  amount: number | null;
+  larkSlipCode?: string;
+  requestedAt?: string;
+  paidAt?: string;
+  uncBillUrl?: string;
+  note?: string;
+}
+
+export interface LateSigningExplanation {
+  reason: string;
+  impactAndRisk?: string;
+  processCompliance?: string;
+  confirmedByLead?: string;
+  confirmedAt?: string;
+  chatEvidenceUrl?: string;
+  leadConfirmed?: boolean;
+  leadConfirmedBy?: string;
+  leadConfirmedAt?: string;
+}
+
+export interface LivestreamJobSpec {
+  liveDate?: string;
+  startTime?: string;
+  endTime?: string;
+  committedMinutes?: number;
+  actualMinutes?: number | null;
+  dealPriceInfo?: string;
+  voucherInfo?: string;
+  committedStock?: number | null;
+  replayUrl?: string;
+  scheduledStartAt?: string;
+  durationMinutes?: number;
+  pinnedSkus?: string;
+  voucherDeal?: string;
+  replayRecordingUrl?: string;
+}
+
+export interface JobInvoiceCheck {
+  draftInvoiceStatus: DraftInvoiceStatus;
+  draftInvoiceUrl?: string;
+  officialInvoiceNumber?: string;
+  officialInvoiceNo?: string;
+  officialInvoiceDate?: string;
+  officialInvoiceUrl?: string;
+  bbntDate?: string;
+  taxLookupVerified?: boolean;
+}
+
+export interface JobClosingAudit {
+  accountStatus: 'PENDING' | 'PASSED' | 'RETURNED';
+  financeStatus: 'PENDING' | 'PASSED' | 'RETURNED';
+  errorNote?: string;
+  accountErrorNote?: string;
+  financeErrorNote?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+}
 
 /** Loại pháp nhân ký hợp đồng & hạch toán thuế theo `Booking đa sàn.md` */
 export type LegalEntityType = 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
@@ -219,6 +285,8 @@ export interface DealJob {
   angle: string;
   hook: string;
   usp: string;
+  /** Claim cấm / Từ khóa cấm Do & Don't kế thừa từ Nhóm sản phẩm hoặc Brief */
+  forbiddenClaims?: string;
   cta: string;
   briefUrl: string;
   week: string;
@@ -264,27 +332,47 @@ export interface DealJob {
   cartUrl: string;
   affiliateUrl: string;
   commissionPct: number | null;
-  // Phụ lục ký theo từng Job
+  // Phụ lục ký theo từng Job & Pháp chế / Tài chính (Pipeline 7)
   appendixNo: string;
   appendixDate: string;
   appendixUrl: string;
-  // Vận hành theo Job
+  /** Đánh dấu sử dụng mẫu hợp đồng ngoài hoặc có sửa điều khoản (kích hoạt Pháp chế 24h & Tài chính 48h) */
+  isCustomContractTemplate?: boolean;
+  legalReviewStatus?: ContractReviewStatus;
+  financeReviewStatus?: ContractReviewStatus;
+  /** Giải trình ký muộn (Mục 3.5) khi ký < 1 ngày trước Air hoặc ký sau Air */
+  lateSigningExplanation?: LateSigningExplanation;
+  /** Đề nghị Tạm ứng trước Air cho KOL lớn (Pipeline 8) */
+  advancePayment?: JobAdvancePayment;
+  // Vận hành theo Job (Pipeline 9 -> 13)
   sample: { status: SampleStatus; trackingNo: string; at: string };
   script: {
     status: ScriptStatus;
     note: string;
     at: string;
     scriptUrl?: string;
+    /** Vòng 1: B2C kiểm duyệt video demo nội bộ trước khi đẩy Google Sheet cho Brand (Pipeline 12.1) */
+    internalDemoAuditStatus?: 'NONE' | 'PASSED' | 'CHANGES';
     demoStatus?: ScriptStatus;
     demoUrl?: string;
   };
+  /** Đánh dấu Job Livestream Affiliate và thông số phiên Live (Mục II dòng 739–800) */
+  isLivestreamJob?: boolean;
+  liveSpec?: LivestreamJobSpec;
   deadline: string;
   airLink: string;
   airedAt: string;
   sparkAdsCode: string;
-  // Nghiệm thu & Thanh toán theo Job
+  // Nghiệm thu, Hóa đơn HKD/Công ty & Thanh toán theo Job (Pipeline 14 -> 18)
   acceptance: DealJobAcceptance;
+  invoiceCheck?: JobInvoiceCheck;
+  closingAudit?: JobClosingAudit;
   payment: DealJobPayment;
+  /** Xử lý ngoại lệ giữa chừng: Đổi KOC / Dời sang tháng sau / Hủy Job (Pipeline 19) */
+  lifecycleStatus?: JobLifecycleStatus;
+  lifecycleNote?: string;
+  rolledOverToMonth?: string;
+  replacedByKocHandle?: string;
   performance: { d14: DealPerformance; d30: DealPerformance; d60: DealPerformance };
 }
 
@@ -392,12 +480,25 @@ export interface JobContractAmountBreakdown {
   grossPayoutOrInvoice: number;
   /** Giá trị bắt buộc điền trên Hợp đồng / Phụ lục / Lark theo quy ước `Booking đa sàn.md` */
   contractDisplayValue: number;
+  /** Số tiền đã tạm ứng trước Air (Pipeline 8) */
+  advancePaidAmount: number;
+  /** Số tiền còn lại cần tất toán sau khi trừ Tạm ứng */
+  remainingSettlementAmount: number;
   ruleSummary: string;
 }
 
 export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakdown {
   const netAmount = jobTotalFee(job);
   const entityType: LegalEntityType = job.entityType || 'INDIVIDUAL';
+  const advancePaidAmount =
+    job.advancePayment && (job.advancePayment.status === 'PAID' || job.advancePayment.status === 'APPROVED')
+      ? Math.max(0, Math.round(job.advancePayment.amount || 0))
+      : 0;
+  const remainingSettlementAmount = Math.max(0, netAmount - advancePaidAmount);
+  const advSuffix =
+    advancePaidAmount > 0
+      ? ` · Đã tạm ứng ${advancePaidAmount.toLocaleString('vi-VN')}đ → Còn thanh toán ${remainingSettlementAmount.toLocaleString('vi-VN')}đ`
+      : '';
   if (entityType === 'COMPANY') {
     const vatPct = typeof job.vatPct === 'number' && job.vatPct >= 0 ? job.vatPct : 8;
     const vatAmount = Math.round((netAmount * vatPct) / 100);
@@ -410,7 +511,9 @@ export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakd
       vatAmount,
       grossPayoutOrInvoice: totalWithVat,
       contractDisplayValue: totalWithVat,
-      ruleSummary: `Công ty: Điền tổng giá trị đã gồm VAT ${vatPct}% (${totalWithVat.toLocaleString('vi-VN')}đ = Net ${netAmount.toLocaleString('vi-VN')}đ + VAT ${vatAmount.toLocaleString('vi-VN')}đ)`,
+      advancePaidAmount,
+      remainingSettlementAmount: Math.max(0, totalWithVat - advancePaidAmount),
+      ruleSummary: `Công ty: Điền tổng giá trị đã gồm VAT ${vatPct}% (${totalWithVat.toLocaleString('vi-VN')}đ = Net ${netAmount.toLocaleString('vi-VN')}đ + VAT ${vatAmount.toLocaleString('vi-VN')}đ)${advSuffix}`,
     };
   }
   if (entityType === 'HOUSEHOLD') {
@@ -422,7 +525,9 @@ export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakd
       vatAmount: 0,
       grossPayoutOrInvoice: netAmount,
       contractDisplayValue: netAmount,
-      ruleSummary: `Hộ kinh doanh: Điền tổng giá trị hợp đồng (${netAmount.toLocaleString('vi-VN')}đ)`,
+      advancePaidAmount,
+      remainingSettlementAmount,
+      ruleSummary: `Hộ kinh doanh: Điền tổng giá trị hợp đồng (${netAmount.toLocaleString('vi-VN')}đ)${advSuffix}`,
     };
   }
   // INDIVIDUAL (Mặc định)
@@ -436,7 +541,9 @@ export function computeJobContractAmounts(job: DealJob): JobContractAmountBreakd
     vatAmount: 0,
     grossPayoutOrInvoice: grossFromNet,
     contractDisplayValue: netAmount,
-    ruleSummary: `Cá nhân: Điền giá trị Net (${netAmount.toLocaleString('vi-VN')}đ · Chưa gồm 10% TNCN ${pitTaxAmount.toLocaleString('vi-VN')}đ · Tổng chi Gross ${grossFromNet.toLocaleString('vi-VN')}đ)`,
+    advancePaidAmount,
+    remainingSettlementAmount,
+    ruleSummary: `Cá nhân: Điền giá trị Net (${netAmount.toLocaleString('vi-VN')}đ · Chưa gồm 10% TNCN ${pitTaxAmount.toLocaleString('vi-VN')}đ · Tổng chi Gross ${grossFromNet.toLocaleString('vi-VN')}đ)${advSuffix}`,
   };
 }
 
@@ -552,6 +659,7 @@ export interface NewJobInput {
   angle?: string;
   hook?: string;
   usp?: string;
+  forbiddenClaims?: string;
   cta?: string;
   briefUrl?: string;
   week?: string;
@@ -593,6 +701,7 @@ export function createDealJob(input: NewJobInput): DealJob {
     angle: input.angle || '',
     hook: input.hook || '',
     usp: input.usp || '',
+    forbiddenClaims: input.forbiddenClaims || undefined,
     cta: input.cta || '',
     briefUrl: input.briefUrl || '',
     week: input.week || '',
@@ -793,6 +902,7 @@ export interface NewDealInput {
   angle?: string;
   hook?: string;
   usp?: string;
+  forbiddenClaims?: string;
   cta?: string;
   briefUrl?: string;
   productGroupId?: string;
@@ -836,6 +946,7 @@ export function createDeal(input: NewDealInput): PlanDeal {
     angle: input.angle || '',
     hook: input.hook || '',
     usp: input.usp || '',
+    forbiddenClaims: input.forbiddenClaims || undefined,
     cta: input.cta || '',
     briefUrl: input.briefUrl || '',
     week: input.week || '',
@@ -911,14 +1022,32 @@ export const isJobAcceptanceCleared = (job: DealJob): boolean => {
 export const isAcceptanceCleared = (d: PlanDeal): boolean =>
   d.jobs && d.jobs.length > 0 ? d.jobs.every(isJobAcceptanceCleared) : d.acceptance.status === 'PASSED' || Boolean(d.acceptance.confirmedBy);
 
-/** Bước hiện tại của 1 Job: bước đầu tiên chưa xong. */
+const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+
+/** Kiểm tra Job có bắt buộc qua bước Pháp chế duyệt (24h) & Tài chính duyệt (48h) hay không (HĐ >= 50M hoặc sửa mẫu/điều khoản). */
+export function requiresLegalFinanceReview(job: DealJob): boolean {
+  if (jobTotalFee(job) === 0) return false;
+  return jobTotalFee(job) >= 50_000_000 || Boolean(job.isCustomContractTemplate);
+}
+
+/** Kiểm tra Job có rơi vào diện ký muộn (< 1 ngày trước hạn Air hoặc ký sau ngày Air) bắt buộc lập Mẫu giải trình Mục 3.5 hay không. */
+export function requiresLateSigningExplanation(job: DealJob): boolean {
+  if (jobTotalFee(job) === 0) return false;
+  if (!job.appendixDate) return false;
+  if (job.airedAt && job.appendixDate > job.airedAt) return true;
+  if (job.deadline && dayDiff(job.appendixDate, job.deadline) < 1) return true;
+  return false;
+}
+
+/** Bước hiện tại của 1 Job: bước đầu tiên chưa xong (Miễn bước Phụ lục cho Job FOC 0đ). */
 export function jobStageOf(job: DealJob): DealStage {
-  if (!job.appendixNo.trim() || !job.appendixDate) return 'APPENDIX';
+  const isFoc = jobTotalFee(job) === 0;
+  if (!isFoc && (!job.appendixNo.trim() || !job.appendixDate)) return 'APPENDIX';
   if (job.sample.status !== 'RECEIVED' && job.sample.status !== 'NOT_NEEDED') return 'SAMPLE';
   if (job.script.status !== 'APPROVED' && job.script.status !== 'NOT_NEEDED') return 'SCRIPT';
   if (!job.airLink.trim()) return 'AIR';
   if (!isJobAcceptanceCleared(job)) return 'ACCEPTANCE';
-  if (job.payment.status !== 'PAID') return 'PAYMENT';
+  if (!isFoc && job.payment.status !== 'PAID') return 'PAYMENT';
   return 'TRACKING';
 }
 
@@ -933,45 +1062,70 @@ export function stageOf(d: PlanDeal): DealStage {
     }
     return order[minIdx];
   }
-  if (!d.appendixNo.trim() || !d.appendixDate) return 'APPENDIX';
+  const isFoc = dealTotalFee(d) === 0;
+  if (!isFoc && (!d.appendixNo.trim() || !d.appendixDate)) return 'APPENDIX';
   if (d.sample.status !== 'RECEIVED' && d.sample.status !== 'NOT_NEEDED') return 'SAMPLE';
   if (d.script.status !== 'APPROVED' && d.script.status !== 'NOT_NEEDED') return 'SCRIPT';
   if (!d.airLink.trim()) return 'AIR';
   if (!isAcceptanceCleared(d)) return 'ACCEPTANCE';
-  if (d.payment.status !== 'PAID') return 'PAYMENT';
+  if (!isFoc && d.payment.status !== 'PAID') return 'PAYMENT';
   return 'TRACKING';
 }
 
 /**
  * Lý do không cho tạo deal/job từ thẻ KOC; chuỗi rỗng nghĩa là được tạo.
- * Hỗ trợ cả 2 nguồn: Hợp đồng nguyên tắc theo `@handle` HOẶC Hồ sơ pháp lý 1–N (`hasValidLegalProfile`) trong Dữ liệu KOC.
+ * Mở khóa cho phép tạo Deal/Job ngay khi KOC ở cột Đã chốt (CONFIRMED) để chạy song song Hàng mẫu & Kịch bản trong lúc chờ ký HĐNT.
+ * Miễn hoàn toàn HĐNT & Phụ lục cho KOC FOC 0đ (`TAP UpAffiliate`).
  */
 export function createDealBlocker(
   item: KocListingItem,
-  framework: FrameworkContract | undefined,
+  _framework: FrameworkContract | undefined,
   deals: PlanDeal[],
-  hasValidLegalProfile = false
+  _hasValidLegalProfile = false
 ): string {
   if (columnOf(item) !== 'CONFIRMED') return 'KOC chưa ở cột Đã chốt.';
   if (deals.some(d => d.listingItemId === item.id || (d.jobs || []).some(j => j.listingItemId === item.id))) return 'KOC này đã được tạo Deal/Job.';
   const g = itemGrade(item);
   if (g !== 'TAP UpAffiliate' && !(itemFee(item) > 0)) return 'Chưa có giá chốt.';
-  if (hasValidLegalProfile) return '';
-  const st = frameworkState(framework);
-  if (st !== 'VALID') return FRAMEWORK_STATE_LABEL[st];
   return '';
 }
 
 /** Lý do không cho đề nghị thanh toán / đẩy Lark của 1 Job; chuỗi rỗng nghĩa là đủ điều kiện. */
 export function jobPaymentBlocker(job: DealJob): string {
-  if (!job.appendixNo.trim() || !job.appendixDate) return 'Job chưa ký phụ lục hợp đồng.';
+  if (job.lifecycleStatus && job.lifecycleStatus !== 'ACTIVE') {
+    return `Job đang ở trạng thái ${job.lifecycleStatus} (Đã đổi KOC / Dời tháng / Hủy).`;
+  }
+  const isFoc = jobTotalFee(job) === 0;
+  if (!isFoc && (!job.appendixNo.trim() || !job.appendixDate)) return 'Job có phí chưa ký phụ lục hợp đồng SOW.';
+  if (!isFoc && requiresLegalFinanceReview(job)) {
+    if (job.legalReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Pháp chế duyệt (SLA 24h).';
+    if (job.financeReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Tài chính duyệt (SLA 48h).';
+  }
+  if (!isFoc && requiresLateSigningExplanation(job) && !job.lateSigningExplanation?.confirmedByLead?.trim()) {
+    return 'Phụ lục ký muộn (< 1 ngày trước Air hoặc sau Air) — bắt buộc điền Giải trình ký muộn (Mục 3.5) có xác nhận của Booking Lead.';
+  }
   if (!job.airLink.trim() && job.productionMode !== 'PRODUCTION_ONLY') return 'Job chưa có link video lên sóng (link air).';
   const videoCleared = job.acceptance.status === 'PASSED' || Boolean(job.acceptance.confirmedBy);
   if (!videoCleared) return job.acceptance.status === 'PENDING' ? 'Chưa nghiệm thu video của Job.' : 'Video chưa đạt, cần người có quyền xác nhận nghiệm thu.';
   const pendingAddons = (job.addons || []).filter(a => a.status === 'PENDING');
   if (pendingAddons.length > 0) return `Còn ${pendingAddons.length} dịch vụ gia tăng chưa nghiệm thu (${pendingAddons.map(a => a.label).join(', ')}).`;
-  if (!isAccountHolderMatched(job) && !(job.authorizationUrl || '').trim()) {
+  if (!isFoc && !isAccountHolderMatched(job) && !(job.authorizationUrl || '').trim()) {
     return 'Tên chủ TK ngân hàng khác tên pháp nhân trên HĐNT — bắt buộc đính kèm link Giấy ủy quyền hợp lệ.';
+  }
+  if (!isFoc && (job.entityType === 'HOUSEHOLD' || job.entityType === 'COMPANY')) {
+    if (job.invoiceCheck?.draftInvoiceStatus !== 'APPROVED') {
+      return `${job.entityType === 'COMPANY' ? 'Công ty' : 'Hộ kinh doanh'} bắt buộc được Kế toán duyệt Hóa đơn nháp trước khi xuất chính thức (Bước 48–50).`;
+    }
+    if (!job.invoiceCheck?.officialInvoiceUrl?.trim()) {
+      return `Chưa đính kèm link Hóa đơn chính thức của ${job.entityType === 'COMPANY' ? 'Công ty' : 'Hộ kinh doanh'}.`;
+    }
+    if (
+      job.invoiceCheck.officialInvoiceDate &&
+      job.invoiceCheck.bbntDate &&
+      job.invoiceCheck.officialInvoiceDate !== job.invoiceCheck.bbntDate
+    ) {
+      return `Ngày Hóa đơn chính thức (${job.invoiceCheck.officialInvoiceDate}) không trùng ngày Biên bản nghiệm thu BBNT (${job.invoiceCheck.bbntDate}).`;
+    }
   }
   const effectiveAmount = job.payment.amount ?? jobTotalFee(job);
   if (!(effectiveAmount >= 0)) return 'Chưa có số tiền thanh toán hợp lệ.';
@@ -996,13 +1150,261 @@ export function paymentBlocker(d: PlanDeal): string {
   return '';
 }
 
+export type JobBallInCourt = 'B2C_STAFF' | 'BRAND' | 'KOC' | 'LEGAL_FINANCE' | 'ACCOUNT_FINANCE' | 'DONE';
+
+export interface JobParallelPipelineState {
+  contractTrack: { code: string; label: string };
+  advanceTrack: { code: string; label: string } | null;
+  sampleTrack: string;
+  legalTrack: string;
+  contentTrack: string;
+  financeTrack: string;
+  mainTrack: { code: string; label: string };
+  ballInCourt: JobBallInCourt;
+  ballLabel: string;
+}
+
+/**
+ * Tự động suy diễn 4 nhánh trạng thái Pipeline song song (7 → 18 & 19) theo đúng Mục 3.1 `Quy trình Booking - Tech.md`
+ * và xác định rõ "Quả bóng đang ở chân ai" để tính SLA công bằng.
+ */
+export function computeJobPipelineState(job: DealJob, framework?: FrameworkContract): JobParallelPipelineState {
+  const fmtTrack = (t: { code: string; label: string }) => `${t.code} ${t.label}`;
+  // Ngoại lệ Pipeline 19
+  if (job.lifecycleStatus === 'REPLACED' || job.lifecycleStatus === 'REPLACED_KOC') {
+    const c = { code: '19.5', label: 'Đã đổi KOC khác' };
+    const s = { code: '19.5', label: 'Dừng gửi mẫu' };
+    const m = { code: '19.5', label: `Đã đổi sang @${job.replacedByKocHandle || 'KOC mới'}` };
+    return {
+      contractTrack: c,
+      advanceTrack: null,
+      legalTrack: fmtTrack(c),
+      sampleTrack: fmtTrack(s),
+      contentTrack: fmtTrack(m),
+      financeTrack: fmtTrack(c),
+      mainTrack: m,
+      ballInCourt: 'DONE',
+      ballLabel: 'Đã đóng (Đổi KOC)',
+    };
+  }
+  if (job.lifecycleStatus === 'ROLLED_OVER' || job.lifecycleStatus === 'ROLLED_OVER_NEXT_MONTH') {
+    const c = { code: '19.6', label: 'Bảo lưu sang tháng sau' };
+    const s = { code: '19.6', label: 'Bảo lưu mẫu' };
+    const m = { code: '19.6', label: `Dời sang tháng ${job.rolledOverToMonth || 'kế tiếp'}` };
+    return {
+      contractTrack: c,
+      advanceTrack: null,
+      legalTrack: fmtTrack(c),
+      sampleTrack: fmtTrack(s),
+      contentTrack: fmtTrack(m),
+      financeTrack: fmtTrack(c),
+      mainTrack: m,
+      ballInCourt: 'DONE',
+      ballLabel: 'Đã dời tháng',
+    };
+  }
+  if (job.lifecycleStatus === 'CANCELLED') {
+    const c = { code: '19.7', label: 'Hủy Job' };
+    const m = { code: '19.7', label: 'Job đã hủy' };
+    return {
+      contractTrack: c,
+      advanceTrack: null,
+      legalTrack: fmtTrack(c),
+      sampleTrack: fmtTrack(c),
+      contentTrack: fmtTrack(m),
+      financeTrack: fmtTrack(c),
+      mainTrack: m,
+      ballInCourt: 'DONE',
+      ballLabel: 'Đã hủy',
+    };
+  }
+
+  const isFoc = jobTotalFee(job) === 0;
+
+  // 1. Nhánh Hợp đồng (Pipeline 7)
+  let contractTrack = { code: '7.1', label: 'Đang thu thập TT HĐ' };
+  if (isFoc) {
+    contractTrack = { code: 'FOC', label: 'Miễn HĐ & SOW (FOC 0đ)' };
+  } else if (job.appendixNo.trim() && job.appendixDate) {
+    const leadConfirmed = Boolean(job.lateSigningExplanation?.confirmedByLead || job.lateSigningExplanation?.leadConfirmed);
+    if (requiresLateSigningExplanation(job) && !leadConfirmed) {
+      contractTrack = { code: '7.11', label: 'Ký muộn — Chờ Lead xác nhận giải trình' };
+    } else if (framework?.hardcopyStatus === 'HARDCOPY_RETURNED_TO_ACCOUNTING' || framework?.hardcopyStatus === 'ESIGN_VERIFIED') {
+      contractTrack = { code: '7.11', label: 'HĐ/SOW hoàn tất' };
+    } else {
+      contractTrack = { code: '7.9', label: 'HĐ đã ký · Chờ lưu bản cứng Kế toán' };
+    }
+  } else if (requiresLegalFinanceReview(job)) {
+    if (job.legalReviewStatus === 'CHANGES' || job.financeReviewStatus === 'CHANGES') {
+      contractTrack = { code: '7.5', label: 'Cần sửa điều khoản HĐ' };
+    } else if (job.legalReviewStatus !== 'APPROVED') {
+      contractTrack = { code: '7.3', label: 'Chờ Pháp chế duyệt (24h)' };
+    } else if (job.financeReviewStatus !== 'APPROVED') {
+      contractTrack = { code: '7.4', label: 'Chờ Tài chính duyệt (48h)' };
+    } else {
+      contractTrack = { code: '7.6', label: 'Đã duyệt mẫu · Chờ KOC ký' };
+    }
+  } else if (job.payeeLegalName && job.payeeBankAccount) {
+    contractTrack = { code: '7.6', label: 'Đã có TT · Chờ ký SOW' };
+  }
+
+  // 2. Nhánh Tạm ứng (Pipeline 8)
+  let advanceTrack: { code: string; label: string } | null = null;
+  const advAmount = job.advancePayment?.amount ?? 0;
+  if (job.advancePayment && job.advancePayment.status !== 'NONE' && (advAmount > 0 || job.advancePayment.status === 'REQUIRED')) {
+    if (job.advancePayment.status === 'REQUIRED') advanceTrack = { code: '8.1', label: 'Cần làm đề nghị tạm ứng' };
+    else if (job.advancePayment.status === 'REQUESTED') advanceTrack = { code: '8.2', label: 'Chờ duyệt Tạm ứng (Lark 6.1)' };
+    else if (job.advancePayment.status === 'APPROVED') advanceTrack = { code: '8.3', label: 'Tạm ứng đã duyệt · Chờ chi' };
+    else if (job.advancePayment.status === 'PAID') advanceTrack = { code: '8.4', label: `Đã tạm ứng ${Math.round(advAmount).toLocaleString('vi-VN')}đ` };
+  }
+
+  // 3. Nhánh Sản phẩm mẫu (Pipeline 9)
+  let sampleTrackObj = { code: '9.1', label: 'Chưa gửi mẫu' };
+  if (job.sample.status === 'NOT_NEEDED' || job.hasSampleOnHand) sampleTrackObj = { code: '9.3', label: 'KOC đã sẵn hàng' };
+  else if (job.sample.status === 'SENT') sampleTrackObj = { code: '9.2', label: 'Đang vận chuyển mẫu' };
+  else if (job.sample.status === 'RECEIVED') sampleTrackObj = { code: '9.3', label: 'KOC đã nhận mẫu' };
+  else if (job.sample.status === 'OUT_OF_STOCK') sampleTrackObj = { code: '9.4', label: 'Brand hết hàng (Tạm dừng SLA)' };
+  else if (job.sample.status === 'ISSUE') sampleTrackObj = { code: '9.5', label: 'Lỗi sản phẩm mẫu (Tạm dừng SLA)' };
+
+  // 4. Nhánh Sản xuất -> Air -> Nghiệm thu -> Hóa đơn -> Thanh toán (Pipeline 10 -> 18)
+  let mainTrack = { code: '10.1', label: 'Đã gửi Brief · Chờ KOC nộp KB' };
+  let financeTrackObj = advanceTrack || (isFoc ? { code: 'FOC', label: 'Không phát sinh thanh toán' } : { code: '17.0', label: 'Chờ nghiệm thu để thanh toán' });
+  let ballInCourt: JobBallInCourt = 'KOC';
+  let ballLabel = 'Chờ KOC';
+
+  if (job.sample.status === 'OUT_OF_STOCK' || job.sample.status === 'ISSUE') {
+    ballInCourt = 'BRAND';
+    ballLabel = 'Chờ Brand xử lý hàng mẫu';
+  }
+
+  if (job.script.status === 'SUBMITTED') {
+    mainTrack = { code: '10.4', label: 'Chờ Brand duyệt kịch bản' };
+    ballInCourt = 'BRAND';
+    ballLabel = 'Chờ Brand duyệt KB';
+  } else if (job.script.status === 'CHANGES') {
+    mainTrack = { code: '10.5', label: 'Kịch bản cần sửa' };
+    ballInCourt = 'KOC';
+    ballLabel = 'Chờ KOC sửa KB';
+  } else if (job.script.status === 'APPROVED' || job.script.status === 'NOT_NEEDED') {
+    if (!job.airLink.trim()) {
+      if (job.script.demoUrl?.trim()) {
+        if (job.script.internalDemoAuditStatus === 'CHANGES') {
+          mainTrack = { code: '12.1', label: 'Demo chưa đạt nội bộ · KOC sửa' };
+          ballInCourt = 'KOC';
+          ballLabel = 'Chờ KOC sửa Demo (Vòng 1)';
+        } else if (job.script.internalDemoAuditStatus !== 'PASSED') {
+          mainTrack = { code: '12.1', label: 'Chờ B2C duyệt Demo nội bộ (Vòng 1)' };
+          ballInCourt = 'B2C_STAFF';
+          ballLabel = 'Chờ B2C duyệt Demo V1';
+        } else if (job.script.demoStatus === 'SUBMITTED') {
+          mainTrack = { code: '12.2', label: 'Chờ Brand duyệt Video Demo' };
+          ballInCourt = 'BRAND';
+          ballLabel = 'Chờ Brand duyệt Demo';
+        } else if (job.script.demoStatus === 'CHANGES') {
+          mainTrack = { code: '12.3', label: 'Brand yêu cầu sửa Video Demo' };
+          ballInCourt = 'KOC';
+          ballLabel = 'Chờ KOC sửa Demo (Brand)';
+        } else if (job.script.demoStatus === 'APPROVED') {
+          mainTrack = { code: '12.4', label: 'Demo đã duyệt · Chờ KOC lên sóng' };
+          ballInCourt = 'KOC';
+          ballLabel = 'Chờ KOC đăng video';
+        } else {
+          mainTrack = { code: '12.1', label: 'Đã duyệt nội bộ · Chờ gửi Demo cho Brand' };
+          ballInCourt = 'B2C_STAFF';
+          ballLabel = 'Chờ B2C đẩy Demo lên Sheet';
+        }
+      } else {
+        mainTrack = { code: '11.1', label: job.isLivestreamJob ? 'Chờ phiên Livestream' : 'Đang quay dựng video' };
+        ballInCourt = 'KOC';
+        ballLabel = job.isLivestreamJob ? 'Chờ KOC Live' : 'Chờ KOC quay Demo';
+      }
+    } else if (!isJobAcceptanceCleared(job)) {
+      if (job.closingAudit?.accountStatus === 'RETURNED' || job.closingAudit?.financeStatus === 'RETURNED') {
+        mainTrack = { code: '14.3', label: 'Nghiệm thu bị trả lỗi · Cần sửa' };
+        ballInCourt = 'B2C_STAFF';
+        ballLabel = 'Chờ B2C sửa lỗi nghiệm thu';
+      } else {
+        mainTrack = { code: '14.1', label: 'Đã Air · Chờ nghiệm thu' };
+        ballInCourt = 'B2C_STAFF';
+        ballLabel = 'Chờ B2C nghiệm thu';
+      }
+    } else if (isFoc) {
+      mainTrack = { code: '14.2', label: 'Đã nghiệm thu hoàn tất (FOC 0đ)' };
+      ballInCourt = 'DONE';
+      ballLabel = 'Hoàn tất (FOC)';
+    } else if (
+      (job.entityType === 'HOUSEHOLD' || job.entityType === 'COMPANY') &&
+      (job.invoiceCheck?.draftInvoiceStatus !== 'APPROVED' || !job.invoiceCheck?.officialInvoiceUrl?.trim())
+    ) {
+      if (!job.invoiceCheck?.draftInvoiceStatus || job.invoiceCheck.draftInvoiceStatus === 'NONE' || job.invoiceCheck.draftInvoiceStatus === 'NOT_REQUIRED') {
+        mainTrack = { code: '16.1', label: 'Chờ KOC gửi Hóa đơn nháp' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'KOC';
+        ballLabel = 'Chờ KOC nộp HĐ nháp';
+      } else if (job.invoiceCheck?.draftInvoiceStatus === 'SUBMITTED' || job.invoiceCheck?.draftInvoiceStatus === 'PENDING') {
+        mainTrack = { code: '16.2', label: 'Chờ Kế toán duyệt Hóa đơn nháp' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'ACCOUNT_FINANCE';
+        ballLabel = 'Chờ Kế toán duyệt HĐ nháp';
+      } else if (job.invoiceCheck?.draftInvoiceStatus === 'REJECTED' || job.invoiceCheck?.draftInvoiceStatus === 'CHANGES') {
+        mainTrack = { code: '16.2', label: 'Hóa đơn nháp sai · Chờ KOC sửa' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'KOC';
+        ballLabel = 'Chờ KOC sửa HĐ nháp';
+      } else {
+        mainTrack = { code: '16.5', label: 'Đã duyệt nháp · Chờ HĐ chính thức (= ngày BBNT)' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'KOC';
+        ballLabel = 'Chờ KOC xuất HĐ chính thức';
+      }
+    } else if (job.payment.status === 'NONE') {
+      mainTrack = { code: '17.1', label: 'Đủ ĐK · Chờ tạo ĐNTT Lark 6.1' };
+      financeTrackObj = mainTrack;
+      ballInCourt = 'B2C_STAFF';
+      ballLabel = 'Chờ B2C đẩy ĐNTT Lark';
+    } else if (job.payment.status === 'REQUESTED') {
+      mainTrack = { code: '17.2', label: 'Chờ Kế toán duyệt & giải ngân' };
+      financeTrackObj = mainTrack;
+      ballInCourt = 'ACCOUNT_FINANCE';
+      ballLabel = 'Chờ Kế toán giải ngân';
+    } else if (job.payment.status === 'PAID') {
+      if (!(job.payment.uncBillUrl || '').trim()) {
+        mainTrack = { code: '18.1', label: 'Đã giải ngân · Chờ gửi UNC cho KOC (7 ngày)' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'B2C_STAFF';
+        ballLabel = 'Chờ B2C gửi Bill UNC';
+      } else {
+        mainTrack = { code: '18.2', label: 'Đã thanh toán & gửi UNC hoàn tất' };
+        financeTrackObj = mainTrack;
+        ballInCourt = 'DONE';
+        ballLabel = 'Hoàn tất 100%';
+      }
+    }
+  }
+
+  if (!isFoc && requiresLegalFinanceReview(job) && (job.legalReviewStatus !== 'APPROVED' || job.financeReviewStatus !== 'APPROVED')) {
+    ballInCourt = 'LEGAL_FINANCE';
+    ballLabel = job.legalReviewStatus !== 'APPROVED' ? 'Chờ Pháp chế duyệt HĐ (24h)' : 'Chờ Tài chính duyệt HĐ (48h)';
+  }
+
+  return {
+    contractTrack,
+    advanceTrack,
+    legalTrack: fmtTrack(contractTrack),
+    sampleTrack: fmtTrack(sampleTrackObj),
+    contentTrack: fmtTrack(mainTrack),
+    financeTrack: fmtTrack(financeTrackObj),
+    mainTrack,
+    ballInCourt,
+    ballLabel,
+  };
+}
+
 export interface DealIssue {
   level: 'error' | 'warning';
   dealCode: string;
   text: string;
 }
-
-const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 
 export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
   const out: DealIssue[] = [];
@@ -1010,12 +1412,23 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
     const dealCreatedDay = (d.createdAt || '').slice(0, 10);
     const jobs = d.jobs && d.jobs.length > 0 ? d.jobs : [];
     for (const j of jobs) {
+      if (j.lifecycleStatus && j.lifecycleStatus !== 'ACTIVE') continue;
       const total = jobTotalFee(j);
       if (!j.slotId && !j.briefCode && !j.angle?.trim()) {
         out.push({ level: 'warning', dealCode: j.code, text: 'Job chưa chọn dòng Định hướng / Brief từ Plan.' });
       }
+      // Miễn phạt SLA cho B2C khi Hàng mẫu rơi vào diện Brand hết hàng (9.4) hoặc Lỗi sản phẩm (9.5)
+      const sampleBlockedByBrand = j.sample.status === 'OUT_OF_STOCK' || j.sample.status === 'ISSUE';
+      if (sampleBlockedByBrand) {
+        out.push({
+          level: 'warning',
+          dealCode: j.code,
+          text: j.sample.status === 'OUT_OF_STOCK' ? 'Brand đang hết hàng mẫu (Pipeline 9.4) — Đã tạm dừng tính phạt SLA cho B2C.' : 'Sản phẩm mẫu đang gặp sự cố (Pipeline 9.5) — Đã tạm dừng tính phạt SLA cho B2C.',
+        });
+      }
       // SLA Nhận việc gấp dưới 5 ngày (`Các SLA B2C.md` dòng 120)
       if (
+        !sampleBlockedByBrand &&
         j.productionMode === 'ORIGINAL' &&
         j.deadline &&
         dealCreatedDay &&
@@ -1031,7 +1444,7 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
         });
       }
       // SLA Hàng mẫu 2 - 3 - 5 ngày (`Các SLA B2C.md` dòng 33–39)
-      if (j.sample.status === 'NONE' && dealCreatedDay && dayDiff(dealCreatedDay, now) >= 2) {
+      if (!sampleBlockedByBrand && j.sample.status === 'NONE' && dealCreatedDay && dayDiff(dealCreatedDay, now) >= 2) {
         const elapsed = dayDiff(dealCreatedDay, now);
         if (elapsed >= 3) {
           out.push({
@@ -1047,7 +1460,7 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
           });
         }
       }
-      if (j.sample.status === 'SENT' && j.sample.at) {
+      if (!sampleBlockedByBrand && j.sample.status === 'SENT' && j.sample.at) {
         const sentDays = dayDiff(j.sample.at, now);
         if (!j.sample.trackingNo.trim() && sentDays >= 3) {
           out.push({
@@ -1081,11 +1494,18 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
           });
         }
       }
-      if (j.deadline && !j.airLink.trim() && j.productionMode !== 'PRODUCTION_ONLY' && j.deadline < now) {
+      if (!sampleBlockedByBrand && j.deadline && !j.airLink.trim() && j.productionMode !== 'PRODUCTION_ONLY' && j.deadline < now) {
         out.push({ level: 'error', dealCode: j.code, text: `Quá hạn air ${dayDiff(j.deadline, now)} ngày, chưa có link air.` });
       }
-      if (j.airedAt && j.deadline && j.airedAt > j.deadline) {
+      if (!sampleBlockedByBrand && j.airedAt && j.deadline && j.airedAt > j.deadline) {
         out.push({ level: 'warning', dealCode: j.code, text: `Air trễ ${dayDiff(j.deadline, j.airedAt)} ngày.` });
+      }
+      if (requiresLateSigningExplanation(j) && !j.lateSigningExplanation?.confirmedByLead?.trim()) {
+        out.push({
+          level: 'error',
+          dealCode: j.code,
+          text: 'Phụ lục ký muộn (< 1 ngày trước Air hoặc sau Air) — Cần điền Mẫu giải trình ký muộn (Mục 3.5) và xin xác nhận của Booking Lead.',
+        });
       }
       if (j.payment.amount !== null && j.payment.amount > total && total > 0) {
         out.push({
@@ -1110,7 +1530,7 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
         });
       }
       // Kiểm tra chính danh chủ tài khoản ngân hàng
-      if (!isAccountHolderMatched(j) && !(j.authorizationUrl || '').trim()) {
+      if (total > 0 && !isAccountHolderMatched(j) && !(j.authorizationUrl || '').trim()) {
         out.push({
           level: 'error',
           dealCode: j.code,
@@ -1129,23 +1549,47 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
 }
 
 /**
- * Đối soát chi phí các deal (tổng các Job) với hạn mức Net của từng bậc trong kế hoạch đã duyệt:
- * vượt hạn mức thì cảnh báo, phát sinh chi phí khi hạn mức bằng 0đ thì báo đỏ (cần bổ sung phê duyệt).
+ * Đối soát chi phí các deal (tổng các Job) với hạn mức Net của gian hàng:
+ * - Chặn cứng (error) khi Tổng chi phí Net toàn gian hàng vượt Tổng hạn mức Order Net của gian hàng (hoặc khi phát sinh chi phí nhưng hạn mức = 0đ).
+ * - Cảnh báo màu vàng (warning) khi xê dịch nội bộ giữa các bậc KL1..KL7 mà tổng trần Net gian hàng vẫn trong hạn mức.
  */
 export function budgetIssues(deals: PlanDeal[], quota: QuotaLine[]): DealIssue[] {
   const out: DealIssue[] = [];
   const spent = new Map<string, number>();
+  let totalStoreSpent = 0;
   for (const d of deals) {
     const key = d.grade === 'TAP UpAffiliate' ? 'FOC' : d.grade;
-    spent.set(key, (spent.get(key) || 0) + dealTotalFee(d));
+    const activeFee = (d.jobs || [])
+      .filter(j => !j.lifecycleStatus || j.lifecycleStatus === 'ACTIVE')
+      .reduce((s, j) => s + jobTotalFee(j), 0);
+    spent.set(key, (spent.get(key) || 0) + activeFee);
+    if (key !== 'FOC') totalStoreSpent += activeFee;
   }
+  const totalStoreCap = quota.filter(q => q.key !== 'FOC').reduce((s, q) => s + (q.requiredBudget || 0), 0);
+  if (totalStoreSpent > 0 && totalStoreCap <= 0) {
+    out.push({
+      level: 'error',
+      dealCode: 'TỔNG GIAN HÀNG',
+      text: `Phát sinh chi phí ${Math.round(totalStoreSpent).toLocaleString('vi-VN')}đ nhưng hạn mức Order Net của gian hàng ghi nhận 0đ (Unbudgeted Spend) — Bắt buộc bổ sung phê duyệt.`,
+    });
+  } else if (totalStoreCap > 0 && totalStoreSpent > totalStoreCap) {
+    out.push({
+      level: 'error',
+      dealCode: 'TỔNG GIAN HÀNG',
+      text: `VƯỢT TRẦN NGÂN SÁCH NET GIAN HÀNG: Đã chốt ${Math.round(totalStoreSpent).toLocaleString('vi-VN')}đ / Trần ${Math.round(totalStoreCap).toLocaleString('vi-VN')}đ (vượt ${Math.round(totalStoreSpent - totalStoreCap).toLocaleString('vi-VN')}đ).`,
+    });
+  }
+
   const limit = new Map(quota.map(q => [String(q.key), q.requiredBudget]));
   spent.forEach((amount, key) => {
     if (key === 'FOC' || amount <= 0) return;
     const cap = limit.get(key) ?? 0;
     const label = `${key}: đã chốt ${Math.round(amount).toLocaleString('vi-VN')}đ`;
-    if (cap <= 0) out.push({ level: 'error', dealCode: key, text: `${label} nhưng hạn mức Net của bậc này là 0đ, cần bổ sung phê duyệt.` });
-    else if (amount > cap) out.push({ level: 'warning', dealCode: key, text: `${label} vượt hạn mức Net ${Math.round(cap).toLocaleString('vi-VN')}đ (vượt ${Math.round(amount - cap).toLocaleString('vi-VN')}đ).` });
+    if (cap <= 0 && totalStoreCap > 0) {
+      out.push({ level: 'warning', dealCode: key, text: `${label} (bậc này kế hoạch gốc 0đ — đang điều chuyển nội bộ từ bậc KL khác).` });
+    } else if (cap > 0 && amount > cap) {
+      out.push({ level: 'warning', dealCode: key, text: `${label} vượt định mức bậc ${Math.round(cap).toLocaleString('vi-VN')}đ (xê dịch nội bộ +${Math.round(amount - cap).toLocaleString('vi-VN')}đ).` });
+    }
   });
   return out;
 }
@@ -1244,6 +1688,7 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           angle: s(j?.angle, 240),
           hook: s(j?.hook, 300),
           usp: s(j?.usp, 300),
+          forbiddenClaims: s(j?.forbiddenClaims, 500) || undefined,
           cta: s(j?.cta, 240),
           briefUrl: s(j?.briefUrl, 1000),
           week: s(j?.week, 60),
@@ -1283,21 +1728,99 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           appendixNo: s(j?.appendixNo, 80),
           appendixDate: day(j?.appendixDate),
           appendixUrl: s(j?.appendixUrl, 1000),
-          sample: { status: oneOf(j?.sample?.status, ['NONE', 'NOT_NEEDED', 'SENT', 'RECEIVED'] as const, 'NONE'), trackingNo: s(j?.sample?.trackingNo, 80), at: day(j?.sample?.at) },
+          isCustomContractTemplate: Boolean(j?.isCustomContractTemplate),
+          legalReviewStatus: oneOf(j?.legalReviewStatus, ['NOT_NEEDED', 'NOT_REQUIRED', 'PENDING', 'APPROVED', 'CHANGES'] as const, 'NOT_NEEDED'),
+          financeReviewStatus: oneOf(j?.financeReviewStatus, ['NOT_NEEDED', 'NOT_REQUIRED', 'PENDING', 'APPROVED', 'CHANGES'] as const, 'NOT_NEEDED'),
+          lateSigningExplanation: j?.lateSigningExplanation
+            ? {
+                reason: s(j.lateSigningExplanation.reason, 500),
+                impactAndRisk: s(j.lateSigningExplanation.impactAndRisk, 500) || undefined,
+                processCompliance: s(j.lateSigningExplanation.processCompliance, 500) || undefined,
+                confirmedByLead: s(j.lateSigningExplanation.confirmedByLead, 120) || undefined,
+                confirmedAt: day(j.lateSigningExplanation.confirmedAt) || undefined,
+                chatEvidenceUrl: s(j.lateSigningExplanation.chatEvidenceUrl, 1000) || undefined,
+                leadConfirmed: Boolean(j.lateSigningExplanation.leadConfirmed),
+                leadConfirmedBy: s(j.lateSigningExplanation.leadConfirmedBy, 120) || undefined,
+                leadConfirmedAt: s(j.lateSigningExplanation.leadConfirmedAt, 40) || undefined,
+              }
+            : undefined,
+          advancePayment: j?.advancePayment
+            ? {
+                status: oneOf(j.advancePayment.status, ['NONE', 'REQUIRED', 'REQUESTED', 'APPROVED', 'PAID'] as const, 'NONE'),
+                amount: n(j.advancePayment.amount),
+                larkSlipCode: s(j.advancePayment.larkSlipCode, 80) || undefined,
+                requestedAt: day(j.advancePayment.requestedAt) || undefined,
+                paidAt: day(j.advancePayment.paidAt) || undefined,
+                uncBillUrl: s(j.advancePayment.uncBillUrl, 1000) || undefined,
+                note: s(j.advancePayment.note, 500) || undefined,
+              }
+            : undefined,
+          sample: {
+            status: oneOf(j?.sample?.status, ['NONE', 'NOT_NEEDED', 'SENT', 'RECEIVED', 'OUT_OF_STOCK', 'ISSUE'] as const, 'NONE'),
+            trackingNo: s(j?.sample?.trackingNo, 80),
+            at: day(j?.sample?.at),
+          },
           script: {
             status: oneOf(j?.script?.status, ['NONE', 'NOT_NEEDED', 'SUBMITTED', 'CHANGES', 'APPROVED'] as const, 'NONE'),
             scriptUrl: s(j?.script?.scriptUrl, 1000),
+            internalDemoAuditStatus: oneOf(j?.script?.internalDemoAuditStatus, ['NONE', 'PASSED', 'CHANGES'] as const, 'NONE'),
             demoStatus: oneOf(j?.script?.demoStatus, ['NONE', 'NOT_NEEDED', 'SUBMITTED', 'CHANGES', 'APPROVED'] as const, 'NONE'),
             demoUrl: s(j?.script?.demoUrl, 1000),
             note: s(j?.script?.note, 500),
             at: day(j?.script?.at),
           },
+          isLivestreamJob: Boolean(j?.isLivestreamJob),
+          liveSpec: j?.liveSpec
+            ? {
+                liveDate: day(j.liveSpec.liveDate) || undefined,
+                startTime: s(j.liveSpec.startTime, 20) || undefined,
+                endTime: s(j.liveSpec.endTime, 20) || undefined,
+                committedMinutes: n(j.liveSpec.committedMinutes) ?? undefined,
+                actualMinutes: n(j.liveSpec.actualMinutes),
+                dealPriceInfo: s(j.liveSpec.dealPriceInfo, 400) || undefined,
+                voucherInfo: s(j.liveSpec.voucherInfo, 400) || undefined,
+                committedStock: n(j.liveSpec.committedStock),
+                replayUrl: s(j.liveSpec.replayUrl, 1000) || undefined,
+                scheduledStartAt: s(j.liveSpec.scheduledStartAt, 60) || undefined,
+                durationMinutes: n(j.liveSpec.durationMinutes) ?? undefined,
+                pinnedSkus: s(j.liveSpec.pinnedSkus, 400) || undefined,
+                voucherDeal: s(j.liveSpec.voucherDeal, 400) || undefined,
+                replayRecordingUrl: s(j.liveSpec.replayRecordingUrl, 1000) || undefined,
+              }
+            : undefined,
           deadline: day(j?.deadline),
           airLink: s(j?.airLink, 1000),
           airedAt: day(j?.airedAt),
           sparkAdsCode: s(j?.sparkAdsCode, 120),
           acceptance: sanitizeAcceptance(j?.acceptance),
+          invoiceCheck: j?.invoiceCheck
+            ? {
+                draftInvoiceStatus: oneOf(j.invoiceCheck.draftInvoiceStatus, ['NONE', 'NOT_REQUIRED', 'PENDING', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES'] as const, 'NONE'),
+                draftInvoiceUrl: s(j.invoiceCheck.draftInvoiceUrl, 1000) || undefined,
+                officialInvoiceNumber: s(j.invoiceCheck.officialInvoiceNumber, 80) || undefined,
+                officialInvoiceNo: s(j.invoiceCheck.officialInvoiceNo, 80) || undefined,
+                officialInvoiceDate: day(j.invoiceCheck.officialInvoiceDate) || undefined,
+                officialInvoiceUrl: s(j.invoiceCheck.officialInvoiceUrl, 1000) || undefined,
+                bbntDate: day(j.invoiceCheck.bbntDate) || undefined,
+                taxLookupVerified: Boolean(j.invoiceCheck.taxLookupVerified),
+              }
+            : undefined,
+          closingAudit: j?.closingAudit
+            ? {
+                accountStatus: oneOf(j.closingAudit.accountStatus, ['PENDING', 'PASSED', 'RETURNED'] as const, 'PENDING'),
+                financeStatus: oneOf(j.closingAudit.financeStatus, ['PENDING', 'PASSED', 'RETURNED'] as const, 'PENDING'),
+                errorNote: s(j.closingAudit.errorNote, 500) || undefined,
+                accountErrorNote: s(j.closingAudit.accountErrorNote, 500) || undefined,
+                financeErrorNote: s(j.closingAudit.financeErrorNote, 500) || undefined,
+                updatedBy: s(j.closingAudit.updatedBy, 120) || undefined,
+                updatedAt: s(j.closingAudit.updatedAt, 40) || undefined,
+              }
+            : undefined,
           payment: sanitizePayment(j?.payment),
+          lifecycleStatus: oneOf(j?.lifecycleStatus, ['ACTIVE', 'REPLACED', 'REPLACED_KOC', 'ROLLED_OVER', 'ROLLED_OVER_NEXT_MONTH', 'CANCELLED'] as const, 'ACTIVE'),
+          lifecycleNote: s(j?.lifecycleNote, 500) || undefined,
+          rolledOverToMonth: s(j?.rolledOverToMonth, 20) || undefined,
+          replacedByKocHandle: s(j?.replacedByKocHandle, 120) || undefined,
           performance: { d14: perf(j?.performance?.d14), d30: perf(j?.performance?.d30), d60: perf(j?.performance?.d60) },
         }))
       : [

@@ -5,26 +5,33 @@ import { KL_TIERS, klBaseCost, klFromFee, klLabel, klTier, type KlCode } from '.
 
 export const LISTABLE_STATUSES = ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'LOCKED', 'IN_EXECUTION', 'COMPLETED'];
 
-/** Chỉ kế hoạch đã được Giám đốc duyệt mới bắt đầu listing. */
-export const isPlanListable = (plan: InputPlanBreakdownState): boolean =>
+/** Kiểm tra kế hoạch đã được Giám đốc duyệt chính thức hay chưa. */
+export const isPlanOfficiallyApproved = (plan: InputPlanBreakdownState): boolean =>
   LISTABLE_STATUSES.includes(plan.status || '') || Boolean(plan.isVersionLocked);
+
+/**
+ * Cho phép lập nháp Kế hoạch Content & Listing KOC Đợt 1 ngay từ ngày 10..20/T-1
+ * kể cả khi Plan 4.1/4.1.1 đang ở trạng thái Nháp hoặc Chờ duyệt (giải quyết nghịch lý thời gian UPA:OI-020).
+ */
+export const isPlanListable = (plan: InputPlanBreakdownState): boolean =>
+  Boolean(plan && plan.id && String(plan.status) !== 'ARCHIVED');
 
 export type BoardColumn = 'DRAFT' | 'WAIT_BRAND' | 'NEGOTIATING' | 'CONFIRMED' | 'DROPPED';
 
 export const BOARD_COLUMNS: { key: BoardColumn; label: string }[] = [
-  { key: 'DRAFT', label: 'Nháp' },
-  { key: 'WAIT_BRAND', label: 'Chờ Brand duyệt' },
-  { key: 'NEGOTIATING', label: 'Thương lượng KOC' },
-  { key: 'CONFIRMED', label: 'Đã chốt' },
-  { key: 'DROPPED', label: 'Rớt' },
+  { key: 'DRAFT', label: 'Nháp (Pipeline 1–4)' },
+  { key: 'WAIT_BRAND', label: 'Chờ Brand duyệt (Pipeline 5)' },
+  { key: 'NEGOTIATING', label: 'Thương lượng KOC (Pipeline 4/6)' },
+  { key: 'CONFIRMED', label: 'Đã chốt Deal (Pipeline 6)' },
+  { key: 'DROPPED', label: 'Tạm dừng / Rớt (Pipeline 19)' },
 ];
 
 const ALLOWED_MOVES: Record<BoardColumn, BoardColumn[]> = {
-  DRAFT: ['WAIT_BRAND', 'DROPPED'],
-  WAIT_BRAND: ['DRAFT', 'NEGOTIATING', 'DROPPED'],
+  DRAFT: ['WAIT_BRAND', 'NEGOTIATING', 'CONFIRMED', 'DROPPED'],
+  WAIT_BRAND: ['DRAFT', 'NEGOTIATING', 'CONFIRMED', 'DROPPED'],
   NEGOTIATING: ['WAIT_BRAND', 'CONFIRMED', 'DROPPED'],
-  CONFIRMED: ['NEGOTIATING'],
-  DROPPED: ['DRAFT'],
+  CONFIRMED: ['NEGOTIATING', 'WAIT_BRAND', 'DROPPED'],
+  DROPPED: ['DRAFT', 'WAIT_BRAND', 'NEGOTIATING'],
 };
 
 export const canMove = (from: BoardColumn, to: BoardColumn) => ALLOWED_MOVES[from].includes(to);
@@ -219,7 +226,11 @@ export function computeAlerts(plan: InputPlanBreakdownState, items: KocListingIt
 
   for (const t of tiers) {
     if (t.requiredBudget > 0 && t.committedBudget > t.requiredBudget) {
-      alerts.push({ severity: 'critical', tier: t.key, message: `${t.key} vượt ngân sách ${fmt(t.committedBudget - t.requiredBudget)}đ (cam kết ${fmt(t.committedBudget)}đ trên ${fmt(t.requiredBudget)}đ)` });
+      alerts.push({
+        severity: 'warning',
+        tier: t.key,
+        message: `${t.key} dịch chuyển vượt định mức bậc ${fmt(t.committedBudget - t.requiredBudget)}đ (cam kết ${fmt(t.committedBudget)}đ / định mức bậc ${fmt(t.requiredBudget)}đ)`,
+      });
     }
     if (t.requiredQty === 0 && t.listed > 0) {
       alerts.push({ severity: 'warning', tier: t.key, message: `${t.key} không có chỉ tiêu trong kế hoạch nhưng đã list ${t.listed} KOC` });
@@ -227,8 +238,12 @@ export function computeAlerts(plan: InputPlanBreakdownState, items: KocListingIt
       alerts.push({ severity: 'info', tier: t.key, message: `${t.key} còn thiếu ${t.gap} KOC` });
     }
   }
-  if (total.requiredBudget > 0 && total.committedBudget > total.requiredBudget) {
-    alerts.unshift({ severity: 'critical', message: `Tổng cam kết vượt ngân sách Net ${fmt(total.committedBudget - total.requiredBudget)}đ` });
+  const storeNetCap = plan.reference41?.affCostNet && plan.reference41.affCostNet > 0 ? plan.reference41.affCostNet : total.requiredBudget;
+  if (storeNetCap > 0 && total.committedBudget > storeNetCap) {
+    alerts.unshift({
+      severity: 'critical',
+      message: `Tổng cam kết toàn gian hàng vượt trần ngân sách Net ${fmt(total.committedBudget - storeNetCap)}đ (cam kết ${fmt(total.committedBudget)}đ / trần Net ${fmt(storeNetCap)}đ)`,
+    });
   }
 
   const seen = new Map<string, number>();
@@ -661,3 +676,448 @@ export function getItemSlaBadge(item: KocListingItem, thresholdHours = 48): {
 
   return null;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Động cơ Tự động ghi nhận Pipeline 1 → 6 & 19 (Theo Mục 3.1 Quy trình Booking - Tech.md)
+// ---------------------------------------------------------------------------------------------
+
+export type BallInCourtActor = 'B2C' | 'BRAND' | 'KOC' | 'WAREHOUSE' | 'LEGAL_FINANCE' | 'DONE';
+
+export const BALL_IN_COURT_LABEL: Record<BallInCourtActor, string> = {
+  B2C: 'B2C đang cầm bóng',
+  BRAND: 'Đang chờ Brand / Account',
+  KOC: 'Đang chờ KOC phản hồi',
+  WAREHOUSE: 'Đang chờ Kho / Vận chuyển',
+  LEGAL_FINANCE: 'Đang chờ Pháp chế / Kế toán',
+  DONE: 'Đã hoàn tất chặng',
+};
+
+export interface ListingPipelineInfo {
+  stageNo: 1 | 2 | 3 | 4 | 5 | 6 | 19;
+  code: string;
+  stageTitle: string;
+  detailStatus: string;
+  subStatusLabel: string;
+  ballInCourt: BallInCourtActor;
+  ballLabel: string;
+}
+
+/**
+ * Tự động suy diễn trạng thái Pipeline (1 → 6 & 19) từ hành động và dữ liệu thực tế của thẻ KOC,
+ * không bắt nhân sự phải chọn tay từ 73 trạng thái.
+ */
+export function computeListingPipelineState(item: KocListingItem): ListingPipelineInfo {
+  const col = columnOf(item);
+  const mk = (
+    stageNo: 1 | 2 | 3 | 4 | 5 | 6 | 19,
+    code: string,
+    stageTitle: string,
+    detailStatus: string,
+    ballInCourt: BallInCourtActor,
+    ballLabel: string
+  ): ListingPipelineInfo => ({
+    stageNo,
+    code,
+    stageTitle,
+    detailStatus,
+    subStatusLabel: detailStatus,
+    ballInCourt,
+    ballLabel,
+  });
+
+  if (col === 'DROPPED') {
+    const detail =
+      item.brandApprovalStatus === 'BRAND_REJECTED'
+        ? 'Brand từ chối'
+        : item.dropReason?.trim() || 'KOC từ chối / Tạm dừng';
+    return mk(19, '19.1', '19. Tạm dừng / Không thành công', detail, 'DONE', BALL_IN_COURT_LABEL.DONE);
+  }
+
+  if (col === 'CONFIRMED') {
+    return mk(6, '6.2', '6. Chốt hợp tác', 'Đã xác nhận Deal', 'DONE', 'Đã chốt — Sẵn sàng chạy Job');
+  }
+
+  if (col === 'WAIT_BRAND') {
+    const isResubmit = Boolean(item.brandApprovedAt && item.finalFee && item.proposedFee && item.finalFee !== item.proposedFee);
+    return mk(
+      5,
+      isResubmit ? '5.4' : '5.1',
+      '5. Chờ duyệt',
+      isResubmit ? 'Yêu cầu thay thế/điều chỉnh' : 'Chờ Brand duyệt',
+      'BRAND',
+      BALL_IN_COURT_LABEL.BRAND
+    );
+  }
+
+  if (col === 'NEGOTIATING') {
+    if (String(item.kocNegotiationStatus) === 'PRICE_NEGOTIATING' || (item.finalFee && item.finalFee > 0 && item.finalFee !== item.proposedFee)) {
+      return mk(4, '4.3', '4. Đang thương lượng', 'Đang thương lượng', 'KOC', BALL_IN_COURT_LABEL.KOC);
+    }
+    if (item.brandApprovalStatus === 'BRAND_APPROVED') {
+      return mk(6, '6.1', '6. Chốt hợp tác', 'Brand đã duyệt · Chờ xác nhận Deal', 'B2C', 'B2C liên hệ chốt Deal với KOC');
+    }
+    return mk(4, '4.1', '4. Đang thương lượng', 'Chờ báo giá', 'KOC', BALL_IN_COURT_LABEL.KOC);
+  }
+
+  // Cột DRAFT (Pipeline 1 -> 4 trước khi gửi Brand)
+  if (item.kocNegotiationStatus === 'CONTACTING') {
+    const updatedHours = item.updatedAt ? (Date.now() - new Date(item.updatedAt).getTime()) / (1000 * 3600) : 0;
+    return mk(
+      2,
+      updatedHours >= 24 ? '2.2' : '2.1',
+      '2. Đã liên hệ',
+      updatedHours >= 24 ? 'Đang follow-up' : 'Đã gửi lời mời',
+      'KOC',
+      BALL_IN_COURT_LABEL.KOC
+    );
+  }
+  if (String(item.kocNegotiationStatus) === 'PRICE_NEGOTIATING') {
+    return mk(4, '4.2', '4. Đang thương lượng', 'Đã nhận báo giá', 'B2C', BALL_IN_COURT_LABEL.B2C);
+  }
+  return mk(1, '1.1', '1. Chưa liên hệ', 'Mới thêm vào danh sách', 'B2C', 'B2C chuẩn bị đẩy Sheet / Liên hệ');
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bộ 21 Lý do KOC từ chối & Phương án xử lý chuẩn (Mục 3.2 Quy trình Booking - Tech.md)
+// ---------------------------------------------------------------------------------------------
+
+export interface KocRejectionReasonSpec {
+  code: string;
+  reason: string;
+  label: string;
+  group: string;
+  pipelineDetail: string;
+  followUpQuestion: string;
+  negotiationPlaybook: string;
+}
+
+const RAW_KOC_REJECTION_REASONS: Omit<KocRejectionReasonSpec, 'label' | 'group'>[] = [
+  {
+    code: 'FEE_TOO_HIGH',
+    reason: 'Chi phí KOC cao hơn ngân sách',
+    pipelineDetail: 'Không thống nhất chi phí',
+    followUpQuestion: 'Báo giá đã gồm những quyền lợi nào? KOC có thể linh hoạt ở mức nào?',
+    negotiationPlaybook: 'Giảm phạm vi reup/mã ads/độc quyền; chuyển từ video riêng sang video ghép; đề xuất gói nhiều video; tăng commission để giảm phí cố định.',
+  },
+  {
+    code: 'NEW_PRODUCT_NO_SALES',
+    reason: 'Sản phẩm quá mới, chưa có lượt bán',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'KOC lo khó ra đơn, ảnh hưởng GMV hay chưa tin chất lượng sản phẩm?',
+    negotiationPlaybook: 'Cung cấp thông tin thương hiệu, KOL đồng hành, ngân sách truyền thông, ưu đãi kéo traffic; đề xuất trải nghiệm trước; kết hợp phí hỗ trợ hoặc commission cao giai đoạn đầu.',
+  },
+  {
+    code: 'UNKNOWN_BRAND',
+    reason: 'Sản phẩm chưa có thương hiệu',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'KOC chưa biết Brand hay lo ảnh hưởng uy tín kênh?',
+    negotiationPlaybook: 'Gửi hồ sơ Brand, giấy tờ công bố sản phẩm, điểm khác biệt, review thực tế; cho phép KOC kiểm tra sản phẩm trước khi nhận Deal.',
+  },
+  {
+    code: 'LOW_COMMISSION',
+    reason: 'Commission thấp',
+    pipelineDetail: 'Không thống nhất chi phí',
+    followUpQuestion: 'Mức commission kỳ vọng là bao nhiêu? So với sản phẩm nào?',
+    negotiationPlaybook: 'Đề xuất commission riêng (link chỉ định); commission theo bậc GMV; thưởng nóng theo mốc đơn; thêm voucher riêng cho kênh.',
+  },
+  {
+    code: 'HIGH_PRODUCT_PRICE',
+    reason: 'Giá sản phẩm khó bán',
+    pipelineDetail: 'Không phù hợp',
+    followUpQuestion: 'KOC thấy giá cao so với ngành hàng hay không phù hợp tệp follower?',
+    negotiationPlaybook: 'Bổ sung voucher, combo, quà tặng; chọn SKU phễu dễ vào hơn; đề xuất nội dung so sánh giá trị thay vì chỉ nói giá.',
+  },
+  {
+    code: 'CHANNEL_MISMATCH',
+    reason: 'Sản phẩm không phù hợp kênh',
+    pipelineDetail: 'Không phù hợp',
+    followUpQuestion: 'Không phù hợp về ngành hàng, tệp người xem hay hình ảnh cá nhân?',
+    negotiationPlaybook: 'Đổi SKU hoặc góc nội dung; đề xuất format phù hợp với kênh; nếu lệch hoàn toàn thì không ép Deal.',
+  },
+  {
+    code: 'DOUBT_CONVERSION',
+    reason: 'KOC không tin sản phẩm có khả năng ra đơn',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'KOC dựa trên dữ liệu nào: lượt bán, review, giá hay landing page?',
+    negotiationPlaybook: 'Cung cấp GMV, CR, case KOC tương đồng đã ra đơn; chạy thử 1 video trước khi mở rộng.',
+  },
+  {
+    code: 'REPUTATION_CONCERN',
+    reason: 'Sợ sản phẩm ảnh hưởng uy tín kênh',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'Lo về chất lượng, claim, nguồn gốc hay phản hồi tiêu cực?',
+    negotiationPlaybook: 'Gửi giấy tờ thành phần, hướng dẫn claim chuẩn; cho trải nghiệm trước; cam kết không bắt KOC nói trái trải nghiệm thật.',
+  },
+  {
+    code: 'COMPETITOR_EXCLUSIVITY',
+    reason: 'Đã nhận booking của đối thủ',
+    pipelineDetail: 'Không phù hợp lịch',
+    followUpQuestion: 'Có điều khoản độc quyền không? Thời hạn bao lâu?',
+    negotiationPlaybook: 'Lùi lịch đăng sang sau kỳ độc quyền; chọn SKU không cạnh tranh trực tiếp.',
+  },
+  {
+    code: 'NO_FOC_ACCEPTANCE',
+    reason: 'Không muốn nhận hàng mẫu/FOC',
+    pipelineDetail: 'Không thống nhất chi phí',
+    followUpQuestion: 'KOC chỉ nhận trả phí hay lo sản phẩm khó bán?',
+    negotiationPlaybook: 'Chuyển sang hỗ trợ phí sản xuất nhỏ + commission cao; hoặc chuyển sang tệp KOC phù hợp FOC.',
+  },
+  {
+    code: 'NO_TIME_TO_PRODUCE',
+    reason: 'Không có thời gian sản xuất',
+    pipelineDetail: 'Không phù hợp lịch',
+    followUpQuestion: 'KOC bận trong khoảng nào? Có thể nhận lịch tuần sau không?',
+    negotiationPlaybook: 'Lùi deadline sang tuần kế tiếp; cung cấp brief ngắn và tài nguyên sẵn; chuyển sang gắn sản phẩm trong nội dung có sẵn.',
+  },
+  {
+    code: 'TIGHT_DEADLINE',
+    reason: 'Deadline quá gấp',
+    pipelineDetail: 'Không phù hợp lịch',
+    followUpQuestion: 'Mốc sớm nhất KOC có thể hoàn thành là khi nào?',
+    negotiationPlaybook: 'Điều chỉnh lịch; ưu tiên 1 đầu ra trước; dùng KOC backup nếu mốc Sale Day không thể lùi.',
+  },
+  {
+    code: 'BRIEF_TOO_COMPLEX',
+    reason: 'Brief quá khó hoặc quá nhiều yêu cầu',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'Phần nào trong Brief khiến KOC khó thực hiện?',
+    negotiationPlaybook: 'Giảm key message chỉ giữ USP bắt buộc; cho KOC sáng tạo theo ngôn ngữ riêng của kênh.',
+  },
+  {
+    code: 'NO_MULTIPLE_REVISIONS',
+    reason: 'Không muốn chỉnh sửa nhiều vòng',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'KOC chấp nhận tối đa bao nhiêu vòng sửa?',
+    negotiationPlaybook: 'Chốt rõ tối đa 1–2 vòng sửa; Brand duyệt kịch bản chữ trước khi quay; gom feedback 1 lần duy nhất.',
+  },
+  {
+    code: 'NO_IMAGE_USAGE_RIGHTS',
+    reason: 'Không đồng ý quyền sử dụng hình ảnh / Reup',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'KOC ngại reup, chạy ads hay thời hạn sử dụng quá dài?',
+    negotiationPlaybook: 'Giới hạn thời hạn (30–90 ngày) và nền tảng sử dụng; hoặc tách quyền sử dụng báo giá riêng.',
+  },
+  {
+    code: 'NO_ADS_CODE',
+    reason: 'Không muốn cung cấp mã quảng cáo (Spark Ads)',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'Lo ảnh hưởng kênh hay chưa thống nhất phí cấp mã?',
+    negotiationPlaybook: 'Làm rõ thời hạn chạy (30 ngày), trả thêm phí mã Ads, cam kết không chỉnh sửa nội dung gốc.',
+  },
+  {
+    code: 'CONTRACT_TAX_DISPUTE',
+    reason: 'Không đồng ý điều khoản hợp đồng / thuế / thanh toán',
+    pipelineDetail: 'Hủy trước khi ký',
+    followUpQuestion: 'Vướng ở tạm ứng, thời hạn thanh toán, khấu trừ thuế TNCN 10% hay chủ thể ký?',
+    negotiationPlaybook: 'Giải thích rõ quy định thuế (Cá nhân TNCN 10% / HKD / Công ty VAT); hỗ trợ tạm ứng nếu đủ điều kiện; chuyển Pháp chế/Kế toán xử lý.',
+  },
+  {
+    code: 'BAD_PAST_EXPERIENCE',
+    reason: 'Từng có trải nghiệm không tốt với Brand/Agency',
+    pipelineDetail: 'KOC từ chối',
+    followUpQuestion: 'Vấn đề trước đây là duyệt chậm, thanh toán trễ hay sửa nhiều lần?',
+    negotiationPlaybook: 'Cam kết SLA cụ thể và người phụ trách trực tiếp; xử lý dứt điểm tồn đọng cũ trước.',
+  },
+  {
+    code: 'NO_RESPONSE',
+    reason: 'KOC không phản hồi sau 2–3 lần liên hệ',
+    pipelineDetail: 'Không phản hồi',
+    followUpQuestion: 'Đã liên hệ qua cả Zalo, Email và kênh quản lý MCN chưa?',
+    negotiationPlaybook: 'Follow-up tối đa 2–3 lần kèm thông tin deal rõ ràng; sau 48h đóng trạng thái và đẩy KOC dự phòng.',
+  },
+  {
+    code: 'BRAND_REJECTED_DIRECT',
+    reason: 'Brand từ chối KOC',
+    pipelineDetail: 'Brand từ chối',
+    followUpQuestion: 'Brand từ chối vì tệp người xem, hình ảnh hay chi phí?',
+    negotiationPlaybook: 'Nếu KOC rất tiềm năng thì dùng dữ liệu GMV/ROI lịch sử để bảo vệ lại với Brand; nếu không phù hợp thì thay thế ngay.',
+  },
+  {
+    code: 'CANCELED_AFTER_SAMPLE',
+    reason: 'KOC hủy sau khi đã nhận hàng mẫu / đã ký',
+    pipelineDetail: 'Hủy sau khi nhận mẫu',
+    followUpQuestion: 'Lý do hủy là bất khả kháng hay vi phạm cam kết?',
+    negotiationPlaybook: 'Yêu cầu hoàn trả hàng mẫu/tạm ứng theo điều khoản hợp đồng và thay thế KOC dự phòng vào ô Brief.',
+  },
+];
+
+export const KOC_REJECTION_REASONS_CATALOG: KocRejectionReasonSpec[] = RAW_KOC_REJECTION_REASONS.map(r => ({
+  ...r,
+  label: r.reason,
+  group: r.pipelineDetail,
+}));
+
+// ---------------------------------------------------------------------------------------------
+// Mẫu tin nhắn thuyết phục Brand khi KOC tăng giá / đổi lịch (Mục 3.3) & Mở nhóm Zalo (Mục 3.4)
+// ---------------------------------------------------------------------------------------------
+
+export function buildBrandPriceChangeMessage(params: {
+  templateType?: 1 | 2 | 3;
+  brandName?: string;
+  kocName?: string;
+  kocHandle: string;
+  oldFee: number;
+  newFee: number;
+  reason?: string;
+  kpiCommitmentNote?: string;
+  historicalGmv?: number;
+  historicalRoi?: number;
+  avgViews?: number;
+  extraPerks?: string;
+  replacementInfo?: string;
+}): string {
+  const tpl = params.templateType || 1;
+  const kocDisplay = params.kocName || `@${params.kocHandle.replace(/^@/, '')}`;
+  const reasonText = params.reason || params.kpiCommitmentNote || 'cập nhật bảng giá mới của kênh';
+  const diff = Math.max(0, params.newFee - params.oldFee);
+  const pct = params.oldFee > 0 ? Math.round((diff / params.oldFee) * 100) : 0;
+  const oldStr = `${fmt(params.oldFee)}đ`;
+  const newStr = `${fmt(params.newFee)}đ`;
+  const diffStr = `${fmt(diff)}đ (${pct}%)`;
+  const dataStr = [
+    params.avgViews ? `view TB ${fmt(params.avgViews)}` : '',
+    params.historicalGmv ? `GMV tốt nhất ${fmt(params.historicalGmv)}đ` : '',
+    params.historicalRoi ? `ROI lịch sử ${params.historicalRoi.toFixed(1)}x` : '',
+  ]
+    .filter(Boolean)
+    .join(', ') || 'tệp người xem phù hợp cao với ngành hàng';
+  const perks = params.extraPerks?.trim() || params.kpiCommitmentNote?.trim() || 'cấp miễn phí mã quảng cáo Spark Ads 30 ngày và giữ link giỏ hàng';
+
+  if (tpl === 1) {
+    return `Brand ơi, team cập nhật về KOC ${kocDisplay} (@${params.kocHandle.replace(/^@/, '')}):\n\nKOC điều chỉnh mức phí từ ${oldStr} lên ${newStr}, tăng ${diffStr}. Lý do KOC đưa ra là: ${reasonText}.\n\nTeam đã kiểm tra lại và đánh giá:\n- Mức giá mới vẫn nằm trong mặt bằng của nhóm KOC cùng quy mô và chất lượng nội dung.\n- KOC có chỉ số thực tế tốt: ${dataStr}.\n- Team đã thương lượng để KOC hỗ trợ thêm: ${perks}.\n\nVới tiềm năng chuyển đổi hiện tại, team đề xuất giữ KOC ở mức ${newStr} (phần chênh ${fmt(diff)}đ vẫn cân đối được trong tổng trần ngân sách Net của gian hàng).\nNhờ Brand xác nhận phương án giúp team để giữ lịch KOC ạ.`;
+  }
+  if (tpl === 2) {
+    return `Brand ơi, KOC ${kocDisplay} (@${params.kocHandle.replace(/^@/, '')}) vừa báo điều chỉnh phí từ ${oldStr} lên ${newStr} (tăng ${pct}%).\n\nSau khi đối chiếu, dữ liệu hiện tại (${dataStr}) chưa đủ cơ sở để chấp nhận mức tăng này.\nTeam đề xuất 2 phương án:\n1. Giữ KOC nếu đàm phán chốt về mức ${oldStr} kèm điều kiện hỗ trợ ${perks}.\n2. Thay bằng KOC dự phòng cùng phân khúc (${params.replacementInfo || 'đã có sẵn trong danh sách dự phòng cùng mức giá'}).\n\nKhuyến nghị của team là Phương án 2 nếu KOC không giảm giá trong hôm nay. Nhờ Brand xác nhận giúp team ạ.`;
+  }
+  return `Brand ơi, team cập nhật thay đổi chi phí của KOC chủ lực ${kocDisplay} (@${params.kocHandle.replace(/^@/, '')}):\n\nMức phí mới là ${newStr} (tăng ${diffStr} so với dự kiến ${oldStr}). Do KOC có dữ liệu nổi bật (${dataStr}) và giữ vai trò quan trọng trong đợt này, để KHÔNG vượt tổng ngân sách tháng, team đề xuất:\n- Giữ KOC ${kocDisplay} ở mức ${newStr} (kèm quyền lợi cộng thêm: ${perks}).\n- Điều chỉnh giảm tương ứng ở nhóm KOC nhỏ để tổng ngân sách Net toàn gian hàng giữ nguyên 100%.\n\nNhờ Brand xác nhận giúp team để khóa lịch sản xuất ạ.`;
+}
+
+export function buildZaloGroupDealConfirmMessage(params: {
+  brandName: string;
+  storeName: string;
+  kocName: string;
+  kocHandle: string;
+  productName: string;
+  feeNet?: number;
+  finalFee?: number;
+  isFoc?: boolean;
+  deadline?: string;
+  airDate?: string;
+  sowSummary?: string;
+  briefUrl?: string;
+  usp?: string;
+  forbiddenClaims?: string;
+  cta?: string;
+  bookingPic?: string;
+  picName?: string;
+}): string {
+  const effectiveFee = params.finalFee ?? params.feeNet ?? 0;
+  const isFoc = params.isFoc ?? effectiveFee <= 0;
+  const feeText = isFoc ? '0đ (Hợp tác gửi mẫu FOC + Hoa hồng Affiliate)' : `${fmt(effectiveFee)}đ`;
+  const picDisplay = params.bookingPic || params.picName || 'Team Booking B2C';
+  const deadlineDisplay = params.deadline || params.airDate || 'Theo lịch tuần đã chốt';
+  const sowDisplay = params.sowSummary || '01 Video TikTok gắn giỏ hàng';
+  return `Chào bạn ${params.kocName} (@${params.kocHandle.replace(/^@/, '')}), để bảo đảm các bên thống nhất đầy đủ trước khi gửi sản phẩm và tạo hợp đồng, team UpBase (${picDisplay}) gửi lại nội dung xác nhận hợp tác cuối cùng như sau:\n\n1. THÔNG TIN DEAL\n- Thương hiệu / Gian hàng: ${params.brandName} (${params.storeName})\n- Sản phẩm thực hiện: ${params.productName || 'Theo định hướng chương trình'}\n- Hình thức hợp tác: ${isFoc ? 'FOC + Affiliate Commission' : 'Booking Fee + Affiliate Commission'}\n- Đầu ra cam kết: ${sowDisplay}\n- Phí hợp tác: ${feeText}\n\n2. TIMELINE THỰC HIỆN\n- Gửi kịch bản / demo: Trước ngày Air tối thiểu 02–03 ngày\n- Lịch On-air dự kiến: ${deadlineDisplay}\n\n3. YÊU CẦU NỘI DUNG\n- Điểm nhấn USP bắt buộc: ${params.usp || 'Theo Brief đính kèm'}\n- Lưu ý / Từ khóa cấm (Do & Don't): ${params.forbiddenClaims || 'Không nhắc đối thủ, tuân thủ chính sách TikTok Shop'}\n- CTA / Gắn giỏ hàng: ${params.cta || 'Gắn đúng link sản phẩm được cung cấp'}\n- Link Brief chi tiết: ${params.briefUrl || 'Gửi trực tiếp trong nhóm'}\n- Số vòng chỉnh sửa kịch bản/demo: Tối đa 01–02 vòng theo Brief\n\n4. QUYỀN SỬ DỤNG & DUY TRÌ\n- Duy trì video công khai và giữ link giỏ hàng theo thỏa thuận hợp đồng.\n- Cung cấp mã quảng cáo Spark Ads (nếu nằm trong gói thỏa thuận).\n\nNhờ bạn kiểm tra và phản hồi: "Tôi đã đọc, hiểu và đồng ý toàn bộ nội dung hợp tác trên" để team tiến hành gửi sản phẩm mẫu và hoàn tất hợp đồng nhé!`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Kiểm tra Trùng KOC trong cùng gian hàng (tháng hiện tại & 30-60 ngày trước) + Cảnh báo Hớ giá
+// ---------------------------------------------------------------------------------------------
+
+export interface KocDuplicateAndPriceCheck {
+  handle: string;
+  matchedKoc?: KocItem;
+  isDuplicateInCurrentPlan: boolean;
+  duplicateCountInPlan: number;
+  recentStoreCoopWarning: string | null;
+  lastHistoricalFee: number | null;
+  historicalRoi: number | null;
+  totalPastDeals: number;
+  isPriceHigherThanHistory: boolean;
+  priceDiffPct: number;
+  priceWarningText: string | null;
+  priceHikeWarning: string | null;
+}
+
+export function checkKocDuplicateAndPriceWarning(
+  paramsOrHandle:
+    | {
+        handle: string;
+        proposedFee?: number;
+        plan: InputPlanBreakdownState | null;
+        currentItems: KocListingItem[];
+        kocs: KocItem[];
+        excludeItemId?: string;
+      }
+    | string,
+  proposedFeeArg?: number,
+  currentItemsArg?: KocListingItem[],
+  kocsArg?: KocItem[],
+  planArg?: InputPlanBreakdownState | null,
+  excludeItemIdArg?: string
+): KocDuplicateAndPriceCheck {
+  const params =
+    typeof paramsOrHandle === 'string'
+      ? {
+          handle: paramsOrHandle,
+          proposedFee: proposedFeeArg,
+          plan: planArg ?? null,
+          currentItems: currentItemsArg || [],
+          kocs: kocsArg || [],
+          excludeItemId: excludeItemIdArg,
+        }
+      : paramsOrHandle;
+  const clean = (params.handle || '').replace(/^@/, '').trim().toLowerCase();
+  const matchedKoc = params.kocs.find(k => (k.channelId || '').replace(/^@/, '').trim().toLowerCase() === clean);
+  const sameHandleItems = params.currentItems.filter(
+    i =>
+      i.id !== params.excludeItemId &&
+      columnOf(i) !== 'DROPPED' &&
+      (i.kocHandle || '').replace(/^@/, '').trim().toLowerCase() === clean
+  );
+
+  let recentStoreCoopWarning: string | null = null;
+  if (matchedKoc && params.plan) {
+    const brandNorm = (params.plan.brandName || '').trim().toLowerCase();
+    const storeNorm = (params.plan.storeName || '').trim().toLowerCase();
+    const kocBrandNorm = (matchedKoc.brandName || '').trim().toLowerCase();
+    const worked = Boolean(
+      kocBrandNorm && ((brandNorm && kocBrandNorm.includes(brandNorm)) || (storeNorm && kocBrandNorm.includes(storeNorm)))
+    );
+    if (worked && matchedKoc.latestBookMonth) {
+      recentStoreCoopWarning = `KOC từng hợp tác với Brand/Gian hàng này gần đây (${matchedKoc.latestBookMonth})`;
+    }
+  }
+
+  const lastHistoricalFee =
+    matchedKoc && matchedKoc.rateCardVideo && matchedKoc.rateCardVideo > 0 ? matchedKoc.rateCardVideo : null;
+  const historicalRoi = matchedKoc?.historicalRoi ?? null;
+  const totalPastDeals = matchedKoc?.totalPastDeals ?? 0;
+
+  const fee = params.proposedFee ?? 0;
+  let isPriceHigherThanHistory = false;
+  let priceDiffPct = 0;
+  let priceWarningText: string | null = null;
+
+  if (lastHistoricalFee && lastHistoricalFee > 0 && fee > lastHistoricalFee) {
+    isPriceHigherThanHistory = true;
+    priceDiffPct = Math.round(((fee - lastHistoricalFee) / lastHistoricalFee) * 100);
+    priceWarningText = `Giá nhập (${fmt(fee)}đ) cao hơn ${priceDiffPct}% so với giá lịch sử tại Upbase (${fmt(lastHistoricalFee)}đ)`;
+  }
+
+  return {
+    handle: clean,
+    matchedKoc,
+    isDuplicateInCurrentPlan: sameHandleItems.length > 0,
+    duplicateCountInPlan: sameHandleItems.length,
+    recentStoreCoopWarning,
+    lastHistoricalFee,
+    historicalRoi,
+    totalPastDeals,
+    isPriceHigherThanHistory,
+    priceDiffPct,
+    priceWarningText,
+    priceHikeWarning: priceWarningText,
+  };
+}
+

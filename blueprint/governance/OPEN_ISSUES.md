@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-GOV-02 |
 | Dự án | B2C Ops Hub |
 | Trạng thái | Đang dùng (sổ ghi liên tục) |
-| Cập nhật | 09/10/2026 |
+| cập nhật | 24/10/2026 (Đã chốt & triển khai 22 quyết định nghiệp vụ `/grill-me` theo `Quy trình Booking - Tech.md`) |
 
 Nguồn: `B2C/Pain point Marketing B2C.xlsx` (Sheet1, Sheet3, Sheet5, *Khảo sát nhân viên*), [HUB-1.6 Mục tiêu vận hành](../1-requirements/1.6_OPERATING_GOALS.md) mục "Việc cần xác nhận", rà soát 30/09/2026.
 

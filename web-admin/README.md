@@ -64,7 +64,8 @@ Sau khi rà soát và ẩn 10 màn hình thừa / trùng lặp, hệ thống đ�
 13. **Dữ liệu gốc (`master-data` / `MasterDataHubView`):** Quản lý danh mục 69 gian hàng B2C và Danh mục sản phẩm theo Brand (Brand → Nhóm sản phẩm → Sản phẩm → Link giỏ hàng & Link affiliate hoa hồng riêng).
 14. **Phân quyền & Nhân sự (`partner-access` / `CentralizedRbacHubView`):** Quản trị tài khoản Lark SSO, phân quyền 14 vai trò và Data Scoping Engine.
 15. **Quản lý Cloudflare R2 (`cloudflare-admin` / `CloudflareAdminView`):** Quản lý bucket tệp đính kèm và tài liệu hợp đồng.
-16. **Chân trang:** Sổ tay & Hỏi đáp (`knowledge-qa`), Cấu hình API (`api-settings`).
+16. **Bộ công cụ tiện ích (`work-toolkit` / `WorkToolkitHubView`):** Kho 10 công cụ tác nghiệp nhanh cho quản lý và chuyên viên nội bộ (Quy đổi Gross ↔ Net & bậc KL, tính ROAS/CIR hòa vốn, chia định mức KPI tuần, bóc tách hàng loạt link TikTok/Shopee đối chiếu danh bạ KOC, tạo mã QR VietQR chuẩn Bảng 3.2, tạo link UTM, kiểm tra từ hạn chế TikTok Shop, tính thời lượng đọc kịch bản, soạn Brief/Hashtag và đối soát 2 danh sách mã).
+17. **Chân trang:** Bộ công cụ tiện ích (`work-toolkit`), Sổ tay & Hỏi đáp (`knowledge-qa`), Cấu hình API (`api-settings`).
 
 ---
 

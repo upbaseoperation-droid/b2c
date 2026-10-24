@@ -90,13 +90,35 @@ const quoteTab = (tab: string) => `'${tab.replace(/'/g, "''")}'`;
 export interface AppendResult {
   added: number;
   skipped: number;
+  updated?: number;
   createdTab: boolean;
   writtenHeader: boolean;
 }
 
+const colLetter = (idx: number): string => {
+  let n = idx + 1;
+  let s = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+};
+
+const UPDATABLE_COLUMNS = new Set([
+  'Mã Brief',
+  'Sản phẩm',
+  'Giá net video',
+  'Link kịch bản',
+  'Link video demo',
+  'Link Air',
+]);
+
 /**
  * Thêm các dòng mới vào một tab, giữ nguyên những gì Brand đã điền.
- * Dòng đã có (trùng cột khóa) bị bỏ qua. Cột của sheet được căn theo tên cột, cột lạ để trống.
+ * So khớp theo cặp (ID kênh + Mã Brief) nếu có Mã Brief để 1 KOC làm nhiều video trên cùng Sheet không bị bỏ qua.
+ * Với dòng đã tồn tại trên Sheet, tự động cập nhật các cột Link kịch bản / Link video demo / Link Air nếu có dữ liệu mới từ Ops Hub.
  */
 export async function appendNewRows(opts: {
   spreadsheetId: string;
@@ -109,6 +131,7 @@ export async function appendNewRows(opts: {
   if (!tab.trim() || tab.length > 100) throw new GoogleSheetsError('Tên tab không hợp lệ.', 'INVALID', 400);
   const keyIdx = columns.indexOf(keyColumn);
   if (keyIdx < 0) throw new GoogleSheetsError('Thiếu cột khóa.', 'INVALID', 400);
+  const briefIdx = columns.indexOf('Mã Brief');
 
   const meta = (await sheetsFetch(`${spreadsheetId}?fields=sheets.properties.title`)) as { sheets?: { properties: { title: string } }[] };
   const exists = (meta.sheets || []).some(s => s.properties.title === tab);
@@ -122,17 +145,85 @@ export async function appendNewRows(opts: {
   const sheetHeader = (values[0] || []).map(h => String(h).trim());
   const hasHeader = sheetHeader.length > 0;
 
-  const header = hasHeader ? sheetHeader : columns;
-  const sheetKeyIdx = header.indexOf(keyColumn);
-  const existingKeys = new Set<string>();
-  if (hasHeader && sheetKeyIdx >= 0) {
-    for (const r of values.slice(1)) {
-      const k = keyOf(r[sheetKeyIdx]);
-      if (k) existingKeys.add(k);
+  const header = hasHeader ? [...sheetHeader] : [...columns];
+  let headerExtended = false;
+  if (hasHeader) {
+    for (const c of columns) {
+      if (!header.includes(c)) {
+        header.push(c);
+        headerExtended = true;
+      }
     }
   }
 
-  const fresh = rows.filter(r => !existingKeys.has(keyOf(r[keyIdx])));
+  const sheetKeyIdx = header.indexOf(keyColumn);
+  const sheetBriefIdx = header.indexOf('Mã Brief');
+  const existingRowByComposite = new Map<string, { rowNum: number; rowVals: string[] }>();
+  const existingRowByHandle = new Map<string, { rowNum: number; rowVals: string[] }>();
+
+  if (hasHeader && sheetKeyIdx >= 0) {
+    values.slice(1).forEach((r, idx) => {
+      const k = keyOf(r[sheetKeyIdx]);
+      if (!k) return;
+      const b = sheetBriefIdx >= 0 ? String(r[sheetBriefIdx] ?? '').trim().toUpperCase() : '';
+      const rowNum = idx + 2; // 1-indexed, row 1 is header
+      if (b) existingRowByComposite.set(`${k}::${b}`, { rowNum, rowVals: r });
+      if (!existingRowByHandle.has(k)) existingRowByHandle.set(k, { rowNum, rowVals: r });
+    });
+  }
+
+  const fresh: (string | number)[][] = [];
+  const updateRequests: { range: string; values: (string | number)[][] }[] = [];
+  let updatedCount = 0;
+
+  if (headerExtended) {
+    updateRequests.push({
+      range: `${quoteTab(tab)}!A1:${colLetter(header.length - 1)}1`,
+      values: [header],
+    });
+  }
+
+  for (const r of rows) {
+    const k = keyOf(r[keyIdx]);
+    if (!k) continue;
+    const b = briefIdx >= 0 ? String(r[briefIdx] ?? '').trim().toUpperCase() : '';
+    const match = (b && existingRowByComposite.get(`${k}::${b}`)) || (!b ? existingRowByHandle.get(k) : undefined) || existingRowByHandle.get(k);
+    if (!match) {
+      fresh.push(r);
+      continue;
+    }
+    // Dòng đã có trên Sheet: kiểm tra nếu khác Mã Brief (cùng KOC nhưng làm Brief thứ 2) thì thêm dòng mới
+    const existingBrief = sheetBriefIdx >= 0 ? String(match.rowVals[sheetBriefIdx] ?? '').trim().toUpperCase() : '';
+    if (b && existingBrief && b !== existingBrief && !existingRowByComposite.has(`${k}::${b}`)) {
+      fresh.push(r);
+      continue;
+    }
+    // Cập nhật các cột Giai đoạn 2 (Link kịch bản, Link video demo, Link Air, Mã Brief...) nếu Ops Hub có giá trị mới
+    let rowTouched = false;
+    for (const colName of UPDATABLE_COLUMNS) {
+      const srcIdx = columns.indexOf(colName);
+      const dstIdx = header.indexOf(colName);
+      if (srcIdx < 0 || dstIdx < 0) continue;
+      const newVal = String(r[srcIdx] ?? '').trim();
+      const oldVal = String(match.rowVals[dstIdx] ?? '').trim();
+      if (newVal && newVal !== oldVal) {
+        updateRequests.push({
+          range: `${quoteTab(tab)}!${colLetter(dstIdx)}${match.rowNum}`,
+          values: [[r[srcIdx]]],
+        });
+        rowTouched = true;
+      }
+    }
+    if (rowTouched) updatedCount += 1;
+  }
+
+  if (updateRequests.length > 0) {
+    await sheetsFetch(`${spreadsheetId}/values:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updateRequests }),
+    });
+  }
+
   const aligned = fresh.map(r => header.map(h => {
     const i = columns.indexOf(h);
     return i >= 0 ? r[i] : '';
@@ -145,7 +236,7 @@ export async function appendNewRows(opts: {
       body: JSON.stringify({ values: payload }),
     });
   }
-  return { added: fresh.length, skipped: rows.length - fresh.length, createdTab: !exists, writtenHeader: !hasHeader };
+  return { added: fresh.length, skipped: rows.length - fresh.length, updated: updatedCount, createdTab: !exists, writtenHeader: !hasHeader };
 }
 
 /** Đọc toàn bộ một tab: dòng đầu là tên cột. Trả về mảng đối tượng theo tên cột. */

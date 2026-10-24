@@ -301,14 +301,30 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({ brandNam
             <div className="rounded-lg border border-dashed border-line px-6 py-14 text-center text-sm text-ink-3">Chọn hoặc thêm một nhóm sản phẩm.</div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input className="h-9 max-w-[320px]" placeholder="Tên nhóm sản phẩm" value={group.name} onChange={e => patchGroup(group.id, { name: e.target.value })} />
-                <Button size="md" variant="primary" icon={Plus} onClick={() => patchGroup(group.id, { products: [...group.products, newProduct()] })}>
-                  Thêm sản phẩm
-                </Button>
-                <button type="button" aria-label="Xóa nhóm" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => removeGroup(group)}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <div className="rounded-lg border border-line bg-surface p-3 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input className="h-9 max-w-[320px]" placeholder="Tên nhóm sản phẩm thúc đẩy" value={group.name} onChange={e => patchGroup(group.id, { name: e.target.value })} />
+                  <Button size="md" variant="primary" icon={Plus} onClick={() => patchGroup(group.id, { products: [...group.products, newProduct()] })}>
+                    Thêm sản phẩm
+                  </Button>
+                  <button type="button" aria-label="Xóa nhóm" className="rounded p-1.5 text-ink-3 hover:bg-sunken hover:text-critical" onClick={() => removeGroup(group)}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="USP / Điểm nhấn bắt buộc (tự động đổ vào Brief & SOW)"
+                    value={group.usp || ''}
+                    onChange={e => patchGroup(group.id, { usp: e.target.value })}
+                  />
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Claim cấm / Từ khóa cấm Do & Don't (tự động đổ vào Brief & SOW)"
+                    value={group.forbiddenClaims || ''}
+                    onChange={e => patchGroup(group.id, { forbiddenClaims: e.target.value })}
+                  />
+                </div>
               </div>
               {group.products.length === 0 && <div className="rounded-lg border border-dashed border-line px-6 py-10 text-center text-sm text-ink-3">Nhóm này chưa có sản phẩm.</div>}
               {group.products.map(renderProduct)}

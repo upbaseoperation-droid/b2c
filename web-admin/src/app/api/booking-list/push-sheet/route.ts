@@ -37,35 +37,68 @@ export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
-    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; columns?: string[]; rows?: PushRow[] };
+    const body = (await request.json()) as {
+      planId?: string;
+      sheetUrl?: string;
+      tab?: string;
+      tabName?: string;
+      columns?: string[];
+      header?: string[];
+      rows?: (PushRow | (string | number)[])[];
+    };
     const planId = body.planId || '';
     const spreadsheetId = parseSpreadsheetId(body.sheetUrl || '');
+    const columns = Array.isArray(body.columns) ? body.columns : Array.isArray(body.header) ? body.header : null;
+    const rawRows = Array.isArray(body.rows) ? body.rows : [];
     if (!planId || !spreadsheetId) return NextResponse.json({ error: 'Thiếu mã kế hoạch hoặc link Google Sheet không hợp lệ.', code: 'INVALID' }, { status: 400 });
-    if (!Array.isArray(body.columns) || !Array.isArray(body.rows) || body.rows.length === 0) return NextResponse.json({ error: 'Chưa có KOC nào được gán để gửi.', code: 'INVALID' }, { status: 400 });
-    if (body.rows.length > MAX_ROWS) return NextResponse.json({ error: `Tối đa ${MAX_ROWS} KOC mỗi lần gửi.`, code: 'INVALID' }, { status: 400 });
+    if (!columns || rawRows.length === 0) return NextResponse.json({ error: 'Chưa có KOC nào được gán để gửi.', code: 'INVALID' }, { status: 400 });
+    if (rawRows.length > MAX_ROWS) return NextResponse.json({ error: `Tối đa ${MAX_ROWS} KOC mỗi lần gửi.`, code: 'INVALID' }, { status: 400 });
     if (!isGoogleSheetsConfigured()) {
       return NextResponse.json({ error: 'Chưa cấu hình tài khoản dịch vụ Google. Tải file Excel để gửi tạm.', code: 'NOT_CONFIGURED' }, { status: 503 });
     }
     await assertPlanIdAccess(planId, actor, 'write');
 
+    const cellRows: (string | number)[][] = rawRows.map(r => (Array.isArray(r) ? r : r.cells));
+    const pushObjects: PushRow[] = rawRows.filter((r): r is PushRow => !Array.isArray(r) && typeof r === 'object' && r !== null && 'handle' in r);
+
     const result = await appendNewRows({
       spreadsheetId,
-      tab: (body.tab || '').trim(),
-      columns: body.columns,
-      rows: body.rows.map(r => r.cells),
+      tab: (body.tab || body.tabName || '').trim(),
+      columns,
+      rows: cellRows,
       keyColumn: KEY_COLUMN,
     });
 
     // Đưa KOC vừa gửi vào bảng điều phối listing (Chờ Brand duyệt)
     let listed = 0;
     const plan = (await listMonthlyPlans(actor)).find(p => p.plan.id === planId)?.plan;
-    if (plan) {
+    if (plan && pushObjects.length > 0) {
       for (let attempt = 0; attempt < 3; attempt++) {
         const rec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
-        const have = new Set(rec.data.items.filter(i => i.overallStatus !== 'DROPPED').map(i => (i.kocHandle || '').replace(/^@/, '').toLowerCase()));
-        const created: KocListingItem[] = [];
-        for (const r of body.rows) {
-          if (have.has(r.handle.toLowerCase())) continue;
+        const existingByKey = new Map<string, number>();
+        rec.data.items.forEach((i, idx) => {
+          if (i.overallStatus === 'DROPPED') return;
+          const h = (i.kocHandle || '').replace(/^@/, '').toLowerCase();
+          existingByKey.set(h, idx);
+          if (i.planSlotId) existingByKey.set(`${h}::${i.planSlotId.toLowerCase()}`, idx);
+        });
+        const nextItems = [...rec.data.items];
+        let changedCount = 0;
+        for (const r of pushObjects) {
+          const h: string = (r.handle || '').replace(/^@/, '').toLowerCase();
+          const compKey: string = r.slotId ? `${h}::${r.slotId.toLowerCase()}` : h;
+          const existIdx = existingByKey.get(compKey) ?? existingByKey.get(h);
+          if (existIdx !== undefined) {
+            const existing = nextItems[existIdx];
+            if (existing.overallStatus === 'DRAFT') {
+              const moved = moveItem(existing, 'WAIT_BRAND', actor.name);
+              if (moved.item) {
+                nextItems[existIdx] = moved.item;
+                changedCount += 1;
+              }
+            }
+            continue;
+          }
           const item = createListingItem({
             plan,
             grade: (r.grade as never) || 'KL1',
@@ -78,12 +111,13 @@ export async function POST(request: NextRequest) {
           });
           if (typeof r.slotId === 'string' && r.slotId) item.planSlotId = r.slotId.slice(0, 60);
           if (typeof r.pic === 'string' && r.pic.trim()) item.assignedStaffName = r.pic.trim().slice(0, 120);
-          created.push(moveItem(item, 'WAIT_BRAND', actor.name).item || item);
+          nextItems.push(moveItem(item, 'WAIT_BRAND', actor.name).item || item);
+          changedCount += 1;
         }
-        if (created.length === 0) break;
+        if (changedCount === 0) break;
         try {
-          await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, d => ({ items: [...d.items, ...created] }));
-          listed = created.length;
+          await updateRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] }, rec.revision, () => ({ items: nextItems }));
+          listed = changedCount;
           break;
         } catch (err) {
           if (!(err instanceof RecordError && err.status === 409)) throw err;

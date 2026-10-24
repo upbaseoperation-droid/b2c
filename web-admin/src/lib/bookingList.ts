@@ -1,11 +1,12 @@
-// Danh sách KOC dự kiến book gửi Brand duyệt: dựng từ các content đã gán KOC trong kế hoạch content.
-import type { InputPlanBreakdownState, KocItem } from './types';
-import type { ContentSlot } from './contentPlanRules';
+// Danh sách KOC dự kiến book gửi Brand duyệt: dựng từ các content đã gán KOC trong kế hoạch content hoặc từ bảng điều phối Listing.
+import type { InputPlanBreakdownState, KocItem, KocListingItem } from './types';
+import { formatBriefCode, slotKocHandles, type ContentSlot } from './contentPlanRules';
 import { brandKey } from './brands/types';
 import { findRealBrandFileLinks, REAL_BRAND_FILE_CATALOG } from './brands/brandFilesCatalog';
 
 export const BOOKING_LIST_COLUMNS = [
   'STT',
+  'Mã Brief',
   'Tuần',
   'Bậc KL',
   'Pillar',
@@ -26,6 +27,12 @@ export const BOOKING_LIST_COLUMNS = [
   'Brand duyệt',
   'Lý do Brand từ chối',
   'Ghi chú Brand',
+  'Link kịch bản',
+  'Brand duyệt kịch bản',
+  'Link video demo',
+  'Brand duyệt demo',
+  'Ghi chú sửa demo',
+  'Link Air',
 ] as const;
 
 export interface BookingListRow {
@@ -36,49 +43,129 @@ export interface BookingListRow {
   grade: string;
   /** Content (ô trong kế hoạch content) mà KOC này được gán. */
   slotId: string;
+  briefCode?: string;
   pic: string;
   cells: (string | number)[];
 }
 
 const cleanHandle = (h: string) => h.replace(/^@/, '').trim();
 
-/** Chỉ lấy content đã gán KOC. Thiếu chỉ số thì để trống, không điền số giả. */
+/** Mở rộng toàn bộ KOC được gán trong từng dòng Brief (1 Brief BR-xx chứa được N KOC). */
 export function buildBookingListRows(plan: InputPlanBreakdownState, slots: ContentSlot[], kocs: KocItem[]): BookingListRow[] {
   const byHandle = new Map(kocs.map(k => [cleanHandle(k.channelId || '').toLowerCase(), k]));
-  const assigned = slots.filter(s => s.kocHandle && s.kocHandle.trim());
+  const assigned = slots.filter(s => slotKocHandles(s).length > 0);
   const weekOrder = (w: string | null) => (w ? w : 'zzz');
   assigned.sort((a, b) => weekOrder(a.week).localeCompare(weekOrder(b.week)) || (a.row || '').localeCompare(b.row || ''));
-  return assigned.map((s, idx) => {
-    const handle = cleanHandle(s.kocHandle!);
+  const out: BookingListRow[] = [];
+  let stt = 0;
+  assigned.forEach((s, slotIdx) => {
+    const handles = slotKocHandles(s);
+    const briefCode = formatBriefCode(s, slotIdx);
+    const grade = s.row && s.row !== 'SELF' ? (s.row === 'FOC' ? 'TAP UpAffiliate' : s.row) : '';
+    for (const rawH of handles) {
+      const handle = cleanHandle(rawH);
+      if (!handle) continue;
+      stt += 1;
+      const koc = byHandle.get(handle.toLowerCase());
+      const resolvedGrade = grade || koc?.salaryGrade || 'KL1';
+      const fee = s.row === 'FOC' ? 0 : koc?.rateCardVideo || 0;
+      out.push({
+        handle,
+        kocName: koc?.stageName || handle,
+        followers: koc?.followers || 0,
+        fee,
+        grade: resolvedGrade,
+        slotId: s.id,
+        briefCode,
+        pic: s.pic || plan.pic || '',
+        cells: [
+          stt,
+          briefCode,
+          s.week ? s.week.split(' ')[0] : 'Chưa xếp tuần',
+          resolvedGrade,
+          s.pillar,
+          s.product,
+          s.pic || plan.pic || '',
+          s.angle,
+          handle,
+          `https://www.tiktok.com/@${handle}`,
+          koc?.stageName || '',
+          koc?.followers || '',
+          koc?.tepKenh || '',
+          s.row === 'FOC' ? 0 : fee || '',
+          koc?.gmvBestCase || '',
+          koc?.gpm || '',
+          koc?.historicalRoi !== undefined ? Number(koc.historicalRoi.toFixed(2)) : '',
+          koc?.totalPastDeals ?? '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+        ],
+      });
+    }
+  });
+  return out;
+}
+
+/** Dựng danh sách dòng đẩy Google Sheet trực tiếp từ bảng điều phối Listing (`PlanListingBoard`). */
+export function buildBookingListRowsFromListingItems(
+  plan: InputPlanBreakdownState,
+  items: KocListingItem[],
+  slots: ContentSlot[],
+  kocs: KocItem[]
+): BookingListRow[] {
+  const byHandle = new Map(kocs.map(k => [cleanHandle(k.channelId || '').toLowerCase(), k]));
+  const slotById = new Map(slots.map((s, idx) => [s.id, { slot: s, briefCode: formatBriefCode(s, idx) }]));
+  const candidates = items.filter(i => i.overallStatus !== 'DROPPED');
+  return candidates.map((item, idx) => {
+    const handle = cleanHandle(item.kocHandle || '');
     const koc = byHandle.get(handle.toLowerCase());
-    const grade = s.row && s.row !== 'SELF' ? (s.row === 'FOC' ? 'TAP UpAffiliate' : s.row) : koc?.salaryGrade || '';
-    const fee = s.row === 'FOC' ? 0 : koc?.rateCardVideo || 0;
+    const matched = item.planSlotId ? slotById.get(item.planSlotId) : undefined;
+    const s = matched?.slot;
+    const briefCode = matched?.briefCode || '';
+    const grade = item.salaryGrade || s?.row || koc?.salaryGrade || 'KL1';
+    const fee = item.finalFee ?? item.proposedFee ?? (grade === 'TAP UpAffiliate' ? 0 : koc?.rateCardVideo || 0);
     return {
       handle,
-      kocName: koc?.stageName || handle,
-      followers: koc?.followers || 0,
+      kocName: item.kocName || koc?.stageName || handle,
+      followers: item.followersCount || koc?.followers || 0,
       fee,
-      grade,
-      slotId: s.id,
-      pic: s.pic || '',
+      grade: String(grade),
+      slotId: item.planSlotId || '',
+      briefCode,
+      pic: item.assignedStaffName || s?.pic || plan.pic || '',
       cells: [
         idx + 1,
-        s.week ? s.week.split(' ')[0] : 'Chưa xếp tuần',
-        grade,
-        s.pillar,
-        s.product,
-        s.pic || '',
-        s.angle,
+        briefCode,
+        s?.week ? s.week.split(' ')[0] : 'Chưa xếp tuần',
+        String(grade),
+        s?.pillar || '',
+        s?.product || '',
+        item.assignedStaffName || s?.pic || plan.pic || '',
+        s?.angle || item.niche || '',
         handle,
         `https://www.tiktok.com/@${handle}`,
-        koc?.stageName || '',
-        koc?.followers || '',
+        item.kocName || koc?.stageName || '',
+        item.followersCount || koc?.followers || '',
         koc?.tepKenh || '',
-        s.row === 'FOC' ? 0 : fee || '',
+        grade === 'TAP UpAffiliate' ? 0 : fee || '',
         koc?.gmvBestCase || '',
         koc?.gpm || '',
         koc?.historicalRoi !== undefined ? Number(koc.historicalRoi.toFixed(2)) : '',
         koc?.totalPastDeals ?? '',
+        item.negotiationNote || '',
+        item.brandApprovalStatus === 'BRAND_APPROVED' ? 'Yes' : item.brandApprovalStatus === 'BRAND_REJECTED' ? 'No' : '',
+        item.dropReason || '',
+        item.brandFeedbackNote || '',
+        '',
+        '',
         '',
         '',
         '',
@@ -89,12 +176,17 @@ export function buildBookingListRows(plan: InputPlanBreakdownState, slots: Conte
 }
 
 /** Link Google Sheet booking của Brand theo danh mục file Brand (bảng 3.5). */
-export function resolveBrandBookingSheetUrl(plan: InputPlanBreakdownState): string {
-  const store = (plan.storeName || '').trim().toLowerCase();
+export function resolveBrandBookingSheetUrl(planOrBrand: InputPlanBreakdownState | string, storeName?: string): string {
+  const brandStr = typeof planOrBrand === 'string' ? planOrBrand : planOrBrand.brandName || '';
+  const storeStr = typeof planOrBrand === 'string' ? storeName || '' : planOrBrand.storeName || '';
+  const store = storeStr.trim().toLowerCase();
   const byStore = REAL_BRAND_FILE_CATALOG.find(i => i.storeCode.toLowerCase() === store);
   if (byStore?.bookingSheetUrl) return byStore.bookingSheetUrl;
-  const byBrand = findRealBrandFileLinks(brandKey(plan.brandName || ''));
+  const byBrand = findRealBrandFileLinks(brandKey(brandStr));
   return byBrand?.bookingSheetUrl || '';
 }
 
-export const defaultBookingTabName = (plan: InputPlanBreakdownState, dot: number) => `Listing ${plan.month.replace('/', '-')} Đợt ${dot}`;
+export const defaultBookingTabName = (planOrMonth: InputPlanBreakdownState | string, dot = 1) => {
+  const monthStr = typeof planOrMonth === 'string' ? planOrMonth : planOrMonth.month || '';
+  return `Listing ${monthStr.replace('/', '-')} Đợt ${dot}`;
+};

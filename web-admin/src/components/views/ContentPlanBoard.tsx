@@ -6,6 +6,7 @@ import type { BookingDealItem, InputPlanBreakdownState, KocItem, StorePortfolioI
 import { Button, ConfirmDialog, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { CONTENT_PILLARS, pillarGroupOf } from '../../lib/contentPillars';
 import {
+  addKocToSlot,
   BRIEF_FORMAT_OPTIONS,
   CONTENT_ROWS,
   diagnoseContentPlan,
@@ -15,7 +16,9 @@ import {
   isBriefReady,
   isPlaced,
   newSlot,
+  removeKocFromSlot,
   requiredGrid,
+  slotKocHandles,
   slotSpecsFromBrandPlan,
   slotTargetQty,
   syncSlotsFromBrandPlan,
@@ -23,6 +26,7 @@ import {
   type ContentRowKey,
   type ContentSlot,
 } from '../../lib/contentPlanRules';
+import type { BrandProductCatalog } from '../../lib/productCatalog';
 import { usePlanRecord } from '../../lib/usePlanRecord';
 import { detectChannel, type BrandPlanData, type PlanChannel } from '../../lib/brandPlanRules';
 import { CreatorMatchModal } from './CreatorMatchModal';
@@ -103,6 +107,26 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const { data, status, update, saveNow } = usePlanRecord<ContentPlanData>('/api/content-plan', plan?.id ?? null, EMPTY, msg => notify(msg, 'warning'));
   const slots = useMemo(() => ensureSequentialBriefCodes(data.slots || []), [data.slots]);
 
+  const [catalog, setCatalog] = useState<BrandProductCatalog>({ groups: [] });
+  useEffect(() => {
+    if (!plan?.brandName) {
+      setCatalog({ groups: [] });
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/product-catalog?brand=${encodeURIComponent(plan.brandName)}`, { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(b => {
+        if (!cancelled && b?.data) setCatalog(b.data as BrandProductCatalog);
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog({ groups: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [plan?.brandName]);
+
   const req = useMemo(() => (plan ? requiredGrid(plan) : null), [plan]);
   const diag = useMemo(() => (plan ? diagnoseContentPlan(plan, slots) : null), [plan, slots]);
 
@@ -138,10 +162,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
   const [addForm, setAddForm] = useState({
     pillar: CONTENT_PILLARS[0].name,
     qty: 5,
+    productGroupId: '',
     product: '',
     angle: '',
     hook: '',
     usp: '',
+    forbiddenClaims: '',
     cta: '',
     format: BRIEF_FORMAT_OPTIONS[0] as string,
     briefUrl: '',
@@ -169,8 +195,10 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       pillar: addForm.pillar,
       angle: addForm.angle,
       product: addForm.product,
+      productGroupId: addForm.productGroupId || undefined,
       hook: addForm.hook,
       usp: addForm.usp,
+      forbiddenClaims: addForm.forbiddenClaims,
       cta: addForm.cta,
       format: addForm.format,
       briefUrl: addForm.briefUrl,
@@ -190,10 +218,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     briefCode: '',
     targetQty: 1,
     pillar: '',
+    productGroupId: '',
     product: '',
     angle: '',
     hook: '',
     usp: '',
+    forbiddenClaims: '',
     cta: '',
     format: '',
     briefUrl: '',
@@ -207,10 +237,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
       briefCode: s.briefCode || '',
       targetQty: slotTargetQty(s),
       pillar: s.pillar,
+      productGroupId: s.productGroupId || '',
       product: s.product,
       angle: s.angle,
       hook: s.hook || '',
       usp: s.usp || '',
+      forbiddenClaims: s.forbiddenClaims || '',
       cta: s.cta || '',
       format: s.format || BRIEF_FORMAT_OPTIONS[0],
       briefUrl: s.briefUrl || '',
@@ -228,10 +260,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               briefCode: editForm.briefCode.trim() || s.briefCode,
               targetQty: Math.max(1, Math.min(500, Math.floor(editForm.targetQty) || 1)),
               pillar: editForm.pillar,
+              productGroupId: editForm.productGroupId || undefined,
               product: editForm.product.trim(),
               angle: editForm.angle.trim(),
               hook: editForm.hook.trim() || undefined,
               usp: editForm.usp.trim() || undefined,
+              forbiddenClaims: editForm.forbiddenClaims.trim() || undefined,
               cta: editForm.cta.trim() || undefined,
               format: editForm.format.trim() || undefined,
               briefUrl: editForm.briefUrl.trim() || undefined,
@@ -260,8 +294,10 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         pillar: s.pillar,
         angle: s.angle,
         product: s.product,
+        productGroupId: s.productGroupId,
         hook: s.hook,
         usp: s.usp,
+        forbiddenClaims: s.forbiddenClaims,
         cta: s.cta,
         format: s.format,
         briefUrl: s.briefUrl,
@@ -276,18 +312,38 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     notify(`Đã sao chép ${copies.length} dòng Brief từ ${weekShort(prev)} sang ${weekShort(cur)}.`, 'success');
   };
 
-  // --- gán KOC (thủ công hoặc theo điểm phù hợp) ---
+  // --- gán KOC (hỗ trợ 1 Brief - N KOC) ---
   const [matchSlotId, setMatchSlotId] = useState<string | null>(null);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const matchSlot = slots.find(s => s.id === matchSlotId) || null;
-  const usedHandles = useMemo(() => new Set(slots.filter(s => s.kocHandle).map(s => (s.kocHandle || '').replace(/^@/, '').toLowerCase())), [slots]);
+  const usedHandles = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of slots) {
+      for (const h of slotKocHandles(s)) set.add(h.replace(/^@/, '').toLowerCase());
+    }
+    return set;
+  }, [slots]);
 
   const assignKoc = (handle: string | null) => {
     if (!matchSlotId) return;
     const clean = handle ? handle.replace(/^@/, '').trim() : '';
-    setSlots(slots.map(s => (s.id === matchSlotId ? { ...s, kocHandle: clean || undefined, updatedAt: new Date().toISOString() } : s)));
-    notify(clean ? `Đã gán @${clean}.` : 'Đã bỏ gán KOC.', 'success');
+    if (!clean) {
+      setSlots(slots.map(s => (s.id === matchSlotId ? { ...s, kocHandle: undefined, kocHandles: undefined, updatedAt: new Date().toISOString() } : s)));
+      notify('Đã bỏ gán toàn bộ KOC của dòng Brief này.', 'success');
+    } else {
+      setSlots(slots.map(s => (s.id === matchSlotId ? { ...addKocToSlot(s, clean), updatedAt: new Date().toISOString() } : s)));
+      notify(`Đã gán @${clean} vào dòng Brief.`, 'success');
+    }
     setMatchSlotId(null);
+  };
+
+  const removeAssignedKoc = (slotId: string, handle: string) => {
+    const next = slots.map(s => (s.id === slotId ? { ...removeKocFromSlot(s, handle), updatedAt: new Date().toISOString() } : s));
+    setSlots(next);
+    if (editing && editing.id === slotId) {
+      setEditing(next.find(s => s.id === slotId) || null);
+    }
+    notify(`Đã gỡ @${handle.replace(/^@/, '')} khỏi dòng Brief.`, 'info');
   };
 
   // --- gửi danh sách KOC dự kiến book cho Brand ---
@@ -321,11 +377,18 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         notify('Plan tháng của Brand chưa có dòng Chi tiết Content cho sàn này.', 'info');
         return;
       }
-      let groups: { id: string; name: string }[] = [];
+      let groups: { id: string; name: string; usp?: string; forbiddenClaims?: string }[] = [];
       try {
         const gRes = await fetch('/api/product-catalog?brand=' + encodeURIComponent(plan.brandName), { cache: 'no-store' });
         const gBody = await gRes.json().catch(() => null);
-        if (gRes.ok) groups = ((gBody?.data?.groups as { id: string; name: string }[]) || []).map(g => ({ id: g.id, name: g.name }));
+        if (gRes.ok) {
+          groups = ((gBody?.data?.groups as { id: string; name: string; usp?: string; forbiddenClaims?: string }[]) || []).map(g => ({
+            id: g.id,
+            name: g.name,
+            usp: g.usp,
+            forbiddenClaims: g.forbiddenClaims,
+          }));
+        }
       } catch {
         /* không có danh mục thì ghi sản phẩm theo SKU của dòng plan */
       }
@@ -419,6 +482,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
     const ready = isBriefReady(s);
     const code = formatBriefCode(s);
     const qty = slotTargetQty(s);
+    const handles = slotKocHandles(s);
     return (
       <div
         key={s.id}
@@ -442,8 +506,12 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           <div className="truncate text-ink-3">{s.product || s.angle || 'Chưa ghi sản phẩm'}</div>
           {s.angle && s.product && <div className="truncate text-ink-3">{s.angle}</div>}
           {s.pic && <div className="truncate text-ink-3">{s.pic}</div>}
-          {s.kocHandle && <div className="truncate font-medium text-accent">@{s.kocHandle.replace(/^@/, '')}</div>}
-          {!s.kocHandle && s.rejectedKoc && <div className="truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
+          {handles.length > 0 && (
+            <div className="truncate font-medium text-accent">
+              {handles.map(h => `@${h.replace(/^@/, '')}`).join(', ')} ({handles.length}/{qty})
+            </div>
+          )}
+          {handles.length === 0 && s.rejectedKoc && <div className="truncate text-critical">Brand từ chối @{s.rejectedKoc.handle}</div>}
         </button>
       </div>
     );
@@ -703,6 +771,30 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           <Field label="Số lượng video mục tiêu của dòng Brief">
             <Input inputMode="numeric" value={String(addForm.qty)} onChange={e => setAddForm({ ...addForm, qty: parseInt(e.target.value.replace(/\D/g, ''), 10) || 0 })} />
           </Field>
+          {catalog.groups.length > 0 && (
+            <Field label="Chọn nhóm sản phẩm đẩy (Danh mục 2 tầng)" className="col-span-2">
+              <Select
+                value={addForm.productGroupId}
+                onChange={e => {
+                  const g = catalog.groups.find(x => x.id === e.target.value);
+                  setAddForm({
+                    ...addForm,
+                    productGroupId: e.target.value,
+                    product: g ? g.name : addForm.product,
+                    usp: g?.usp || addForm.usp,
+                    forbiddenClaims: g?.forbiddenClaims || addForm.forbiddenClaims,
+                  });
+                }}
+              >
+                <option value="">— Tự nhập hoặc chọn nhóm sản phẩm —</option>
+                {catalog.groups.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field label="Sản phẩm">
             <Input value={addForm.product} onChange={e => setAddForm({ ...addForm, product: e.target.value })} />
           </Field>
@@ -723,6 +815,9 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           </Field>
           <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
             <Input value={addForm.usp} onChange={e => setAddForm({ ...addForm, usp: e.target.value })} />
+          </Field>
+          <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
+            <Input value={addForm.forbiddenClaims} onChange={e => setAddForm({ ...addForm, forbiddenClaims: e.target.value })} />
           </Field>
           <Field label="Xếp vào tuần">
             <Select value={addForm.week} onChange={e => setAddForm({ ...addForm, week: e.target.value })}>
@@ -768,7 +863,7 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
                   setEditing(null);
                 }}
               >
-                {editing.kocHandle ? `Đổi KOC (@${editing.kocHandle.replace(/^@/, '')})` : 'Gán KOC'}
+                {slotKocHandles(editing).length > 0 ? `+ Thêm KOC (${slotKocHandles(editing).length}/${slotTargetQty(editing)})` : 'Gán KOC'}
               </Button>
             )}
             {editing && isPlaced(editing) && (
@@ -789,6 +884,28 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
         }
       >
         <div className="grid grid-cols-2 gap-3">
+          {editing && slotKocHandles(editing).length > 0 && (
+            <div className="col-span-2 rounded-md border border-line bg-sunken px-3 py-2">
+              <div className="mb-1 text-2xs font-medium text-ink-2">
+                KOC đã gán vào dòng Brief này ({slotKocHandles(editing).length}/{slotTargetQty(editing)} video):
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {slotKocHandles(editing).map(h => (
+                  <span key={h} className="inline-flex items-center gap-1 rounded bg-surface px-2 py-0.5 text-xs font-medium text-accent border border-line">
+                    @{h.replace(/^@/, '')}
+                    <button
+                      type="button"
+                      onClick={() => removeAssignedKoc(editing.id, h)}
+                      className="ml-0.5 text-ink-3 hover:text-critical"
+                      title="Gỡ KOC này khỏi Brief"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <Field label="Mã dòng Brief">
             <Input value={editForm.briefCode} onChange={e => setEditForm({ ...editForm, briefCode: e.target.value })} />
           </Field>
@@ -799,6 +916,30 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
               onChange={e => setEditForm({ ...editForm, targetQty: parseInt(e.target.value.replace(/\D/g, ''), 10) || 1 })}
             />
           </Field>
+          {catalog.groups.length > 0 && (
+            <Field label="Chọn nhóm sản phẩm đẩy (Danh mục 2 tầng)" className="col-span-2">
+              <Select
+                value={editForm.productGroupId}
+                onChange={e => {
+                  const g = catalog.groups.find(x => x.id === e.target.value);
+                  setEditForm({
+                    ...editForm,
+                    productGroupId: e.target.value,
+                    product: g ? g.name : editForm.product,
+                    usp: g?.usp || editForm.usp,
+                    forbiddenClaims: g?.forbiddenClaims || editForm.forbiddenClaims,
+                  });
+                }}
+              >
+                <option value="">— Tự nhập hoặc chọn nhóm sản phẩm —</option>
+                {catalog.groups.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field label="Content pillar">
             <Select value={editForm.pillar} onChange={e => setEditForm({ ...editForm, pillar: e.target.value })}>
               {CONTENT_PILLARS.map(p => (
@@ -839,6 +980,9 @@ export const ContentPlanBoard: React.FC<ContentPlanBoardProps> = ({ kocs = [], d
           </Field>
           <Field label="Thông điệp USP sản phẩm bắt buộc" className="col-span-2">
             <Textarea rows={2} value={editForm.usp} onChange={e => setEditForm({ ...editForm, usp: e.target.value })} />
+          </Field>
+          <Field label="Claim cấm / Từ khóa cấm (Do & Don't)" className="col-span-2">
+            <Textarea rows={2} value={editForm.forbiddenClaims} onChange={e => setEditForm({ ...editForm, forbiddenClaims: e.target.value })} />
           </Field>
           <Field label="Lời kêu gọi hành động (CTA)">
             <Input value={editForm.cta} onChange={e => setEditForm({ ...editForm, cta: e.target.value })} />

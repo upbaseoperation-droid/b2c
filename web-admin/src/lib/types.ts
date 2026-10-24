@@ -71,7 +71,8 @@ export type TabKey =
   | 'audit-trail'
   | 'tiktok-crawler'
   | 'market-research'
-  | 'store-air-plan-report';
+  | 'store-air-plan-report'
+  | 'work-toolkit';
 
 export interface UserProfile {
   id: string;
@@ -444,6 +445,9 @@ export interface KocItem {
   tepKenh: TepKenh; // 3. Tệp kênh (25 tệp chuẩn: Review Nữ, Mẹ bé (bầu), Beauty, ELHA...)
   creatorCategory?: CreatorNiche; // Alias backward-compatibility cho tepKenh
   kocCategory: KocCategory; // 4. KOC category (9 nhóm ngành: Personal care, Mom and baby, Reviewer...)
+  field?: string;
+  workedBrands?: string[];
+  lastCoopDate?: string;
 
   niche: string;
   followers: number; // Follower
@@ -2740,7 +2744,8 @@ export type MonthlyPlanStatus =
   | 'APPROVED'               // Đã phê duyệt chính thức
   | 'LOCKED'                 // Đã đóng băng phiên bản chốt
   | 'IN_EXECUTION'           // Đang triển khai booking
-  | 'COMPLETED';             // Đã nghiệm thu & đóng số tháng
+  | 'COMPLETED'              // Đã nghiệm thu & đóng số tháng
+  | 'ARCHIVED';              // Đã lưu trữ
 
 export type PlanDiscussionRole = 'GROWTH' | 'BOOKING' | 'MEDIA' | 'LEAD' | 'SYSTEM';
 
@@ -3251,6 +3256,7 @@ export interface Contributor {
   phone: string;
   email?: string;
   channelLink?: string; // TikTok / Portfolio link
+  tiktokChannel?: string;
   driveFolderUrl?: string; // Link Drive tổng gian hàng / Drive nộp video của VJ
   nicheSpecialty: string[]; // Tệp thế mạnh (VD: Mẹ & Bé, Chăm da, Diễn hài...)
   role: ContributorRole;
@@ -3627,7 +3633,7 @@ export type ListingBatchCycle = 'BATCH_10' | 'BATCH_20' | 'BATCH_30';
 
 export type BrandListingStatus = 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED';
 
-export type KocNegotiationStatus = 'NOT_CONTACTED' | 'CONTACTING' | 'TERMS_AGREED' | 'NEGOTIATION_FAILED';
+export type KocNegotiationStatus = 'NOT_CONTACTED' | 'CONTACTING' | 'PRICE_NEGOTIATING' | 'TERMS_AGREED' | 'NEGOTIATION_FAILED';
 
 export type ListingItemStatus = 
   | 'DRAFT'            // Đang lập danh sách nháp
@@ -3686,6 +3692,9 @@ export interface KocListingItem {
   // Tiến trình song song 1: Brand Review
   brandApprovalStatus: BrandListingStatus;
   brandFeedbackNote?: string;
+  brandFeedback?: string;
+  channelCharacteristic?: string;
+  staffComment?: string;
   brandApprovedAt?: string;
   brandApprovedBy?: string;
   

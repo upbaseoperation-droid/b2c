@@ -1898,7 +1898,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cloudflare-admin',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   MANAGER: [
     'store-air-plan-report',
@@ -1938,7 +1939,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cloudflare-admin',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   GROWTH_MANAGER: [
     'store-air-plan-report',
@@ -1966,7 +1968,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   MEDIA_MANAGER: [
     'cockpit',
@@ -1993,7 +1996,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   LEADER: [
     'store-air-plan-report',
@@ -2028,7 +2032,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   BOOKING_MEMBER: [
     'store-air-plan-report',
@@ -2051,7 +2056,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   CONTENT_MEMBER: [
     'cockpit',
@@ -2068,7 +2074,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'push-products',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   BRAND_MEMBER: [
     'cockpit',
@@ -2089,7 +2096,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   MEMBER: [
     'cockpit',
@@ -2111,7 +2119,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   GROWTH_MEMBER: [
     'store-air-plan-report',
@@ -2129,7 +2138,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   MEDIA_MEMBER: [
     'input-plan',
@@ -2145,18 +2155,22 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'knowledge-qa',
     'tiktok-crawler',
-    'market-research'
+    'market-research',
+    'work-toolkit'
   ],
   LEGAL: [
-    'contracts'
+    'contracts',
+    'work-toolkit'
   ],
   FINANCE: [
     'store-air-plan-report',
     'contracts',
-    'dashboard-finance'
+    'dashboard-finance',
+    'work-toolkit'
   ],
   SIGN_ADMIN: [
-    'contracts'
+    'contracts',
+    'work-toolkit'
   ],
   BRAND_PARTNER: [
     'brand-hub',
@@ -2264,6 +2278,7 @@ const CORE_SYNCED_ROLE_TABS: TabKey[] = [
   'task-delegation',
   'contracts',
   'cloudflare-admin',
+  'work-toolkit',
 ];
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
@@ -2347,6 +2362,7 @@ const BASE_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
   { key: 'partner-access', label: 'Phân quyền & Nhân sự (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
   { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
+  { key: 'work-toolkit', label: 'Bộ công cụ tiện ích', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Kho công cụ tính thuế Gross/Net, ROAS hòa vốn, bóc tách link TikTok/Shopee, tạo VietQR, kiểm tra từ hạn chế TikTok Shop và đếm thời lượng kịch bản.' },
   { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
   { key: 'cloudflare-admin', label: 'Quản lý Cloudflare R2', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản lý kết nối Cloudflare R2 và tệp đính kèm của 42 thương hiệu B2C.' },
   { key: 'brand-hub', label: 'Cổng đối tác Brand', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho đại diện thương hiệu duyệt KOC & kịch bản.' },
