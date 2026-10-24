@@ -74,11 +74,26 @@ export function weekLabelsForMonth(month: string): string[] {
 /** Danh sách tuần để hiển thị: giữ dữ liệu đã nhập, bổ sung tuần còn thiếu của tháng. */
 export function resolveWeekRows(plan: Pick<InputPlanBreakdownState, 'month' | 'weeklyBreakdown'>): PlanWeekRow[] {
   const saved = plan.weeklyBreakdown || [];
+  const weekCode = (w: string) => (w || '').trim().split(/\s+/)[0].toUpperCase();
   const byWeek = new Map(saved.map(r => [r.week, r]));
+  const byCode = new Map(saved.map(r => [weekCode(r.week), r]));
   const labels = weekLabelsForMonth(plan.month);
-  const rows = labels.map(w => byWeek.get(w) || emptyWeekRow(w));
+  const matchedSaved = new Set<PlanWeekRow>();
+  const rows = labels.map(w => {
+    const exact = byWeek.get(w);
+    if (exact) {
+      matchedSaved.add(exact);
+      return exact;
+    }
+    const prefixMatch = byCode.get(weekCode(w));
+    if (prefixMatch) {
+      matchedSaved.add(prefixMatch);
+      return { ...prefixMatch, week: w };
+    }
+    return emptyWeekRow(w);
+  });
   saved.forEach(r => {
-    if (!labels.includes(r.week)) rows.push(r);
+    if (!matchedSaved.has(r)) rows.push(r);
   });
   return rows;
 }

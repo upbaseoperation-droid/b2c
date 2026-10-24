@@ -9,6 +9,7 @@ import type {
   LarkbaseBookingPlanRecordItem,
   PlanVersionSnapshot
 } from '../types';
+import { REAL_LARKBASE_RECORDS_NOV_2026, REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)
 const NGOC_TAM_MANAGED_PATTERNS: RegExp[] = [
@@ -237,7 +238,8 @@ const FALLBACK_APPROVED_LARKBASE_RECORDS: LarkbaseBookingPlanRecordItem[] = [
     syncSource: 'API_PULL',
     syncedBy: 'Hệ thống API Larkbase',
     syncedAt: '2026-10-14T08:15:00.000Z'
-  }
+  },
+  ...REAL_LARKBASE_RECORDS_NOV_2026
 ];
 
 // Bộ nhớ đệm phía server trong trường hợp DB chưa bật
@@ -260,6 +262,13 @@ const TIER_BENCHMARK_NET: Record<keyof LarkbaseBookingPlanRecordItem['kocTierBre
  * sang cấu trúc Kế hoạch tháng (`InputPlanBreakdownState`) đầy đủ 4 đầu việc B2C & Snapshot phiên bản.
  */
 export function convertLarkbaseRecordToMonthlyPlan(record: LarkbaseBookingPlanRecordItem): InputPlanBreakdownState {
+  const realNovMatch = REAL_MONTHLY_PLANS_NOV_2026.find(
+    p => p.id === record.planId || (record.larkRecordId && p.larkRecordId === record.larkRecordId)
+  );
+  if (realNovMatch) {
+    return realNovMatch;
+  }
+
   const items: InputPlanRowItem[] = [];
 
   // 1. Đầu việc 1: Video Affiliate KOC trả phí theo bậc KL1 - KL7
@@ -533,8 +542,8 @@ export function convertLarkbaseRecordToMonthlyPlan(record: LarkbaseBookingPlanRe
  */
 export function getLarkbasePlanConfig() {
   const larkConfig = getLarkConfig();
-  const appToken = process.env.LARKBASE_PLAN_APP_TOKEN || 'bascnUpbaseB2CPlan41';
-  const tableId = process.env.LARKBASE_PLAN_TABLE_ID || 'tblBookingInputPlan411';
+  const appToken = process.env.LARKBASE_PLAN_APP_TOKEN || 'W6vRbbuOVar3qtsV18dlan1xgXb';
+  const tableId = process.env.LARKBASE_PLAN_TABLE_ID || 'tblvgyOkneDKOVsB';
   const viewId = process.env.LARKBASE_PLAN_VIEW_ID || '';
   const hasLiveBitableConfig = Boolean(
     larkConfig.isConfigured &&
@@ -1030,16 +1039,14 @@ export async function pullApprovedBookingPlansFromLarkbase(options?: {
         },
         body: JSON.stringify({
           ...(viewId ? { view_id: viewId } : {}),
-          filter: {
-            conjunction: 'and',
-            conditions: [
-              {
-                field_name: 'B2C phụ trách',
-                operator: 'is',
-                value: ['1']
+          ...(options?.month && options.month !== 'ALL'
+            ? {
+                filter: {
+                  conjunction: 'and',
+                  conditions: [{ field_name: 'Tháng', operator: 'is', value: [options.month] }]
+                }
               }
-            ]
-          }
+            : {})
         })
       });
 

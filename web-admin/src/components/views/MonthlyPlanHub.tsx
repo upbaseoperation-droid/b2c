@@ -93,17 +93,27 @@ function generateDiscussionId(): string {
   return `DISC-${Date.now()}`;
 }
 
+function normStoreSlug(value?: string): string {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toUpperCase();
+}
+
 function buildPlanLookupMap(plans: InputPlanBreakdownState[], month: string) {
   const byStoreId = new Map<string, InputPlanBreakdownState>();
-  const byStoreName = new Map<string, InputPlanBreakdownState>();
+  const byStoreSlug = new Map<string, InputPlanBreakdownState>();
   const byBrandName = new Map<string, InputPlanBreakdownState>();
   const brandPrefixList: Array<{ prefix: string; brandName: string; plan: InputPlanBreakdownState }> = [];
 
   for (const p of plans) {
     if (month !== 'ALL' && p.month !== month) continue;
     if (p.storeId) byStoreId.set(p.storeId, p);
-    if (p.storeName) byStoreName.set(p.storeName.trim().toLowerCase(), p);
-    if (p.brandName) {
+    if (p.storeName) byStoreSlug.set(normStoreSlug(p.storeName), p);
+    // Chỉ dùng brandName fallback khi kế hoạch chưa gắn storeId/storeName cụ thể
+    if (!p.storeId && !p.storeName && p.brandName) {
       const b = p.brandName.trim().toLowerCase();
       byBrandName.set(b, p);
       const prefix = b.split('_')[0].trim();
@@ -115,8 +125,9 @@ function buildPlanLookupMap(plans: InputPlanBreakdownState[], month: string) {
 
   return (store: StorePortfolioItem): InputPlanBreakdownState | null => {
     if (store.id && byStoreId.has(store.id)) return byStoreId.get(store.id)!;
+    const sSlug = normStoreSlug(store.storeName);
+    if (sSlug && byStoreSlug.has(sSlug)) return byStoreSlug.get(sSlug)!;
     const sName = (store.storeName || '').trim().toLowerCase();
-    if (sName && byStoreName.has(sName)) return byStoreName.get(sName)!;
     const bName = (store.brandName || '').trim().toLowerCase();
     if (bName && byBrandName.has(bName)) return byBrandName.get(bName)!;
 
@@ -146,6 +157,39 @@ interface B2cWorkloadBreakdown {
 }
 
 function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: StorePortfolioItem): B2cWorkloadBreakdown {
+  if (plan?.reference41) {
+    const ref = plan.reference41;
+    const items = plan.items || [];
+    const affPaidItems = items.filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP') && it.totalBudget > 0);
+    const focItems = items.filter(it => it.tierCode.includes('TAP') || (it.channel === 'TIKTOK' && it.totalBudget === 0));
+    const selfItems = items.filter(it => it.channel === 'SELF_CHANNEL');
+    const otherItems = items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+
+    const affPaidQty = affPaidItems.reduce((s, i) => s + (i.qty || 0), 0) || ref.cast || 0;
+    const affPaidBudget = affPaidItems.reduce((s, i) => s + (i.totalBudget || 0), 0) || ref.affCostNet || 0;
+    const focQty = focItems.reduce((s, i) => s + (i.qty || 0), 0) || ref.foc || 0;
+    const selfQty = selfItems.reduce((s, i) => s + (i.qty || 0), 0) || ref.selfVideos || 0;
+    const selfBudget = selfItems.reduce((s, i) => s + (i.totalBudget || 0), 0) || ref.selfCostNet || 0;
+    const otherQty = otherItems.reduce((s, i) => s + (i.qty || 0), 0);
+    const otherBudget = otherItems.reduce((s, i) => s + (i.totalBudget || 0), 0);
+    const totalBudget = plan.totalTargetBudget ?? (ref.affCostNet + ref.selfCostNet + ref.liveCostNet);
+    const allocatedBudget = affPaidBudget + selfBudget + otherBudget + (ref.liveCostNet || 0);
+    const totalVideos = plan.totalTargetContents || (affPaidQty + focQty + selfQty + otherQty + (ref.liveSessions || 0));
+
+    return {
+      totalBudget,
+      allocatedBudget,
+      totalVideos,
+      affPaidQty,
+      affPaidBudget,
+      focQty,
+      selfQty,
+      selfBudget,
+      otherQty,
+      otherBudget,
+    };
+  }
+
   const items = plan?.items || [];
   const isShopeeStore = (store?.platform || plan?.storeName || '').toLowerCase().includes('shopee');
 
@@ -160,7 +204,7 @@ function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: Store
   // 3. Self-channel (Kênh Brand tự xây)
   const selfItems = items.filter(it => it.channel === 'SELF_CHANNEL');
   // 4. Các kênh khác (Shopee, Facebook, Instagram, Threads...)
-  const otherItems = items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+  const otherItems = items.filter(it => ['SHOPEE', 'SHOPEE_LAZADA', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
 
   const affPaidItemsQty = affPaidItems.reduce((s, i) => s + (i.qty || 0), 0);
   const affPaidItemsBudget = affPaidItems.reduce((s, i) => s + (i.totalBudget || 0), 0);
@@ -410,8 +454,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [isLarkbaseModalOpen, setIsLarkbaseModalOpen] = useState<boolean>(false);
   const [larkbaseRecords, setLarkbaseRecords] = useState<LarkbaseBookingPlanRecordItem[]>([]);
   const [larkbaseConvertedPlans, setLarkbaseConvertedPlans] = useState<InputPlanBreakdownState[]>([]);
-  const [larkbaseAppToken, setLarkbaseAppToken] = useState<string>('bascnUpbaseB2CPlan41');
-  const [larkbaseTableId, setLarkbaseTableId] = useState<string>('tblBookingInputPlan411');
+  const [larkbaseAppToken, setLarkbaseAppToken] = useState<string>('W6vRbbuOVar3qtsV18dlan1xgXb');
+  const [larkbaseTableId, setLarkbaseTableId] = useState<string>('tblvgyOkneDKOVsB');
   const [larkbaseViewId] = useState<string>('');
   const hasLiveLarkCredentials = false;
   const isLoadingLarkbase = false;
@@ -424,6 +468,61 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   // Ma trận từng gian hàng và kế hoạch trong tháng
   const storeGovernanceList = useMemo<StoreGovernanceItem[]>(() => {
+    const monthPlans = selectedMonth === 'ALL' ? scopedPlans : scopedPlans.filter(p => p.month === selectedMonth);
+    const hasFullMonth41Batch = selectedMonth !== 'ALL' && monthPlans.filter(p => Boolean(p.reference41)).length >= 50;
+
+    if (hasFullMonth41Batch) {
+      const storeById = new Map(activeStores.map(s => [s.id, s]));
+      const storeBySlug = new Map(activeStores.map(s => [normStoreSlug(s.storeName), s]));
+      return monthPlans.map(plan => {
+        const matched =
+          (plan.storeId ? storeById.get(plan.storeId) : undefined) ||
+          (plan.storeName ? storeBySlug.get(normStoreSlug(plan.storeName)) : undefined);
+        const sName = plan.storeName || matched?.storeName || plan.brandName;
+        const store: StorePortfolioItem = matched
+          ? {
+              ...matched,
+              storeName: sName,
+              primaryPic: plan.primaryPic || plan.pic || matched.primaryPic,
+              assignedStaff: plan.primaryPic || plan.pic || matched.assignedStaff,
+              hasBookingLeader: Boolean(plan.bookingLeader),
+              bookingLeader: plan.bookingLeader,
+            }
+          : {
+              id: plan.storeId || `store-b2c-${normStoreSlug(sName).toLowerCase()}`,
+              storeOperationId: `SO-${normStoreSlug(sName).slice(0, 8)}`,
+              brandName: plan.brandName,
+              storeName: sName,
+              platform: sName.toLowerCase().includes('shopee') ? 'Shopee Mall' : 'TikTok Shop',
+              serviceModel: 'FULL_SERVICE',
+              difficultyTier: 'Tiêu chuẩn',
+              difficultyMultiplier: 1.2,
+              accountStatus: 'ACTIVE',
+              category: 'Tiêu dùng & Bán lẻ',
+              monthlyTargetGmv: plan.targetGmv || 0,
+              monthlyBudget: plan.totalTargetBudget || 0,
+              budgetNet: plan.totalTargetBudget || 0,
+              accountOwnerName: 'Đào Phương Anh',
+              b2cOwnerName: plan.primaryPic || plan.pic || 'Chưa phân công',
+              primaryPic: plan.primaryPic || plan.pic || 'Chưa phân công',
+              assignedStaff: plan.primaryPic || plan.pic || 'Chưa phân công',
+              hasBookingLeader: Boolean(plan.bookingLeader),
+              bookingLeader: plan.bookingLeader,
+              isB2cManaged: true,
+              requiresB2cPlan: true,
+            };
+        return {
+          store,
+          isB2c: true,
+          plan,
+          hasPlan: true,
+          status: (plan.status || 'DRAFT') as MonthlyPlanStatus,
+          breakdown: getB2cPlanBreakdown(plan, store),
+          workstreamSummary: getStorePlanWorkstreamSummary(plan),
+        };
+      });
+    }
+
     const lookupPlan = buildPlanLookupMap(scopedPlans, selectedMonth);
     return activeStores.map((store: StorePortfolioItem) => {
       const isB2c = store.isB2cManaged !== false && store.requiresB2cPlan !== false;

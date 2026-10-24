@@ -7,6 +7,7 @@ import {
 } from './inputPlanDefaults';
 import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';
+import { REAL_MONTHLY_PLANS_NOV_2026 } from './realLarkPlans202611';
 import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
 import { INITIAL_CAMPAIGNS } from './mockData';
 
@@ -646,85 +647,7 @@ const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   // =========================================================================
   // THÁNG 11/2026 (KẾ HOẠCH SẮP TỚI - CÓ KẾ HOẠCH BỊ YÊU CẦU HIỆU CHỈNH)
   // =========================================================================
-  {
-    id: 'PLAN-2026-11-SUNPLAY',
-    title: 'Chiến Dịch Mega Sale 11.11 - Sunplay Chống Nắng Da Dầu',
-    brandName: 'Sunplay',
-    month: '2026/11',
-    week: 'W45 [02.11 - 08.11]',
-    pic: 'Trần Minh Đức',
-    totalTargetBudget: 160000000,
-    totalTargetContents: 75,
-    targetGmv: 950000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'MEGA_SALE',
-    status: 'REVISION_REQUESTED',
-    statusLabel: 'Yêu Cầu Hiệu Chỉnh',
-    spentBudget: 0,
-    deliveredContents: 0,
-    actualGmv: 0,
-    revisionNotes: 'Tỷ trọng Shopee Video đang để 0đ trong khi tháng 11 Shopee có hỗ trợ traffic mạnh cho hashtag #ChongNang. Đức phân rã lại tối thiểu 15 video Shopee và điều chỉnh ngân sách.',
-    notes: 'Chuẩn bị giỏ hàng và danh sách KOC sớm trước 3 tuần để đón đầu lượng traffic Mega Sale 11.11.',
-    createdAt: '2026-10-06T15:00:00Z',
-    updatedAt: '2026-10-07T12:00:00Z',
-    items: createPlanItemsForScenario(160000000, 75, 'MEGA_SALE', 'Trần Minh Đức'),
-    discussions: [
-      {
-        id: 'DISC-SUNPLAY-1',
-        authorName: 'Trần Minh Đức',
-        authorRole: 'BOOKING',
-        authorTitle: 'Booking Specialist',
-        content: 'Em gửi bản phân rã dự thảo 160M cho Sunplay chiến dịch 11.11, dồn toàn lực vào TikTok Shop 75 video.',
-        type: 'COMMENT',
-        timestamp: '2026-10-06T16:00:00Z',
-        tags: ['Ngân Sách', 'TikTok Shop']
-      },
-      {
-        id: 'DISC-SUNPLAY-2',
-        authorName: 'Trần Thị Ánh',
-        authorRole: 'GROWTH',
-        authorTitle: 'Growth Manager',
-        content: 'Chị review thấy kênh Shopee Video đang để 0đ là chưa tối ưu, tháng 11 Shopee có hỗ trợ traffic mạnh cho hashtag #ChongNang. Đức phân rã lại tối thiểu 15 video Shopee và điều chỉnh ngân sách sang đa sàn nhé.',
-        type: 'REVISION_REQUEST',
-        timestamp: '2026-10-07T09:30:00Z',
-        tags: ['Yêu Cầu Hiệu Chỉnh', 'Shopee Video']
-      }
-    ]
-  },
-  {
-    id: 'PLAN-2026-11-COCOON',
-    title: 'Chiến Dịch Chăm Sóc Da Mùa Đông 11.11 - Cocoon',
-    brandName: 'Cocoon',
-    month: '2026/11',
-    week: 'W46 [09.11 - 15.11]',
-    pic: 'Phương Thảo',
-    totalTargetBudget: 140000000,
-    totalTargetContents: 70,
-    targetGmv: 880000000,
-    cancellationRate: 0.08,
-    strategyPreset: 'BALANCED',
-    status: 'DRAFT',
-    statusLabel: 'Bản Nháp (Đang Lập)',
-    spentBudget: 0,
-    deliveredContents: 0,
-    actualGmv: 0,
-    notes: 'Kế hoạch dự thảo cho tuần siêu sale 11.11. Dự kiến đẩy Combo Dưỡng Ẩm Chuyên Sâu.',
-    createdAt: '2026-10-07T09:30:00Z',
-    updatedAt: '2026-10-07T09:30:00Z',
-    items: createPlanItemsForScenario(140000000, 70, 'BALANCED', 'Phương Thảo'),
-    discussions: [
-      {
-        id: 'DISC-COCOON11-1',
-        authorName: 'Phương Thảo',
-        authorRole: 'BOOKING',
-        authorTitle: 'Booking Specialist',
-        content: 'Em đang lên khung phân rã 140M cho tuần 46, dự kiến đẩy mạnh Combo dưỡng ẩm chuyên sâu Cocoon.',
-        type: 'COMMENT',
-        timestamp: '2026-10-07T09:35:00Z',
-        tags: ['Ngân Sách']
-      }
-    ]
-  },
+  ...REAL_MONTHLY_PLANS_NOV_2026,
 
   // =========================================================================
   // THÁNG 09/2026 (THÁNG TRƯỚC - ĐÃ HOÀN THÀNH NGHIỆM THU)
@@ -1225,12 +1148,52 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
     it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.totalBudget === 0 && it.unitCost === 0)
   );
   const selfRows = items.filter(it => it.channel === 'SELF_CHANNEL');
-  const multiRows = items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+  const multiRows = items.filter(it => ['SHOPEE', 'SHOPEE_LAZADA', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
 
   const affSlices = groupRows(affRows, 'BOOKING', primaryPic, bookingLeader);
   const focSlices = groupRows(focRows, 'FOC', 'Trần Thị Hảo', bookingLeader);
   const selfSlices = groupRows(selfRows, 'CONTENT_SELF_CHANNEL', 'Quỳnh Như', 'Việt Hoàng');
   const multiSlices = groupRows(multiRows, 'MULTI_PLATFORM', primaryPic, bookingLeader);
+
+  // Nếu kế hoạch có reference41 từ bảng 4.1 Larkbase, bổ sung phần còn thiếu theo reference41
+  if (plan.reference41) {
+    if (affSlices.length === 0 && (plan.reference41.cast > 0 || plan.reference41.affCostNet > 0)) {
+      affSlices.push({
+        staffName: primaryPic,
+        roleGroup: 'BOOKING',
+        leaderName: bookingLeader,
+        qty: plan.reference41.cast,
+        videos: plan.reference41.cast,
+        budget: plan.reference41.affCostNet,
+        tierOrFormatLabels: ['Chỉ tiêu 4.1'],
+        rowIds: []
+      });
+    }
+    if (focSlices.length === 0 && plan.reference41.foc > 0) {
+      focSlices.push({
+        staffName: 'Trần Thị Hảo',
+        roleGroup: 'FOC',
+        leaderName: bookingLeader,
+        qty: plan.reference41.foc,
+        videos: plan.reference41.foc,
+        budget: 0,
+        tierOrFormatLabels: ['FOC 4.1'],
+        rowIds: []
+      });
+    }
+    if (selfSlices.length === 0 && (plan.reference41.selfVideos > 0 || plan.reference41.selfCostNet > 0)) {
+      selfSlices.push({
+        staffName: primaryPic,
+        roleGroup: 'CONTENT_SELF_CHANNEL',
+        leaderName: 'Việt Hoàng',
+        qty: plan.reference41.selfVideos,
+        videos: plan.reference41.selfVideos,
+        budget: plan.reference41.selfCostNet,
+        tierOrFormatLabels: ['Self-channel 4.1'],
+        rowIds: []
+      });
+    }
+  }
 
   // Fallback nếu plan chưa có items chi tiết nhưng có chỉ tiêu tổng
   if (affSlices.length === 0 && ((plan.budgetAffiliate || 0) > 0 || (plan.targetAffiliateContents || 0) > 0)) {
@@ -1593,6 +1556,22 @@ export function buildPersonalWorkPackages(
 
 export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
   const resolvedLeader = resolveStoreBookingLeader(rawPlan.storeName || rawPlan.brandName, rawPlan.bookingLeader);
+  if (rawPlan.reference41) {
+    const matchedCamp41 = rawPlan.campaignId
+      ? INITIAL_CAMPAIGNS.find(c => c.id === rawPlan.campaignId)
+      : findActiveCampaignForBrandInMonth(rawPlan.brandName, rawPlan.month, INITIAL_CAMPAIGNS);
+    const matchedPhase41 = matchedCamp41 ? getCampaignPhaseForMonth(matchedCamp41, rawPlan.month) : undefined;
+    return {
+      ...rawPlan,
+      hasBookingLeader: Boolean(resolvedLeader),
+      bookingLeader: resolvedLeader,
+      hasCampaign: rawPlan.hasCampaign !== undefined ? rawPlan.hasCampaign : !!matchedCamp41,
+      campaignId: rawPlan.campaignId ?? matchedCamp41?.id,
+      campaignCode: rawPlan.campaignCode ?? matchedCamp41?.code,
+      campaignTitle: rawPlan.campaignTitle ?? matchedCamp41?.title,
+      campaignPhaseName: rawPlan.campaignPhaseName ?? matchedPhase41?.phaseName,
+    };
+  }
   const basePlan = enrichPlanWithMultiStaffWorkstreams({ ...rawPlan, hasBookingLeader: Boolean(resolvedLeader), bookingLeader: resolvedLeader }, idx);
   const matchedCamp = basePlan.campaignId
     ? INITIAL_CAMPAIGNS.find(c => c.id === basePlan.campaignId)
@@ -1812,9 +1791,9 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = RAW_MONTHLY_PLAN
 
 // Danh sách các chu kỳ tháng hỗ trợ
 export const AVAILABLE_MONTHS = [
-  { value: 'ALL', label: 'Tất Cả Các Tháng', badge: '11 Plans' },
-  { value: '2026/10', label: 'Tháng 10/2026 (Hiện tại)', badge: '5 Plans', isCurrent: true },
-  { value: '2026/11', label: 'Tháng 11/2026 (Sắp tới)', badge: '2 Plans' },
+  { value: 'ALL', label: 'Tất Cả Các Tháng', badge: '140 Plans' },
+  { value: '2026/10', label: 'Tháng 10/2026 (Hiện tại)', badge: '69 Plans', isCurrent: true },
+  { value: '2026/11', label: 'Tháng 11/2026 (Sắp tới)', badge: '66 Plans' },
   { value: '2026/09', label: 'Tháng 09/2026', badge: '3 Plans' },
   { value: '2026/08', label: 'Tháng 08/2026', badge: '2 Plans' }
 ];
@@ -1858,11 +1837,11 @@ export function getWeeksForMonth(month: string): MonthWeekOption[] {
     ],
     '2026/11': [
       { value: 'Cả tháng 11/2026 (W45 - W49)', label: 'Cả tháng 11/2026 (W45 - W49)', isFullMonth: true },
-      { value: 'W45 [02.11 - 08.11]', label: 'W45 [02.11 - 08.11]' },
-      { value: 'W46 [09.11 - 15.11]', label: 'W46 [09.11 - 15.11]' },
-      { value: 'W47 [16.11 - 22.11]', label: 'W47 [16.11 - 22.11]' },
-      { value: 'W48 [23.11 - 29.11]', label: 'W48 [23.11 - 29.11]' },
-      { value: 'W49 [30.11 - 06.12]', label: 'W49 [30.11 - 06.12]' },
+      { value: 'W45 [30.10-05.11]', label: 'W45 [30.10-05.11]' },
+      { value: 'W46 [06.11-12.11]', label: 'W46 [06.11-12.11]' },
+      { value: 'W47 [13.11-19.11]', label: 'W47 [13.11-19.11]' },
+      { value: 'W48 [20.11-26.11]', label: 'W48 [20.11-26.11]' },
+      { value: 'W49 [27.11-03.12]', label: 'W49 [27.11-03.12]' },
     ],
     '2026/12': [
       { value: 'Cả tháng 12/2026 (W49 - W53)', label: 'Cả tháng 12/2026 (W49 - W53)', isFullMonth: true },

@@ -16,6 +16,7 @@ import type {
 } from '../types';
 import { brandPlanSectionsOf, FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess } from '../brandPlanAccess';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
+import { REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
 import { checkBreakdownForSubmit } from '../planBreakdownRules';
 import type { PlanChatMessage, UserMessageType } from '../planChat';
 import { notifyPlanMessages } from './planRealtime';
@@ -246,8 +247,55 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
         orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
       });
     }
+  } else if (rows.filter(r => r.month === '2026/11').length !== REAL_MONTHLY_PLANS_NOV_2026.length || !rows.some(r => r.id === 'PO-2026-11-CLUBCLIOTIKTOKE2EO')) {
+    await syncRealNov2026LarkPlans();
+    rows = await prisma.monthlyPlan.findMany({
+      where: { deletedAt: null },
+      include: planInclude,
+      orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
+    });
   }
   return rows.map(toStored).filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
+}
+
+async function syncRealNov2026LarkPlans() {
+  try {
+    const validIds = REAL_MONTHLY_PLANS_NOV_2026.map(p => p.id);
+    await prisma.monthlyPlan.updateMany({
+      where: { month: '2026/11', deletedAt: null, id: { notIn: validIds } },
+      data: { deletedAt: new Date() }
+    });
+    for (const plan of REAL_MONTHLY_PLANS_NOV_2026) {
+      const { working } = splitPlan(plan);
+      await prisma.monthlyPlan.upsert({
+        where: { id: plan.id },
+        create: {
+          id: plan.id,
+          ...indexedColumns(plan),
+          sourceSystem: 'LARKBASE',
+          larkRecordId: plan.larkRecordId ?? null,
+          larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
+          larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
+          larkSyncedAt: new Date(),
+          data: working as unknown as Prisma.InputJsonValue,
+          createdBy: 'Lark Base Sync',
+          updatedBy: 'Lark Base Sync'
+        },
+        update: {
+          ...indexedColumns(plan),
+          sourceSystem: 'LARKBASE',
+          larkRecordId: plan.larkRecordId ?? null,
+          larkAppToken: plan.larkAppToken ?? 'W6vRbbuOVar3qtsV18dlan1xgXb',
+          larkTableId: plan.larkTableId ?? 'tblvgyOkneDKOVsB',
+          larkSyncedAt: new Date(),
+          data: working as unknown as Prisma.InputJsonValue,
+          updatedBy: 'Lark Base Sync'
+        }
+      });
+    }
+  } catch {
+    // Bỏ qua nếu có xung đột đồng thời
+  }
 }
 
 async function seedInitialPlans(actor: UserProfile) {
