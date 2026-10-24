@@ -1,11 +1,53 @@
 // Quy tắc kiểm soát bảng phân rã tuần. Chỉ kiểm tra và cộng số, không gợi ý số.
 // Khoảng giá từng bậc: bảng 5.6 Tệp cast. Công thức Net: bảng 4.1 (Gross ÷ 1,08 ÷ 1,10).
-import type { InputPlanBreakdownState, InputPlanRowItem, PlanTierKey, PlanWeekRow } from './types';
+import type { InputPlanBreakdownState, InputPlanRowItem, PlanMultiPlatformKey, PlanReference41, PlanTierKey, PlanWeekRow } from './types';
 import { KL_TIERS } from './klTiers';
 import { getWeeksForMonth } from './monthlyPlanData';
 
 export const GROSS_FACTOR = 1.08 * 1.1;
 export const TIER_KEYS: PlanTierKey[] = ['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
+
+export const MULTI_PLATFORMS: {
+  key: PlanMultiPlatformKey;
+  label: string;
+  shortLabel: string;
+  badgeClass: string;
+  headerBg: string;
+  borderClass: string;
+}[] = [
+  {
+    key: 'shopee',
+    label: 'Shopee Video & Affiliate',
+    shortLabel: 'Shopee',
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+    headerBg: 'bg-orange-50/70',
+    borderClass: 'border-orange-200',
+  },
+  {
+    key: 'threads',
+    label: 'Threads Affiliate',
+    shortLabel: 'Threads',
+    badgeClass: 'bg-slate-200 text-slate-800 border-slate-300',
+    headerBg: 'bg-slate-50/80',
+    borderClass: 'border-slate-200',
+  },
+  {
+    key: 'facebook',
+    label: 'Facebook Reels & Affiliate',
+    shortLabel: 'Facebook',
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    headerBg: 'bg-blue-50/70',
+    borderClass: 'border-blue-200',
+  },
+  {
+    key: 'instagram',
+    label: 'Instagram Reels & Affiliate',
+    shortLabel: 'Instagram',
+    badgeClass: 'bg-pink-100 text-pink-800 border-pink-200',
+    headerBg: 'bg-pink-50/70',
+    borderClass: 'border-pink-200',
+  },
+];
 
 export const TIER_RANGE = Object.fromEntries(
   KL_TIERS.map(t => [t.code, { label: t.label, min: t.min, max: t.max, base: t.base }])
@@ -63,6 +105,13 @@ export function emptyWeekRow(week: string): PlanWeekRow {
     foc: { tapBrand: 0, tap: 0, tapUp: 0 },
     self: { reviewVoice: 0, videoAi: 0, videoRemix: 0, videoToLive: 0, nhacText: 0, budgetNet: 0 },
     live: { sessions: 0, budgetNet: 0 },
+    multiPlatform: {
+      shopee: { affQty: 0, budgetNet: 0, reupQty: 0 },
+      threads: { affQty: 0, budgetNet: 0, reupQty: 0 },
+      facebook: { affQty: 0, budgetNet: 0, reupQty: 0 },
+      instagram: { affQty: 0, budgetNet: 0, reupQty: 0 },
+    },
+    liveSelf: { inhouse3h: 0, ctv2h: 0, brand2h: 0, budgetNet: 0 },
   };
 }
 
@@ -105,34 +154,102 @@ export interface BreakdownTotals {
   castQty: number;
   castBudget: number;
   focQty: number;
+  focByType: { tapBrand: number; tap: number; tapUp: number };
   selfQty: number;
+  selfByType: Record<keyof PlanWeekRow['self'], number>;
   selfBudget: number;
   liveSessions: number;
   liveBudget: number;
+  multiPlatform: Record<PlanMultiPlatformKey, { affQty: number; budgetNet: number; reupQty: number }>;
+  multiTotalAffQty: number;
+  multiTotalReupQty: number;
+  multiTotalBudget: number;
+  liveSelfInhouse: number;
+  liveSelfCtv: number;
+  liveSelfBrand: number;
+  liveSelfBudget: number;
   totalBudget: number;
 }
 
 export function sumBreakdown(rows: PlanWeekRow[]): BreakdownTotals {
   const tiers = Object.fromEntries(TIER_KEYS.map(k => [k, { qty: 0, budget: 0 }])) as BreakdownTotals['tiers'];
+  const focByType = { tapBrand: 0, tap: 0, tapUp: 0 };
+  const selfByType: Record<keyof PlanWeekRow['self'], number> = {
+    reviewVoice: 0,
+    videoAi: 0,
+    videoRemix: 0,
+    videoToLive: 0,
+    nhacText: 0,
+    budgetNet: 0,
+  };
+  const multiPlatform: BreakdownTotals['multiPlatform'] = {
+    shopee: { affQty: 0, budgetNet: 0, reupQty: 0 },
+    threads: { affQty: 0, budgetNet: 0, reupQty: 0 },
+    facebook: { affQty: 0, budgetNet: 0, reupQty: 0 },
+    instagram: { affQty: 0, budgetNet: 0, reupQty: 0 },
+  };
   let focQty = 0;
   let selfQty = 0;
   let selfBudget = 0;
   let liveSessions = 0;
   let liveBudget = 0;
+  let liveSelfInhouse = 0;
+  let liveSelfCtv = 0;
+  let liveSelfBrand = 0;
+  let liveSelfBudget = 0;
   for (const r of rows) {
     for (const k of TIER_KEYS) {
       tiers[k].qty += n(r.tiers?.[k]?.qty);
       tiers[k].budget += n(r.tiers?.[k]?.budgetNet);
     }
+    focByType.tapBrand += n(r.foc?.tapBrand);
+    focByType.tap += n(r.foc?.tap);
+    focByType.tapUp += n(r.foc?.tapUp);
     focQty += n(r.foc?.tapBrand) + n(r.foc?.tap) + n(r.foc?.tapUp);
+    for (const t of SELF_TYPES) {
+      selfByType[t.key] += n(r.self?.[t.key]);
+    }
     selfQty += SELF_TYPES.reduce((s, t) => s + n(r.self?.[t.key]), 0);
     selfBudget += n(r.self?.budgetNet);
+    selfByType.budgetNet = selfBudget;
     liveSessions += n(r.live?.sessions);
     liveBudget += n(r.live?.budgetNet);
+    for (const mp of MULTI_PLATFORMS) {
+      multiPlatform[mp.key].affQty += n(r.multiPlatform?.[mp.key]?.affQty);
+      multiPlatform[mp.key].budgetNet += n(r.multiPlatform?.[mp.key]?.budgetNet);
+      multiPlatform[mp.key].reupQty += n(r.multiPlatform?.[mp.key]?.reupQty);
+    }
+    liveSelfInhouse += n(r.liveSelf?.inhouse3h);
+    liveSelfCtv += n(r.liveSelf?.ctv2h);
+    liveSelfBrand += n(r.liveSelf?.brand2h);
+    liveSelfBudget += n(r.liveSelf?.budgetNet);
   }
   const castQty = TIER_KEYS.reduce((s, k) => s + tiers[k].qty, 0);
   const castBudget = TIER_KEYS.reduce((s, k) => s + tiers[k].budget, 0);
-  return { tiers, castQty, castBudget, focQty, selfQty, selfBudget, liveSessions, liveBudget, totalBudget: castBudget + selfBudget + liveBudget };
+  const multiTotalAffQty = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].affQty, 0);
+  const multiTotalReupQty = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].reupQty, 0);
+  const multiTotalBudget = MULTI_PLATFORMS.reduce((s, mp) => s + multiPlatform[mp.key].budgetNet, 0);
+  return {
+    tiers,
+    castQty,
+    castBudget,
+    focQty,
+    focByType,
+    selfQty,
+    selfByType,
+    selfBudget,
+    liveSessions,
+    liveBudget,
+    multiPlatform,
+    multiTotalAffQty,
+    multiTotalReupQty,
+    multiTotalBudget,
+    liveSelfInhouse,
+    liveSelfCtv,
+    liveSelfBrand,
+    liveSelfBudget,
+    totalBudget: castBudget + selfBudget + liveBudget + multiTotalBudget + liveSelfBudget,
+  };
 }
 
 export type BreakdownIssueSeverity = 'error' | 'warning';
@@ -247,6 +364,14 @@ export function validateBreakdown(plan: InputPlanBreakdownState): { issues: Brea
     }
   }
 
+  if (plan.reference41?.isGrowthLocked === false) {
+    issues.push({
+      severity: 'warning',
+      code: 'GROWTH_UNCONFIRMED_41',
+      message: 'Dòng Plan order 4.1 của gian hàng này chưa có trạng thái "Chốt plan" (số liệu tạm tính). Chỉ lưu Nháp, chưa thể gửi duyệt.',
+    });
+  }
+
   const comparison = compareWith41(plan, rows);
   for (const c of comparison) {
     if (c.matched) continue;
@@ -263,13 +388,108 @@ export function validateBreakdown(plan: InputPlanBreakdownState): { issues: Brea
   return { issues, comparison, rows };
 }
 
+/** Đối chiếu bản 4.1 mới tải lên với kế hoạch hiện có trên hệ thống (đặc biệt cho kế hoạch đã duyệt hoặc đang trình duyệt). */
+export function comparePlanWithNewReference41(
+  currentPlan: InputPlanBreakdownState,
+  nextRef: PlanReference41
+): {
+  hasDiff: boolean;
+  diffSummary: string[];
+  budgetDelta: number;
+  videoDelta: number;
+} {
+  const curRef = currentPlan.reference41;
+  const rows = resolveWeekRows(currentPlan);
+  const hasWeek = hasBreakdownData(rows);
+  const weekTotals = sumBreakdown(rows);
+
+  const curCast = curRef ? curRef.cast : hasWeek ? weekTotals.castQty : (currentPlan.items || []).filter(i => i.channel === 'TIKTOK' && !i.tierCode.includes('TAP') && i.totalBudget > 0).reduce((s, i) => s + (i.qty || 0), 0);
+  const curAffBudget = curRef ? curRef.affCostNet : hasWeek ? weekTotals.castBudget : (currentPlan.budgetAffiliate || 0);
+  const curFoc = curRef ? curRef.foc : hasWeek ? weekTotals.focQty : (currentPlan.items || []).filter(i => i.tierCode.includes('TAP') || (i.channel === 'TIKTOK' && i.totalBudget === 0)).reduce((s, i) => s + (i.qty || 0), 0);
+  const curSelfQty = curRef ? curRef.selfVideos : hasWeek ? weekTotals.selfQty : (currentPlan.targetSelfChannelContents || 0);
+  const curSelfBudget = curRef ? curRef.selfCostNet : hasWeek ? weekTotals.selfBudget : (currentPlan.budgetSelfChannel || 0);
+  const curLiveQty = curRef ? curRef.liveSessions : hasWeek ? weekTotals.liveSessions : 0;
+  const curLiveBudget = curRef ? curRef.liveCostNet : hasWeek ? weekTotals.liveBudget : 0;
+
+  const curTotalBudget = curRef ? curRef.affCostNet + curRef.selfCostNet + curRef.liveCostNet : (currentPlan.totalTargetBudget || curAffBudget + curSelfBudget + curLiveBudget);
+  const nextTotalBudget = nextRef.affCostNet + nextRef.selfCostNet + nextRef.liveCostNet;
+
+  const curTotalVideos = curCast + curFoc + curSelfQty + curLiveQty;
+  const nextTotalVideos = nextRef.cast + nextRef.foc + nextRef.selfVideos + nextRef.liveSessions;
+
+  const budgetDelta = nextTotalBudget - curTotalBudget;
+  const videoDelta = nextTotalVideos - curTotalVideos;
+  const diffSummary: string[] = [];
+
+  const fmtSigned = (d: number, suffix = '') => `${d > 0 ? '+' : ''}${fmt(d)}${suffix}`;
+
+  if (Math.abs(budgetDelta) > moneyTolerance(curTotalBudget)) {
+    diffSummary.push(`Tổng Net ${fmtSigned(budgetDelta, 'đ')} (${fmt(curTotalBudget)}đ → ${fmt(nextTotalBudget)}đ)`);
+  }
+  const affBudgetDiff = nextRef.affCostNet - curAffBudget;
+  if (Math.abs(affBudgetDiff) > moneyTolerance(curAffBudget) && Math.abs(affBudgetDiff - budgetDelta) > 1000) {
+    diffSummary.push(`NS Cast ${fmtSigned(affBudgetDiff, 'đ')}`);
+  }
+  const castDiff = nextRef.cast - curCast;
+  if (castDiff !== 0) {
+    diffSummary.push(`Cast ${fmtSigned(castDiff, ' video')}`);
+  }
+  const focDiff = nextRef.foc - curFoc;
+  if (focDiff !== 0) {
+    diffSummary.push(`FOC ${fmtSigned(focDiff, ' mẫu')}`);
+  }
+  const selfQtyDiff = nextRef.selfVideos - curSelfQty;
+  if (selfQtyDiff !== 0) {
+    diffSummary.push(`Self ${fmtSigned(selfQtyDiff, ' video')}`);
+  }
+  const selfBudgetDiff = nextRef.selfCostNet - curSelfBudget;
+  if (Math.abs(selfBudgetDiff) > moneyTolerance(curSelfBudget)) {
+    diffSummary.push(`NS Self ${fmtSigned(selfBudgetDiff, 'đ')}`);
+  }
+  const liveDiff = nextRef.liveSessions - curLiveQty;
+  if (liveDiff !== 0) {
+    diffSummary.push(`Live ${fmtSigned(liveDiff, ' phiên')}`);
+  }
+  if (curRef && curRef.isGrowthLocked !== undefined && nextRef.isGrowthLocked !== undefined && curRef.isGrowthLocked !== nextRef.isGrowthLocked) {
+    diffSummary.push(nextRef.isGrowthLocked ? 'Trạng thái 4.1: Chưa chốt → Đã chốt' : 'Trạng thái 4.1: Đã chốt → Chưa chốt');
+  }
+
+  return {
+    hasDiff: diffSummary.length > 0,
+    diffSummary,
+    budgetDelta,
+    videoDelta,
+  };
+}
+
 export function hasBreakdownData(rows: PlanWeekRow[]): boolean {
   const t = sumBreakdown(rows);
-  return t.castQty + t.castBudget + t.focQty + t.selfQty + t.selfBudget + t.liveSessions + t.liveBudget > 0;
+  return (
+    t.castQty +
+      t.castBudget +
+      t.focQty +
+      t.selfQty +
+      t.selfBudget +
+      t.liveSessions +
+      t.liveBudget +
+      t.multiTotalAffQty +
+      t.multiTotalReupQty +
+      t.multiTotalBudget +
+      t.liveSelfInhouse +
+      t.liveSelfCtv +
+      t.liveSelfBudget >
+    0
+  );
 }
 
 /** Kế hoạch có số 4.1 hoặc có bảng phân rã thì phải qua kiểm soát trước khi gửi duyệt. */
 export function checkBreakdownForSubmit(plan: InputPlanBreakdownState): { canSubmit: boolean; reason?: string } {
+  if (plan.reference41?.isGrowthLocked === false) {
+    return {
+      canSubmit: false,
+      reason: 'Plan order 4.1 của gian hàng này chưa có trạng thái "Chốt plan" (số liệu tạm tính). Chỉ được lưu Nháp cho đến khi tải lên bản 4.1 đã chốt.',
+    };
+  }
   const governed = Boolean(plan.reference41) || Boolean(plan.weeklyBreakdown && plan.weeklyBreakdown.length > 0);
   if (!governed) return { canSubmit: true };
   const { issues, rows } = validateBreakdown(plan);
@@ -284,14 +504,22 @@ export function checkBreakdownForSubmit(plan: InputPlanBreakdownState): { canSub
 }
 
 /** Tóm tắt trạng thái để hiện trên danh sách kế hoạch. */
-export function getBreakdownHealth(plan: InputPlanBreakdownState): { errors: number; mismatches: number; empty: boolean } | null {
-  const governed = Boolean(plan.reference41) || Boolean(plan.weeklyBreakdown && plan.weeklyBreakdown.length > 0);
+export function getBreakdownHealth(plan: InputPlanBreakdownState): {
+  errors: number;
+  mismatches: number;
+  empty: boolean;
+  unconfirmed41: boolean;
+  hasPending41: boolean;
+} | null {
+  const governed = Boolean(plan.reference41) || Boolean(plan.weeklyBreakdown && plan.weeklyBreakdown.length > 0) || Boolean(plan.pendingReference41);
   if (!governed) return null;
   const { issues, rows } = validateBreakdown(plan);
   return {
     errors: issues.filter(i => i.severity === 'error').length,
     mismatches: issues.filter(i => i.needsNote).length,
     empty: !hasBreakdownData(rows),
+    unconfirmed41: plan.reference41?.isGrowthLocked === false,
+    hasPending41: Boolean(plan.pendingReference41),
   };
 }
 
@@ -785,38 +1013,46 @@ export function distributeReference41ToWeeks(
   const weekCount = baseRows.length;
   const weights = getWeeklyWeights(weekCount, mode);
 
-  // Tỷ trọng các bậc KL1..KL7 dựa trên items hiện có hoặc tỷ lệ chuẩn B2C
-  const currentAffRows = (plan.items || []).filter(
-    it => it.channel === 'TIKTOK' && TIER_KEYS.includes(it.tierCode.toUpperCase() as PlanTierKey)
-  );
-  const curAffQty = currentAffRows.reduce((s, it) => s + Math.max(0, it.qty || 0), 0);
+  // Tỷ trọng các bậc KL1..KL7: ưu tiên dùng trực tiếp số từng bậc trên 4.1 (`ref.tiers`) nếu có
+  const refTiersSum = ref.tiers ? TIER_KEYS.reduce((s, k) => s + Math.max(0, ref.tiers?.[k] || 0), 0) : 0;
 
-  const defaultTierShares: Record<PlanTierKey, number> = {
-    KL1: 0.35,
-    KL2: 0.30,
-    KL3: 0.20,
-    KL4: 0.10,
-    KL5: 0.05,
-    KL6: 0,
-    KL7: 0,
-  };
+  let tierQtys: number[];
+  if (refTiersSum > 0 && ref.tiers) {
+    tierQtys = TIER_KEYS.map(k => Math.max(0, Math.round(ref.tiers?.[k] || 0)));
+  } else {
+    const currentAffRows = (plan.items || []).filter(
+      it => it.channel === 'TIKTOK' && TIER_KEYS.includes(it.tierCode.toUpperCase() as PlanTierKey)
+    );
+    const curAffQty = currentAffRows.reduce((s, it) => s + Math.max(0, it.qty || 0), 0);
 
-  const tierWeights = TIER_KEYS.map(k => {
-    if (curAffQty > 0) {
-      const kQty = currentAffRows
-        .filter(it => it.tierCode.toUpperCase() === k)
-        .reduce((s, it) => s + Math.max(0, it.qty || 0), 0);
-      return kQty / curAffQty;
-    }
-    return defaultTierShares[k];
-  });
+    const defaultTierShares: Record<PlanTierKey, number> = {
+      KL1: 0.35,
+      KL2: 0.30,
+      KL3: 0.20,
+      KL4: 0.10,
+      KL5: 0.05,
+      KL6: 0,
+      KL7: 0,
+    };
 
-  const tierQtys = splitIntByWeights(ref.cast, tierWeights);
+    const tierWeights = TIER_KEYS.map(k => {
+      if (curAffQty > 0) {
+        const kQty = currentAffRows
+          .filter(it => it.tierCode.toUpperCase() === k)
+          .reduce((s, it) => s + Math.max(0, it.qty || 0), 0);
+        return kQty / curAffQty;
+      }
+      return defaultTierShares[k];
+    });
+
+    tierQtys = splitIntByWeights(ref.cast, tierWeights);
+  }
+
   const weightedBaseCosts = TIER_KEYS.map((k, idx) => tierQtys[idx] * getTierDefaultUnitCost(plan, k));
   const totalWeightedBase = weightedBaseCosts.reduce((s, v) => s + v, 0);
 
   let remAffBudget = Math.max(0, Math.round(ref.affCostNet));
-  const tierBudgets = TIER_KEYS.map((_, idx) => 0);
+  const tierBudgets = TIER_KEYS.map(() => 0);
   const activeTierIndices = tierQtys.map((q, idx) => (q > 0 ? idx : -1)).filter(idx => idx >= 0);
 
   activeTierIndices.forEach((tIdx, pos) => {
@@ -840,11 +1076,22 @@ export function distributeReference41ToWeeks(
     });
   });
 
-  // FOC
-  const wFoc = splitIntByWeights(ref.foc, weights);
-  baseRows.forEach((row, wi) => {
-    row.foc.tapUp = wFoc[wi];
-  });
+  // FOC: ưu tiên chia theo từng nguồn TAP Brand / TAP / TAP UpAffiliate nếu ref.focBreakdown có
+  if (ref.focBreakdown && ref.focBreakdown.tapBrand + ref.focBreakdown.tap + ref.focBreakdown.tapUp > 0) {
+    const wTapBrand = splitIntByWeights(ref.focBreakdown.tapBrand || 0, weights);
+    const wTap = splitIntByWeights(ref.focBreakdown.tap || 0, weights);
+    const wTapUp = splitIntByWeights(ref.focBreakdown.tapUp || 0, weights);
+    baseRows.forEach((row, wi) => {
+      row.foc.tapBrand = wTapBrand[wi];
+      row.foc.tap = wTap[wi];
+      row.foc.tapUp = wTapUp[wi];
+    });
+  } else {
+    const wFoc = splitIntByWeights(ref.foc, weights);
+    baseRows.forEach((row, wi) => {
+      row.foc.tapUp = wFoc[wi];
+    });
+  }
 
   // Self-channel
   const wSelfQty = splitIntByWeights(ref.selfVideos, weights);
@@ -854,13 +1101,49 @@ export function distributeReference41ToWeeks(
     row.self.budgetNet = wSelfBud[wi];
   });
 
-  // Livestream
+  // Livestream Affiliate
   const wLiveQty = splitIntByWeights(ref.liveSessions, weights);
   const wLiveBud = splitBudgetByWeeklyQty(ref.liveCostNet, wLiveQty, weights);
   baseRows.forEach((row, wi) => {
     row.live.sessions = wLiveQty[wi];
     row.live.budgetNet = wLiveBud[wi];
   });
+
+  // Đa sàn (Shopee / Threads / Facebook / Instagram)
+  if (ref.multiPlatform) {
+    for (const mp of MULTI_PLATFORMS) {
+      const mRef = ref.multiPlatform[mp.key];
+      if (!mRef) continue;
+      const wAff = splitIntByWeights(mRef.affQty || 0, weights);
+      const wReup = splitIntByWeights(mRef.reupQty || 0, weights);
+      const wBud = splitBudgetByWeeklyQty(mRef.costNet || 0, wAff, weights);
+      baseRows.forEach((row, wi) => {
+        if (!row.multiPlatform) row.multiPlatform = {};
+        row.multiPlatform[mp.key] = {
+          affQty: wAff[wi],
+          budgetNet: wBud[wi],
+          reupQty: wReup[wi],
+        };
+      });
+    }
+  }
+
+  // Livestream Kênh Brand (Inhouse 3h / CTV 2h / Brand 2h)
+  if (ref.liveSelf) {
+    const wInhouse = splitIntByWeights(ref.liveSelf.inhouse3h || 0, weights);
+    const wCtv = splitIntByWeights(ref.liveSelf.ctv2h || 0, weights);
+    const wBrand = splitIntByWeights(ref.liveSelf.brand2h || 0, weights);
+    const wLiveSelfTotal = baseRows.map((_, wi) => wInhouse[wi] + wCtv[wi] + wBrand[wi]);
+    const wLiveSelfBud = splitBudgetByWeeklyQty(ref.liveSelf.totalCostNet || 0, wLiveSelfTotal, weights);
+    baseRows.forEach((row, wi) => {
+      row.liveSelf = {
+        inhouse3h: wInhouse[wi],
+        ctv2h: wCtv[wi],
+        brand2h: wBrand[wi],
+        budgetNet: wLiveSelfBud[wi],
+      };
+    });
+  }
 
   return {
     weeklyBreakdown: baseRows,

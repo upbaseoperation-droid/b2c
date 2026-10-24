@@ -28,7 +28,9 @@ const COL = {
   liveSessions: 'Số phiên livestream affiliate',
   liveCostGross: 'Chi phí booking livestream affiliate',
   gmvAff: '(Plan) GMV video affiliate',
-  gmvSelf: '(Plan) GMV video self channel'
+  gmvSelf: '(Plan) GMV video self channel',
+  planLock: 'Chốt plan',
+  planStatusFallback: 'Trạng thái plan',
 } as const;
 
 const REQUIRED_COLUMNS: string[] = [
@@ -183,8 +185,62 @@ export async function parsePlanOrderWorkbook(
     const liveCostNet = Math.round(num(read(row, COL.liveCostGross)) / GROSS_FACTOR);
     const gmvAff = num(read(row, COL.gmvAff));
     const gmvSelf = num(read(row, COL.gmvSelf));
+    const nmvPlan = num(read(row, '(Plan) NMV'));
+    const focBreakdown = {
+      tapBrand: num(read(row, 'TAP Brand')),
+      tap: num(read(row, 'TAP')),
+      tapUp: num(read(row, 'TAP UpAffiliate')),
+    };
+    const splitNames = (raw: unknown) =>
+      text(raw)
+        .split(/[,;/\n]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+    const inhouseSessions =
+      num(read(row, 'Inhouse️ - Số phiên livestream self channel (3h)')) ||
+      num(read(row, 'Inhouse - Số phiên livestream self channel (3h)'));
+    const inhouseCostGross =
+      num(read(row, 'Inhouse️ - Chi phí livestream self channel')) ||
+      num(read(row, 'Inhouse - Chi phí livestream self channel'));
+    const inhouseGmv =
+      num(read(row, 'Inhouse️ - Doanh thu livestream self channel')) ||
+      num(read(row, 'Inhouse - Doanh thu livestream self channel'));
+    const ctvSessions = num(read(row, 'CTV ngoài - Số phiên livestream self channel (2h)'));
+    const ctvCostGross = num(read(row, 'CTV ngoài - Chi phí livestream self channel'));
+    const ctvGmv = num(read(row, 'CTV ngoài - Doanh thu livestream self channel'));
+    const brandSessions = num(read(row, 'Brand - Số phiên livestream self channel (2h)'));
+    const liveSelfCostGross = num(read(row, 'Chi phí livestream self channel')) || inhouseCostGross + ctvCostGross;
+    const liveSelfCostNet = Math.round(liveSelfCostGross / GROSS_FACTOR);
+
+    const hasLockColumn = colIndex.has(COL.planLock) || colIndex.has(COL.planStatusFallback);
+    const rawLockValue = text(read(row, COL.planLock)) || text(read(row, COL.planStatusFallback));
+    const uniqueLockTokens = Array.from(
+      new Set(
+        rawLockValue
+          .split(/[,;/\n]+/)
+          .map(s => s.trim())
+          .filter(Boolean)
+      )
+    );
+    const normalizedLockText = uniqueLockTokens.join(', ');
+    const lowerLock = normalizedLockText.toLowerCase();
+    const isGrowthLocked = hasLockColumn
+      ? (lowerLock.includes('chốt') || lowerLock.includes('chot') || lowerLock === '1' || lowerLock === 'true') &&
+        !lowerLock.includes('chưa') &&
+        !lowerLock.includes('chua') &&
+        !lowerLock.includes('nháp') &&
+        !lowerLock.includes('nhap')
+      : true;
+    const growthLockLabel = isGrowthLocked
+      ? 'Đã chốt'
+      : normalizedLockText
+      ? `Chưa chốt (${normalizedLockText})`
+      : 'Chưa chốt';
 
     const noteParts: string[] = ['Tạo từ file 4.1 Plan order tổng.'];
+    if (!isGrowthLocked) {
+      noteParts.push('Dòng 4.1 chưa có trạng thái Chốt plan (số tạm tính — chỉ lưu Nháp, chờ bản 4.1 đã chốt để gửi duyệt).');
+    }
 
     const totalBudget = costAffNet + costSelfNet + liveCostNet;
     const bookingLeader = store?.bookingLeader?.trim() || undefined;
@@ -218,6 +274,8 @@ export async function parsePlanOrderWorkbook(
         month,
         importedAt: new Date().toISOString(),
         importedBy: options.importedBy,
+        isGrowthLocked,
+        growthLockLabel,
         videoAff: videoAffSource,
         foc: focQty,
         cast: klTotal > 0 ? klTotal : castTarget,
@@ -229,6 +287,66 @@ export async function parsePlanOrderWorkbook(
         liveSessions,
         liveCostGross: num(read(row, COL.liveCostGross)),
         liveCostNet,
+        tiers: klQty,
+        kl4PlusTarget: num(read(row, 'Số video KL4 trở lên')),
+        focBreakdown,
+        tiktokReup: num(read(row, 'Số Video Reup - TikTok')),
+        multiPlatform: {
+          shopee: {
+            affQty: num(read(row, 'Shopee - Số video affiliate')),
+            costGross: num(read(row, 'Shopee - Chi phí video affiliate')),
+            costNet: Math.round(num(read(row, 'Shopee - Chi phí video affiliate')) / GROSS_FACTOR),
+            reupQty: num(read(row, 'Số Video Reup - Shopee')),
+          },
+          threads: {
+            affQty: num(read(row, 'Threads - Số video affiliate')),
+            costGross: num(read(row, 'Threads - Chi phí video affiliate')),
+            costNet: Math.round(num(read(row, 'Threads - Chi phí video affiliate')) / GROSS_FACTOR),
+            reupQty: num(read(row, 'Số Video Reup - Threads')),
+          },
+          facebook: {
+            affQty: num(read(row, 'Facebook - Số video affiliate')),
+            costGross: num(read(row, 'Facebook - Chi phí video affiliate')),
+            costNet: Math.round(num(read(row, 'Facebook - Chi phí video affiliate')) / GROSS_FACTOR),
+            reupQty: num(read(row, 'Số Video Reup - Facebook')),
+          },
+          instagram: {
+            affQty: num(read(row, 'Instagram - Số video affiliate')),
+            costGross: num(read(row, 'Instagram - Chi phí video affiliate')),
+            costNet: Math.round(num(read(row, 'Instagram - Chi phí video affiliate')) / GROSS_FACTOR),
+            reupQty: num(read(row, 'Số Video Reup - Instagram')),
+          },
+        },
+        liveSelf: {
+          inhouse3h: inhouseSessions,
+          inhouseCostGross,
+          inhouseGmv,
+          ctv2h: ctvSessions,
+          ctvCostGross,
+          ctvGmv,
+          brand2h: brandSessions,
+          totalCostGross: liveSelfCostGross,
+          totalCostNet: liveSelfCostNet,
+        },
+        gmvTargets: {
+          nmvPlan,
+          videoAff: gmvAff,
+          videoSelf: gmvSelf,
+          liveInhouse: inhouseGmv,
+          liveCtv: ctvGmv,
+          lastMonth30d: 0,
+          thisMonth30d: 0,
+        },
+        rolePics: {
+          growthPics: splitNames(read(row, 'Growth_PIC')),
+          growthSupports: splitNames(read(row, 'Growth_Support')),
+          accountPics: splitNames(read(row, 'Account PIC')),
+          bookingPics: splitNames(read(row, 'Booking PIC')),
+          contentPics: splitNames(read(row, 'Content PIC')),
+          focPics: [],
+          livePics: splitNames(read(row, 'Livestream phụ trách')),
+          b2cPics: splitNames(read(row, 'B2C PIC')),
+        },
       },
       budgetAffiliate: costAffNet,
       budgetSelfChannel: costSelfNet,

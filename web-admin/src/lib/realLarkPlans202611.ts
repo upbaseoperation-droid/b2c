@@ -23,7 +23,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
-    "targetGmv": 98137373,
+    "targetGmv": 1393137373,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiglOyG). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -33,6 +33,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -47,7 +48,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 70,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 1295000000,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 111888000,
+        "totalCostNet": 94181818
+      },
+      "gmvTargets": {
+        "nmvPlan": 3400000000,
+        "videoAff": 97110000,
+        "videoSelf": 1027373,
+        "liveInhouse": 1295000000,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Thị Như Quỳnh"
+        ],
+        "growthSupports": [
+          "Nguyễn Trung Kiên"
+        ],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Quỳnh Trang"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -128,6 +211,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -148,6 +259,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -170,6 +309,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -190,6 +357,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -212,7 +407,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Quỳnh Trang",
+        "roleLabel": "Booking PIC",
+        "rowCount": 2,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -229,7 +958,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 17,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 96
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 46325520,
+        "totalCostNet": 38994545
+      },
+      "gmvTargets": {
+        "nmvPlan": 1450000004,
+        "videoAff": 305000001,
+        "videoSelf": 4000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Mai Linh"
+        ],
+        "growthSupports": [
+          "Nguyễn Mai Oanh"
+        ],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Quỳnh Trang"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -325,6 +1138,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -345,6 +1186,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -367,6 +1236,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -387,6 +1284,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -409,7 +1334,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -426,7 +1633,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 36,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 15,
+          "costGross": 3564000,
+          "costNet": 3000000,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 31752000,
+        "totalCostNet": 26727273
+      },
+      "gmvTargets": {
+        "nmvPlan": 4500000000,
+        "videoAff": 333860287,
+        "videoSelf": 89999989,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Văn Dũng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Diệu Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 3000000,
     "budgetSelfChannel": 0,
@@ -596,6 +1883,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -616,6 +1931,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -638,6 +1981,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -658,6 +2029,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -680,7 +2079,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -697,7 +2630,88 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 13000000,
       "liveSessions": 7,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 120285000,
+        "totalCostNet": 101250000
+      },
+      "gmvTargets": {
+        "nmvPlan": 2400000000,
+        "videoAff": 1000000010,
+        "videoSelf": 31343277,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Văn Dũng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Diệu Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi",
+          "Nguyễn Ngọc Huyền"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 98250000,
     "budgetSelfChannel": 13000000,
@@ -739,6 +2753,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -753,7 +2768,85 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 5400000,
-      "liveCostNet": 4545455
+      "liveCostNet": 4545455,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 5
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 5,
+          "costGross": 21600000,
+          "costNet": 18181818,
+          "reupQty": 5
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 2150000000,
+        "videoAff": 36613300,
+        "videoSelf": 122044337,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đỗ Minh Nhật"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Lê Thanh Hải"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
@@ -796,6 +2889,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -810,7 +2904,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 8989896,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 160
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 3650000000,
+        "videoAff": 2268288451,
+        "videoSelf": 266264876,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Ngô Lan Hương"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Lê Thanh Hải"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 125252525,
     "budgetSelfChannel": 8989896,
@@ -853,6 +3027,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -867,7 +3042,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 5600000,
       "liveSessions": 32,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 200
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 98415000,
+        "totalCostNet": 82840909
+      },
+      "gmvTargets": {
+        "nmvPlan": 4200000000,
+        "videoAff": 2270941176,
+        "videoSelf": 50000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đỗ Hồng Hạnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Bùi Ngọc Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 50000000,
     "budgetSelfChannel": 5600000,
@@ -909,6 +3166,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -923,7 +3181,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 5400000,
+          "costNet": 4545455,
+          "reupQty": 50
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 23517000,
+        "totalCostNet": 19795455
+      },
+      "gmvTargets": {
+        "nmvPlan": 780000000,
+        "videoAff": 32000000,
+        "videoSelf": 29000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Thị Như Quỳnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Đinh Thị Bích Liên"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 4545455,
     "budgetSelfChannel": 0,
@@ -955,7 +3293,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 76000000,
     "totalTargetContents": 70,
-    "targetGmv": 933010848,
+    "targetGmv": 1259665848,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigeFUC). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -965,6 +3303,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -979,7 +3318,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 3272727,
       "liveSessions": 20,
       "liveCostGross": 10800000,
-      "liveCostNet": 9090909
+      "liveCostNet": 9090909,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 85,
+        "inhouseCostGross": 57691200,
+        "inhouseGmv": 326655000,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 62306496,
+        "totalCostNet": 52446545
+      },
+      "gmvTargets": {
+        "nmvPlan": 1400000000,
+        "videoAff": 927710848,
+        "videoSelf": 5300000,
+        "liveInhouse": 326655000,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Lưu Hoàng Khánh Linh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Đinh Thị Bích Liên"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 63636364,
     "budgetSelfChannel": 3272727,
@@ -1021,6 +3440,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -1035,7 +3455,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 65
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 14904000,
+        "totalCostNet": 12545455
+      },
+      "gmvTargets": {
+        "nmvPlan": 269999997,
+        "videoAff": 232493197,
+        "videoSelf": 3058563,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Chu Nhật Linh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Hoàng Hải Long"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 157272727,
     "budgetSelfChannel": 0,
@@ -1067,7 +3569,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 6818182,
     "totalTargetContents": 55,
-    "targetGmv": 225750000,
+    "targetGmv": 909750000,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCiguMX1). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -1077,6 +3579,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -1091,7 +3594,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 15,
+          "costGross": 3300000,
+          "costNet": 2777778,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 30,
+          "costGross": 4800000,
+          "costNet": 4040404,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 10
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 28816600,
+        "inhouseGmv": 342000000,
+        "ctv2h": 0,
+        "ctvCostGross": 37895000,
+        "ctvGmv": 342000000,
+        "brand2h": 0,
+        "totalCostGross": 61074000,
+        "totalCostNet": 51409091
+      },
+      "gmvTargets": {
+        "nmvPlan": 2800000000,
+        "videoAff": 208250000,
+        "videoSelf": 17500000,
+        "liveInhouse": 342000000,
+        "liveCtv": 342000000,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Thị Mỹ Hạnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Thị Huyền Thương"
+        ],
+        "bookingPics": [
+          "Dương Thị Hồng Nhung"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 6818182,
     "budgetSelfChannel": 0,
@@ -1318,6 +3901,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -1338,6 +3949,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -1360,6 +3999,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -1380,6 +4047,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -1402,7 +4097,1297 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Booking PIC",
+        "rowCount": 10,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Dương Thị Hồng Nhung",
+        "roleLabel": "Booking PIC",
+        "rowCount": 1,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Hồng Ngát",
+        "roleLabel": "Booking PIC",
+        "rowCount": 10,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -1419,7 +5404,94 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 31900000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 150
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 164969997,
+        "totalCostNet": 138863634
+      },
+      "gmvTargets": {
+        "nmvPlan": 6000000000,
+        "videoAff": 4190000001,
+        "videoSelf": 79999997,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phùng Thị Thu Huệ"
+        ],
+        "growthSupports": [
+          "Phan Đức Hoàng"
+        ],
+        "accountPics": [
+          "Trần Thị Huyền Thương"
+        ],
+        "bookingPics": [
+          "Dương Thị Hồng Nhung",
+          "Nguyễn Ngọc Huyền",
+          "Nguyễn Thị Hồng Ngát",
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 353200000,
     "budgetSelfChannel": 31900000,
@@ -1461,6 +5533,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -1475,7 +5548,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 68,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 15,
+          "costGross": 16200000,
+          "costNet": 13636364,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 189493820,
+        "totalCostNet": 159506582
+      },
+      "gmvTargets": {
+        "nmvPlan": 4600000000,
+        "videoAff": 125873250,
+        "videoSelf": 67132400,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Khắc Công"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 13636364,
     "budgetSelfChannel": 0,
@@ -1517,6 +5670,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -1531,7 +5685,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 32,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 100
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 48796830,
+        "totalCostNet": 41074773
+      },
+      "gmvTargets": {
+        "nmvPlan": 1826000000,
+        "videoAff": 500000004,
+        "videoSelf": 49999989,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Ngọc Trâm Anh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -1701,6 +5937,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -1721,6 +5985,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -1743,6 +6035,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -1763,6 +6083,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -1785,7 +6133,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phạm Thị Thu Hằng",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -1802,7 +6684,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 18000000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 6,
+        "tap": 0,
+        "tapUp": 650
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 113211000,
+        "totalCostNet": 95295455
+      },
+      "gmvTargets": {
+        "nmvPlan": 3600000000,
+        "videoAff": 1829000000,
+        "videoSelf": 55000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Anh Tú"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Phạm Thị Thu Hằng"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 160000000,
     "budgetSelfChannel": 18000000,
@@ -1844,6 +6808,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -1858,7 +6823,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 2727273,
       "liveSessions": 20,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 45,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 15552000,
+        "totalCostNet": 13090909
+      },
+      "gmvTargets": {
+        "nmvPlan": 131570000,
+        "videoAff": 45500000,
+        "videoSelf": 6000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đoàn Gia Huy"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hồ Đỗ Trung Hiếu"
+        ],
+        "bookingPics": [
+          "Ôn Ngọc Hà"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 16363643,
     "budgetSelfChannel": 2727273,
@@ -2009,6 +7056,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2029,6 +7104,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2051,6 +7154,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2071,6 +7202,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2093,7 +7252,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -2110,7 +7551,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 4500000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 244
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 42249600,
+        "totalCostNet": 35563636
+      },
+      "gmvTargets": {
+        "nmvPlan": 1630000000,
+        "videoAff": 752000000,
+        "videoSelf": 92200000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đàm Thùy Dung"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 77000000,
     "budgetSelfChannel": 4500000,
@@ -2142,7 +7665,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
     "totalTargetContents": 0,
-    "targetGmv": 290824998,
+    "targetGmv": 642449990,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigJhb4). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -2152,6 +7675,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -2166,7 +7690,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 40,
+        "inhouseCostGross": 32173875,
+        "inhouseGmv": 351624992,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 31890376,
+        "totalCostNet": 26843751
+      },
+      "gmvTargets": {
+        "nmvPlan": 2200000000,
+        "videoAff": 272300000,
+        "videoSelf": 18524998,
+        "liveInhouse": 351624992,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Trung Kiên"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -2246,6 +7850,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2266,6 +7898,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2288,6 +7948,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2308,6 +7996,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2330,7 +8046,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phan Diệu Ánh",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -2347,7 +8345,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 40,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 9600000,
+          "costNet": 8080808,
+          "reupQty": 71
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 12000000,
+          "costNet": 10101010,
+          "reupQty": 4
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 121646500,
+        "totalCostNet": 102396044
+      },
+      "gmvTargets": {
+        "nmvPlan": 8500000002,
+        "videoAff": 174114053,
+        "videoSelf": 57500000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Thị Vân Hồng"
+        ],
+        "growthSupports": [
+          "Vũ Thảo Vân"
+        ],
+        "accountPics": [
+          "Phạm Thị Nhài"
+        ],
+        "bookingPics": [
+          "Lương Thị Như Quỳnh",
+          "Phan Diệu Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
@@ -2518,6 +8599,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2538,6 +8647,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2560,6 +8697,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2580,6 +8745,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2602,7 +8795,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phan Diệu Ánh",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Ngọc Linh",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -2619,7 +9346,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 8545455,
       "liveSessions": 20,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 82464480,
+        "totalCostNet": 69414545
+      },
+      "gmvTargets": {
+        "nmvPlan": 2000000000,
+        "videoAff": 607515893,
+        "videoSelf": 74235000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Lưu Hoàng Khánh Linh"
+        ],
+        "growthSupports": [
+          "Nguyễn Thị Vân Hồng"
+        ],
+        "accountPics": [
+          "Phạm Thị Nhài"
+        ],
+        "bookingPics": [
+          "Lương Thị Như Quỳnh",
+          "Phan Diệu Ánh",
+          "Nguyễn Ngọc Linh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 59090909,
     "budgetSelfChannel": 8545455,
@@ -2659,6 +9470,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -2673,7 +9485,85 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 60,
+          "costGross": 32400000,
+          "costNet": 27272727,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 44064000,
+        "totalCostNet": 37090909
+      },
+      "gmvTargets": {
+        "nmvPlan": 1900000000,
+        "videoAff": 178386000,
+        "videoSelf": 89193000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Khắc Công"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Cao Trần Thu Hương"
+        ],
+        "bookingPics": [],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 27272727,
     "budgetSelfChannel": 0,
@@ -2843,6 +9733,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2863,6 +9781,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2885,6 +9831,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -2905,6 +9879,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -2927,7 +9929,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Lại Ngọc Huyền",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Bùi Thu Hằng",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -2944,7 +10480,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 19000000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 109446509,
+        "totalCostNet": 92126691
+      },
+      "gmvTargets": {
+        "nmvPlan": 3700000000,
+        "videoAff": 1850008500,
+        "videoSelf": 164445200,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Văn Tú"
+        ],
+        "growthSupports": [
+          "Tăng Khánh Hằng"
+        ],
+        "accountPics": [
+          "Trần Việt Hoàng"
+        ],
+        "bookingPics": [
+          "Bùi Thu Hằng",
+          "Lại Ngọc Huyền"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 71181818,
     "budgetSelfChannel": 19000000,
@@ -2976,7 +10595,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 0,
     "totalTargetContents": 60,
-    "targetGmv": 216279760,
+    "targetGmv": 796636903,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigt5bq). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -2986,6 +10605,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -3000,7 +10620,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 40,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 20,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 130,
+        "ctvCostGross": 45019200,
+        "ctvGmv": 580357143,
+        "brand2h": 0,
+        "totalCostGross": 43524000,
+        "totalCostNet": 36636364
+      },
+      "gmvTargets": {
+        "nmvPlan": 3250000000,
+        "videoAff": 100208335,
+        "videoSelf": 116071425,
+        "liveInhouse": 0,
+        "liveCtv": 580357143,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Thiều Thị Lan Anh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Việt Hoàng"
+        ],
+        "bookingPics": [
+          "Bùi Thu Hằng"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -3032,7 +10734,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 68500000,
     "totalTargetContents": 155,
-    "targetGmv": 1085720000,
+    "targetGmv": 1145720000,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxEDCigVfV5) & Bảng 4.1.1 (5 dòng phân rã tuần).",
@@ -3187,6 +10889,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3207,6 +10937,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3229,6 +10987,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3249,6 +11035,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3271,7 +11085,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Hải Phượng",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -3288,7 +11384,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 8500000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 120
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 60,
+        "inhouseCostGross": 12960000,
+        "inhouseGmv": 60000000,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 12960000,
+        "totalCostNet": 10909091
+      },
+      "gmvTargets": {
+        "nmvPlan": 1000000000,
+        "videoAff": 1065720000,
+        "videoSelf": 20000000,
+        "liveInhouse": 60000000,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Thị Thanh Hoài"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Cao Trần Thu Hương"
+        ],
+        "bookingPics": [
+          "Trần Hải Phượng"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 60000000,
     "budgetSelfChannel": 8500000,
@@ -3421,6 +11599,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3441,6 +11647,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3463,6 +11697,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3483,6 +11745,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3505,7 +11795,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Lê Phương Thảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -3522,7 +12094,85 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 11000000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 1520000000,
+        "videoAff": 1119300000,
+        "videoSelf": 60700000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Thị Thanh Hoài"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Lê Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 11000000,
@@ -3692,6 +12342,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3712,6 +12390,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3734,6 +12440,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3754,6 +12488,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3776,7 +12538,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Lại Ngọc Huyền",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -3793,7 +12837,93 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 12045455,
       "liveSessions": 30,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 30
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 37791360,
+        "totalCostNet": 31810909
+      },
+      "gmvTargets": {
+        "nmvPlan": 1400000000,
+        "videoAff": 1081813334,
+        "videoSelf": 77440000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phùng Thị Thu Huệ"
+        ],
+        "growthSupports": [
+          "Phan Đức Hoàng",
+          "Trần Minh Ngọc",
+          "Đào Thị Lệ Quyên"
+        ],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Lại Ngọc Huyền"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 92727273,
     "budgetSelfChannel": 12045455,
@@ -3835,6 +12965,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -3849,7 +12980,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 74790000,
+        "totalCostNet": 62954545
+      },
+      "gmvTargets": {
+        "nmvPlan": 6500000000,
+        "videoAff": 40625000,
+        "videoSelf": 121875000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Anh Tú"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Diệu Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 5000000,
     "budgetSelfChannel": 0,
@@ -3947,6 +13158,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -3967,6 +13206,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -3989,6 +13256,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -4009,6 +13304,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -4031,7 +13354,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -4048,7 +13905,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 545455,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 150
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 115339217,
+        "totalCostNet": 97086883
+      },
+      "gmvTargets": {
+        "nmvPlan": 2060000000,
+        "videoAff": 111363600,
+        "videoSelf": 19652401,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Thiều Thị Lan Anh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Diệu Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 545455,
@@ -4090,6 +14029,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4104,7 +14044,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 13383843,
       "liveSessions": 16,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 80
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 75531960,
+        "totalCostNet": 63579091
+      },
+      "gmvTargets": {
+        "nmvPlan": 2402344980,
+        "videoAff": 420720001,
+        "videoSelf": 225359997,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đỗ Thị Thanh Loan"
+        ],
+        "growthSupports": [
+          "Lê Hương Mai"
+        ],
+        "accountPics": [
+          "Phan Bạch Tuyết"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Mai Anh"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 83838384,
     "budgetSelfChannel": 13383843,
@@ -4146,6 +14170,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4160,7 +14185,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 30
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 51840000,
+        "totalCostNet": 43636364
+      },
+      "gmvTargets": {
+        "nmvPlan": 1500000000,
+        "videoAff": 383076915,
+        "videoSelf": 76615384,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Trần Phương Anh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Nguyễn Quỳnh Trang"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -4202,6 +14309,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4216,7 +14324,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 6,
       "liveCostGross": 6480000,
-      "liveCostNet": 5454545
+      "liveCostNet": 5454545,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 2
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 3
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 3
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 117587700,
+        "totalCostNet": 98979545
+      },
+      "gmvTargets": {
+        "nmvPlan": 5700000000,
+        "videoAff": 376392600,
+        "videoSelf": 55947800,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Thị Ánh Tuyết"
+        ],
+        "growthSupports": [
+          "Vũ Thị Thanh Hoài"
+        ],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Bùi Ngọc Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -4259,6 +14449,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4273,7 +14464,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 1363636,
       "liveSessions": 48,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 204488508,
+        "totalCostNet": 172128374
+      },
+      "gmvTargets": {
+        "nmvPlan": 6500000000,
+        "videoAff": 1681034483,
+        "videoSelf": 74712643,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Thị Xuân"
+        ],
+        "growthSupports": [
+          "Nguyễn Đức Mạnh",
+          "Nguyễn Văn Tú"
+        ],
+        "accountPics": [
+          "Hà Thị Thương"
+        ],
+        "bookingPics": [
+          "Lê Thanh Hải"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 1500000,
     "budgetSelfChannel": 1363636,
@@ -4313,6 +14587,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4327,7 +14602,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 20,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 15552000,
+        "totalCostNet": 13090909
+      },
+      "gmvTargets": {
+        "nmvPlan": 1500000000,
+        "videoAff": 50784352,
+        "videoSelf": 10438136,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Mai Linh"
+        ],
+        "growthSupports": [
+          "Nguyễn Khánh Linh"
+        ],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -4369,6 +14724,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4383,7 +14739,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 8080808,
       "liveSessions": 60,
       "liveCostGross": 42000000,
-      "liveCostNet": 35353535
+      "liveCostNet": 35353535,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 350
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 34570800,
+        "totalCostNet": 29100000
+      },
+      "gmvTargets": {
+        "nmvPlan": 2050041000,
+        "videoAff": 1700000010,
+        "videoSelf": 6000006,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phạm Hà Hoàng Trang"
+        ],
+        "growthSupports": [
+          "Hứa Thị Ngọc Lam"
+        ],
+        "accountPics": [
+          "Dương Vân Khánh"
+        ],
+        "bookingPics": [
+          "Bùi Ngọc Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 191919190,
     "budgetSelfChannel": 8080808,
@@ -4416,7 +14856,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 46818181,
     "totalTargetContents": 262,
-    "targetGmv": 514999998,
+    "targetGmv": 543139998,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoaXgOR) & Bảng 4.1.1 (8 dòng phân rã tuần).",
@@ -4553,6 +14993,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -4573,6 +15041,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -4595,6 +15091,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -4615,6 +15139,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -4637,7 +15189,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phạm Thị Thu Hằng",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -4654,7 +15740,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 10454545,
       "liveSessions": 8,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 32,
+        "tap": 0,
+        "tapUp": 200
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 63,
+        "inhouseCostGross": 13608000,
+        "inhouseGmv": 28140000,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 13608000,
+        "totalCostNet": 11454545
+      },
+      "gmvTargets": {
+        "nmvPlan": 1030000000,
+        "videoAff": 494399997,
+        "videoSelf": 20600001,
+        "liveInhouse": 28140000,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Ngô Thị Mai Linh"
+        ],
+        "growthSupports": [
+          "Trần Việt Hùng"
+        ],
+        "accountPics": [
+          "Cao Trần Thu Hương"
+        ],
+        "bookingPics": [
+          "Phạm Thị Thu Hằng"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 36363636,
     "budgetSelfChannel": 10454545,
@@ -4752,6 +15922,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -4772,6 +15970,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -4794,6 +16020,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -4814,6 +16068,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -4836,7 +16118,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Nguyễn Ngọc Linh",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Vũ Hoài Lâm",
+        "roleLabel": "Booking PIC",
+        "rowCount": 1,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -4853,7 +16669,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 4560000,
       "liveSessions": 6,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 150
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 24624000,
+        "totalCostNet": 20727273
+      },
+      "gmvTargets": {
+        "nmvPlan": 700000000,
+        "videoAff": 570000000,
+        "videoSelf": 8000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đặng Nhật Hoài"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Vũ Hoài Lâm",
+          "Nguyễn Ngọc Linh"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 45000000,
     "budgetSelfChannel": 4560000,
@@ -4893,6 +16792,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -4907,7 +16807,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 1,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 4227930,
+        "totalCostNet": 3558864
+      },
+      "gmvTargets": {
+        "nmvPlan": 116999991,
+        "videoAff": 4800000,
+        "videoSelf": 2000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Mai Oanh"
+        ],
+        "growthSupports": [
+          "Nguyễn Duy Cường"
+        ],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -4986,6 +16966,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5006,6 +17014,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5028,6 +17064,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5048,6 +17112,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5070,7 +17162,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Vũ Hoài Lâm",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -5087,7 +17461,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 2
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 24840000,
+        "totalCostNet": 20909091
+      },
+      "gmvTargets": {
+        "nmvPlan": 530000000,
+        "videoAff": 7724280,
+        "videoSelf": 6276300,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đào Thị Lệ Quyên"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Vũ Hoài Lâm"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -5129,6 +17583,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5143,7 +17598,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 5
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 8640000,
+        "totalCostNet": 7272727
+      },
+      "gmvTargets": {
+        "nmvPlan": 580000000,
+        "videoAff": 24830499,
+        "videoSelf": 10805998,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Đức Mạnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Phạm Thị Thu Hằng"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -5175,7 +17710,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 9090909,
     "totalTargetContents": 34,
-    "targetGmv": 31000004,
+    "targetGmv": 81000004,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoak0R2). Chưa có dòng phân rã tuần trên Bảng 4.1.1.",
@@ -5185,6 +17720,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5199,7 +17735,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 26,
+          "costGross": 4320000,
+          "costNet": 3636364,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 8,
+          "costGross": 6480000,
+          "costNet": 5454545,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 13685760,
+        "ctvGmv": 50000000,
+        "brand2h": 0,
+        "totalCostGross": 16988405,
+        "totalCostNet": 14300004
+      },
+      "gmvTargets": {
+        "nmvPlan": 650000000,
+        "videoAff": 30000004,
+        "videoSelf": 1000000,
+        "liveInhouse": 0,
+        "liveCtv": 50000000,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phùng Thị Thu Huệ"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Hoàng Hải Long"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 0,
@@ -5281,6 +17897,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5301,6 +17945,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5323,6 +17995,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5343,6 +18043,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5365,7 +18093,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Hà Thị Thủy",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -5382,7 +18644,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 12727277,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 245
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 59136480,
+        "totalCostNet": 49778182
+      },
+      "gmvTargets": {
+        "nmvPlan": 1330000000,
+        "videoAff": 1028925068,
+        "videoSelf": 87791413,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Ngô Lan Hương"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Hoàng Hải Long",
+          "Hà Thị Thủy"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 338383835,
     "budgetSelfChannel": 12727277,
@@ -5424,6 +18769,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5438,7 +18784,85 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 8100000,
+          "costNet": 6818182,
+          "reupQty": 50
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 200000000,
+        "videoAff": 4000000,
+        "videoSelf": 2480,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Vũ Thị Như Quỳnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Hoàng Hải Long"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 6818182,
     "budgetSelfChannel": 0,
@@ -5480,6 +18904,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5494,7 +18919,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 9950000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 130
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 900000000,
+        "videoAff": 599400000,
+        "videoSelf": 54000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phan Đức Hoàng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Đào Phương Anh"
+        ],
+        "bookingPics": [
+          "Hoàng Hải Long"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 200000000,
     "budgetSelfChannel": 9950000,
@@ -5537,6 +19042,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5551,7 +19057,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 10,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 210
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 71280000,
+        "totalCostNet": 60000000
+      },
+      "gmvTargets": {
+        "nmvPlan": 1200000000,
+        "videoAff": 284842008,
+        "videoSelf": 2572549,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Như Quỳnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [
+          "Lê Thanh Hải"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 16363636,
     "budgetSelfChannel": 0,
@@ -5593,6 +19181,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5607,7 +19196,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 8398080,
+        "totalCostNet": 7069091
+      },
+      "gmvTargets": {
+        "nmvPlan": 325000000,
+        "videoAff": 20683806,
+        "videoSelf": 400886,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Chu Nhật Linh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Trần Hải Phượng"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -5639,7 +19308,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "totalTargetBudget": 81100000,
     "totalTargetContents": 100,
-    "targetGmv": 310510000,
+    "targetGmv": 346510000,
     "cancellationRate": 8,
     "strategyPreset": "BALANCED",
     "notes": "Đồng bộ trực tiếp từ Lark Base B2C_Quản lý Booking: Bảng 4.1 (recvxESIoadDko) & Bảng 4.1.1 (5 dòng phân rã tuần).",
@@ -5794,6 +19463,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5814,6 +19511,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5836,6 +19561,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -5856,6 +19609,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -5878,7 +19659,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Hải Phượng",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -5895,7 +19958,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 6100000,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 60
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 25,
+        "inhouseCostGross": 17550000,
+        "inhouseGmv": 36000000,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 17550000,
+        "totalCostNet": 14772727
+      },
+      "gmvTargets": {
+        "nmvPlan": 400000000,
+        "videoAff": 301514000,
+        "videoSelf": 8996000,
+        "liveInhouse": 36000000,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Trung Kiên"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Trần Hải Phượng"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 75000000,
     "budgetSelfChannel": 6100000,
@@ -5937,6 +20082,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -5951,7 +20097,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 27272727,
       "liveSessions": 2,
       "liveCostGross": 145800000,
-      "liveCostNet": 122727273
+      "liveCostNet": 122727273,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 400
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 154296305,
+        "totalCostNet": 129879045
+      },
+      "gmvTargets": {
+        "nmvPlan": 4800000000,
+        "videoAff": 2747975999,
+        "videoSelf": 66000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phạm Thương Thảo"
+        ],
+        "growthSupports": [
+          "Đặng Ngọc Minh Dũng"
+        ],
+        "accountPics": [
+          "Nguyễn Phạm Thanh Diệp"
+        ],
+        "bookingPics": [
+          "Hoàng Diệu Thùy"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 181818182,
     "budgetSelfChannel": 27272727,
@@ -5993,6 +20223,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6007,7 +20238,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 80,
       "liveCostGross": 21840000,
-      "liveCostNet": 18383838
+      "liveCostNet": 18383838,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 90,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 26111570,
+        "totalCostNet": 21979436
+      },
+      "gmvTargets": {
+        "nmvPlan": 2600000000,
+        "videoAff": 64938200,
+        "videoSelf": 76900500,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Hứa Thị Ngọc Lam"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Vân Khánh"
+        ],
+        "bookingPics": [
+          "Bùi Ngọc Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -6047,6 +20360,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6061,7 +20375,83 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 0,
+        "videoAff": 0,
+        "videoSelf": 0,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Mai Oanh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Thị Mai Linh"
+        ],
+        "bookingPics": [],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -6103,6 +20493,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6117,7 +20508,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 9639000,
+        "totalCostNet": 8113636
+      },
+      "gmvTargets": {
+        "nmvPlan": 250000000,
+        "videoAff": 47200000,
+        "videoSelf": 11800000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Vũ Gia Long"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Việt Hoàng"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Mai Anh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -6159,6 +20630,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6173,7 +20645,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 12000004,
       "liveSessions": 3,
       "liveCostGross": 7128000,
-      "liveCostNet": 6000000
+      "liveCostNet": 6000000,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 19084318,
+        "totalCostNet": 16064241
+      },
+      "gmvTargets": {
+        "nmvPlan": 999999995,
+        "videoAff": 746341465,
+        "videoSelf": 43902441,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đào Thị Ánh Hồng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Trần Việt Hoàng"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Mai Anh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hoàng Vân Anh"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 80000000,
     "budgetSelfChannel": 12000004,
@@ -6215,6 +20767,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6229,7 +20782,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 22,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 75,
+          "costGross": 16200000,
+          "costNet": 13636364,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 19440000,
+        "totalCostNet": 16363636
+      },
+      "gmvTargets": {
+        "nmvPlan": 600000000,
+        "videoAff": 55000000,
+        "videoSelf": 5000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Hà Thúy Quỳnh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Cao Trần Thu Hương"
+        ],
+        "bookingPics": [
+          "Phạm Thị Thu Hằng"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 13636364,
     "budgetSelfChannel": 0,
@@ -6271,6 +20904,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6285,7 +20919,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 5400000,
-      "liveCostNet": 4545455
+      "liveCostNet": 4545455,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 20,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 21600000,
+          "costNet": 18181818,
+          "reupQty": 5
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 17550000,
+        "totalCostNet": 14772727
+      },
+      "gmvTargets": {
+        "nmvPlan": 300000000,
+        "videoAff": 34344918,
+        "videoSelf": 3600000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Trần Phương Anh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Hà Thị Thủy"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 18181818,
     "budgetSelfChannel": 0,
@@ -6510,6 +21226,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -6530,6 +21274,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -6552,6 +21324,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -6572,6 +21372,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -6594,7 +21422,793 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Trần Phương Thảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Hà Thị Thủy",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -6611,7 +22225,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 9959091,
       "liveSessions": 3,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 200
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 46332000,
+        "totalCostNet": 39000000
+      },
+      "gmvTargets": {
+        "nmvPlan": 900000000,
+        "videoAff": 693280000,
+        "videoSelf": 28000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Bùi Thị Phương Chi"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Ngô Hà Linh"
+        ],
+        "bookingPics": [
+          "Hà Thị Thủy",
+          "Trần Phương Thảo"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 120000000,
     "budgetSelfChannel": 9959091,
@@ -6653,6 +22350,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6667,7 +22365,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 30,
       "liveCostGross": 10800000,
-      "liveCostNet": 9090909
+      "liveCostNet": 9090909,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 8118144,
+        "totalCostNet": 6833455
+      },
+      "gmvTargets": {
+        "nmvPlan": 95292689,
+        "videoAff": 1020797,
+        "videoSelf": 2816000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đoàn Gia Huy"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hồ Đỗ Trung Hiếu"
+        ],
+        "bookingPics": [
+          "Phạm Huyền Thương"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -6709,6 +22487,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -6723,7 +22502,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 7776000,
+        "totalCostNet": 6545455
+      },
+      "gmvTargets": {
+        "nmvPlan": 54143092,
+        "videoAff": 36135000,
+        "videoSelf": 0,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đặng Ngọc Minh Dũng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Hồ Đỗ Trung Hiếu"
+        ],
+        "bookingPics": [
+          "Phạm Huyền Thương"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 9090909,
     "budgetSelfChannel": 0,
@@ -6803,6 +22662,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -6823,6 +22710,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -6845,6 +22760,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -6865,6 +22808,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -6887,7 +22858,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phạm Huyền Thương",
+        "roleLabel": "Booking PIC",
+        "rowCount": 3,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -6904,7 +23157,88 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 52,
       "liveCostGross": 5400000,
-      "liveCostNet": 4545455
+      "liveCostNet": 4545455,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 11904001,
+        "totalCostNet": 10020203
+      },
+      "gmvTargets": {
+        "nmvPlan": 714061841,
+        "videoAff": 33375402,
+        "videoSelf": 2505663,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đoàn Gia Huy"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Phạm Thanh Diệp"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi",
+          "Phạm Huyền Thương"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -7074,6 +23408,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7094,6 +23456,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7116,6 +23506,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7136,6 +23554,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7158,7 +23604,541 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phạm Huyền Thương",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
+      },
+      {
+        "staffName": "Nguyễn Thị Quỳnh Nhi",
+        "roleLabel": "Booking PIC",
+        "rowCount": 2,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -7175,7 +24155,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 6363636,
       "liveSessions": 14,
       "liveCostGross": 10800000,
-      "liveCostNet": 9090909
+      "liveCostNet": 9090909,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 38,
+        "tapUp": 600
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 39467173,
+        "totalCostNet": 33221526
+      },
+      "gmvTargets": {
+        "nmvPlan": 732766703,
+        "videoAff": 310780866,
+        "videoSelf": 25000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Phạm Trương Thu Đông"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Phạm Thanh Diệp"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Quỳnh Nhi",
+          "Phạm Huyền Thương"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 84000000,
     "budgetSelfChannel": 6363636,
@@ -7217,6 +24280,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -7231,7 +24295,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 8,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 8537400,
+        "totalCostNet": 7186364
+      },
+      "gmvTargets": {
+        "nmvPlan": 100000000,
+        "videoAff": 10000000,
+        "videoSelf": 1000000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Hà Thúy Quỳnh"
+        ],
+        "growthSupports": [
+          "Vũ Mai Linh"
+        ],
+        "accountPics": [
+          "Phan Bạch Tuyết"
+        ],
+        "bookingPics": [
+          "Phan Diệu Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -7365,6 +24511,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7385,6 +24559,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7407,6 +24609,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7427,6 +24657,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7449,7 +24707,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phan Diệu Ánh",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -7466,7 +25006,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 9090911,
       "liveSessions": 3,
       "liveCostGross": 18000000,
-      "liveCostNet": 15151515
+      "liveCostNet": 15151515,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 2315520,
+        "totalCostNet": 1949091
+      },
+      "gmvTargets": {
+        "nmvPlan": 350895230,
+        "videoAff": 276959997,
+        "videoSelf": 2375002,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Lê Hương Mai"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Phan Bạch Tuyết"
+        ],
+        "bookingPics": [
+          "Phan Diệu Ánh"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 56060606,
     "budgetSelfChannel": 9090911,
@@ -7509,6 +25129,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -7523,7 +25144,89 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 10
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 30
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 10
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 38880000,
+        "totalCostNet": 32727273
+      },
+      "gmvTargets": {
+        "nmvPlan": 6800000000,
+        "videoAff": 389332738,
+        "videoSelf": 74489681,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Khắc Công"
+        ],
+        "growthSupports": [
+          "Đỗ Minh Nhật"
+        ],
+        "accountPics": [
+          "Phạm Thị Nhài"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Ngọc Tâm"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -7605,6 +25308,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7625,6 +25356,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7647,6 +25406,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7667,6 +25454,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7689,7 +25504,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Trần Thị Hảo",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -7706,7 +25803,91 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 4545455,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 135
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 106920000,
+        "totalCostNet": 90000000
+      },
+      "gmvTargets": {
+        "nmvPlan": 1800000000,
+        "videoAff": 606000000,
+        "videoSelf": 22700000,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đàm Thùy Dung"
+        ],
+        "growthSupports": [
+          "Vũ Thị Như Quỳnh"
+        ],
+        "accountPics": [
+          "Phạm Thị Nhài"
+        ],
+        "bookingPics": [
+          "Nguyễn Thị Ngọc Tâm"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Hồng Bảo Ngọc"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 43636364,
     "budgetSelfChannel": 4545455,
@@ -7748,6 +25929,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -7762,7 +25944,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 7905600,
+        "totalCostNet": 6654545
+      },
+      "gmvTargets": {
+        "nmvPlan": 200000003,
+        "videoAff": 4599992,
+        "videoSelf": 1999996,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đào Thị Ánh Hồng"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Lương Nguyễn Trang Nhung"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -7842,6 +26104,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7862,6 +26152,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7884,6 +26202,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -7904,6 +26250,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -7926,7 +26300,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Nguyễn Ngọc Huyền",
+        "roleLabel": "Booking PIC",
+        "rowCount": 5,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -7943,7 +26599,90 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 9090909,
       "liveSessions": 4,
       "liveCostGross": 15120000,
-      "liveCostNet": 12727273
+      "liveCostNet": 12727273,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 50,
+        "tapUp": 50
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 22696200,
+        "totalCostNet": 19104545
+      },
+      "gmvTargets": {
+        "nmvPlan": 350000001,
+        "videoAff": 279030813,
+        "videoSelf": 8629827,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Nguyễn Mai Oanh"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Dương Khánh Linh"
+        ],
+        "bookingPics": [
+          "Lương Nguyễn Trang Nhung",
+          "Nguyễn Ngọc Huyền"
+        ],
+        "contentPics": [],
+        "focPics": [
+          "Trần Thị Hảo"
+        ],
+        "livePics": [
+          "Nguyễn Thị Thảo"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 102727273,
     "budgetSelfChannel": 9090909,
@@ -7985,6 +26724,7 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
     "updatedAt": "2026-10-24T16:20:00.000Z",
     "items": [],
     "weeklyBreakdown": [],
+    "staffWeeklySlices": [],
     "reference41": {
       "month": "2026/11",
       "importedAt": "2026-10-24T16:20:00.000Z",
@@ -7999,7 +26739,79 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 0,
       "liveCostGross": 0,
-      "liveCostNet": 0
+      "liveCostNet": 0,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 0,
+        "totalCostNet": 0
+      },
+      "gmvTargets": {
+        "nmvPlan": 0,
+        "videoAff": 0,
+        "videoSelf": 0,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 0,
+        "thisMonth30d": 0
+      },
+      "rolePics": {
+        "growthPics": [],
+        "growthSupports": [],
+        "accountPics": [],
+        "bookingPics": [],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -8078,6 +26890,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -8098,6 +26938,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -8120,6 +26988,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
       },
       {
@@ -8140,6 +27036,34 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         },
         "live": {
           "sessions": 0,
+          "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
           "budgetNet": 0
         }
       },
@@ -8162,7 +27086,289 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
         "live": {
           "sessions": 0,
           "budgetNet": 0
+        },
+        "multiPlatform": {
+          "shopee": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "threads": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "facebook": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          },
+          "instagram": {
+            "affQty": 0,
+            "budgetNet": 0,
+            "reupQty": 0
+          }
+        },
+        "liveSelf": {
+          "inhouse3h": 0,
+          "ctv2h": 0,
+          "brand2h": 0,
+          "budgetNet": 0
         }
+      }
+    ],
+    "staffWeeklySlices": [
+      {
+        "staffName": "Phạm Huyền Thương",
+        "roleLabel": "Booking PIC",
+        "rowCount": 4,
+        "weeklyBreakdown": [
+          {
+            "week": "W45 [30.10-05.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W46 [06.11-12.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W47 [13.11-19.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W48 [20.11-26.11]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          },
+          {
+            "week": "W49 [27.11-03.12]",
+            "tiers": {},
+            "foc": {
+              "tapBrand": 0,
+              "tap": 0,
+              "tapUp": 0
+            },
+            "self": {
+              "reviewVoice": 0,
+              "videoAi": 0,
+              "videoRemix": 0,
+              "videoToLive": 0,
+              "nhacText": 0,
+              "budgetNet": 0
+            },
+            "live": {
+              "sessions": 0,
+              "budgetNet": 0
+            },
+            "multiPlatform": {
+              "shopee": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "threads": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "facebook": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              },
+              "instagram": {
+                "affQty": 0,
+                "budgetNet": 0,
+                "reupQty": 0
+              }
+            },
+            "liveSelf": {
+              "inhouse3h": 0,
+              "ctv2h": 0,
+              "brand2h": 0,
+              "budgetNet": 0
+            }
+          }
+        ]
       }
     ],
     "reference41": {
@@ -8179,7 +27385,87 @@ export const REAL_MONTHLY_PLANS_NOV_2026: InputPlanBreakdownState[] = [
       "selfCostNet": 0,
       "liveSessions": 31,
       "liveCostGross": 23759494,
-      "liveCostNet": 19999574
+      "liveCostNet": 19999574,
+      "tiers": {
+        "KL1": 0,
+        "KL2": 0,
+        "KL3": 0,
+        "KL4": 0,
+        "KL5": 0,
+        "KL6": 0,
+        "KL7": 0
+      },
+      "kl4PlusTarget": 0,
+      "focBreakdown": {
+        "tapBrand": 0,
+        "tap": 0,
+        "tapUp": 0
+      },
+      "tiktokReup": 0,
+      "multiPlatform": {
+        "shopee": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 70
+        },
+        "threads": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "facebook": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        },
+        "instagram": {
+          "affQty": 0,
+          "costGross": 0,
+          "costNet": 0,
+          "reupQty": 0
+        }
+      },
+      "liveSelf": {
+        "inhouse3h": 0,
+        "inhouseCostGross": 0,
+        "inhouseGmv": 0,
+        "ctv2h": 0,
+        "ctvCostGross": 0,
+        "ctvGmv": 0,
+        "brand2h": 0,
+        "totalCostGross": 14271298,
+        "totalCostNet": 12012877
+      },
+      "gmvTargets": {
+        "nmvPlan": 600000000,
+        "videoAff": 23574169,
+        "videoSelf": 8929610,
+        "liveInhouse": 0,
+        "liveCtv": 0,
+        "lastMonth30d": 134282514,
+        "thisMonth30d": 32789212
+      },
+      "rolePics": {
+        "growthPics": [
+          "Đinh Nguyễn Hồng Hà"
+        ],
+        "growthSupports": [],
+        "accountPics": [
+          "Nguyễn Phạm Thanh Diệp"
+        ],
+        "bookingPics": [
+          "Phạm Huyền Thương"
+        ],
+        "contentPics": [],
+        "focPics": [],
+        "livePics": [
+          "Đặng Thị Liên"
+        ],
+        "b2cPics": []
+      }
     },
     "budgetAffiliate": 0,
     "budgetSelfChannel": 0,
@@ -8220,7 +27506,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 0,
     "budgetNet": 0,
     "budgetAdsTotal": 0,
-    "targetGmv": 98137373,
+    "targetGmv": 1393137373,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
     "affiliatePaidBudgetNet": 0,
@@ -8614,7 +27900,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 90288000,
     "budgetNet": 76000000,
     "budgetAdsTotal": 0,
-    "targetGmv": 933010848,
+    "targetGmv": 1259665848,
     "totalTargetVideos": 70,
     "affiliatePaidVideos": 35,
     "affiliatePaidBudgetNet": 63636364,
@@ -8712,7 +27998,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 8100000,
     "budgetNet": 6818182,
     "budgetAdsTotal": 0,
-    "targetGmv": 225750000,
+    "targetGmv": 909750000,
     "totalTargetVideos": 55,
     "affiliatePaidVideos": 55,
     "affiliatePaidBudgetNet": 6818182,
@@ -9056,7 +28342,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 0,
     "budgetNet": 0,
     "budgetAdsTotal": 0,
-    "targetGmv": 290824998,
+    "targetGmv": 642449990,
     "totalTargetVideos": 0,
     "affiliatePaidVideos": 0,
     "affiliatePaidBudgetNet": 0,
@@ -9301,7 +28587,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 0,
     "budgetNet": 0,
     "budgetAdsTotal": 0,
-    "targetGmv": 216279760,
+    "targetGmv": 796636903,
     "totalTargetVideos": 60,
     "affiliatePaidVideos": 0,
     "affiliatePaidBudgetNet": 0,
@@ -9350,7 +28636,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 81378000,
     "budgetNet": 68500000,
     "budgetAdsTotal": 0,
-    "targetGmv": 1085720000,
+    "targetGmv": 1145720000,
     "totalTargetVideos": 155,
     "affiliatePaidVideos": 20,
     "affiliatePaidBudgetNet": 60000000,
@@ -9891,7 +29177,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 55620000,
     "budgetNet": 46818181,
     "budgetAdsTotal": 0,
-    "targetGmv": 514999998,
+    "targetGmv": 543139998,
     "totalTargetVideos": 262,
     "affiliatePaidVideos": 0,
     "affiliatePaidBudgetNet": 36363636,
@@ -10136,7 +29422,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 10800000,
     "budgetNet": 9090909,
     "budgetAdsTotal": 0,
-    "targetGmv": 31000004,
+    "targetGmv": 81000004,
     "totalTargetVideos": 34,
     "affiliatePaidVideos": 34,
     "affiliatePaidBudgetNet": 9090909,
@@ -10431,7 +29717,7 @@ export const REAL_LARKBASE_RECORDS_NOV_2026: LarkbaseBookingPlanRecordItem[] = [
     "budgetGross": 96346800,
     "budgetNet": 81100000,
     "budgetAdsTotal": 0,
-    "targetGmv": 310510000,
+    "targetGmv": 346510000,
     "totalTargetVideos": 100,
     "affiliatePaidVideos": 10,
     "affiliatePaidBudgetNet": 75000000,

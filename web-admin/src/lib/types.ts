@@ -816,7 +816,7 @@ export interface BookingDealItem {
   status: DealStatus;
   statusLabel: string;
   currentStage?: '1_PLAN_SOURCING' | '2_DEAL_CONTRACT' | '3_CONTENT_SCRIPT' | '4_AIR_GROWTH' | '5_SETTLEMENT';
-  holdingTeam?: 'BOOKING' | 'CONTENT' | 'BRAND' | 'GROWTH' | 'FINANCE';
+  holdingTeam?: 'BOOKING' | 'CONTENT' | 'BRAND' | 'FINANCE';
   holdingReason?: string;
   slaDeadline?: string;
   slaRemainingText?: string;
@@ -1756,6 +1756,7 @@ export type PushProductFeasibility =
   | 'CHALLENGING'       // Khó bán, cần deal sâu hoặc hỗ trợ ads
   | 'REJECTED_BY_B2C';  // B2C đánh giá không khả thi, đề xuất đổi
 
+/** GROWTH: phía Brand / Quản lý đề xuất (giữ tên khoá cho dữ liệu cũ, khối Growth đã bỏ khỏi hệ thống). */
 export type PushProductRole = 'GROWTH' | 'B2C' | 'MANAGEMENT';
 
 export interface PushProductComment {
@@ -2724,9 +2725,9 @@ export interface InputPlanRowItem {
 
 export type MonthlyPlanStatus = 
   | 'DRAFT'                  // Bản nháp đang phân rã
-  | 'PENDING_PRE_APPROVAL'   // Chờ Sơ duyệt (Gửi sang Growth thẩm định cơ cấu & ngân sách)
-  | 'PRE_APPROVED'           // Sơ duyệt Đạt (Growth đã thông qua)
-  | 'REVISION_REQUESTED'     // Yêu cầu hiệu chỉnh (Growth/Lead yêu cầu sửa đổi)
+  | 'PENDING_PRE_APPROVAL'   // Chờ Booking Leader sơ duyệt (gian có Leader)
+  | 'PRE_APPROVED'           // Leader sơ duyệt đạt (chỉ còn trong dữ liệu cũ)
+  | 'REVISION_REQUESTED'     // Yêu cầu hiệu chỉnh (Leader / Trưởng phòng yêu cầu sửa)
   | 'PENDING_APPROVAL'       // Chờ Trưởng phòng phê duyệt chính thức
   | 'LEAD_APPROVED'          // Trưởng phòng đã duyệt
   | 'BRAND_APPROVED'         // Brand đã thông qua
@@ -2892,6 +2893,20 @@ export interface PlanAlignmentProtocol {
 }
 
 export type PlanTierKey = 'KL1' | 'KL2' | 'KL3' | 'KL4' | 'KL5' | 'KL6' | 'KL7';
+export type PlanMultiPlatformKey = 'shopee' | 'threads' | 'facebook' | 'instagram';
+
+export interface PlanMultiPlatformMetrics {
+  affQty: number;
+  budgetNet: number;
+  reupQty: number;
+}
+
+export interface PlanLiveSelfMetrics {
+  inhouse3h: number;
+  ctv2h: number;
+  brand2h?: number;
+  budgetNet: number;
+}
 
 /** Một tuần trong bảng phân rã (tương ứng một dòng bảng 4.1.1 Input plan). Ngân sách luôn là Net. */
 export interface PlanWeekRow {
@@ -2900,6 +2915,16 @@ export interface PlanWeekRow {
   foc: { tapBrand: number; tap: number; tapUp: number };
   self: { reviewVoice: number; videoAi: number; videoRemix: number; videoToLive: number; nhacText: number; budgetNet: number };
   live: { sessions: number; budgetNet: number };
+  multiPlatform?: Partial<Record<PlanMultiPlatformKey, PlanMultiPlatformMetrics>>;
+  liveSelf?: PlanLiveSelfMetrics;
+}
+
+/** Lát cắt tiến độ nhập phân rã tuần (4.1.1) theo từng chuyên viên phụ trách trong cùng một gian hàng. */
+export interface PlanStaffWeeklySlice {
+  staffName: string;
+  roleLabel?: string;
+  rowCount: number;
+  weeklyBreakdown: PlanWeekRow[];
 }
 
 /** Số của bảng 4.1 Plan order tổng dùng để đối chiếu với bảng phân rã. Chi phí Net = Gross ÷ 1,08 ÷ 1,10. */
@@ -2907,6 +2932,10 @@ export interface PlanReference41 {
   month: string;
   importedAt: string;
   importedBy: string;
+  /** true = Cột "Chốt plan" trên bảng 4.1 đã chốt; false = Cột "Chốt plan" đang trống / chưa chốt (số tạm tính). */
+  isGrowthLocked?: boolean;
+  /** Nhãn hiển thị trạng thái cột "Chốt plan" từ file 4.1 (VD: 'Đã chốt', 'Chưa chốt'). */
+  growthLockLabel?: string;
   videoAff: number;
   foc: number;
   cast: number;
@@ -2918,6 +2947,41 @@ export interface PlanReference41 {
   liveSessions: number;
   liveCostGross: number;
   liveCostNet: number;
+  tiers?: Partial<Record<PlanTierKey, number>>;
+  kl4PlusTarget?: number;
+  focBreakdown?: { tapBrand: number; tap: number; tapUp: number };
+  tiktokReup?: number;
+  multiPlatform?: Partial<Record<PlanMultiPlatformKey, { affQty: number; costGross: number; costNet: number; reupQty: number }>>;
+  liveSelf?: {
+    inhouse3h: number;
+    inhouseCostGross: number;
+    inhouseGmv: number;
+    ctv2h: number;
+    ctvCostGross: number;
+    ctvGmv: number;
+    brand2h: number;
+    totalCostGross: number;
+    totalCostNet: number;
+  };
+  gmvTargets?: {
+    nmvPlan: number;
+    videoAff: number;
+    videoSelf: number;
+    liveInhouse: number;
+    liveCtv: number;
+    lastMonth30d: number;
+    thisMonth30d: number;
+  };
+  rolePics?: {
+    growthPics: string[];
+    growthSupports: string[];
+    accountPics: string[];
+    bookingPics: string[];
+    contentPics: string[];
+    focPics: string[];
+    livePics: string[];
+    b2cPics: string[];
+  };
 }
 
 export interface InputPlanBreakdownState {
@@ -2950,7 +3014,10 @@ export interface InputPlanBreakdownState {
   items: InputPlanRowItem[];
   // Phân rã theo tuần (nguồn của items có id bắt đầu bằng 'WB-') và số 4.1 để đối chiếu
   weeklyBreakdown?: PlanWeekRow[];
+  staffWeeklySlices?: PlanStaffWeeklySlice[];
   reference41?: PlanReference41;
+  /** Số bảng 4.1 mới tải lên bị lệch so với kế hoạch đã gửi duyệt/đã duyệt; giữ nguyên bản đã duyệt và gắn cờ chờ Quản lý mở khóa cập nhật. */
+  pendingReference41?: PlanReference41;
   breakdownNote?: string; // Giải trình khi tổng phân rã lệch số 4.1
   // Layer 1: Khung chỉ số cốt lõi thống nhất giữa các bên trước khi phân rã Layer 2
   coreMetricsLayer1?: CorePlanMetricsLayer1;
