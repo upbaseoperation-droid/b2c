@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
   const config = getLarkPaymentIntegrationConfig();
   const canSeeFullPayee =
     isStaffGlobalAdminOrManager(user) ||
-    ['FINANCE', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role) ||
+    ['FINANCE', 'LEADER'].includes(user.role) ||
     Boolean(user.permissions?.includes('canApprovePayment'));
   const slips = Array.from(memoryPaymentRequestSlips.values())
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -229,8 +229,6 @@ export async function POST(request: NextRequest) {
   const allowedRoles = [
     'ADMIN',
     'MANAGER',
-    'GROWTH_MANAGER',
-    'MEDIA_MANAGER',
     'LEADER',
     'BOOKING_MEMBER',
     'MEMBER',
@@ -329,7 +327,7 @@ export async function POST(request: NextRequest) {
     // S4: Kiểm tra phạm vi thương hiệu / PIC đối với chuyên viên lập phiếu
     const isGlobalOrFinance =
       isStaffGlobalAdminOrManager(user) ||
-      ['FINANCE', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role);
+      ['FINANCE', 'LEADER'].includes(user.role);
     if (!isGlobalOrFinance && Array.isArray(user.assignedBrands) && user.assignedBrands.length > 0) {
       const allowedBrands = new Set(user.assignedBrands.map(b => b.trim().toLowerCase()));
       const userNameLower = (user.name || '').trim().toLowerCase();

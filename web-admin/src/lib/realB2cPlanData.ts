@@ -59,9 +59,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Đức Mạnh",
     "contentPic": "Nguyễn Đức Mạnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -109,9 +107,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Như Quỳnh",
     "contentPic": "Nguyễn Như Quỳnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -159,9 +155,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 4.5M / Gross: 5.3M (60 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Trần Anh Thư",
     "contentPic": "Trần Anh Thư",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -209,9 +203,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 136.4M / Gross: 162.0M (135 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Khánh Linh",
     "contentPic": "Nguyễn Khánh Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -259,9 +251,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (100 video). PIC phụ trách: Nguyễn Quỳnh Trang (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Mai Linh",
     "contentPic": "Vũ Mai Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -311,9 +301,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 4.3M / Gross: 5.0M (60 video). PIC phụ trách: Hoàng Hải Long (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phan Đức Hoàng",
     "contentPic": "Phan Đức Hoàng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -361,9 +349,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Chu Nhật Linh",
     "contentPic": "Chu Nhật Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -413,9 +399,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (71 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Văn Dũng",
     "contentPic": "Nguyễn Văn Dũng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -469,9 +453,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 113.2M / Gross: 134.4M (70 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Văn Dũng",
     "contentPic": "Nguyễn Văn Dũng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -521,9 +503,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 5.4M / Gross: 0.0M (15 video). PIC phụ trách: Lê Thanh Hải (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đỗ Minh Nhật",
     "contentPic": "Đỗ Minh Nhật",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -574,9 +554,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 175.0M / Gross: 208.0M (140 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Lê Thanh Hải",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Ngô Lan Hương",
     "contentPic": "Ngô Lan Hương",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -624,9 +602,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (1 video). PIC phụ trách: Vũ Hoài Lâm (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đào Thị Lệ Quyên",
     "contentPic": "Đào Thị Lệ Quyên",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -676,9 +652,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 42.8M / Gross: 50.8M (169 video). PIC phụ trách: Vũ Hoài Lâm (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đặng Nhật Hoài",
     "contentPic": "Đặng Nhật Hoài",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -726,9 +700,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 13.6M / Gross: 16.2M (30 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Hà Thúy Quỳnh",
     "contentPic": "Hà Thúy Quỳnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -780,9 +752,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 81.6M / Gross: 97.0M (237 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Ngô Thị Mai Linh",
     "contentPic": "Ngô Thị Mai Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -830,9 +800,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 15.0M / Gross: 17.8M (18 video). PIC phụ trách: Lương Nguyễn Trang Nhung (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đào Thị Ánh Hồng",
     "contentPic": "Đào Thị Ánh Hồng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -882,9 +850,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 210.3M / Gross: 230.6M (138 video). PIC phụ trách: Nguyễn Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Mai Oanh",
     "contentPic": "Nguyễn Mai Oanh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -943,9 +909,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 97.5M / Gross: 76.0M (343 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Bùi Ngọc Ánh",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đỗ Hồng Hạnh",
     "contentPic": "Đỗ Hồng Hạnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -998,9 +962,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 10.1M / Gross: 12.0M (60 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Phạm Thị Thu Hằng",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Khắc Công",
     "contentPic": "Nguyễn Khắc Công",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1053,9 +1015,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 83.4M / Gross: 99.1M (229 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Phạm Thị Thu Hằng",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đàm Thùy Dung",
     "contentPic": "Đàm Thùy Dung",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1103,9 +1063,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Đinh Thị Bích Liên (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Thị Như Quỳnh",
     "contentPic": "Vũ Thị Như Quỳnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1157,9 +1115,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 54.2M / Gross: 64.4M (50 video). PIC phụ trách: Đinh Thị Bích Liên (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Lưu Hoàng Khánh Linh",
     "contentPic": "Lưu Hoàng Khánh Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1209,9 +1165,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 127.7M / Gross: 151.7M (221 video). PIC phụ trách: Hoàng Hải Long (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Chu Nhật Linh",
     "contentPic": "Chu Nhật Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1263,9 +1217,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 16.4M / Gross: 19.4M (55 video). PIC phụ trách: Nguyễn Thị Hồng Ngát (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Thị Mỹ Hạnh",
     "contentPic": "Nguyễn Thị Mỹ Hạnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1326,9 +1278,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 626.9M / Gross: 744.8M (414 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Nguyễn Ngọc Huyền",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1376,9 +1326,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 18.2M / Gross: 21.6M (20 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Khắc Công",
     "contentPic": "Nguyễn Khắc Công",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1426,9 +1374,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Ngọc Trâm Anh",
     "contentPic": "Vũ Ngọc Trâm Anh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1476,9 +1422,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Khánh Linh",
     "contentPic": "Nguyễn Khánh Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1526,9 +1470,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Phan Diệu Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Mai Linh",
     "contentPic": "Vũ Mai Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1580,9 +1522,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 91.7M / Gross: 96.1M (39 video). PIC phụ trách: Phan Diệu Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Lê Hương Mai",
     "contentPic": "Lê Hương Mai",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1634,9 +1574,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 133.5M / Gross: 143.2M (684 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Anh Tú",
     "contentPic": "Nguyễn Anh Tú",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1686,9 +1624,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 21.8M / Gross: 25.9M (122 video). PIC phụ trách: Hà Thị Thủy (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Trần Phương Anh",
     "contentPic": "Trần Phương Anh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1742,9 +1678,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 212.6M / Gross: 252.6M (415 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Bùi Thị Phương Chi",
     "contentPic": "Bùi Thị Phương Chi",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1792,9 +1726,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 27.3M / Gross: 32.4M (10 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Chu Nhật Linh",
     "contentPic": "Chu Nhật Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1844,9 +1776,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 369.8M / Gross: 439.3M (213 video). PIC phụ trách: Trần Hải Phượng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Trung Kiên",
     "contentPic": "Nguyễn Trung Kiên",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1894,9 +1824,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 4.5M / Gross: 5.4M (40 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Khắc Công",
     "contentPic": "Nguyễn Khắc Công",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -1944,9 +1872,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (30 video). PIC phụ trách: Bùi Thu Hằng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Thiều Thị Lan Anh",
     "contentPic": "Thiều Thị Lan Anh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2000,9 +1926,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 160.4M / Gross: 190.6M (122 video). PIC phụ trách: Lại Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Văn Tú",
     "contentPic": "Nguyễn Văn Tú",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2050,9 +1974,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Lê Thanh Hải (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "contentPic": "Nguyễn Thị Vân Hồng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2101,9 +2023,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 3.4M / Gross: 4.0M (40 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Lê Thanh Hải",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Thị Xuân",
     "contentPic": "Nguyễn Thị Xuân",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2153,9 +2073,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 38.9M / Gross: 35.6M (134 video). PIC phụ trách: Phạm Thị Thu Hằng (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Thị Thanh Hoài",
     "contentPic": "Vũ Thị Thanh Hoài",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2205,9 +2123,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 13.0M / Gross: 15.4M (56 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Thị Thanh Hoài",
     "contentPic": "Vũ Thị Thanh Hoài",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2255,9 +2171,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (5 video). PIC phụ trách: Lại Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Đức Mạnh",
     "contentPic": "Nguyễn Đức Mạnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2308,9 +2222,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 197.5M / Gross: 234.6M (144 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Lại Ngọc Huyền",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2358,9 +2270,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Lê Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Trung Kiên",
     "contentPic": "Nguyễn Trung Kiên",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2412,9 +2322,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 232.5M / Gross: 276.2M (375 video). PIC phụ trách: Bùi Ngọc Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đàm Thùy Dung",
     "contentPic": "Đàm Thùy Dung",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2462,9 +2370,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (30 video). PIC phụ trách: Nguyễn Thị Quỳnh Nhi (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đỗ Hồng Hạnh",
     "contentPic": "Đỗ Hồng Hạnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2514,9 +2420,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.5M / Gross: 0.6M (110 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Thiều Thị Lan Anh",
     "contentPic": "Thiều Thị Lan Anh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2564,9 +2468,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (5 video). PIC phụ trách: Hoàng Hải Long (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2620,9 +2522,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 397.2M / Gross: 471.8M (325 video). PIC phụ trách: Trần Thị Hảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Ngô Lan Hương",
     "contentPic": "Ngô Lan Hương",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2672,9 +2572,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 221.1M / Gross: 262.7M (42 video). PIC phụ trách: Phan Diệu Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phạm Thị Hồng Yến",
     "contentPic": "Phạm Thị Hồng Yến",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2722,9 +2620,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 72.0M / Gross: 85.5M (128 video). PIC phụ trách: Nguyễn Thị Mai Anh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đỗ Thị Thanh Loan",
     "contentPic": "Đỗ Thị Thanh Loan",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2772,9 +2668,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 19.4M / Gross: 0.0M (59 video). PIC phụ trách: Phạm Huyền Thương (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Đoàn Gia Huy",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2822,9 +2716,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 4.3M / Gross: 0.0M (15 video). PIC phụ trách: Nguyễn Thị Quỳnh Nhi (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Đoàn Gia Huy",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2876,9 +2768,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 43.6M / Gross: 51.8M (431 video). PIC phụ trách: Phạm Huyền Thương (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phạm Trương Thu Đông",
     "contentPic": "Phạm Trương Thu Đông",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2926,9 +2816,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (10 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đỗ Minh Nhật",
     "contentPic": "Đỗ Minh Nhật",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -2979,9 +2867,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 52.0M / Gross: 61.8M (292 video). Leader: Nguyễn Thị Ngọc Tâm, PIC: Nguyễn Thị Quỳnh Nhi",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Như Quỳnh",
     "contentPic": "Nguyễn Như Quỳnh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3029,9 +2915,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 95.0M / Gross: 0.0M (30 video). PIC phụ trách: Chưa phân công (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Vũ Mai Linh",
     "contentPic": "Vũ Mai Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3079,9 +2963,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (62 video). PIC phụ trách: Hoàng Diệu Thuỳ (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Trần Phương Anh",
     "contentPic": "Trần Phương Anh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3129,9 +3011,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 31.6M / Gross: 37.5M (63 video). PIC phụ trách: Lương Nguyễn Trang Nhung (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đặng Nhật Hoài",
     "contentPic": "Đặng Nhật Hoài",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3179,9 +3059,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 5.4M / Gross: 0.0M (8 video). PIC phụ trách: Nguyễn Thị Ngọc Tâm (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Thị Ánh Tuyết",
     "contentPic": "Nguyễn Thị Ánh Tuyết",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3229,9 +3107,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 8.2M / Gross: 9.7M (7 video). PIC phụ trách: Nguyễn Thị Mai Anh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Vũ Gia Long",
     "contentPic": "Nguyễn Vũ Gia Long",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3281,9 +3157,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 90.4M / Gross: 89.1M (105 video). PIC phụ trách: Nguyễn Thị Mai Anh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Đào Thị Ánh Hồng",
     "contentPic": "Đào Thị Ánh Hồng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3333,9 +3207,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 0.0M / Gross: 0.0M (0 video). PIC phụ trách: Lại Ngọc Huyền (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Bùi Thị Phương Chi",
     "contentPic": "Bùi Thị Phương Chi",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3383,9 +3255,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 16.5M / Gross: 0.0M (90 video). PIC phụ trách: Bùi Ngọc Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Hứa Thị Ngọc Lam",
     "contentPic": "Hứa Thị Ngọc Lam",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3437,9 +3307,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 211.4M / Gross: 234.0M (571 video). PIC phụ trách: Bùi Ngọc Ánh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phạm Hà Hoàng Trang",
     "contentPic": "Phạm Hà Hoàng Trang",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3489,9 +3357,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 18.2M / Gross: 21.6M (55 video). PIC phụ trách: Nguyễn Ngọc Linh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "contentPic": "Nguyễn Thị Vân Hồng",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3543,9 +3409,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 80.0M / Gross: 93.6M (37 video). PIC phụ trách: Nguyễn Ngọc Linh (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Lưu Hoàng Khánh Linh",
     "contentPic": "Lưu Hoàng Khánh Linh",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   },
   {
@@ -3599,9 +3463,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "assignmentNotes": "Hạn mức Net: 399.6M / Gross: 453.6M (470 video). PIC phụ trách: Trần Phương Thảo (Không có leader)",
     "isB2cManaged": true,
     "requiresB2cPlan": true,
-    "growthPic": "Phạm Thương Thảo",
     "contentPic": "Phạm Thương Thảo",
-    "mediaPic": "Media Team",
     "createdAt": "2026-10-01"
   }
 ];
@@ -4254,8 +4116,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Đức Mạnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -4322,8 +4182,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Như Quỳnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -4390,8 +4248,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Trần Anh Thư",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 5346000,
     "budgetAdsTotal": 1336500,
     "budgetAffiliate": 5346000,
@@ -4475,8 +4331,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Khánh Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 162000000,
     "budgetAdsTotal": 40500000,
     "budgetAffiliate": 150000000,
@@ -4697,8 +4551,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Quỳnh Trang phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Mai Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -4785,8 +4637,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Hoàng Hải Long phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phan Đức Hoàng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 5049000,
     "budgetAdsTotal": 1262250,
     "budgetAffiliate": 0,
@@ -4902,8 +4752,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Chu Nhật Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -4971,8 +4819,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Văn Dũng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -5059,8 +4905,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Văn Dũng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 134422200,
     "budgetAdsTotal": 33605550,
     "budgetAffiliate": 117315000,
@@ -5312,8 +5156,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Thanh Hải phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đỗ Minh Nhật",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -5384,8 +5226,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Ngô Lan Hương",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 207955438,
     "budgetAdsTotal": 51988860,
     "budgetAffiliate": 198840003,
@@ -5587,8 +5427,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Vũ Hoài Lâm phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đào Thị Lệ Quyên",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -5656,8 +5494,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Vũ Hoài Lâm phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đặng Nhật Hoài",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 50846400,
     "budgetAdsTotal": 12711600,
     "budgetAffiliate": 41580000,
@@ -5792,8 +5628,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Hải Phượng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Hà Thúy Quỳnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 16200000,
     "budgetAdsTotal": 4050000,
     "budgetAffiliate": 16200000,
@@ -5881,8 +5715,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Hải Phượng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Ngô Thị Mai Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 96954538,
     "budgetAdsTotal": 24238635,
     "budgetAffiliate": 86400000,
@@ -6102,8 +5934,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lương Nguyễn Trang Nhung phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đào Thị Ánh Hồng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 17820000,
     "budgetAdsTotal": 4455000,
     "budgetAffiliate": 17820000,
@@ -6188,8 +6018,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Mai Oanh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 230580000,
     "budgetAdsTotal": 57645000,
     "budgetAffiliate": 216000000,
@@ -6382,8 +6210,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Đỗ Hồng Hạnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 76032000,
     "budgetAdsTotal": 19008000,
     "budgetAffiliate": 59400000,
@@ -6557,8 +6383,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Nguyễn Khắc Công",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 12000000,
     "budgetAdsTotal": 3000000,
     "budgetAffiliate": 12000000,
@@ -6630,8 +6454,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Đàm Thùy Dung",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 99115579,
     "budgetAdsTotal": 24778895,
     "budgetAffiliate": 93175579,
@@ -6817,8 +6639,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Đinh Thị Bích Liên phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Thị Như Quỳnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -6887,8 +6707,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Đinh Thị Bích Liên phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Lưu Hoàng Khánh Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 64389600,
     "budgetAdsTotal": 16097400,
     "budgetAffiliate": 60588000,
@@ -7041,8 +6859,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Hoàng Hải Long phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Chu Nhật Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 151740000,
     "budgetAdsTotal": 37935000,
     "budgetAffiliate": 140400000,
@@ -7196,8 +7012,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Hồng Ngát phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Thị Mỹ Hạnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 19440000,
     "budgetAdsTotal": 4860000,
     "budgetAffiliate": 19440000,
@@ -7306,8 +7120,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 744768000,
     "budgetAdsTotal": 186192000,
     "budgetAffiliate": 717444000,
@@ -7560,8 +7372,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Khắc Công",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 21600000,
     "budgetAdsTotal": 5400000,
     "budgetAffiliate": 21600000,
@@ -7647,8 +7457,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Ngọc Trâm Anh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -7715,8 +7523,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Khánh Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -7783,8 +7589,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phan Diệu Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Mai Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -7853,8 +7657,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phan Diệu Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Lê Hương Mai",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 96108001,
     "budgetAdsTotal": 24027000,
     "budgetAffiliate": 81108000,
@@ -8042,8 +7844,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Thị Hảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Anh Tú",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 143154000,
     "budgetAdsTotal": 35788500,
     "budgetAffiliate": 106920000,
@@ -8247,8 +8047,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Hà Thị Thủy phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Trần Phương Anh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 25920000,
     "budgetAdsTotal": 6480000,
     "budgetAffiliate": 25920000,
@@ -8318,8 +8116,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Thị Hảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Bùi Thị Phương Chi",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 252568800,
     "budgetAdsTotal": 63142200,
     "budgetAffiliate": 237600000,
@@ -8523,8 +8319,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Hải Phượng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Chu Nhật Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 32400000,
     "budgetAdsTotal": 8100000,
     "budgetAffiliate": 32400000,
@@ -8610,8 +8404,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Hải Phượng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Trung Kiên",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 439322400,
     "budgetAdsTotal": 109830600,
     "budgetAffiliate": 427680000,
@@ -8830,8 +8622,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Khắc Công",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 5400000,
     "budgetAdsTotal": 1350000,
     "budgetAffiliate": 5400000,
@@ -8917,8 +8707,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Bùi Thu Hằng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Thiều Thị Lan Anh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -8988,8 +8776,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lại Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Văn Tú",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 190555200,
     "budgetAdsTotal": 47638800,
     "budgetAffiliate": 166795200,
@@ -9174,8 +8960,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Thanh Hải phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Thị Vân Hồng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -9245,8 +9029,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Nguyễn Thị Xuân",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 3996000,
     "budgetAdsTotal": 999000,
     "budgetAffiliate": 2376000,
@@ -9332,8 +9114,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phạm Thị Thu Hằng phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Thị Thanh Hoài",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 35640000,
     "budgetAdsTotal": 8910000,
     "budgetAffiliate": 35640000,
@@ -9485,8 +9265,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Thị Thanh Hoài",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 15444000,
     "budgetAdsTotal": 3861000,
     "budgetAffiliate": 0,
@@ -9586,8 +9364,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lại Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Đức Mạnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -9658,8 +9434,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 234630000,
     "budgetAdsTotal": 58657500,
     "budgetAffiliate": 220849200,
@@ -9912,8 +9686,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lê Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Trung Kiên",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -9982,8 +9754,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Bùi Ngọc Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đàm Thùy Dung",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 276210000,
     "budgetAdsTotal": 69052500,
     "budgetAffiliate": 269676000,
@@ -10203,8 +9973,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Quỳnh Nhi phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đỗ Hồng Hạnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -10289,8 +10057,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Thị Hảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Thiều Thị Lan Anh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 648000,
     "budgetAdsTotal": 162000,
     "budgetAffiliate": 0,
@@ -10392,8 +10158,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Hoàng Hải Long phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phùng Thị Thu Huệ",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -10463,8 +10227,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Thị Hảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Ngô Lan Hương",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 471840015,
     "budgetAdsTotal": 117960004,
     "budgetAffiliate": 456000009,
@@ -10701,8 +10463,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phan Diệu Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phạm Thị Hồng Yến",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 262710000,
     "budgetAdsTotal": 65677500,
     "budgetAffiliate": 262710000,
@@ -10854,8 +10614,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Mai Anh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đỗ Thị Thanh Loan",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 85500005,
     "budgetAdsTotal": 21375001,
     "budgetAffiliate": 69600001,
@@ -11023,8 +10781,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phạm Huyền Thương phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đoàn Gia Huy",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11110,8 +10866,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Quỳnh Nhi phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đoàn Gia Huy",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11215,8 +10969,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Phạm Huyền Thương phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phạm Trương Thu Đông",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 51840000,
     "budgetAdsTotal": 12960000,
     "budgetAffiliate": 43200000,
@@ -11402,8 +11154,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đỗ Minh Nhật",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11493,8 +11243,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "leaderApprovedBy": "Nguyễn Thị Ngọc Tâm",
     "leaderApprovedAt": "2026-09-30T17:00:00Z",
     "leaderNotes": "Leader Nguyễn Thị Ngọc Tâm: Đã đối soát đúng hạn mức Order tổng từ Growth. Đồng ý thông qua nội bộ.",
-    "growthPic": "Nguyễn Như Quỳnh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 61776000,
     "budgetAdsTotal": 15444000,
     "budgetAffiliate": 59400000,
@@ -11579,8 +11327,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Chưa phân công phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Vũ Mai Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11666,8 +11412,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Hoàng Diệu Thuỳ phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Trần Phương Anh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11753,8 +11497,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lương Nguyễn Trang Nhung phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đặng Nhật Hoài",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 37540800,
     "budgetAdsTotal": 9385200,
     "budgetAffiliate": 33264000,
@@ -11856,8 +11598,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Ngọc Tâm phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Thị Ánh Tuyết",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -11943,8 +11683,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Mai Anh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Vũ Gia Long",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 9720000,
     "budgetAdsTotal": 2430000,
     "budgetAffiliate": 9720000,
@@ -12031,8 +11769,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Thị Mai Anh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Đào Thị Ánh Hồng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 89100011,
     "budgetAdsTotal": 22275003,
     "budgetAffiliate": 77220000,
@@ -12236,8 +11972,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Lại Ngọc Huyền phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Bùi Thị Phương Chi",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -12353,8 +12087,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Bùi Ngọc Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Hứa Thị Ngọc Lam",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 0,
     "budgetAdsTotal": 0,
     "budgetAffiliate": 0,
@@ -12442,8 +12174,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Bùi Ngọc Ánh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phạm Hà Hoàng Trang",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 233999995,
     "budgetAdsTotal": 58499999,
     "budgetAffiliate": 224399995,
@@ -12629,8 +12359,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Ngọc Linh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Nguyễn Thị Vân Hồng",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 21600000,
     "budgetAdsTotal": 5400000,
     "budgetAffiliate": 21600000,
@@ -12716,8 +12444,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Nguyễn Ngọc Linh phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Lưu Hoàng Khánh Linh",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 93614400,
     "budgetAdsTotal": 23403600,
     "budgetAffiliate": 81496800,
@@ -12905,8 +12631,6 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     ],
     "leaderApprovalStatus": "KHÔNG_ÁP_DỤNG",
     "leaderNotes": "Gian hàng do chuyên viên Trần Phương Thảo phụ trách độc lập (không có leader). Kế hoạch chuyển trực tiếp lên Trưởng Phòng.",
-    "growthPic": "Phạm Thương Thảo",
-    "mediaPic": "Phan Thành Đạt (Media PIC)",
     "totalTargetBudget": 453600000,
     "budgetAdsTotal": 113400000,
     "budgetAffiliate": 410400000,

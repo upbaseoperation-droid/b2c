@@ -46,7 +46,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Ngô Xuân Quý",
     "operationStatus": "Live",
     "storeOperation": "AQUA VIETNAM_Shopee_SoCom",
     "servicePackage": "SoCom",
@@ -101,7 +100,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Trần Minh Ngọc",
     "csListingPic": "Đào Thị Thu Thảo",
     "operationStatus": "Live",
     "storeOperation": "ARENCIA_Shopee_SoCom",
@@ -130,7 +128,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Trần Minh Ngọc",
     "csListingPic": "Đào Thị Thu Thảo",
     "operationStatus": "Live",
     "storeOperation": "ARENCIA_TikTok_SoCom",
@@ -159,9 +156,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Trần Anh Thư",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Nguyễn Trần Khánh Linh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -191,9 +186,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Nguyễn Khánh Linh",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Nguyễn Trần Khánh Linh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -223,9 +216,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Quỳnh Trang"
     ],
-    "growthPic": "Vũ Thị Như Quỳnh",
     "contentPic": "Nguyễn Quỳnh Trang",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -255,9 +246,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Quỳnh Trang"
     ],
-    "growthPic": "Vũ Mai Linh",
     "contentPic": "Nguyễn Quỳnh Trang",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -287,9 +276,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Hải Long"
     ],
-    "growthPic": "Vũ Thị Như Quỳnh",
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -319,9 +306,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Hải Long"
     ],
-    "growthPic": "Phan Đức Hoàng",
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -351,7 +336,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Bùi Quang Vinh",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -381,8 +365,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Mai Oanh",
-    "mediaPic": "Lê Thu Uyên",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -412,9 +394,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Nguyễn Văn Dũng",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -444,9 +424,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Nguyễn Văn Dũng",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -476,8 +454,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đào Thị Lệ Quyên",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -507,9 +483,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Thanh Hải"
     ],
-    "growthPic": "Đỗ Minh Nhật",
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -539,9 +513,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Thanh Hải"
     ],
-    "growthPic": "Ngô Lan Hương",
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -571,9 +543,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vũ Hoài Lâm"
     ],
-    "growthPic": "Đào Thị Lệ Quyên",
     "contentPic": "Vũ Hoài Lâm",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -603,9 +573,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vũ Hoài Lâm"
     ],
-    "growthPic": "Đặng Nhật Hoài",
     "contentPic": "Vũ Hoài Lâm",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -662,9 +630,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Trần Hải Phượng"
     ],
-    "growthPic": "Hà Thúy Quỳnh",
     "contentPic": "Trần Hải Phượng",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -694,9 +660,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Thị Thu Hằng"
     ],
-    "growthPic": "Ngô Thị Mai Linh",
     "contentPic": "Phạm Thị Thu Hằng",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -726,9 +690,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lương Nguyễn Trang Nhung"
     ],
-    "growthPic": "Đào Thị Ánh Hồng",
     "contentPic": "Lương Nguyễn Trang Nhung",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -758,9 +720,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lương Nguyễn Trang Nhung"
     ],
-    "growthPic": "Nguyễn Mai Oanh",
     "contentPic": "Lương Nguyễn Trang Nhung",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -790,9 +750,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Ngọc Tâm"
     ],
-    "growthPic": "Đỗ Hồng Hạnh",
     "contentPic": "Nguyễn Thị Ngọc Tâm",
-    "mediaPic": "Lê Thu Uyên",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -822,9 +780,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Ngọc Tâm"
     ],
-    "growthPic": "Nguyễn Khắc Công",
     "contentPic": "Nguyễn Thị Ngọc Tâm",
-    "mediaPic": "Chu Văn Duy",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -854,9 +810,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Ngọc Tâm"
     ],
-    "growthPic": "Đàm Thùy Dung",
     "contentPic": "Nguyễn Thị Ngọc Tâm",
-    "mediaPic": "Lê Thu Uyên",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -886,7 +840,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Nhung",
     "operationStatus": "Live",
     "storeOperation": "Corine de Farme_Lazada_FFM",
     "servicePackage": "FFM",
@@ -914,7 +867,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Nhung",
     "operationStatus": "Live",
     "storeOperation": "Corine de Farme_Shopee_FFM",
     "servicePackage": "FFM",
@@ -942,7 +894,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Nhung",
     "operationStatus": "Live",
     "storeOperation": "Corine de Farme_TikTok_FFM",
     "servicePackage": "FFM",
@@ -970,8 +921,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đặng Nhật Hoài",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -1001,8 +950,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Thiều Thị Lan Anh",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -1032,9 +979,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Đinh Thị Bích Liên"
     ],
-    "growthPic": "Vũ Thị Như Quỳnh",
     "contentPic": "Đinh Thị Bích Liên",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1064,9 +1009,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Đinh Thị Bích Liên"
     ],
-    "growthPic": "Lưu Hoàng Khánh Linh",
     "contentPic": "Đinh Thị Bích Liên",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1096,9 +1039,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Huyền Thương"
     ],
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Phạm Huyền Thương",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -1128,9 +1069,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Huyền Thương"
     ],
-    "growthPic": "Đặng Ngọc Minh Dũng",
     "contentPic": "Phạm Huyền Thương",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -1188,9 +1127,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Chu Nhật Linh",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1220,9 +1157,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Dương Thị Hồng Nhung"
     ],
-    "growthPic": "Nguyễn Thị Mỹ Hạnh",
     "contentPic": "Dương Thị Hồng Nhung",
-    "mediaPic": "Chu Văn Duy",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1252,9 +1187,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Dương Thị Hồng Nhung"
     ],
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Dương Thị Hồng Nhung",
-    "mediaPic": "Chu Văn Duy",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1284,9 +1217,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Nguyễn Khắc Công",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1316,9 +1247,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Hà Thúy Quỳnh",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1348,8 +1277,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Thị Mỹ Hạnh",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1379,8 +1306,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Trần Việt Hùng",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -1410,8 +1335,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Khánh Linh",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -1441,9 +1364,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phan Diệu Ánh"
     ],
-    "growthPic": "Vũ Mai Linh",
     "contentPic": "Phan Diệu Ánh",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -1473,9 +1394,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phan Diệu Ánh"
     ],
-    "growthPic": "Lê Hương Mai",
     "contentPic": "Phan Diệu Ánh",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -1505,8 +1424,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thương Thảo",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -1536,9 +1453,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Thị Thu Hằng"
     ],
-    "growthPic": "Nguyễn Anh Tú",
     "contentPic": "Phạm Thị Thu Hằng",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -1568,8 +1483,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Ngô Xuân Quý",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1599,8 +1512,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Huỳnh Ngọc Xuân Thúy",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1630,9 +1541,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hà Thị Thủy"
     ],
-    "growthPic": "Lưu Hoàng Khánh Linh",
     "contentPic": "Hà Thị Thủy",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1662,9 +1571,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hà Thị Thủy"
     ],
-    "growthPic": "Bùi Thị Phương Chi",
     "contentPic": "Hà Thị Thủy",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1694,9 +1601,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Ôn Ngọc Hà"
     ],
-    "growthPic": "Ngô Xuân Quý",
     "contentPic": "Ôn Ngọc Hà",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "operationStatus": "Live",
     "storeOperation": "HLA Garment Vietnam_Shopee_E2E-C",
@@ -1725,9 +1630,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Ôn Ngọc Hà"
     ],
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Ôn Ngọc Hà",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -1757,9 +1660,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Trần Hải Phượng"
     ],
-    "growthPic": "Chu Nhật Linh",
     "contentPic": "Trần Hải Phượng",
-    "mediaPic": "Hoàng Cẩm Ly",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1789,9 +1690,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Trần Hải Phượng"
     ],
-    "growthPic": "Nguyễn Trung Kiên",
     "contentPic": "Trần Hải Phượng",
-    "mediaPic": "Hoàng Cẩm Ly",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -1821,7 +1720,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Hà Hoàng Trang",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -1851,8 +1749,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Thị Vân Hồng",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Uông Thanh Tâm",
     "operationStatus": "Live",
     "storeOperation": "Intimate_Website_E2E-S",
@@ -1881,8 +1777,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Khắc Công",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -1939,8 +1833,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Trần Anh Thư",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -1970,8 +1862,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Lưu Hoàng Khánh Linh",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -2001,9 +1891,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Thu Hằng"
     ],
-    "growthPic": "Thiều Thị Lan Anh",
     "contentPic": "Bùi Thu Hằng",
-    "mediaPic": "Lê Thu Uyên",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -2033,9 +1921,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Thu Hằng"
     ],
-    "growthPic": "Nguyễn Văn Tú",
     "contentPic": "Bùi Thu Hằng",
-    "mediaPic": "Chu Văn Duy",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -2065,7 +1951,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Hà Thị Thúy Hằng",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Kênh nội bộ",
     "storeOperation": "Kênh tick xanh_TikTok_",
@@ -2094,7 +1979,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Thị Xuân",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -2124,7 +2008,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Ngô Thị Mai Linh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -2154,9 +2037,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Thanh Hải"
     ],
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -2186,9 +2067,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Thanh Hải"
     ],
-    "growthPic": "Nguyễn Thị Xuân",
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Nguyễn Trần Khánh Linh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -2218,8 +2097,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Thị Xuân",
-    "mediaPic": "Nguyễn Trần Khánh Linh",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -2277,9 +2154,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Huyền Thương"
     ],
-    "growthPic": "Ngô Xuân Quý",
     "contentPic": "Phạm Huyền Thương",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -2309,9 +2184,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Thị Thu Hằng"
     ],
-    "growthPic": "Vũ Thị Thanh Hoài",
     "contentPic": "Phạm Thị Thu Hằng",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -2341,8 +2214,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đào Thị Ánh Hồng",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -2480,9 +2351,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Thu Hằng"
     ],
-    "growthPic": "Vũ Thị Thanh Hoài",
     "contentPic": "Bùi Thu Hằng",
-    "mediaPic": "Thiều Anh Đức",
     "operationStatus": "Live",
     "storeOperation": "Meracine_TikTok_E2E-S",
     "servicePackage": "E2E-S",
@@ -2510,8 +2379,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Đức Mạnh",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -2541,9 +2408,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Hồng Ngát"
     ],
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Nguyễn Thị Hồng Ngát",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -2573,9 +2438,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Nguyễn Trung Kiên",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -2605,9 +2468,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Phương Thảo"
     ],
-    "growthPic": "Đàm Thùy Dung",
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -2637,9 +2498,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Đỗ Hồng Hạnh",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -2669,9 +2528,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Thiều Thị Lan Anh",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Lê Thu Uyên",
     "csListingPic": "Đào Thị Thu Thảo",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -2701,9 +2558,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Hải Long"
     ],
-    "growthPic": "Phùng Thị Thu Huệ",
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -2733,9 +2588,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Hải Long"
     ],
-    "growthPic": "Ngô Lan Hương",
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Đỗ Thị Hằng",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -2765,9 +2618,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lương Thị Như Quỳnh"
     ],
-    "growthPic": "Phạm Thị Hồng Yến",
     "contentPic": "Lương Thị Như Quỳnh",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -2797,9 +2648,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Mai Anh"
     ],
-    "growthPic": "Đỗ Thị Thanh Loan",
     "contentPic": "Nguyễn Thị Mai Anh",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -2829,9 +2678,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Phạm Huyền Thương"
     ],
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Phạm Huyền Thương",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Nguyễn Thu Thủy",
     "operationStatus": "Live",
     "storeOperation": "ORGALIFE_Mall_Shopee_E2E-C",
@@ -2860,9 +2707,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Đoàn Gia Huy",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -2892,9 +2737,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Quỳnh Nhi"
     ],
-    "growthPic": "Phạm Trương Thu Đông",
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",
@@ -2924,8 +2767,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Hà Hoàng Trang",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -2955,8 +2796,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Ngô Thị Mai Linh",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -2986,8 +2825,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đỗ Minh Nhật",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -3017,9 +2854,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lê Thanh Hải"
     ],
-    "growthPic": "Nguyễn Như Quỳnh",
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -3049,8 +2884,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Vũ Mai Linh",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -3080,9 +2913,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Diệu Thùy"
     ],
-    "growthPic": "Trần Phương Anh",
     "contentPic": "Hoàng Diệu Thùy",
-    "mediaPic": "Nguyễn Mai Phương",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -3112,8 +2943,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Hồng Yến",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -3143,8 +2972,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đặng Nhật Hoài",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Đoàn Thị Hồng Ngọc",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -3174,9 +3001,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Ngọc Tâm"
     ],
-    "growthPic": "Nguyễn Thị Ánh Tuyết",
     "contentPic": "Nguyễn Thị Ngọc Tâm",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Thị Hồng Hải",
     "operationStatus": "Live",
@@ -3206,7 +3031,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Như Quỳnh",
     "operationStatus": "Live",
     "storeOperation": "SOME BY MI_Shopee_SoCom",
     "servicePackage": "SoCom",
@@ -3234,7 +3058,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Văn Tú",
     "operationStatus": "Live",
     "storeOperation": "SOME BY MI_TikTok_SoCom",
     "servicePackage": "SoCom",
@@ -3262,7 +3085,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Nhung",
     "operationStatus": "Live",
     "storeOperation": "Sensilis Vietnam_Shopee_FFM",
     "servicePackage": "FFM",
@@ -3344,9 +3166,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Mai Anh"
     ],
-    "growthPic": "Nguyễn Vũ Gia Long",
     "contentPic": "Nguyễn Thị Mai Anh",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -3376,9 +3196,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Nguyễn Thị Mai Anh"
     ],
-    "growthPic": "Đào Thị Ánh Hồng",
     "contentPic": "Nguyễn Thị Mai Anh",
-    "mediaPic": "Nguyễn Minh Khánh",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Phan Tuấn Duy",
     "operationStatus": "Live",
@@ -3408,8 +3226,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đàm Thùy Dung",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Vũ Đặng Thắng",
     "operationStatus": "Live",
@@ -3439,8 +3255,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Mai Oanh",
-    "mediaPic": "Thiều Anh Đức",
     "csListingPic": "Trần Thị Thu Hương",
     "operationStatus": "Live",
     "storeOperation": "The Vigo_TikTok_E2E-O",
@@ -3469,7 +3283,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Thị Nhung",
     "operationStatus": "Live",
     "storeOperation": "Topicrem_Lazada_FFM",
     "servicePackage": "FFM",
@@ -3524,7 +3337,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Thiều Anh Đức",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -3554,8 +3366,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Lê Hương Mai",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -3585,9 +3395,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lại Ngọc Huyền"
     ],
-    "growthPic": "Bùi Thị Phương Chi",
     "contentPic": "Lại Ngọc Huyền",
-    "mediaPic": "Chu Khánh Duy",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -3617,8 +3425,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Thị Xuân",
-    "mediaPic": "Nguyễn Trần Khánh Linh",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Thị Bích Phượng",
     "operationStatus": "Live",
@@ -3648,7 +3454,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Lê Trung Hoa",
     "operationStatus": "Kênh nội bộ",
     "storeOperation": "Upbaby68_TikTok_MCN",
     "servicePackage": "MCN",
@@ -3703,7 +3508,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Lê Trung Hoa",
     "operationStatus": "Kênh nội bộ",
     "storeOperation": "Upbeautysuthat_TikTok_MCN",
     "servicePackage": "MCN",
@@ -3731,7 +3535,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Nguyễn Lê Trung Hoa",
     "operationStatus": "Kênh nội bộ",
     "storeOperation": "Upecom_Shopee_MCN",
     "servicePackage": "MCN",
@@ -3759,9 +3562,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Ngọc Ánh"
     ],
-    "growthPic": "Hứa Thị Ngọc Lam",
     "contentPic": "Bùi Ngọc Ánh",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -3791,9 +3592,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Ngọc Ánh"
     ],
-    "growthPic": "Phạm Hà Hoàng Trang",
     "contentPic": "Bùi Ngọc Ánh",
-    "mediaPic": "Đỗ Phương Thảo",
     "csListingPic": "Ngô Thị Khánh Ly",
     "csDesignPic": "Mai Ngọc Huy",
     "operationStatus": "Live",
@@ -3823,9 +3622,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Thu Hằng"
     ],
-    "growthPic": "Nguyễn Thị Ánh Tuyết",
     "contentPic": "Bùi Thu Hằng",
-    "mediaPic": "Phạm Quyền Anh",
     "csListingPic": "Trần Mai Linh",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -3855,7 +3652,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Bùi Thu Hằng"
     ],
-    "growthPic": "Ngô Hà Linh",
     "contentPic": "Bùi Thu Hằng",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -3885,9 +3681,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lương Thị Như Quỳnh"
     ],
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "contentPic": "Lương Thị Như Quỳnh",
-    "mediaPic": "Chu Văn Duy",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -3917,9 +3711,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Lương Thị Như Quỳnh"
     ],
-    "growthPic": "Lưu Hoàng Khánh Linh",
     "contentPic": "Lương Thị Như Quỳnh",
-    "mediaPic": "Hoàng Cẩm Ly",
     "csListingPic": "Nguyễn Thu Thủy",
     "csDesignPic": "Nguyễn Hoài Ngọc",
     "operationStatus": "Live",
@@ -3949,8 +3741,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Phạm Hà Hoàng Trang",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -3980,8 +3770,6 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Vân Ngọc"
     ],
-    "growthPic": "Đinh Nguyễn Hồng Hà",
-    "mediaPic": "Đặng Hữu Trung",
     "csListingPic": "Trần Thị Thu Hương",
     "csDesignPic": "Nguyễn Đức Anh",
     "operationStatus": "Live",
@@ -4011,9 +3799,7 @@ export const LIVE_STORE_PORTFOLIOS_MASTER: StorePortfolioItem[] = [
     "b2cOwners": [
       "Hoàng Diệu Thùy"
     ],
-    "growthPic": "Phạm Thương Thảo",
     "contentPic": "Hoàng Diệu Thùy",
-    "mediaPic": "Đoàn Khánh Linh",
     "csListingPic": "Uông Thanh Tâm",
     "csDesignPic": "Nguyễn Tấn Đạt",
     "operationStatus": "Live",

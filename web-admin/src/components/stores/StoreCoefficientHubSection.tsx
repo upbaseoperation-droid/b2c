@@ -92,7 +92,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
   onNotify,
 }) => {
   const isManager =
-    !currentUser || ['ADMIN', 'MANAGER', 'GROWTH_MANAGER'].includes(currentUser.role);
+    !currentUser || ['ADMIN', 'MANAGER'].includes(currentUser.role);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'ALL' | StoreDifficultyTier>('ALL');

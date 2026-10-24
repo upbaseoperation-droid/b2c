@@ -22,7 +22,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Nguyễn Đức Mạnh",
-    "growthPic": "Nguyễn Đức Mạnh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lê Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu 4PM tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -81,7 +80,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-bella",
@@ -98,7 +96,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 209,
     "airedVideos": 0,
     "accountPic": "Trần Anh Thư",
-    "growthPic": "Trần Anh Thư",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lê Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu BELLA tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -157,7 +154,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-babe",
@@ -174,7 +170,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Vũ Mai Linh",
-    "growthPic": "Vũ Mai Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Quỳnh Trang",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Babe tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -219,7 +214,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Quỳnh Trang",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-badlab",
@@ -236,7 +230,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Phan Đức Hoàng",
-    "growthPic": "Phan Đức Hoàng",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Hoàng Hải Long",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Badlab tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -281,7 +274,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-baegayul",
@@ -298,7 +290,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Chu Nhật Linh",
-    "growthPic": "Chu Nhật Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Đặng Thị Yến Nhi",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Baegayul tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -343,7 +334,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Đặng Thị Yến Nhi",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-baniphar",
@@ -360,7 +350,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 168,
     "airedVideos": 0,
     "accountPic": "Nguyễn Văn Dũng",
-    "growthPic": "Nguyễn Văn Dũng",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Ngọc Huyền",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Baniphar tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -419,7 +408,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Ngọc Huyền",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-bye-bye-blemish",
@@ -436,7 +424,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 260,
     "airedVideos": 0,
     "accountPic": "Đỗ Minh Nhật",
-    "growthPic": "Đỗ Minh Nhật",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Lê Thanh Hải",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Bye Bye Blemish tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -495,7 +482,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-cm24",
@@ -512,7 +498,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 64,
     "airedVideos": 0,
     "accountPic": "Đào Thị Lệ Quyên",
-    "growthPic": "Đào Thị Lệ Quyên",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Vũ Hoài Lâm",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu CM24 tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -571,7 +556,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Vũ Hoài Lâm",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-cathy-doll",
@@ -588,7 +572,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 141,
     "airedVideos": 0,
     "accountPic": "Hà Thúy Quỳnh",
-    "growthPic": "Hà Thúy Quỳnh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Trần Hải Phượng",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Cathy Doll tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -647,7 +630,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Trần Hải Phượng",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-chulala",
@@ -664,7 +646,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 311,
     "airedVideos": 0,
     "accountPic": "Đào Thị Ánh Hồng",
-    "growthPic": "Đào Thị Ánh Hồng",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lương Nguyễn Trang Nhung",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Chulala tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -723,7 +704,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lương Nguyễn Trang Nhung",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-cindy-bloom",
@@ -740,7 +720,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 95,
     "airedVideos": 0,
     "accountPic": "Đỗ Hồng Hạnh",
-    "growthPic": "Đỗ Hồng Hạnh",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Bùi Ngọc Ánh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Cindy Bloom tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -785,7 +764,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Bùi Ngọc Ánh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-clubclio",
@@ -802,7 +780,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 139,
     "airedVideos": 0,
     "accountPic": "Nguyễn Khắc Công",
-    "growthPic": "Nguyễn Khắc Công",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Phạm Thị Thu Hằng",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu ClubClio tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -861,7 +838,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Phạm Thị Thu Hằng",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-docilee",
@@ -878,7 +854,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 80,
     "airedVideos": 0,
     "accountPic": "Vũ Thị Như Quỳnh",
-    "growthPic": "Vũ Thị Như Quỳnh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Đinh Thị Bích Liên",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Docilee tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -937,7 +912,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Đinh Thị Bích Liên",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-dynik",
@@ -954,7 +928,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 190,
     "airedVideos": 0,
     "accountPic": "Chu Nhật Linh",
-    "growthPic": "Chu Nhật Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Hoàng Hải Long",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Dynik tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -999,7 +972,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-eupc",
@@ -1016,7 +988,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 955,
     "airedVideos": 0,
     "accountPic": "Nguyễn Thị Mỹ Hạnh",
-    "growthPic": "Nguyễn Thị Mỹ Hạnh",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Nguyễn Thị Hồng Ngát",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu EUPC tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1075,7 +1046,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Thị Hồng Ngát",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-ekseption",
@@ -1092,7 +1062,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 27,
     "airedVideos": 0,
     "accountPic": "Nguyễn Khắc Công",
-    "growthPic": "Nguyễn Khắc Công",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lê Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Ekseption tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1151,7 +1120,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-face-republic",
@@ -1168,7 +1136,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Nguyễn Khánh Linh",
-    "growthPic": "Nguyễn Khánh Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Đặng Thị Yến Nhi",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Face republic tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1213,7 +1180,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Đặng Thị Yến Nhi",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-feelcleans",
@@ -1230,7 +1196,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 120,
     "airedVideos": 0,
     "accountPic": "Vũ Mai Linh",
-    "growthPic": "Vũ Mai Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Phan Diệu Ánh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu FeelCleans tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1289,7 +1254,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Phan Diệu Ánh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-fresh",
@@ -1306,7 +1270,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 179,
     "airedVideos": 0,
     "accountPic": "Nguyễn Anh Tú",
-    "growthPic": "Nguyễn Anh Tú",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Trần Thị Hảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Fresh tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1351,7 +1314,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Trần Thị Hảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-hdt",
@@ -1368,7 +1330,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 348,
     "airedVideos": 0,
     "accountPic": "Trần Phương Anh",
-    "growthPic": "Trần Phương Anh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Hà Thị Thủy",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu HDT tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1427,7 +1388,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Hà Thị Thủy",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-herbal-care",
@@ -1444,7 +1404,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 590,
     "airedVideos": 0,
     "accountPic": "Chu Nhật Linh",
-    "growthPic": "Chu Nhật Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Trần Hải Phượng",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Herbal Care tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1503,7 +1462,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Trần Hải Phượng",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-ziaja-intimate",
@@ -1520,7 +1478,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 144,
     "airedVideos": 0,
     "accountPic": "Nguyễn Thị Vân Hồng",
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Ngọc Linh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Intimate tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1579,7 +1536,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Ngọc Linh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-karmart",
@@ -1596,7 +1552,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Nguyễn Khắc Công",
-    "growthPic": "Nguyễn Khắc Công",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Đặng Thị Yến Nhi",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Karmart tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1641,7 +1596,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "Shopee Mall"
     ],
     "contentPic": "Đặng Thị Yến Nhi",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-kutieskin-mama",
@@ -1658,7 +1612,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 238,
     "airedVideos": 0,
     "accountPic": "Thiều Thị Lan Anh",
-    "growthPic": "Thiều Thị Lan Anh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Bùi Thu Hằng",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Kutieskin Mama tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1717,7 +1670,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Bùi Thu Hằng",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-l-occitane-vi-t-nam",
@@ -1734,7 +1686,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Nguyễn Thị Vân Hồng",
-    "growthPic": "Nguyễn Thị Vân Hồng",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Lê Thanh Hải",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu L'Occitane Việt Nam tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1793,7 +1744,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Thanh Hải",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-lipit",
@@ -1810,7 +1760,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 45,
     "airedVideos": 0,
     "accountPic": "Vũ Thị Thanh Hoài",
-    "growthPic": "Vũ Thị Thanh Hoài",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Phạm Thị Thu Hằng",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Lipit tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1855,7 +1804,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Phạm Thị Thu Hằng",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-meracine",
@@ -1872,7 +1820,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 19,
     "airedVideos": 0,
     "accountPic": "Vũ Thị Thanh Hoài",
-    "growthPic": "Vũ Thị Thanh Hoài",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lê Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Meracine tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1917,7 +1864,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-mine",
@@ -1934,7 +1880,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 293,
     "airedVideos": 0,
     "accountPic": "Nguyễn Đức Mạnh",
-    "growthPic": "Nguyễn Đức Mạnh",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Lại Ngọc Huyền",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Mine tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -1993,7 +1938,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lại Ngọc Huyền",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-miss-saigon",
@@ -2010,7 +1954,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 345,
     "airedVideos": 0,
     "accountPic": "Nguyễn Trung Kiên",
-    "growthPic": "Nguyễn Trung Kiên",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lê Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Miss Saigon tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2069,7 +2012,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lê Phương Thảo",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-nabizam",
@@ -2086,7 +2028,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Đỗ Hồng Hạnh",
-    "growthPic": "Đỗ Hồng Hạnh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Thị Quỳnh Nhi",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Nabizam tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2145,7 +2086,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-natural-care",
@@ -2162,7 +2102,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 590,
     "airedVideos": 0,
     "accountPic": "Phùng Thị Thu Huệ",
-    "growthPic": "Phùng Thị Thu Huệ",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Hoàng Hải Long",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Natural Care tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2221,7 +2160,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Hoàng Hải Long",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-nature-s-way",
@@ -2238,7 +2176,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 328,
     "airedVideos": 0,
     "accountPic": "Phạm Thị Hồng Yến",
-    "growthPic": "Phạm Thị Hồng Yến",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Phan Diệu Ánh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Nature's Way tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2283,7 +2220,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "Shopee Mall"
     ],
     "contentPic": "Phan Diệu Ánh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-nucos",
@@ -2300,7 +2236,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 107,
     "airedVideos": 0,
     "accountPic": "Đỗ Thị Thanh Loan",
-    "growthPic": "Đỗ Thị Thanh Loan",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Thị Mai Anh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Nucos tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2345,7 +2280,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Thị Mai Anh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-orgalife",
@@ -2362,7 +2296,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 65,
     "airedVideos": 0,
     "accountPic": "Đoàn Gia Huy",
-    "growthPic": "Đoàn Gia Huy",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Phạm Huyền Thương",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu ORGALIFE tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2434,7 +2367,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Phạm Huyền Thương",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-rejuran",
@@ -2451,7 +2383,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 77,
     "airedVideos": 0,
     "accountPic": "Đỗ Minh Nhật",
-    "growthPic": "Đỗ Minh Nhật",
     "bookingPicLead": "Nguyễn Thị Ngọc Tâm",
     "brandPicName": "Nguyễn Thị Quỳnh Nhi",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Rejuran tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2510,7 +2441,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Thị Quỳnh Nhi",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-revision",
@@ -2527,7 +2457,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Vũ Mai Linh",
-    "growthPic": "Vũ Mai Linh",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Hoàng Diệu Thuỳ",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Revision tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2586,7 +2515,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Hoàng Diệu Thuỳ",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-royal-canin",
@@ -2603,7 +2531,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 47,
     "airedVideos": 0,
     "accountPic": "Đặng Nhật Hoài",
-    "growthPic": "Đặng Nhật Hoài",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lương Nguyễn Trang Nhung",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Royal Canin tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2648,7 +2575,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lương Nguyễn Trang Nhung",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-scc-saigon-cosmetics",
@@ -2665,7 +2591,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Nguyễn Thị Ánh Tuyết",
-    "growthPic": "Nguyễn Thị Ánh Tuyết",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Thị Ngọc Tâm",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu SCC Saigon Cosmetics tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2710,7 +2635,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "Shopee Mall"
     ],
     "contentPic": "Nguyễn Thị Ngọc Tâm",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-tm-clean",
@@ -2727,7 +2651,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 124,
     "airedVideos": 0,
     "accountPic": "Nguyễn Vũ Gia Long",
-    "growthPic": "Nguyễn Vũ Gia Long",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Nguyễn Thị Mai Anh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu TM Clean tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2786,7 +2709,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Nguyễn Thị Mai Anh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-upbeauty",
@@ -2803,7 +2725,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 10,
     "airedVideos": 0,
     "accountPic": "Bùi Thị Phương Chi",
-    "growthPic": "Bùi Thị Phương Chi",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Lại Ngọc Huyền",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu UpBeauty tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2848,7 +2769,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Lại Ngọc Huyền",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-venus",
@@ -2865,7 +2785,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 292,
     "airedVideos": 0,
     "accountPic": "Hứa Thị Ngọc Lam",
-    "growthPic": "Hứa Thị Ngọc Lam",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Bùi Ngọc Ánh",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu Venus tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2924,7 +2843,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Bùi Ngọc Ánh",
-    "mediaPic": "Media Team"
   },
   {
     "id": "brand-b2c-phcare",
@@ -2941,7 +2859,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
     "targetVideos": 567,
     "airedVideos": 0,
     "accountPic": "Phạm Thương Thảo",
-    "growthPic": "Phạm Thương Thảo",
     "bookingPicLead": "Đặng Thị Yến Nhi",
     "brandPicName": "Trần Phương Thảo",
     "brandGuideline": "Bộ quy chuẩn nội dung và thông điệp thương hiệu pHCare tháng 10/2026. Tuân thủ trần chi phí và kịch bản duyệt trước khi lên sóng.",
@@ -2986,7 +2903,6 @@ const RAW_B2C_42_BRANDS: BrandDetail[] = [
       "TikTok Shop"
     ],
     "contentPic": "Trần Phương Thảo",
-    "mediaPic": "Media Team"
   }
 ];
 

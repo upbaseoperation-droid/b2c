@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const user = await requestActor(req);
     if (!user) throw new RecordError('Phiên không còn quyền truy cập.', 401);
     const record = await readPolicy();
-    const canViewRbacDirectory = ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role);
+    const canViewRbacDirectory = ['ADMIN', 'MANAGER'].includes(user.role);
     if (!canViewRbacDirectory) return NextResponse.json({ ...record, data: { ...record.data, staffOverrides: {}, deptRules: [], internalStaff: [], audit: [] }, user }, { headers });
     return NextResponse.json({ ...record, user }, { headers });
   } catch (e) { return failure(e); }

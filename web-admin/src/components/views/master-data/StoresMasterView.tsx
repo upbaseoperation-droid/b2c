@@ -106,9 +106,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     stores.forEach(s => {
       if (s.accountOwnerName) set.add(s.accountOwnerName.trim());
       if (s.b2cOwnerName) set.add(s.b2cOwnerName.trim());
-      if (s.growthPic) set.add(s.growthPic.trim());
       if (s.contentPic) set.add(s.contentPic.trim());
-      if (s.mediaPic) set.add(s.mediaPic.trim());
       if (s.backupOwnerName) set.add(s.backupOwnerName.trim());
     });
     return Array.from(set).sort();
@@ -130,12 +128,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     platform: 'Shopee Mall' as 'Shopee Mall' | 'TikTok Shop' | 'Lazada',
     servicePackage: 'E2E-S',
     accountOwnerName: '',
-    growthPic: '',
     b2cOwnerName: '',
     bookingLeader: '',
     hasBookingLeader: false,
     contentPic: '',
-    mediaPic: '',
     planStrategyPic: '',
     keyVisualSisPic: '',
     backupOwnerName: '',
@@ -209,9 +205,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       if (selectedOwner !== 'ALL') {
         const matchOwner = (s.b2cOwnerName && s.b2cOwnerName.includes(selectedOwner)) ||
                            (s.accountOwnerName && s.accountOwnerName.includes(selectedOwner)) ||
-                           (s.growthPic && s.growthPic.includes(selectedOwner)) ||
                            (s.contentPic && s.contentPic.includes(selectedOwner)) ||
-                           (s.mediaPic && s.mediaPic.includes(selectedOwner)) ||
                            (s.backupOwnerName && s.backupOwnerName.includes(selectedOwner)) ||
                            (s.bookingLeader && s.bookingLeader.includes(selectedOwner));
         if (!matchOwner) return false;
@@ -227,9 +221,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(q)) ||
           (s.bookingLeader && s.bookingLeader.toLowerCase().includes(q)) ||
           (s.accountOwnerName && s.accountOwnerName.toLowerCase().includes(q)) ||
-          (s.growthPic && s.growthPic.toLowerCase().includes(q)) ||
           (s.contentPic && s.contentPic.toLowerCase().includes(q)) ||
-          (s.mediaPic && s.mediaPic.toLowerCase().includes(q)) ||
           (s.platformStoreId && s.platformStoreId.toLowerCase().includes(q))
         );
       }
@@ -371,9 +363,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       b2cOwnerName: brandObj?.bookingPicLead || 'Chưa phân công',
       bookingLeader: undefined,
       hasBookingLeader: false,
-      growthPic: brandObj?.growthPic || 'Chưa phân công',
       contentPic: 'Media Team',
-      mediaPic: 'Media Team',
       isB2cManaged: true,
       requiresB2cPlan: true,
       targetAffiliateContents: 0,
@@ -401,12 +391,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       platform: s.platform,
       servicePackage: s.servicePackage || 'E2E-S',
       accountOwnerName: s.accountOwnerName || '',
-      growthPic: s.growthPic || '',
       b2cOwnerName: s.b2cOwnerName || (s.b2cOwners ? s.b2cOwners.join(', ') : ''),
       bookingLeader: s.bookingLeader || '',
       hasBookingLeader: !!(s.hasBookingLeader && s.bookingLeader),
       contentPic: s.contentPic || '',
-      mediaPic: s.mediaPic || '',
       planStrategyPic: s.planStrategyPic || '',
       keyVisualSisPic: s.keyVisualSisPic || '',
       backupOwnerName: s.backupOwnerName || '',
@@ -446,12 +434,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       platform: form.platform,
       servicePackage: form.servicePackage,
       accountOwnerName: form.accountOwnerName.trim() || editingStore.accountOwnerName,
-      growthPic: form.growthPic.trim() || editingStore.growthPic,
       b2cOwnerName: form.b2cOwnerName.trim() || editingStore.b2cOwnerName,
       bookingLeader: isLeaderSet ? form.bookingLeader.trim() : undefined,
       hasBookingLeader: isLeaderSet,
       contentPic: form.contentPic.trim() || editingStore.contentPic,
-      mediaPic: form.mediaPic.trim() || editingStore.mediaPic,
       // Bỏ trống thì gỡ người phụ trách
       planStrategyPic: form.planStrategyPic.trim() || undefined,
       keyVisualSisPic: form.keyVisualSisPic.trim() || undefined,
@@ -1268,15 +1254,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     </select>
                   </div>
 
-                  <StaffSearchSelect
-                    label="Growth PIC (Bộ phận Tăng trưởng sàn)"
-                    sublabel="(Giao chỉ tiêu và đối soát NMV)"
-                    badgeColorClass="text-positive"
-                    placeholder="Chọn Growth PIC..."
-                    value={form.growthPic}
-                    departmentHint="GROWTH"
-                    onChange={(name) => setForm(prev => ({ ...prev, growthPic: name }))}
-                  />
 
                   <StaffSearchSelect
                     label="Account PIC (Quan hệ Brand)"

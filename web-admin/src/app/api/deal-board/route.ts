@@ -141,7 +141,7 @@ export async function PUT(request: NextRequest) {
               j.lateSigningExplanation?.leadConfirmedBy?.trim()
           );
           if (isLeadConfirmed && !wasLeadConfirmed) {
-            if (!['LEADER', 'ADMIN', 'DIRECTOR', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(actor.role)) {
+            if (!['LEADER', 'ADMIN', 'DIRECTOR'].includes(actor.role)) {
               throw new RecordError('Chỉ Trưởng nhóm (Leader) hoặc Quản lý mới có quyền xác nhận Giải trình ký muộn.', 403);
             }
           }

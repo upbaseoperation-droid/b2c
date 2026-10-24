@@ -300,7 +300,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       if (selectedBrandStatus !== 'ALL' && b.status !== selectedBrandStatus) return false;
       if (selectedBrandPic !== 'ALL') {
         const matchPic = (b.accountPic && b.accountPic.includes(selectedBrandPic)) ||
-                         (b.growthPic && b.growthPic.includes(selectedBrandPic)) ||
                          (b.bookingPicLead && b.bookingPicLead.includes(selectedBrandPic));
         if (!matchPic) return false;
       }
@@ -457,7 +456,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       targetVideos: 0,
       airedVideos: 0,
       accountPic: 'Chưa phân công',
-      growthPic: 'Chưa phân công',
       bookingPicLead: 'Chưa phân công',
       platforms: ['Shopee Mall', 'TikTok Shop'],
       brandGuideline: '',
@@ -517,7 +515,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           targetVideos: 0,
           airedVideos: 0,
           accountPic: 'Chưa phân công',
-          growthPic: 'Chưa phân công',
           bookingPicLead: 'Chưa phân công',
           platforms: ['TikTok Shop', 'Shopee Mall'],
           brandGuideline: '',

@@ -1,7 +1,5 @@
 export type SystemDepartmentScope =
   | 'MARKETING_B2C'
-  | 'GROWTH'
-  | 'MEDIA'
   | 'OTHER_BLOCKED';
 
 /**
@@ -13,14 +11,10 @@ export type DataScope = 'ALL' | 'DEPARTMENT' | 'TEAM' | 'OWN';
 export type UserRole =
   | 'ADMIN' 
   | 'MANAGER'        // Giám đốc Marketing B2C
-  | 'GROWTH_MANAGER' // Trưởng phòng Growth
-  | 'MEDIA_MANAGER'  // Trưởng phòng Media
   | 'LEADER'         // Trưởng nhóm B2C
   | 'BRAND_MEMBER' 
   | 'CONTENT_MEMBER' 
   | 'BOOKING_MEMBER' 
-  | 'GROWTH_MEMBER'
-  | 'MEDIA_MEMBER'
   | 'MEMBER'
   | 'LEGAL'          // Pháp chế — Duyệt hợp đồng & Quản lý danh mục biểu mẫu
   | 'FINANCE'        // Kế toán — Duyệt hợp đồng & Đối soát thanh toán
@@ -843,7 +837,6 @@ export interface BookingDealItem {
   // Nhân sự phối hợp trên Job (3 bên)
   assignedStaff: string; // Booking PIC
   bookingPic?: string; // Booking PIC
-  growthPic?: string; // Growth PIC (Phạm Thị Hồng Yến, Nguyễn Anh Tú...)
   accountPic?: string; // Account PIC (Phạm Thị Nhài, Hà Thị Thương...)
   leadBooking?: string; // Lead Booking
   contentNote?: string; // Content note / Đề xuất từ UpBase cho Job này
@@ -1573,7 +1566,6 @@ export interface BrandKnowledgeBase {
   taxCode?: string;
   contactPerson?: string;
   accountPic?: string;
-  growthPic?: string;
   bookingPicLead?: string;
   monthlyBudget?: number;
   targetGmv?: number;
@@ -1867,7 +1859,6 @@ export interface PushProductItem {
   pdpUrlShopee?: string;
 
   // PICs
-  growthPic: string; // PIC Growth phụ trách khởi tạo & đảm bảo deal/kho
   b2cPic: string; // PIC B2C Booking phụ trách kết nối KOC
   
   // Workflow Status
@@ -1875,7 +1866,6 @@ export interface PushProductItem {
   proposedAt: string;
   lockedAt?: string;
   lockedBy?: {
-    growthPic: string;
     b2cPic: string;
   };
   
@@ -1896,7 +1886,6 @@ export interface MasterBrandSummary {
   servicePackages: string[];
   status: 'ACTIVE' | 'PAUSED' | 'UPCOMING';
   accountPic?: string;
-  growthPic?: string;
   monthlyBudget?: number;
   contractEndDate?: string;
 }
@@ -1921,7 +1910,6 @@ export interface BrandDetail {
 
   // Đội ngũ phụ trách 3 bên (PIC) & 3 vị trí gắn theo Brand (B2C Brand-level Positions)
   accountPic: string; // Account Manager làm việc với Brand
-  growthPic: string; // Growth Lead chạy Ads & GMV
   bookingPicLead: string; // Trưởng nhóm Booking phụ trách KOC
   brandPicName?: string; // Brand PIC Lead (alias)
   contentBrandMainPic?: string; // Content / Brand main [theo brand]
@@ -1948,7 +1936,6 @@ export interface BrandDetail {
   platforms?: string[];
   servicePackages?: string[];
   contentPic?: string;
-  mediaPic?: string;
   profileStatus?: 'CONFIGURED' | 'NOT_CONFIGURED';
 }
 
@@ -2024,7 +2011,6 @@ export interface GrowthDemandItem {
   cancellationRate?: number; // Tỉ lệ hủy đơn dự kiến (e.g. 0.08)
   targetNmv?: number; // Target NMV thuần = GMV * (1 - Tỉ lệ hủy)
   targetCir: number; // CIR trần kỳ vọng = Budget / Target GMV (e.g. 20.0%)
-  growthPic: string; // Growth Lead gửi yêu cầu
   bookingPic: string; // Booking PIC chịu trách nhiệm lập plan
   deadlineBreakdown: string; // Hạn chót lập plan (SLA 24h)
   growthNotes: string; // Định hướng sản phẩm chủ lực, SKU, Hook mong muốn từ Growth
@@ -2413,9 +2399,7 @@ export interface StorePortfolioItem {
   storeOperation?: string; // Tên nhận diện vận hành: Brand_Platform_Service
   servicePackage?: string; // E2E-S, Live-S, MCN-S, Standard...
   servicePackageName?: string; // E2E - Service, Live - Service...
-  growthPic?: string; // PIC phụ trách Growth
   contentPic?: string; // PIC phụ trách Content
-  mediaPic?: string; // PIC phụ trách Media
   /** Giám đốc gán theo gian: chỉ nhập phần Định hướng của Plan tháng của Brand */
   planStrategyPic?: string;
   /** Giám đốc gán theo gian: chỉ nhập phần Key Visual của Plan tháng của Brand */
@@ -2752,7 +2736,8 @@ export type MonthlyPlanStatus =
   | 'COMPLETED'              // Đã nghiệm thu & đóng số tháng
   | 'ARCHIVED';              // Đã lưu trữ
 
-export type PlanDiscussionRole = 'GROWTH' | 'BOOKING' | 'MEDIA' | 'LEAD' | 'SYSTEM';
+/** GROWTH / MEDIA chỉ còn trong biên bản trao đổi cũ (đã bỏ 2 khối khỏi hệ thống), không đăng mới được. */
+export type PlanDiscussionRole = 'BOOKING' | 'LEAD' | 'SYSTEM' | 'GROWTH' | 'MEDIA';
 
 export type PlanDiscussionType = 
   | 'COMMENT' 
@@ -2794,7 +2779,7 @@ export interface PlanApprovalStep {
 
 // Trạng thái ký duyệt đồng thuận 3 bên: Growth, Booking B2C, Media (+ Trưởng phòng)
 export interface MultiPartySignOff {
-  growth: {
+  growth?: {
     confirmed: boolean;
     confirmedBy?: string;
     confirmedAt?: string;
@@ -2811,7 +2796,7 @@ export interface MultiPartySignOff {
     totalContents?: number;
     allocatedBudget?: number;
   };
-  media: {
+  media?: {
     confirmed: boolean;
     confirmedBy?: string;
     confirmedAt?: string;
@@ -2945,8 +2930,6 @@ export interface InputPlanBreakdownState {
   month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
   week: string;
   pic: string;
-  growthPic?: string; // Nhân sự Growth phụ trách thẩm định & giao số
-  mediaPic?: string; // Nhân sự Media phụ trách gói quảng cáo
   growthAlignmentStatus?: 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT'; // Trạng thái trao đổi với Growth
   growthAlignmentNotes?: string;
   submittedAt?: string;
@@ -3036,8 +3019,6 @@ export interface LarkbaseBookingPlanRecordItem {
   isB2cManaged: boolean;
   b2cPic: string;
   bookingLeader?: string;
-  growthPic?: string;
-  mediaPic?: string;
   approvalStatus: 'APPROVED' | 'LEAD_APPROVED' | 'LOCKED' | 'PENDING';
   larkApprovalInstanceId?: string;
   approvedBy: string;
@@ -3780,7 +3761,6 @@ export interface BrandMonthlyPlanItem {
 
   // Phối hợp 3 bên (Account / Growth / Booking Lead)
   accountPic: string;
-  growthPic: string;
   bookingPicLead: string;
 
   // 1. Kế hoạch tháng vị trí Content / Brand main [theo brand]

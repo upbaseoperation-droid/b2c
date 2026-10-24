@@ -27,10 +27,10 @@ interface StoredPlan {
 interface UseMonthlyPlanSyncOptions {
   /** Danh sách kế hoạch hiệu lực (đã gộp bản đang mở trong Studio). */
   effectivePlans: InputPlanBreakdownState[];
-  /** Nạp danh sách từ database vào state của màn hình. */
-  onLoaded: (plans: InputPlanBreakdownState[]) => void;
+  /** Nạp danh sách từ database vào state của màn hình. Có thể trả về danh sách đã chuẩn hóa để ghi nhận mốc đã lưu. */
+  onLoaded: (plans: InputPlanBreakdownState[]) => InputPlanBreakdownState[] | void;
   /** Thay một kế hoạch bằng bản mới nhất từ database (khi bị ghi đè / bị khóa). */
-  onReplacePlan: (plan: InputPlanBreakdownState) => void;
+  onReplacePlan: (plan: InputPlanBreakdownState) => InputPlanBreakdownState | void;
   onNotify?: (msg: string) => void;
   debounceMs?: number;
 }
@@ -92,9 +92,17 @@ export function useMonthlyPlanSync({
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || `HTTP ${res.status}`);
         const body = (await res.json()) as { plans: StoredPlan[] };
         if (cancelled) return;
-        body.plans.forEach(rememberStored);
+        const loadedPlans = body.plans.map(p => p.plan);
+        const maybeTransformed = callbacksRef.current.onLoaded(loadedPlans);
+        const finalPlans = Array.isArray(maybeTransformed) ? maybeTransformed : loadedPlans;
+        const byId = new Map(finalPlans.map(p => [p.id, p]));
+        body.plans.forEach(s => {
+          rememberStored({
+            revision: s.revision,
+            plan: byId.get(s.plan.id) ?? s.plan
+          });
+        });
         readyRef.current = true;
-        callbacksRef.current.onLoaded(body.plans.map(p => p.plan));
         setStatus('saved');
         setLastSavedAt(new Date());
       } catch (err) {
@@ -151,8 +159,11 @@ export function useMonthlyPlanSync({
             // Bị người khác lưu trước hoặc phiên bản đã chốt: lấy bản mới nhất từ database
             if ((res.status === 409 || res.status === 423) && body?.current) {
               const current = body.current as StoredPlan;
-              rememberStored(current);
-              callbacksRef.current.onReplacePlan(current.plan);
+              const replaced = callbacksRef.current.onReplacePlan(current.plan);
+              rememberStored({
+                revision: current.revision,
+                plan: replaced || current.plan
+              });
               callbacksRef.current.onNotify?.(
                 `${body.error} Đã tải lại bản mới nhất của "${current.plan.title}", thay đổi vừa rồi chưa được lưu.`
               );

@@ -12,15 +12,11 @@ import type { UserScopeSummary } from '../lib/rbacScope';
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Quản trị',
   MANAGER: 'Trưởng phòng B2C',
-  GROWTH_MANAGER: 'Trưởng phòng Growth',
-  MEDIA_MANAGER: 'Trưởng phòng Media',
   LEADER: 'Trưởng nhóm',
   MEMBER: 'Chuyên viên',
   BRAND_MEMBER: 'Brand PIC',
   CONTENT_MEMBER: 'Content',
   BOOKING_MEMBER: 'Booking B2C',
-  GROWTH_MEMBER: 'Growth',
-  MEDIA_MEMBER: 'Media',
   BRAND_PARTNER: 'Đối tác Brand',
   KOC_PARTNER: 'KOC / KOL',
   CTV_PARTNER: 'Cộng tác viên',
@@ -60,9 +56,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-3 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2.5 shrink-0">
       {/* Khối 1: Nút menu di động / ẩn menu desktop & Tiêu đề trang */}
-      <div className="order-1 flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+      <div className="order-1 flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
         {onToggleMobileSidebar && (
           <button
             type="button"
@@ -97,29 +93,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight min-w-0 truncate">{title}</h1>
+        <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight whitespace-nowrap">{title}</h1>
       </div>
 
       {/* Khối 2: Cụm thao tác trang & Đăng xuất (Mobile: cạnh tiêu đề; Desktop: phía cuối thanh) */}
-      <div className="order-2 sm:order-3 flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+      <div className="order-2 sm:order-3 ml-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 shrink-0 max-w-full">
         {activeTab !== 'tiktok-crawler' && (
           currentUser.role === 'BRAND_PARTNER' ? (
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20">
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
               <Building2 className="w-3.5 h-3.5 text-positive shrink-0" />
-              <span className="truncate max-w-[180px]">{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
+              <span className="truncate max-w-[160px]">{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
             </div>
           ) : userScopeSummary && !userScopeSummary.isGlobal ? (
             <div
               title={userScopeSummary.scopeTooltip}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-xs font-medium border border-accent/25"
+              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-xs font-medium border border-accent/25 shrink-0"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" aria-hidden="true" />
               <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="truncate max-w-[220px]">{userScopeSummary.scopeBadgeText}</span>
+              <span className="truncate max-w-[180px]">{userScopeSummary.scopeBadgeText}</span>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line">
+            <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
               <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
               <span>Toàn hệ thống (69 gian hàng)</span>
@@ -131,14 +127,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         {onUserChange && (
           <label className="hidden sm:inline-flex relative items-center h-8 pl-2.5 pr-7 rounded-md border border-line bg-surface hover:bg-sunken transition-colors text-xs text-ink cursor-pointer shrink-0">
-            <span className="text-ink-3 mr-1.5 hidden xl:inline">Vai trò:</span>
+            <span className="text-ink-3 mr-1.5 hidden 2xl:inline">Vai trò:</span>
             <select
               value={USERS.some(u => u.id === currentUser.id) ? currentUser.id : ''}
               onChange={(e) => {
                 const u = USERS.find((item) => item.id === e.target.value);
                 if (u) onUserChange(u);
               }}
-              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[210px] truncate"
+              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[165px] xl:max-w-[210px] truncate"
               aria-label="Chuyển tài khoản giả lập"
             >
               {!USERS.some(u => u.id === currentUser.id) && (
@@ -147,14 +143,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 </option>
               )}
               <optgroup label="Ban Điều Hành & Quản Trị">
-                {USERS.filter(u => ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(u.role)).map((user) => (
+                {USERS.filter(u => ['ADMIN', 'MANAGER'].includes(u.role)).map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} · {ROLE_LABEL[user.role] ?? user.role}
                   </option>
                 ))}
               </optgroup>
               <optgroup label="Trưởng Nhóm & Chuyên Viên Nội Bộ">
-                {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'GROWTH_MEMBER', 'MEDIA_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
+                {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} · {user.id.startsWith('contract-demo-') ? user.roleTitle : (ROLE_LABEL[user.role] ?? user.role)}
                   </option>
@@ -190,8 +186,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
       </div>
 
-      {/* Khối 3: Tabs nhóm & Điều hướng con (Mobile: dòng riêng cuộn ngang; Desktop: nằm giữa cạnh tiêu đề) */}
-      <div className="order-3 sm:order-2 w-full sm:w-auto sm:flex-1 flex items-center gap-2 sm:gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-1 sm:pt-0 border-t border-line/60 sm:border-t-0 empty:hidden">
+      {/* Khối 3: Tabs nhóm & Điều hướng con (Mobile: dòng riêng cuộn ngang; Desktop: nằm cạnh tiêu đề, giữ nguyên kích thước tự nhiên) */}
+      <div className="order-3 sm:order-2 w-full sm:w-auto flex items-center gap-2 sm:gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pt-1 sm:pt-0 border-t border-line/60 sm:border-t-0 empty:hidden shrink-0 max-w-full">
         {groupTabs && groupTabs.length > 1 && activeTab && onNavigateTab && (
           <Segmented<TabKey>
             items={groupTabs}

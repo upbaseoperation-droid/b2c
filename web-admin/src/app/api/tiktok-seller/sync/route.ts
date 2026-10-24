@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const allowed = ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role);
+  const allowed = ['ADMIN', 'MANAGER'].includes(user.role);
   if (!allowed) {
     return NextResponse.json(
       { success: false, error: 'Bạn không có quyền kích hoạt đồng bộ dữ liệu TikTok Seller xuống DB.' },

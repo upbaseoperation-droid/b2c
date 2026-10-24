@@ -69,8 +69,6 @@ export const AirBookingReportHubView: React.FC<AirBookingReportHubViewProps> = (
       'ADMIN',
       'MANAGER',
       'LEADER',
-      'GROWTH_MANAGER',
-      'MEDIA_MANAGER',
       'FINANCE',
     ];
     return managerRoles.includes(currentUser.role);

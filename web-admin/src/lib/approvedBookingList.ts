@@ -59,7 +59,6 @@ export interface ApprovedBookingListItem {
   storeName: string;                   // Cột 3: Store
   brandName: string;                   // Cột 4: Brand
   nguoiPhuTrach: string;               // Cột 5 & 34: Người phụ trách / Booking PIC
-  growthPic: string;                   // Cột 35: Growth PIC
   leaderName: string;                  // Cột 62: Leader
 
   // 2. Thông tin kênh KOC & Nội dung Brand đã duyệt
@@ -605,7 +604,6 @@ export function buildApprovedBookingItemFromSheetRow(params: {
     storeName: row.store,
     brandName,
     nguoiPhuTrach: row.nhanSuDien || store?.assignedPic || 'Chuyên viên Booking',
-    growthPic: store?.accountOwnerName || 'Phạm Thị Thu Hằng',
     leaderName: store?.bookingLeader || '',
     kocId: row.kocId,
     idKenh: normalizeTikTokId(row.idKenh),

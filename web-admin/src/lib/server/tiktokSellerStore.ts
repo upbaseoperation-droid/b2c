@@ -87,7 +87,7 @@ export async function syncB2cStoresAndTikTokSellerToDb(): Promise<TikTokDbSyncSu
           actualAiredVideos: s.actualAiredVideos || 0,
           financialRiskStatus: s.financialRiskStatus || 'NORMAL',
           financialRiskNotes: s.financialRiskNotes || null,
-          accountOwnerName: s.accountOwnerName || s.growthPic || 'Đào Phương Anh',
+          accountOwnerName: s.accountOwnerName || 'Đào Phương Anh',
           b2cOwnerName: s.primaryPic || s.assignedStaff || 'Đặng Thị Yến Nhi'
         },
         update: {

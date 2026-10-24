@@ -85,36 +85,6 @@ export const USERS: UserProfile[] = [
     assignedBrands: ['Tất cả nhãn hàng', 'BELLA', 'Baniphar', 'EUPC', 'ClubClio', 'Fresh', 'Kutieskin', 'Natural Care', 'Miss Saigon']
   },
   {
-    id: 'user-growth-manager-quyen',
-    name: 'Nguyễn Thị Thu Thủy',
-    email: 'thuyntt@upbase.vn',
-    role: 'GROWTH_MANAGER',
-    roleTitle: 'Trưởng Phòng Growth (Head of Growth)',
-    avatar: 'TT',
-    staffCode: 'HN028',
-    departmentScope: 'GROWTH',
-    departmentName: 'Khối Growth Ecom',
-    teamName: 'Growth 1 - 6 & HCM',
-    canLogin: true,
-    loginProvider: 'LARK',
-    assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA']
-  },
-  {
-    id: 'user-media-manager-quang',
-    name: 'Nguyễn Đức Quảng',
-    email: 'quangnd@upbase.vn',
-    role: 'MEDIA_MANAGER',
-    roleTitle: 'Trưởng Phòng Media (Head of Media)',
-    avatar: 'ĐQ',
-    staffCode: 'HN045',
-    departmentScope: 'MEDIA',
-    departmentName: 'Khối Media & Ads',
-    teamName: 'Media Omni & TikTok',
-    canLogin: true,
-    loginProvider: 'LARK',
-    assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA']
-  },
-  {
     id: 'user-huu-chien',
     name: 'Trần Hữu Chiến',
     email: 'chienth@upbase.vn',
@@ -237,38 +207,6 @@ export const USERS: UserProfile[] = [
     loginProvider: 'LARK',
     linkedEntityName: 'Dynik, Badlab, Natural Care',
     assignedBrands: ['Dynik', 'Badlab', 'Natural Care']
-  },
-  {
-    id: 'user-growth-anh',
-    name: 'Trần Thị Ánh',
-    email: 'anhtt@upbase.vn',
-    role: 'GROWTH_MEMBER',
-    roleTitle: 'Chuyên Viên Chiến Lược & PnL (Growth PIC)',
-    avatar: 'TÁ',
-    departmentScope: 'GROWTH',
-    departmentName: 'Khối Growth Ecom',
-    teamName: 'Growth 1',
-    managerId: 'user-growth-manager-quyen',
-    managerName: 'Nguyễn Thị Thu Thủy',
-    canLogin: true,
-    loginProvider: 'LARK',
-    assignedBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh']
-  },
-  {
-    id: 'user-media-dat',
-    name: 'Phan Thành Đạt',
-    email: 'datpt@upbase.vn',
-    role: 'MEDIA_MEMBER',
-    roleTitle: 'Chuyên Viên Quảng Cáo & Ads (Media PIC)',
-    avatar: 'PĐ',
-    departmentScope: 'MEDIA',
-    departmentName: 'Khối Media & Ads',
-    teamName: 'Media TikTok',
-    managerId: 'user-media-manager-quang',
-    managerName: 'Nguyễn Đức Quảng',
-    canLogin: true,
-    loginProvider: 'LARK',
-    assignedBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh']
   },
   {
     id: 'user-viet-hoang',
@@ -523,7 +461,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     // Nhân sự phụ trách (3 bên)
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Trần Việt Hoàng',
     contentNote: 'Review trải nghiệm thực tế độ dịu nhẹ cho da em bé, nhấn mạnh thành phần thảo dược không corticoid.',
     
@@ -701,7 +638,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     // Nhân sự phụ trách (3 bên)
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Phạm Thị Hồng Yến',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Nhấn mạnh chứng chỉ nguồn gốc sữa Úc chuẩn 20 phút, bổ sung canxi và phát triển trí não.',
     
@@ -862,7 +798,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     videoUrl: 'https://www.tiktok.com/@chanhbeauty/video/7382910481923',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Trần Việt Hoàng',
     contentNote: 'Mua thêm 30 ngày mã Spark Ads và quyền cắt hình ảnh chạy Shopee Ads từ video gốc BO260611204 (ROAS đạt 9.29). Không cần gửi lại hàng mẫu.',
     totalValue: 1200000,
@@ -954,7 +889,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     tiktokVideoUrl: 'https://www.tiktok.com/@megauriviu/video/7391823746192',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Review chia sẻ dinh dưỡng giảm nghén cho mẹ bầu trong 3 tháng đầu thai kỳ.',
     totalValue: 15000000,
@@ -1021,7 +955,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Phạm Thị Nhài',
     totalValue: 20000000,
     advanceAmount: 4000000,
@@ -1083,7 +1016,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Phạm Thị Hồng Yến',
     accountPic: 'Trần Việt Hoàng',
     totalValue: 15000000,
     advanceAmount: 3000000,
@@ -1147,7 +1079,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     tiktokVideoUrl: 'https://www.tiktok.com/@chanhbeauty/video/7382910481923',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Trần Việt Hoàng',
     totalValue: 3500000,
     advanceAmount: 1000000,
@@ -1210,7 +1141,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
     assignedStaff: 'Trần Thị Hảo',
     bookingPic: 'Trần Thị Hảo',
-    growthPic: 'Phạm Thị Hồng Yến',
     accountPic: 'Trần Việt Hoàng',
     totalValue: 0, // Suất gửi mẫu FOC 0đ
     advanceAmount: 0,
@@ -1272,7 +1202,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Trần Việt Hoàng',
     totalValue: 2500000,
     advanceAmount: 500000,
@@ -1345,7 +1274,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Văn Tú',
     accountPic: 'Trần Thảo Linh',
     contentNote: 'Quay cận cảnh cồi mụn gom lại sau 1 đêm, tips không lắc chai trước khi chấm bông tăm.',
     
@@ -1423,7 +1351,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     
     assignedStaff: 'Phạm Thị Thu Hằng',
     bookingPic: 'Phạm Thị Thu Hằng',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Hà Thị Thương',
     contentNote: 'Đề xuất đổi sang KOC Chanh Beauty hoặc Dược sĩ Oanh.',
     
@@ -1489,7 +1416,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     
     assignedStaff: 'Trần Anh Thư',
     bookingPic: 'Trần Anh Thư',
-    growthPic: 'Nguyễn Mai Oanh',
     accountPic: 'Nguyễn Thị Mai Linh',
     contentNote: 'Mở hộp test chất liệu mặt nạ ôm khít, tinh chất rau má làm dịu tức thì vết đỏ.',
     
@@ -1553,7 +1479,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     
     assignedStaff: 'Đinh Thị Bích Liên',
     bookingPic: 'Đinh Thị Bích Liên',
-    growthPic: 'Huỳnh Ngọc Xuân Thúy',
     accountPic: 'Phạm Hà Hoàng Trang',
     contentNote: 'Mega Livestream ghim deal độc quyền Babe Stop Akn, cam kết chính hãng nhập khẩu.',
     
@@ -1614,7 +1539,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     
     assignedStaff: 'Đinh Thị Bích Liên',
     bookingPic: 'Đinh Thị Bích Liên',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Vlog sinh hoạt gia đình, mẹ Cam giặt quần áo cho bé Cam với hương hoa dịu nhẹ.',
     
@@ -1669,7 +1593,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     tiktokVideoUrl: 'https://www.tiktok.com/@chloenguyen.official/video/7419823412',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Review trải nghiệm bọt tơ tằm, test khả năng làm sạch trên da sau ngày dài makeup.',
     totalValue: 18000000,
@@ -1721,7 +1644,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'CHƯA_CẤP',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Bác sĩ giải thích cơ chế tẩy da chết vật lý dịu nhẹ với 91% nước tinh khiết.',
     totalValue: 4500000,
@@ -1773,7 +1695,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'CHƯA_CẤP',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Trần Văn Hải',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Swatch 5 màu son hot nhất mùa thu, so sánh độ bền màu khi ăn uống.',
     totalValue: 3500000,
@@ -1825,7 +1746,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'CHƯA_CẤP',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Demo tinh thể vàng 24K tan đều trên da, cấp ẩm sâu và cải thiện độ đàn hồi.',
     totalValue: 6500000,
@@ -1879,7 +1799,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     tiktokVideoUrl: 'https://www.tiktok.com/@ninhanhbui/video/7420194821',
     assignedStaff: 'Nguyễn Thu Trang',
     bookingPic: 'Nguyễn Thu Trang',
-    growthPic: 'Phạm Hồng Quân',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Vlog sinh hoạt hài hước, review sữa bổ sung dinh dưỡng gia đình chuẩn Úc.',
     totalValue: 45000000,
@@ -1933,7 +1852,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     tiktokVideoUrl: 'https://www.tiktok.com/@mebausanhdieu/video/7420582910',
     assignedStaff: 'Nguyễn Thu Trang',
     bookingPic: 'Nguyễn Thu Trang',
-    growthPic: 'Phạm Hồng Quân',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Mẹ bỉm chia sẻ kinh nghiệm chăm sóc da bé không corticoid, an toàn cho trẻ sơ sinh.',
     totalValue: 6000000,
@@ -1985,7 +1903,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'CHƯA_CẤP',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Unbox túi quà Senka xinh xắn, test rửa mặt tạo bọt bông mịn.',
     totalValue: 500000,
@@ -2037,7 +1954,6 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     adsCodeStatus: 'CHƯA_CẤP',
     assignedStaff: 'Khánh Vy',
     bookingPic: 'Khánh Vy',
-    growthPic: 'Nguyễn Anh Tú',
     accountPic: 'Phạm Thị Nhài',
     contentNote: 'Vlog buổi sáng chăm sóc da, tẩy da chết dịu nhẹ chuẩn bị đi làm.',
     totalValue: 1200000,
@@ -5832,7 +5748,6 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
     cancellationRate: 0.08,
     targetNmv: 690000000, // 750M * (1 - 0.08)
     targetCir: 20.0,
-    growthPic: 'Bùi Tuấn Hưng (Growth Lead)',
     bookingPic: 'Khánh Vy',
     deadlineBreakdown: 'Trước 18:00 ngày 25/09/2026',
     growthNotes: 'Đẩy mạnh dòng Sữa Rửa Mặt Perfect Whip và Kem Chống Nắng Senka Perfect UV Gel. Cần tối thiểu 1 Celeb/Mega mở phễu tạo trust, phần lớn ngân sách dồn vào Micro KOC và Mass Affiliate để phủ sàn TikTok Shop trong 3 ngày D-Day.',
@@ -5937,7 +5852,6 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
     totalAssignedBudget: 120000000,
     targetGmv: 600000000,
     targetCir: 20.0,
-    growthPic: 'Đỗ Hữu Nam (Performance PIC)',
     bookingPic: 'Trần Minh Đức',
     deadlineBreakdown: 'Đã lập plan xong',
     growthNotes: 'Tập trung các KOC có tệp follower Nữ 22-32 tuổi, dân văn phòng. Yêu cầu 100% video phải lấy được mã Spark Ads để team Growth chạy đè Ads đẩy GMV.',
@@ -6005,7 +5919,6 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
     totalAssignedBudget: 80000000,
     targetGmv: 480000000,
     targetCir: 16.7,
-    growthPic: 'Bùi Tuấn Hưng (Growth Lead)',
     bookingPic: 'Lê Hoàng Yến',
     deadlineBreakdown: 'Đã được duyệt',
     growthNotes: 'Đẩy dòng Tẩy tế bào chết Cà phê Đắk Lắk và Nước hoa hồng hoa hồng Cao Bằng. Ưu tiên KOC phong cách organic, sống xanh, tự nhiên.',
@@ -6074,7 +5987,6 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
     totalAssignedBudget: 250000000,
     targetGmv: 1500000000,
     targetCir: 16.7,
-    growthPic: 'Vân Ngọc (Operations Head)',
     bookingPic: 'Khánh Vy',
     deadlineBreakdown: 'Đang triển khai booking',
     growthNotes: 'Chiến dịch trọng điểm quý 4. Đẩy Serum Hyaluronic Acid và Dưỡng tóc Elseve. Cần 2 Celeb hạng A và kết hợp Live Affiliate lớn.',
@@ -8289,13 +8201,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     briefUpdatedBy: 'Khánh Vy (B2C Lead)',
     briefUpdatedAt: '2026-09-27T10:00:00Z',
     b2cEvaluationNote: 'Sản phẩm chủ lực có uy tín sẵn trên thị trường. KOC nhận mẫu đạt tỷ lệ lên video 94%. Hoa hồng 20% rất hấp dẫn KOC sàn.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-25T08:30:00Z',
     lockedAt: '2026-09-28T16:00:00Z',
     lockedBy: {
-      growthPic: 'Hoàng Long (Growth Lead)',
       b2cPic: 'Khánh Vy (Booking Lead)'
     },
     comments: [
@@ -8378,7 +8288,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: '',
     feasibilityScore: 'HIGH_VIRAL',
     b2cBriefStatus: 'PENDING_BRIEF',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'PROPOSED',
     proposedAt: '2026-10-08T09:00:00Z',
@@ -8438,13 +8347,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 chai 20ml cho KOC có tệp mẹ bỉm tương tác tốt.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Mùa thu mưa nhiều muỗi đốt, sản phẩm này chuyển đổi cực kỳ nhạy trên live và video ngắn.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-28T10:00:00Z',
     lockedAt: '2026-10-02T11:00:00Z',
     lockedBy: {
-      growthPic: 'Hoàng Long (Growth Lead)',
       b2cPic: 'Khánh Vy (Booking Lead)'
     },
     comments: [
@@ -8504,7 +8411,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 chai 250ml fullsize cho KOC quay video tương tác thực.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Bao bì chai vòi nhấn tiện dụng, các mẹ quay video tắm bé rất dễ viral trên TikTok.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'IN_DISCUSSION',
     proposedAt: '2026-09-30T10:00:00Z',
@@ -8573,7 +8479,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp trọn bộ hộp quà mùa đông gồm 2 tuýp + tất len em bé cho KOC quay unboxing.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Combo này đón đúng mùa hanh heo tháng 11, tiềm năng bùng nổ doanh số rất mạnh.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'PROPOSED',
     proposedAt: '2026-10-06T15:00:00Z',
@@ -8631,13 +8536,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     pdpUrl: 'https://shopee.vn/kutieskin-kem-duong-am-30g',
     briefUrl: 'https://drive.google.com/kutieskin-kem-duong-sep2026',
     feasibilityScore: 'HIGH_VIRAL',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'ARCHIVED',
     proposedAt: '2026-08-25T08:00:00Z',
     lockedAt: '2026-08-28T10:00:00Z',
     lockedBy: {
-      growthPic: 'Hoàng Long',
       b2cPic: 'Khánh Vy'
     },
     comments: [
@@ -8701,13 +8604,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 chai 30ml + hộp tăm bông y tế chuyên dụng.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Sản phẩm hit TikTok Shop, KOC nào có da mụn thật quay lên view rất cao.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-26T09:00:00Z',
     lockedAt: '2026-09-29T14:00:00Z',
     lockedBy: {
-      growthPic: 'Hoàng Long (Growth Lead)',
       b2cPic: 'Khánh Vy (Booking Lead)'
     },
     comments: [
@@ -8767,13 +8668,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 02 hộp 9 miếng cho KOC test lên da.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Giá deal 79k rất dễ chốt đơn trên sàn Shopee trong các khung giờ Flash Sale.',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-27T11:00:00Z',
     lockedAt: '2026-09-30T10:00:00Z',
     lockedBy: {
-      growthPic: 'Hoàng Long',
       b2cPic: 'Khánh Vy'
     },
     comments: [],
@@ -8821,7 +8720,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     pdpUrl: 'https://shop.tiktok.com/view/product/bbb-serum-salicylic',
     briefUrl: 'https://drive.google.com/bbb-serum-brief-nov2026',
     feasibilityScore: 'MEDIUM',
-    growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
     status: 'PROPOSED',
     proposedAt: '2026-10-07T14:00:00Z',
@@ -8886,13 +8784,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 lon 900g nguyên seal có tem chống giả điện tử của Bộ Công An.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Dòng sữa cao cấp uy tín, giá trị đơn cao nên hoa hồng 14% mang lại thu nhập rất tốt cho Creator.',
-    growthPic: 'Lê Thanh Hải',
     b2cPic: 'Đinh Thị Bích Liên',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-24T10:00:00Z',
     lockedAt: '2026-09-27T15:00:00Z',
     lockedBy: {
-      growthPic: 'Lê Thanh Hải (Growth PIC)',
       b2cPic: 'Đinh Thị Bích Liên (Booking PIC)'
     },
     comments: [
@@ -8952,7 +8848,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 lon 800g cho KOC có bé thực sự gặp vấn đề nhạy cảm tiêu hóa.',
     feasibilityScore: 'MEDIUM',
     b2cEvaluationNote: 'Phân khúc ngách giá cao nhưng khách hàng trung thành cực cao, chốt đơn trên livestream rất đều.',
-    growthPic: 'Lê Thanh Hải',
     b2cPic: 'Đinh Thị Bích Liên',
     status: 'IN_DISCUSSION',
     proposedAt: '2026-09-29T14:00:00Z',
@@ -9010,13 +8905,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     pdpUrl: 'https://shopee.vn/royal-lactoferrin-100g',
     briefUrl: 'https://drive.google.com/royal-lactoferrin-sep2026',
     feasibilityScore: 'HIGH_VIRAL',
-    growthPic: 'Lê Thanh Hải',
     b2cPic: 'Đinh Thị Bích Liên',
     status: 'ARCHIVED',
     proposedAt: '2026-08-25T09:00:00Z',
     lockedAt: '2026-08-28T14:00:00Z',
     lockedBy: {
-      growthPic: 'Lê Thanh Hải',
       b2cPic: 'Đinh Thị Bích Liên'
     },
     comments: [],
@@ -9071,13 +8964,11 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 chai 150ml + túi zip lụa thời trang đi kèm.',
     feasibilityScore: 'HIGH_VIRAL',
     b2cEvaluationNote: 'Sản phẩm giá mềm, bao bì xinh xắn chuẩn Nhật, các bạn KOC Gen Z quay video rất tự nhiên và tương tác cao.',
-    growthPic: 'Vũ Hoài Lâm',
     b2cPic: 'Thu Thảo',
     status: 'LOCKED_APPROVED',
     proposedAt: '2026-09-25T14:00:00Z',
     lockedAt: '2026-09-28T10:00:00Z',
     lockedBy: {
-      growthPic: 'Vũ Hoài Lâm (Growth Lead)',
       b2cPic: 'Thu Thảo (Booking Lead)'
     },
     comments: [
@@ -9137,7 +9028,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     sampleNotes: 'Cấp 01 chai 120ml cho KOC quay video trải nghiệm ASMR.',
     feasibilityScore: 'MEDIUM',
     b2cEvaluationNote: 'Bao bì tạo bọt là điểm cộng thị giác lớn khi quay video ASMR. Đang thương lượng thêm 30 suất mẫu cho KOC Live.',
-    growthPic: 'Vũ Hoài Lâm',
     b2cPic: 'Thu Thảo',
     status: 'IN_DISCUSSION',
     proposedAt: '2026-09-30T15:00:00Z',
@@ -9195,7 +9085,6 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     pdpUrl: 'https://shop.tiktok.com/view/product/phcare-mini-duo',
     briefUrl: 'https://drive.google.com/phcare-mini-brief-nov2026',
     feasibilityScore: 'HIGH_VIRAL',
-    growthPic: 'Vũ Hoài Lâm',
     b2cPic: 'Thu Thảo',
     status: 'PROPOSED',
     proposedAt: '2026-10-07T16:00:00Z',

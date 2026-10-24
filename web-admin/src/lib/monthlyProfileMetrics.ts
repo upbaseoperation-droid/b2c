@@ -72,7 +72,6 @@ export interface StoreMonthlyBookingRecord {
   campaignTitle: string;
   pic: string;
   picName: string;
-  growthPic: string;
   airDate: string;
   weekLabel: string;
   linkAir: string;
@@ -111,7 +110,6 @@ export interface StoreMonthlyPlanReport {
   bookingLeader?: string;
   leaderPic?: string;
   hasBookingLeader: boolean;
-  growthPic: string;
   // Chỉ số Plan (Kế hoạch tháng - File 4.1 & 4.1.1)
   planNmv: number;
   planBudgetNet: number;
@@ -347,7 +345,6 @@ function convertBookedRecordToMonthlyBooking(
     campaignTitle: `Chiến dịch ${r.brandName} (${month})`,
     pic: r.pic || 'Lê Phương Thảo',
     picName: r.pic || 'Lê Phương Thảo',
-    growthPic: r.growthPic || 'Growth Team',
     airDate: r.airDate || '',
     weekLabel: r.weekLabel || 'W41',
     linkAir: r.linkAir || '',
@@ -404,7 +401,6 @@ function convertDealToMonthlyBooking(
     campaignTitle: d.campaignTitle || `Chiến dịch ${d.brandName}`,
     pic,
     picName: pic,
-    growthPic: 'Growth Team',
     airDate: d.deadlinePost || '2026-10-15',
     weekLabel: d.bookingBatch || 'W41',
     linkAir: link,
@@ -698,7 +694,6 @@ export function buildStoreMonthlyPlanReport(
     bookingLeader: store.bookingLeader,
     leaderPic: store.bookingLeader,
     hasBookingLeader: Boolean(store.hasBookingLeader && store.bookingLeader),
-    growthPic: directPlan?.growthPic || store.growthPic || 'Growth Team',
     planNmv,
     planBudgetNet: baseBudgetNet,
     planBudgetGross: baseBudgetGross,

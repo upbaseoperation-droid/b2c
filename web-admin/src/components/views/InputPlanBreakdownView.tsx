@@ -281,11 +281,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   if (currentUser?.role !== prevUserRole) {
     setPrevUserRole(currentUser?.role);
     if (currentUser) {
-      if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
-        setCurrentRole('GROWTH');
-      } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
-        setCurrentRole('MEDIA');
-      } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+      if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
         setCurrentRole('LEAD');
       } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
         setCurrentRole('BOOKING');
@@ -431,7 +427,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
     const actor = currentUser?.name || planState.pic || 'Nhân viên Booking';
     const now = new Date().toISOString();
-    const finalNote = submissionNote.trim() || `Đã trao đổi thống nhất với Growth (${planState.growthPic || 'Growth Lead'}) về các chỉ số GMV và ngân sách B2C. Kính gửi Quản lý phê duyệt.`;
+    const finalNote = submissionNote.trim() || `Đã trao đổi thống nhất với Growth (${'Growth Lead'}) về các chỉ số GMV và ngân sách B2C. Kính gửi Quản lý phê duyệt.`;
     const log = `Nhân viên (${actor}) đã GỬI DUYỆT QUẢN LÝ sau khi thống nhất chỉ số với Growth team: "${finalNote}"`;
 
     // Gian có Trưởng nhóm: sơ duyệt trước, rồi mới tới Giám đốc. Gian không có Trưởng nhóm: lên thẳng Giám đốc.
@@ -683,7 +679,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // Chốt Chỉ tiêu tháng -> Chuyển sang Phân bổ chi tiết
   const handleLockLayer1AndProceed = (syncToLayer2: boolean = true) => {
-    const actor = currentUser?.name || planState.growthPic || planState.pic || 'Nhóm Kế Hoạch';
+    const actor = currentUser?.name || planState.pic || 'Nhóm Kế Hoạch';
     const now = new Date().toISOString();
     const lockedLayer1: CorePlanMetricsLayer1 = {
       ...layer1Metrics,
@@ -696,7 +692,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       id: `DISC-${Date.now()}`,
       authorName: actor,
       authorRole: currentRole,
-      authorTitle: currentRole === 'GROWTH' ? 'Growth PIC' : currentRole === 'LEAD' ? 'Quản lý B2C' : 'Booking PIC',
+      authorTitle: currentRole === 'LEAD' ? 'Quản lý B2C' : 'Booking PIC',
       content: `Đã thống nhất và CHỐT CHỈ TIÊU THÁNG trên phiên bản ${planState.currentVersionCode || 'v1.0'}:\n• Tổng PnL Net: ${formatVndShort(lockedLayer1.pnlTotalBudgetNet)} | Target NMV: ${formatVndShort(lockedLayer1.targetNmvTotal)}\n• KOC trả phí: ${lockedLayer1.qtyAffiliatePaid} video (${formatVndShort(lockedLayer1.budgetAffiliateNet)}) | Mẫu FOC 0đ: ${lockedLayer1.qtyFocSample} suất\n• Kênh Brand: ${lockedLayer1.qtySelfChannel} video (${formatVndShort(lockedLayer1.budgetSelfChannelNet)}) | Đa sàn: ${lockedLayer1.qtyMultiPlatform} video (${formatVndShort(lockedLayer1.budgetMultiPlatformNet)})\n→ Chuyển sang phân bổ chi tiết KL1–KL7 & Lịch tuần.`,
       type: 'STATUS_CHANGE',
       timestamp: now,
@@ -1216,13 +1212,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
     let authorName = currentUser?.name || targetPlan.pic;
     let authorTitle = 'Booking Specialist PIC';
-    if (currentRole === 'GROWTH') {
-      authorName = (currentUser?.role === 'GROWTH_MEMBER' ? currentUser.name : null) || targetPlan.growthPic || 'Trần Thị Ánh';
-      authorTitle = 'Growth PIC / Chiến lược & PnL';
-    } else if (currentRole === 'MEDIA') {
-      authorName = (currentUser?.role === 'MEDIA_MEMBER' ? currentUser.name : null) || targetPlan.mediaPic || 'Phan Thành Đạt';
-      authorTitle = 'Media PIC / Quảng cáo & Ads';
-    } else if (currentRole === 'LEAD') {
+    if (currentRole === 'LEAD') {
       authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Đặng Thị Yến Nhi';
       authorTitle = 'Giám đốc Marketing B2C';
     } else if (currentRole === 'BOOKING') {
@@ -3518,7 +3508,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 className="mt-0.5 rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
               />
               <span className="text-xs text-blue-950 font-medium leading-relaxed">
-                Tôi xác nhận <strong>ĐÃ TRAO ĐỔI VÀ THỐNG NHẤT</strong> các chỉ số mục tiêu (ngân sách, GMV, số lượng KOC) với Growth Lead <strong>({planState.growthPic || 'Growth Team'})</strong>.
+                Tôi xác nhận <strong>ĐÃ TRAO ĐỔI VÀ THỐNG NHẤT</strong> các chỉ số mục tiêu (ngân sách, GMV, số lượng KOC) với Growth Lead <strong>(Growth Team)</strong>.
               </span>
             </label>
           </div>

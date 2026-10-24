@@ -55,7 +55,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   onNotify
 }) => {
   const [activeTab, setActiveTab] = useState<'DISCUSSION' | 'APPROVAL_FLOW' | 'VERSION_HISTORY'>(initialTab);
-  const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('GROWTH');
+  const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
 
   // Form tạo phiên bản mới ngay trong tháng
@@ -85,11 +85,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   if (userRoleKey !== prevUserRoleKey) {
     setPrevUserRoleKey(userRoleKey);
     if (currentUser) {
-      if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
-        setCurrentRole('GROWTH');
-      } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
-        setCurrentRole('MEDIA');
-      } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+      if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
         setCurrentRole('LEAD');
       } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
         setCurrentRole('BOOKING');
@@ -123,7 +119,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
     }
 
     const now = new Date().toISOString();
-    const author = currentUser?.name || plan.growthPic || plan.pic || 'Growth / B2C PIC';
+    const author = currentUser?.name || plan.pic || 'Growth / B2C PIC';
 
     // Bảo lưu toàn bộ các phiên bản trước đó (chuyển trạng thái sang SUPERSEDED nếu cần)
     const archivedSnapshots: PlanVersionSnapshot[] = snapshots.map(s => ({
@@ -152,7 +148,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
       },
       media: {
         confirmed: false,
-        confirmedBy: plan.mediaPic || 'Phan Thành Đạt',
+        confirmedBy: 'Phan Thành Đạt',
         acceptedAdsBudget: newAdsBudget,
         targetRoas: 4.8,
         note: 'Chờ xác nhận gói Ads phiên bản mới'
@@ -276,7 +272,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
             <span>·</span>
             <span>Đang áp dụng: <strong className="font-mono text-positive">{currentVersionCode}</strong> ({snapshots.length} phiên bản)</span>
             <span>·</span>
-            <span>Growth: <strong className="text-ink-2">{plan.growthPic || 'Growth Team'}</strong></span>
+            <span>Growth: <strong className="text-ink-2">{'Growth Team'}</strong></span>
             <span>·</span>
             <span>B2C: <strong className="text-ink-2">{plan.pic}</strong></span>
           </div>
@@ -772,7 +768,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       {
                         key: 'growth',
                         party: 'Growth',
-                        person: activeSnapshot.signOffRecord?.growth?.confirmedBy || plan.growthPic || 'Trần Thị Ánh',
+                        person: activeSnapshot.signOffRecord?.growth?.confirmedBy || 'Trần Thị Ánh',
                         note: activeSnapshot.signOffRecord?.growth?.note || 'Giao trần ngân sách & gói Ads',
                         confirmed: Boolean(activeSnapshot.signOffRecord?.growth?.confirmed ?? true),
                       },
@@ -786,7 +782,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       {
                         key: 'media',
                         party: 'Media',
-                        person: activeSnapshot.signOffRecord?.media?.confirmedBy || plan.mediaPic || 'Phan Thành Đạt',
+                        person: activeSnapshot.signOffRecord?.media?.confirmedBy || 'Phan Thành Đạt',
                         note: activeSnapshot.signOffRecord?.media?.note || 'Nhận gói Ads & cam kết ROAS',
                         confirmed: Boolean(activeSnapshot.signOffRecord?.media?.confirmed ?? true),
                       },

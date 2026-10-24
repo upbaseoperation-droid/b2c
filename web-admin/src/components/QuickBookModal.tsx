@@ -409,7 +409,6 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
 
       assignedStaff: masterBrand?.brandPicName || 'Lê Phương Thảo',
       bookingPic: masterBrand?.brandPicName || 'Lê Phương Thảo',
-      growthPic: masterBrand?.growthPic || 'Nguyễn Văn Tú',
       accountPic: masterBrand?.accountPic || 'Đặng Thị Yến Nhi',
       contentNote: isOverCeiling
         ? `[VƯỢT TRẦN ${salaryGrade}: Đề xuất ${formatVnd(rate)} / Trần ${formatVnd(ratecardCeiling!)} — Lý do: ${overCeilingReason.trim()}] ${baseNote}`

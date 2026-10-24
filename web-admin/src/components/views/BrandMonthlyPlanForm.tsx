@@ -213,7 +213,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
   const isManagerUser = useMemo(() => {
-    const managerRoles = ['ADMIN', 'MANAGER', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'FINANCE'];
+    const managerRoles = ['ADMIN', 'MANAGER', 'LEADER', 'FINANCE'];
     if (currentUserRole && managerRoles.includes(currentUserRole)) return true;
     const nameSlug = normalizeName(currentUserName);
     if (nameSlug === normalizeName('Đặng Thị Yến Nhi') || nameSlug === normalizeName('Đỗ Văn Giang')) return true;

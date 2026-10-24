@@ -557,7 +557,6 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
       storeName: defaultStoreObj?.storeName || '4PM_Shopee_E2E-S',
       brandName: defaultStoreObj?.brandName || '4PM',
       nguoiPhuTrach: currentUserName,
-      growthPic: defaultStoreObj?.accountOwnerName || 'Phạm Thương Thảo',
       leaderName: defaultStoreObj?.bookingLeader || 'Đặng Thị Yến Nhi',
       idKenh: '',
       tenKenh: '',

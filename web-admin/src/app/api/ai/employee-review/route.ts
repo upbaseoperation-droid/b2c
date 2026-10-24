@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const canReview =
-    ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(user.role) ||
+    ['ADMIN', 'MANAGER', 'LEADER'].includes(user.role) ||
     user.permissions?.includes('canApproveP3');
   if (!canReview) {
     return NextResponse.json(

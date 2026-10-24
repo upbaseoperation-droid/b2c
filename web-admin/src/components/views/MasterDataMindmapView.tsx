@@ -302,7 +302,6 @@ export function buildMindmapStoresAndBrands(
         targetVideos: sameStores.length * 15,
         airedVideos: Math.round(sameStores.length * 8),
         accountPic: s.accountOwnerName || 'Chưa gán',
-        growthPic: s.growthPic || 'Chưa gán',
         bookingPicLead: (s.b2cOwners && s.b2cOwners[0]) || s.b2cOwnerName || 'Chưa gán',
         brandGuideline: `Bộ quy chuẩn nhận diện thương hiệu & định hướng nội dung ${bName}.`,
         kocCriteria: `KOC/KOL từ 50k-500k followers ngành ${s.category || 'Lifestyle & Beauty'}.`,
@@ -380,9 +379,6 @@ export function buildMindmapStoresAndBrands(
           memberPics.push(bo);
         }
       });
-    }
-    if (s.growthPic && s.growthPic !== 'Chưa gán' && s.growthPic !== primaryPic && !memberPics.includes(`Growth: ${s.growthPic}`)) {
-      memberPics.push(`Growth: ${s.growthPic}`);
     }
     if (s.accountOwnerName && s.accountOwnerName !== 'Chưa gán' && s.accountOwnerName !== primaryPic && !memberPics.includes(`Account: ${s.accountOwnerName}`)) {
       memberPics.push(`Account: ${s.accountOwnerName}`);
@@ -1416,7 +1412,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                   <div className="p-3 bg-canvas border border-line rounded-xl space-y-1.5 text-2xs">
                     <div className="text-ink-2">Account PIC: <strong className="text-ink">{selectedNode.data.accountPic || 'Chưa gán'}</strong></div>
-                    <div className="text-ink-2">Growth PIC: <strong className="text-ink">{selectedNode.data.growthPic || 'Chưa gán'}</strong></div>
                     <div className="text-ink-2">Booking Lead: <strong className="text-ink">{selectedNode.data.bookingPicLead || 'Đặng Thị Yến Nhi'}</strong></div>
                   </div>
 

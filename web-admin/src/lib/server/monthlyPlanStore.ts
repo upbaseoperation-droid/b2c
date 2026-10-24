@@ -87,8 +87,6 @@ function indexedColumns(plan: InputPlanBreakdownState) {
     month: plan.month || '',
     week: plan.week ?? null,
     pic: plan.pic ?? null,
-    growthPic: plan.growthPic ?? null,
-    mediaPic: plan.mediaPic ?? null,
     bookingLeader: plan.bookingLeader ?? null,
     status: plan.status || 'DRAFT',
     currentVersionCode: plan.currentVersionCode || 'v1.0',

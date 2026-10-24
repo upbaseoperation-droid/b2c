@@ -64,28 +64,6 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     userCount: 1
   },
   {
-    id: 'GROWTH_MANAGER',
-    code: 'GROWTH_HEAD',
-    name: 'Trưởng Phòng Growth',
-    scopeType: 'INTERNAL',
-    departmentScope: 'GROWTH',
-    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-    description: 'Quản lý đội ngũ chuyên viên Growth (Growth 1-6, HCM), phân công gian hàng, giao & duyệt chỉ tiêu Input Plan tháng (GMV, Ngân sách Order Net/Gross).',
-    defaultLandingTab: 'cockpit',
-    userCount: 3
-  },
-  {
-    id: 'MEDIA_MANAGER',
-    code: 'MEDIA_HEAD',
-    name: 'Trưởng Phòng Media',
-    scopeType: 'INTERNAL',
-    departmentScope: 'MEDIA',
-    badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
-    description: 'Quản lý đội ngũ chuyên viên Media (Media Omni, Media TikTok), phân công nhận mã Spark Ads, duyệt phân bổ ngân sách quảng cáo & kiểm soát ROAS/CPA.',
-    defaultLandingTab: 'cockpit',
-    userCount: 2
-  },
-  {
     id: 'LEADER',
     code: 'PIC_LEAD',
     name: 'Trưởng Nhóm B2C (Leader)',
@@ -622,7 +600,7 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
     categoryTitle: '1. Lập Kế Hoạch & Phân Bổ Tải',
     featureName: 'Bật / tắt bước Leader trong tuyến duyệt kế hoạch gian hàng',
     description: 'Chọn gian hàng nào phải qua Leader sơ duyệt, gian hàng nào trình thẳng Giám đốc Marketing.',
-    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'ALL', GROWTH_MANAGER: 'VIEW', MEDIA_MANAGER: 'VIEW', LEADER: 'VIEW' }),
+    permissions: withDeniedDefaults({ ADMIN: 'ALL', MANAGER: 'ALL', LEADER: 'VIEW' }),
   },
   {
     id: 'koc_sensitive_identity',
@@ -635,8 +613,6 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
       MANAGER: 'ALL',
       LEADER: 'SCOPED',
       MEMBER: 'SCOPED',
-      GROWTH_MANAGER: 'SCOPED',
-      MEDIA_MANAGER: 'SCOPED',
       LEGAL: 'ALL',
       FINANCE: 'ALL',
     }),
@@ -660,8 +636,6 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
     permissions: withDeniedDefaults({
       ADMIN: 'ALL',
       MANAGER: 'ALL',
-      GROWTH_MANAGER: 'ALL',
-      MEDIA_MANAGER: 'VIEW',
       LEADER: 'VIEW',
       MEMBER: 'VIEW',
     }),
@@ -675,8 +649,6 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
     permissions: withDeniedDefaults({
       ADMIN: 'ALL',
       MANAGER: 'ALL',
-      GROWTH_MANAGER: 'ALL',
-      MEDIA_MANAGER: 'ALL',
       LEADER: 'SCOPED',
     }),
   },
@@ -694,29 +666,18 @@ const RAW_PERMISSION_MATRIX: PermissionMatrixItem[] = [
 /** Quyền mới khai báo đủ mọi vai trò, vai trò không nêu tên mặc định bị chặn. */
 function withDeniedDefaults(levels: Partial<Record<UserRole, PermissionAccessLevel>>): Record<string, PermissionAccessLevel> {
   const roles: UserRole[] = [
-    'ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER', 'MEMBER',
+    'ADMIN', 'MANAGER', 'LEADER', 'MEMBER',
     'LEGAL', 'FINANCE', 'SIGN_ADMIN', 'BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER',
   ];
   return Object.fromEntries(roles.map((r) => [r, levels[r] ?? 'DENIED']));
 }
 
 export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_MATRIX.map(item => {
-  let growthManagerPerm: PermissionAccessLevel = 'VIEW';
-  let mediaManagerPerm: PermissionAccessLevel = 'VIEW';
   let legalPerm: PermissionAccessLevel = 'DENIED';
   let financePerm: PermissionAccessLevel = 'DENIED';
   let signAdminPerm: PermissionAccessLevel = 'DENIED';
 
-  if (item.category === 'PLANNING') {
-    growthManagerPerm = item.id === 'plan_target_month' ? 'APPROVE' : item.id === 'delegation_pic_assignment' ? 'ALL' : 'SCOPED';
-    mediaManagerPerm = item.id === 'plan_target_month' ? 'APPROVE' : item.id === 'delegation_pic_assignment' ? 'ALL' : 'VIEW';
-  } else if (item.category === 'BOOKING_CONTENT') {
-    growthManagerPerm = 'VIEW';
-    mediaManagerPerm = item.id === 'video_link_spark_ads' ? 'ALL' : 'VIEW';
-  } else if (item.category === 'CONTRACTS_FINANCE') {
-    growthManagerPerm = item.id === 'agency_financial_margins' ? 'ALL' : 'VIEW';
-    mediaManagerPerm = item.id === 'agency_financial_margins' ? 'VIEW' : 'DENIED';
-
+  if (item.category === 'CONTRACTS_FINANCE') {
     if (item.id === 'legal_ocr_extraction') {
       legalPerm = 'ALL';
       financePerm = 'VIEW';
@@ -739,16 +700,12 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
       signAdminPerm = 'DENIED';
     }
   } else if (item.category === 'PERFORMANCE_ADS') {
-    growthManagerPerm = item.id === 'p3_performance_evaluation' ? 'APPROVE' : 'ALL';
-    mediaManagerPerm = item.id === 'p3_performance_evaluation' ? 'APPROVE' : 'ALL';
     if (item.id === 'raw_data_export') {
       legalPerm = 'VIEW';
       financePerm = 'ALL';
       signAdminPerm = 'VIEW';
     }
   } else if (item.category === 'SYSTEM_MASTER') {
-    growthManagerPerm = ['staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
-    mediaManagerPerm = ['staff_master_lark_sync', 'impersonate_preview_mode'].includes(item.id) ? 'SCOPED' : 'VIEW';
     if (item.id === 'security_audit_log_access') {
       legalPerm = 'VIEW';
       financePerm = 'VIEW';
@@ -760,8 +717,6 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
     ...item,
     permissions: {
       ...item.permissions,
-      GROWTH_MANAGER: item.permissions.GROWTH_MANAGER || growthManagerPerm,
-      MEDIA_MANAGER: item.permissions.MEDIA_MANAGER || mediaManagerPerm,
       LEGAL: item.permissions.LEGAL || legalPerm,
       FINANCE: item.permissions.FINANCE || financePerm,
       SIGN_ADMIN: item.permissions.SIGN_ADMIN || signAdminPerm,
@@ -829,64 +784,6 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     },
     status: 'ACTIVE',
     lastActive: '5 phút trước',
-    authMethod: 'LARK_SSO'
-  },
-  {
-    id: 'user-growth-manager-quyen',
-    staffCode: 'HN028',
-    name: 'Nguyễn Thị Thu Thủy',
-    email: 'thuyntt@upbase.vn',
-    avatar: 'TT',
-    role: 'GROWTH_MANAGER',
-    roleTitle: 'Trưởng Phòng Growth (Head of Growth)',
-    department: 'Khối Growth Ecom',
-    team: 'Growth 1',
-    location: 'HN',
-    employmentType: 'Chính thức',
-    departmentScope: 'GROWTH',
-    canLogin: true,
-    accessSource: 'ADMIN_EXPLICIT',
-    position: 'Giám đốc trung tâm vận hành I',
-    picBrands: ['ALL_BRANDS', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay'],
-    permissions: {
-      canApproveBudget: true,
-      canApproveP3: true,
-      canApprovePayment: false,
-      canViewAllBrands: true,
-      canExportRawData: true,
-      canManageMasterData: false
-    },
-    status: 'ACTIVE',
-    lastActive: '8 phút trước',
-    authMethod: 'LARK_SSO'
-  },
-  {
-    id: 'user-media-manager-quang',
-    staffCode: 'HN045',
-    name: 'Nguyễn Đức Quảng',
-    email: 'quangnd@upbase.vn',
-    avatar: 'ĐQ',
-    role: 'MEDIA_MANAGER',
-    roleTitle: 'Trưởng Phòng Media (Head of Media)',
-    department: 'Khối Media & Ads',
-    team: 'Media Omni',
-    location: 'HN',
-    employmentType: 'Chính thức',
-    departmentScope: 'MEDIA',
-    canLogin: true,
-    accessSource: 'ADMIN_EXPLICIT',
-    position: 'Media Leader / Head of Media',
-    picBrands: ['ALL_BRANDS', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay'],
-    permissions: {
-      canApproveBudget: true,
-      canApproveP3: true,
-      canApprovePayment: false,
-      canViewAllBrands: true,
-      canExportRawData: true,
-      canManageMasterData: false
-    },
-    status: 'ACTIVE',
-    lastActive: '15 phút trước',
     authMethod: 'LARK_SSO'
   },
   {
@@ -1071,68 +968,6 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     },
     status: 'ACTIVE',
     lastActive: '15 phút trước',
-    authMethod: 'LARK_SSO'
-  },
-  {
-    id: 'user-growth-anh',
-    staffCode: 'HN210',
-    name: 'Trần Thị Ánh',
-    email: 'anhtt@upbase.vn',
-    avatar: 'TÁ',
-    role: 'GROWTH_MEMBER',
-    roleTitle: 'Chuyên Viên Chiến Lược & PnL (Growth PIC)',
-    department: 'Growth 1',
-    team: 'Growth 1',
-    location: 'HN',
-    employmentType: 'Chính thức',
-    departmentScope: 'GROWTH',
-    canLogin: true,
-    accessSource: 'DEPT_RULE',
-    managerId: 'user-growth-manager-quyen',
-    managerName: 'Nguyễn Thị Thu Thủy',
-    position: 'Growth Executive',
-    picBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh'],
-    permissions: {
-      canApproveBudget: false,
-      canApproveP3: false,
-      canApprovePayment: false,
-      canViewAllBrands: false,
-      canExportRawData: true,
-      canManageMasterData: false
-    },
-    status: 'ACTIVE',
-    lastActive: '18 phút trước',
-    authMethod: 'LARK_SSO'
-  },
-  {
-    id: 'user-media-dat',
-    staffCode: 'HN305',
-    name: 'Phan Thành Đạt',
-    email: 'datpt@upbase.vn',
-    avatar: 'PĐ',
-    role: 'MEDIA_MEMBER',
-    roleTitle: 'Chuyên Viên Quảng Cáo & Ads (Media PIC)',
-    department: 'Media TikTok',
-    team: 'Media TikTok',
-    location: 'HN',
-    employmentType: 'Chính thức',
-    departmentScope: 'MEDIA',
-    canLogin: true,
-    accessSource: 'DEPT_RULE',
-    managerId: 'user-media-manager-quang',
-    managerName: 'Nguyễn Đức Quảng',
-    position: 'Media Specialist',
-    picBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh'],
-    permissions: {
-      canApproveBudget: false,
-      canApproveP3: false,
-      canApprovePayment: false,
-      canViewAllBrands: false,
-      canExportRawData: true,
-      canManageMasterData: false
-    },
-    status: 'ACTIVE',
-    lastActive: '22 phút trước',
     authMethod: 'LARK_SSO'
   },
   {
@@ -1409,28 +1244,6 @@ export const INITIAL_DEPARTMENT_ACCESS_RULES: DepartmentAccessRule[] = [
     description: 'Nhân sự kịch bản sáng tạo (Content) và quản trị nhãn hàng (Brand PIC) phối hợp cùng Booking.'
   },
   {
-    id: 'rule-growth-all',
-    departmentOrTeamName: 'Growth 1, Growth 2, Growth 3, Growth 6, Growth (HCM)',
-    mappedScope: 'GROWTH',
-    defaultRole: 'GROWTH_MEMBER',
-    defaultManagerName: 'Nguyễn Thị Thu Thủy',
-    autoAllowLogin: true,
-    staffCount: 136,
-    allowedCount: 136,
-    description: 'Nhân sự khối Growth Ecom lập Input Plan tháng (File 4.1), giao chỉ tiêu GMV & ngân sách Order Net/Gross.'
-  },
-  {
-    id: 'rule-media-all',
-    departmentOrTeamName: 'Media Omni / Media TikTok',
-    mappedScope: 'MEDIA',
-    defaultRole: 'MEDIA_MEMBER',
-    defaultManagerName: 'Nguyễn Đức Quảng',
-    autoAllowLogin: true,
-    staffCount: 30,
-    allowedCount: 30,
-    description: 'Nhân sự khối Media & Ads nhận mã Spark Ads, phân bổ ngân sách quảng cáo và cập nhật báo cáo ROAS tuần.'
-  },
-  {
     id: 'rule-blocked-fulfillment',
     departmentOrTeamName: 'Fulfillment / Kho vận (HN & HCM)',
     mappedScope: 'OTHER_BLOCKED',
@@ -1552,8 +1365,6 @@ export function classifyMasterStaffMember(
       mappedRole: override.role,
       roleTitle: staff.position || staff.roleTitle || 'Nhân sự được Admin phân quyền',
       managerName: override.managerName || (
-        override.departmentScope === 'GROWTH' ? 'Nguyễn Thị Thu Thủy' :
-        override.departmentScope === 'MEDIA' ? 'Nguyễn Đức Quảng' :
         override.departmentScope === 'MARKETING_B2C' ? 'Đặng Thị Yến Nhi' : 'Chưa gán'
       ),
       ruleId: 'explicit-override',
@@ -1570,63 +1381,15 @@ export function classifyMasterStaffMember(
   const combined = `${dept} ${team} ${pos}`.toLowerCase();
   const isLeaderOrHead = /giám đốc|trưởng phòng|head|manager|leader|lead/i.test(pos);
 
-  // 2. Nhận diện Khối MEDIA (Media Omni, Media TikTok...)
-  if (
-    combined.includes('media omni') ||
-    combined.includes('media tiktok') ||
-    /\bmedia\b/i.test(dept) ||
-    /\bmedia\b/i.test(team)
-  ) {
-    const rule = deptRules.find(r => r.id === 'rule-media-all');
-    const autoAllow = rule ? rule.autoAllowLogin : true;
-    const role: UserRole = isLeaderOrHead ? 'MEDIA_MANAGER' : 'MEDIA_MEMBER';
-    return {
-      ...staff,
-      departmentScope: 'MEDIA',
-      classifiedScope: 'MEDIA',
-      canLogin: autoAllow,
-      role,
-      mappedRole: role,
-      roleTitle: pos || (role === 'MEDIA_MANAGER' ? 'Trưởng Phòng Media' : 'Chuyên Viên Media'),
-      managerName: role === 'MEDIA_MANAGER' ? 'Ban Giám Đốc' : (rule?.defaultManagerName || 'Nguyễn Đức Quảng'),
-      ruleId: 'rule-media-all',
-      accessSource: autoAllow ? 'DEPT_RULE' : 'BLOCKED_DEPT',
-      reason: autoAllow
-        ? 'Thuộc khối Media (Media Omni / TikTok) — Được phép đăng nhập'
-        : 'Khối Media đang tạm khóa đăng nhập theo quy tắc phòng ban'
-    };
-  }
+  // 2. Khối Growth và Media không dùng hệ thống Marketing B2C: rơi xuống nhóm bị chặn bên dưới
+  const isGrowthOrMedia =
+    combined.includes('growth') || combined.includes('media omni') || combined.includes('media tiktok') || /\bmedia\b/i.test(`${dept} ${team}`);
 
-  // 3. Nhận diện Khối GROWTH (Growth 1, 2, 3, 6, Growth HCM, Sub-Growth...)
-  if (
-    combined.includes('growth') ||
-    staff.role === 'GROWTH'
-  ) {
-    const rule = deptRules.find(r => r.id === 'rule-growth-all');
-    const autoAllow = rule ? rule.autoAllowLogin : true;
-    const role: UserRole = isLeaderOrHead ? 'GROWTH_MANAGER' : 'GROWTH_MEMBER';
-    return {
-      ...staff,
-      departmentScope: 'GROWTH',
-      classifiedScope: 'GROWTH',
-      canLogin: autoAllow,
-      role,
-      mappedRole: role,
-      roleTitle: pos || (role === 'GROWTH_MANAGER' ? 'Trưởng Phòng Growth' : 'Chuyên Viên Growth'),
-      managerName: role === 'GROWTH_MANAGER' ? 'Ban Giám Đốc' : (rule?.defaultManagerName || 'Nguyễn Thị Thu Thủy'),
-      ruleId: 'rule-growth-all',
-      accessSource: autoAllow ? 'DEPT_RULE' : 'BLOCKED_DEPT',
-      reason: autoAllow
-        ? 'Thuộc khối Growth Ecom — Được phép đăng nhập'
-        : 'Khối Growth đang tạm khóa đăng nhập theo quy tắc phòng ban'
-    };
-  }
-
-  // 4. Nhận diện Khối MARKETING B2C (Booking, Sub-Booking, Marketing B2C, Content, Brand - loại trừ Livestream & B2B)
+  // 3. Nhận diện Khối MARKETING B2C (Booking, Sub-Booking, Marketing B2C, Content, Brand - loại trừ Livestream & B2B)
   const isLivestreamOnly = /livestream/i.test(team) || /livestream/i.test(dept) || /ctv livestream|host livestream/i.test(pos);
   const isMarketingB2B = /marketing b2b/i.test(combined);
 
-  if (!isLivestreamOnly && !isMarketingB2B) {
+  if (!isLivestreamOnly && !isMarketingB2B && !isGrowthOrMedia) {
     if (
       /booking|sub-booking|marketing b2c/i.test(dept) ||
       /booking|sub-booking|marketing b2c/i.test(team)
@@ -1766,32 +1529,6 @@ export const INITIAL_RBAC_AUDIT_LOGS: RbacAuditLogItem[] = [
     description: 'Kích hoạt cổng đăng nhập cho 3 khối Marketing B2C, Growth, Media và bổ nhiệm Trưởng phòng quản lý quân số từng khối.',
     ipAddress: '118.70.182.44',
     deviceInfo: 'Chrome 128 / macOS',
-    status: 'SUCCESS'
-  },
-  {
-    id: 'log-003',
-    timestamp: '2026-10-08 22:15:30',
-    actorName: 'Nguyễn Thị Thu Thủy',
-    actorEmail: 'thuyntt@upbase.vn',
-    actorRole: 'GROWTH_MANAGER',
-    actionType: 'ROLE_CHANGE',
-    targetUserOrEntity: 'Trần Thị Ánh (anhtt@upbase.vn - Growth 1)',
-    description: 'Trưởng phòng Growth phân công phụ trách lập Input Plan tháng cho cụm nhãn Kutieskin, Cocoon, Senka.',
-    ipAddress: '14.162.24.11',
-    deviceInfo: 'Chrome 128 / Windows 11',
-    status: 'SUCCESS'
-  },
-  {
-    id: 'log-004',
-    timestamp: '2026-10-08 21:04:19',
-    actorName: 'Nguyễn Đức Quảng',
-    actorEmail: 'quangnd@upbase.vn',
-    actorRole: 'MEDIA_MANAGER',
-    actionType: 'ROLE_CHANGE',
-    targetUserOrEntity: 'Phan Thành Đạt (datpt@upbase.vn - Media TikTok)',
-    description: 'Trưởng phòng Media phân công tiếp nhận mã Spark Ads và quản lý ngân sách Ads tuần cho 5 gian hàng trọng điểm.',
-    ipAddress: '171.244.38.102',
-    deviceInfo: 'Chrome 128 / Windows 11',
     status: 'SUCCESS'
   },
   {
@@ -1942,63 +1679,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research',
     'work-toolkit'
   ],
-  GROWTH_MANAGER: [
-    'store-air-plan-report',
-    'cockpit',
-    'manager',
-    'task-delegation',
-    'input-plan',
-    'overview',
-    'dashboard-bi',
-    'dashboard-brand',
-    'dashboard-store',
-    'dashboard-video',
-    'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
-    'dashboard-finance',
-    'stores',
-    'campaigns',
-    'contracts',
-    'brand-knowledge',
-    'push-products',
-    'ads-report',
-    'master-data',
-    'partner-access',
-    'api-settings',
-    'knowledge-qa',
-    'tiktok-crawler',
-    'market-research',
-    'work-toolkit'
-  ],
-  MEDIA_MANAGER: [
-    'cockpit',
-    'manager',
-    'task-delegation',
-    'input-plan',
-    'ads-report',
-    'sample-tracker',
-    'overview',
-    'dashboard-bi',
-    'dashboard-brand',
-    'dashboard-store',
-    'dashboard-video',
-    'dashboard-air-sync',
-    'dashboard-team-sla',
-    'dashboard-staff',
-    'dashboard-finance',
-    'stores',
-    'campaigns',
-    'contracts',
-    'brand-knowledge',
-    'master-data',
-    'partner-access',
-    'api-settings',
-    'knowledge-qa',
-    'tiktok-crawler',
-    'market-research',
-    'work-toolkit'
-  ],
   LEADER: [
     'store-air-plan-report',
     'cockpit',
@@ -2122,42 +1802,6 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'market-research',
     'work-toolkit'
   ],
-  GROWTH_MEMBER: [
-    'store-air-plan-report',
-    'input-plan',
-    'cockpit',
-    'task-delegation',
-    'overview',
-    'dashboard-brand',
-    'dashboard-store',
-    'dashboard-video',
-    'dashboard-air-sync',
-    'stores',
-    'campaigns',
-    'ads-report',
-    'brand-knowledge',
-    'knowledge-qa',
-    'tiktok-crawler',
-    'market-research',
-    'work-toolkit'
-  ],
-  MEDIA_MEMBER: [
-    'input-plan',
-    'ads-report',
-    'cockpit',
-    'task-delegation',
-    'overview',
-    'dashboard-brand',
-    'dashboard-store',
-    'dashboard-video',
-    'dashboard-air-sync',
-    'campaigns',
-    'brand-knowledge',
-    'knowledge-qa',
-    'tiktok-crawler',
-    'market-research',
-    'work-toolkit'
-  ],
   LEGAL: [
     'contracts',
     'work-toolkit'
@@ -2190,14 +1834,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
 export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
   ADMIN: 'cockpit',
   MANAGER: 'cockpit',
-  GROWTH_MANAGER: 'cockpit',
-  MEDIA_MANAGER: 'cockpit',
   LEADER: 'cockpit',
   BOOKING_MEMBER: 'cockpit',
   CONTENT_MEMBER: 'cockpit',
   BRAND_MEMBER: 'cockpit',
-  GROWTH_MEMBER: 'cockpit',
-  MEDIA_MEMBER: 'cockpit',
   MEMBER: 'cockpit',
   LEGAL: 'contracts',
   FINANCE: 'contracts',
@@ -2230,8 +1870,6 @@ export const SPECIALIST_MEMBER_ROLE_IDS: UserRole[] = [
   'BOOKING_MEMBER',
   'CONTENT_MEMBER',
   'BRAND_MEMBER',
-  'GROWTH_MEMBER',
-  'MEDIA_MEMBER',
   'MEMBER',
 ];
 
@@ -2239,14 +1877,10 @@ export const SPECIALIST_MEMBER_ROLE_IDS: UserRole[] = [
 export const ROLE_DEFAULT_DATA_SCOPE: Record<UserRole, DataScope> = {
   ADMIN: 'ALL',
   MANAGER: 'ALL',
-  GROWTH_MANAGER: 'DEPARTMENT',
-  MEDIA_MANAGER: 'DEPARTMENT',
   LEADER: 'TEAM',
   BOOKING_MEMBER: 'OWN',
   CONTENT_MEMBER: 'OWN',
   BRAND_MEMBER: 'OWN',
-  GROWTH_MEMBER: 'OWN',
-  MEDIA_MEMBER: 'OWN',
   MEMBER: 'OWN',
   LEGAL: 'ALL',
   FINANCE: 'ALL',
@@ -2409,8 +2043,6 @@ export function canUserPerformAction(
     'BOOKING_MEMBER',
     'CONTENT_MEMBER',
     'BRAND_MEMBER',
-    'GROWTH_MEMBER',
-    'MEDIA_MEMBER',
   ];
   const level: PermissionAccessLevel =
     item?.permissions[user.role] ??
@@ -2493,28 +2125,6 @@ export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
     defaultLandingTab: 'cockpit',
     userCount: 6
   },
-  {
-    id: 'GROWTH_MEMBER',
-    code: 'GROWTH_PIC',
-    name: 'Chuyên Viên Growth Ecom',
-    scopeType: 'INTERNAL',
-    departmentScope: 'GROWTH',
-    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
-    description: 'Lập kế hoạch tháng (Input Plan 4.1), quản lý PnL gian hàng và giao hạn mức Order Net/Gross.',
-    defaultLandingTab: 'cockpit',
-    userCount: 136
-  },
-  {
-    id: 'MEDIA_MEMBER',
-    code: 'MEDIA_PIC',
-    name: 'Chuyên Viên Media & Ads',
-    scopeType: 'INTERNAL',
-    departmentScope: 'MEDIA',
-    badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
-    description: 'Nhận mã Spark Ads, vận hành chiến dịch quảng cáo TikTok và cập nhật báo cáo Ads hàng tuần.',
-    defaultLandingTab: 'cockpit',
-    userCount: 30
-  },
   ...RBAC_ROLE_DEFINITIONS.slice(6),
 ];
 
@@ -2574,14 +2184,10 @@ export function saveInternalStaffList(list: InternalStaffRbacMember[]): void {
 export const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
   ADMIN: 'Quản trị hệ thống',
   MANAGER: 'Trưởng phòng MKT B2C',
-  GROWTH_MANAGER: 'Trưởng phòng Growth',
-  MEDIA_MANAGER: 'Trưởng phòng Media',
   LEADER: 'Trưởng nhóm B2C',
   BOOKING_MEMBER: 'Chuyên viên Booking',
   CONTENT_MEMBER: 'Chuyên viên Content',
   BRAND_MEMBER: 'Chuyên viên Brand',
-  GROWTH_MEMBER: 'Chuyên viên Growth',
-  MEDIA_MEMBER: 'Chuyên viên Media',
   MEMBER: 'Chuyên viên thực thi',
   LEGAL: 'Pháp chế',
   FINANCE: 'Kế toán',

@@ -39,14 +39,10 @@ type ScopeFilter =
   | 'ALL'
   | 'ALLOWED_LOGIN'
   | 'MARKETING_B2C'
-  | 'GROWTH'
-  | 'MEDIA'
   | 'BLOCKED_LOGIN';
 
 const SCOPE_LABELS: Record<SystemDepartmentScope, string> = {
   MARKETING_B2C: 'Khối Marketing B2C',
-  GROWTH: 'Khối Growth',
-  MEDIA: 'Khối Media',
   OTHER_BLOCKED: 'Phòng ban khác',
 };
 
@@ -94,8 +90,6 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
   const allowedCount = useMemo(() => enrichedStaff.filter((s) => s.canLogin).length, [enrichedStaff]);
   const blockedCount = useMemo(() => enrichedStaff.filter((s) => !s.canLogin).length, [enrichedStaff]);
   const mktCount = useMemo(() => enrichedStaff.filter((s) => s.classifiedScope === 'MARKETING_B2C').length, [enrichedStaff]);
-  const growthCount = useMemo(() => enrichedStaff.filter((s) => s.classifiedScope === 'GROWTH').length, [enrichedStaff]);
-  const mediaCount = useMemo(() => enrichedStaff.filter((s) => s.classifiedScope === 'MEDIA').length, [enrichedStaff]);
 
   // Lọc danh sách nhân sự
   const filteredStaff = useMemo(() => {
@@ -103,12 +97,7 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
       if (selectedLocation !== 'ALL' && s.location !== selectedLocation) return false;
       if (selectedScope === 'ALLOWED_LOGIN' && !s.canLogin) return false;
       if (selectedScope === 'BLOCKED_LOGIN' && s.canLogin) return false;
-      if (
-        ['MARKETING_B2C', 'GROWTH', 'MEDIA'].includes(selectedScope) &&
-        s.classifiedScope !== selectedScope
-      ) {
-        return false;
-      }
+      if (selectedScope === 'MARKETING_B2C' && s.classifiedScope !== 'MARKETING_B2C') return false;
       if (selectedDept !== 'ALL' && s.department !== selectedDept) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -149,8 +138,6 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
     { key: 'ALL', label: 'Tất cả', count: enrichedStaff.length },
     { key: 'ALLOWED_LOGIN', label: 'Được vào', count: allowedCount },
     { key: 'MARKETING_B2C', label: 'Marketing B2C', count: mktCount },
-    { key: 'GROWTH', label: 'Khối Growth', count: growthCount },
-    { key: 'MEDIA', label: 'Khối Media', count: mediaCount },
     { key: 'BLOCKED_LOGIN', label: 'Chặn Login', count: blockedCount },
   ];
 

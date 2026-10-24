@@ -308,7 +308,6 @@ export function BrandProfileDetail({
       operationStatus: 'Live' as const,
       b2cOwnerName: m?.brandPicName || 'Lê Phương Thảo',
       accountOwnerName: m?.accountPic,
-      growthPic: m?.growthPic,
       budgetNet: Math.round((m?.planBudget || m?.monthlyBudget || 0) / Math.max(1, m?.stores?.length || 1)),
     })) as StorePortfolioItem[];
   }, [stores, row.name, m]);
@@ -353,7 +352,6 @@ export function BrandProfileDetail({
   );
   const primarySpecialist = specialistPics[0] || real(m?.brandPicName) || 'Lê Phương Thảo';
   const accountPicName = real(m?.accountPic) || brandStores.find(s => s.accountOwnerName)?.accountOwnerName || '';
-  const growthPicName = real(m?.growthPic) || brandStores.find(s => s.growthPic)?.growthPic || '';
 
   const status = !row.saved
     ? { label: 'Nháp', tone: 'neutral' as const }
@@ -1532,11 +1530,6 @@ export function BrandProfileDetail({
                 {accountPicName && (
                   <Info label="Quản lý quan hệ nhãn hàng (Account PIC)">
                     <Person name={accountPicName} size={20} />
-                  </Info>
-                )}
-                {growthPicName && (
-                  <Info label="Phụ trách Tăng trưởng (Growth PIC)">
-                    <Person name={growthPicName} size={20} />
                   </Info>
                 )}
                 <Info label="Chuyên viên điều phối mẫu FOC">

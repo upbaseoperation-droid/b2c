@@ -121,8 +121,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   const canManageSetup = [
     'ADMIN',
     'MANAGER',
-    'GROWTH_MANAGER',
-    'MEDIA_MANAGER',
     'LEADER',
   ].includes(currentUser.role);
 

@@ -41,8 +41,6 @@ const SPECIALIST_MEMBER_ROLES: UserRole[] = [
   'BOOKING_MEMBER',
   'CONTENT_MEMBER',
   'BRAND_MEMBER',
-  'GROWTH_MEMBER',
-  'MEDIA_MEMBER',
 ];
 
 /**
@@ -233,8 +231,13 @@ export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision
       result = { ...result, role: classified.role, departmentScope: classified.departmentScope };
     }
   }
+  // Hệ thống chỉ dành cho Marketing B2C: cấu hình đã lưu còn vai trò / khối Growth, Media cũ thì không cho đăng nhập
+  if (REMOVED_ROLES.has(String(result.role)) || REMOVED_SCOPES.has(String(result.departmentScope))) return null;
   return result.canLogin === false ? null : result;
 }
+
+const REMOVED_ROLES = new Set(['GROWTH_MANAGER', 'GROWTH_MEMBER', 'MEDIA_MANAGER', 'MEDIA_MEMBER']);
+const REMOVED_SCOPES = new Set(['GROWTH', 'MEDIA']);
 
 export async function actionAllowed(
   user: UserProfile,

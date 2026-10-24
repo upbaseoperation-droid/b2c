@@ -48,7 +48,7 @@ export default function PerformanceP3View({
 }: PerformanceP3ViewProps = {}) {
   const canViewAllStaffP3 =
     !currentUser ||
-    ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(currentUser.role);
+    ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser.role);
   const [rawActiveTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
   const activeTab = !canViewAllStaffP3 && rawActiveTab === 'STORE_MATRIX' ? 'CALC' : rawActiveTab;
   const [staffRecords, setStaffRecords] = useState<StaffP3Record[]>(MOCK_P3_STAFF_RECORDS);

@@ -72,8 +72,6 @@ export interface KocOutreachEmailModalProps {
 const MANAGER_ROLES: UserRole[] = [
   'ADMIN',
   'MANAGER',
-  'GROWTH_MANAGER',
-  'MEDIA_MANAGER',
   'LEADER',
 ];
 

@@ -258,9 +258,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
 
   const conn = CONNECTION_VIEW[chat.connection];
   const pics: { label: string; name?: string }[] = [
-    { label: 'Growth', name: plan.growthPic },
     { label: 'MKT B2C', name: plan.pic }, ...(plan.hasBookingLeader ? [{ label: 'Leader', name: plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm' }] : []),
-    { label: 'Media', name: plan.mediaPic },
     { label: 'Lead B2C', name: plan.approvedBy || 'Đặng Thị Yến Nhi' }
   ];
   const overLimit = draft.length > MAX_MESSAGE_LENGTH;

@@ -547,7 +547,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
   // Action: Lock / Chốt Sản Phẩm Thúc Đẩy
   const handleLockProduct = (product: PushProductItem) => {
-    const growthName = activeRole === 'GROWTH' ? activeAuthorName : product.growthPic || 'Hoàng Long (Growth Lead)';
     const b2cName = activeRole === 'B2C' ? activeAuthorName : product.b2cPic || 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)';
 
     const updated: PushProductItem = {
@@ -555,7 +554,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       status: 'LOCKED_APPROVED',
       lockedAt: new Date().toISOString(),
       lockedBy: {
-        growthPic: growthName,
         b2cPic: b2cName
       },
       auditLogs: [
@@ -808,7 +806,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       sampleNotes: '',
       feasibilityScore: 'MEDIUM',
       b2cBriefStatus: 'PENDING_BRIEF',
-      growthPic: 'Hoàng Long',
       b2cPic: 'Lê Phương Thảo',
       status: 'PROPOSED',
       proposedAt: new Date().toISOString(),

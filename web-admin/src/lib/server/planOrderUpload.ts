@@ -201,7 +201,6 @@ export async function parsePlanOrderWorkbook(
       week: `Tháng ${month}`,
       pic: storePic,
       primaryPic: storePic || undefined,
-      growthPic: store?.growthPic?.trim() || undefined,
       hasBookingLeader: hasLeader,
       bookingLeader,
       leaderApprovalStatus: hasLeader ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG',

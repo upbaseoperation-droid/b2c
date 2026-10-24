@@ -233,7 +233,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     category: string;
     bookingPicLead: string;
     accountPic: string;
-    growthPic: string;
     contentBrandMainPic: string;
     planStrategyPic: string;
     keyVisualSisPic: string;
@@ -243,7 +242,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     category: 'Mỹ phẩm & Chăm sóc da',
     bookingPicLead: 'Đặng Thị Yến Nhi',
     accountPic: 'Phạm Thị Nhài',
-    growthPic: 'Hoàng Long',
     contentBrandMainPic: 'Quỳnh Như',
     planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
     keyVisualSisPic: 'Vũ Hoài Lâm',
@@ -293,7 +291,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       category: master.category || 'Mỹ phẩm & Chăm sóc da',
       bookingPicLead: master.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: master.accountPic || 'Phạm Thị Nhài',
-      growthPic: master.growthPic || 'Hoàng Long',
       contentBrandMainPic: master.contentBrandMainPic || master.contentPic || 'Quỳnh Như',
       planStrategyPic: master.planStrategyPic || master.brandPicName || 'Nguyễn Thị Ngọc Tâm',
       keyVisualSisPic: master.keyVisualSisPic || 'Vũ Hoài Lâm',
@@ -316,7 +313,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         category: brandFormState.category,
         bookingPicLead: brandFormState.bookingPicLead,
         accountPic: brandFormState.accountPic,
-        growthPic: brandFormState.growthPic,
         contentBrandMainPic: brandFormState.contentBrandMainPic,
         planStrategyPic: brandFormState.planStrategyPic,
         keyVisualSisPic: brandFormState.keyVisualSisPic,
@@ -347,7 +343,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         airedVideos: 0,
         bookingPicLead: brandFormState.bookingPicLead,
         accountPic: brandFormState.accountPic,
-        growthPic: brandFormState.growthPic,
         contentBrandMainPic: brandFormState.contentBrandMainPic,
         planStrategyPic: brandFormState.planStrategyPic,
         keyVisualSisPic: brandFormState.keyVisualSisPic,
@@ -375,7 +370,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       category: brand.category,
       bookingPicLead: brand.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: brand.accountPic || 'Phạm Thị Nhài',
-      growthPic: brand.growthPic || 'Hoàng Long',
       contentBrandMainPic: brand.contentBrandMainPic || brand.contentPic || 'Quỳnh Như',
       planStrategyPic: brand.planStrategyPic || brand.brandPicName || 'Nguyễn Thị Ngọc Tâm',
       keyVisualSisPic: brand.keyVisualSisPic || 'Vũ Hoài Lâm',
@@ -542,7 +536,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     category: 'Mỹ phẩm & Chăm sóc da',
                     bookingPicLead: staffList[0]?.name || 'Đặng Thị Yến Nhi',
                     accountPic: 'Phạm Thị Nhài',
-                    growthPic: 'Hoàng Long',
                     contentBrandMainPic: 'Quỳnh Như',
                     planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
                     keyVisualSisPic: 'Vũ Hoài Lâm',
@@ -1339,22 +1332,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="font-semibold text-ink-2 block mb-1">Growth PIC</label>
-                <select
-                  value={brandFormState.growthPic}
-                  onChange={(e) => setBrandFormState((prev) => ({ ...prev, growthPic: e.target.value }))}
-                  className="w-full text-xs px-2.5 py-2 bg-canvas border border-line rounded-lg text-ink focus:outline-none"
-                >
-                  {staffList
-                    .filter((s) => s.role === 'GROWTH' || s.role === 'MANAGER')
-                    .map((s) => (
-                      <option key={s.id} value={s.name}>
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
             </div>
           </div>
 

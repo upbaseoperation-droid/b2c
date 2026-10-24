@@ -17,8 +17,6 @@ export function isPartnerUser(user: Pick<UserProfile, 'role' | 'partnerType'>): 
 /** Khối của người dùng; thiếu dữ liệu thì suy ra từ vai trò. */
 export function departmentOf(user: { role: UserRole; departmentScope?: SystemDepartmentScope }): SystemDepartmentScope {
   if (user.departmentScope) return user.departmentScope;
-  if (user.role === 'GROWTH_MANAGER' || user.role === 'GROWTH_MEMBER') return 'GROWTH';
-  if (user.role === 'MEDIA_MANAGER' || user.role === 'MEDIA_MEMBER') return 'MEDIA';
   return 'MARKETING_B2C';
 }
 
@@ -87,7 +85,6 @@ function storeExecutionPics(store: StorePortfolioItem): string[] {
     store.primaryPic,
     store.assignedStaff,
     store.contentPic,
-    store.mediaPic,
     store.backupOwnerName,
     ...(store.b2cOwners || []),
   ].flatMap((v) => splitPics(v));

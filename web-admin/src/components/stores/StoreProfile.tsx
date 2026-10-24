@@ -1292,11 +1292,6 @@ export function StoreProfile({
               </div>
 
               <div>
-                <span className="block text-2xs text-ink-3 mb-1">Bộ phận Tăng trưởng sàn (Growth PIC)</span>
-                {store.growthPic ? <Person name={store.growthPic} /> : <span className="text-ink-3 text-2xs">—</span>}
-              </div>
-
-              <div>
                 <span className="block text-2xs text-ink-3 mb-1">Quản lý quan hệ Brand (Account PIC)</span>
                 {store.accountOwnerName ? (
                   <Person name={store.accountOwnerName} />

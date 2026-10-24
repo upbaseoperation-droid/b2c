@@ -78,7 +78,7 @@ interface CentralizedRbacHubViewProps {
 type MainTab = 'roles' | 'matrix' | 'internal' | 'gatekeeper' | 'third-party';
 type MatrixRoleGroupFilter = 'ALL' | 'MANAGERS' | 'INTERNAL_OPS' | 'EXTERNAL';
 type InternalRoleGroupFilter = 'ALL' | 'LEADERSHIP' | 'EXECUTION' | 'BACKOFFICE';
-type GatekeeperScopeChip = 'ALLOWED_3_SCOPES' | 'ALL' | 'MARKETING_B2C' | 'GROWTH' | 'MEDIA' | 'OTHER_BLOCKED' | 'OVERRIDDEN';
+type GatekeeperScopeChip = 'ALLOWED_3_SCOPES' | 'ALL' | 'MARKETING_B2C' | 'OTHER_BLOCKED' | 'OVERRIDDEN';
 
 const SCOPE_LABELS: Record<
   SystemDepartmentScope,
@@ -89,18 +89,6 @@ const SCOPE_LABELS: Record<
     shortLabel: 'Marketing B2C',
     badgeClass: 'bg-accent-soft text-accent border-accent/20',
     managerLabel: 'Đặng Thị Yến Nhi',
-  },
-  GROWTH: {
-    label: 'Khối Growth Ecom',
-    shortLabel: 'Growth Ecom',
-    badgeClass: 'bg-positive-soft text-positive border-positive/20',
-    managerLabel: 'Nguyễn Thị Thu Thủy',
-  },
-  MEDIA: {
-    label: 'Khối Media & Ads',
-    shortLabel: 'Media & Ads',
-    badgeClass: 'bg-warning-soft text-warning border-warning/20',
-    managerLabel: 'Nguyễn Đức Quảng',
   },
   OTHER_BLOCKED: {
     label: 'Phòng ban khác',
@@ -113,14 +101,10 @@ const SCOPE_LABELS: Record<
 const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
   ADMIN: 'Quản trị hệ thống (Admin)',
   MANAGER: 'Giám đốc Marketing B2C',
-  GROWTH_MANAGER: 'Trưởng phòng Growth',
-  MEDIA_MANAGER: 'Trưởng phòng Media',
   LEADER: 'Trưởng nhóm B2C',
   BOOKING_MEMBER: 'Chuyên viên Booking B2C',
   CONTENT_MEMBER: 'Chuyên viên Content B2C',
   BRAND_MEMBER: 'Chuyên viên Brand PIC',
-  GROWTH_MEMBER: 'Chuyên viên Growth',
-  MEDIA_MEMBER: 'Chuyên viên Media',
   MEMBER: 'Chuyên viên vận hành',
   BRAND_PARTNER: 'Đối tác Brand',
   KOC_PARTNER: 'KOC / KOL',
@@ -133,14 +117,10 @@ const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
 const ROLE_SHORT_HEADER: Record<string, string> = {
   ADMIN: 'Admin',
   MANAGER: 'GĐ MKT B2C',
-  GROWTH_MANAGER: 'TP Growth',
-  MEDIA_MANAGER: 'TP Media',
   LEADER: 'Leader B2C',
   BOOKING_MEMBER: 'CV Booking',
   CONTENT_MEMBER: 'CV Content',
   BRAND_MEMBER: 'CV Brand',
-  GROWTH_MEMBER: 'CV Growth',
-  MEDIA_MEMBER: 'CV Media',
   MEMBER: 'Chuyên viên',
   LEGAL: 'Pháp chế',
   FINANCE: 'Kế toán',
@@ -180,8 +160,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const logCounterRef = useRef(100);
 
   const isAdmin = currentUser?.role === 'ADMIN';
-  const isGrowthManager = currentUser?.role === 'GROWTH_MANAGER';
-  const isMediaManager = currentUser?.role === 'MEDIA_MANAGER';
   const isB2cManager = currentUser?.role === 'MANAGER';
 
   // --- STATE TAB ROLES: QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH ---
@@ -205,8 +183,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [dirSearch, setDirSearch] = useState('');
   const deferredDirSearch = useDeferredValue(dirSearch);
   const [dirScopeFilter, setDirScopeFilter] = useState<GatekeeperScopeChip>(() => {
-    if (isGrowthManager) return 'GROWTH';
-    if (isMediaManager) return 'MEDIA';
     if (isB2cManager) return 'MARKETING_B2C';
     return 'ALLOWED_3_SCOPES';
   });
@@ -226,13 +202,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [prevUserRole, setPrevUserRole] = useState<UserRole | undefined>(currentUser?.role);
   if (currentUser?.role !== prevUserRole) {
     setPrevUserRole(currentUser?.role);
-    if (currentUser?.role === 'GROWTH_MANAGER') {
-      setDirScopeFilter('GROWTH');
-      setDirPage(1);
-    } else if (currentUser?.role === 'MEDIA_MANAGER') {
-      setDirScopeFilter('MEDIA');
-      setDirPage(1);
-    } else if (currentUser?.role === 'MANAGER') {
+    if (currentUser?.role === 'MANAGER') {
       setDirScopeFilter('MARKETING_B2C');
       setDirPage(1);
     } else if (currentUser?.role === 'ADMIN') {
@@ -402,10 +372,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const directoryStats = useMemo(() => {
     let mktTotal = 0,
       mktAllowed = 0;
-    let growthTotal = 0,
-      growthAllowed = 0;
-    let mediaTotal = 0,
-      mediaAllowed = 0;
     let otherTotal = 0,
       otherAllowed = 0;
 
@@ -413,29 +379,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       if (s.classifiedScope === 'MARKETING_B2C') {
         mktTotal++;
         if (s.canLogin) mktAllowed++;
-      } else if (s.classifiedScope === 'GROWTH') {
-        growthTotal++;
-        if (s.canLogin) growthAllowed++;
-      } else if (s.classifiedScope === 'MEDIA') {
-        mediaTotal++;
-        if (s.canLogin) mediaAllowed++;
       } else {
         otherTotal++;
         if (s.canLogin) otherAllowed++;
       }
     });
 
-    const totalAllowed = mktAllowed + growthAllowed + mediaAllowed + otherAllowed;
+    const totalAllowed = mktAllowed + otherAllowed;
     return {
       totalStaff: classifiedDirectory.length,
       totalAllowed,
       totalBlocked: classifiedDirectory.length - totalAllowed,
       mktTotal,
       mktAllowed,
-      growthTotal,
-      growthAllowed,
-      mediaTotal,
-      mediaAllowed,
       otherTotal,
       otherAllowed,
     };
@@ -452,11 +408,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   const filteredDirectory = useMemo(() => {
     return classifiedDirectory.filter((s) => {
-      if (isGrowthManager && s.classifiedScope !== 'GROWTH') return false;
-      if (isMediaManager && s.classifiedScope !== 'MEDIA') return false;
-
       if (dirScopeFilter === 'ALLOWED_3_SCOPES') {
-        if (!['MARKETING_B2C', 'GROWTH', 'MEDIA'].includes(s.classifiedScope) && !s.canLogin) return false;
+        if (s.classifiedScope !== 'MARKETING_B2C' && !s.canLogin) return false;
       } else if (dirScopeFilter === 'OVERRIDDEN') {
         if (!['ADMIN_EXPLICIT', 'REVOKED'].includes(s.accessSource)) return false;
       } else if (dirScopeFilter !== 'ALL') {
@@ -488,8 +441,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     });
   }, [
     classifiedDirectory,
-    isGrowthManager,
-    isMediaManager,
     dirScopeFilter,
     dirLoginFilter,
     dirDeptFilter,
@@ -537,12 +488,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       canLogin: nextCanLogin,
       departmentScope: nextScope,
       role: nextRole,
-      managerName:
-        nextScope === 'GROWTH'
-          ? 'Nguyễn Thị Thu Thủy'
-          : nextScope === 'MEDIA'
-          ? 'Nguyễn Đức Quảng'
-          : 'Đặng Thị Yến Nhi',
+      managerName: 'Đặng Thị Yến Nhi',
       updatedBy: currentUser?.name || 'Admin',
       updatedAt: new Date().toISOString(),
     };
@@ -703,11 +649,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     if (!masterMatch) return;
     const classified = classifyMasterStaffMember(masterMatch, deptRules, staffOverrides);
     const nextScope: SystemDepartmentScope =
-      nextRole === 'GROWTH_MANAGER' || nextRole === 'GROWTH_MEMBER'
-        ? 'GROWTH'
-        : nextRole === 'MEDIA_MANAGER' || nextRole === 'MEDIA_MEMBER'
-        ? 'MEDIA'
-        : classified.departmentScope === 'OTHER_BLOCKED'
+      classified.departmentScope === 'OTHER_BLOCKED'
         ? 'MARKETING_B2C'
         : classified.departmentScope;
     setStaffOverrides((prev) => ({
@@ -763,7 +705,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const matrixRolesToRender = useMemo(() => {
     if (matrixRoleGroup === 'MANAGERS') {
       return ALL_ROLE_DEFINITIONS.filter((r) =>
-        ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(r.id)
+        ['ADMIN', 'MANAGER', 'LEADER'].includes(r.id)
       );
     }
     if (matrixRoleGroup === 'INTERNAL_OPS') {
@@ -772,8 +714,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           'BOOKING_MEMBER',
           'CONTENT_MEMBER',
           'BRAND_MEMBER',
-          'GROWTH_MEMBER',
-          'MEDIA_MEMBER',
           'LEGAL',
           'FINANCE',
           'SIGN_ADMIN',
@@ -810,11 +750,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   // --- HANDLERS TAB INTERNAL STAFF ---
   const filteredStaff = useMemo(() => {
     return internalStaff.filter((staff) => {
-      if (isGrowthManager && staff.departmentScope !== 'GROWTH') return false;
-      if (isMediaManager && staff.departmentScope !== 'MEDIA') return false;
-
       if (staffGroupFilter === 'LEADERSHIP') {
-        if (!['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(staff.role)) return false;
+        if (!['ADMIN', 'MANAGER'].includes(staff.role)) return false;
       } else if (staffGroupFilter === 'EXECUTION') {
         if (
           ![
@@ -822,8 +759,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             'BOOKING_MEMBER',
             'CONTENT_MEMBER',
             'BRAND_MEMBER',
-            'GROWTH_MEMBER',
-            'MEDIA_MEMBER',
             'MEMBER',
           ].includes(staff.role)
         )
@@ -844,7 +779,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       }
       return true;
     });
-  }, [internalStaff, isGrowthManager, isMediaManager, staffGroupFilter, staffRoleFilter, deferredSearchStaff]);
+  }, [internalStaff, staffGroupFilter, staffRoleFilter, deferredSearchStaff]);
 
   const handleInlineRoleChange = (staffId: string, nextRole: UserRole) => {
     if (!isAdmin) {
@@ -943,7 +878,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       key: 'LEADERSHIP',
       label: 'BGĐ & Trưởng phòng',
       count: internalStaff.filter((s) =>
-        ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(s.role)
+        ['ADMIN', 'MANAGER'].includes(s.role)
       ).length,
     },
     {
@@ -955,8 +890,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           'BOOKING_MEMBER',
           'CONTENT_MEMBER',
           'BRAND_MEMBER',
-          'GROWTH_MEMBER',
-          'MEDIA_MEMBER',
           'MEMBER',
         ].includes(s.role)
       ).length,
@@ -969,11 +902,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   ];
 
   const gatekeeperChips: ChipOption<GatekeeperScopeChip>[] = [
-    { key: 'ALLOWED_3_SCOPES', label: '3 Khối được vào', count: directoryStats.totalAllowed },
+    { key: 'ALLOWED_3_SCOPES', label: 'Được vào', count: directoryStats.totalAllowed },
     { key: 'ALL', label: 'Toàn công ty', count: directoryStats.totalStaff },
     { key: 'MARKETING_B2C', label: 'Marketing B2C', count: directoryStats.mktTotal },
-    { key: 'GROWTH', label: 'Growth Ecom', count: directoryStats.growthTotal },
-    { key: 'MEDIA', label: 'Media & Ads', count: directoryStats.mediaTotal },
     { key: 'OTHER_BLOCKED', label: 'Phòng ban khác', count: directoryStats.otherTotal },
     { key: 'OVERRIDDEN', label: 'Ngoại lệ cá nhân', count: Object.keys(staffOverrides).length },
   ];
@@ -1073,7 +1004,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 {[
                   {
                     groupTitle: 'Quản trị & Trưởng phòng',
-                    roleIds: ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'] as UserRole[],
+                    roleIds: ['ADMIN', 'MANAGER', 'LEADER'] as UserRole[],
                   },
                   {
                     groupTitle: 'Chuyên viên thực thi',
@@ -1081,8 +1012,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       'BOOKING_MEMBER',
                       'CONTENT_MEMBER',
                       'BRAND_MEMBER',
-                      'GROWTH_MEMBER',
-                      'MEDIA_MEMBER',
                     ] as UserRole[],
                   },
                   {
@@ -1546,8 +1475,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             'BOOKING_MEMBER',
                             'CONTENT_MEMBER',
                             'BRAND_MEMBER',
-                            'GROWTH_MEMBER',
-                            'MEDIA_MEMBER',
                           ].includes(role.id);
                           const level: PermissionAccessLevel =
                             item.permissions[role.id] ||
@@ -1631,12 +1558,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <option value="ALL">Mọi vai trò cụ thể</option>
                     <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
                     <option value="MANAGER">Giám Đốc Marketing B2C</option>
-                    <option value="GROWTH_MANAGER">Trưởng Phòng Growth</option>
-                    <option value="MEDIA_MANAGER">Trưởng Phòng Media</option>
                     <option value="LEADER">Trưởng Nhóm Booking B2C</option>
                     <option value="BOOKING_MEMBER">Chuyên Viên Booking B2C</option>
-                    <option value="GROWTH_MEMBER">Chuyên Viên Growth</option>
-                    <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads</option>
                     <option value="CONTENT_MEMBER">Chuyên Viên Content</option>
                     <option value="BRAND_MEMBER">Chuyên Viên Brand PIC</option>
                     <option value="LEGAL">Pháp Chế</option>
@@ -1762,12 +1685,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           >
                             <option value="ADMIN">Quản trị hệ thống (Admin)</option>
                             <option value="MANAGER">Giám đốc Marketing B2C</option>
-                            <option value="GROWTH_MANAGER">Trưởng phòng Growth</option>
-                            <option value="MEDIA_MANAGER">Trưởng phòng Media</option>
                             <option value="LEADER">Trưởng nhóm B2C</option>
                             <option value="BOOKING_MEMBER">Chuyên viên Booking B2C</option>
-                            <option value="GROWTH_MEMBER">Chuyên viên Growth</option>
-                            <option value="MEDIA_MEMBER">Chuyên viên Media</option>
                             <option value="CONTENT_MEMBER">Chuyên viên Content B2C</option>
                             <option value="BRAND_MEMBER">Chuyên viên Brand PIC</option>
                             <option value="LEGAL">Pháp chế</option>
@@ -2167,12 +2086,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               >
                 <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
                 <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
-                <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
-                <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
                 <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
                 <option value="BOOKING_MEMBER">Chuyên Viên Booking KOC (BOOKING_MEMBER)</option>
-                <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
-                <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
                 <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản (CONTENT_MEMBER)</option>
                 <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
                 <option value="LEGAL">Pháp Chế (LEGAL)</option>
@@ -2299,13 +2214,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     onChange={(e) => {
                       const nextScope = e.target.value as SystemDepartmentScope;
                       setDirEditScope(nextScope);
-                      if (nextScope === 'GROWTH') {
-                        setDirEditRole('GROWTH_MEMBER');
-                        setDirEditManager('Nguyễn Thị Thu Thủy');
-                      } else if (nextScope === 'MEDIA') {
-                        setDirEditRole('MEDIA_MEMBER');
-                        setDirEditManager('Nguyễn Đức Quảng');
-                      } else {
+                      {
                         setDirEditRole('BOOKING_MEMBER');
                         setDirEditManager('Đặng Thị Yến Nhi');
                       }
@@ -2313,8 +2222,6 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     className="w-full h-9 px-3 rounded-lg border border-line bg-surface font-semibold text-ink"
                   >
                     <option value="MARKETING_B2C">Khối Marketing B2C (Booking / Content / Brand)</option>
-                    <option value="GROWTH">Khối Growth Ecom (Growth 1 - 6 &amp; HCM)</option>
-                    <option value="MEDIA">Khối Media &amp; Ads (Media Omni &amp; TikTok)</option>
                   </select>
                 </div>
 
@@ -2330,16 +2237,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <optgroup label="Cấp Quản Trị & Trưởng Phòng">
                       <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
                       <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
-                      <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
-                      <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
                       <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
                     </optgroup>
                     <optgroup label="Cấp Chuyên Viên Thực Thi">
                       <option value="BOOKING_MEMBER">Chuyên Viên Booking B2C (BOOKING_MEMBER)</option>
                       <option value="CONTENT_MEMBER">Chuyên Viên Content B2C (CONTENT_MEMBER)</option>
                       <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
-                      <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
-                      <option value="MEDIA_MEMBER">Chuyên Viên Media &amp; Ads (MEDIA_MEMBER)</option>
                     </optgroup>
                     <optgroup label="Khối Pháp Chế · Kế Toán · Ký Số">
                       <option value="LEGAL">Pháp Chế (LEGAL)</option>

@@ -3,7 +3,7 @@ import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, 
 /** Tất cả người được phân việc trong một kế hoạch tháng: là PIC tham gia gian trong tháng đó. */
 function planParticipantNames(plan: InputPlanBreakdownState): string[] {
   return [
-    plan.pic, plan.primaryPic, plan.growthPic, plan.mediaPic, plan.submittedBy,
+    plan.pic, plan.primaryPic, plan.submittedBy,
     ...(plan.assignedMembers || []),
     ...(plan.items || []).map(i => i.assignedStaff),
   ].filter((n): n is string => !!n && !!n.trim());
@@ -136,11 +136,9 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): 
     hasUserInPicField(store.b2cOwnerName, userNameLower) ||
     hasUserInPicField(store.primaryPic, userNameLower) ||
     hasUserInPicField(store.assignedStaff, userNameLower) ||
-    hasUserInPicField(store.growthPic, userNameLower) ||
     hasUserInPicField(store.accountOwnerName, userNameLower) ||
     hasUserInPicField(store.bookingLeader, userNameLower) ||
     hasUserInPicField(store.contentPic, userNameLower) ||
-    hasUserInPicField(store.mediaPic, userNameLower) ||
     hasUserInPicField(store.backupOwnerName, userNameLower)
   ) {
     return true;
@@ -228,7 +226,6 @@ export function isBrandManagedByUser(
       userNameLower &&
       (hasUserInPicField(brand.brandPicName, userNameLower) ||
         hasUserInPicField(brand.accountPic, userNameLower) ||
-        hasUserInPicField(brand.growthPic, userNameLower) ||
         hasUserInPicField(brand.bookingPicLead, userNameLower) ||
         hasUserInPicField(brand.contentBrandMainPic, userNameLower) ||
         hasUserInPicField(brand.planStrategyPic, userNameLower) ||
@@ -348,7 +345,6 @@ export function isDealManagedByUser(
     userNameLower &&
     (hasUserInPicField(deal.assignedStaff, userNameLower) ||
       hasUserInPicField(deal.bookingPic, userNameLower) ||
-      hasUserInPicField(deal.growthPic, userNameLower) ||
       hasUserInPicField(deal.accountPic, userNameLower) ||
       hasUserInPicField(deal.leadBooking, userNameLower))
   ) {

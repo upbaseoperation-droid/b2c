@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       user &&
         !user.partnerType &&
         !user.role.endsWith('_PARTNER') &&
-        (['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'LEADER'].includes(user.role) ||
+        (['ADMIN', 'MANAGER', 'LEADER'].includes(user.role) ||
           user.permissions?.includes('canApproveBudget'))
     );
     const rejectWebhook = () =>

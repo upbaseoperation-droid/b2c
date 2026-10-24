@@ -296,7 +296,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Chỉ cấp Quản lý / Trưởng nhóm mới được xem Tab "Kế hoạch theo nhân sự" & "Hệ số gian hàng"
   const canViewTeamPlansAndCoefficients = Boolean(
     currentUser &&
-      ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'].includes(currentUser.role)
+      ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser.role)
   );
 
   // Tab chuyển góc nhìn: Ma trận gian hàng vs Kế hoạch theo Brand (3 vị trí) vs Hệ số gian hàng (Bảng 2) vs Kế hoạch theo nhân sự vs Danh mục kế hoạch
@@ -925,7 +925,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       month: newPlanMonth,
       week: newPlanWeek,
       pic: newPlanPic,
-      growthPic: 'Trần Thị Ánh (Growth Manager)',
       totalTargetBudget: newPlanBudget,
       totalTargetContents: newPlanQty,
       targetGmv: newPlanGmv,
@@ -2577,7 +2576,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <div className="flex items-center gap-2 mt-1.5 text-2xs text-ink-3 flex-wrap">
                           <span>B2C: <strong className="text-ink font-medium">{plan.pic || 'Chưa giao'}</strong></span>
                           <span>•</span>
-                          <span>Growth: <strong className="text-ink-2 font-medium">{plan.growthPic?.split(' (')[0] || 'Team'}</strong></span>
+                          <span>Growth: <strong className="text-ink-2 font-medium">{'B2C'}</strong></span>
                           {getBreakdownHealth(plan) && <span>•</span>}
                           <BreakdownHealthText plan={plan} />
                           {budgetDelta !== 0 && (
@@ -2748,7 +2747,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               </div>
                               <div className="flex items-center gap-1 min-w-0">
                                 <span className="text-ink-3 w-10 shrink-0">Growth:</span>
-                                <span className="text-ink-2 truncate">{plan.growthPic?.split(' (')[0] || 'Team'}</span>
+                                <span className="text-ink-2 truncate">{'B2C'}</span>
                               </div>
                               {getBreakdownHealth(plan) && (
                                 <div className="min-w-0 truncate">

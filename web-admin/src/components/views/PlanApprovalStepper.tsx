@@ -20,6 +20,7 @@ import {
 import { formatVndShort } from '../../lib/format';
 import { Modal } from '../ui';
 import { getPlanVersionSnapshots } from '../../lib/monthlyPlanData';
+import { resolveStoreBookingLeader } from '../../lib/larkPaymentRequestEngine';
 
 interface PlanApprovalStepperProps {
   plan: InputPlanBreakdownState;
@@ -37,24 +38,11 @@ interface PlanApprovalStepperProps {
 export function deriveSignOff(plan: InputPlanBreakdownState): MultiPartySignOff {
   const status = plan.status || 'DRAFT';
   return plan.multiPartySignOff || {
-    growth: {
-      confirmed: ['PRE_APPROVED', 'PENDING_APPROVAL', 'LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(status),
-      confirmedBy: plan.growthPic || 'Trần Thị Ánh',
-      confirmedAt: plan.preApprovedAt,
-      note: 'Đã giao trần ngân sách và gói tổng Ads.',
-    },
     booking: {
       confirmed: status !== 'DRAFT' && status !== 'REVISION_REQUESTED',
       confirmedBy: plan.primaryPic || plan.pic || 'Lê Phương Thảo',
       confirmedAt: plan.submittedAt,
       note: 'Đã phân rã cơ cấu KOC theo KL1-KL7 và Kênh thương hiệu.',
-    },
-    media: {
-      confirmed: ['PRE_APPROVED', 'PENDING_APPROVAL', 'LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(status),
-      confirmedBy: plan.mediaPic || 'Phan Thành Đạt',
-      confirmedAt: plan.preApprovedAt,
-      targetRoas: 4.5,
-      note: 'Đã nhận gói Tổng ngân sách Ads và cam kết ROAS.',
     },
     leadB2c: {
       confirmed: ['LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(status),
@@ -81,11 +69,10 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   const [actionNote, setActionNote] = useState('');
   const [isActionNoteOpen, setIsActionNoteOpen] = useState(false);
   const [pendingActionType, setPendingActionType] = useState<
-    'CONFIRM_GROWTH' | 'CONFIRM_BOOKING' | 'CONFIRM_LEADER' | 'CONFIRM_MEDIA' | 'FINAL_APPROVE' | null
+    'CONFIRM_BOOKING' | 'CONFIRM_LEADER' | 'FINAL_APPROVE' | null
   >(null);
-  const [mediaRoasInput, setMediaRoasInput] = useState<number>(plan.multiPartySignOff?.media?.targetRoas || 4.5);
 
-  const [isGrowthNewVersionModalOpen, setIsGrowthNewVersionModalOpen] = useState(false);
+  const [isNewVersionModalOpen, setIsNewVersionModalOpen] = useState(false);
   const [newVersionCode, setNewVersionCode] = useState('v1.1');
   const [newVersionTitle, setNewVersionTitle] = useState('Điều chỉnh Đợt 2 - Cập nhật ngân sách & chỉ tiêu');
   const [newChangeReason, setNewChangeReason] = useState('');
@@ -95,30 +82,19 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
   const currentVersion = plan.currentVersionCode || 'v1.0';
   const isLocked = Boolean(plan.isVersionLocked);
-  const hasLeader = Boolean(plan.hasBookingLeader !== undefined ? plan.hasBookingLeader : plan.bookingLeader);
+  const resolvedLeader = resolveStoreBookingLeader(plan.storeName || plan.brandName, plan.bookingLeader);
+  const hasLeader = Boolean(resolvedLeader);
   const leaderConfirmed =
     plan.leaderApprovalStatus === 'ĐÃ_SƠ_DUYỆT' ||
     ['LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || '');
 
-  // Plan lập từ Plan order tổng (bảng 4.1): Growth đã giao số và gói Ads trong chính bảng đó
   const b2cOrderSourced = Boolean(plan.reference41);
-  const baseSignOff = deriveSignOff(plan);
-  const signOff: MultiPartySignOff = b2cOrderSourced
-    ? {
-        ...baseSignOff,
-        growth: { ...baseSignOff.growth, confirmed: true, note: 'Số giao nằm trong Plan order tổng (bảng 4.1).' },
-        media: { ...baseSignOff.media, confirmed: true, note: 'Gói Ads nằm trong Plan order tổng (bảng 4.1).' },
-      }
-    : baseSignOff;
-  const allPrePartiesConfirmed =
-    signOff.growth.confirmed &&
-    signOff.booking.confirmed &&
-    signOff.media.confirmed &&
-    (!hasLeader || leaderConfirmed);
+  const signOff: MultiPartySignOff = deriveSignOff(plan);
+  const allPrePartiesConfirmed = signOff.booking.confirmed && (!hasLeader || leaderConfirmed);
 
   const normName = (v?: string) => (v || '').trim().toLowerCase();
   const isGlobalManager = ['ADMIN', 'MANAGER'].includes(currentUser?.role || '') || currentRole === 'LEAD';
-  const isPlanLeader = Boolean(plan.bookingLeader) && normName(currentUser?.name) === normName(plan.bookingLeader);
+  const isPlanLeader = Boolean(resolvedLeader) && normName(currentUser?.name) === normName(resolvedLeader);
   const canLeaderAct = isGlobalManager || isPlanLeader;
 
   const handleConfirmAction = () => {
@@ -126,18 +102,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     const now = new Date().toISOString();
     const updatedSignOff = { ...signOff };
 
-    if (pendingActionType === 'CONFIRM_GROWTH') {
-      const author = currentUser?.name || plan.growthPic || 'Trần Thị Ánh';
-      updatedSignOff.growth = {
-        confirmed: true,
-        confirmedBy: author,
-        confirmedAt: now,
-        note: actionNote || 'Growth đã xác nhận số tổng và gói Ads cho gian hàng.',
-      };
-      const nextAll = updatedSignOff.booking.confirmed && updatedSignOff.media.confirmed && (!hasLeader || leaderConfirmed);
-      const msg = `Growth (${author}) đã duyệt giao số tổng và gói Ads: "${actionNote || 'Đạt yêu cầu P&L'}"`;
-      onStatusChange(nextAll ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
-    } else if (pendingActionType === 'CONFIRM_BOOKING') {
+    if (pendingActionType === 'CONFIRM_BOOKING') {
       const author = currentUser?.name || plan.primaryPic || plan.pic || 'Lê Phương Thảo';
       updatedSignOff.booking = {
         confirmed: true,
@@ -145,11 +110,11 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         confirmedAt: now,
         note: actionNote || 'Booking PIC đã hoàn thành phân rã chi tiết 4 kênh và định mức KL1-KL7.',
       };
-      const nextAll = updatedSignOff.growth.confirmed && updatedSignOff.media.confirmed && (!hasLeader || leaderConfirmed);
-      const msg = `Marketing B2C (${author}) đã duyệt cơ cấu phân rã KOC & kênh: "${actionNote || 'Khớp trần chi phí'}"`;
+      const nextAll = !hasLeader || leaderConfirmed;
+      const msg = `Marketing B2C (${author}) đã gửi duyệt cơ cấu phân rã KOC & kênh: "${actionNote || 'Khớp trần chi phí'}"`;
       onStatusChange(nextAll ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'CONFIRM_LEADER') {
-      const author = currentUser?.name || plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm';
+      const author = currentUser?.name || resolvedLeader || 'Nguyễn Thị Ngọc Tâm';
       const note = actionNote || 'Trưởng nhóm đã sơ duyệt cơ cấu phân bổ KOC và tỷ trọng kênh.';
       if (onUpdatePlan) {
         onUpdatePlan({
@@ -159,27 +124,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           leaderNotes: note,
         });
       }
-      const nextAll = updatedSignOff.growth.confirmed && updatedSignOff.booking.confirmed && updatedSignOff.media.confirmed;
       const msg = `Trưởng nhóm B2C (${author}) đã sơ duyệt nội bộ: "${note}"`;
-      onStatusChange(nextAll ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, note);
+      onStatusChange('PENDING_APPROVAL', msg, note);
       setIsActionNoteOpen(false);
       setActionNote('');
       setPendingActionType(null);
-      if (onNotify) onNotify('Trưởng nhóm đã duyệt thành công!');
+      if (onNotify) onNotify('Trưởng nhóm đã sơ duyệt thành công!');
       return;
-    } else if (pendingActionType === 'CONFIRM_MEDIA') {
-      const author = currentUser?.name || plan.mediaPic || 'Phan Thành Đạt';
-      updatedSignOff.media = {
-        confirmed: true,
-        confirmedBy: author,
-        confirmedAt: now,
-        targetRoas: mediaRoasInput,
-        acceptedAdsBudget: plan.budgetAdsTotal || 45000000,
-        note: actionNote || `Media nhận gói Ads ${formatVndShort(plan.budgetAdsTotal || 0)} và cam kết ROAS ${mediaRoasInput}x.`,
-      };
-      const nextAll = updatedSignOff.growth.confirmed && updatedSignOff.booking.confirmed && (!hasLeader || leaderConfirmed);
-      const msg = `Media (${author}) đã duyệt nhận gói Ads (${formatVndShort(plan.budgetAdsTotal || 0)}) & ROAS ${mediaRoasInput}x: "${actionNote || 'Đạt chuẩn'}"`;
-      onStatusChange(nextAll ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'FINAL_APPROVE') {
       const author = currentUser?.name || 'Đặng Thị Yến Nhi';
       updatedSignOff.leadB2c = {
@@ -239,29 +190,22 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     if (onNotify) onNotify('Đã cập nhật trạng thái duyệt!');
   };
 
-  const handleGrowthCreateNewVersion = () => {
+  const handleCreateNewVersion = () => {
     if (!newChangeReason.trim()) {
       if (onNotify) onNotify('Vui lòng nhập lý do điều chỉnh phiên bản!');
       return;
     }
 
     const now = new Date().toISOString();
-    const author = currentUser?.name || plan.growthPic || 'Trần Thị Ánh';
+    const author = currentUser?.name || plan.approvedBy || 'Đặng Thị Yến Nhi';
     const existingSnapshots = getPlanVersionSnapshots(plan).map(s => ({
       ...s,
       status: s.versionCode === 'v1.0' ? ('LOCKED' as const) : ('SUPERSEDED' as const),
     }));
 
     const updatedSignOff: MultiPartySignOff = {
-      growth: {
-        confirmed: true,
-        confirmedBy: author,
-        confirmedAt: now,
-        note: `Khởi tạo phiên bản mới ${newVersionCode}: ${newChangeReason}`,
-      },
       booking: { confirmed: false, note: 'Chờ B2C cập nhật lại cơ cấu theo số mới' },
-      media: { confirmed: false, note: 'Chờ Media xác nhận gói Ads mới' },
-      leadB2c: { confirmed: false },
+      leadB2c: { confirmed: false, note: `Khởi tạo phiên bản mới ${newVersionCode}: ${newChangeReason}` },
     };
 
     const nextAffBudget = Math.round(Math.max(0, newBudget - newAdsBudget) * 0.7);
@@ -298,7 +242,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       status: 'LOCKED',
       createdAt: now,
       createdBy: author,
-      creatorRole: 'GROWTH',
+      creatorRole: 'LEAD',
       changeReason: newChangeReason,
       totalTargetBudget: newBudget,
       totalTargetContents: plan.totalTargetContents,
@@ -325,14 +269,14 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         leaderApprovalStatus: hasLeader ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG',
         versionSnapshots: [...existingSnapshots, newSnap],
         status: 'DRAFT',
-        notes: `Phiên bản ${newVersionCode} do Growth (${author}) khởi tạo: ${newChangeReason}`,
+        notes: `Phiên bản ${newVersionCode} do ${author} khởi tạo: ${newChangeReason}`,
       });
     }
 
-    const msg = `Growth (${author}) đã khởi tạo phiên bản điều chỉnh ${newVersionCode}: "${newChangeReason}". Ngân sách mới: ${formatVndShort(newBudget)}, Gói Ads: ${formatVndShort(newAdsBudget)}, Target GMV: ${formatVndShort(newGmv)}.`;
+    const msg = `${author} đã khởi tạo phiên bản điều chỉnh ${newVersionCode}: "${newChangeReason}". Ngân sách mới: ${formatVndShort(newBudget)}, Gói Ads: ${formatVndShort(newAdsBudget)}, Target GMV: ${formatVndShort(newGmv)}.`;
     onStatusChange('DRAFT', msg, newChangeReason);
 
-    setIsGrowthNewVersionModalOpen(false);
+    setIsNewVersionModalOpen(false);
     if (onNotify) onNotify(`Đã khởi tạo phiên bản ${newVersionCode}!`);
   };
 
@@ -343,11 +287,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     }
 
     const actor =
-      currentRole === 'GROWTH'
-        ? `Growth (${plan.growthPic || 'Trần Thị Ánh'})`
-        : currentRole === 'MEDIA'
-        ? `Media (${plan.mediaPic || 'Phan Thành Đạt'})`
-        : isPlanLeader && !isGlobalManager
+      isPlanLeader && !isGlobalManager
         ? `Trưởng nhóm B2C (${currentUser?.name})`
         : `Giám đốc Marketing B2C (${currentUser?.name || 'Đặng Thị Yến Nhi'})`;
     const log = `${actor} yêu cầu hiệu chỉnh kế hoạch: "${revisionNote}"`;
@@ -366,26 +306,6 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     confirmed: boolean;
     action?: React.ReactNode;
   }> = [
-    {
-      key: 'growth',
-      partyName: 'Growth',
-      personName: signOff.growth.confirmedBy || plan.growthPic || 'Trần Thị Ánh',
-      summary: `Ngân sách ${formatVndShort(plan.totalTargetBudget)} · NMV ${formatVndShort(plan.targetGmv)}`,
-      confirmed: signOff.growth.confirmed,
-      action:
-        currentRole === 'GROWTH' && !signOff.growth.confirmed && !isLocked ? (
-          <button
-            type="button"
-            onClick={() => {
-              setPendingActionType('CONFIRM_GROWTH');
-              setIsActionNoteOpen(true);
-            }}
-            className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition cursor-pointer shrink-0"
-          >
-            Duyệt
-          </button>
-        ) : null,
-    },
     {
       key: 'booking',
       partyName: 'Marketing B2C',
@@ -411,7 +331,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           {
             key: 'leader',
             partyName: 'Trưởng nhóm B2C',
-            personName: plan.leaderApprovedBy || plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm',
+            personName: plan.leaderApprovedBy || resolvedLeader || 'Nguyễn Thị Ngọc Tâm',
             summary: 'Sơ duyệt nội bộ gian hàng',
             confirmed: leaderConfirmed,
             action:
@@ -430,26 +350,6 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           },
         ]
       : []),
-    {
-      key: 'media',
-      partyName: 'Media',
-      personName: signOff.media.confirmedBy || plan.mediaPic || 'Phan Thành Đạt',
-      summary: `Ads ${formatVndShort(plan.budgetAdsTotal || 0)} · ROAS ${signOff.media.targetRoas || 4.5}x`,
-      confirmed: signOff.media.confirmed,
-      action:
-        currentRole === 'MEDIA' && !signOff.media.confirmed && !isLocked ? (
-          <button
-            type="button"
-            onClick={() => {
-              setPendingActionType('CONFIRM_MEDIA');
-              setIsActionNoteOpen(true);
-            }}
-            className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition cursor-pointer shrink-0"
-          >
-            Duyệt
-          </button>
-        ) : null,
-    },
     {
       key: 'lead',
       partyName: 'Giám đốc MKT B2C',
@@ -470,7 +370,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
                 : 'bg-slate-200 text-slate-500 cursor-not-allowed'
             }`}
-            title={allPrePartiesConfirmed ? 'Phê duyệt & khóa phiên bản' : 'Cần các bên xác nhận trước khi chốt'}
+            title={allPrePartiesConfirmed ? 'Phê duyệt & khóa phiên bản' : 'Cần chuyên viên/trưởng nhóm xác nhận trước khi chốt'}
           >
             {allPrePartiesConfirmed ? 'Duyệt chốt' : 'Chờ đủ bên'}
           </button>
@@ -478,7 +378,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     },
   ];
 
-  const visibleRows = b2cOrderSourced ? partyRows.filter(r => r.key !== 'growth' && r.key !== 'media') : partyRows;
+  const visibleRows = partyRows;
   const confirmedCount = visibleRows.filter(r => r.confirmed).length;
 
   return (
@@ -514,14 +414,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 className="font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
                 title="Đổi vai trò duyệt thử"
               >
-                <option value="GROWTH">Vai trò: Growth</option>
                 <option value="BOOKING">Vai trò: Marketing B2C</option>
-                <option value="MEDIA">Vai trò: Media</option>
                 <option value="LEAD">Vai trò: Giám đốc MKT</option>
               </select>
             </div>
           )}
-          {!isLocked && (canLeaderAct || currentRole === 'GROWTH' || currentRole === 'MEDIA') && (
+          {!isLocked && canLeaderAct && (
             <button
               type="button"
               onClick={() => setIsRevisionModalOpen(true)}
@@ -532,13 +430,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               <span>Yêu cầu sửa</span>
             </button>
           )}
-          {(currentRole === 'GROWTH' || currentRole === 'LEAD') && (
+          {currentRole === 'LEAD' && (
             <button
               type="button"
               onClick={() => {
                 const current = parseFloat(currentVersion.replace(/[^0-9.]/g, '')) || 1;
                 setNewVersionCode(`v${(Math.round(current * 10) + 1) / 10}`.replace(/^v(\d+)$/, 'v$1.0'));
-                setIsGrowthNewVersionModalOpen(true);
+                setIsNewVersionModalOpen(true);
               }}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer"
               title="Tạo phiên bản điều chỉnh mới"
@@ -596,22 +494,22 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
       {/* Hộp thoại: Tạo phiên bản kế hoạch mới */}
       <Modal
-        open={isGrowthNewVersionModalOpen}
-        onClose={() => setIsGrowthNewVersionModalOpen(false)}
+        open={isNewVersionModalOpen}
+        onClose={() => setIsNewVersionModalOpen(false)}
         title={`Khởi tạo phiên bản mới từ ${currentVersion}`}
         size="md"
         footer={
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
-              onClick={() => setIsGrowthNewVersionModalOpen(false)}
+              onClick={() => setIsNewVersionModalOpen(false)}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken"
             >
               Hủy
             </button>
             <button
               type="button"
-              onClick={handleGrowthCreateNewVersion}
+              onClick={handleCreateNewVersion}
               className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs"
             >
               Kích hoạt {newVersionCode}
@@ -703,14 +601,10 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           setActionNote('');
         }}
         title={
-          pendingActionType === 'CONFIRM_GROWTH'
-            ? 'Growth: Xác nhận giao số tổng & gói Ads'
-            : pendingActionType === 'CONFIRM_BOOKING'
+          pendingActionType === 'CONFIRM_BOOKING'
             ? 'Marketing B2C: Xác nhận cơ cấu phân rã'
             : pendingActionType === 'CONFIRM_LEADER'
             ? 'Trưởng nhóm B2C: Sơ duyệt nội bộ'
-            : pendingActionType === 'CONFIRM_MEDIA'
-            ? 'Media: Xác nhận gói Ads & ROAS'
             : `Giám đốc MKT B2C: Phê duyệt & khóa ${currentVersion}`
         }
         size="md"
@@ -743,87 +637,4 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               Kế hoạch: <strong className="text-ink">{plan.title}</strong>
             </div>
             <div className="text-ink-2">
-              Phiên bản: <strong className="text-accent">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-accent">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
-            </div>
-          </div>
-
-          {pendingActionType === 'CONFIRM_MEDIA' && (
-            <div className="bg-accent-soft/70 p-3 rounded-xl border border-line flex items-center justify-between">
-              <span className="font-semibold text-ink">Mức ROAS cam kết tối thiểu</span>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="1.0"
-                  max="20.0"
-                  value={mediaRoasInput}
-                  onChange={(e) => setMediaRoasInput(parseFloat(e.target.value) || 4.5)}
-                  className="w-20 px-2 py-1 bg-surface border border-line-strong rounded-lg text-xs font-semibold text-accent text-center focus:outline-none focus:border-accent"
-                />
-                <span className="font-semibold text-ink text-xs">x</span>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-ink font-semibold mb-1">Ghi chú duyệt</label>
-            <textarea
-              rows={3}
-              value={actionNote}
-              onChange={(e) => setActionNote(e.target.value)}
-              placeholder="Nhập ghi chú xác nhận..."
-              className="w-full px-3 py-2 border border-line rounded-xl text-xs focus:outline-none focus:border-accent resize-none"
-            />
-          </div>
-        </div>
-      </Modal>
-
-      {/* Hộp thoại: Yêu cầu hiệu chỉnh */}
-      <Modal
-        open={isRevisionModalOpen}
-        onClose={() => {
-          setIsRevisionModalOpen(false);
-          setRevisionNote('');
-        }}
-        title="Yêu cầu hiệu chỉnh kế hoạch"
-        size="md"
-        footer={
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRevisionModalOpen(false);
-                setRevisionNote('');
-              }}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              onClick={handleRevisionSubmit}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
-            >
-              Gửi yêu cầu sửa
-            </button>
-          </div>
-        }
-      >
-        <div className="space-y-3 text-xs">
-          <div>
-            <label className="block text-slate-700 font-semibold mb-1">
-              Nội dung cần điều chỉnh <span className="text-rose-500">*</span>
-            </label>
-            <textarea
-              rows={4}
-              value={revisionNote}
-              onChange={(e) => setRevisionNote(e.target.value)}
-              placeholder="Ví dụ: Tăng số lượng KOC Micro Shopee lên 15 video, giảm ngân sách KL5..."
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-rose-500 resize-none"
-            />
-          </div>
-        </div>
-      </Modal>
-    </div>
-  );
-};
+              Phiên bản: <strong className="text-accent">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-

@@ -22,7 +22,7 @@ export const SYSTEM_MESSAGE_TYPES: ReadonlyArray<PlanDiscussionType> = [
   'VERSION_LOCKED'
 ];
 
-export const CHAT_ROLES: ReadonlyArray<Exclude<PlanDiscussionRole, 'SYSTEM'>> = ['GROWTH', 'BOOKING', 'MEDIA', 'LEAD'];
+export const CHAT_ROLES: ReadonlyArray<Exclude<PlanDiscussionRole, 'SYSTEM'>> = ['BOOKING', 'LEAD'];
 
 export const MAX_MESSAGE_LENGTH = 4000;
 
@@ -53,12 +53,6 @@ export const TYPE_LABELS: Record<PlanDiscussionType, string> = {
 /** Map vai trò tài khoản sang vai trò trong biên bản trao đổi. */
 export function chatRoleFromUser(user: Pick<UserProfile, 'role'>): Exclude<PlanDiscussionRole, 'SYSTEM'> {
   switch (user.role) {
-    case 'GROWTH_MANAGER':
-    case 'GROWTH_MEMBER':
-      return 'GROWTH';
-    case 'MEDIA_MANAGER':
-    case 'MEDIA_MEMBER':
-      return 'MEDIA';
     case 'ADMIN':
     case 'MANAGER':
       return 'LEAD';
@@ -70,10 +64,6 @@ export function chatRoleFromUser(user: Pick<UserProfile, 'role'>): Exclude<PlanD
 /** Chức danh hiển thị trong biên bản. */
 export function chatTitleFor(role: PlanDiscussionRole, user?: Pick<UserProfile, 'role'>): string {
   switch (role) {
-    case 'GROWTH':
-      return user?.role === 'GROWTH_MANAGER' ? 'Trưởng phòng Growth' : 'Growth PIC';
-    case 'MEDIA':
-      return user?.role === 'MEDIA_MANAGER' ? 'Trưởng phòng Media' : 'Chuyên viên Media';
     case 'LEAD':
       return user?.role === 'ADMIN' ? 'Quản trị hệ thống' : 'Trưởng phòng B2C';
     case 'SYSTEM':
