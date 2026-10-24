@@ -2706,7 +2706,7 @@ export interface InputPlanRowItem {
   channel: InputPlanChannelType;
   platform: string;
   category: 'KOC_TIER' | 'PLATFORM_FORMAT' | 'SELF_CHANNEL' | 'LIVESTREAM';
-  tierCode: SalaryGrade | 'Reup' | 'Affiliate' | 'Review voice' | 'Nhạc text' | 'Video remix' | 'Video AI' | 'POV' | 'Độc quyền' | 'Add in' | 'Daily';
+  tierCode: SalaryGrade | 'Reup' | 'Affiliate' | 'Review voice' | 'Nhạc text' | 'Video remix' | 'Video AI' | 'Video giọng máy' | 'POV' | 'Độc quyền' | 'Add in' | 'Daily';
   tierLabel: string;
   salaryGrade?: SalaryGrade;
   contentFormat: string; // Loại nội dung (Review trực tiếp, Nỗi đau - Giải pháp, Unboxing, POV, v.v.)

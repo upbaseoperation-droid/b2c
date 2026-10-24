@@ -1346,9 +1346,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-3 w-[20%]">Gian hàng &amp; Phiên bản</th>
-                    <th className="py-2.5 px-2.5 w-[14%]">Đầu mối &amp; Tổ đội</th>
-                    <th className="py-2.5 px-2 text-right w-[9%] bg-sunken">Hạn mức Net</th>
+                    <th className="py-2.5 px-3 w-[20%]">Gian hàng</th>
+                    <th className="py-2.5 px-2.5 w-[14%]">Phụ trách</th>
+                    <th className="py-2.5 px-2 text-right w-[9%] bg-sunken">Ngân sách Net</th>
                     <th className="py-2.5 px-2 text-right w-[13%]">1. KOC trả phí</th>
                     <th className="py-2.5 px-2 text-center w-[9%]">2. FOC (0đ)</th>
                     <th className="py-2.5 px-2 text-right w-[12%]">3. Kênh Brand</th>
@@ -1726,9 +1726,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                             ? 'bg-indigo-600 text-white border-indigo-600'
                                             : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                                         )}
-                                        title="Mở/Đóng Bảng tổng quan 4.1 & Bảng chi tiết tuần 4.1.1 ngay bên dưới dòng này"
                                       >
-                                        {isExpanded ? 'Đóng chi tiết' : 'Chi tiết 4.1.1'}
+                                        {isExpanded ? 'Đóng' : 'Xem 4.1.1'}
                                       </button>
                                       <Button
                                         size="sm"
@@ -1736,7 +1735,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                         onClick={() => onSelectPlan(plan)}
                                         className="h-6 px-2 text-2xs font-medium shrink-0"
                                       >
-                                        Mở 5 bước
+                                        Chi tiết
                                       </Button>
                                     </>
                                   )}
@@ -1759,22 +1758,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <tr className="bg-slate-50/70 border-b-2 border-indigo-200">
                             <td colSpan={8} className="p-4">
                               <div className="space-y-3">
-                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-2.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-2xs font-bold text-white">
-                                      ĐANG MỞ CHI TIẾT
-                                    </span>
-                                    <span className="text-xs font-bold text-slate-900">
-                                      {store.storeName} ({plan.month}) — Đối soát Bảng tổng quan 4.1 &amp; Bảng chi tiết tuần 4.1.1
-                                    </span>
-                                  </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50/80 px-4 py-2">
+                                  <span className="text-xs font-bold text-slate-900">
+                                    {store.storeName} · {plan.month}
+                                  </span>
                                   <div className="flex items-center gap-2">
                                     <button
                                       type="button"
                                       onClick={() => onSelectPlan(plan)}
                                       className="rounded-lg bg-indigo-600 hover:bg-indigo-700 px-3 py-1 text-2xs font-semibold text-white transition cursor-pointer inline-flex items-center gap-1"
                                     >
-                                      <span>Mở không gian 5 bước đầy đủ</span>
+                                      <span>Mở chi tiết</span>
                                       <ArrowRight className="w-3 h-3" />
                                     </button>
                                     <button
@@ -1782,7 +1776,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       onClick={() => setExpandedStoreId(null)}
                                       className="rounded-lg border border-slate-300 bg-white hover:bg-slate-100 px-2.5 py-1 text-2xs font-semibold text-slate-700 transition cursor-pointer"
                                     >
-                                      Thu gọn
+                                      Đóng
                                     </button>
                                   </div>
                                 </div>
@@ -1834,9 +1828,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
                   {brandPlanKpis.total} nhãn hàng
                 </div>
-                <div className="text-3xs text-ink-3 truncate mt-0.5">
-                  69 gian hàng phụ trách
-                </div>
               </div>
             </div>
 
@@ -1848,9 +1839,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="text-2xs text-ink-3">Ngân sách Brand ({selectedMonth})</div>
                 <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
                   {formatVndShort(brandPlanKpis.totalBudget)}
-                </div>
-                <div className="text-3xs text-ink-3 truncate mt-0.5">
-                  Hạn mức Net toàn khối
                 </div>
               </div>
             </div>
@@ -1864,9 +1852,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
                   {brandPlanKpis.hasCampaignCount} có Campaign
                 </div>
-                <div className="text-3xs text-ink-3 truncate mt-0.5">
-                  {brandPlanKpis.alwaysOnCount} nhãn Always-on duy trì
-                </div>
               </div>
             </div>
 
@@ -1878,9 +1863,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="text-2xs text-ink-3">Phủ 3 vị trí nghiệp vụ</div>
                 <div className="text-lg font-semibold text-ink leading-tight tabular-nums">
                   {brandPlanKpis.completeCoverageCount}/{brandPlanKpis.total} nhãn
-                </div>
-                <div className="text-3xs text-ink-3 truncate mt-0.5">
-                  Content · Strategy · KV/SIS
                 </div>
               </div>
             </div>

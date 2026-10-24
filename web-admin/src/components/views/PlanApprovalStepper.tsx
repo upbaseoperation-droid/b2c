@@ -382,9 +382,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   const confirmedCount = visibleRows.filter(r => r.confirmed).length;
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-2xs">
+    <div className="bg-white rounded-xl border border-slate-200 p-2.5 space-y-1.5 shadow-2xs">
       {/* Thanh tiêu đề gọn 1 dòng */}
-      <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-100">
+      <div className="flex items-center justify-between gap-1.5 flex-wrap pb-1.5 border-b border-slate-100">
         <div className="flex items-center gap-2 min-w-0">
           {isLocked ? (
             <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -450,36 +450,34 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       </div>
 
       {/* Danh sách các bên: mỗi bên đúng 1 dòng — Xanh là Đã duyệt, Đỏ là Chưa duyệt */}
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {visibleRows.map((row) => (
           <div
             key={row.key}
-            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs transition ${
+            className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition ${
               row.confirmed
                 ? 'bg-emerald-50/75 border-emerald-200 text-emerald-950'
                 : 'bg-rose-50/75 border-rose-200 text-rose-950'
             }`}
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {row.confirmed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               ) : (
-                <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
               )}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-semibold">{row.partyName}</span>
-                  <span className="text-slate-400">·</span>
-                  <span className="font-medium truncate">{row.personName}</span>
-                </div>
-                <div className="text-2xs text-slate-600 font-mono truncate">{row.summary}</div>
+              <div className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-2xs">{row.partyName}</span>
+                <span className="text-slate-400">·</span>
+                <span className="font-medium text-2xs truncate">{row.personName}</span>
+                <span className="text-2xs text-slate-500 font-mono truncate hidden xl:inline">({row.summary})</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {row.action}
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-2xs font-semibold ${
                   row.confirmed
                     ? 'bg-emerald-600 text-white'
                     : 'bg-rose-600 text-white'

@@ -17,7 +17,7 @@ export const MULTI_PLATFORMS: {
 }[] = [
   {
     key: 'shopee',
-    label: 'Shopee Video & Affiliate',
+    label: 'Shopee',
     shortLabel: 'Shopee',
     badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
     headerBg: 'bg-orange-50/70',
@@ -25,7 +25,7 @@ export const MULTI_PLATFORMS: {
   },
   {
     key: 'threads',
-    label: 'Threads Affiliate',
+    label: 'Threads',
     shortLabel: 'Threads',
     badgeClass: 'bg-slate-200 text-slate-800 border-slate-300',
     headerBg: 'bg-slate-50/80',
@@ -33,7 +33,7 @@ export const MULTI_PLATFORMS: {
   },
   {
     key: 'facebook',
-    label: 'Facebook Reels & Affiliate',
+    label: 'Facebook',
     shortLabel: 'Facebook',
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
     headerBg: 'bg-blue-50/70',
@@ -41,7 +41,7 @@ export const MULTI_PLATFORMS: {
   },
   {
     key: 'instagram',
-    label: 'Instagram Reels & Affiliate',
+    label: 'Instagram',
     shortLabel: 'Instagram',
     badgeClass: 'bg-pink-100 text-pink-800 border-pink-200',
     headerBg: 'bg-pink-50/70',
@@ -55,7 +55,7 @@ export const TIER_RANGE = Object.fromEntries(
 
 export const SELF_TYPES: { key: keyof PlanWeekRow['self']; label: string }[] = [
   { key: 'reviewVoice', label: 'Review voice' },
-  { key: 'videoAi', label: 'Video AI' },
+  { key: 'videoAi', label: 'Video giọng máy' },
   { key: 'videoRemix', label: 'Video remix' },
   { key: 'videoToLive', label: 'Video to live' },
   { key: 'nhacText', label: 'Nhạc text' },
