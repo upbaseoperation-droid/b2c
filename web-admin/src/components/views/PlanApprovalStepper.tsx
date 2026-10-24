@@ -637,4 +637,69 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               Kế hoạch: <strong className="text-ink">{plan.title}</strong>
             </div>
             <div className="text-ink-2">
-              Phiên bản: <strong className="text-accent">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-
+              Phiên bản: <strong className="text-accent">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-accent">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-ink font-semibold mb-1">Ghi chú duyệt</label>
+            <textarea
+              rows={3}
+              value={actionNote}
+              onChange={(e) => setActionNote(e.target.value)}
+              placeholder="Nhập ghi chú xác nhận..."
+              className="w-full px-3 py-2 border border-line rounded-xl text-xs focus:outline-none focus:border-accent resize-none"
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Hộp thoại: Yêu cầu hiệu chỉnh */}
+      <Modal
+        open={isRevisionModalOpen}
+        onClose={() => {
+          setIsRevisionModalOpen(false);
+          setRevisionNote('');
+        }}
+        title="Yêu cầu hiệu chỉnh kế hoạch"
+        size="md"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsRevisionModalOpen(false);
+                setRevisionNote('');
+              }}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleRevisionSubmit}
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+            >
+              Gửi yêu cầu sửa
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1">
+              Nội dung cần điều chỉnh <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              rows={4}
+              value={revisionNote}
+              onChange={(e) => setRevisionNote(e.target.value)}
+              placeholder="Ví dụ: Tăng số lượng KOC Micro Shopee lên 15 video, giảm ngân sách KL5..."
+              className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-rose-500 resize-none"
+            />
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+};
