@@ -32,7 +32,7 @@ import type {
   KocItem,
   StorePortfolioItem,
 } from '../../lib/types';
-import { formatVnd, formatVndShort } from '../../lib/format';
+import { formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import {
   APPROVED_BOOKING_LIST_UPDATED_EVENT,
   LOAI_TAI_KHOAN_THANH_TOAN_OPTIONS,
@@ -625,7 +625,7 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
   const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
   const [acceptanceBulkText, setAcceptanceBulkText] = useState('');
   const [defaultAcceptanceAirDate, setDefaultAcceptanceAirDate] = useState(
-    () => new Date().toISOString().slice(0, 10)
+    () => getVietnamDateYmd()
   );
   const [selectedTargetBoItemId, setSelectedTargetBoItemId] = useState<string>('AUTO');
   const [rowManualBoMap, setRowManualBoMap] = useState<Record<number, string>>({});

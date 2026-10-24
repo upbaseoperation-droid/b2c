@@ -938,7 +938,7 @@ export function ContractForm({
                 className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
               >
                 <span className="font-semibold text-ink block">ĐKKD Hộ kinh doanh · Studio Sáng Tạo Hoàng Gia</span>
-                <span className="text-2xs text-ink-3">MST: 8129481023 · Chủ hộ: Trần Hoàng Nam</span>
+                <span className="text-2xs text-ink-3">MST: 8129481023 · Chủ hộ: Trần Văn Nam</span>
               </button>
               <button
                 type="button"

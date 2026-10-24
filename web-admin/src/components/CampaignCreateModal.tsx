@@ -40,7 +40,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
   const [targetCir, setTargetCir] = useState(16.0);
   const [contentPic, setContentPic] = useState('Quỳnh Như');
   const [brandStrategyPic, setBrandStrategyPic] = useState('Nguyễn Thị Thu Hà');
-  const [kvPic, setKvPic] = useState('Lê Hoàng Nam');
+  const [kvPic, setKvPic] = useState('Nguyễn Thị Ngọc Tâm');
   const [budget, setBudget] = useState(150000000);
   const [targetGmv, setTargetGmv] = useState(1000000000);
   const [targetKocCount, setTargetKocCount] = useState(25);
@@ -128,7 +128,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
         setTargetCir(initialCampaign.targetCir ?? 16.0);
         setContentPic(initialCampaign.contentPic || 'Quỳnh Như');
         setBrandStrategyPic(initialCampaign.brandStrategyPic || 'Nguyễn Thị Thu Hà');
-        setKvPic(initialCampaign.kvPic || initialCampaign.keyVisualSpec?.kvPic || 'Lê Hoàng Nam');
+        setKvPic(initialCampaign.kvPic || initialCampaign.keyVisualSpec?.kvPic || 'Nguyễn Thị Ngọc Tâm');
         setBudget(initialCampaign.budget);
         setTargetGmv(initialCampaign.targetGmv);
         setTargetKocCount(initialCampaign.targetKocCount);
@@ -169,7 +169,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
         setTargetCir(16.0);
         setContentPic('Quỳnh Như');
         setBrandStrategyPic('Nguyễn Thị Thu Hà');
-        setKvPic('Lê Hoàng Nam');
+        setKvPic('Nguyễn Thị Ngọc Tâm');
         setBudget(150000000);
         setTargetGmv(1000000000);
         setTargetKocCount(25);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { formatVndShort, formatNumber } from '../../lib/format';
+import { formatVndShort, formatNumber, getVietnamDateTimeShort } from '../../lib/format';
 import {
   Layers,
   Download,
@@ -147,7 +147,6 @@ const PIC_OPTIONS = [
   'Quỳnh Như',
   'Trần Thị Hảo',
   'Đặng Mai Hà Linh',
-  'Khánh Vy',
   'Nguyễn Thu Trang',
   'Lê Hoàng Yến',
   'Trần Minh Đức'
@@ -166,7 +165,6 @@ const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertis
   'Quỳnh Như': { role: 'Chuyên viên Content Self-Channel', avatar: 'QN', expertise: 'Sản xuất Video Self-Channel & CTV (Team Việt Hoàng)' },
   'Trần Thị Hảo': { role: 'Chuyên viên Gửi mẫu FOC', avatar: 'TH', expertise: 'Điều phối gửi mẫu miễn phí 0đ Cast (FOC)' },
   'Đặng Mai Hà Linh': { role: 'Brand PIC / Senior Specialist', avatar: 'HL', expertise: 'Chiến lược, Celeb & Macro (KL5-KL7)' },
-  'Khánh Vy': { role: 'Senior Booking Specialist', avatar: 'KV', expertise: 'Key Creator & Mid-Macro (KL3-KL5)' },
   'Nguyễn Thu Trang': { role: 'Booking Specialist', avatar: 'TT', expertise: 'Micro KOC & Shopee Affiliate' },
   'Trần Minh Đức': { role: 'Live & Creator Specialist', avatar: 'MĐ', expertise: 'Livestream Độc quyền & Co-host' },
   'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Shopee Video' }
@@ -1105,7 +1103,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           leadNotes: item.staffNotes
             ? `[Giao bởi PIC ${planState.pic}]: ${item.staffNotes} (${item.platform} - ${item.contentFormat})`
             : `[Giao bởi PIC ${planState.pic}]: Phân rã từ Input Plan (${item.platform} - ${item.contentFormat})`,
-          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+          updatedAt: getVietnamDateTimeShort()
         });
       }
     });
@@ -1156,7 +1154,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Đặng Thị Yến Nhi';
       authorTitle = 'Giám đốc Marketing B2C';
     } else if (currentRole === 'BOOKING') {
-      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Khánh Vy';
+      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Lê Phương Thảo';
       authorTitle = 'Booking Specialist PIC';
     }
 

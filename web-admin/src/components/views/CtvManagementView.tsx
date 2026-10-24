@@ -32,7 +32,7 @@ import type {
   UserProfile,
 } from '../../lib/types';
 import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../../lib/selfChannelData';
-import { formatDate, formatVnd, formatVndShort } from '../../lib/format';
+import { formatDate, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { LegalOcrModal } from '../LegalOcrModal';
 import {
   ActionMenu,
@@ -306,7 +306,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       assignedTaskCount: 0,
       completedTaskCount: 0,
       totalPaidAmount: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
+      joinedDate: getVietnamDateYmd(),
     };
 
     setLocalCtvs((prev) => [newCtv, ...prev]);

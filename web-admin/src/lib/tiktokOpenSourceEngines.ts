@@ -1,6 +1,7 @@
 import type CryptoType from 'crypto';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
 import type { KocItem } from './types';
+import { getVietnamDateYmd } from './format';
 import {
   extractContactsFromBio,
   type TikTokCommentIntentType,
@@ -1094,8 +1095,8 @@ export function parseTikTokItemStructToDetail(itemStruct: Record<string, any> | 
   }
   const publishedAt =
     createTimeSec > 1000000000
-      ? new Date(createTimeSec * 1000).toISOString().slice(0, 10)
-      : new Date().toISOString().slice(0, 10);
+      ? getVietnamDateYmd(new Date(createTimeSec * 1000))
+      : getVietnamDateYmd();
 
   const contentsDesc = Array.isArray(itemStruct.contents)
     ? itemStruct.contents
@@ -3236,8 +3237,8 @@ export async function scrapeTikTokVideoComments(
     const contact = extractContactsFromBio(text);
     const ts =
       typeof c.create_time === 'number' && c.create_time > 1000000000
-        ? new Date(c.create_time * 1000).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
+        ? getVietnamDateYmd(new Date(c.create_time * 1000))
+        : getVietnamDateYmd();
 
     return {
       cid: String(c.cid || `cmt-${startCursor + idx + 1}`),

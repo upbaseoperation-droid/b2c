@@ -82,7 +82,7 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
   const [activeAuthorName, setActiveAuthorName] = useState<string>(
     currentUser.role === 'BRAND_MEMBER' || currentUser.role === 'MANAGER'
       ? 'Hoàng Long (Growth Lead)'
-      : 'Khánh Vy (Booking Lead)'
+      : 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)'
   );
 
   // Time Horizon View: Available (Hiện tại) | Future (Tương lai các tháng sau) | History (Lịch sử)
@@ -548,7 +548,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
   // Action: Lock / Chốt Sản Phẩm Thúc Đẩy
   const handleLockProduct = (product: PushProductItem) => {
     const growthName = activeRole === 'GROWTH' ? activeAuthorName : product.growthPic || 'Hoàng Long (Growth Lead)';
-    const b2cName = activeRole === 'B2C' ? activeAuthorName : product.b2cPic || 'Khánh Vy (Booking Lead)';
+    const b2cName = activeRole === 'B2C' ? activeAuthorName : product.b2cPic || 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)';
 
     const updated: PushProductItem = {
       ...product,
@@ -809,7 +809,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       feasibilityScore: 'MEDIUM',
       b2cBriefStatus: 'PENDING_BRIEF',
       growthPic: 'Hoàng Long',
-      b2cPic: 'Khánh Vy',
+      b2cPic: 'Lê Phương Thảo',
       status: 'PROPOSED',
       proposedAt: new Date().toISOString(),
       comments: [
@@ -938,7 +938,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             type="button"
             onClick={() => {
               setActiveRole('B2C');
-              setActiveAuthorName('Khánh Vy (Booking Lead)');
+              setActiveAuthorName('Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)');
               notify('Chuyển sang góc nhìn: B2C Team', 'info');
             }}
             className={`px-2.5 py-1 rounded text-xs transition-colors flex items-center gap-1.5 shrink-0 ${

@@ -45,7 +45,7 @@ export function deriveSignOff(plan: InputPlanBreakdownState): MultiPartySignOff 
     },
     booking: {
       confirmed: status !== 'DRAFT' && status !== 'REVISION_REQUESTED',
-      confirmedBy: plan.primaryPic || plan.pic || 'Khánh Vy',
+      confirmedBy: plan.primaryPic || plan.pic || 'Lê Phương Thảo',
       confirmedAt: plan.submittedAt,
       note: 'Đã phân rã cơ cấu KOC theo KL1-KL7 và Kênh thương hiệu.',
     },
@@ -138,7 +138,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       const msg = `Growth (${author}) đã duyệt giao số tổng và gói Ads: "${actionNote || 'Đạt yêu cầu P&L'}"`;
       onStatusChange(nextAll ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'CONFIRM_BOOKING') {
-      const author = currentUser?.name || plan.primaryPic || plan.pic || 'Khánh Vy';
+      const author = currentUser?.name || plan.primaryPic || plan.pic || 'Lê Phương Thảo';
       updatedSignOff.booking = {
         confirmed: true,
         confirmedBy: author,
@@ -389,7 +389,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     {
       key: 'booking',
       partyName: 'Marketing B2C',
-      personName: signOff.booking.confirmedBy || plan.primaryPic || plan.pic || 'Khánh Vy',
+      personName: signOff.booking.confirmedBy || plan.primaryPic || plan.pic || 'Lê Phương Thảo',
       summary: `${plan.totalTargetContents} video · KL1–KL7 & FOC`,
       confirmed: signOff.booking.confirmed,
       action:

@@ -236,7 +236,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="font-semibold text-ink block">Booking 30 KOC video Micro</span>
                 <p className="text-ink-2 text-2xs">Đã chốt 28/30 KOC · 18 hợp đồng đã chi tạm ứng 2 tr</p>
                 <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
-                  <span className="font-medium text-ink-2">Khánh Vy</span>
+                  <span className="font-medium text-ink-2">Lê Phương Thảo</span>
                   <Status tone="positive">Đang chạy</Status>
                 </div>
               </div>

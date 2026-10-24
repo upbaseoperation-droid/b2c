@@ -27,7 +27,7 @@ import type {
   UserProfile,
 } from '../../../lib/types';
 import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../../../lib/selfChannelData';
-import { formatVndShort } from '../../../lib/format';
+import { formatVndShort, getVietnamDateYmd } from '../../../lib/format';
 import { LegalOcrModal } from '../../LegalOcrModal';
 import {
   CTV_CONTRACT_LABELS,
@@ -306,7 +306,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
       assignedTaskCount: 0,
       completedTaskCount: 0,
       totalPaidAmount: 0,
-      joinedDate: new Date().toISOString().split('T')[0],
+      joinedDate: getVietnamDateYmd(),
     };
 
     setLocalCtvs((prev) => [newCtv, ...prev]);

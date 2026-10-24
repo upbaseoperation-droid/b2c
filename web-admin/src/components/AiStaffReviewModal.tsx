@@ -54,7 +54,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
   onApplyManagerNote,
   onPingStaffNotification,
 }) => {
-  const [selectedStaffName, setSelectedStaffName] = useState<string>(initialStaffName || 'Khánh Vy');
+  const [selectedStaffName, setSelectedStaffName] = useState<string>(initialStaffName || 'Lê Phương Thảo');
   const [prevInitialStaffName, setPrevInitialStaffName] = useState<string | undefined>(initialStaffName);
   if (initialStaffName !== prevInitialStaffName) {
     setPrevInitialStaffName(initialStaffName);

@@ -2,24 +2,16 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Store,
-  Layers,
   Filter,
   Search,
-  ExternalLink,
   ChevronRight,
   CheckCircle2,
   Clock,
   AlertTriangle,
   FileText,
-  DollarSign,
   Film,
   Users,
-  ShieldAlert,
-  ArrowRight,
-  Calendar,
   XCircle,
-  HelpCircle,
 } from 'lucide-react';
 import {
   StorePortfolioItem,
@@ -29,8 +21,8 @@ import {
   InputPlanBreakdownState,
 } from '../../lib/types';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
-import { formatNumber, formatVndShort } from '../../lib/format';
-import { Modal, Button, Status } from '../ui';
+import { formatVndShort } from '../../lib/format';
+import { Modal, Button } from '../ui';
 
 type FinancialRiskStatus = 'NORMAL' | 'UNBUDGETED' | 'OVERBUDGET' | 'SLOW_BURN';
 
@@ -85,12 +77,9 @@ const normalize = (v: string) =>
     .toLowerCase();
 
 export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewProps> = ({
-  currentUser,
   storePortfolios,
   deals = [],
-  kocs = [],
   onNavigateToTab,
-  onNotify,
 }) => {
   const stores = useMemo<StorePortfolioItem[]>(() => {
     if (storePortfolios && storePortfolios.length >= 69) return storePortfolios;
@@ -99,7 +88,6 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
 
   // Tải danh sách kế hoạch 4.1.1 từ server
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,8 +101,6 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         }
       } catch {
         /* Bỏ qua nếu lỗi mạng, hệ thống dùng fallback */
-      } finally {
-        if (!cancelled) setLoadingPlans(false);
       }
     })();
     return () => {
@@ -776,6 +762,7 @@ export const StorePipelineFunnelOverview: React.FC<StorePipelineFunnelOverviewPr
         open={Boolean(selectedProgress)}
         onClose={() => setSelectedProgress(null)}
         title={selectedProgress ? `Tiến Trình Phễu Vận Hành 0 → 18: ${selectedProgress.store.storeName}` : 'Chi Tiết Gian Hàng'}
+        size="xl"
       >
         {selectedProgress && (
           <div className="space-y-5">

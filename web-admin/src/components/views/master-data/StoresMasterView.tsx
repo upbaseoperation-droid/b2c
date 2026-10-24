@@ -938,7 +938,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         open={Boolean(isQuickAddModalOpen)}
         onClose={() => setIsQuickAddModalOpen(false)}
         title="Thêm Gian Hàng Mới (Dữ Liệu Gốc)"
-        size="md"
+        size="lg"
       >
         <form onSubmit={handleQuickAddStore} className="space-y-3.5 text-xs">
           <div>

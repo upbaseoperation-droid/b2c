@@ -10,6 +10,7 @@ import {
   getSegmentFromSalaryGrade,
 } from './types';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
+import { getVietnamDateYmd } from './format';
 import {
   buildTargetKeywordProfile,
   compareTikTokVideoIdDesc,
@@ -885,7 +886,7 @@ export function mapScrapedResultToKocItem(
       engagementRate: engagementMetrics.engagementRate,
       recentVideos,
       tiktokSellerSyncedAt: nowStr,
-      metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+      metricsUpdatedAt: getVietnamDateYmd(),
     };
   }
 
@@ -926,7 +927,7 @@ export function mapScrapedResultToKocItem(
     avgShares: engagementMetrics.avgShares,
     engagementRate: engagementMetrics.engagementRate,
     recentVideos,
-    metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+    metricsUpdatedAt: getVietnamDateYmd(),
     tiktokSellerSyncedAt: nowStr,
     tiktokAccountHealth: 'TỐT',
     statusKoc: 'SẴN_SÀNG',

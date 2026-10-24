@@ -369,7 +369,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     {
       id: 'msg-3',
       sender: 'UPBASE_BOOKING',
-      senderName: activePortal.bookingPic || 'Khánh Vy',
+      senderName: activePortal.bookingPic || 'Lê Phương Thảo',
       senderRole: 'Booking Execution Lead',
       avatarText: 'KV',
       time: 'Sáng nay lúc 09:15',
@@ -729,7 +729,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   <option value="ALL">Mọi Account Lead</option>
                   <option value="Vân Ngọc">Vân Ngọc</option>
                   <option value="Tuấn Anh">Tuấn Anh</option>
-                  <option value="Khánh Vy">Khánh Vy</option>
+                  <option value="Lê Phương Thảo">Lê Phương Thảo</option>
                 </select>
 
                 {(executiveSearchQuery || executivePlanStatusFilter !== 'ALL' || executivePicFilter !== 'ALL') && (

@@ -1,5 +1,6 @@
 import type { KocListingItem } from './types';
 import { columnOf, itemFee, itemGrade, type QuotaLine } from './listingBoardRules';
+import { getVietnamDateYmd } from './format';
 
 /**
  * Mô hình Quản lý theo Deal → Job:
@@ -40,7 +41,7 @@ export const normHandle = (h: string) =>
     .replace(/^@/, '')
     .toLowerCase();
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => getVietnamDateYmd();
 
 export type FrameworkState = 'NONE' | 'INCOMPLETE' | 'EXPIRED' | 'VALID';
 

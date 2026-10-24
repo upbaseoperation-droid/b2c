@@ -13,6 +13,7 @@ import {
   Panel 
 } from '../../ui';
 import { MasterVideoFormat } from '../../../lib/types';
+import { getVietnamDateYmd } from '../../../lib/format';
 
 interface VideoFormatsMasterViewProps {
   initialFormats: MasterVideoFormat[];
@@ -82,7 +83,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
         ...item,
         name: form.name.trim(),
         option: form.option.trim() || form.name.trim(),
-        lastUpdate: new Date().toISOString().split('T')[0]
+        lastUpdate: getVietnamDateYmd()
       } : item));
       if (onNotify) onNotify(`Đã sửa bản nháp: định dạng video [${form.name}]`);
     } else {
@@ -90,7 +91,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
         id: `VF-${String(formats.length + 1).padStart(2, '0')}`,
         name: form.name.trim(),
         option: form.option.trim() || form.name.trim(),
-        lastUpdate: new Date().toISOString().split('T')[0]
+        lastUpdate: getVietnamDateYmd()
       };
       setFormats(prev => [...prev, newFormat]);
       if (onNotify) onNotify(`Đã thêm vào bản nháp: định dạng video mới [${newFormat.name}]`);

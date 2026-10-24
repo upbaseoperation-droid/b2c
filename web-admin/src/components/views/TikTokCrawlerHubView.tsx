@@ -58,7 +58,7 @@ import {
   type TikTokVideoCommentsScrapeResult,
   type TrendingKocCategoryKey,
 } from '../../lib/tiktokKocScraper';
-import { formatDate, formatNumber } from '../../lib/format';
+import { formatDate, formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import { TikTokKocScraperModal } from '../koc/TikTokKocScraperModal';
 import { TikTokVideoInspectorModal } from '../koc/TikTokVideoInspectorModal';
@@ -1753,7 +1753,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
         videoCount: c.videoCount || existing.videoCount,
         engagementRate: c.engagementRate ?? existing.engagementRate,
         tiktokSellerSyncedAt: nowStr,
-        metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+        metricsUpdatedAt: getVietnamDateYmd(),
       };
     }
 
@@ -1791,7 +1791,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
       videoCount: c.videoCount,
       avgLikes: c.latestVideoLikes || 0,
       engagementRate: c.engagementRate || 0,
-      metricsUpdatedAt: new Date().toISOString().slice(0, 10),
+      metricsUpdatedAt: getVietnamDateYmd(),
       tiktokSellerSyncedAt: nowStr,
       tiktokAccountHealth: 'TỐT',
       statusKoc: 'SẴN_SÀNG',
@@ -1834,7 +1834,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `koc-doi-thu-${compProfile?.handle || 'tiktok'}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `koc-doi-thu-${compProfile?.handle || 'tiktok'}-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1849,7 +1849,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `koc-hashtag-${hashtagInput.replace(/[^a-z0-9]/gi, '')}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `koc-hashtag-${hashtagInput.replace(/[^a-z0-9]/gi, '')}-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1867,7 +1867,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `binh-luan-video-${commentData.videoInfo.videoId}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `binh-luan-video-${commentData.videoInfo.videoId}-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1882,7 +1882,7 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `koc-xu-huong-${trendingCategory.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `koc-xu-huong-${trendingCategory.toLowerCase()}-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -2870,32 +2870,12 @@ export const TikTokCrawlerHubView: React.FC<TikTokCrawlerHubViewProps> = ({
     },
   ];
 
-  const todayVnDateKey = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date());
-    } catch {
-      return new Date().toISOString().slice(0, 10);
-    }
-  }, []);
+  const todayVnDateKey = useMemo(() => getVietnamDateYmd(), []);
 
   const yesterdayVnDateKey = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(d);
-    } catch {
-      return d.toISOString().slice(0, 10);
-    }
+    return getVietnamDateYmd(d);
   }, []);
 
   const formatHistoryDayBadge = useCallback(

@@ -25,6 +25,7 @@ import type { BrandProduct } from '../../lib/brands/types';
 import { INITIAL_CONTENT_ANGLES, generateAiAngleSuggestions } from '../../lib/contentAngleData';
 import { INITIAL_MASTER_PILLARS } from '../../lib/selfChannelData';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { getVietnamDateYmd } from '../../lib/format';
 
 interface ContentAngleSetupViewProps {
   currentUser?: UserProfile | null;
@@ -368,7 +369,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
         callToAction: formCallToAction.trim(),
         suggestedFormat: formSuggestedFormat,
         status: formStatus,
-        updatedAt: new Date().toISOString().substring(0, 10)
+        updatedAt: getVietnamDateYmd()
       };
 
       setAngles(prev => prev.map(a => a.id === updated.id ? updated : a));
@@ -405,8 +406,8 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
         usageCount: 0,
         avgViewsEstimate: 50000,
         createdBy: currentUser?.name || 'Trưởng nhóm nội dung',
-        createdAt: new Date().toISOString().substring(0, 10),
-        updatedAt: new Date().toISOString().substring(0, 10)
+        createdAt: getVietnamDateYmd(),
+        updatedAt: getVietnamDateYmd()
       };
 
       setAngles(prev => [newAngle, ...prev]);

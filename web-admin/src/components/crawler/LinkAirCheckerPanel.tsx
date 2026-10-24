@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Camera, Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, ShieldCheck, ShoppingBag } from 'lucide-react';
-import { formatDate, formatNumber } from '../../lib/format';
+import { formatDate, formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
 import {
@@ -66,7 +66,7 @@ function downloadCsv(results: LinkAirResult[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `kiem-tra-link-air-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `kiem-tra-link-air-${getVietnamDateYmd()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -694,7 +694,7 @@ export const KocVideoWeeklyHistoryPanel: React.FC<KocVideoWeeklyHistoryPanelProp
         open={Boolean(selectedVideoForTimeline)}
         onClose={() => setSelectedVideoForTimeline(null)}
         title={`Lịch sử hiệu quả qua các tuần — Video ID ${selectedVideoForTimeline || ''}`}
-        size="lg"
+        size="xl"
         footer={
           <Button variant="secondary" onClick={() => setSelectedVideoForTimeline(null)}>
             Đóng

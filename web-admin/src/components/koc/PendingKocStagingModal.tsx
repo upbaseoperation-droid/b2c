@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Modal, Button, SearchInput } from '../ui';
 import type { StagingKocItem } from '@/lib/kocStagingService';
-import { formatNumber } from '@/lib/format';
+import { formatNumber, getVietnamDateYmd } from '@/lib/format';
 
 interface PendingKocStagingModalProps {
   open: boolean;
@@ -92,7 +92,7 @@ export const PendingKocStagingModal: React.FC<PendingKocStagingModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bang-tam-koc-cho-upaffiliate-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `bang-tam-koc-cho-upaffiliate-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

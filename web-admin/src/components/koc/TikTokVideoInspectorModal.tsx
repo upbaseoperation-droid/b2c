@@ -18,7 +18,7 @@ import {
   TikTokVideoInspectionResult,
   buildVideoInspectionCsv,
 } from '../../lib/tiktokVideoInspector';
-import { formatNumber } from '../../lib/format';
+import { formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
 import {
@@ -225,7 +225,7 @@ export const TikTokVideoInspectorModal: React.FC<TikTokVideoInspectorModalProps>
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `kiem-tra-video-tiktok-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `kiem-tra-video-tiktok-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

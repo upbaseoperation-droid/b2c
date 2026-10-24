@@ -4,12 +4,52 @@ import { requestActor } from '@/lib/server/requestActor';
 import { USERS } from '@/lib/mockData';
 import type { KocItem } from '@/lib/types';
 import type { StagingKocItem } from '@/lib/kocStagingService';
-import {
-  computeNextScheduledSyncAt,
-  DEFAULT_UPAFFILIATE_SYNC_CONFIG,
-  type UpaffiliateSyncConfig,
-  type UpaffiliateSyncRunLog,
+import type {
+  UpaffiliateSyncConfig,
+  UpaffiliateSyncRunLog,
+  UpaffiliateSyncScheduleMode,
 } from '@/lib/upaffiliateKocSyncService';
+
+const DEFAULT_UPAFFILIATE_SYNC_CONFIG: UpaffiliateSyncConfig = {
+  enabled: true,
+  endpointUrl: 'https://api.upaffiliate.vn/v1/kol-connector/koc-master-sync',
+  scheduleMode: 'EVERY_6H',
+  syncDirection: 'BIDIRECTIONAL',
+  scope: {
+    cooperatedKocs: true,
+    newPotentialKocs: true,
+    legalProfiles1toN: true,
+    dealHistoryMetrics: true,
+    autoPromoteNewToCooperated: true,
+  },
+  lastSyncedAt: '2026-10-23T18:00:00.000Z',
+  nextScheduledSyncAt: '2026-10-24T00:00:00.000Z',
+  lastSyncCursor: 'UPA-CUR-20261023-04820',
+};
+
+function computeNextScheduledSyncAt(
+  mode: UpaffiliateSyncScheduleMode,
+  fromIso?: string,
+): string | undefined {
+  if (mode === 'MANUAL_ONLY') return undefined;
+  const base = fromIso ? new Date(fromIso) : new Date();
+  if (Number.isNaN(base.getTime())) return undefined;
+  if (mode === 'EVERY_1H') {
+    return new Date(base.getTime() + 60 * 60 * 1000).toISOString();
+  }
+  if (mode === 'EVERY_6H') {
+    return new Date(base.getTime() + 6 * 60 * 60 * 1000).toISOString();
+  }
+  if (mode === 'DAILY_02AM') {
+    const next = new Date(base);
+    next.setHours(2, 0, 0, 0);
+    if (next.getTime() <= base.getTime()) {
+      next.setDate(next.getDate() + 1);
+    }
+    return next.toISOString();
+  }
+  return undefined;
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -235,7 +275,7 @@ export async function POST(req: NextRequest) {
 
     const syncedHandles: string[] = [];
     const promotedHandles: string[] = [];
-    let pushedNewKocsCount = pendingStagingItems.length + incomingPendingKocs.length;
+    const pushedNewKocsCount = pendingStagingItems.length + incomingPendingKocs.length;
     let pushedLegalProfilesCount = 0;
 
     // 2. Cập nhật trạng thái SYNCED cho các KOC trong koc-directory-changes và chuyển các KOC từ Staging vào Bảng 2 (NEW)

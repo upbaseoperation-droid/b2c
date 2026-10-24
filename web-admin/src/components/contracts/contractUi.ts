@@ -7,7 +7,7 @@
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, FieldGroup, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
 import type { StatusTone } from '../ui';
-import { formatNumber } from '../../lib/format';
+import { formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { legalTypeOf } from '../koc/kocUtils';
 import {
   calculateContractTax,
@@ -201,7 +201,7 @@ export function prefill(
     }
     const sameDayCount = existingRecords.filter(r => {
       const matchKoc = r.kocId === koc?.id || r.partner === koc?.realName || r.partner === koc?.stageName;
-      const matchDate = r.values['token:[dd.mm.yy]'] === docDateStr || r.createdAt.startsWith(d.toISOString().slice(0, 10));
+      const matchDate = r.values['token:[dd.mm.yy]'] === docDateStr || r.createdAt.startsWith(getVietnamDateYmd(d));
       return matchKoc && matchDate;
     }).length;
     if (sameDayCount > 0) {

@@ -20,7 +20,7 @@ import {
   parseTikTokHandles,
   type TikTokScrapedKocResult,
 } from '../../lib/tiktokKocScraper';
-import { formatDate, formatNumber } from '../../lib/format';
+import { formatDate, formatNumber, getVietnamDateYmd } from '../../lib/format';
 import { formatFollowers } from './kocUtils';
 import {
   KocChannelReviewBadge,
@@ -206,7 +206,7 @@ export const TikTokKocScraperModal: React.FC<TikTokKocScraperModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tiktok-koc-data-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `tiktok-koc-data-${getVietnamDateYmd()}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

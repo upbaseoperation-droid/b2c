@@ -2929,12 +2929,12 @@ export const MONTHLY_PLAN_DATA: MonthlyPlanItem[] = [
 // Data from Image 4: Table 2.2 Hiệu quả theo Khung Lương KL1 -> KL7
 export const KL_PERFORMANCE_DATA = [
   { kl: 'KL1 (<500k)', videoCount: 214, pctVideo: '34,41%', cost: '45,5 M', pctCost: '1,61%', gmv30: '38,7 M', pctGmv: '3,04%', roi: 0.85 },
-  { kl: 'KL2 (500k - 1tr)', videoCount: 118, pctVideo: '18,97%', cost: '92,9 M', pctCost: '3,28%', gmv30: '54,6 M', pctGmv: '4,29%', roi: 0.59 },
-  { kl: 'KL3 (1tr - 2.5tr)', videoCount: 76, pctVideo: '12,22%', cost: '141,9 M', pctCost: '5,01%', gmv30: '21,6 M', pctGmv: '1,70%', roi: 0.15 },
-  { kl: 'KL4 (2.5tr - 5tr)', videoCount: 65, pctVideo: '10,45%', cost: '232,9 M', pctCost: '8,22%', gmv30: '134,4 M', pctGmv: '10,56%', roi: 0.58 },
+  { kl: 'KL2 (500k - 1,5tr)', videoCount: 118, pctVideo: '18,97%', cost: '92,9 M', pctCost: '3,28%', gmv30: '54,6 M', pctGmv: '4,29%', roi: 0.59 },
+  { kl: 'KL3 (1,5tr - 3tr)', videoCount: 76, pctVideo: '12,22%', cost: '141,9 M', pctCost: '5,01%', gmv30: '21,6 M', pctGmv: '1,70%', roi: 0.15 },
+  { kl: 'KL4 (3tr - 5tr)', videoCount: 65, pctVideo: '10,45%', cost: '232,9 M', pctCost: '8,22%', gmv30: '134,4 M', pctGmv: '10,56%', roi: 0.58 },
   { kl: 'KL5 (5tr - 10tr)', videoCount: 62, pctVideo: '9,97%', cost: '404,5 M', pctCost: '14,27%', gmv30: '155,2 M', pctGmv: '12,20%', roi: 0.38 },
-  { kl: 'KL6 (10tr - 25tr)', videoCount: 63, pctVideo: '10,13%', cost: '926,3 M', pctCost: '32,68%', gmv30: '570,9 M', pctGmv: '44,87%', roi: 0.62 },
-  { kl: 'KL7 (>25tr)', videoCount: 24, pctVideo: '3,86%', cost: '990,2 M', pctCost: '34,94%', gmv30: '297,1 M', pctGmv: '23,35%', roi: 0.30 },
+  { kl: 'KL6 (10tr - 30tr)', videoCount: 63, pctVideo: '10,13%', cost: '926,3 M', pctCost: '32,68%', gmv30: '570,9 M', pctGmv: '44,87%', roi: 0.62 },
+  { kl: 'KL7 (>30tr)', videoCount: 24, pctVideo: '3,86%', cost: '990,2 M', pctCost: '34,94%', gmv30: '297,1 M', pctGmv: '23,35%', roi: 0.30 },
 ];
 
 // Data from Image 4: Table 2.3 Hiệu quả theo Content Pillar
@@ -5103,7 +5103,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_1_CELEB',
         tierName: 'Tier 1 — Celebrity / Mega',
-        klRange: 'KL7 (>25tr)',
+        klRange: 'KL7 (>30tr)',
         targetVideos: 24,
         totalBudget: 990200000,
         avgCostPerVideo: 41258000,
@@ -5112,7 +5112,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_2_MACRO',
         tierName: 'Tier 2 — Macro Creator',
-        klRange: 'KL6 (10-25tr)',
+        klRange: 'KL6 (10-30tr)',
         targetVideos: 63,
         totalBudget: 926300000,
         avgCostPerVideo: 14703000,
@@ -5149,7 +5149,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_1_CELEB',
         tierName: 'Tier 1 — Celebrity / Mega',
-        klRange: 'KL7 (>25tr)',
+        klRange: 'KL7 (>30tr)',
         targetVideos: 18,
         totalBudget: 750000000,
         avgCostPerVideo: 41666000,
@@ -5158,7 +5158,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_2_MACRO',
         tierName: 'Tier 2 — Macro Creator',
-        klRange: 'KL6 (10-25tr)',
+        klRange: 'KL6 (10-30tr)',
         targetVideos: 50,
         totalBudget: 750000000,
         avgCostPerVideo: 15000000,
@@ -5195,7 +5195,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_1_CELEB',
         tierName: 'Tier 1 — Celebrity / Mega',
-        klRange: 'KL7 (>25tr)',
+        klRange: 'KL7 (>30tr)',
         targetVideos: 28,
         totalBudget: 1100000000,
         avgCostPerVideo: 39285000,
@@ -5204,7 +5204,7 @@ export const MONTHLY_MASTER_QUOTA_PLANS: MonthlyMasterQuotaPlan[] = [
       {
         tierId: 'TIER_2_MACRO',
         tierName: 'Tier 2 — Macro Creator',
-        klRange: 'KL6 (10-25tr)',
+        klRange: 'KL6 (10-30tr)',
         targetVideos: 75,
         totalBudget: 1100000000,
         avgCostPerVideo: 14666000,
@@ -5880,7 +5880,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_1_CELEB',
         tierLabel: 'Level 1: Celeb / Mega KOL',
-        salaryGradeLabel: 'KL7 (>25M/video)',
+        salaryGradeLabel: 'KL7 (>30M/video)',
         targetCount: 1,
         estimatedAvgCost: 35000000,
         allocatedBudget: 35000000,
@@ -5892,7 +5892,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 3,
         estimatedAvgCost: 18000000,
         allocatedBudget: 54000000,
@@ -5948,7 +5948,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_1_CELEB',
         tierLabel: 'Level 1: Celeb / Mega KOL',
-        salaryGradeLabel: 'KL7 (>25M/video)',
+        salaryGradeLabel: 'KL7 (>30M/video)',
         targetCount: 0,
         estimatedAvgCost: 35000000,
         allocatedBudget: 0,
@@ -5960,7 +5960,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 3,
         estimatedAvgCost: 20000000,
         allocatedBudget: 60000000,
@@ -6017,7 +6017,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_1_CELEB',
         tierLabel: 'Level 1: Celeb / Mega KOL',
-        salaryGradeLabel: 'KL7 (>25M/video)',
+        salaryGradeLabel: 'KL7 (>30M/video)',
         targetCount: 0,
         estimatedAvgCost: 30000000,
         allocatedBudget: 0,
@@ -6029,7 +6029,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 2,
         estimatedAvgCost: 15000000,
         allocatedBudget: 30000000,
@@ -6086,7 +6086,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_1_CELEB',
         tierLabel: 'Level 1: Celeb / Mega KOL',
-        salaryGradeLabel: 'KL7 (>25M/video)',
+        salaryGradeLabel: 'KL7 (>30M/video)',
         targetCount: 2,
         estimatedAvgCost: 40000000,
         allocatedBudget: 80000000,
@@ -6098,7 +6098,7 @@ export const INITIAL_GROWTH_DEMANDS: GrowthDemandItem[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 4,
         estimatedAvgCost: 20000000,
         allocatedBudget: 80000000,
@@ -6154,7 +6154,7 @@ export const INITIAL_BRAND_PORTAL_DATA: BrandCampaignPortalData[] = [
       {
         tier: 'TIER_1_CELEB',
         tierLabel: 'Level 1: Celeb / Mega KOL',
-        salaryGradeLabel: 'KL7 (>25M)',
+        salaryGradeLabel: 'KL7 (>30M)',
         targetCount: 1,
         estimatedAvgCost: 35000000,
         allocatedBudget: 35000000,
@@ -6166,7 +6166,7 @@ export const INITIAL_BRAND_PORTAL_DATA: BrandCampaignPortalData[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 3,
         estimatedAvgCost: 18000000,
         allocatedBudget: 54000000,
@@ -6350,7 +6350,7 @@ export const INITIAL_BRAND_PORTAL_DATA: BrandCampaignPortalData[] = [
       {
         tier: 'TIER_2_MACRO',
         tierLabel: 'Level 2: Macro KOL',
-        salaryGradeLabel: 'KL6 (10M - 25M)',
+        salaryGradeLabel: 'KL6 (10M - 30M)',
         targetCount: 3,
         estimatedAvgCost: 20000000,
         allocatedBudget: 60000000,

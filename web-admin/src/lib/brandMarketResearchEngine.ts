@@ -11,6 +11,7 @@
  */
 
 import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
+import { getVietnamDateYmd } from './format';
 import { REAL_B2C_69_STORES } from './realB2cPlanData';
 import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from './b2cWeeklyAirSyncDataset';
 import {
@@ -3011,7 +3012,7 @@ export function generateBrandMarketResearchDossier(params: {
 
   // Khởi tạo Sổ Dẫn chứng Xác thực (Evidence Ledger)
   const evidenceLedger: EvidenceCitation[] = [];
-  const verifiedToday = new Date().toISOString().slice(0, 10);
+  const verifiedToday = getVietnamDateYmd();
   const pushEvidence = (item: Omit<EvidenceCitation, 'id'>): string => {
     const id = `EV-${String(evidenceLedger.length + 1).padStart(2, '0')}`;
     evidenceLedger.push({ id, ...item });

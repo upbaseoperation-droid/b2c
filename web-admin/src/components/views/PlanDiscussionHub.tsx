@@ -80,7 +80,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     if (e) e.preventDefault();
     if (!commentText.trim()) return;
 
-    let authorName = currentUser?.name || plan.pic || 'Khánh Vy';
+    let authorName = currentUser?.name || plan.pic || 'Lê Phương Thảo';
     let authorTitle = 'Booking Specialist';
 
     if (activeAuthorRole === 'GROWTH') {
@@ -93,7 +93,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
       authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.approvedBy || 'Đặng Thị Yến Nhi';
       authorTitle = 'Trưởng Phòng B2C';
     } else if (activeAuthorRole === 'BOOKING') {
-      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || plan.pic || 'Khánh Vy';
+      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || plan.pic || 'Lê Phương Thảo';
       authorTitle = 'Booking Specialist PIC';
     }
 
@@ -205,7 +205,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <span className="text-ink-3">·</span>
           <div className="flex items-center gap-1">
             <span className="text-ink-3 font-medium">Booking:</span>
-            <strong className="text-ink font-semibold">{plan.pic || 'Khánh Vy'}</strong>
+            <strong className="text-ink font-semibold">{plan.pic || 'Lê Phương Thảo'}</strong>
           </div>
           <span className="text-ink-3">·</span>
           <div className="flex items-center gap-1">

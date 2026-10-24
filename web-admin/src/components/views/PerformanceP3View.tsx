@@ -68,7 +68,7 @@ export default function PerformanceP3View({
         monthlyTargetGmv: st.monthlyTargetGmv || 500000000,
         difficultyTier: normalized.tier,
         multiplier: normalized.multiplier,
-        assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Khánh Vy',
+        assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Lê Phương Thảo',
         accountOwner: st.accountOwnerName,
         b2cOwner: st.b2cOwnerName,
         activeKocsCount: st.activeBookingsCount || 8,

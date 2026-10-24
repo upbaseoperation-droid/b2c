@@ -51,7 +51,7 @@ import {
   TepKenh
 } from '../../lib/types';
 import { INITIAL_KOCS, INITIAL_DEALS } from '../../lib/mockData';
-import { formatVnd, formatVndShort } from '../../lib/format';
+import { formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import {
   dealsOfKoc,
   calculateKocPerformanceStats,
@@ -597,7 +597,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
     const updated: BookingDealItem = {
       ...target,
       sampleStatus: 'ĐÃ_NHẬN',
-      slaDeadline: deadlineDate.toISOString().split('T')[0],
+      slaDeadline: getVietnamDateYmd(deadlineDate),
       pipelineText: 'Đã nhận mẫu - SLA 5 ngày nộp video'
     };
     commitDealUpdate(
@@ -3014,7 +3014,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
         open={Boolean(selectedHistoryDeal)}
         onClose={() => setSelectedHistoryDeal(null)}
         title={selectedHistoryDeal ? `Chi Tiết Chiến Dịch Hợp Tác: ${selectedHistoryDeal.dealCode}` : 'Chi Tiết Chiến Dịch'}
-        size="lg"
+        size="xl"
         footer={
           <div className="flex justify-end w-full">
             <Button variant="ghost" onClick={() => setSelectedHistoryDeal(null)}>

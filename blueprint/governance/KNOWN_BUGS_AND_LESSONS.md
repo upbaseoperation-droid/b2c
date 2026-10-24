@@ -570,7 +570,7 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Cách khắc phục:**
   1. Tạo `klTiers.ts` làm nguồn duy nhất (khoảng giá, nhãn, giá cơ sở theo bảng 5.6).
   2. Các màn lọc, hộp thoại, bộ gợi ý KOC, đồng bộ Larkbase và bộ kiểm soát phân rã đều đọc từ `klTiers.ts`.
-- **Phạm vi rà soát mở rộng sang phần khác:** Còn các chuỗi số cứng trong `mockData.ts`, `marketingKnowledgeBase.ts`, `inputPlanDefaults.ts`, `CreateKocModal.tsx`, `BookingView.tsx`, `StaffBrandListingSheetWorkspace.tsx` (đa số đã đúng 10M–30M và trên 30M, riêng dữ liệu mẫu trong `mockData.ts` còn ghi KL7 trên 25tr). Khi thêm màn mới dùng khung lương phải import từ `klTiers.ts`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đồng bộ nốt toàn bộ chuỗi nhãn `KL6 (10-30tr)` và `KL7 (>30tr)` trong `mockData.ts` và `realB2cPlanData.ts`. Khi thêm màn mới dùng khung lương phải import từ `klTiers.ts`.
 
 ### BUG-034 — Hai Người Cùng Thao Tác Một Kế Hoạch: Người Lưu Sau Mất Toàn Bộ Phần Vừa Sửa
 - **Ngày phát hiện:** 22/10/2026
@@ -618,6 +618,26 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   6. Xóa bộ chọn Nhà cung cấp / Mô hình trên hộp thoại người dùng cuối (`KocSocialChannelsModal.tsx`, `BrandMarketResearchHubView.tsx`, `AiStaffReviewModal.tsx`) theo đúng `RULE-API-01` để đọc tự động từ Trung tâm Cấu hình API.
   7. Xử lý triệt để toàn bộ 25 tệp giao diện có lỗi React Compiler (`react-hooks/set-state-in-effect` và `react-hooks/refs`) bằng cơ chế đồng bộ state theo `prevKey` trong lúc render, triệt tiêu hiện tượng render kép khi mở hộp thoại hoặc chuyển bộ lọc.
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã chạy trình quét tự động 2 vòng và ESLint trên toàn bộ 107+ tệp `.tsx` trong `src/components` và `src/app`, đạt **0 lỗi ESLint (`0 errors`)**, **0 lỗi `no-restricted-syntax`**, **0 lỗi TypeScript (`tsc --noEmit`)** và build sản phẩm (`npm run build`) thành công.
+
+---
+
+### BUG-037 — Tái Nhiễm Mẫu Lỗi Lịch Sử Trên Các Phân Hệ Phụ (Import Client Từ Server API, Lệch Giờ UTC+0, Nhãn Khung Lương Cũ, Tên Gian Hàng / Nhân Sự Mẫu Cũ & Rớt Dòng Nhãn Hộp Thoại)
+- **Ngày phát hiện:** 24/10/2026
+- **Phân hệ / File liên quan:** 45 tệp trên `web-admin/src` (`app/api/integrations/upaffiliate/sync/route.ts`, `lib/mockData.ts`, `lib/realB2cPlanData.ts`, `components/ui/blocks.tsx`, `MasterDataMindmapView.tsx`, `PlanDealBoard.tsx`, `TikTokCrawlerHubView.tsx`, `ApprovedBookingListView.tsx`, `KocKolHubView.tsx`, `InputPlanBreakdownView.tsx`, `CreatorMatchModal.tsx`, `StoresMasterView.tsx`, `TaskPolicySetupView.tsx`...).
+- **Triệu chứng:**
+  1. **Rủi ro `BUG-026` (Server Route import `'use client'` module):** API route `app/api/integrations/upaffiliate/sync/route.ts` import giá trị runtime (`computeNextScheduledSyncAt`, `DEFAULT_UPAFFILIATE_SYNC_CONFIG`) từ `src/lib/upaffiliateKocSyncService.ts` có chỉ thị `'use client'`, tiềm ẩn lỗi `TypeError: fn is not a function` trên Next.js Server Runtime.
+  2. **Rủi ro `BUG-018` (Lệch ngày từ 00:00–06:59 sáng giờ Việt Nam do cắt chuỗi UTC+0):** 56 vị trí trên 26 tệp giao diện và thư viện vẫn dùng `new Date().toISOString().slice(0, 10)` / `.split('T')[0]` / `.substring(0, 10)` (múi giờ UTC+0) khi ghi ngày nghiệm thu, ngày bàn giao, ngày tạo bản ghi và đặt tên file CSV/MD xuất ra.
+  3. **Rủi ro `BUG-033` (Nhãn bậc lương cũ):** 27 vị trí trong `mockData.ts` và `realB2cPlanData.ts` còn hiển thị chuỗi nhãn cũ `KL7 (>25tr)` / `KL6 (10-25tr)` thay vì chuẩn bảng 5.6 Lark (`KL6 (10-30tr)`, `KL7 (>30tr)`).
+  4. **Rủi ro `BUG-028` & `BUG-007` (Tên gian hàng và nhân sự mẫu cũ):** Còn sót tên gian hàng mẫu (`Shopee Mall Kutieskin Chính Hãng`, `Kutieskin Official Store`) trong `MasterDataMindmapView.tsx` và các tên nhân sự mẫu cũ (`Khánh Vy`, `Lê Hoàng Nam`, `Minh Tuấn`) ở giá trị mặc định/fallback của 14 tệp giao diện.
+  5. **Rủi ro `BUG-029` (Hộp thoại hẹp chứa lưới nhiều cột & rớt dòng chữ trong ngoặc đơn):** 8 hộp thoại `<Modal>` để `size="md"` hoặc `size="lg"` nhưng bên trong chia lưới `grid-cols-3` / `grid-cols-4`, và 166 thẻ `<Field label="...">` có cụm chú thích ngoặc đơn ở cuối (`(VNĐ)`, `(%)`, `(Brand) *`, `(SLA ≤ 2 ngày)`) dễ bị ngắt đôi chữ trong ngoặc khi khung hẹp.
+- **Nguyên nhân gốc (Root Cause):** Các bản vá lỗi trước đây xử lý tại màn hình được báo cáo nhưng chưa có kịch bản quét đối soát chéo toàn bộ 36 mẫu lỗi lịch sử trên toàn kho mã nguồn.
+- **Cách khắc phục:**
+  1. Tách `import type` và định nghĩa hằng số/hàm tính lịch đồng bộ ngay phía server trong `app/api/integrations/upaffiliate/sync/route.ts` (`BUG-026`).
+  2. Thay thế toàn bộ 56 điểm cắt chuỗi ngày UTC+0 trên 26 tệp sang hàm chuẩn múi giờ Việt Nam `getVietnamDateYmd()` và `getVietnamDateTimeShort()` (`Asia/Ho_Chi_Minh`, `GMT+7`) từ `src/lib/format.ts` (`BUG-018`).
+  3. Đồng bộ 100% nhãn `KL6 (10-30tr)` và `KL7 (>30tr)` trong `mockData.ts` và `realB2cPlanData.ts` (`BUG-033`).
+  4. Thay thế hoàn toàn tên gian hàng mẫu sang gian hàng B2C thực tế (`Kutieskin Mama_Shopee_E2E-S`, `Kutieskin Mama_TikTok_E2E-S`) và thay toàn bộ tên nhân sự mẫu cũ sang nhân sự B2C thực tế (`Lê Phương Thảo`, `Nguyễn Thị Ngọc Tâm`) (`BUG-028`, `BUG-007`).
+  5. Nâng kích thước 8 hộp thoại `<Modal>` đa cột lên `size="lg"` / `size="xl"` và nâng cấp trực tiếp component gốc `<Field>` trong `src/components/ui/blocks.tsx` để tự động bọc `<span className="whitespace-nowrap">` cho cụm ngoặc đơn cuối nhãn, chấm dứt triệt để hiện tượng rớt dòng chữ mồôi trên mọi biểu mẫu (`BUG-029`).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm chứng lại bằng kịch bản quét mẫu lỗi lịch sử, ESLint (`0 errors`), TypeScript (`tsc --noEmit` 0 lỗi) và `npm run build` thành công.
 
 ---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)

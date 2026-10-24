@@ -56,7 +56,7 @@ import {
   executeOperationalReport,
   type OperationalReportResult,
 } from '../../lib/operationalReportService';
-import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
+import { formatNumber, formatVnd, formatVndShort, getVietnamDateYmd } from '../../lib/format';
 import { formatFollowers } from '../koc/kocUtils';
 import {
   ActionMenu,
@@ -1149,7 +1149,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `doi-thu-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `doi-thu-${dossier.brandKey}-${getVietnamDateYmd()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
     onNotify?.('Đã xuất file CSV danh sách đối thủ', 'success');
@@ -1164,7 +1164,7 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ho-so-nghien-cuu-brand-${dossier.brandKey}-${new Date().toISOString().slice(0, 10)}.md`;
+    link.download = `ho-so-nghien-cuu-brand-${dossier.brandKey}-${getVietnamDateYmd()}.md`;
     link.click();
     URL.revokeObjectURL(url);
     onNotify?.('Đã tải xuống báo cáo nghiên cứu thương hiệu (.MD)', 'success');

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Edit3, Plus } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
-import { formatVnd } from '../../../lib/format';
+import { formatVnd, getVietnamDateYmd } from '../../../lib/format';
 import { 
   ActionMenu, 
   Button, 
@@ -123,7 +123,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
         note: form.note.trim(),
         adsCost: form.adsCost.trim(),
         usageImageCost: form.usageImageCost.trim(),
-        lastUpdate: new Date().toISOString().split('T')[0]
+        lastUpdate: getVietnamDateYmd()
       } : t));
       if (onNotify) onNotify(`Đã sửa bản nháp: bậc cast [${form.tierCode}]`);
     } else {
@@ -138,7 +138,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
         note: form.note.trim(),
         adsCost: form.adsCost.trim(),
         usageImageCost: form.usageImageCost.trim(),
-        lastUpdate: new Date().toISOString().split('T')[0]
+        lastUpdate: getVietnamDateYmd()
       };
       setTiers(prev => [...prev, newTier]);
       if (onNotify) onNotify(`Đã thêm vào bản nháp: bậc cast mới [${newTier.tierCode}]`);

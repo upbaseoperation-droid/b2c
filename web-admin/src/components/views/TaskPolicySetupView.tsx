@@ -842,7 +842,7 @@ export function TaskPolicySetupView({
         open={Boolean(editingSow)}
         onClose={() => setEditingSow(null)}
         title={editingSow ? `Chỉnh sửa đầu việc SOW #${editingSow.stt}` : ''}
-        size="md"
+        size="lg"
         footer={
           <>
             <Button variant="secondary" onClick={() => setEditingSow(null)}>
@@ -972,7 +972,7 @@ export function TaskPolicySetupView({
               : `${editingLevelState.levelConfig.levelCode} · ${editingLevelState.categoryName}`
             : ''
         }
-        size="md"
+        size="lg"
         footer={
           <>
             <Button

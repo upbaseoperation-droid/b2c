@@ -94,7 +94,7 @@ export default function SampleTrackerView({
     status: 'DELIVERING',
     sparkAdsCode: '',
     sparkAdsExpiryDays: 60,
-    bookingPic: 'Khánh Vy',
+    bookingPic: 'Lê Phương Thảo',
   });
 
   // Đồng bộ 2 chiều giữa danh sách Deal Booking và Sổ vận đơn mẫu
@@ -187,7 +187,7 @@ export default function SampleTrackerView({
         sparkAdsCode: d.sparkAdsCode,
         sparkAdsExpiryDays: d.sparkAdsExpiryDays || 60,
         isMediaHandedOff: Boolean(d.sparkAdsCode),
-        bookingPic: d.bookingPic || d.assignedStaff || 'Khánh Vy',
+        bookingPic: d.bookingPic || d.assignedStaff || 'Lê Phương Thảo',
         notes: `Liên kết từ Deal Booking ${d.dealCode} · ${d.storeName || d.brandName}`,
         ...override,
       };
@@ -345,7 +345,7 @@ export default function SampleTrackerView({
       status: 'DELIVERING',
       sparkAdsCode: firstDeal?.sparkAdsCode || '',
       sparkAdsExpiryDays: firstDeal?.sparkAdsExpiryDays || 60,
-      bookingPic: firstDeal?.bookingPic || firstDeal?.assignedStaff || 'Khánh Vy',
+      bookingPic: firstDeal?.bookingPic || firstDeal?.assignedStaff || 'Lê Phương Thảo',
     });
     setIsShipmentModalOpen(true);
   };

@@ -64,16 +64,16 @@ export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
       id: 'store-kuti-tts',
       brandId: 'brand-kutieskin',
       brandName: 'Kutieskin Mama & Baby',
-      storeName: 'Kutieskin Official Store',
+      storeName: 'Kutieskin Mama_TikTok_E2E-S',
       platform: 'TIKTOK_SHOP',
       storeId: 'TTS_VN_83921',
       storeUrl: 'https://shop.tiktok.com/view/product/kutieskin-official',
       status: 'ACTIVE',
       monthlyTargetGmv: 450000000,
       monthlyBudget: 150000000,
-      primaryPic: 'Khánh Vy', // PIC Chính
+      primaryPic: 'Lê Phương Thảo', // PIC Chính
       memberPics: ['Trần Minh Đức', 'Lê Hoàng Yến'],
-      assignmentNotes: 'Khánh Vy chủ trì phân rã plan và chốt ngân sách. Đức phụ trách KOC Affiliate, Yến phụ trách Livestream.',
+      assignmentNotes: 'Lê Phương Thảo chủ trì phân rã plan và chốt ngân sách. Đức phụ trách KOC Affiliate, Yến phụ trách Livestream.',
       storeProducts: [
         {
           masterProductId: 'prod-kuti-1',
@@ -111,7 +111,7 @@ export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
       id: 'store-kuti-sp',
       brandId: 'brand-kutieskin',
       brandName: 'Kutieskin Mama & Baby',
-      storeName: 'Shopee Mall Kutieskin Chính Hãng',
+      storeName: 'Kutieskin Mama_Shopee_E2E-S',
       platform: 'SHOPEE_MALL',
       storeId: 'SP_MALL_19284',
       storeUrl: 'https://shopee.vn/kutieskin_official',
@@ -119,7 +119,7 @@ export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
       monthlyTargetGmv: 400000000,
       monthlyBudget: 130000000,
       primaryPic: 'Trần Minh Đức', // PIC Chính
-      memberPics: ['Khánh Vy'],
+      memberPics: ['Lê Phương Thảo'],
       assignmentNotes: 'Trần Minh Đức làm PIC chính điều phối Shopee Mall, tối ưu voucher sàn và hoa hồng affiliate Shopee.',
       storeProducts: [
         {
@@ -224,7 +224,7 @@ export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
       monthlyTargetGmv: 950000000,
       monthlyBudget: 320000000,
       primaryPic: 'Phạm Thị Thu Hằng', // PIC Chính
-      memberPics: ['Khánh Vy', 'Trần Minh Đức'],
+      memberPics: ['Lê Phương Thảo', 'Trần Minh Đức'],
       assignmentNotes: 'Thu Hằng chịu trách nhiệm chính số Clio TTS. Phối hợp Vy book KOC make-up Beauty Guru.',
       storeProducts: [
         {

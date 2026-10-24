@@ -18,6 +18,7 @@ import {
   saveStaffSheetCollection,
   type StaffListingSheetRow,
 } from './staffBrandListingSheet';
+import { getVietnamDateYmd } from './format';
 
 export const APPROVED_BOOKING_LIST_STORAGE_KEY = 'upbase_b2c_approved_booking_list_v2';
 export const APPROVED_BOOKING_LIST_UPDATED_EVENT = 'upbase-approved-booking-list-updated';
@@ -417,7 +418,7 @@ export function recalculateApprovedBookingItem(
       const anchorDate = new Date(anchorStr);
       if (!Number.isNaN(anchorDate.getTime())) {
         anchorDate.setDate(anchorDate.getDate() + (addon.durationDays || 30));
-        expiresAt = anchorDate.toISOString().slice(0, 10);
+        expiresAt = getVietnamDateYmd(anchorDate);
       }
     }
 
@@ -1119,7 +1120,7 @@ export function autoMapVideoAcceptanceByKocChannel(params: {
   const updatedApprovedItems: ApprovedBookingListItem[] = [];
   const unmatchedHandles: string[] = [];
   let matchedCount = 0;
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = getVietnamDateYmd();
 
   for (const acc of acceptances) {
     const cleanHandle = normalizeTikTokId(acc.channelHandle).toLowerCase();

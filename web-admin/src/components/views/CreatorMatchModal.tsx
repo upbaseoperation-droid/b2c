@@ -154,7 +154,7 @@ export const CreatorMatchModal: React.FC<CreatorMatchModalProps> = ({ open, onCl
       open={open}
       onClose={onClose}
       title={slot ? `Gán KOC cho ${slot.pillar}` : 'Gán KOC'}
-      size="lg"
+      size="xl"
       footer={
         <>
           {current && (

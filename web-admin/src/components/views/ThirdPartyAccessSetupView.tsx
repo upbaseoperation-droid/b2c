@@ -33,6 +33,7 @@ import {
 import { ThirdPartyAccessAccount, UserProfile, BrandDetail, KocItem } from '../../lib/types';
 import { INITIAL_THIRD_PARTY_ACCOUNTS, convertPartnerAccountToUserProfile } from '../../lib/thirdPartyAccessData';
 import { INITIAL_BRANDS, INITIAL_KOCS } from '../../lib/mockData';
+import { getVietnamDateYmd } from '../../lib/format';
 
 interface ThirdPartyAccessSetupViewProps {
   currentUser?: UserProfile;
@@ -213,7 +214,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
         permissions: { ...formPermissions },
         status: 'ACTIVE',
         loginCount: 0,
-        createdAt: new Date().toISOString().substring(0, 10),
+        createdAt: getVietnamDateYmd(),
         createdBy: currentUser?.name || 'Admin',
         notes: formNotes.trim(),
       };
@@ -546,7 +547,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                 type="text"
                 value={formDisplayName}
                 onChange={(e) => setFormDisplayName(e.target.value)}
-                placeholder="ví dụ: Minh Tuấn (Brand Lead)"
+                placeholder="ví dụ: Nguyễn Thị Ngọc Tâm (Trưởng nhóm B2C)"
                 className="w-full h-9 px-3 rounded-lg border border-line bg-surface text-ink font-medium focus:outline-none focus:border-accent"
                 required
               />

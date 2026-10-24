@@ -24,6 +24,7 @@ import {
   normalizeStoreCoefficient,
 } from '../../lib/types';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
+import { getVietnamDateYmd } from '../../lib/format';
 import { Avatar, Button, Modal, PageActions, Status, ChannelTag, Tabs } from '../ui';
 import { B2C_28_STAFF_WORKLOAD_ROSTER } from './TaskDelegationView';
 import {
@@ -389,7 +390,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     const prevOwner = (targetStore.b2cOwners && targetStore.b2cOwners[0]) || targetStore.b2cOwnerName || '';
     const nextOwner = b2cOwners[0] || '';
     const isPicChanged = Boolean(prevOwner && nextOwner && prevOwner !== nextOwner);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getVietnamDateYmd();
 
     const updated: StorePortfolioItem = {
       ...targetStore,

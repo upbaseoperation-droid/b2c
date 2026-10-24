@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { UserCheck } from 'lucide-react';
 import type { StorePortfolioItem } from '../../lib/types';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
+import { getVietnamDateYmd } from '../../lib/format';
 import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 
 export interface StoreHandoverDialogProps {
@@ -37,7 +38,7 @@ export function StoreHandoverDialog({
     store.hasBookingLeader && store.bookingLeader ? store.bookingLeader : 'NONE'
   );
   const [effectiveDate, setEffectiveDate] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    getVietnamDateYmd()
   );
   const [reason, setReason] = useState('Nghỉ phép / Chuyển nhóm');
   const [customReason, setCustomReason] = useState('');

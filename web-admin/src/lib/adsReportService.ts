@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import ExcelJS from 'exceljs';
+import { getVietnamDateYmd } from './format';
 import { 
   WeeklyAdsReportMeta, 
   AdsCampaignPerformance, 
@@ -47,7 +48,7 @@ export function getStoredAdsReportsList(): WeeklyAdsReportMeta[] {
         fileName,
         reportWeek,
         dateRange,
-        uploadDate: stat.mtime.toISOString().split('T')[0],
+        uploadDate: getVietnamDateYmd(stat.mtime),
         fileSizeBytes: stat.size,
         totalRows: fileName.includes('product campaigns') ? 12554 : 4211,
         totalSpend: fileName.includes('product campaigns') ? 30258757 : 309065,
@@ -285,7 +286,7 @@ export async function parseAdsExcelFile(
     // Top Creative có doanh thu hoặc spend đáng kể
     if (gmv > 200000 || cost > 200000 || cleanAuth.includes('Video code')) {
       topCreatives.push({
-        id: `CR-${rowNumber}-${videoId || Math.random()}`,
+        id: `CR-${rowNumber}-${videoId || rowNumber}`,
         campaignName: campName,
         productId: prodId,
         videoTitle: videoTitle || `Video ${videoId}`,
@@ -365,7 +366,7 @@ export async function parseAdsExcelFile(
     fileName,
     reportWeek: isEnglishFormat ? 'Tuần 40 (01/10 - 08/10/2026)' : 'Snapshot ngày 08/10/2026',
     dateRange: isEnglishFormat ? '2026-10-01 00:00 ~ 2026-10-08 06:00' : '2026-10-08',
-    uploadDate: new Date().toISOString().split('T')[0],
+    uploadDate: getVietnamDateYmd(),
     fileSizeBytes: 0,
     totalRows: worksheet.rowCount - 1,
     totalSpend: Math.round(totalCost),

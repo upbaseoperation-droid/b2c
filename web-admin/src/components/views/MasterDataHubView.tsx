@@ -25,7 +25,7 @@ import {
 } from '../ui';
 import { type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
-import { formatVnd } from '../../lib/format';
+import { formatVnd, getVietnamDateYmd } from '../../lib/format';
 import { 
   ExternalLink, 
   RotateCcw, 
@@ -687,7 +687,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         status: pillarForm.status,
         colorTag: pillarForm.colorTag || '#4F46E5',
         activeBrandsCount: 0,
-        createdAt: new Date().toISOString().split('T')[0]
+        createdAt: getVietnamDateYmd()
       };
       setPillarList(prev => [newPillar, ...prev]);
       if (onNotify) onNotify(`Đã thêm vào bản nháp trụ cột nội dung mới: ${pillarForm.name}`);

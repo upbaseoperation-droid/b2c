@@ -27,7 +27,7 @@ import {
   SalaryGrade,
   InputPlanBreakdownState,
 } from '@/lib/types';
-import { formatVndShort } from '@/lib/format';
+import { formatVndShort, getVietnamDateYmd } from '@/lib/format';
 import { useKocChannelReviews } from '@/lib/kocChannelReviewService';
 import {
   KocChannelReviewBadge,
@@ -89,7 +89,7 @@ function createListingId(kocId: string): string {
 }
 
 function getTodayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return getVietnamDateYmd();
 }
 
 const KL_FILTER_OPTIONS: Array<{ id: SalaryGrade; label: string }> = [

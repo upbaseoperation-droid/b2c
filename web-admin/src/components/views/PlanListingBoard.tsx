@@ -802,7 +802,7 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
         open={reportOpen}
         onClose={() => setReportOpen(false)}
         title="Tổng hợp phiên lấy kết quả Brand duyệt"
-        size="lg"
+        size="xl"
         footer={
           <Button variant="primary" onClick={() => setReportOpen(false)}>
             Đã xem xong

@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Camera, ChevronDown, ChevronRight, Plus, Search, Send, Trash2 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
+import { getVietnamDateYmd } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
 import { VideoProductScreenshotModal } from '../contracts/VideoProductScreenshotModal';
@@ -751,8 +752,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       ...bookingDeal,
       totalValue: taxCalc.grossPayoutOrInvoice + jobDroppedFee(job),
       finalAmount: effectiveAmount,
-      postedDate: job.airedAt || new Date().toISOString().slice(0, 10),
-      postDate: job.airedAt || new Date().toISOString().slice(0, 10),
+      postedDate: job.airedAt || getVietnamDateYmd(),
+      postDate: job.airedAt || getVietnamDateYmd(),
       contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
       signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
     };
@@ -778,7 +779,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             legalId,
             hasIdCardScan: true,
             linkAir: job.airLink.trim(),
-            postedDate: job.airedAt || new Date().toISOString().slice(0, 10),
+            postedDate: job.airedAt || getVietnamDateYmd(),
             sparkAdsCode: job.sparkAdsCode || 'DA_NGHIEM_THU',
             adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
             contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
@@ -798,7 +799,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         slipCode: string;
         larkSync: { approvalInstanceCode: string; larkbaseRecordId: string; syncedAt: string };
       };
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = getVietnamDateYmd();
       patchJob(
         d.id,
         job.id,
@@ -1597,7 +1598,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.sample.status}
                 onChange={e => {
                   const nextStatus = e.target.value as SampleStatus;
-                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const todayStr = getVietnamDateYmd();
                   setJob(
                     x => ({
                       ...x,
@@ -1629,7 +1630,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.script.status}
                 onChange={e =>
                   setJob(
-                    x => ({ ...x, script: { ...x.script, status: e.target.value as ScriptStatus, at: new Date().toISOString().slice(0, 10) } }),
+                    x => ({ ...x, script: { ...x.script, status: e.target.value as ScriptStatus, at: getVietnamDateYmd() } }),
                     `Kịch bản ${job.code}: ${SCRIPT_LABEL[e.target.value as ScriptStatus]}`
                   )
                 }
@@ -1656,7 +1657,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.script.demoStatus || 'NONE'}
                 onChange={e =>
                   setJob(
-                    x => ({ ...x, script: { ...x.script, demoStatus: e.target.value as ScriptStatus, at: new Date().toISOString().slice(0, 10) } }),
+                    x => ({ ...x, script: { ...x.script, demoStatus: e.target.value as ScriptStatus, at: getVietnamDateYmd() } }),
                     `Video Demo ${job.code}: ${SCRIPT_LABEL[e.target.value as ScriptStatus]}`
                   )
                 }
@@ -1737,7 +1738,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 disabled={airLinkLocked}
                 placeholder="https://www.tiktok.com/@kênh/video/…"
                 onChange={e => {
-                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const todayStr = getVietnamDateYmd();
                   setJob(x => ({
                     ...x,
                     airLink: e.target.value,
@@ -1868,8 +1869,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                         ...x.payment,
                         amount: x.payment.amount ?? taxCalc.contractDisplayValue,
                         status: next,
-                        requestedAt: next === 'REQUESTED' && !x.payment.requestedAt ? new Date().toISOString().slice(0, 10) : x.payment.requestedAt,
-                        paidAt: next === 'PAID' ? new Date().toISOString().slice(0, 10) : '',
+                        requestedAt: next === 'REQUESTED' && !x.payment.requestedAt ? getVietnamDateYmd() : x.payment.requestedAt,
+                        paidAt: next === 'PAID' ? getVietnamDateYmd() : '',
                       },
                     }),
                     `Thanh toán ${job.code}: ${PAY_LABEL[next]}`
@@ -1888,7 +1889,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 value={job.payment.uncBillUrl || ''}
                 placeholder="https://drive.google.com/bill-unc..."
                 onChange={e => {
-                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const todayStr = getVietnamDateYmd();
                   setJob(x => ({
                     ...x,
                     payment: {
