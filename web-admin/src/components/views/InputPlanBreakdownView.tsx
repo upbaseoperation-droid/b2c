@@ -1531,7 +1531,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               setIsShowingStudio(false);
               if (planSync.isPersistent) void planSync.saveNow();
             }}
-            className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
+            className="h-8 px-2 sm:px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-surface hover:bg-sunken border border-line text-ink text-xs font-semibold transition cursor-pointer"
             title="Quay lại danh sách kế hoạch tháng"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -1547,7 +1547,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[200px] xl:max-w-[250px] truncate"
+            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[165px] sm:max-w-[200px] xl:max-w-[250px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
@@ -1557,7 +1557,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             ))}
           </select>
 
-          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-sunken border border-line">
+          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-sunken border border-line shrink-0">
             {studioVersionSnapshots.map((snap) => {
               const isCurrent = snap.versionCode === activeVersionCode;
               return (
@@ -1591,12 +1591,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
       {/* 1B. ĐẨY CÁC THAO TÁC TOÀN CỤC LÊN TOPHEADER (PAGE ACTIONS) */}
       <PageActions>
-        <PlanSyncBadge
-          status={planSync.status}
-          lastSavedAt={planSync.lastSavedAt}
-          errorMessage={planSync.errorMessage}
-          onRetry={() => void planSync.saveNow()}
-        />
+        <div className="hidden md:block">
+          <PlanSyncBadge
+            status={planSync.status}
+            lastSavedAt={planSync.lastSavedAt}
+            errorMessage={planSync.errorMessage}
+            onRetry={() => void planSync.saveNow()}
+          />
+        </div>
 
         <button
           type="button"
@@ -1610,10 +1612,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             notify(ok ? `Đã lưu kế hoạch "${planState.title}".` : 'Lưu kế hoạch không thành công, vui lòng thử lại.');
           }}
           disabled={planSync.status === 'saving'}
-          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
+          title="Lưu kế hoạch"
+          className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
         >
           <Save className="w-3.5 h-3.5 text-ink-3" />
-          <span>Lưu</span>
+          <span className="hidden sm:inline">Lưu</span>
         </button>
 
         <div className="relative">
@@ -1907,10 +1910,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
 
         {/* Bên phải thanh bước: Trạng thái 4.1, Đội ngũ 4.1 & lối tắt Listing KOC */}
-        <div className="flex items-center gap-1.5 text-2xs text-slate-600 ml-auto shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5 text-2xs text-slate-600 w-full xl:w-auto xl:ml-auto shrink-0 flex-wrap">
           {planState.reference41 && (
             <span
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold shrink-0 ${
                 planState.reference41.isGrowthLocked === false
                   ? 'bg-amber-50 border-amber-200 text-amber-800'
                   : 'bg-emerald-50 border-emerald-200 text-emerald-800'
@@ -1920,11 +1923,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <span>4.1: {planState.reference41.isGrowthLocked === false ? (planState.reference41.growthLockLabel || 'Chưa chốt') : 'Đã chốt'}</span>
             </span>
           )}
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 max-w-full overflow-x-auto whitespace-nowrap">
             {planState.reference41?.rolePics?.growthPics?.length ? (
               <>
-                <span>Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
-                <span className="text-slate-300">·</span>
+                <span className="hidden sm:inline">Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
+                <span className="text-slate-300 hidden sm:inline">·</span>
               </>
             ) : null}
             {planState.reference41?.rolePics?.accountPics?.length ? (
@@ -1952,7 +1955,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <button
               type="button"
               onClick={() => onOpenListingForPlan(planState)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-2xs transition cursor-pointer ml-auto sm:ml-0 shrink-0"
               title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
             >
               <UserCheck className="w-3 h-3" />
@@ -2069,7 +2072,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
                             notify(`Đã gắn Chiến dịch [${selected.code}] ${selected.title} vào kế hoạch tháng ${planState.month}`);
                           }}
-                          className="h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent max-w-[320px] truncate"
+                          className="h-7 px-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent w-full sm:w-auto sm:max-w-[320px] truncate"
                         >
                           {brandCampaignCandidates.map(c => (
                             <option key={c.id} value={c.id}>
@@ -2238,7 +2241,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 items-stretch">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 items-stretch">
                   {/* Ô 1: Mục tiêu NMV tổng (4.1) */}
                   <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -2379,7 +2382,317 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* MOBILE (< 768px): DẠNG THẺ DỌC KHÔNG CẦN CUỘN NGANG */}
+                <div className="md:hidden divide-y divide-slate-200">
+                  {/* Thẻ 1: Cast trả phí */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900">1. Cast trả phí (Affiliate Paid)</div>
+                        {(() => {
+                          const tiers = planState.reference41?.tiers;
+                          const kl4Plus = planState.reference41?.kl4PlusTarget;
+                          const activeTiers = tiers
+                            ? (['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const)
+                                .filter(k => (tiers[k] || 0) > 0)
+                                .map(k => `${k}:${tiers[k]}`)
+                            : [];
+                          return (
+                            <div className="text-2xs text-slate-500 font-mono">
+                              {activeTiers.length > 0 ? activeTiers.join(' · ') : '4.1 KL1–KL7: Chưa tách bậc'}
+                              {kl4Plus !== undefined ? ` · KL4+: ${kl4Plus}` : ''}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewMode('TABLE');
+                          setActiveTab('AFFILIATE_PAID');
+                        }}
+                        className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
+                      >
+                        KL1–KL7 →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Sản lượng (video)</span>
+                        <input
+                          type="number"
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.qtyAffiliatePaid}
+                          onChange={(e) => handleUpdateLayer1Metrics({ qtyAffiliatePaid: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.budgetAffiliateNet}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.targetGmvAffiliate}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvAffiliate: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-xs text-emerald-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs font-mono text-slate-500">
+                      <span>Gross: {formatVndShort(Math.round(layer1Metrics.budgetAffiliateNet * GROSS_MULTIPLIER))}</span>
+                      <span className={channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                        Đã phân bổ: {channelTotals.affiliatePaid.qty} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 2: Mẫu FOC (0đ) & TikTok Reup */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900">2. Mẫu FOC (0đ) &amp; TikTok Reup</div>
+                        {(() => {
+                          const fb = planState.reference41?.focBreakdown;
+                          const reup = planState.reference41?.tiktokReup || 0;
+                          return (
+                            <div className="text-2xs text-slate-500 font-mono">
+                              TAP Brand: {fb?.tapBrand || 0} · TAP: {fb?.tap || 0} · TAP Up: {fb?.tapUp || 0} · Reup TT: {reup}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewMode('TABLE');
+                          setActiveTab('TAP_FREECAST');
+                        }}
+                        className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
+                      >
+                        Chi tiết FOC →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 items-end">
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Sản lượng (suất)</span>
+                        <input
+                          type="number"
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.qtyFocSample}
+                          onChange={(e) => handleUpdateLayer1Metrics({ qtyFocSample: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <span className="inline-flex items-center justify-end w-full h-7 px-2 rounded border border-slate-200 bg-slate-50/80 font-mono text-xs font-semibold text-slate-400">
+                          0 đ (FOC)
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Đã phân bổ</span>
+                        <span className={`inline-flex items-center justify-end w-full h-7 px-2 rounded border border-slate-200 bg-slate-50 font-mono text-2xs font-semibold ${
+                          channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
+                        }`}>
+                          {channelTotals.tapFreecast.qty} suất
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 3: Kênh Brand (Self-channel) */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900">3. Kênh Brand (Self-channel)</div>
+                        <div className="text-2xs text-slate-500 font-mono">
+                          4.1 giao: {planState.reference41?.selfVideos ?? layer1Metrics.qtySelfChannel} video · Net {formatVndShort(planState.reference41?.selfCostNet ?? layer1Metrics.budgetSelfChannelNet)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewMode('TABLE');
+                          setActiveTab('SELF_CHANNEL');
+                        }}
+                        className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
+                      >
+                        Kênh Brand →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Sản lượng (video)</span>
+                        <input
+                          type="number"
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.qtySelfChannel}
+                          onChange={(e) => handleUpdateLayer1Metrics({ qtySelfChannel: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.budgetSelfChannelNet}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.targetGmvSelfChannel}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvSelfChannel: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-xs text-emerald-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs font-mono text-slate-500">
+                      <span>Gross: {formatVndShort(Math.round(layer1Metrics.budgetSelfChannelNet * GROSS_MULTIPLIER))}</span>
+                      <span className={channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                        Đã phân bổ: {channelTotals.selfChannel.qty} video · {formatVndShort(channelTotals.selfChannel.budget)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 4: Đa sàn */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900">4. Đa sàn (Shopee, Threads, FB, IG)</div>
+                        {(() => {
+                          const mp = planState.reference41?.multiPlatform;
+                          const sp = mp?.shopee?.affQty || 0;
+                          const th = mp?.threads?.affQty || 0;
+                          const fb = mp?.facebook?.affQty || 0;
+                          const ig = mp?.instagram?.affQty || 0;
+                          const reupAll =
+                            (mp?.shopee?.reupQty || 0) +
+                            (mp?.threads?.reupQty || 0) +
+                            (mp?.facebook?.reupQty || 0) +
+                            (mp?.instagram?.reupQty || 0);
+                          return (
+                            <div className="text-2xs text-slate-500 font-mono">
+                              Shopee: {sp} · Threads: {th} · FB: {fb} · IG: {ig} (Reup: {reupAll})
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setViewMode('TABLE');
+                          setActiveTab('MULTI_PLATFORM');
+                        }}
+                        className="text-2xs font-semibold text-blue-600 shrink-0 cursor-pointer"
+                      >
+                        Đa sàn →
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 items-end">
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Sản lượng (video)</span>
+                        <input
+                          type="number"
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.qtyMultiPlatform}
+                          onChange={(e) => handleUpdateLayer1Metrics({ qtyMultiPlatform: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.budgetMultiPlatformNet}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Đã phân bổ</span>
+                        <span className={`inline-flex items-center justify-end w-full h-7 px-2 rounded border border-slate-200 bg-slate-50 font-mono text-2xs font-semibold ${
+                          channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
+                            ? 'text-emerald-700'
+                            : 'text-amber-700'
+                        }`}>
+                          {channelTotals.multiPlatform.qty} video
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 5: Livestream */}
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-900">5. Livestream (Affiliate &amp; Kênh Brand)</div>
+                      {(() => {
+                        const ref41 = planState.reference41;
+                        const liveAff = ref41?.liveSessions || 0;
+                        const ih = ref41?.liveSelf?.inhouse3h || 0;
+                        const ctv = ref41?.liveSelf?.ctv2h || 0;
+                        const br = ref41?.liveSelf?.brand2h || 0;
+                        return (
+                          <div className="text-2xs text-slate-500 font-mono">
+                            Live Aff: {liveAff} · Inhouse 3h: {ih} · CTV 2h: {ctv}{br > 0 ? ` · Brand 2h: ${br}` : ''}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Số phiên live</span>
+                        <input
+                          type="number"
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.qtyLivestreamSessions}
+                          onChange={(e) => handleUpdateLayer1Metrics({ qtyLivestreamSessions: Math.max(0, Number(e.target.value) || 0) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-slate-900 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Trần Net (VNĐ)</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.budgetLivestreamNet}
+                          onChange={(val) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
+                        <FormattedNumberInput
+                          disabled={isLayer1Locked}
+                          value={layer1Metrics.targetGmvLivestream}
+                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvLivestream: Math.max(0, val) })}
+                          className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-xs text-emerald-700 disabled:bg-slate-100"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tổng cộng Mobile */}
+                  <div className="p-2.5 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-900">
+                    <span>Tổng 4.1: {totalLayer1Videos} video + {layer1Metrics.qtyLivestreamSessions} live</span>
+                    <span className="font-mono text-blue-700">
+                      Net: {formatVndShort(totalLayer1ChannelBudgetNet)} · GMV: {formatVndShort(layer1Metrics.targetNmvTotal)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* DESKTOP/TABLET (>= 768px): BẢNG 6 CỘT THẲNG HÀNG */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/50">
@@ -2767,20 +3080,20 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   value={layer1Metrics.alignmentNote || ''}
                   onChange={(e) => handleUpdateLayer1Metrics({ alignmentNote: e.target.value })}
                   placeholder="Nhập thống nhất giữa các bên (VD: Chốt trần Net Affiliate 150Tr, đẩy 50 suất FOC mẫu mới)..."
-                  className="flex-1 min-w-0 h-7 px-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                  className="w-full sm:w-auto sm:flex-1 min-w-0 h-7 px-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-800 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                 />
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto shrink-0">
                   {!isLayer1Locked ? (
                     <button
                       type="button"
                       onClick={() => handleLockLayer1AndProceed(true)}
-                      className="h-7 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
+                      className="w-full sm:w-auto justify-center h-7 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition inline-flex items-center gap-1 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Chốt chỉ tiêu &amp; Sang phân bổ →</span>
                     </button>
                   ) : (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto">
                       {!isPlanLocked && (
                         <button
                           type="button"
@@ -2794,7 +3107,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setActiveTab('ALL_SUMMARY')}
-                        className="h-7 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition inline-flex items-center gap-1 cursor-pointer"
+                        className="flex-1 sm:flex-initial justify-center h-7 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition inline-flex items-center gap-1 cursor-pointer"
                       >
                         <span>Mở Phân bổ chi tiết</span>
                         <ArrowRight className="w-3 h-3" />
