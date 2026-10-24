@@ -504,11 +504,11 @@ export function computeAirBookingComparisonReport(params: {
         actualPendingPaymentSpend += (b.soTienCanThanhToan || net);
       }
 
-      // NMV/GMV từ dữ liệu 14 ngày hoặc 30 ngày
-      const gmv = (b.gmv14d || 0) > 0 ? (b.gmv14d || 0) : (b.gmv30d || 0);
+      // NMV/GMV, Đơn hàng, Lượt xem lấy theo mốc lũy kế cao nhất (30d đã bao gồm 14d, không cộng trùng)
+      const gmv = Math.max(b.gmv14d || 0, b.gmv30d || 0);
       actualNmv += gmv;
-      actualOrders += (b.orders14d || 0) + (b.orders30d || 0);
-      actualViews += (b.views14d || 0) + (b.views30d || 0);
+      actualOrders += Math.max(b.orders14d || 0, b.orders30d || 0);
+      actualViews += Math.max(b.views14d || 0, b.views30d || 0);
 
       // Tiến độ Air
       const isAired = Boolean(b.actualAirDate || b.linkAir || b.videoId);
@@ -636,10 +636,10 @@ export function computeAirBookingComparisonReport(params: {
         const net = b.chiPhiBookingNetCuoi || 0;
         actualNetSpend += net;
         actualGrossSpend += b.chiPhiGrossKemThue || (net / 0.9);
-        const gmv = (b.gmv14d || 0) > 0 ? (b.gmv14d || 0) : (b.gmv30d || 0);
+        const gmv = Math.max(b.gmv14d || 0, b.gmv30d || 0);
         actualNmv += gmv;
-        actualOrders += (b.orders14d || 0) + (b.orders30d || 0);
-        actualViews += (b.views14d || 0) + (b.views30d || 0);
+        actualOrders += Math.max(b.orders14d || 0, b.orders30d || 0);
+        actualViews += Math.max(b.views14d || 0, b.views30d || 0);
 
         const isAired = Boolean(b.actualAirDate || b.linkAir || b.videoId);
         if (isAired) {

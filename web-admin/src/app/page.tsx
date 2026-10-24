@@ -356,6 +356,7 @@ export default function App() {
       void import('../components/views/StoreManagementView');
       void import('../components/views/TikTokCrawlerHubView');
       void import('../components/views/BrandMarketResearchHubView');
+      void import('../components/views/MasterDataHubView');
       void import('../components/views/KocMasterDataView');
     }, 350);
     const timerWave2 = window.setTimeout(() => {
@@ -368,7 +369,6 @@ export default function App() {
       void import('../components/views/BrandView');
       void import('../components/views/WeeklyAdsReportHubView');
       void import('../components/views/MarketingKnowledgeQaView');
-      void import('../components/views/MasterDataHubView');
       void import('../components/views/CentralizedRbacHubView');
     }, 1000);
     return () => {

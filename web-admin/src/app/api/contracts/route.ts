@@ -79,7 +79,14 @@ export async function POST(req: NextRequest) {
     requireCondition(body && typeof body === 'object' && !Array.isArray(body), 'Yêu cầu không hợp lệ.');
     if (body.action === 'CREATE') {
       const input = await parseInput(body, actor);
-      if (input.parentId) { const parent = await getContract(input.parentId); requireCondition(canRead(parent, actor), 'Không có quyền truy cập hồ sơ gốc.', 403); }
+      if (input.parentId) {
+        const parent = await getContract(input.parentId);
+        requireCondition(canRead(parent, actor), 'Không có quyền truy cập hồ sơ gốc.', 403);
+        if (input.templateId.endsWith('-SOW')) {
+          requireCondition(parent.templateId.endsWith('-HDNT'), 'Phụ lục SOW phải gắn với Hợp đồng nguyên tắc (HĐNT).');
+          requireCondition(!input.kocId || !parent.kocId || parent.kocId === input.kocId, 'Hợp đồng nguyên tắc gốc phải thuộc cùng KOC.');
+        }
+      }
       const draft = createContract(input, actor); await archiveTemplate(input.templateId, input.templateHash);
       const saved = await saveContract(draft); return NextResponse.json({ record: saved });
     }
@@ -97,7 +104,10 @@ export async function POST(req: NextRequest) {
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');
       const reviewers = configuredActors().filter(a => (body.reviewers as string[]).includes(a.id));
       requireCondition(reviewers.length === body.reviewers.length, 'Người duyệt chưa được cấp quyền.');
-      next = submitContract(record, actor, reviewers, { requireLegal: record.isKocOwnForm ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) });
+      const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || template.exemptLegalReview === false);
+      next = submitContract(record, actor, reviewers, {
+        requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined),
+      });
     } else if (body.action === 'ADD_NOTE') {
       requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
       event(next, actor, 'NOTE', (body.note as string).trim());

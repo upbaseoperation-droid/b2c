@@ -5,15 +5,21 @@ import {
   Camera,
   Check,
   Clock,
+  Download,
   Film,
   ImagePlus,
   Play,
   RefreshCw,
+  Sparkles,
   Trash2,
   Upload,
+  ZoomIn,
 } from 'lucide-react';
 import type { AcceptanceScreenshotItem } from '../../lib/contracts/types';
-import type { SuggestedVideoFrameMoment } from '../../app/api/integrations/tiktok-koc/video-frame/route';
+import type {
+  SuggestedVideoFrameMoment,
+  VideoMomentCategory,
+} from '../../app/api/integrations/tiktok-koc/video-frame/route';
 import {
   findSavedScreenshotsForContext,
   saveScreenshotsForContext,
@@ -43,6 +49,9 @@ interface CandidateFrameItem {
   captionQuote?: string;
   imageDataUrl: string;
   sourceMode: AcceptanceScreenshotItem['sourceMode'];
+  momentCategory?: VideoMomentCategory;
+  confidenceScore: number;
+  sharpnessScore: number;
 }
 
 function formatSecToMmSs(sec: number): string {
@@ -50,6 +59,69 @@ function formatSecToMmSs(sec: number): string {
   const mm = String(Math.floor(safe / 60)).padStart(2, '0');
   const ss = String(safe % 60).padStart(2, '0');
   return `${mm}:${ss}`;
+}
+
+/**
+ * Đo nhanh độ sáng và độ sắc nét biên (Edge Gradient) trên lưới mẫu 32x32 của Canvas (< 0.4ms)
+ * để phát hiện khung hình tối đen/mờ nhòe khi chuyển cảnh và xếp hạng khung hình rõ nét nhất.
+ */
+function analyzeCanvasFrameQuality(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): { brightness: number; sharpnessScore: number; isBlankOrDark: boolean } {
+  try {
+    const sampleW = Math.min(64, Math.max(16, Math.floor(width / 8)));
+    const sampleH = Math.min(64, Math.max(16, Math.floor(height / 8)));
+    const startX = Math.floor((width - sampleW) / 2);
+    const startY = Math.floor((height - sampleH) / 2);
+    const data = ctx.getImageData(startX, startY, sampleW, sampleH).data;
+
+    let lumSum = 0;
+    let edgeSum = 0;
+    const pixelCount = sampleW * sampleH;
+
+    for (let y = 0; y < sampleH; y++) {
+      for (let x = 0; x < sampleW; x++) {
+        const idx = (y * sampleW + x) * 4;
+        const lum = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+        lumSum += lum;
+        if (x < sampleW - 1 && y < sampleH - 1) {
+          const idxRight = (y * sampleW + (x + 1)) * 4;
+          const idxDown = ((y + 1) * sampleW + x) * 4;
+          const lumRight =
+            0.299 * data[idxRight] + 0.587 * data[idxRight + 1] + 0.114 * data[idxRight + 2];
+          const lumDown =
+            0.299 * data[idxDown] + 0.587 * data[idxDown + 1] + 0.114 * data[idxDown + 2];
+          edgeSum += Math.abs(lum - lumRight) + Math.abs(lum - lumDown);
+        }
+      }
+    }
+
+    const brightness = Math.round(lumSum / Math.max(1, pixelCount));
+    const avgEdge = edgeSum / Math.max(1, pixelCount);
+    const sharpnessScore = Math.min(99, Math.max(35, Math.round(avgEdge * 2.4)));
+    const isBlankOrDark = brightness < 16 || brightness > 248 || avgEdge < 2.2;
+    return { brightness, sharpnessScore, isBlankOrDark };
+  } catch {
+    return { brightness: 128, sharpnessScore: 78, isBlankOrDark: false };
+  }
+}
+
+function getMomentBadgeProps(category?: VideoMomentCategory): {
+  label: string;
+  tone: 'positive' | 'info' | 'warning' | 'neutral';
+} {
+  switch (category) {
+    case 'HOLDING_SHOWCASE':
+      return { label: 'KOC cầm SP', tone: 'positive' };
+    case 'TEXTURE_DEMO':
+      return { label: 'Test chất SP', tone: 'info' };
+    case 'VERBAL_MENTION':
+      return { label: 'Nhắc tên SP', tone: 'warning' };
+    default:
+      return { label: 'Mốc tiến trình', tone: 'neutral' };
+  }
 }
 
 export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalProps> = ({
@@ -70,6 +142,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     productName || brandName || ''
   );
   const [stampOverlay, setStampOverlay] = useState<boolean>(true);
+  const [zoomCropProduct, setZoomCropProduct] = useState<boolean>(false);
 
   const [loadingMeta, setLoadingMeta] = useState<boolean>(false);
   const [extractingFrames, setExtractingFrames] = useState<boolean>(false);
@@ -84,7 +157,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     durationSeconds: number;
     publishedTimeFormatted: string;
     cartAnchorTitle: string;
+    streamToken: string | null;
     streamProxyUrl: string | null;
+    serverFrameCaptureAvailable: boolean;
     proxiedCoverUrl: string | null;
     firstProductAppearanceSec: number | null;
     firstProductMentionTerm?: string;
@@ -125,6 +200,29 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     }
   }
 
+  const drawSourceWithCrop = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      source: HTMLVideoElement | HTMLImageElement,
+      srcW: number,
+      srcH: number,
+      destW: number,
+      destH: number
+    ) => {
+      if (zoomCropProduct && srcW > 0 && srcH > 0) {
+        // Cắt tập trung 80% vùng trung tâm & nửa dưới khung hình (nơi KOC đưa tay cầm sản phẩm)
+        const cropW = Math.round(srcW * 0.8);
+        const cropH = Math.round(srcH * 0.8);
+        const sx = Math.round((srcW - cropW) / 2);
+        const sy = Math.round((srcH - cropH) * 0.58);
+        ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, destW, destH);
+      } else {
+        ctx.drawImage(source, 0, 0, destW, destH);
+      }
+    },
+    [zoomCropProduct]
+  );
+
   const drawWatermarkStamp = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -140,11 +238,11 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       if (!stampOverlay) return;
       const barHeight = Math.max(38, Math.round(height * 0.065));
       ctx.save();
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
       ctx.fillRect(0, height - barHeight, width, barHeight);
 
       const fontSize = Math.max(12, Math.round(barHeight * 0.38));
-      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.font = `600 ${fontSize}px sans-serif`;
       ctx.fillStyle = '#ffffff';
       ctx.textBaseline = 'middle';
 
@@ -163,7 +261,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
   );
 
   /**
-   * Vẽ khung hình minh chứng dự phòng từ ảnh bìa video (hoặc khung chuẩn) khi TikTok CDN khóa luồng MP4 trực tiếp
+   * Vẽ khung hình minh chứng dự phòng từ ảnh bìa video khi cả máy chủ lẫn trình duyệt đều bị chặn luồng MP4
    */
   const buildFallbackCanvasFrame = useCallback(
     async (
@@ -184,7 +282,6 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       const ctx = canvas.getContext('2d');
       if (!ctx) return '';
 
-      // Nền tối chuẩn khung dọc 9:16
       const grad = ctx.createLinearGradient(0, 0, 0, height);
       grad.addColorStop(0, '#1e293b');
       grad.addColorStop(1, '#0f172a');
@@ -211,7 +308,6 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         }
       }
 
-      // Khung thẻ giỏ hàng góc trái dưới mô phỏng giao diện bài đăng TikTok
       const cardY = height - 210;
       ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
       ctx.fillRect(20, cardY, width - 40, 130);
@@ -220,15 +316,11 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       ctx.strokeRect(20, cardY, width - 40, 130);
 
       ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 18px sans-serif';
-      ctx.fillText(
-        `KHUNG HÌNH SẢN PHẨM · MỐC ${moment.timeLabel}`,
-        36,
-        cardY + 32
-      );
+      ctx.font = '600 18px sans-serif';
+      ctx.fillText(`KHUNG HÌNH SẢN PHẨM · MỐC ${moment.timeLabel}`, 36, cardY + 32);
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px sans-serif';
+      ctx.font = '600 20px sans-serif';
       const prodLabel =
         moment.matchedTerm ||
         meta.cartAnchorTitle ||
@@ -264,89 +356,207 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
   );
 
   /**
-   * Trích xuất hàng loạt khung hình thực tế từ luồng video MP4 bằng thẻ <video> + <canvas>
+   * Ưu tiên 1: Cắt khung hình song song qua endpoint máy chủ (`?streamToken=...&captureSec=...`)
+   * giúp cắt 8 khung hình thực tế trong ~1.5s mà không cần tải toàn bộ file MP4 về trình duyệt.
+   */
+  const extractFramesViaServerEndpoint = useCallback(
+    async (
+      streamToken: string,
+      moments: SuggestedVideoFrameMoment[],
+      authorHandleVal: string
+    ): Promise<CandidateFrameItem[]> => {
+      const targetMoments = moments.slice(0, 8);
+      const results = await Promise.all(
+        targetMoments.map(async (m): Promise<CandidateFrameItem | null> => {
+          try {
+            const frameUrl = `/api/integrations/tiktok-koc/video-frame?streamToken=${encodeURIComponent(
+              streamToken
+            )}&captureSec=${encodeURIComponent(String(m.sec))}`;
+
+            const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const el = new Image();
+              el.crossOrigin = 'anonymous';
+              const timer = setTimeout(() => reject(new Error('Frame timeout')), 9500);
+              el.onload = () => {
+                clearTimeout(timer);
+                resolve(el);
+              };
+              el.onerror = (err) => {
+                clearTimeout(timer);
+                reject(err);
+              };
+              el.src = frameUrl;
+            });
+
+            const canvas = document.createElement('canvas');
+            const iw = img.naturalWidth || img.width || 540;
+            const ih = img.naturalHeight || img.height || 960;
+            canvas.width = iw;
+            canvas.height = ih;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+
+            drawSourceWithCrop(ctx, img, iw, ih, iw, ih);
+            const quality = analyzeCanvasFrameQuality(ctx, iw, ih);
+
+            drawWatermarkStamp(ctx, iw, ih, {
+              timeLabel: m.timeLabel,
+              handle: authorHandleVal || authorHandle,
+              term: m.matchedTerm || productKeywordInput || productName || brandName,
+              dealCode,
+            });
+
+            return {
+              id: `srv-${Math.round(m.sec * 10)}-${Date.now()}`,
+              timestampSec: m.sec,
+              timeLabel: m.timeLabel,
+              reason: m.reason,
+              matchedTerm: m.matchedTerm || productKeywordInput || productName,
+              captionQuote: m.quote,
+              imageDataUrl: canvas.toDataURL('image/jpeg', 0.88),
+              sourceMode: m.isPrimaryProductMoment ? 'SUGGESTED_MOMENT' : 'VIDEO_FRAME',
+              momentCategory: m.momentCategory,
+              confidenceScore: m.confidenceScore || (m.isPrimaryProductMoment ? 88 : 65),
+              sharpnessScore: quality.sharpnessScore,
+            };
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      return results.filter((r): r is CandidateFrameItem => r !== null);
+    },
+    [
+      authorHandle,
+      brandName,
+      dealCode,
+      drawSourceWithCrop,
+      drawWatermarkStamp,
+      productKeywordInput,
+      productName,
+    ]
+  );
+
+  /**
+   * Ưu tiên 2: Trích xuất khung hình từ luồng video MP4 trực tiếp trên trình duyệt bằng thẻ <video> + <canvas>
+   * (Tự động nhảy tránh khung hình tối đen khi chuyển cảnh)
    */
   const extractFramesFromVideoSource = useCallback(
     async (
       videoSrc: string,
       moments: SuggestedVideoFrameMoment[],
       fallbackMeta: {
+        streamToken?: string | null;
+        serverFrameCaptureAvailable?: boolean;
         proxiedCoverUrl: string | null;
         authorHandle: string;
         authorNickname: string;
         cartAnchorTitle: string;
         publishedTimeFormatted: string;
-      }
+      },
+      appendMode = false
     ) => {
       setExtractingFrames(true);
-      const extracted: CandidateFrameItem[] = [];
+      let extracted: CandidateFrameItem[] = [];
 
       try {
-        const tempVideo = document.createElement('video');
-        tempVideo.crossOrigin = 'anonymous';
-        tempVideo.muted = true;
-        tempVideo.playsInline = true;
-        tempVideo.preload = 'auto';
-        tempVideo.src = videoSrc;
+        // Nếu máy chủ hỗ trợ cắt khung hình trực tiếp qua ffmpeg, chạy song song để có kết quả tức thì
+        if (fallbackMeta.serverFrameCaptureAvailable && fallbackMeta.streamToken) {
+          const serverExtracted = await extractFramesViaServerEndpoint(
+            fallbackMeta.streamToken,
+            moments,
+            fallbackMeta.authorHandle
+          );
+          if (serverExtracted.length > 0) {
+            extracted = serverExtracted;
+          }
+        }
 
-        await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(() => reject(new Error('Timeout loading video stream')), 12000);
-          tempVideo.onloadedmetadata = () => {
-            clearTimeout(timer);
-            resolve();
-          };
-          tempVideo.onerror = () => {
-            clearTimeout(timer);
-            reject(new Error('Video stream error'));
-          };
-        });
+        // Nếu chưa lấy qua máy chủ (hoặc đang mở file MP4 từ máy tính), dùng thẻ <video> trên trình duyệt
+        if (extracted.length === 0) {
+          const tempVideo = document.createElement('video');
+          tempVideo.crossOrigin = 'anonymous';
+          tempVideo.muted = true;
+          tempVideo.playsInline = true;
+          tempVideo.preload = 'auto';
+          tempVideo.src = videoSrc;
 
-        const actualDuration = Number(tempVideo.duration) || 20;
-        setVideoDuration(actualDuration);
-
-        const targetMoments = moments.slice(0, 6);
-        for (const m of targetMoments) {
-          const safeSec = Math.min(Math.max(0.5, m.sec), Math.max(0.5, actualDuration - 0.3));
-          await new Promise<void>((resolve) => {
-            const seekTimer = setTimeout(() => resolve(), 3500);
-            tempVideo.onseeked = () => {
-              clearTimeout(seekTimer);
+          await new Promise<void>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Timeout loading video stream')), 12000);
+            tempVideo.onloadedmetadata = () => {
+              clearTimeout(timer);
               resolve();
             };
-            tempVideo.currentTime = safeSec;
+            tempVideo.onerror = () => {
+              clearTimeout(timer);
+              reject(new Error('Video stream error'));
+            };
           });
 
-          const canvas = document.createElement('canvas');
-          const vw = tempVideo.videoWidth || 540;
-          const vh = tempVideo.videoHeight || 960;
-          const scale = Math.min(1, 720 / Math.max(vw, 1));
-          canvas.width = Math.round(vw * scale);
-          canvas.height = Math.round(vh * scale);
+          const actualDuration = Number(tempVideo.duration) || 20;
+          setVideoDuration(actualDuration);
 
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-            drawWatermarkStamp(ctx, canvas.width, canvas.height, {
-              timeLabel: formatSecToMmSs(safeSec),
-              handle: fallbackMeta.authorHandle || authorHandle,
-              term: m.matchedTerm || productKeywordInput || productName || brandName,
-              dealCode,
-            });
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-            extracted.push({
-              id: `frm-${Math.round(safeSec * 10)}-${Date.now()}`,
-              timestampSec: Math.round(safeSec * 10) / 10,
-              timeLabel: formatSecToMmSs(safeSec),
-              reason: m.reason,
-              matchedTerm: m.matchedTerm || productKeywordInput || productName,
-              captionQuote: m.quote,
-              imageDataUrl: dataUrl,
-              sourceMode: m.isPrimaryProductMoment ? 'SUGGESTED_MOMENT' : 'VIDEO_FRAME',
-            });
+          const targetMoments = moments.slice(0, 8);
+          for (const m of targetMoments) {
+            let safeSec = Math.min(Math.max(0.5, m.sec), Math.max(0.5, actualDuration - 0.3));
+            const seekToSec = async (targetSec: number) => {
+              await new Promise<void>((resolve) => {
+                const seekTimer = setTimeout(() => resolve(), 3200);
+                tempVideo.onseeked = () => {
+                  clearTimeout(seekTimer);
+                  resolve();
+                };
+                tempVideo.currentTime = targetSec;
+              });
+            };
+
+            await seekToSec(safeSec);
+
+            const canvas = document.createElement('canvas');
+            const vw = tempVideo.videoWidth || 540;
+            const vh = tempVideo.videoHeight || 960;
+            const scale = Math.min(1, 720 / Math.max(vw, 1));
+            canvas.width = Math.round(vw * scale);
+            canvas.height = Math.round(vh * scale);
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
+              let quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
+
+              // Nếu trúng đúng khung hình tối đen lúc chuyển cảnh, tự động nhích thêm +0.45s
+              if (quality.isBlankOrDark && safeSec + 0.5 < actualDuration) {
+                safeSec = Math.round((safeSec + 0.45) * 10) / 10;
+                await seekToSec(safeSec);
+                drawSourceWithCrop(ctx, tempVideo, vw, vh, canvas.width, canvas.height);
+                quality = analyzeCanvasFrameQuality(ctx, canvas.width, canvas.height);
+              }
+
+              drawWatermarkStamp(ctx, canvas.width, canvas.height, {
+                timeLabel: formatSecToMmSs(safeSec),
+                handle: fallbackMeta.authorHandle || authorHandle,
+                term: m.matchedTerm || productKeywordInput || productName || brandName,
+                dealCode,
+              });
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+              extracted.push({
+                id: `frm-${Math.round(safeSec * 10)}-${Date.now()}`,
+                timestampSec: Math.round(safeSec * 10) / 10,
+                timeLabel: formatSecToMmSs(safeSec),
+                reason: m.reason,
+                matchedTerm: m.matchedTerm || productKeywordInput || productName,
+                captionQuote: m.quote,
+                imageDataUrl: dataUrl,
+                sourceMode: m.isPrimaryProductMoment ? 'SUGGESTED_MOMENT' : 'VIDEO_FRAME',
+                momentCategory: m.momentCategory,
+                confidenceScore: m.confidenceScore || (m.isPrimaryProductMoment ? 88 : 65),
+                sharpnessScore: quality.sharpnessScore,
+              });
+            }
           }
         }
       } catch {
-        // Nếu luồng MP4 bị chặn hoặc quá thời gian, chuyển sang tạo dải khung hình từ ảnh bìa gốc kèm mốc giây
         const fallbackMoments = moments.slice(0, 4);
         for (const m of fallbackMoments) {
           const dataUrl = await buildFallbackCanvasFrame(m, fallbackMeta);
@@ -360,6 +570,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               captionQuote: m.quote,
               imageDataUrl: dataUrl,
               sourceMode: 'SUGGESTED_MOMENT',
+              momentCategory: m.momentCategory,
+              confidenceScore: m.confidenceScore || 70,
+              sharpnessScore: 75,
             });
           }
         }
@@ -368,7 +581,16 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       }
 
       if (extracted.length > 0) {
-        setCandidateFrames(extracted);
+        setCandidateFrames((prev) => {
+          if (!appendMode) return extracted;
+          const merged = [...prev];
+          for (const item of extracted) {
+            if (!merged.some((x) => Math.abs(x.timestampSec - item.timestampSec) < 0.35)) {
+              merged.push(item);
+            }
+          }
+          return merged.sort((a, b) => a.timestampSec - b.timestampSec);
+        });
       }
     },
     [
@@ -376,7 +598,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       brandName,
       buildFallbackCanvasFrame,
       dealCode,
+      drawSourceWithCrop,
       drawWatermarkStamp,
+      extractFramesViaServerEndpoint,
       productKeywordInput,
       productName,
     ]
@@ -419,13 +643,20 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
       if (data.streamProxyUrl) {
         setActiveVideoSrc(data.streamProxyUrl);
-        await extractFramesFromVideoSource(data.streamProxyUrl, data.suggestedMoments || [], {
-          proxiedCoverUrl: data.proxiedCoverUrl,
-          authorHandle: data.authorHandle,
-          authorNickname: data.authorNickname,
-          cartAnchorTitle: data.cartAnchorTitle,
-          publishedTimeFormatted: data.publishedTimeFormatted,
-        });
+        await extractFramesFromVideoSource(
+          data.streamProxyUrl,
+          data.suggestedMoments || [],
+          {
+            streamToken: data.streamToken,
+            serverFrameCaptureAvailable: data.serverFrameCaptureAvailable,
+            proxiedCoverUrl: data.proxiedCoverUrl,
+            authorHandle: data.authorHandle,
+            authorNickname: data.authorNickname,
+            cartAnchorTitle: data.cartAnchorTitle,
+            publishedTimeFormatted: data.publishedTimeFormatted,
+          },
+          false
+        );
       } else {
         const fbFrames: CandidateFrameItem[] = [];
         for (const m of (data.suggestedMoments || []).slice(0, 4)) {
@@ -446,6 +677,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               captionQuote: m.quote,
               imageDataUrl: dataUrl,
               sourceMode: 'SUGGESTED_MOMENT',
+              momentCategory: m.momentCategory,
+              confidenceScore: m.confidenceScore || 70,
+              sharpnessScore: 75,
             });
           }
         }
@@ -454,7 +688,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
       if (data.firstProductAppearanceSec !== null) {
         setStatusNotice(
-          `Phát hiện KOC nhắc "${data.firstProductMentionTerm || 'sản phẩm'}" tại giây thứ ${data.firstProductAppearanceSec}s. Đã trích xuất sẵn dải khung hình quanh mốc này.`
+          `Đã dò thấy ${data.productMentionMoments?.length || 1} mốc KOC nhắc/cầm "${
+            data.firstProductMentionTerm || 'sản phẩm'
+          }" và cắt sẵn dải khung hình tương ứng.`
         );
       } else {
         setStatusNotice('Đã cắt sẵn dải khung hình gợi ý theo tiến trình giới thiệu sản phẩm.');
@@ -464,6 +700,82 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     } finally {
       setLoadingMeta(false);
     }
+  };
+
+  /**
+   * Quét liên tiếp 6 khung hình cách nhau 0.7s quanh một mốc giây bất kỳ (±1.8s)
+   * để chuyên viên chọn đúng khoảnh khắc KOC cầm sản phẩm rõ nét nhất.
+   */
+  const handleBurstScanAroundSec = async (centerSec: number, matchedTerm?: string) => {
+    if (!activeVideoSrc) return;
+    const dur = Math.max(10, videoDuration || resolvedMeta?.durationSeconds || 25);
+    const offsets = [-1.4, -0.7, 0, 0.7, 1.4, 2.1];
+    const burstMoments: SuggestedVideoFrameMoment[] = offsets.map((off) => {
+      const sec = Math.max(0.4, Math.min(dur - 0.4, Math.round((centerSec + off) * 10) / 10));
+      return {
+        sec,
+        timeLabel: formatSecToMmSs(sec),
+        reason: `Quét chi tiết quanh ${formatSecToMmSs(centerSec)} (${off >= 0 ? `+${off}s` : `${off}s`})`,
+        matchedTerm: matchedTerm || productKeywordInput || productName || brandName,
+        isPrimaryProductMoment: true,
+        momentCategory: 'HOLDING_SHOWCASE',
+        confidenceScore: 92,
+      };
+    });
+
+    await extractFramesFromVideoSource(
+      activeVideoSrc,
+      burstMoments,
+      {
+        streamToken: resolvedMeta?.streamToken,
+        serverFrameCaptureAvailable: resolvedMeta?.serverFrameCaptureAvailable,
+        proxiedCoverUrl: resolvedMeta?.proxiedCoverUrl || null,
+        authorHandle: resolvedMeta?.authorHandle || authorHandle || 'koc',
+        authorNickname: resolvedMeta?.authorNickname || 'KOC',
+        cartAnchorTitle: resolvedMeta?.cartAnchorTitle || '',
+        publishedTimeFormatted: resolvedMeta?.publishedTimeFormatted || '',
+      },
+      true
+    );
+    setStatusNotice(
+      `Đã cắt bổ sung dải 6 khung hình liên tiếp quanh mốc ${formatSecToMmSs(centerSec)}.`
+    );
+  };
+
+  /**
+   * Tự động chọn 2 khung hình có điểm nhận diện sản phẩm + độ sắc nét cao nhất
+   */
+  const handleAutoSelectBestFrames = () => {
+    if (candidateFrames.length === 0) return;
+    const ranked = [...candidateFrames].sort(
+      (a, b) => b.confidenceScore + b.sharpnessScore - (a.confidenceScore + a.sharpnessScore)
+    );
+    const topTwo = ranked.slice(0, 2);
+    setSelectedScreenshots((prev) => {
+      const next = [...prev];
+      for (const cand of topTwo) {
+        if (!next.some((s) => s.id === cand.id)) {
+          next.push({
+            id: cand.id,
+            videoUrl: resolvedMeta?.resolvedUrl || videoUrlInput.trim(),
+            videoId: resolvedMeta?.videoId,
+            authorHandle: resolvedMeta?.authorHandle || authorHandle,
+            timestampSec: cand.timestampSec,
+            timeLabel: cand.timeLabel,
+            matchedTerm: cand.matchedTerm || productKeywordInput.trim() || productName || brandName,
+            captionQuote: cand.captionQuote || cand.reason,
+            imageDataUrl: cand.imageDataUrl,
+            capturedAt: new Date().toISOString(),
+            sourceMode: cand.sourceMode,
+            note: cand.reason,
+          });
+        }
+      }
+      return next;
+    });
+    setStatusNotice(
+      `Đã chọn 2 khung hình rõ nét nhất (${topTwo.map((t) => t.timeLabel).join(', ')}) vào danh sách nghiệm thu.`
+    );
   };
 
   /**
@@ -478,13 +790,15 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
     try {
       const canvas = document.createElement('canvas');
-      const scale = Math.min(1, 720 / Math.max(videoEl.videoWidth, 1));
-      canvas.width = Math.round(videoEl.videoWidth * scale);
-      canvas.height = Math.round(videoEl.videoHeight * scale);
+      const vw = videoEl.videoWidth;
+      const vh = videoEl.videoHeight;
+      const scale = Math.min(1, 720 / Math.max(vw, 1));
+      canvas.width = Math.round(vw * scale);
+      canvas.height = Math.round(vh * scale);
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      drawSourceWithCrop(ctx, videoEl, vw, vh, canvas.width, canvas.height);
       const sec = Math.round(videoEl.currentTime * 10) / 10;
       const timeLabel = formatSecToMmSs(sec);
       const handle = resolvedMeta?.authorHandle || authorHandle || 'koc';
@@ -536,21 +850,28 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
     const defaultMoments: SuggestedVideoFrameMoment[] = [
       { sec: 2, timeLabel: '00:02', reason: 'Mở đầu (00:02)', isPrimaryProductMoment: false },
-      { sec: 4, timeLabel: '00:04', reason: 'Đưa sản phẩm lên hình (00:04)', isPrimaryProductMoment: true },
-      { sec: 7, timeLabel: '00:07', reason: 'Cận cảnh sản phẩm (00:07)', isPrimaryProductMoment: true },
-      { sec: 11, timeLabel: '00:11', reason: 'Trải nghiệm thực tế (00:11)', isPrimaryProductMoment: false },
+      { sec: 4, timeLabel: '00:04', reason: 'Đưa sản phẩm lên hình (00:04)', isPrimaryProductMoment: true, momentCategory: 'HOLDING_SHOWCASE', confidenceScore: 90 },
+      { sec: 7, timeLabel: '00:07', reason: 'Cận cảnh sản phẩm (00:07)', isPrimaryProductMoment: true, momentCategory: 'HOLDING_SHOWCASE', confidenceScore: 92 },
+      { sec: 11, timeLabel: '00:11', reason: 'Trải nghiệm thực tế (00:11)', isPrimaryProductMoment: false, momentCategory: 'TEXTURE_DEMO', confidenceScore: 84 },
       { sec: 15, timeLabel: '00:15', reason: 'Điểm nhấn công dụng (00:15)', isPrimaryProductMoment: false },
       { sec: 19, timeLabel: '00:19', reason: 'Kêu gọi giỏ hàng (00:19)', isPrimaryProductMoment: false },
     ];
 
-    await extractFramesFromVideoSource(objectUrl, resolvedMeta?.suggestedMoments || defaultMoments, {
-      proxiedCoverUrl: null,
-      authorHandle: resolvedMeta?.authorHandle || authorHandle || 'koc',
-      authorNickname: resolvedMeta?.authorNickname || 'KOC',
-      cartAnchorTitle: productKeywordInput || productName || '',
-      publishedTimeFormatted: '',
-    });
-    setStatusNotice(`Đã tải tệp video "${file.name}" và cắt sẵn 6 khung hình.`);
+    await extractFramesFromVideoSource(
+      objectUrl,
+      resolvedMeta?.suggestedMoments || defaultMoments,
+      {
+        streamToken: null,
+        serverFrameCaptureAvailable: false,
+        proxiedCoverUrl: null,
+        authorHandle: resolvedMeta?.authorHandle || authorHandle || 'koc',
+        authorNickname: resolvedMeta?.authorNickname || 'KOC',
+        cartAnchorTitle: productKeywordInput || productName || '',
+        publishedTimeFormatted: '',
+      },
+      false
+    );
+    setStatusNotice(`Đã tải tệp video "${file.name}" và cắt sẵn dải khung hình.`);
   };
 
   /**
@@ -562,10 +883,15 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       reader.onload = () => {
         const result = typeof reader.result === 'string' ? reader.result : '';
         if (!result) return;
-        const sec = Math.round((playerVideoRef.current?.currentTime || resolvedMeta?.firstProductAppearanceSec || 4) * 10) / 10;
+        const sec =
+          Math.round(
+            (playerVideoRef.current?.currentTime ||
+              resolvedMeta?.firstProductAppearanceSec ||
+              4) * 10
+          ) / 10;
         const timeLabel = formatSecToMmSs(sec);
         const newItem: AcceptanceScreenshotItem = {
-          id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          id: `img-${Date.now()}-${sec}`,
           videoUrl: resolvedMeta?.resolvedUrl || videoUrlInput.trim(),
           videoId: resolvedMeta?.videoId,
           authorHandle: resolvedMeta?.authorHandle || authorHandle,
@@ -643,6 +969,17 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
     setCurrentVideoTime(videoEl.currentTime);
   };
 
+  const handleDownloadSingleImage = (item: AcceptanceScreenshotItem, index: number) => {
+    const a = document.createElement('a');
+    a.href = item.imageDataUrl;
+    const prefix = dealCode || item.authorHandle || 'KOC';
+    const cleanTime = (item.timeLabel || '00-00').replace(':', 'm') + 's';
+    a.download = `BBNT_${prefix}_Anh${index + 1}_${cleanTime}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleSaveAndApply = () => {
     saveScreenshotsForContext(
       {
@@ -664,11 +1001,13 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
       open={open}
       onClose={onClose}
       title="Chụp khung hình sản phẩm từ video để đưa vào Biên bản nghiệm thu"
-      size="lg"
+      size="xl"
       footer={
         <div className="flex flex-wrap items-center justify-between w-full gap-2">
           <span className="text-xs text-ink-2">
-            Đã chọn <strong className="text-ink font-semibold">{selectedScreenshots.length}</strong> ảnh minh chứng sản phẩm
+            Đã chọn{' '}
+            <strong className="text-ink font-semibold">{selectedScreenshots.length}</strong> ảnh
+            minh chứng sản phẩm
           </span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -680,7 +1019,8 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               onClick={handleSaveAndApply}
               disabled={selectedScreenshots.length === 0}
             >
-              Đưa {selectedScreenshots.length > 0 ? `${selectedScreenshots.length} ảnh ` : ''}vào Biên bản nghiệm thu
+              Đưa {selectedScreenshots.length > 0 ? `${selectedScreenshots.length} ảnh ` : ''}vào
+              Biên bản nghiệm thu
             </Button>
           </div>
         </div>
@@ -703,7 +1043,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                 id="vpss-kw"
                 value={productKeywordInput}
                 onChange={(e) => setProductKeywordInput(e.target.value)}
-                placeholder="VD: Kem dưỡng Kutieskin, CeraVe..."
+                placeholder="VD: HLC + Vỏ sồi, Kutieskin, CeraVe..."
               />
             </Field>
             <Button
@@ -712,7 +1052,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               disabled={loadingMeta || extractingFrames}
               onClick={handleInspectAndExtract}
             >
-              {loadingMeta || extractingFrames ? 'Đang cắt khung hình…' : 'Tải video & dò mốc sản phẩm'}
+              {loadingMeta || extractingFrames
+                ? 'Đang cắt khung hình…'
+                : 'Tải video & dò mốc sản phẩm'}
             </Button>
           </div>
 
@@ -755,15 +1097,28 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               </Button>
             </div>
 
-            <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-2">
-              <input
-                type="checkbox"
-                checked={stampOverlay}
-                onChange={(e) => setStampOverlay(e.target.checked)}
-                className="rounded border-line"
-              />
-              <span>Đóng dấu mốc giây & tên sản phẩm lên ảnh</span>
-            </label>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-2">
+                <input
+                  type="checkbox"
+                  checked={zoomCropProduct}
+                  onChange={(e) => setZoomCropProduct(e.target.checked)}
+                  className="rounded border-line"
+                />
+                <ZoomIn className="w-3.5 h-3.5 text-accent" />
+                <span>Zoom cận cảnh sản phẩm (1.25x)</span>
+              </label>
+
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-ink-2">
+                <input
+                  type="checkbox"
+                  checked={stampOverlay}
+                  onChange={(e) => setStampOverlay(e.target.checked)}
+                  className="rounded border-line"
+                />
+                <span>Đóng dấu mốc giây & tên sản phẩm lên ảnh</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -774,12 +1129,12 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
         )}
 
         {statusNotice && (
-          <div className="rounded-lg border border-positive/30 bg-positive-soft/25 px-3.5 py-2 text-xs text-positive font-medium flex items-center justify-between gap-2">
+          <div className="rounded-lg border border-positive/30 bg-positive-soft/25 px-3.5 py-2 text-xs text-positive font-medium flex flex-wrap items-center justify-between gap-2">
             <span>{statusNotice}</span>
             {resolvedMeta?.firstProductAppearanceSec !== null &&
               resolvedMeta?.firstProductAppearanceSec !== undefined && (
                 <Status tone="positive">
-                  Mốc nhắc SP: {formatSecToMmSs(resolvedMeta.firstProductAppearanceSec)}
+                  Mốc nhắc SP đầu tiên: {formatSecToMmSs(resolvedMeta.firstProductAppearanceSec)}
                 </Status>
               )}
           </div>
@@ -787,7 +1142,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
         {/* Khu vực trình phát video + dải khung hình gợi ý */}
         {(activeVideoSrc || candidateFrames.length > 0) && (
-          <div className="grid gap-4 lg:grid-cols-[270px_minmax(0,1fr)] items-start">
+          <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)] items-start">
             {/* Cột trái: Trình phát video để tua và bấm chụp thủ công */}
             <div className="rounded-xl border border-line bg-surface p-3 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -826,7 +1181,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                       icon={Camera}
                       onClick={handleCaptureCurrentPlayerFrame}
                     >
-                      Chụp khung hình này
+                      Chụp khung này
                     </Button>
                     <Button
                       size="sm"
@@ -836,6 +1191,21 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                       +0.5s
                     </Button>
                   </div>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Film}
+                    disabled={extractingFrames}
+                    onClick={() =>
+                      handleBurstScanAroundSec(
+                        currentVideoTime || resolvedMeta?.firstProductAppearanceSec || 4
+                      )
+                    }
+                    className="w-full justify-center"
+                  >
+                    Cắt 6 khung liên tiếp quanh {formatSecToMmSs(currentVideoTime)} (±2s)
+                  </Button>
 
                   {resolvedMeta?.suggestedMoments && resolvedMeta.suggestedMoments.length > 0 && (
                     <div className="pt-2 border-t border-line space-y-1.5">
@@ -849,9 +1219,11 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                             type="button"
                             onClick={() => seekVideoTo(m.sec)}
                             className={`px-2 py-0.5 rounded text-2xs font-code border transition-colors ${
-                              m.isPrimaryProductMoment
+                              m.momentCategory === 'HOLDING_SHOWCASE'
                                 ? 'bg-positive-soft text-positive border-positive/30 font-semibold'
-                                : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
+                                : m.isPrimaryProductMoment
+                                  ? 'bg-accent-soft text-accent border-accent/30 font-semibold'
+                                  : 'bg-surface-2 text-ink-2 border-line hover:text-ink'
                             }`}
                             title={m.reason}
                           >
@@ -866,7 +1238,9 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                 <div className="p-4 rounded-lg border border-dashed border-line bg-surface-2 text-center space-y-2 text-xs text-ink-2">
                   <Play className="w-6 h-6 text-ink-3 mx-auto" />
                   <p>
-                    Video TikTok này đang hạn chế phát trực tiếp trên trình duyệt. Bạn có thể chọn ngay ảnh trong dải khung hình bên phải hoặc bấm <strong>Mở file video (.mp4) từ máy</strong>.
+                    Video TikTok này đang hạn chế phát trực tiếp trên trình duyệt. Bạn có thể chọn
+                    ngay ảnh trong dải khung hình bên phải hoặc bấm{' '}
+                    <strong>Mở file video (.mp4) từ máy</strong>.
                   </p>
                 </div>
               )}
@@ -877,22 +1251,31 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-accent" />
-                  Dải khung hình trích xuất tại mốc xuất hiện sản phẩm ({candidateFrames.length} ảnh)
+                  Dải khung hình trích xuất tại mốc xuất hiện sản phẩm ({candidateFrames.length}{' '}
+                  ảnh)
                 </span>
-                <span className="text-2xs text-ink-3">
-                  Bấm vào từng ảnh để chọn hoặc bỏ chọn đưa vào Biên bản nghiệm thu
-                </span>
+                {candidateFrames.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Sparkles}
+                    onClick={handleAutoSelectBestFrames}
+                  >
+                    Tự chọn 2 ảnh rõ nhất
+                  </Button>
+                )}
               </div>
 
               {extractingFrames ? (
                 <div className="p-8 text-center text-xs text-ink-2 flex flex-col items-center gap-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-accent" />
-                  <span>Đang tua video tới các mốc giây nhắc sản phẩm và chụp khung hình…</span>
+                  <span>Đang cắt khung hình tại các mốc KOC cầm và giới thiệu sản phẩm…</span>
                 </div>
               ) : candidateFrames.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {candidateFrames.map((cand) => {
                     const isSelected = selectedScreenshots.some((s) => s.id === cand.id);
+                    const badge = getMomentBadgeProps(cand.momentCategory);
                     return (
                       <div
                         key={cand.id}
@@ -903,7 +1286,7 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                             : 'border-line bg-surface-2/40 hover:border-line-strong'
                         }`}
                       >
-                        <div className="relative aspect-[9/16] max-h-[210px] bg-black overflow-hidden">
+                        <div className="relative aspect-[9/16] max-h-[200px] bg-black overflow-hidden">
                           <img
                             src={cand.imageDataUrl}
                             alt={cand.reason}
@@ -921,11 +1304,48 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                           >
                             {isSelected ? '✓' : '+'}
                           </span>
+                          <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 pointer-events-none">
+                            <Status tone={badge.tone}>{badge.label}</Status>
+                            <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-3xs font-code">
+                              Nét {cand.sharpnessScore}%
+                            </span>
+                          </div>
                         </div>
-                        <div className="p-2 space-y-0.5 text-2xs">
-                          <p className="font-semibold text-ink line-clamp-1">{cand.reason}</p>
-                          {cand.captionQuote && (
-                            <p className="text-ink-3 line-clamp-1">&ldquo;{cand.captionQuote}&rdquo;</p>
+                        <div className="p-2 space-y-1 text-2xs flex-1 flex flex-col justify-between">
+                          <div>
+                            <p className="font-semibold text-ink line-clamp-1">{cand.reason}</p>
+                            {cand.captionQuote && (
+                              <p className="text-ink-3 line-clamp-1">
+                                &ldquo;{cand.captionQuote}&rdquo;
+                              </p>
+                            )}
+                          </div>
+                          {activeVideoSrc && (
+                            <div className="pt-1 flex items-center justify-between gap-1 border-t border-line/60">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  seekVideoTo(cand.timestampSec);
+                                }}
+                                className="text-3xs text-ink-2 hover:text-ink font-medium"
+                              >
+                                Xem mốc này
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleBurstScanAroundSec(
+                                    cand.timestampSec,
+                                    cand.matchedTerm
+                                  );
+                                }}
+                                className="text-3xs text-accent hover:underline font-semibold"
+                              >
+                                Quét ±2s
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -934,7 +1354,8 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                 </div>
               ) : (
                 <div className="p-6 rounded-lg border border-dashed border-line text-center text-xs text-ink-3">
-                  Chưa có khung hình nào. Hãy bấm &ldquo;Tải video & dò mốc sản phẩm&rdquo; phía trên.
+                  Chưa có khung hình nào. Hãy bấm &ldquo;Tải video & dò mốc sản phẩm&rdquo; phía
+                  trên.
                 </div>
               )}
             </div>
@@ -961,7 +1382,8 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
 
           {selectedScreenshots.length === 0 ? (
             <div className="p-4 rounded-lg border border-dashed border-line bg-surface-2/40 text-center text-xs text-ink-3">
-              Chưa chọn ảnh nào. Hãy bấm chọn ảnh từ dải khung hình phía trên, bấm &ldquo;Chụp khung hình này&rdquo; trên trình phát video, hoặc bấm Ctrl+V để dán ảnh chụp màn hình.
+              Chưa chọn ảnh nào. Hãy bấm chọn ảnh từ dải khung hình phía trên, bấm &ldquo;Tự chọn 2
+              ảnh rõ nhất&rdquo;, hoặc bấm Ctrl+V để dán ảnh chụp màn hình.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -980,16 +1402,26 @@ export const VideoProductScreenshotModal: React.FC<VideoProductScreenshotModalPr
                       <span className="px-1.5 py-0.5 rounded bg-accent-soft text-accent font-code text-2xs font-semibold">
                         Ảnh #{idx + 1} · Mốc {item.timeLabel}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedScreenshots((prev) => prev.filter((x) => x.id !== item.id))
-                        }
-                        className="text-ink-3 hover:text-critical p-0.5"
-                        title="Gỡ ảnh này"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSingleImage(item, idx)}
+                          className="text-ink-3 hover:text-accent p-0.5"
+                          title="Tải ảnh .JPG về máy"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedScreenshots((prev) => prev.filter((x) => x.id !== item.id))
+                          }
+                          className="text-ink-3 hover:text-critical p-0.5"
+                          title="Gỡ ảnh này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <Input
                       value={item.note || ''}

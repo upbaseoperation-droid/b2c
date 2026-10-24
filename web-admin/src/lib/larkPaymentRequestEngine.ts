@@ -169,23 +169,27 @@ export interface LarkPaymentRequestSlip {
 }
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)
-const NGOC_TAM_LEADER_STORES = [
-  'clubclio',
-  'cindy bloom',
-  'mine',
-  'eupc',
-  "l'occitane",
-  'loccitane',
-  'bye bye blemish',
-  'rejuran',
+const NGOC_TAM_LEADER_PATTERNS: RegExp[] = [
+  /\bclub\s*clio\b/i,
+  /\bcindy\s*bloom\b/i,
+  /\bmine\b/i,
+  /\beupc\b/i,
+  /\bl['’]?occitane\b/i,
+  /\bbye\s*bye\s*blemish\b/i,
+  /\brejuran\b/i,
 ];
 
 export function resolveStoreBookingLeader(storeOrBrandName?: string, explicitLeader?: string): string | undefined {
   if (explicitLeader && explicitLeader.toLowerCase().includes('ngọc tâm')) {
     return 'Nguyễn Thị Ngọc Tâm';
   }
-  const normalized = (storeOrBrandName || '').toLowerCase();
-  if (NGOC_TAM_LEADER_STORES.some(key => normalized.includes(key))) {
+  const normalized = (storeOrBrandName || '').replace(/[_-]+/g, ' ').trim().toLowerCase();
+  if (!normalized) return undefined;
+  // Theo GEMINI.md: Toàn bộ gian Shopee (trừ ClubClio Shopee) chỉ có 1 PIC, không qua Trưởng nhóm trung gian
+  if (normalized.includes('shopee') && !/\bclub\s*clio\b/i.test(normalized)) {
+    return undefined;
+  }
+  if (NGOC_TAM_LEADER_PATTERNS.some(re => re.test(normalized))) {
     return 'Nguyễn Thị Ngọc Tâm';
   }
   return undefined;
@@ -429,11 +433,14 @@ export function evaluateDealForPaymentRequest(
     actualSettledValue: effectiveSettledNetAmount,
   });
 
-  // 3. Lấy các trường nghiệm thu & chứng từ (ưu tiên override từ form bổ sung nhanh)
+  // 3. Lấy các trường nghiệm thu & chứng từ (ưu tiên override từ form bổ sung nhanh; không tự bịa trạng thái hay link — P2)
   const linkAir = (override?.linkAir ?? deal.tiktokVideoUrl ?? deal.videoUrl ?? '').trim();
   const postedDate = (override?.postedDate ?? deal.postedDate ?? deal.postDate ?? '').trim();
-  const adsCodeStatus = override?.adsCodeStatus ?? deal.adsCodeStatus ?? 'ĐÃ_NGHIỆM_THU';
   const sparkAdsCode = (override?.sparkAdsCode ?? deal.sparkAdsCode ?? '').trim();
+  const adsCodeStatus =
+    override?.adsCodeStatus ??
+    deal.adsCodeStatus ??
+    (sparkAdsCode ? 'ĐÃ_NGHIỆM_THU' : 'CHỜ_NGHIỆM_THU');
   const contractUrl = (
     override?.contractUrl ??
     deal.contractScanUrl ??
@@ -441,10 +448,7 @@ export function evaluateDealForPaymentRequest(
     koc?.contractDriveUrl ??
     ''
   ).trim();
-  const bbntUrl = (
-    override?.bbntUrl ??
-    (deal.contractAppendixCode ? `BBNT-${deal.contractAppendixCode}` : '')
-  ).trim();
+  const bbntUrl = (override?.bbntUrl ?? '').trim();
   const invoiceNumber = (override?.invoiceNumber ?? '').trim();
 
   // =========================================================================

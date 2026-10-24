@@ -197,17 +197,16 @@ function stripVietnameseTones(value: string): string {
     .replace(/Đ/g, 'D');
 }
 
+function stripDisplayNameQualifier(raw: string): string {
+  return raw.replace(/\s*[\(\[（-].*$/, '').trim();
+}
+
 function matchPersonName(candidateName: string | undefined, larkName: string, larkEnName?: string): boolean {
-  const normCandidate = normalizePersonName(candidateName);
+  const normCandidate = normalizePersonName(candidateName ? stripDisplayNameQualifier(candidateName) : '');
   if (!normCandidate) return false;
-  const normLark = normalizePersonName(larkName);
-  const normEn = normalizePersonName(larkEnName);
-  if (
-    normCandidate === normLark ||
-    normCandidate === normEn ||
-    (normLark.length >= 4 && normLark.includes(normCandidate)) ||
-    (normEn.length >= 4 && normEn.includes(normCandidate))
-  ) {
+  const normLark = normalizePersonName(stripDisplayNameQualifier(larkName));
+  const normEn = normalizePersonName(larkEnName ? stripDisplayNameQualifier(larkEnName) : '');
+  if (normCandidate === normLark || (normEn && normCandidate === normEn)) {
     return true;
   }
   const asciiCandidate = stripVietnameseTones(normCandidate);
@@ -215,10 +214,7 @@ function matchPersonName(candidateName: string | undefined, larkName: string, la
   const asciiEn = stripVietnameseTones(normEn);
   return (
     Boolean(asciiCandidate) &&
-    (asciiCandidate === asciiLark ||
-      asciiCandidate === asciiEn ||
-      (asciiLark.length >= 6 && asciiLark.includes(asciiCandidate)) ||
-      (asciiEn.length >= 6 && asciiEn.includes(asciiCandidate)))
+    (asciiCandidate === asciiLark || Boolean(asciiEn && asciiCandidate === asciiEn))
   );
 }
 

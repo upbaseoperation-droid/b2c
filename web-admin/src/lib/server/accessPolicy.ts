@@ -204,17 +204,14 @@ export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision
   const sameName = (name?: string) =>
     !!name && !!user.name && name.trim().toLowerCase() === user.name.trim().toLowerCase();
 
-  const staff = policy.internalStaff.find(
-    (s) => s.id === user.id || sameEmail(s.email) || sameStaffCode(s.staffCode) || sameName(s.name),
-  );
-  const master = UPBASE_STAFF_MASTER.find(
-    (s) =>
-      `staff-${s.id}` === user.id ||
-      s.id === user.id ||
-      sameEmail(s.email) ||
-      sameStaffCode(s.staffCode) ||
-      sameName(s.name),
-  );
+  const staff =
+    policy.internalStaff.find((s) => s.id === user.id || sameStaffCode(s.staffCode) || sameEmail(s.email)) ||
+    (!user.staffCode && !user.email ? policy.internalStaff.find((s) => sameName(s.name)) : undefined);
+  const master =
+    UPBASE_STAFF_MASTER.find(
+      (s) => `staff-${s.id}` === user.id || s.id === user.id || sameStaffCode(s.staffCode) || sameEmail(s.email),
+    ) ||
+    (!user.staffCode && !user.email ? UPBASE_STAFF_MASTER.find((s) => sameName(s.name)) : undefined);
   let result = { ...user };
   if (staff?.status === 'SUSPENDED' || staff?.canLogin === false) return null;
   if (staff) {
@@ -227,10 +224,12 @@ export function userWithPolicy(user: UserProfile, policy: AccessPolicy, revision
         .map(([k]) => k),
     };
   }
-  if (master && (result.role !== 'ADMIN' || policy.staffOverrides[master.id])) {
+  if (master && (result.role !== 'ADMIN' || policy.staffOverrides?.[master.id])) {
     const classified = classifyMasterStaffMember(master, policy.deptRules, policy.staffOverrides);
-    if (!classified.canLogin) return null;
-    if (policy.staffOverrides[master.id]) {
+    const explicitlyAllowedByInternalStaff =
+      staff?.status === 'ACTIVE' && staff.canLogin === true && policy.staffOverrides?.[master.id]?.canLogin !== false;
+    if (!classified.canLogin && !explicitlyAllowedByInternalStaff) return null;
+    if (policy.staffOverrides?.[master.id]) {
       result = { ...result, role: classified.role, departmentScope: classified.departmentScope };
     }
   }

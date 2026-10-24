@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
+import { columnOf, isDirectConfirmEligible, itemFee } from '@/lib/listingBoardRules';
 import type { KocListingItem } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
@@ -46,7 +47,44 @@ export async function PUT(request: NextRequest) {
     }
     await assertPlanIdAccess(body.planId, actor, 'write');
     const planId = body.planId;
-    const items = body.items.map(i => ({ ...i, sourcePlanId: planId }));
+    const existingRec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
+    const prevById = new Map<string, KocListingItem>(
+      (existingRec.data.items || []).map(it => [it.id, it])
+    );
+
+    const items = body.items.map(raw => {
+      const i: KocListingItem = { ...raw, sourcePlanId: planId };
+      const prev = prevById.get(i.id);
+      if (prev) {
+        const wasApproved =
+          prev.brandApprovalStatus === 'BRAND_APPROVED' || prev.overallStatus === 'FINAL_APPROVED';
+        // Nếu tăng giá sau khi Brand đã duyệt hoặc đã chốt Deal, bắt buộc đưa về chờ Brand duyệt lại (L3)
+        if (wasApproved && itemFee(i) > itemFee(prev) && columnOf(i) !== 'DROPPED') {
+          return {
+            ...i,
+            overallStatus: 'SUBMITTED' as const,
+            brandApprovalStatus: 'BRAND_PENDING' as const,
+            lastSheetDecision: undefined,
+            lastSheetDecisionAt: undefined,
+          };
+        }
+        // Chặn nhảy cóc từ DRAFT/WAIT_BRAND sang CONFIRMED nếu không đủ điều kiện FOC/KOL chỉ định (L2)
+        const prevCol = columnOf(prev);
+        if (
+          (prevCol === 'DRAFT' || prevCol === 'WAIT_BRAND') &&
+          columnOf(i) === 'CONFIRMED' &&
+          !isDirectConfirmEligible(i) &&
+          !prev.brandApprovedAt
+        ) {
+          return {
+            ...i,
+            overallStatus: 'SUBMITTED' as const,
+            brandApprovalStatus: 'BRAND_PENDING' as const,
+          };
+        }
+      }
+      return i;
+    });
     const saved = await updateRecord<ListingBoardData>(keyOf(planId), { items: [] }, body.revision, () => ({ items }));
     return NextResponse.json({ items: saved.data.items, data: { items: saved.data.items }, revision: saved.revision });
   } catch (err) {

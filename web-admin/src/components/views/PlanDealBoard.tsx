@@ -618,34 +618,38 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     notify(`Đã tạo Phụ lục SOW phát sinh sau Air (${upsellJob.code}) gắn với video của ${sourceJob.code}.`, 'success');
   };
 
-  /** Đồng bộ số liệu GMV, Đơn hàng, Lượt xem (D14, D30, D60) từ UpAffiliate / TikTok Seller cho Job */
+  /** Đồng bộ số liệu GMV, Đơn hàng, Lượt xem (D14, D30, D60) từ UpAffiliate / TikTok Seller cho Job (RULE-DATA-01: không sinh số giả) */
   const syncJobPerformanceFromUpaffiliate = (d: PlanDeal, job: DealJob) => {
     const matchedKoc = kocOfHandle(d.kocHandle);
-    const baseViews = job.acceptance.views || matchedKoc?.avgViews || 18500;
-    const baseGmv30 = matchedKoc?.tiktokGmv30d
-      ? Math.max(1500000, Math.round(matchedKoc.tiktokGmv30d / Math.max(4, matchedKoc.videoCount || 6)))
-      : Math.max(2400000, Math.round(jobTotalFee(job) * 2.8));
-    const aov = matchedKoc?.avgOrderValue || matchedKoc?.aov || 265000;
-    const d14Views = Math.round(baseViews * 0.72);
-    const d30Views = Math.round(baseViews);
-    const d60Views = Math.round(baseViews * 1.18);
-    const d14Gmv = Math.round(baseGmv30 * 0.68);
-    const d30Gmv = baseGmv30;
-    const d60Gmv = Math.round(baseGmv30 * 1.22);
+    const realViews = job.acceptance.views || matchedKoc?.avgViews || 0;
+    const realGmv30 = matchedKoc?.tiktokGmv30d
+      ? Math.round(matchedKoc.tiktokGmv30d / Math.max(1, matchedKoc.videoCount || 1))
+      : 0;
+    if (realViews <= 0 && realGmv30 <= 0) {
+      notify(
+        `Chưa có số liệu thực tế từ UpAffiliate / TikTok Seller cho @${d.kocHandle}. Vui lòng đồng bộ dữ liệu thực trước.`,
+        'warning'
+      );
+      return;
+    }
+    const aov = matchedKoc?.avgOrderValue || matchedKoc?.aov || 0;
+    const calcOrders = (gmv: number) => (aov > 0 && gmv > 0 ? Math.max(1, Math.round(gmv / aov)) : 0);
+    const d30Views = Math.round(realViews);
+    const d30Gmv = Math.round(realGmv30);
     patchJob(
       d.id,
       job.id,
       cur => ({
         ...cur,
         performance: {
-          d14: { views: d14Views, orders: Math.max(1, Math.round(d14Gmv / aov)), gmv: d14Gmv },
-          d30: { views: d30Views, orders: Math.max(1, Math.round(d30Gmv / aov)), gmv: d30Gmv },
-          d60: { views: d60Views, orders: Math.max(1, Math.round(d60Gmv / aov)), gmv: d60Gmv },
+          d14: cur.performance?.d14 || { views: 0, orders: 0, gmv: 0 },
+          d30: { views: d30Views, orders: calcOrders(d30Gmv), gmv: d30Gmv },
+          d60: cur.performance?.d60 || { views: 0, orders: 0, gmv: 0 },
         },
       }),
-      `Đồng bộ hiệu suất D14/D30/D60 từ UpAffiliate cho ${job.code}`
+      `Đồng bộ hiệu suất thực tế từ UpAffiliate cho ${job.code}`
     );
-    notify(`Đã đồng bộ hiệu suất D14/D30/D60 từ UpAffiliate cho ${job.code} (GMV 30d: ${fmt(d30Gmv)}đ).`, 'success');
+    notify(`Đã đồng bộ hiệu suất thực tế từ UpAffiliate cho ${job.code} (GMV 30d: ${fmt(d30Gmv)}đ).`, 'success');
   };
 
   const removeJobFromDeal = (d: PlanDeal, job: DealJob) => {

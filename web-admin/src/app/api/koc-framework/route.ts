@@ -20,6 +20,12 @@ function fail(e: unknown) {
   return NextResponse.json({ error: 'Không truy cập được sổ hợp đồng nguyên tắc. Thử lại sau.' }, { status: 503 });
 }
 
+const maskCode = (v?: string) => {
+  const clean = (v || '').trim();
+  if (clean.length <= 4) return clean;
+  return `${'*'.repeat(Math.max(3, clean.length - 4))}${clean.slice(-4)}`;
+};
+
 // GET /api/koc-framework?handles=a,b — hợp đồng nguyên tắc của các KOC (hỗ trợ cả HĐNT MCN dùng chung cho nhiều kênh coveredHandles)
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
@@ -27,8 +33,20 @@ export async function GET(request: NextRequest) {
   try {
     const rec = await readRecord<FrameworkData>(KEY, EMPTY);
     const allItems = rec.data.items || [];
+    const canSeeFullSensitive = ['ADMIN', 'MANAGER', 'DIRECTOR', 'LEADER', 'LEGAL', 'FINANCE', 'SIGN_ADMIN'].includes(
+      actor.role
+    );
     const raw = request.nextUrl.searchParams.get('handles');
-    if (!raw) return NextResponse.json({ items: allItems });
+    if (!raw) {
+      const items = canSeeFullSensitive
+        ? allItems
+        : allItems.map(it => ({
+            ...it,
+            taxOrCccd: maskCode(it.taxOrCccd),
+            bankAccount: maskCode(it.bankAccount),
+          }));
+      return NextResponse.json({ items });
+    }
     const wanted = Array.from(new Set(raw.split(',').map(normHandle).filter(Boolean)));
     const directMap = new Map(allItems.map(i => [i.id, i]));
     const result: FrameworkContract[] = [];

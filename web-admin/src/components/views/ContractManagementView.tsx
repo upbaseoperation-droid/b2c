@@ -357,6 +357,7 @@ export function ContractManagementView({
           onEdit={() => setScreen({ mode: 'form', editId: record.id })}
           onOpen={id => setScreen({ mode: 'detail', id })}
           onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
+          onCreateSow={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'CONTRACT', parentId: record.id, templateId: record.templateId.replace(/-HDNT$/, '-SOW') } })}
           kocs={kocs}
         />
       ) : (

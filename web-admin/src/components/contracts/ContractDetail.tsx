@@ -40,6 +40,7 @@ export function ContractDetail({
   onEdit,
   onOpen,
   onCreateAcceptance,
+  onCreateSow,
 }: {
   record: ContractRecord;
   data: ContractBootstrap;
@@ -51,6 +52,7 @@ export function ContractDetail({
   onEdit: () => void;
   onOpen: (id: string) => void;
   onCreateAcceptance: () => void;
+  onCreateSow?: () => void;
 }) {
   const me = data.actor;
   const status = contractStatus(record);
@@ -70,7 +72,9 @@ export function ContractDetail({
   const demo = data.demoActors.length > 0;
   const canWithdraw = isOwner && ['IN_REVIEW', 'APPROVED'].includes(record.approval) && !signing;
   const canCheck = record.approval !== 'APPROVED' && !record.signing.length && (isOwner || record.steps.some(s => s.reviewerId === me.id));
-  const hasAcceptance = data.records.some(r => r.parentId === record.id);
+  const childRecords = data.records.filter(r => r.parentId === record.id);
+  const hasAcceptance = childRecords.some(r => isAcceptance(r.templateId));
+  const isFrameworkWithSow = record.templateId.endsWith('-HDNT') && record.templateId !== 'CTV-HDNT';
   const parent = record.parentId ? data.records.find(r => r.id === record.parentId) : undefined;
   const linkedDeal = deals.find(d => d.id === record.dealId || (record.dealCode && d.dealCode === record.dealCode));
   const linkedKoc = kocs.find(
@@ -178,6 +182,11 @@ export function ContractDetail({
               onClick={() => setScreenshotModalOpen(true)}
             >
               Chụp ảnh sản phẩm từ video{shownScreenshots.length > 0 ? ` (${shownScreenshots.length})` : ''}
+            </Button>
+          )}
+          {isFrameworkWithSow && onCreateSow && me.roles.includes('CREATOR') && (
+            <Button variant="secondary" icon={FilePlus2} disabled={busy} onClick={onCreateSow}>
+              Tạo phụ lục SOW
             </Button>
           )}
           {editable && <Button icon={Pencil} onClick={onEdit}>Sửa</Button>}
@@ -298,24 +307,39 @@ export function ContractDetail({
           {/* Quy chuẩn pháp chế & Luồng phê duyệt */}
           {(() => {
             const allFields = previewData?.fields || template?.fields || [];
-            const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
-            const customTokenRaw = (shownValues['token:[Tổng tiền trước thuế/sau thuế]'] || '').replace(/[^\d]/g, '');
-            const customTokenNum = customTokenRaw ? Number(customTokenRaw) : 0;
-            const parsedContractValue = Math.max(
-              customTokenNum,
-              moneyFields.reduce((max, f) => {
-                const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
-                const num = raw ? Number(raw) : 0;
-                return num > max ? num : max;
-              }, 0),
+            const parseNum = (val?: string) => {
+              const raw = (val || '').replace(/[^\d]/g, '');
+              return raw ? Number(raw) : 0;
+            };
+            const baseField =
+              allFields.find(f => f.source === 'netTotal') ||
+              allFields.find(f => f.source === 'lineTotal') ||
+              allFields.find(f => f.source === 'unitPrice');
+            const customTokenNum = parseNum(
+              shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
+                shownValues['token:[Thù lao trọn gói]'] ||
+                shownValues['token:[Thành tiền (VNĐ)]'],
             );
+            const moneyFields = allFields.filter(
+              f => (f.group === 'MONEY' || f.kind === 'money') && f.source !== 'grossTotal' && f.source !== 'vatAmount' && f.source !== 'pitAmount',
+            );
+            const baseContractValue =
+              (baseField ? parseNum(shownValues[baseField.key]) : 0) ||
+              customTokenNum ||
+              moneyFields.reduce((max, f) => Math.max(max, parseNum(shownValues[f.key])), 0);
+            const advField = allFields.find(f => f.source === 'advanceAmount');
+            const parsedAdvance =
+              (advField ? parseNum(shownValues[advField.key]) : 0) ||
+              parseNum(shownValues['token:[Số tiền tạm ứng đợt 1]']) ||
+              linkedDeal?.advanceAmount ||
+              0;
             const ruleEvaluation = evaluateContractRules({
               koc: linkedKoc,
               deal: linkedDeal,
               kind: isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT',
-              totalValue: parsedContractValue || linkedDeal?.totalValue || 0,
-              advanceAmount: linkedDeal?.advanceAmount || 0,
-              actualSettledValue: parsedContractValue,
+              totalValue: linkedDeal?.totalValue || baseContractValue || 0,
+              advanceAmount: parsedAdvance,
+              actualSettledValue: baseContractValue > 0 ? baseContractValue : undefined,
               hasCustomTerms: record.hasCustomTerms,
               isKolForm: record.isKocOwnForm || template?.scope === 'KOC_CUSTOM',
               availableTemplates: data.templates,
@@ -366,30 +390,56 @@ export function ContractDetail({
           {/* Đối soát tài chính & hạn mức Booking (Dành cho Kế toán & Lead) */}
           {(() => {
             const allFields = previewData?.fields || template?.fields || [];
-            const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
-            const customTokenRaw = (shownValues['token:[Tổng tiền trước thuế/sau thuế]'] || '').replace(/[^\d]/g, '');
-            const customTokenNum = customTokenRaw ? Number(customTokenRaw) : 0;
-            const parsedContractValue = Math.max(
-              customTokenNum,
-              moneyFields.reduce((max, f) => {
-                const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
-                const num = raw ? Number(raw) : 0;
-                return num > max ? num : max;
-              }, 0),
+            const parseNum = (val?: string) => {
+              const raw = (val || '').replace(/[^\d]/g, '');
+              return raw ? Number(raw) : 0;
+            };
+            const baseField =
+              allFields.find(f => f.source === 'netTotal') ||
+              allFields.find(f => f.source === 'lineTotal') ||
+              allFields.find(f => f.source === 'unitPrice');
+            const grossField = allFields.find(f => f.source === 'grossTotal');
+            const pitField = allFields.find(f => f.source === 'pitAmount');
+            const vatField = allFields.find(f => f.source === 'vatAmount');
+            const remField = allFields.find(f => f.source === 'remainingAmount');
+            const customTokenNum = parseNum(
+              shownValues['token:[Tổng tiền trước thuế/sau thuế]'] ||
+                shownValues['token:[Thù lao trọn gói]'] ||
+                shownValues['token:[Thành tiền (VNĐ)]'],
             );
+            const moneyFields = allFields.filter(
+              f => (f.group === 'MONEY' || f.kind === 'money') && f.source !== 'grossTotal' && f.source !== 'vatAmount' && f.source !== 'pitAmount',
+            );
+            const baseContractValue =
+              (baseField ? parseNum(shownValues[baseField.key]) : 0) ||
+              customTokenNum ||
+              moneyFields.reduce((max, f) => Math.max(max, parseNum(shownValues[f.key])), 0);
+            const grossContractValue = (grossField ? parseNum(shownValues[grossField.key]) : 0) || baseContractValue;
             const dealValue = linkedDeal?.totalValue || 0;
-            const diff = dealValue > 0 && parsedContractValue > 0 ? parsedContractValue - dealValue : 0;
+            const diff = dealValue > 0 && baseContractValue > 0 ? baseContractValue - dealValue : 0;
             const subject = template?.subject || 'Cá nhân';
             const isIndividual = subject === 'Cá nhân' || subject === 'CTV tháng';
-            const pitWithholding = isIndividual && parsedContractValue >= 2000000 ? Math.round(parsedContractValue * 0.1) : 0;
-            const netPayout = parsedContractValue > 0 ? parsedContractValue - pitWithholding : 0;
+            const explicitPit = pitField ? parseNum(shownValues[pitField.key]) : 0;
+            const explicitVat = vatField ? parseNum(shownValues[vatField.key]) : 0;
+            const pitWithholding =
+              explicitPit || (isIndividual && baseContractValue >= 2000000 ? Math.round(baseContractValue * 0.1) : 0);
+            const remainingPayout = remField ? parseNum(shownValues[remField.key]) : 0;
+            const netPayout =
+              remainingPayout ||
+              (baseContractValue > 0
+                ? grossContractValue > baseContractValue && isIndividual
+                  ? baseContractValue
+                  : isIndividual
+                    ? baseContractValue - pitWithholding
+                    : grossContractValue
+                : 0);
 
             return (
               <section className="grid gap-3">
                 <SectionHeader
                   title="Đối soát tài chính & Hạn mức Booking"
                   actions={
-                    dealValue > 0 && parsedContractValue > 0 ? (
+                    dealValue > 0 && baseContractValue > 0 ? (
                       <Status tone={diff === 0 ? 'positive' : diff > 0 ? 'critical' : 'warning'}>
                         {diff === 0
                           ? 'Khớp 100% giá trị Booking'
@@ -404,12 +454,16 @@ export function ContractDetail({
                 />
                 <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
                   <div className="space-y-1">
-                    <span className="text-2xs text-ink-3 block">Giá trị ghi trên hợp đồng</span>
+                    <span className="text-2xs text-ink-3 block">Giá trị thù lao dịch vụ</span>
                     <span className="text-sm font-semibold text-ink tabular-nums block">
-                      {parsedContractValue > 0 ? `${parsedContractValue.toLocaleString('vi-VN')} đ` : 'Chưa điền số tiền'}
+                      {baseContractValue > 0 ? `${baseContractValue.toLocaleString('vi-VN')} đ` : 'Chưa điền số tiền'}
                     </span>
                     <span className="text-2xs text-ink-3 block">
-                      {template?.kind === 'ACCEPTANCE' ? 'Giá trị nghiệm thu quyết toán' : 'Tổng thù lao dịch vụ'}
+                      {grossContractValue > baseContractValue
+                        ? `Tổng gồm thuế: ${grossContractValue.toLocaleString('vi-VN')} đ`
+                        : template?.kind === 'ACCEPTANCE'
+                          ? 'Giá trị nghiệm thu quyết toán'
+                          : 'Tổng thù lao dịch vụ'}
                     </span>
                   </div>
 
@@ -432,7 +486,9 @@ export function ContractDetail({
                         ? pitWithholding > 0
                           ? `TNCN 10%: ${pitWithholding.toLocaleString('vi-VN')} đ`
                           : 'TNCN 0 đ (< 2 triệu)'
-                        : 'Xuất hóa đơn theo ĐKKD'}
+                        : explicitVat > 0
+                          ? `VAT: ${explicitVat.toLocaleString('vi-VN')} đ`
+                          : 'Xuất hóa đơn theo ĐKKD'}
                     </span>
                     <span className="text-2xs text-ink-3 block">
                       {isIndividual ? 'Khấu trừ tại nguồn trước khi chi' : `Đối tác ${subject} xuất hóa đơn`}
@@ -529,8 +585,21 @@ export function ContractDetail({
               <Info label="Nhãn hàng">{record.brand}</Info>
               {record.dealCode && <Info label="Booking"><span className="font-code">{record.dealCode}</span></Info>}
               {parent && (
-                <Info label="Hợp đồng gốc">
+                <Info label={record.templateId.endsWith('-SOW') ? 'Hợp đồng nguyên tắc gốc' : 'Hồ sơ gốc'}>
                   <button type="button" className="text-accent hover:underline text-left" onClick={() => onOpen(parent.id)}>{parent.title}</button>
+                </Info>
+              )}
+              {childRecords.length > 0 && (
+                <Info label="Phụ lục SOW / Nghiệm thu">
+                  <ul className="grid gap-1">
+                    {childRecords.map(ch => (
+                      <li key={ch.id}>
+                        <button type="button" className="text-accent hover:underline text-left text-xs" onClick={() => onOpen(ch.id)}>
+                          {ch.title}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </Info>
               )}
               {record.internalNotes && (

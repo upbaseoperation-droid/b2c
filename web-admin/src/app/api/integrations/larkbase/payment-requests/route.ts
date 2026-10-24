@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchLarkAppAccessToken, getLarkConfig, getAuthenticatedUser } from '@/lib/larkAuth';
+import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
 import {
   buildLarkPaymentRequestSlip,
   type DealPaymentLedgerEntry,
@@ -14,8 +15,14 @@ export const dynamic = 'force-dynamic';
 // Kho lưu trữ các phiếu ĐNTT / Tạm ứng đã đẩy sang Lark Approval & Larkbase trong phiên
 const memoryPaymentRequestSlips = new Map<string, LarkPaymentRequestSlip>();
 
+function maskSensitiveCode(val?: string): string {
+  const s = (val || '').trim();
+  if (s.length <= 4) return s;
+  return `${'*'.repeat(Math.max(3, s.length - 4))}${s.slice(-4)}`;
+}
+
 function seedInitialPaymentSlips() {
-  if (memoryPaymentRequestSlips.size > 0) return;
+  if (memoryPaymentRequestSlips.size > 0 || process.env.NODE_ENV === 'production') return;
   const sampleSlip: LarkPaymentRequestSlip = {
     id: 'SLIP-202610-001',
     slipCode: 'DNTT-202610-001',
@@ -174,9 +181,25 @@ export async function GET(request: NextRequest) {
 
   seedInitialPaymentSlips();
   const config = getLarkPaymentIntegrationConfig();
-  const slips = Array.from(memoryPaymentRequestSlips.values()).sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt)
-  );
+  const canSeeFullPayee =
+    isStaffGlobalAdminOrManager(user) ||
+    ['FINANCE', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role) ||
+    Boolean(user.permissions?.includes('canApprovePayment'));
+  const slips = Array.from(memoryPaymentRequestSlips.values())
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(slip => {
+      if (canSeeFullPayee || slip.createdBy.trim().toLowerCase() === (user.name || '').trim().toLowerCase()) {
+        return slip;
+      }
+      return {
+        ...slip,
+        payee: {
+          ...slip.payee,
+          legalId: maskSensitiveCode(slip.payee.legalId),
+          bankAccount: maskSensitiveCode(slip.payee.bankAccount),
+        },
+      };
+    });
 
   return NextResponse.json({
     config: {
@@ -301,6 +324,32 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // S4: Kiểm tra phạm vi thương hiệu / PIC đối với chuyên viên lập phiếu
+    const isGlobalOrFinance =
+      isStaffGlobalAdminOrManager(user) ||
+      ['FINANCE', 'LEADER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(user.role);
+    if (!isGlobalOrFinance && Array.isArray(user.assignedBrands) && user.assignedBrands.length > 0) {
+      const allowedBrands = new Set(user.assignedBrands.map(b => b.trim().toLowerCase()));
+      const userNameLower = (user.name || '').trim().toLowerCase();
+      if (!allowedBrands.has('all_brands') && !allowedBrands.has('tất cả nhãn hàng') && !allowedBrands.has('*')) {
+        const outOfScope = deals.find(d => {
+          const brandLower = (d.brandName || '').trim().toLowerCase();
+          const picLower = (d.bookingPic || '').trim().toLowerCase();
+          return brandLower && !allowedBrands.has(brandLower) && picLower !== userNameLower;
+        });
+        if (outOfScope) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'FORBIDDEN_BRAND_SCOPE',
+              message: `Bạn không thuộc phạm vi phụ trách thương hiệu "${outOfScope.brandName}" của mã đơn ${outOfScope.dealCode}.`,
+            },
+            { status: 403 }
+          );
+        }
+      }
     }
 
     // 1. Chạy động cơ kiểm tra chặn cứng 100% ngay trên máy chủ

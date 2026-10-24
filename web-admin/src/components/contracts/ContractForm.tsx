@@ -14,7 +14,7 @@ import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { VideoProductScreenshotModal } from './VideoProductScreenshotModal';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
-import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
+import { GROUP_ORDER, formatMoneyInput, inferAcceptanceTemplateId, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
 import { evaluateContractRules } from '../../lib/contracts/contractRules';
 import { parseDocxInBrowser } from './docxClientParser';
 
@@ -68,11 +68,8 @@ export function ContractForm({
   const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
     record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.templateId ? (isAcceptance(init.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT',
   );
-  const inferAcceptanceTemplate = (parentTplId?: string) => {
-    if (!parentTplId) return '';
-    const candidate = parentTplId.endsWith('-HDNT') ? parentTplId.replace(/-HDNT$/, '-VID-BBNT') : parentTplId.endsWith('-HD') ? parentTplId.replace(/-HD$/, '-BBNT') : `${parentTplId.split('-')[0]}-BBNT`;
-    return data.templates.some(t => t.id === candidate) ? candidate : '';
-  };
+  const inferAcceptanceTemplate = (parentTplId?: string) =>
+    inferAcceptanceTemplateId(parentTplId, data.templates);
   const [templateId, setTemplateId] = useState(
     record?.templateId ||
       init?.templateId ||
@@ -168,6 +165,7 @@ export function ContractForm({
           const result = prefill(uniqueFields(r.template), {}, {
             koc,
             deal,
+            brand,
             existingRecords: data.records,
             parentRecord,
             parentFields: parentTemplate ? uniqueFields(parentTemplate) : [],
@@ -210,7 +208,7 @@ export function ContractForm({
     }
     const nextTemplate = templateFor(k, kind, d, data.templates);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
-    else if (template) { const result = prefill(fields, values, { koc: k, deal: d, existingRecords: data.records }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
+    else if (template) { const result = prefill(fields, values, { koc: k, deal: d, brand: d.brandName, existingRecords: data.records, parentRecord, parentFields: parentTemplate ? uniqueFields(parentTemplate) : [] }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
   };
 
   const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
@@ -366,7 +364,13 @@ export function ContractForm({
   const templates = data.templates.filter(t => t.kind === kind && t.active !== false);
   // SOW phải gắn với hợp đồng nguyên tắc gốc của KOC
   const isSow = templateId.endsWith('-SOW');
-  const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (isSow ? r.templateId.endsWith('-HDNT') : !dealId || !r.dealId || r.dealId === dealId));
+  const parents = data.records.filter(r =>
+    !isAcceptance(r.templateId) &&
+    r.id !== record?.id &&
+    (isSow
+      ? r.templateId.endsWith('-HDNT') && (!targetKocId || !r.kocId || r.kocId === targetKocId)
+      : !dealId || !r.dealId || r.dealId === dealId || (targetKocId && r.kocId === targetKocId)),
+  );
   const dealOptions = useMemo(() => {
     const slice = deals.slice(0, 200);
     if (deal && !slice.some(d => d.id === deal.id)) {
@@ -396,8 +400,10 @@ export function ContractForm({
   };
 
   const numericTotal = useMemo(() => {
+    const netField = fields.find(f => f.source === 'netTotal') || fields.find(f => f.source === 'lineTotal');
     const raw =
       (isKocOwnForm ? customContractValue : '') ||
+      (netField ? values[netField.key] : '') ||
       values['token:[Tổng tiền trước thuế/sau thuế]'] ||
       values['token:[Thù lao trọn gói]'] ||
       values['token:[Thành tiền (VNĐ)]'] ||
@@ -408,13 +414,14 @@ export function ContractForm({
       deal?.totalValue || dealRecord?.paymentAmount || dealRecord?.contractAmount || 0
     );
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackAmount;
-  }, [values, deal, isKocOwnForm, customContractValue]);
+  }, [values, fields, deal, isKocOwnForm, customContractValue]);
 
   const numericAdvance = useMemo(() => {
-    const raw = values['token:[Số tiền tạm ứng đợt 1]'] || '';
+    const advField = fields.find(f => f.source === 'advanceAmount');
+    const raw = (advField ? values[advField.key] : '') || values['token:[Số tiền tạm ứng đợt 1]'] || '';
     const parsed = parseInt(raw.replace(/[^\d]/g, ''), 10);
     return Number.isFinite(parsed) ? parsed : (deal?.advanceAmount || 0);
-  }, [values, deal]);
+  }, [values, fields, deal]);
 
   const ruleEval = useMemo(() => {
     const selectedTpl = data.templates.find(t => t.id === templateId);
@@ -595,7 +602,24 @@ export function ContractForm({
                   </div>
                 </Field>
                 <Field label={isKocOwnForm ? 'Phân loại pháp nhân / Mẫu đối chiếu' : 'Mẫu pháp chế'} htmlFor="ct-template">
-                  <Select id="ct-template" required value={templateId} disabled={editing} onChange={e => { setTemplate(null); setValues({}); setTemplateId(e.target.value); }}>
+                  <Select
+                    id="ct-template"
+                    required
+                    value={templateId}
+                    disabled={editing}
+                    onChange={e => {
+                      const nextTpl = e.target.value;
+                      setTemplate(null);
+                      setValues({});
+                      setTemplateId(nextTpl);
+                      if (nextTpl.endsWith('-SOW') && !parentId) {
+                        const matchingHdnt = data.records.find(
+                          r => r.templateId.endsWith('-HDNT') && ((targetKocId && r.kocId === targetKocId) || (partner && r.partner === partner)),
+                        );
+                        if (matchingHdnt) setParentId(matchingHdnt.id);
+                      }
+                    }}
+                  >
                     <option value="">Chọn mẫu</option>
                     {kocTemplates.length > 0 && (
                       <optgroup label={`Mẫu duyệt riêng KOC (${kocTemplates.length})`}>
@@ -654,6 +678,18 @@ export function ContractForm({
                             setTemplate(null);
                             setValues({});
                             setTemplateId(inferredTpl);
+                          } else if (template) {
+                            const pTpl = data.templates.find(t => t.id === pRec.templateId);
+                            const result = prefill(fields, values, {
+                              koc,
+                              deal,
+                              brand: brand || pRec.brand,
+                              existingRecords: data.records,
+                              parentRecord: pRec,
+                              parentFields: pTpl ? uniqueFields(pTpl) : [],
+                            });
+                            setValues(result.values);
+                            setPrefilled(new Set([...prefilled, ...result.filled]));
                           }
                         }
                       }}

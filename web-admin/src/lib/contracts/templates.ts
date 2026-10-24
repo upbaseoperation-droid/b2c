@@ -47,11 +47,15 @@ function replaceRange(xml: string, start: number, end: number, value: string) {
     const next = prefix + (inserted ? '' : value) + suffix; inserted = true;
     return `<w:t${attrs.includes('xml:space') ? attrs : attrs + ' xml:space="preserve"'}>${encodeXml(next)}</w:t>`;
   });
-  if (start === end && !inserted) return replaced.replace('</w:p>', `<w:r><w:t xml:space="preserve">${encodeXml(value)}</w:t></w:r></w:p>`);
+  if (start === end && !inserted) {
+    const plain = paragraphText(replaced);
+    const sep = plain.endsWith(':') ? ' ' : '';
+    return replaced.replace('</w:p>', `<w:r><w:t xml:space="preserve">${encodeXml(sep + value)}</w:t></w:r></w:p>`);
+  }
   return replaced;
 }
 /** Chữ giữ chỗ trong ô bảng của mẫu (“Tên Công ty”, “Số… cấp ngày … tại…”, “Liệt kê đơn giá”): cả ô là chỗ điền. */
-const PLACEHOLDER = /^(Tên (Công ty|Hộ kinh doanh)|MST |Địa chỉ (công ty|hộ kinh doanh)|Họ và tên$|số\s?…|Số\s?…|…|\.{3}|Liệt kê )/i;
+const PLACEHOLDER = /^(Tên (Công ty|Hộ kinh doanh)|MST |Địa chỉ (công ty|hộ kinh doanh)|Họ và tên$|\(?Nếu có\)?$|số\s?…|Số\s?…|Điều\s*…|Nội dung review sửa đổi|…|\.{3}|Liệt kê )/i;
 const PARTY_REQUIRED = /^(BÊN B|CCCD|Mã số thuế|Địa chỉ|Số điện thoại|Email|Chủ hộ|Người đại diện)/i;
 /** Tên ngắn của một dòng bảng: phần đầu trước dấu phẩy, “…” hoặc ngoặc. */
 const shortName = (text: string) => text.split(/[,…:(]|\.{2,}/)[0].trim().slice(0, 60);
@@ -77,7 +81,8 @@ function extractFields(xml: string, part: string): ContractField[] {
       };
       const fillable = (c: { text: string }) => !c.text || PLACEHOLDER.test(c.text);
       if (cells.length >= 3 && cells[1].text === ':') {
-        if (fillable(cells[2])) add(2, cells[0].text, PARTY_REQUIRED.test(cells[0].text));
+        const isOptionalHint = /^\(?Nếu có\)?$/i.test(cells[2].text);
+        if (fillable(cells[2])) add(2, cells[0].text, PARTY_REQUIRED.test(cells[0].text) && !isOptionalHint);
         return;
       }
       if (header && r > 0 && cells.length === header.length) {
@@ -95,14 +100,50 @@ function extractFields(xml: string, part: string): ContractField[] {
   ps.forEach((p, index) => {
     const text = paragraphText(p[0]); const cell = cellFields.get(index);
     if (cell) result.push({ key: `${part}:p${index}:cell`, part, paragraph: index, ...cell });
+    const pFields: ContractField[] = [];
+    if (!cell && /^(?:Tên chủ tài khoản|Số tài khoản|(?:Tại\s+)?Ngân hàng)\s*:\s*$/i.test(text)) {
+      if (/^Tên chủ tài khoản/i.test(text)) {
+        pFields.push({ key: 'token:[Tên chủ tài khoản]', part, paragraph: index, start: text.length, end: text.length, label: 'Tên chủ tài khoản', context: text, required: true });
+      } else if (/^Số tài khoản/i.test(text)) {
+        pFields.push({ key: 'token:[Số tài khoản]', part, paragraph: index, start: text.length, end: text.length, label: 'Số tài khoản', context: text, required: true });
+      } else if (/Ngân hàng/i.test(text)) {
+        pFields.push({ key: 'token:[Tại Ngân hàng]', part, paragraph: index, start: text.length, end: text.length, label: 'Tại Ngân hàng', context: text, required: true });
+      }
+    }
+    if (!cell && /\/(?:HĐNT|HĐDV|SOW|BBNT)\/UPBASE-/i.test(text)) {
+      const isRefLine = /Kèm theo|Căn cứ/i.test(text);
+      for (const m of text.matchAll(/ddmmyy(?=\/(?:HĐNT|HĐDV|SOW|BBNT)\/UPBASE-)/g)) {
+        const afterKind = text.slice(m.index! + 6, m.index! + 12);
+        const tokenKey =
+          isRefLine && afterKind.startsWith('/HĐNT/')
+            ? 'token:[Ngày HĐNT]'
+            : isRefLine && afterKind.startsWith('/SOW/')
+              ? 'token:[Ngày SOW]'
+              : 'token:[dd.mm.yy]';
+        const tokenLabel = tokenKey.slice('token:['.length, -1);
+        pFields.push({ key: tokenKey, part, paragraph: index, start: m.index!, end: m.index! + 6, label: tokenLabel, context: text || previous, required: true });
+      }
+      for (const m of text.matchAll(/UPBASE-(BRAND)-/g)) {
+        const brandStart = m.index! + 'UPBASE-'.length;
+        pFields.push({ key: 'token:[BRAND]', part, paragraph: index, start: brandStart, end: brandStart + 5, label: 'BRAND', context: text || previous, required: true });
+      }
+      for (const m of text.matchAll(/UPBASE-(?:BRAND-)?(ID KOC)/g)) {
+        const idStart = m.index! + m[0].length - 'ID KOC'.length;
+        pFields.push({ key: 'token:[ID KOC]', part, paragraph: index, start: idStart, end: idStart + 6, label: 'ID KOC', context: text || previous, required: true });
+      }
+    }
     // Các token rõ ràng và chỗ trống thuộc dòng khai báo; không coi dấu … trong văn xuôi là trường.
     const pattern = /\[[^\]\r\n]{1,60}\]|\.{3,}|_{3,}|…+/g;
-    if (!cell && /\[|Hôm nay|tháng.*\/2026|điền|trong.{0,12}ngày|ngày.{0,12}tháng|tạm ứng|thanh toán|hoa hồng|mã code|Sản xuất và đăng tải|gắn link\/giỏ hàng|Sử dụng hình ảnh trong|Tham dự sự kiện|Đăng 1 post/i.test(text)) {
+    if (!cell && /\[|Hôm nay|tháng.*\/202|điền|trong.{0,12}ngày|ngày.{0,12}tháng|tạm ứng|thanh toán|hoa hồng|mã code|Sản xuất và đăng tải|gắn link\/giỏ hàng|Sử dụng hình ảnh|Tham dự sự kiện|Đăng 1 post|Là tài khoản mạng xã hội|Thời gian đăng tải|Ngày đăng tải|Thực hiện phiên livestream|Triển khai trên nền tảng|Cho phép Bên A sử dụng hình ảnh|Theo ủy quyền số/i.test(text)) {
       for (const match of text.matchAll(pattern)) {
         const token = match[0]; const start = match.index!;
         const key = token.startsWith('[') ? `token:${token}` : `${part}:p${index}:${start}`;
-        result.push({ key, part, paragraph: index, start, end: start + token.length, label: token.startsWith('[') ? token.slice(1, -1) : `${text.slice(Math.max(0, start - 35), start)} [điền] ${text.slice(start + token.length, start + token.length + 25)}`, context: text || previous, required: token.startsWith('[') || /^Hôm nay/.test(text) });
+        pFields.push({ key, part, paragraph: index, start, end: start + token.length, label: token.startsWith('[') ? token.slice(1, -1) : `${text.slice(Math.max(0, start - 35), start)} [điền] ${text.slice(start + token.length, start + token.length + 25)}`, context: text || previous, required: (token.startsWith('[') || /^Hôm nay/.test(text)) && !/Theo ủy quyền số/i.test(text) });
       }
+    }
+    if (pFields.length > 0) {
+      pFields.sort((a, b) => (a.start ?? 0) - (b.start ?? 0));
+      result.push(...pFields);
     }
     if (text.trim()) previous = text;
   });
@@ -122,23 +163,32 @@ const PARTY_TITLES: PartyRule[] = [
   [/^Chủ hộ/i, () => 'Họ tên chủ hộ', 'ownerName', 'text'],
   [/^Người đại diện/i, () => 'Người đại diện', 'representative', 'text'],
   [/^Chức vụ/i, () => 'Chức vụ người đại diện', undefined, 'text'],
+  [/^Tên\/Nghệ danh/i, () => 'Tên/Nghệ danh KOL/KOC/Talent', 'ownerName', 'text'],
 ];
 type ProseRule = [RegExp, string[], FieldGroup, FieldKind[], Array<FieldSource | undefined>];
 const PROSE: ProseRule[] = [
   [/^Hôm nay, ngày/, ['Ngày ký', 'Tháng ký', 'Năm ký (chữ số cuối, ví dụ 6 cho 2026)'], 'DATE', ['number', 'number', 'number'], ['signDay', 'signMonth', 'signYearDigit']],
-  [/đẩy doanh số bán hàng với sản phẩm/, ['Sản phẩm'], 'SCOPE', ['text'], ['product']],
+  [/Là tài khoản mạng xã hội có link/i, ['Link kênh mạng xã hội'], 'PARTY', ['text'], ['channelLink']],
+  [/Theo ủy quyền số/i, ['Số văn bản ủy quyền (nếu có)', 'Ngày ủy quyền'], 'PARTY', ['text', 'date'], []],
+  [/^(?:Thời gian|Ngày) đăng tải \(air video\)/i, ['Thời gian đăng tải (air video)'], 'SCOPE', ['date'], ['airDate']],
+  [/đẩy doanh số bán hàng với sản phẩm/, ['Sản phẩm', 'Nhãn hiệu', 'Thời gian đăng tải (air video)'], 'SCOPE', ['text', 'text', 'date'], ['product', 'brand', 'airDate']],
   [/gắn link\/giỏ hàng sản phẩm/, ['Sản phẩm gắn giỏ hàng'], 'SCOPE', ['text'], ['product']],
   [/mã code để chạy quảng cáo/, ['Số ngày cấp mã quảng cáo'], 'SCOPE', ['number'], []],
+  [/Sử dụng hình ảnh và video trong/i, ['Số ngày sử dụng hình ảnh và video'], 'SCOPE', ['number'], []],
   [/Sử dụng hình ảnh trong/, ['Số ngày sử dụng hình ảnh', 'Ngày bắt đầu sử dụng hình ảnh'], 'SCOPE', ['number', 'date'], []],
+  [/Thực hiện phiên livestream/i, ['Sản phẩm livestream', 'Nhãn hiệu', 'Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'text', 'text', 'date', 'number'], ['product', 'brand', undefined, 'channelLink', undefined, 'airDate', undefined]],
+  [/Triển khai trên nền tảng/i, ['Nền tảng livestream', 'Kênh livestream', 'Khung giờ livestream', 'Ngày phát sóng livestream', 'Thời lượng lên hình tối thiểu (phút)'], 'SCOPE', ['text', 'text', 'text', 'date', 'number'], [undefined, 'channelLink', undefined, 'airDate', undefined]],
+  [/Cho phép Bên A sử dụng hình ảnh/i, ['Thời hạn sử dụng hình ảnh livestream (tháng)'], 'SCOPE', ['number'], []],
+  [/hưởng hoa hồng affiliate với tỷ lệ/i, ['Hoa hồng affiliate livestream (%)'], 'MONEY', ['number'], []],
   [/Tham dự sự kiện/, ['Số giờ tham dự sự kiện', 'Ngày tham dự sự kiện'], 'SCOPE', ['number', 'date'], []],
   [/Đăng 1 post trên Facebook/, ['Trang Facebook đăng bài'], 'SCOPE', ['text'], []],
   [/Hoa hồng organic/, ['Hoa hồng organic (%)'], 'MONEY', ['number'], []],
   [/Hoa hồng chạy ads/, ['Hoa hồng chạy ads (%)'], 'MONEY', ['number'], []],
-  [/Lần 1.*tạm ứng/, ['Số tiền tạm ứng lần 1', 'Hạn tạm ứng (ngày làm việc)'], 'MONEY', ['money', 'number'], []],
+  [/Lần 1.*tạm ứng/, ['Số tiền tạm ứng lần 1', 'Hạn tạm ứng (ngày làm việc)'], 'MONEY', ['money', 'number'], ['advanceAmount', undefined]],
   [/Lần 2/, ['Hạn thanh toán lần 2 (ngày làm việc)'], 'MONEY', ['number'], []],
-  [/tổng giá trị là/, ['Số tiền còn phải thanh toán', 'Số tiền bằng chữ'], 'MONEY', ['money', 'text'], []],
-  [/Phí dịch vụ Bên A phải thanh toán/, ['Phí dịch vụ phải thanh toán'], 'MONEY', ['money'], []],
-  [/THÁNG …|tháng …/i, ['Tháng nghiệm thu'], 'DATE', ['number'], []],
+  [/tổng giá trị là/, ['Số tiền còn phải thanh toán', 'Số tiền bằng chữ'], 'MONEY', ['money', 'text'], ['remainingAmount', 'amountInWords']],
+  [/Phí dịch vụ Bên A phải thanh toán/, ['Phí dịch vụ phải thanh toán'], 'MONEY', ['money'], ['netTotal']],
+  [/THÁNG\s*(?:\.{2,}|…)|tháng\s*(?:\.{2,}|…)/i, ['Tháng nghiệm thu', 'Năm nghiệm thu (chữ số cuối)'], 'DATE', ['number', 'number'], ['signMonth', 'signYearDigit']],
 ];
 function describeFields(fields: ContractField[], subject: string): ContractField[] {
   const titles = new Map<string, number>(); const byKey = new Map<string, string>();
@@ -154,12 +204,37 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
   const seenInParagraph = new Map<string, number>();
   return fields.map((f): ContractField => {
     if (f.key === 'token:[dd.mm.yy]') return { ...f, title: 'Ngày lập (dd.mm.yy) trong số hợp đồng', group: 'NUMBER', kind: 'text', source: 'docDate' };
+    if (f.key === 'token:[Ngày HĐNT]') return { ...f, title: 'Ngày lập HĐNT gốc (dd.mm.yy)', group: 'NUMBER', kind: 'text', source: 'parentContractDate' };
+    if (f.key === 'token:[Ngày SOW]') return { ...f, title: 'Ngày lập Phụ lục SOW (dd.mm.yy)', group: 'NUMBER', kind: 'text', source: 'parentSowDate' };
+    if (f.key === 'token:[BRAND]') return { ...f, title: 'Mã nhãn hàng (BRAND) trong số hợp đồng', group: 'NUMBER', kind: 'text', source: 'brand' };
     if (f.key === 'token:[ID KOC]') return { ...f, title: 'Mã KOC trong số hợp đồng', group: 'NUMBER', kind: 'text', source: 'kocId' };
+    if (f.key === 'token:[Tên chủ tài khoản]') return { ...f, title: 'Tên chủ tài khoản ngân hàng', group: 'PARTY', kind: 'text', source: 'bankAccountName' };
+    if (f.key === 'token:[Số tài khoản]') return { ...f, title: 'Số tài khoản ngân hàng', group: 'PARTY', kind: 'text', source: 'bankAccountNumber' };
+    if (f.key === 'token:[Tại Ngân hàng]') return { ...f, title: 'Tại Ngân hàng', group: 'PARTY', kind: 'text', source: 'bankName' };
     if (f.key.endsWith(':cell')) {
       const party = !f.label.includes(' · ') && PARTY_TITLES.find(([re]) => re.test(f.label));
       if (party) return { ...f, title: party[1](subject), group: 'PARTY', kind: party[3], source: party[2] };
+      if (/Nội dung điều chỉnh\/áp dụng theo SOW|^Điều\s*…/i.test(f.label)) {
+        return { ...f, title: 'Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW', group: 'OTHER', kind: 'long', required: false };
+      }
+      const isSettlementRow = /^(Tổng giá trị|Thuế TNCN|Thuế VAT|Giá trị đã tạm ứng|Chi phí phát sinh|Giá trị Bên A còn phải thanh toán)/i.test(f.label);
+      if (isSettlementRow) {
+        const title = f.label.replace(/^\d+(\.\d+)? · /, '').replace(/ · (Chi phí|Nội dung|Thành tiền)$/i, '');
+        const net = (/chưa bao gồm thuế|thực nhận|^Tổng giá trị nghiệm thu$/i.test(title)) && !/Phụ lục|VAT/i.test(title);
+        const source: FieldSource | undefined =
+          net ? 'netTotal'
+          : /chưa bao gồm thuế VAT/i.test(title) ? 'lineTotal'
+          : /đã bao gồm thuế|Tổng giá trị Hợp đồng/i.test(title) ? 'grossTotal'
+          : /Thuế TNCN/i.test(title) ? 'pitAmount'
+          : /Thuế VAT/i.test(title) ? 'vatAmount'
+          : /Giá trị đã tạm ứng/i.test(title) ? 'advanceAmount'
+          : /Chi phí phát sinh/i.test(title) ? 'adjustmentAmount'
+          : /Giá trị Bên A còn phải thanh toán/i.test(title) ? 'remainingAmount'
+          : undefined;
+        return { ...f, title, group: 'MONEY', kind: 'money', source };
+      }
       const column = f.label.includes(' · ') ? f.label.split(' · ').pop()! : '';
-      const firstRow = /^(Sản xuất và đăng tải|Link video|Dòng 1 )/.test(f.label);
+      const firstRow = /^(Sản xuất và đăng tải|Thực hiện phiên livestream|Link video|Dòng 1 )/.test(f.label);
       if (/Đơn giá|Mức giá/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'money', source: firstRow ? 'unitPrice' : undefined };
       if (/Số lượng/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'number', source: firstRow ? 'quantity' : undefined };
       if (/Thành tiền/i.test(column)) return { ...f, title: f.label, group: 'SCOPE', kind: 'money', source: firstRow ? 'lineTotal' : undefined };

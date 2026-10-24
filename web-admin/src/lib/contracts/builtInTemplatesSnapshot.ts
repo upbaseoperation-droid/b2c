@@ -26,6 +26,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "docDate"
       },
       {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 27,
+        "end": 32,
+        "label": "BRAND",
+        "context": "Số/:[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
         "paragraph": 4,
@@ -140,6 +154,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "PARTY",
         "kind": "text",
         "source": "email"
+      },
+      {
+        "key": "word/document.xml:p58:34",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
       },
       {
         "key": "word/document.xml:p158:109",
@@ -403,7 +431,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p190:cell",
@@ -414,7 +443,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng Giá trị hợp đồng đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p194:64",
@@ -425,7 +455,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -438,9 +468,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 200,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 201,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 202,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p208:14",
@@ -453,7 +525,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p208:27",
@@ -494,6 +567,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -3588,8 +3675,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 40,
-    "requiredFieldCount": 13,
+    "fieldCount": 46,
+    "requiredFieldCount": 18,
     "history": [
       {
         "version": "Ver052026",
@@ -3625,6 +3712,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "docDate"
       },
       {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/BBNT/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
         "paragraph": 4,
@@ -3651,6 +3752,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 52,
+        "end": 57,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số [dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -3814,7 +3929,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -3877,7 +3993,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền còn phải thanh toán",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "remainingAmount"
       },
       {
         "key": "word/document.xml:p105:107",
@@ -3890,7 +4007,50 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền bằng chữ",
         "group": "MONEY",
-        "kind": "text"
+        "kind": "text",
+        "source": "amountInWords"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 109,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -3905,6 +4065,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -5521,8 +5695,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 24,
-    "requiredFieldCount": 15,
+    "fieldCount": 30,
+    "requiredFieldCount": 21,
     "history": [
       {
         "version": "Ver052026",
@@ -5556,6 +5730,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 27,
+        "end": 32,
+        "label": "BRAND",
+        "context": "Số/:[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -5708,6 +5896,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "word/document.xml:p62:34",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
         "key": "word/document.xml:p163:109",
         "part": "word/document.xml",
         "paragraph": 163,
@@ -5852,7 +6054,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p185:64",
@@ -5863,7 +6066,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -5876,9 +6079,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 191,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 192,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 193,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p202:29",
@@ -5891,7 +6136,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p202:42",
@@ -5932,6 +6178,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -9040,8 +9300,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 31,
-    "requiredFieldCount": 14,
+    "fieldCount": 37,
+    "requiredFieldCount": 19,
     "history": [
       {
         "version": "Ver052026",
@@ -9077,6 +9337,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "docDate"
       },
       {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/BBNT/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
         "paragraph": 4,
@@ -9103,6 +9377,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 52,
+        "end": 57,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số [dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -9225,6 +9513,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 46,
+        "start": 50,
+        "end": 55,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng dịch vụ số [dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC] và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -9358,7 +9660,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p82:cell",
@@ -9432,7 +9735,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền còn phải thanh toán",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "remainingAmount"
       },
       {
         "key": "word/document.xml:p90:107",
@@ -9445,7 +9749,50 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền bằng chữ",
         "group": "MONEY",
-        "kind": "text"
+        "kind": "text",
+        "source": "amountInWords"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 93,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 94,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 95,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -9460,6 +9807,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -10916,8 +11277,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 32,
-    "requiredFieldCount": 17,
+    "fieldCount": 39,
+    "requiredFieldCount": 24,
     "history": [
       {
         "version": "Ver052026",
@@ -10951,6 +11312,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 27,
+        "end": 32,
+        "label": "BRAND",
+        "context": "Số/:[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -11076,6 +11451,32 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
+        "key": "word/document.xml:p52:17",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p52:23",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
+      },
+      {
         "key": "word/document.xml:p55:cell",
         "part": "word/document.xml",
         "paragraph": 55,
@@ -11098,6 +11499,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "PARTY",
         "kind": "text",
         "source": "email"
+      },
+      {
+        "key": "word/document.xml:p68:34",
+        "part": "word/document.xml",
+        "paragraph": 68,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
       },
       {
         "key": "word/document.xml:p169:109",
@@ -11256,7 +11671,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p190:cell",
@@ -11267,7 +11683,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng Giá trị hợp đồng đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p194:64",
@@ -11278,7 +11695,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -11291,9 +11708,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát. ",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 200,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 201,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 202,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p209:14",
@@ -11306,7 +11765,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p209:27",
@@ -11347,6 +11807,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -14458,8 +14932,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 33,
-    "requiredFieldCount": 14,
+    "fieldCount": 41,
+    "requiredFieldCount": 19,
     "history": [
       {
         "version": "Ver052026",
@@ -14495,6 +14969,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "docDate"
       },
       {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/BBNT/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
         "key": "token:[ID KOC]",
         "part": "word/document.xml",
         "paragraph": 4,
@@ -14521,6 +15009,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 52,
+        "end": 57,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số [dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -14602,6 +15104,32 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Chức vụ người đại diện",
         "group": "PARTY",
         "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p42:17",
+        "part": "word/document.xml",
+        "paragraph": 42,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p42:23",
+        "part": "word/document.xml",
+        "paragraph": 42,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
       },
       {
         "key": "word/document.xml:p45:cell",
@@ -14804,7 +15332,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p85:cell",
@@ -14815,7 +15344,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng Giá trị Hợp đồng đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -14838,7 +15368,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT (2)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -14901,7 +15432,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền còn phải thanh toán",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "remainingAmount"
       },
       {
         "key": "word/document.xml:p109:110",
@@ -14914,7 +15446,50 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền bằng chữ",
         "group": "MONEY",
-        "kind": "text"
+        "kind": "text",
+        "source": "amountInWords"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 112,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 113,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 114,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -14929,6 +15504,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -16586,8 +17175,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 37,
-    "requiredFieldCount": 17,
+    "fieldCount": 45,
+    "requiredFieldCount": 23,
     "history": [
       {
         "version": "Ver052026",
@@ -16621,6 +17210,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 27,
+        "end": 32,
+        "label": "BRAND",
+        "context": "Số/:[dd.mm.yy]/HĐDV/UPBASE-BRAND-CTV[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -16781,6 +17384,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 148,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 149,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 150,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
         "key": "token:[dd.mm.yy]",
         "part": "word/footer2.xml",
         "paragraph": 1,
@@ -16793,6 +17438,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-CTV[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -19075,8 +19734,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 15,
-    "requiredFieldCount": 12,
+    "fieldCount": 20,
+    "requiredFieldCount": 17,
     "history": [
       {
         "version": "Ver052026",
@@ -19108,7 +19767,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tháng nghiệm thu",
         "group": "DATE",
-        "kind": "number"
+        "kind": "number",
+        "source": "signMonth"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -19265,7 +19925,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tháng nghiệm thu (2)",
         "group": "DATE",
-        "kind": "number"
+        "kind": "number",
+        "source": "signMonth"
       },
       {
         "key": "word/document.xml:p57:cell",
@@ -19576,7 +20237,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "title": "Tổng Giá trị Phụ lục hợp đồng chưa bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p94:cell",
@@ -19587,7 +20249,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p96:cell",
@@ -19598,7 +20261,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p100:48",
@@ -19611,7 +20275,50 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Phí dịch vụ phải thanh toán",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "netTotal"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 103,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 104,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "token:[dd.mm.yy]",
@@ -21183,8 +21890,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 46,
-    "requiredFieldCount": 14,
+    "fieldCount": 49,
+    "requiredFieldCount": 17,
     "history": [
       {
         "version": "Ver052026",
@@ -21205,6 +21912,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "e1cc9f3e5ac09e6fd99483affc45869d4ebe8c1b2966a4f24ef6f34e16653513",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 29,
+        "end": 35,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p17:14",
         "part": "word/document.xml",
@@ -21310,6 +22059,115 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "word/document.xml:p64:34",
+        "part": "word/document.xml",
+        "paragraph": 64,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p153:72",
+        "part": "word/document.xml",
+        "paragraph": 153,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p153:83",
+        "part": "word/document.xml",
+        "paragraph": 153,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p154:25",
+        "part": "word/document.xml",
+        "paragraph": 154,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p154:37",
+        "part": "word/document.xml",
+        "paragraph": 154,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p154:83",
+        "part": "word/document.xml",
+        "paragraph": 154,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p154:90",
+        "part": "word/document.xml",
+        "paragraph": 154,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p154:164",
+        "part": "word/document.xml",
+        "paragraph": 154,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
         "key": "word/document.xml:p155:cell",
         "part": "word/document.xml",
         "paragraph": 155,
@@ -21318,7 +22176,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p158:cell",
@@ -21330,6 +22189,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p160:80",
+        "part": "word/document.xml",
+        "paragraph": 160,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p161:cell",
@@ -21363,7 +22235,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p167:cell",
@@ -21374,7 +22247,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p172:46",
@@ -21385,9 +22259,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ phiên livestream, được ghi nhận thông qua link/mã theo dõi; ",
         "required": false,
-        "title": "hoa hồng affiliate với tỷ lệ [điền] % trên doanh thu phát",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Hoa hồng affiliate livestream (%)",
+        "group": "MONEY",
+        "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 176,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 177,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 178,
+        "start": 10,
+        "end": 10,
+        "label": "Tại Ngân hàng",
+        "context": "Ngân hàng:",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p184:14",
@@ -21400,7 +22316,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p184:27",
@@ -21441,6 +22358,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -24304,8 +25235,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 11,
+    "fieldCount": 36,
+    "requiredFieldCount": 18,
     "history": [
       {
         "version": "Ver052026",
@@ -24326,6 +25257,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "4489288445324d55e4ec2df4af759e2c6b52d458e81b5fc90ffc5b755db34eff",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 29,
+        "end": 35,
+        "label": "dd.mm.yy",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 48,
+        "end": 53,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 54,
+        "end": 60,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p7:14",
         "part": "word/document.xml",
@@ -24431,6 +25446,143 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 27,
+        "end": 33,
+        "label": "dd.mm.yy",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 46,
+        "end": 51,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 52,
+        "end": 58,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "word/document.xml:p57:72",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p57:83",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p58:25",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p58:37",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p58:83",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p58:90",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p58:164",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
         "key": "word/document.xml:p60:cell",
         "part": "word/document.xml",
         "paragraph": 60,
@@ -24439,7 +25591,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p64:cell",
@@ -24451,6 +25604,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p66:80",
+        "part": "word/document.xml",
+        "paragraph": 66,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p68:cell",
@@ -24484,7 +25650,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p77:cell",
@@ -24495,7 +25662,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p89:cell",
@@ -24504,9 +25672,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Tổng giá trị nghiệm thu",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "netTotal"
       },
       {
         "key": "word/document.xml:p92:cell",
@@ -24515,9 +25684,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
-        "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị đã tạm ứng/thanh toán",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p95:cell",
@@ -24526,9 +25696,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
-        "title": "Chi phí phát sinh tăng/giảm · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Chi phí phát sinh tăng/giảm",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -24537,9 +25708,94 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
-        "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 107,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -26093,8 +27349,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 18,
-    "requiredFieldCount": 9,
+    "fieldCount": 41,
+    "requiredFieldCount": 24,
     "history": [
       {
         "version": "Ver052026",
@@ -26115,6 +27371,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "46dedfece886cb86358c085d4fba987174c338de400bd8712b1498e8bbd4c059",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 29,
+        "end": 35,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p17:14",
         "part": "word/document.xml",
@@ -26252,6 +27550,115 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "word/document.xml:p69:34",
+        "part": "word/document.xml",
+        "paragraph": 69,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p158:72",
+        "part": "word/document.xml",
+        "paragraph": 158,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p158:83",
+        "part": "word/document.xml",
+        "paragraph": 158,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p159:25",
+        "part": "word/document.xml",
+        "paragraph": 159,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p159:37",
+        "part": "word/document.xml",
+        "paragraph": 159,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p159:83",
+        "part": "word/document.xml",
+        "paragraph": 159,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p159:90",
+        "part": "word/document.xml",
+        "paragraph": 159,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p159:164",
+        "part": "word/document.xml",
+        "paragraph": 159,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
         "key": "word/document.xml:p160:cell",
         "part": "word/document.xml",
         "paragraph": 160,
@@ -26260,7 +27667,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p163:cell",
@@ -26272,6 +27680,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p165:80",
+        "part": "word/document.xml",
+        "paragraph": 165,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p166:cell",
@@ -26293,7 +27714,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p172:46",
@@ -26304,9 +27726,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ phiên livestream, được ghi nhận thông qua link/mã theo dõi; ",
         "required": false,
-        "title": "hoa hồng affiliate với tỷ lệ [điền] % trên doanh thu phát",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Hoa hồng affiliate livestream (%)",
+        "group": "MONEY",
+        "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 176,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 177,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 178,
+        "start": 10,
+        "end": 10,
+        "label": "Tại Ngân hàng",
+        "context": "Ngân hàng:",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p187:29",
@@ -26319,7 +27783,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p187:42",
@@ -26349,6 +27814,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
       },
       {
         "key": "token:[dd.mm.yy]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
         "part": "word/footer4.xml",
         "paragraph": 1,
         "start": 0,
@@ -26360,6 +27867,20 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "NUMBER",
         "kind": "text",
         "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer4.xml",
+        "paragraph": 1,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "[dd.mm.yy]/HĐDV/UPBASE-BRAND-[ID KOC]",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
       },
       {
         "key": "token:[ID KOC]",
@@ -29465,8 +30986,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 12,
+    "fieldCount": 39,
+    "requiredFieldCount": 22,
     "history": [
       {
         "version": "Ver052026",
@@ -29487,6 +31008,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "71010c307885d6707ac1dae2b413f0d497d986e4b631f729d76959bc6194ff6d",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 29,
+        "end": 35,
+        "label": "dd.mm.yy",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 48,
+        "end": 53,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 54,
+        "end": 60,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p7:14",
         "part": "word/document.xml",
@@ -29624,6 +31229,143 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 27,
+        "end": 33,
+        "label": "dd.mm.yy",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 46,
+        "end": 51,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 52,
+        "end": 58,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "word/document.xml:p61:72",
+        "part": "word/document.xml",
+        "paragraph": 61,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p61:83",
+        "part": "word/document.xml",
+        "paragraph": 61,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p62:25",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p62:37",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p62:83",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p62:90",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p62:164",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
         "key": "word/document.xml:p63:cell",
         "part": "word/document.xml",
         "paragraph": 63,
@@ -29632,7 +31374,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p66:cell",
@@ -29644,6 +31387,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p68:80",
+        "part": "word/document.xml",
+        "paragraph": 68,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p69:cell",
@@ -29665,7 +31421,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p85:cell",
@@ -29674,9 +31431,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Tổng giá trị nghiệm thu",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "netTotal"
       },
       {
         "key": "word/document.xml:p88:cell",
@@ -29685,9 +31443,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
-        "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị đã tạm ứng/thanh toán",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p91:cell",
@@ -29696,9 +31455,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
-        "title": "Chi phí phát sinh tăng/giảm · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Chi phí phát sinh tăng/giảm",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p94:cell",
@@ -29707,9 +31467,94 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
-        "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 104,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -31264,8 +33109,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 18,
-    "requiredFieldCount": 10,
+    "fieldCount": 41,
+    "requiredFieldCount": 25,
     "history": [
       {
         "version": "Ver052026",
@@ -31286,6 +33131,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "05534b61eb0f912c4f264b65ab51ee4627efdd3eb59a8c48c7da6932263939bd",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 28,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 29,
+        "end": 35,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p17:14",
         "part": "word/document.xml",
@@ -31396,6 +33283,32 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
+        "key": "word/document.xml:p54:17",
+        "part": "word/document.xml",
+        "paragraph": 54,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p54:23",
+        "part": "word/document.xml",
+        "paragraph": 54,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
+      },
+      {
         "key": "word/document.xml:p57:cell",
         "part": "word/document.xml",
         "paragraph": 57,
@@ -31426,9 +33339,119 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Tên/Nghệ danhKOL/KOC/Talent",
         "context": "Tên/Nghệ danhKOL/KOC/Talent",
         "required": false,
-        "title": "Tên/Nghệ danhKOL/KOC/Talent",
-        "group": "MONEY",
-        "kind": "money"
+        "title": "Tên/Nghệ danh KOL/KOC/Talent",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "ownerName"
+      },
+      {
+        "key": "word/document.xml:p74:34",
+        "part": "word/document.xml",
+        "paragraph": 74,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p163:72",
+        "part": "word/document.xml",
+        "paragraph": 163,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p163:83",
+        "part": "word/document.xml",
+        "paragraph": 163,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p164:25",
+        "part": "word/document.xml",
+        "paragraph": 164,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p164:37",
+        "part": "word/document.xml",
+        "paragraph": 164,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p164:83",
+        "part": "word/document.xml",
+        "paragraph": 164,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p164:90",
+        "part": "word/document.xml",
+        "paragraph": 164,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p164:164",
+        "part": "word/document.xml",
+        "paragraph": 164,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p165:cell",
@@ -31439,7 +33462,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p168:cell",
@@ -31451,6 +33475,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p170:80",
+        "part": "word/document.xml",
+        "paragraph": 170,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p171:cell",
@@ -31472,7 +33509,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "title": "Tổng giá trị chưa bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p175:cell",
@@ -31483,7 +33521,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p177:cell",
@@ -31494,7 +33533,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p180:46",
@@ -31505,9 +33545,51 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ phiên livestream, được ghi nhận thông qua link/mã theo dõi; ",
         "required": false,
-        "title": "hoa hồng affiliate với tỷ lệ [điền] % trên doanh thu phát",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Hoa hồng affiliate livestream (%)",
+        "group": "MONEY",
+        "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 184,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 185,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 186,
+        "start": 10,
+        "end": 10,
+        "label": "Tại Ngân hàng",
+        "context": "Ngân hàng:",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p192:14",
@@ -31520,7 +33602,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p192:27",
@@ -31547,6 +33630,48 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -34528,8 +36653,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 21,
-    "requiredFieldCount": 10,
+    "fieldCount": 41,
+    "requiredFieldCount": 19,
     "history": [
       {
         "version": "Ver052026",
@@ -34550,6 +36675,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "28371479142744a65fbea0e87306b72c7b703056aeeab7bc7b010d8d0578c1cd",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 29,
+        "end": 35,
+        "label": "dd.mm.yy",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 48,
+        "end": 53,
+        "label": "BRAND",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 54,
+        "end": 60,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p7:14",
         "part": "word/document.xml",
@@ -34655,6 +36864,143 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "email"
       },
       {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 27,
+        "end": 33,
+        "label": "dd.mm.yy",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 46,
+        "end": 51,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "start": 52,
+        "end": 58,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng dịch vụ số ddmmyy/HĐDV/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "word/document.xml:p57:72",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "start": 72,
+        "end": 73,
+        "label": "thiệu, đánh giá, quảng bá sản phẩm  [điền]  nhãn hiệu…. và thúc đẩy ",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Sản phẩm livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "product"
+      },
+      {
+        "key": "word/document.xml:p57:83",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "start": 83,
+        "end": 84,
+        "label": " giá, quảng bá sản phẩm … nhãn hiệu [điền] . và thúc đẩy doanh số bá",
+        "context": "Thực hiện phiên livestream nhằm giới thiệu, đánh giá, quảng bá sản phẩm … nhãn hiệu…. và thúc đẩy doanh số bán hàng theo kịch bản đã được phê duyệt; ",
+        "required": false,
+        "title": "Nhãn hiệu",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p58:25",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 25,
+        "end": 26,
+        "label": "Triển khai trên nền tảng  [điền] , tại kênh … (kênh Bên A/",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Nền tảng livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p58:37",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 37,
+        "end": 38,
+        "label": "iển khai trên nền tảng …, tại kênh  [điền]  (kênh Bên A/KOL/KOC), tr",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Kênh livestream",
+        "group": "SCOPE",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "word/document.xml:p58:83",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 83,
+        "end": 84,
+        "label": " A/KOL/KOC), trong khung thời gian  [điền]  ngày … và thời lượng lên",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Khung giờ livestream",
+        "group": "SCOPE",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p58:90",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 90,
+        "end": 91,
+        "label": "KOC), trong khung thời gian … ngày  [điền]  và thời lượng lên hình t",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Ngày phát sóng livestream",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
+      },
+      {
+        "key": "word/document.xml:p58:164",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "start": 164,
+        "end": 165,
+        "label": "vestream của sản phẩm tối thiểu là  [điền]  phút (trừ trường hợp hết",
+        "context": "Triển khai trên nền tảng …, tại kênh … (kênh Bên A/KOL/KOC), trong khung thời gian … ngày … và thời lượng lên hình trong phiên livestream của sản phẩm tối thiểu là … phút (trừ trường hợp hết hàng – sold out khi chưa hết thời gian hiển thị).",
+        "required": false,
+        "title": "Thời lượng lên hình tối thiểu (phút)",
+        "group": "SCOPE",
+        "kind": "number"
+      },
+      {
         "key": "word/document.xml:p60:cell",
         "part": "word/document.xml",
         "paragraph": 60,
@@ -34663,7 +37009,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thực hiện phiên livestream nhằm giới thiệu · Thành tiền",
         "group": "SCOPE",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p64:cell",
@@ -34675,6 +37022,19 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Cung cấp mã quảng cáo/cho phép sử dụng nội dung livestream đ · Thành tiền",
         "group": "SCOPE",
         "kind": "money"
+      },
+      {
+        "key": "word/document.xml:p66:80",
+        "part": "word/document.xml",
+        "paragraph": 66,
+        "start": 80,
+        "end": 81,
+        "label": " hình từ livestream trong thời hạn  [điền]  tháng kể từ ngày phát só",
+        "context": "Cho phép Bên A sử dụng hình ảnh, nội dung ghi hình từ livestream trong thời hạn … tháng kể từ ngày phát sóng; ",
+        "required": false,
+        "title": "Thời hạn sử dụng hình ảnh livestream (tháng)",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p68:cell",
@@ -34696,7 +37056,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "title": "Tổng giá trị chưa bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p74:cell",
@@ -34707,7 +37068,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p77:cell",
@@ -34718,7 +37080,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p89:cell",
@@ -34728,7 +37091,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
         "title": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(Đã gồm VAT)",
-        "group": "SCOPE",
+        "group": "MONEY",
         "kind": "money"
       },
       {
@@ -34739,8 +37102,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
         "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền (VNĐ)(Đã gồm VAT)",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p95:cell",
@@ -34750,8 +37114,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
         "title": "Chi phí phát sinh tăng/giảm · Thành tiền (VNĐ)(Đã gồm VAT)",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -34761,8 +37126,93 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
         "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 107,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -36316,8 +38766,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 18,
-    "requiredFieldCount": 9,
+    "fieldCount": 41,
+    "requiredFieldCount": 24,
     "history": [
       {
         "version": "Ver052026",
@@ -36338,6 +38788,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "8087b09e80e26030d7ad5e24a453e1b48e53815b4a84a2a8217a15cb87d6a29f",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 29,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p18:14",
         "part": "word/document.xml",
@@ -36419,6 +38897,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
+        "key": "word/document.xml:p51:cell",
+        "part": "word/document.xml",
+        "paragraph": 51,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p54:cell",
+        "part": "word/document.xml",
+        "paragraph": 54,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "word/document.xml:p64:34",
+        "part": "word/document.xml",
+        "paragraph": 64,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 144,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 145,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 146,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
         "key": "word/document.xml:p152:14",
         "part": "word/document.xml",
         "paragraph": 152,
@@ -36429,7 +38991,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p152:27",
@@ -36456,6 +39019,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -39015,8 +41606,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 9,
-    "requiredFieldCount": 6,
+    "fieldCount": 19,
+    "requiredFieldCount": 13,
     "history": [
       {
         "version": "Ver052026",
@@ -39037,6 +41628,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "744048f327e49146cd768e6dfc2ee6396466fc93e71fb8577ad14bdcdec0b0af",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 22,
+        "end": 27,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 28,
+        "end": 34,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -39118,6 +41779,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
+        "key": "word/document.xml:p41:cell",
+        "part": "word/document.xml",
+        "paragraph": 41,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p44:cell",
+        "part": "word/document.xml",
+        "paragraph": 44,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
         "key": "word/document.xml:p56:109",
         "part": "word/document.xml",
         "paragraph": 56,
@@ -39140,9 +41829,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p57:32",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "start": 32,
+        "end": 33,
+        "label": "Thời gian đăng tải (air video):  [điền] .",
+        "context": "Thời gian đăng tải (air video): ….",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p59:cell",
@@ -39189,9 +41893,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p69:cell",
@@ -39214,7 +41918,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p73:cell",
@@ -39225,7 +41930,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p77:64",
@@ -39236,7 +41942,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -39249,7 +41955,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -39264,7 +41970,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p86:27",
@@ -39291,6 +41998,116 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 89,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 90,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 91,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "word/document.xml:p100:cell",
+        "part": "word/document.xml",
+        "paragraph": 100,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "word/document.xml:p102:cell",
+        "part": "word/document.xml",
+        "paragraph": 102,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW (2)",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 18,
+        "end": 23,
+        "label": "BRAND",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 24,
+        "end": 30,
+        "label": "ID KOC",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -40738,8 +43555,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 7,
+    "fieldCount": 36,
+    "requiredFieldCount": 18,
     "history": [
       {
         "version": "Ver052026",
@@ -40760,6 +43577,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "f0cc09fa4b0258faa0b050101f42ffcb64a9a505cfec2c1895ce9743e23393df",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -40841,6 +43728,104 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
+        "key": "word/document.xml:p41:cell",
+        "part": "word/document.xml",
+        "paragraph": 41,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p44:cell",
+        "part": "word/document.xml",
+        "paragraph": 44,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 30,
+        "end": 36,
+        "label": "Ngày HĐNT",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 49,
+        "end": 55,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày SOW]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 86,
+        "end": 92,
+        "label": "Ngày SOW",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập Phụ lục SOW (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentSowDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 104,
+        "end": 109,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 110,
+        "end": 116,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
         "key": "word/document.xml:p58:109",
         "part": "word/document.xml",
         "paragraph": 58,
@@ -40863,9 +43848,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p59:27",
+        "part": "word/document.xml",
+        "paragraph": 59,
+        "start": 27,
+        "end": 28,
+        "label": "Ngày đăng tải (air video):  [điền] ",
+        "context": "Ngày đăng tải (air video): …",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p62:cell",
@@ -40912,9 +43912,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p70:cell",
@@ -40948,7 +43948,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p79:cell",
@@ -40959,7 +43960,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p92:cell",
@@ -40968,9 +43970,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Tổng giá trị nghiệm thu",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "netTotal"
       },
       {
         "key": "word/document.xml:p95:cell",
@@ -40979,9 +43982,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
-        "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị đã tạm ứng/thanh toán",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -40990,9 +43994,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
-        "title": "Chi phí phát sinh tăng/giảm · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Chi phí phát sinh tăng/giảm",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p101:cell",
@@ -41001,9 +44006,94 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
-        "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 109,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -42607,8 +45697,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 7,
+    "fieldCount": 39,
+    "requiredFieldCount": 23,
     "history": [
       {
         "version": "Ver052026",
@@ -42629,6 +45719,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "13642892727b6f3280e666ebf98aed819c845305f4fa10956de5483500a8b586",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 29,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p18:14",
         "part": "word/document.xml",
@@ -42742,6 +45860,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "cccd"
       },
       {
+        "key": "word/document.xml:p57:cell",
+        "part": "word/document.xml",
+        "paragraph": 57,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · (Nếu có)",
+        "required": false,
+        "start": 0,
+        "end": 8,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p60:cell",
+        "part": "word/document.xml",
+        "paragraph": 60,
+        "label": "Email",
+        "context": "Email · (Nếu có)",
+        "required": false,
+        "start": 0,
+        "end": 8,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "word/document.xml:p70:34",
+        "part": "word/document.xml",
+        "paragraph": 70,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 150,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 151,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 152,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
         "key": "word/document.xml:p162:29",
         "part": "word/document.xml",
         "paragraph": 162,
@@ -42752,7 +45954,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p162:42",
@@ -42779,6 +45982,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -45492,8 +48723,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 11,
-    "requiredFieldCount": 8,
+    "fieldCount": 21,
+    "requiredFieldCount": 15,
     "history": [
       {
         "version": "Ver052026",
@@ -45514,6 +48745,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "44f62e4335242060b08971540df5a28d2e82ccf9337074a84aacd1d792286231",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 22,
+        "end": 27,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 28,
+        "end": 34,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -45627,6 +48928,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "cccd"
       },
       {
+        "key": "word/document.xml:p47:cell",
+        "part": "word/document.xml",
+        "paragraph": 47,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p50:cell",
+        "part": "word/document.xml",
+        "paragraph": 50,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
         "key": "word/document.xml:p61:109",
         "part": "word/document.xml",
         "paragraph": 61,
@@ -45649,9 +48978,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p62:32",
+        "part": "word/document.xml",
+        "paragraph": 62,
+        "start": 32,
+        "end": 33,
+        "label": "Thời gian đăng tải (air video):  [điền] .",
+        "context": "Thời gian đăng tải (air video): ….",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p64:cell",
@@ -45698,9 +49042,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p75:cell",
@@ -45711,7 +49055,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p79:64",
@@ -45722,7 +49067,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -45735,7 +49080,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -45750,7 +49095,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p91:42",
@@ -45777,6 +49123,116 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 100,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 101,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 102,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "word/document.xml:p111:cell",
+        "part": "word/document.xml",
+        "paragraph": 111,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "word/document.xml:p113:cell",
+        "part": "word/document.xml",
+        "paragraph": 113,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW (2)",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 18,
+        "end": 23,
+        "label": "BRAND",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 24,
+        "end": 30,
+        "label": "ID KOC",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -47324,8 +50780,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 8,
+    "fieldCount": 36,
+    "requiredFieldCount": 19,
     "history": [
       {
         "version": "Ver052026",
@@ -47346,6 +50802,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "1a4c42c345b568de51c9174c716ab2d341b8c46b7c98508a00282b8761174849",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -47459,6 +50985,104 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "cccd"
       },
       {
+        "key": "word/document.xml:p46:cell",
+        "part": "word/document.xml",
+        "paragraph": 46,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p49:cell",
+        "part": "word/document.xml",
+        "paragraph": 49,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 30,
+        "end": 36,
+        "label": "Ngày HĐNT",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 49,
+        "end": 55,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày SOW]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 86,
+        "end": 92,
+        "label": "Ngày SOW",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập Phụ lục SOW (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentSowDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 104,
+        "end": 109,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "start": 110,
+        "end": 116,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
         "key": "word/document.xml:p62:109",
         "part": "word/document.xml",
         "paragraph": 62,
@@ -47481,9 +51105,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p63:27",
+        "part": "word/document.xml",
+        "paragraph": 63,
+        "start": 27,
+        "end": 28,
+        "label": "Ngày đăng tải (air video):  [điền] ",
+        "context": "Ngày đăng tải (air video): …",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p66:cell",
@@ -47530,9 +51169,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p74:cell",
@@ -47554,7 +51193,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị Hợp đồng",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p89:cell",
@@ -47563,9 +51203,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Tổng giá trị nghiệm thu · Thành tiền",
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
-        "title": "Tổng giá trị nghiệm thu · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Tổng giá trị nghiệm thu",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "netTotal"
       },
       {
         "key": "word/document.xml:p92:cell",
@@ -47574,9 +51215,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
-        "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị đã tạm ứng/thanh toán",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p95:cell",
@@ -47585,9 +51227,10 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Chi phí phát sinh tăng/giảm · Thành tiền",
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
-        "title": "Chi phí phát sinh tăng/giảm · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Chi phí phát sinh tăng/giảm",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -47596,9 +51239,94 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
-        "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "title": "Giá trị Bên A còn phải thanh toán cho Bên B",
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 109,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -49214,8 +52942,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 8,
+    "fieldCount": 39,
+    "requiredFieldCount": 24,
     "history": [
       {
         "version": "Ver052026",
@@ -49236,6 +52964,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "6c8250b8db960def921e326a32284189136c1a0a269f12b58053afa1c60176a9",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 23,
+        "end": 29,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p18:14",
         "part": "word/document.xml",
@@ -49346,15 +53102,126 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
+        "key": "word/document.xml:p55:17",
+        "part": "word/document.xml",
+        "paragraph": 55,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p55:23",
+        "part": "word/document.xml",
+        "paragraph": 55,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
+      },
+      {
+        "key": "word/document.xml:p58:cell",
+        "part": "word/document.xml",
+        "paragraph": 58,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p61:cell",
+        "part": "word/document.xml",
+        "paragraph": 61,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
         "key": "word/document.xml:p65:cell",
         "part": "word/document.xml",
         "paragraph": 65,
         "label": "Tên/Nghệ danhKOL/KOC/Talent",
         "context": "Tên/Nghệ danhKOL/KOC/Talent",
         "required": false,
-        "title": "Tên/Nghệ danhKOL/KOC/Talent",
-        "group": "MONEY",
-        "kind": "money"
+        "title": "Tên/Nghệ danh KOL/KOC/Talent",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "ownerName"
+      },
+      {
+        "key": "word/document.xml:p75:34",
+        "part": "word/document.xml",
+        "paragraph": 75,
+        "start": 34,
+        "end": 35,
+        "label": "Là tài khoản mạng xã hội có link:  [điền] ",
+        "context": "Là tài khoản mạng xã hội có link: …",
+        "required": false,
+        "title": "Link kênh mạng xã hội",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "channelLink"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 155,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 156,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 157,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
       },
       {
         "key": "word/document.xml:p163:14",
@@ -49367,7 +53234,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p163:27",
@@ -49394,6 +53262,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -52086,8 +55982,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 12,
-    "requiredFieldCount": 7,
+    "fieldCount": 24,
+    "requiredFieldCount": 14,
     "history": [
       {
         "version": "Ver052026",
@@ -52108,6 +56004,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "db1a25a31010b23bc451b6fa0d9497f19e672fec65f4ed0ddd0a9a741b48391f",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 4,
+        "end": 10,
+        "label": "dd.mm.yy",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 22,
+        "end": 27,
+        "label": "BRAND",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 28,
+        "end": 34,
+        "label": "ID KOC",
+        "context": "Số: ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -52218,15 +56184,70 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "kind": "text"
       },
       {
+        "key": "word/document.xml:p45:17",
+        "part": "word/document.xml",
+        "paragraph": 45,
+        "start": 17,
+        "end": 18,
+        "label": "Theo ủy quyền số  [điền]  ngày… - cần ủy quyền từ ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Số văn bản ủy quyền (nếu có)",
+        "group": "PARTY",
+        "kind": "text"
+      },
+      {
+        "key": "word/document.xml:p45:23",
+        "part": "word/document.xml",
+        "paragraph": 45,
+        "start": 23,
+        "end": 24,
+        "label": "Theo ủy quyền số … ngày [điền]  - cần ủy quyền từ người ",
+        "context": "Theo ủy quyền số … ngày… - cần ủy quyền từ người đại diện theo pháp luật nếu người ký không phải là đại diện pháp luật (giám đốc, tổng giám đốc công ty)",
+        "required": false,
+        "title": "Ngày ủy quyền",
+        "group": "PARTY",
+        "kind": "date"
+      },
+      {
+        "key": "word/document.xml:p48:cell",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p51:cell",
+        "part": "word/document.xml",
+        "paragraph": 51,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
         "key": "word/document.xml:p55:cell",
         "part": "word/document.xml",
         "paragraph": 55,
         "label": "Tên/Nghệ danhKOL/KOC/Talent",
         "context": "Tên/Nghệ danhKOL/KOC/Talent",
         "required": false,
-        "title": "Tên/Nghệ danhKOL/KOC/Talent",
-        "group": "MONEY",
-        "kind": "money"
+        "title": "Tên/Nghệ danh KOL/KOC/Talent",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "ownerName"
       },
       {
         "key": "word/document.xml:p66:109",
@@ -52251,9 +56272,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p67:32",
+        "part": "word/document.xml",
+        "paragraph": 67,
+        "start": 32,
+        "end": 33,
+        "label": "Thời gian đăng tải (air video):  [điền] .",
+        "context": "Thời gian đăng tải (air video): ….",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p69:cell",
@@ -52300,9 +56336,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p79:cell",
@@ -52313,7 +56349,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "title": "Tổng giá trị chưa bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p81:cell",
@@ -52324,7 +56361,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p83:cell",
@@ -52335,7 +56373,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p87:64",
@@ -52346,7 +56385,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng organic: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh tự nhiên từ video, được ghi nhận thông qua link/mã theo dõi của Bên B và không bao gồm doanh thu phát sinh từ ngân sách quảng cáo do Bên A hoặc bên thứ ba chi trả. ",
         "required": false,
-        "title": "Hoa hồng organic (%)",
+        "title": "Hoa hồng affiliate livestream (%)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -52359,7 +56398,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "hưởng hoa hồng affiliate với tỷ lệ  [điền] % trên doanh thu phát sin",
         "context": "Hoa hồng chạy ads: Bên B được hưởng hoa hồng affiliate với tỷ lệ …% trên doanh thu phát sinh từ video được sử dụng để chạy quảng cáo, với điều kiện doanh thu đó được ghi nhận thông qua link/mã theo dõi của Bên B và được Bên A xác nhận trong báo cáo đối soát.",
         "required": false,
-        "title": "Hoa hồng chạy ads (%)",
+        "title": "Hoa hồng affiliate livestream (%) (2)",
         "group": "MONEY",
         "kind": "number"
       },
@@ -52374,7 +56413,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Số tiền tạm ứng lần 1",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p96:27",
@@ -52401,6 +56441,116 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Hạn thanh toán lần 2 (ngày làm việc)",
         "group": "MONEY",
         "kind": "number"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 99,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 100,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 101,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "word/document.xml:p110:cell",
+        "part": "word/document.xml",
+        "paragraph": 110,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "word/document.xml:p112:cell",
+        "part": "word/document.xml",
+        "paragraph": 112,
+        "label": "Điều …",
+        "context": "Điều … · Nội dung review sửa đổi",
+        "required": false,
+        "start": 0,
+        "end": 23,
+        "title": "Điều khoản điều chỉnh / ngoại lệ áp dụng theo SOW (2)",
+        "group": "OTHER",
+        "kind": "long"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 18,
+        "end": 23,
+        "label": "BRAND",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer2.xml",
+        "paragraph": 1,
+        "start": 24,
+        "end": 30,
+        "label": "ID KOC",
+        "context": "ddmmyy/SOW/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -53992,8 +58142,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 23,
-    "requiredFieldCount": 8,
+    "fieldCount": 41,
+    "requiredFieldCount": 19,
     "history": [
       {
         "version": "Ver052026",
@@ -54014,6 +58164,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "d4ee2ca879fd169bae2f6c561cd0d1bbdd71fce1f645ea02518295e3671d7507",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 32,
+        "end": 38,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 51,
+        "end": 57,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -54095,6 +58315,104 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
+        "key": "word/document.xml:p41:cell",
+        "part": "word/document.xml",
+        "paragraph": 41,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p44:cell",
+        "part": "word/document.xml",
+        "paragraph": 44,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 30,
+        "end": 36,
+        "label": "Ngày HĐNT",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 49,
+        "end": 55,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày SOW]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 86,
+        "end": 92,
+        "label": "Ngày SOW",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập Phụ lục SOW (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentSowDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 104,
+        "end": 109,
+        "label": "BRAND",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 48,
+        "start": 110,
+        "end": 116,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng nguyên tắc số ddmmyy/HĐNT/UPBASE-ID KOC, Phụ lục phạm vi công việc số ddmmyy/SOW/UPBASE-BRAND-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
         "key": "word/document.xml:p58:109",
         "part": "word/document.xml",
         "paragraph": 58,
@@ -54117,9 +58435,24 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "bán hàng với sản phẩm …. Nhãn hiệu  [điền] .",
         "context": "Sản xuất và đăng tải Video review, đánh giá, giới thiệu, quảng bá và thúc đẩy doanh số bán hàng với sản phẩm …. Nhãn hiệu ….",
         "required": false,
-        "title": "Sản phẩm (2)",
+        "title": "Nhãn hiệu",
         "group": "SCOPE",
-        "kind": "text"
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "word/document.xml:p59:27",
+        "part": "word/document.xml",
+        "paragraph": 59,
+        "start": 27,
+        "end": 28,
+        "label": "Ngày đăng tải (air video):  [điền] ",
+        "context": "Ngày đăng tải (air video): …",
+        "required": false,
+        "title": "Thời gian đăng tải (air video)",
+        "group": "SCOPE",
+        "kind": "date",
+        "source": "airDate"
       },
       {
         "key": "word/document.xml:p62:cell",
@@ -54166,9 +58499,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "label": "Sử dụng hình ảnh và video trong  [điền]  ngày kể từ ngày đăng tải",
         "context": "Sử dụng hình ảnh và video trong … ngày kể từ ngày đăng tải video",
         "required": false,
-        "title": "dụng hình ảnh và video trong [điền] ngày kể từ ngày đăng",
-        "group": "OTHER",
-        "kind": "text"
+        "title": "Số ngày sử dụng hình ảnh và video",
+        "group": "SCOPE",
+        "kind": "number"
       },
       {
         "key": "word/document.xml:p70:cell",
@@ -54190,7 +58523,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": true,
         "title": "Tổng giá trị chưa bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "lineTotal"
       },
       {
         "key": "word/document.xml:p74:cell",
@@ -54201,7 +58535,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "vatAmount"
       },
       {
         "key": "word/document.xml:p76:cell",
@@ -54212,7 +58547,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị đã bao gồm thuế VAT",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p89:cell",
@@ -54222,7 +58558,7 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "1 · Tổng giá trị nghiệm thu",
         "required": false,
         "title": "Tổng giá trị nghiệm thu · Thành tiền (VNĐ)(đã bao gồm VAT)",
-        "group": "SCOPE",
+        "group": "MONEY",
         "kind": "money"
       },
       {
@@ -54233,8 +58569,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "2 · Giá trị đã tạm ứng/thanh toán (nếu có)",
         "required": false,
         "title": "Giá trị đã tạm ứng/thanh toán · Thành tiền (VNĐ)(đã bao gồm VAT)",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "advanceAmount"
       },
       {
         "key": "word/document.xml:p95:cell",
@@ -54244,8 +58581,9 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "3 · Chi phí phát sinh tăng/giảm (nếu có)",
         "required": false,
         "title": "Chi phí phát sinh tăng/giảm · Thành tiền (VNĐ)(đã bao gồm VAT)",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "adjustmentAmount"
       },
       {
         "key": "word/document.xml:p98:cell",
@@ -54255,8 +58593,93 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "context": "4 · Giá trị Bên A còn phải thanh toán cho Bên B",
         "required": false,
         "title": "Giá trị Bên A còn phải thanh toán cho Bên B · Thành tiền",
-        "group": "SCOPE",
-        "kind": "money"
+        "group": "MONEY",
+        "kind": "money",
+        "source": "remainingAmount"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 105,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 107,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[BRAND]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 24,
+        "label": "BRAND",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã nhãn hàng (BRAND) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "brand"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 25,
+        "end": 31,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-BRAND-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -55820,8 +60243,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 20,
-    "requiredFieldCount": 7,
+    "fieldCount": 39,
+    "requiredFieldCount": 23,
     "history": [
       {
         "version": "Ver052026",
@@ -55842,6 +60265,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "1871746a6ffc36cf5fe2bd19ee954763395928e8a0ec7152bb177c88f70b1ebe",
     "fields": [
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 5,
+        "end": 11,
+        "label": "dd.mm.yy",
+        "context": "Số/: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 24,
+        "end": 30,
+        "label": "ID KOC",
+        "context": "Số/: ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p17:14",
         "part": "word/document.xml",
@@ -55923,6 +60374,34 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "source": "address"
       },
       {
+        "key": "word/document.xml:p49:cell",
+        "part": "word/document.xml",
+        "paragraph": 49,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p52:cell",
+        "part": "word/document.xml",
+        "paragraph": 52,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
         "key": "word/document.xml:p85:cell",
         "part": "word/document.xml",
         "paragraph": 85,
@@ -55961,6 +60440,76 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "title": "Dòng 1 · Ghi chú",
         "group": "SCOPE",
         "kind": "text"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 150,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 151,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 152,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/HĐDV/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/HĐDV/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -58228,8 +62777,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 9,
-    "requiredFieldCount": 6,
+    "fieldCount": 18,
+    "requiredFieldCount": 13,
     "history": [
       {
         "version": "Ver052026",
@@ -58250,6 +62799,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "version": "Ver052026",
     "hash": "7da09c48efa3be5148ff53d043b5e9b25ca115f8f9836ca2a80e149943c56c67",
     "fields": [
+      {
+        "key": "word/document.xml:p4:28",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 28,
+        "end": 29,
+        "label": "DỊCH VỤ BOOKING VIDEO THÁNG  [điền] ./202…",
+        "context": "DỊCH VỤ BOOKING VIDEO THÁNG …./202…",
+        "required": false,
+        "title": "Tháng nghiệm thu",
+        "group": "DATE",
+        "kind": "number",
+        "source": "signMonth"
+      },
+      {
+        "key": "word/document.xml:p4:34",
+        "part": "word/document.xml",
+        "paragraph": 4,
+        "start": 34,
+        "end": 35,
+        "label": "DỊCH VỤ BOOKING VIDEO THÁNG …./202 [điền] ",
+        "context": "DỊCH VỤ BOOKING VIDEO THÁNG …./202…",
+        "required": false,
+        "title": "Năm nghiệm thu (chữ số cuối)",
+        "group": "DATE",
+        "kind": "number",
+        "source": "signYearDigit"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 5,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 35,
+        "end": 41,
+        "label": "Ngày HĐNT",
+        "context": "Kèm theo Hợp đồng dịch vụ khung số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 6,
+        "start": 54,
+        "end": 60,
+        "label": "ID KOC",
+        "context": "Kèm theo Hợp đồng dịch vụ khung số ddmmyy/HĐNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
       {
         "key": "word/document.xml:p8:14",
         "part": "word/document.xml",
@@ -58329,6 +62962,90 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "group": "PARTY",
         "kind": "long",
         "source": "address"
+      },
+      {
+        "key": "word/document.xml:p40:cell",
+        "part": "word/document.xml",
+        "paragraph": 40,
+        "label": "Số điện thoại",
+        "context": "Số điện thoại · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Số điện thoại",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "phone"
+      },
+      {
+        "key": "word/document.xml:p43:cell",
+        "part": "word/document.xml",
+        "paragraph": 43,
+        "label": "Email",
+        "context": "Email · Nếu có",
+        "required": false,
+        "start": 0,
+        "end": 6,
+        "title": "Email",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "email"
+      },
+      {
+        "key": "token:[Ngày HĐNT]",
+        "part": "word/document.xml",
+        "paragraph": 46,
+        "start": 33,
+        "end": 39,
+        "label": "Ngày HĐNT",
+        "context": "Căn cứ Hợp đồng dịch vụ khung số ddmmyy/HĐNT/UPBASE-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Ngày lập HĐNT gốc (dd.mm.yy)",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "parentContractDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/document.xml",
+        "paragraph": 46,
+        "start": 52,
+        "end": 58,
+        "label": "ID KOC",
+        "context": "Căn cứ Hợp đồng dịch vụ khung số ddmmyy/HĐNT/UPBASE-ID KOC và kết quả thực hiện công việc thực tế của Bên B.",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
+      },
+      {
+        "key": "word/document.xml:p49:58",
+        "part": "word/document.xml",
+        "paragraph": 49,
+        "start": 58,
+        "end": 59,
+        "label": " vi công việc và phí dịch vụ tháng  [điền] ./202…",
+        "context": "Điều 1: Nghiệm thu phạm vi công việc và phí dịch vụ tháng …./202…",
+        "required": false,
+        "title": "Tháng nghiệm thu (2)",
+        "group": "DATE",
+        "kind": "number",
+        "source": "signMonth"
+      },
+      {
+        "key": "word/document.xml:p49:64",
+        "part": "word/document.xml",
+        "paragraph": 49,
+        "start": 64,
+        "end": 65,
+        "label": "ng việc và phí dịch vụ tháng …./202 [điền] ",
+        "context": "Điều 1: Nghiệm thu phạm vi công việc và phí dịch vụ tháng …./202…",
+        "required": false,
+        "title": "Năm nghiệm thu (chữ số cuối) (2)",
+        "group": "DATE",
+        "kind": "number",
+        "source": "signYearDigit"
       },
       {
         "key": "word/document.xml:p61:cell",
@@ -58651,7 +63368,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Thuế TNCN (Bên A có nghĩa vụ trích nộp cho cơ quan thuế theo quy định)",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "pitAmount"
       },
       {
         "key": "word/document.xml:p100:cell",
@@ -58662,7 +63380,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Tổng giá trị nghiệm thu đã bao gồm thuế TNCN",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "grossTotal"
       },
       {
         "key": "word/document.xml:p103:48",
@@ -58675,7 +63394,78 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
         "required": false,
         "title": "Phí dịch vụ phải thanh toán",
         "group": "MONEY",
-        "kind": "money"
+        "kind": "money",
+        "source": "netTotal"
+      },
+      {
+        "key": "token:[Tên chủ tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 106,
+        "start": 19,
+        "end": 19,
+        "label": "Tên chủ tài khoản",
+        "context": "Tên chủ tài khoản: ",
+        "required": true,
+        "title": "Tên chủ tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountName"
+      },
+      {
+        "key": "token:[Số tài khoản]",
+        "part": "word/document.xml",
+        "paragraph": 107,
+        "start": 14,
+        "end": 14,
+        "label": "Số tài khoản",
+        "context": "Số tài khoản: ",
+        "required": true,
+        "title": "Số tài khoản ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankAccountNumber"
+      },
+      {
+        "key": "token:[Tại Ngân hàng]",
+        "part": "word/document.xml",
+        "paragraph": 108,
+        "start": 15,
+        "end": 15,
+        "label": "Tại Ngân hàng",
+        "context": "Tại Ngân hàng: ",
+        "required": true,
+        "title": "Tại Ngân hàng",
+        "group": "PARTY",
+        "kind": "text",
+        "source": "bankName"
+      },
+      {
+        "key": "token:[dd.mm.yy]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 0,
+        "end": 6,
+        "label": "dd.mm.yy",
+        "context": "ddmmyy/BBNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Ngày lập (dd.mm.yy) trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "docDate"
+      },
+      {
+        "key": "token:[ID KOC]",
+        "part": "word/footer1.xml",
+        "paragraph": 1,
+        "start": 19,
+        "end": 25,
+        "label": "ID KOC",
+        "context": "ddmmyy/BBNT/UPBASE-ID KOC",
+        "required": true,
+        "title": "Mã KOC trong số hợp đồng",
+        "group": "NUMBER",
+        "kind": "text",
+        "source": "kocId"
       }
     ],
     "paragraphs": [
@@ -60216,8 +65006,8 @@ export const OFFICIAL_TEMPLATES_SNAPSHOT: Record<string, LegalTemplate> = {
     "scope": "GLOBAL",
     "updatedAt": "2026-05-01T08:00:00.000Z",
     "updatedBy": "Phòng Pháp chế",
-    "fieldCount": 37,
-    "requiredFieldCount": 7,
+    "fieldCount": 54,
+    "requiredFieldCount": 18,
     "history": [
       {
         "version": "Ver052026",

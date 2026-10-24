@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
 import {
   extractTikTokShopAnchorInfo,
   fetchTikTokHtmlWithWafBypass,
@@ -22,10 +23,31 @@ interface StreamSessionEntry {
   cookies?: string;
   referer: string;
   createdAt: number;
+  frameCache?: Map<string, Buffer>;
+}
+
+interface CachedVideoRawMeta {
+  resolvedUrl: string;
+  videoId: string;
+  authorHandle: string;
+  authorNickname: string;
+  caption: string;
+  durationSeconds: number;
+  publishedTimeFormatted: string;
+  coverUrl: string;
+  originCoverUrl: string;
+  cartAnchorTitle: string;
+  subtitleSegments: TikTokSubtitleSegment[];
+  onScreenStickers: string[];
+  candidateStreamUrls: string[];
+  sessionCookies?: string;
+  cachedAt: number;
 }
 
 const globalForStreamSessions = globalThis as unknown as {
   __upbaseVideoStreamSessions?: Map<string, StreamSessionEntry>;
+  __upbaseVideoRawMetaCache?: Map<string, CachedVideoRawMeta>;
+  __upbaseFfmpegAvailable?: boolean | null;
 };
 
 function getStreamSessionMap(): Map<string, StreamSessionEntry> {
@@ -44,12 +66,101 @@ function getStreamSessionMap(): Map<string, StreamSessionEntry> {
   return map;
 }
 
+function getVideoRawMetaCache(): Map<string, CachedVideoRawMeta> {
+  if (!globalForStreamSessions.__upbaseVideoRawMetaCache) {
+    globalForStreamSessions.__upbaseVideoRawMetaCache = new Map();
+  }
+  const map = globalForStreamSessions.__upbaseVideoRawMetaCache;
+  const now = Date.now();
+  if (map.size > 100) {
+    for (const [k, v] of map.entries()) {
+      if (now - v.cachedAt > 10 * 60 * 1000 || map.size > 100) {
+        map.delete(k);
+      }
+    }
+  }
+  return map;
+}
+
+async function checkFfmpegAvailable(): Promise<boolean> {
+  if (typeof globalForStreamSessions.__upbaseFfmpegAvailable === 'boolean') {
+    return globalForStreamSessions.__upbaseFfmpegAvailable;
+  }
+  const available = await new Promise<boolean>((resolve) => {
+    execFile('ffmpeg', ['-version'], { timeout: 2500 }, (err) => {
+      resolve(!err);
+    });
+  });
+  globalForStreamSessions.__upbaseFfmpegAvailable = available;
+  return available;
+}
+
+async function extractSingleFrameWithFfmpeg(
+  streamUrl: string,
+  sec: number,
+  cookies?: string,
+  referer?: string
+): Promise<Buffer | null> {
+  const safeSec = Math.max(0.2, Math.min(300, Math.round(sec * 10) / 10));
+  const headerLines: string[] = [
+    `Referer: ${referer || 'https://www.tiktok.com/'}`,
+    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  ];
+  if (cookies) {
+    headerLines.push(`Cookie: ${cookies}`);
+  }
+
+  return new Promise<Buffer | null>((resolve) => {
+    const args = [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-headers',
+      `${headerLines.join('\r\n')}\r\n`,
+      '-ss',
+      String(safeSec),
+      '-i',
+      streamUrl,
+      '-frames:v',
+      '1',
+      '-vf',
+      'scale=540:-2',
+      '-q:v',
+      '3',
+      '-f',
+      'image2pipe',
+      '-vcodec',
+      'mjpeg',
+      'pipe:1',
+    ];
+
+    execFile(
+      'ffmpeg',
+      args,
+      { encoding: 'buffer', maxBuffer: 4 * 1024 * 1024, timeout: 9000 },
+      (err, stdout) => {
+        if (err || !stdout || stdout.length < 512) {
+          resolve(null);
+          return;
+        }
+        resolve(stdout);
+      }
+    );
+  });
+}
+
 function formatSecLabel(sec: number): string {
   const safe = Math.max(0, Math.floor(sec));
   const mm = String(Math.floor(safe / 60)).padStart(2, '0');
   const ss = String(safe % 60).padStart(2, '0');
   return `${mm}:${ss}`;
 }
+
+export type VideoMomentCategory =
+  | 'HOLDING_SHOWCASE'
+  | 'TEXTURE_DEMO'
+  | 'VERBAL_MENTION'
+  | 'TIMELINE_FALLBACK';
 
 export interface SuggestedVideoFrameMoment {
   sec: number;
@@ -58,6 +169,30 @@ export interface SuggestedVideoFrameMoment {
   matchedTerm?: string;
   quote?: string;
   isPrimaryProductMoment?: boolean;
+  momentCategory?: VideoMomentCategory;
+  confidenceScore?: number;
+}
+
+const HOLDING_SHOWCASE_REGEX =
+  /(?:đang dùng|xài em|dùng em|chai này|lọ này|tuýp này|hộp này|em này|2 chai|hai chai|trên tay|cầm|đây là|giơ|quay cận|bao bì)/i;
+const TEXTURE_DEMO_REGEX =
+  /(?:bôi|thoa|test|chất kem|chất gel|tạo bọt|thấm|mùi hương|rửa|lên da|trên da)/i;
+
+function classifyMomentCategory(quote?: string): {
+  category: VideoMomentCategory;
+  score: number;
+  badgePrefix: string;
+} {
+  if (!quote) {
+    return { category: 'VERBAL_MENTION', score: 72, badgePrefix: 'KOC nhắc' };
+  }
+  if (HOLDING_SHOWCASE_REGEX.test(quote)) {
+    return { category: 'HOLDING_SHOWCASE', score: 96, badgePrefix: 'KOC cầm SP' };
+  }
+  if (TEXTURE_DEMO_REGEX.test(quote)) {
+    return { category: 'TEXTURE_DEMO', score: 88, badgePrefix: 'Test chất SP' };
+  }
+  return { category: 'VERBAL_MENTION', score: 76, badgePrefix: 'KOC nhắc' };
 }
 
 function buildSuggestedMoments(params: {
@@ -74,7 +209,12 @@ function buildSuggestedMoments(params: {
   const pushMoment = (item: SuggestedVideoFrameMoment) => {
     const clampedSec = Math.max(0.5, Math.min(duration - 0.5, Math.round(item.sec * 10) / 10));
     const roundedKey = Math.round(clampedSec);
-    if (addedSecs.has(roundedKey)) return;
+    if (
+      addedSecs.has(roundedKey) ||
+      suggestions.some((existing) => Math.abs(existing.sec - clampedSec) < 1.4)
+    ) {
+      return;
+    }
     addedSecs.add(roundedKey);
     suggestions.push({
       ...item,
@@ -83,35 +223,60 @@ function buildSuggestedMoments(params: {
     });
   };
 
-  // 1. Ưu tiên các mốc giây nhắc tên sản phẩm / thương hiệu trong phụ đề
-  for (const m of params.productMentionMoments) {
-    pushMoment({
-      sec: m.startSec,
-      timeLabel: formatSecLabel(m.startSec),
-      reason: `KOC nhắc "${m.matchedTerm}"`,
-      matchedTerm: m.matchedTerm,
-      quote: m.quote,
-      isPrimaryProductMoment: true,
+  // 1. Chấm điểm và sắp xếp các mốc KOC cầm / test / nhắc sản phẩm trong phụ đề
+  const rankedMentions = [...params.productMentionMoments]
+    .map((m) => ({
+      moment: m,
+      classified: classifyMomentCategory(m.quote),
+    }))
+    .sort((a, b) => {
+      if (b.classified.score !== a.classified.score) {
+        return b.classified.score - a.classified.score;
+      }
+      return a.moment.startSec - b.moment.startSec;
     });
-    const midSec = Math.min(duration - 1, m.startSec + 1.5);
+
+  for (const { moment: m, classified } of rankedMentions) {
+    const holdSec = Math.min(duration - 0.5, Math.round((m.startSec + 1.0) * 10) / 10);
     pushMoment({
-      sec: midSec,
-      timeLabel: formatSecLabel(midSec),
-      reason: `Cận cảnh sau khi nhắc "${m.matchedTerm}" (+1.5s)`,
+      sec: holdSec,
+      timeLabel: formatSecLabel(holdSec),
+      reason: `${classified.badgePrefix} "${m.matchedTerm}"`,
       matchedTerm: m.matchedTerm,
       quote: m.quote,
       isPrimaryProductMoment: true,
+      momentCategory: classified.category,
+      confidenceScore: classified.score,
     });
   }
 
-  // 2. Bổ sung các mốc giây chuẩn trong kịch bản review (Hook 2s, Giơ SP 4s, Trải nghiệm 8s, Giỏ hàng cuối video)
-  const fallbackStandardPoints: Array<{ sec: number; label: string }> = [
-    { sec: 2, label: 'Mở đầu (Hook 3s đầu)' },
-    { sec: 4, label: 'Đưa sản phẩm lên khung hình (00:04)' },
-    { sec: 7, label: 'Cận cảnh bao bì / chất sản phẩm (00:07)' },
-    { sec: Math.min(12, Math.floor(duration * 0.45)), label: 'Trải nghiệm sản phẩm thực tế' },
-    { sec: Math.min(18, Math.floor(duration * 0.7)), label: 'Điểm nhấn công dụng chính' },
-    { sec: Math.max(3, Math.floor(duration * 0.85)), label: 'Kêu gọi bấm giỏ hàng cuối video' },
+  // 1b. Bổ sung khung hình cận cảnh (+1.5s sau khi kết thúc câu giới thiệu sản phẩm) cho các mốc cầm sản phẩm trực tiếp
+  for (const { moment: m, classified } of rankedMentions) {
+    if (suggestions.length >= 8) break;
+    const afterSec = Math.min(duration - 0.5, Math.round((m.endSec + 1.5) * 10) / 10);
+    const nextSub = params.subtitleSegments.find(
+      (s) => afterSec >= s.startSec - 0.3 && afterSec <= s.endSec + 0.5
+    );
+    pushMoment({
+      sec: afterSec,
+      timeLabel: formatSecLabel(afterSec),
+      reason: `Cận cảnh bao bì "${m.matchedTerm}"`,
+      matchedTerm: m.matchedTerm,
+      quote: nextSub?.text || m.quote,
+      isPrimaryProductMoment: true,
+      momentCategory: classified.category === 'HOLDING_SHOWCASE' ? 'HOLDING_SHOWCASE' : 'TEXTURE_DEMO',
+      confidenceScore: Math.max(82, classified.score - 4),
+    });
+  }
+
+  // 2. Bổ sung các mốc giây chuẩn theo tỷ lệ thời lượng video nếu chưa đủ 8 khung hình
+  const fallbackStandardPoints: Array<{ sec: number; label: string; score: number }> = [
+    { sec: 2, label: 'Mở đầu (Hook 3s đầu)', score: 58 },
+    { sec: 4, label: 'Đưa sản phẩm lên khung hình (00:04)', score: 68 },
+    { sec: Math.max(6, Math.round(duration * 0.25)), label: 'Giới thiệu cận cảnh bao bì', score: 66 },
+    { sec: Math.max(9, Math.round(duration * 0.45)), label: 'Cầm sản phẩm & trải nghiệm thực tế', score: 70 },
+    { sec: Math.max(12, Math.round(duration * 0.65)), label: 'Test chất sản phẩm / Điểm nhấn công dụng', score: 68 },
+    { sec: Math.max(4, Math.round(duration * 0.85)), label: 'Kêu gọi bấm giỏ hàng cuối video', score: 60 },
   ];
 
   for (const pt of fallbackStandardPoints) {
@@ -126,20 +291,24 @@ function buildSuggestedMoments(params: {
       matchedTerm: params.productName || params.brandName,
       quote: matchedSub?.text,
       isPrimaryProductMoment: false,
+      momentCategory: 'TIMELINE_FALLBACK',
+      confidenceScore: pt.score,
     });
   }
 
-  return suggestions.sort((a, b) => a.sec - b.sec).slice(0, 8);
+  return suggestions.slice(0, 8).sort((a, b) => a.sec - b.sec);
 }
 
 /**
  * GET /api/integrations/tiktok-koc/video-frame
- * Proxy luồng phát video (.mp4) hoặc ảnh bìa có gắn header CORS sạch
- * để trình duyệt vẽ lên <canvas> và cắt khung hình không bị lỗi bảo mật Tainted Canvas.
+ * - ?imageUrl=... : Proxy ảnh bìa có CORS sạch
+ * - ?streamToken=...&captureSec=... : Cắt trực tiếp 1 khung hình JPEG tại mốc giây yêu cầu bằng ffmpeg trên máy chủ
+ * - ?streamToken=... : Proxy luồng phát video (.mp4) có hỗ trợ Range & CORS sạch
  */
 export async function GET(req: NextRequest) {
   const streamToken = req.nextUrl.searchParams.get('streamToken')?.trim();
   const imageUrl = req.nextUrl.searchParams.get('imageUrl')?.trim();
+  const captureSecRaw = req.nextUrl.searchParams.get('captureSec')?.trim();
 
   if (imageUrl) {
     try {
@@ -186,6 +355,55 @@ export async function GET(req: NextRequest) {
       { success: false, error: 'Phiên phát video đã hết hạn, vui lòng bấm tải lại video.' },
       { status: 404 }
     );
+  }
+
+  // Nhánh cắt trực tiếp khung hình JPEG tại giây `captureSec` trên máy chủ (nhanh & không phụ thuộc codec trình duyệt)
+  if (captureSecRaw !== undefined && captureSecRaw !== '') {
+    const sec = Number(captureSecRaw);
+    if (!Number.isFinite(sec) || sec < 0) {
+      return new NextResponse('Invalid captureSec', { status: 400 });
+    }
+    const cacheKey = sec.toFixed(1);
+    if (!session.frameCache) {
+      session.frameCache = new Map();
+    }
+    const cachedBuf = session.frameCache.get(cacheKey);
+    if (cachedBuf) {
+      return new NextResponse(new Uint8Array(cachedBuf), {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/jpeg',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'private, max-age=1800',
+        },
+      });
+    }
+
+    const hasFfmpeg = await checkFfmpegAvailable();
+    if (hasFfmpeg) {
+      for (const candidateUrl of session.streamUrls) {
+        const frameBuf = await extractSingleFrameWithFfmpeg(
+          candidateUrl,
+          sec,
+          session.cookies,
+          session.referer
+        );
+        if (frameBuf) {
+          if (session.frameCache.size < 40) {
+            session.frameCache.set(cacheKey, frameBuf);
+          }
+          return new NextResponse(new Uint8Array(frameBuf), {
+            status: 200,
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'private, max-age=1800',
+            },
+          });
+        }
+      }
+    }
+    return new NextResponse('Server frame capture unavailable', { status: 422 });
   }
 
   const rangeHeader = req.headers.get('range');
@@ -247,8 +465,8 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/integrations/tiktok-koc/video-frame
- * Phân tích link video TikTok, trích xuất danh sách mốc giây xuất hiện sản phẩm
- * và tạo đường dẫn luồng phát MP4 (qua proxy nội bộ) để cắt khung hình nghiệm thu.
+ * Phân tích link video TikTok song song (oEmbed + SSR WAF + TikWM), trích xuất danh sách mốc giây
+ * KOC cầm/test/nhắc sản phẩm và tạo đường dẫn luồng phát MP4 + cắt khung hình.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -260,7 +478,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!/^https?:\/\//i.test(rawUrl)) {
+    // Bắt URL TikTok sạch nếu người dùng dán cả dòng kèm mã Spark Ads
+    const urlMatch = rawUrl.match(/https?:\/\/[^\s"'<>]+tiktok\.com\/[^\s"'<>]+/i);
+    if (urlMatch) {
+      rawUrl = urlMatch[0];
+    } else if (!/^https?:\/\//i.test(rawUrl)) {
       rawUrl = `https://${rawUrl}`;
     }
 
@@ -268,61 +490,71 @@ export async function POST(req: NextRequest) {
     const productName = typeof body?.productName === 'string' ? body.productName.trim() : undefined;
     const uspKeywords: string[] = Array.isArray(body?.uspKeywords) ? body.uspKeywords : [];
 
-    let resolvedUrl = rawUrl;
-    const initialExtracted = extractHandleAndVideoIdFromUrl(resolvedUrl);
-    const urlHandle = initialExtracted.handle;
-    let urlVideoId = initialExtracted.videoId;
+    const initialExtracted = extractHandleAndVideoIdFromUrl(rawUrl);
+    const cleanTargetUrl =
+      initialExtracted.handle && initialExtracted.videoId
+        ? `https://www.tiktok.com/@${initialExtracted.handle}/video/${initialExtracted.videoId}`
+        : rawUrl.split('?')[0];
 
-    let authorHandle = urlHandle || '';
-    let authorNickname = urlHandle || 'KOC';
-    let caption = '';
-    let durationSeconds = 22;
-    let publishedTimeFormatted = '';
-    let coverUrl = '';
-    let originCoverUrl = '';
-    let cartAnchorTitle = '';
-    let subtitleSegments: TikTokSubtitleSegment[] = [];
-    const onScreenStickers: string[] = [];
-    const candidateStreamUrls: string[] = [];
-    let sessionCookies: string | undefined;
+    const cacheKey = initialExtracted.videoId || cleanTargetUrl;
+    const rawMetaCache = getVideoRawMetaCache();
+    let meta = rawMetaCache.get(cacheKey);
 
-    // 1. Gọi TikTok oEmbed để lấy nhanh thông tin cơ bản và ảnh bìa
-    try {
-      const oembedRes = await fetch(
-        `https://www.tiktok.com/oembed?url=${encodeURIComponent(resolvedUrl)}`,
-        {
+    if (!meta || Date.now() - meta.cachedAt > 10 * 60 * 1000) {
+      let resolvedUrl = cleanTargetUrl;
+      let urlVideoId = initialExtracted.videoId || '';
+      let authorHandle = initialExtracted.handle || '';
+      let authorNickname = authorHandle || 'KOC';
+      let caption = '';
+      let durationSeconds = 22;
+      let publishedTimeFormatted = '';
+      let coverUrl = '';
+      let originCoverUrl = '';
+      let cartAnchorTitle = '';
+      let subtitleSegments: TikTokSubtitleSegment[] = [];
+      const onScreenStickers: string[] = [];
+      const h264StreamUrls: string[] = [];
+      const fallbackStreamUrls: string[] = [];
+      let sessionCookies: string | undefined;
+
+      // Chạy song song cả 3 nguồn (oEmbed + TikTok SSR HTML + TikWM) để giảm thời gian chờ từ ~9s xuống ~2s
+      const [oembedTask, htmlTask, tikwmTask] = await Promise.allSettled([
+        fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(cleanTargetUrl)}`, {
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
           },
+          signal: AbortSignal.timeout(4000),
+          cache: 'no-store',
+        }).then((r) => (r.ok ? r.json() : null)),
+
+        fetchTikTokHtmlWithWafBypass(rawUrl, 5800),
+
+        fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(cleanTargetUrl)}`, {
+          headers: { Accept: 'application/json' },
           signal: AbortSignal.timeout(4500),
           cache: 'no-store',
-        }
-      );
-      if (oembedRes.ok) {
-        const oembedJson = await oembedRes.json();
+        }).then((r) => (r.ok ? r.json() : null)),
+      ]);
+
+      // 1. Kết quả oEmbed
+      if (oembedTask.status === 'fulfilled' && oembedTask.value) {
+        const oembedJson = oembedTask.value;
         caption = oembedJson.title || caption;
         authorNickname = oembedJson.author_name || authorNickname;
         authorHandle = (oembedJson.author_unique_id || authorHandle).toLowerCase();
         coverUrl = oembedJson.thumbnail_url || coverUrl;
         if (oembedJson.embed_product_id && !urlVideoId) {
           urlVideoId = String(oembedJson.embed_product_id);
-          if (authorHandle) {
-            resolvedUrl = `https://www.tiktok.com/@${authorHandle}/video/${urlVideoId}`;
-          }
         }
       }
-    } catch {
-      // Tiếp tục qua bước 2
-    }
 
-    // 2. Truy cập trang HTML của video (vượt SlardarWAF) để lấy playAddr (.mp4), cookies, phụ đề WebVTT và giỏ hàng
-    try {
-      const fetched = await fetchTikTokHtmlWithWafBypass(resolvedUrl, 6500);
-      if (fetched) {
-        resolvedUrl = fetched.finalUrl || resolvedUrl;
+      // 2. Kết quả SSR HTML (lấy phụ đề WebVTT, giỏ hàng và luồng phát H.264)
+      if (htmlTask.status === 'fulfilled' && htmlTask.value) {
+        const fetched = htmlTask.value;
+        resolvedUrl = fetched.finalUrl?.split('?')[0] || resolvedUrl;
         sessionCookies = fetched.cookies;
-        const extracted = extractHandleAndVideoIdFromUrl(resolvedUrl);
+        const extracted = extractHandleAndVideoIdFromUrl(fetched.finalUrl || resolvedUrl);
         if (extracted.handle) authorHandle = extracted.handle;
         if (extracted.videoId) urlVideoId = extracted.videoId;
 
@@ -330,226 +562,254 @@ export async function POST(req: NextRequest) {
           /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/
         );
         if (scriptMatch?.[1]) {
-          const parsed = JSON.parse(scriptMatch[1]);
-          const defaultScope = parsed?.__DEFAULT_SCOPE__ || {};
-          const itemStruct =
-            defaultScope?.['webapp.video-detail']?.itemInfo?.itemStruct ||
-            defaultScope?.['webapp.reflow.video.detail']?.itemInfo?.itemStruct;
+          try {
+            const parsed = JSON.parse(scriptMatch[1]);
+            const defaultScope = parsed?.__DEFAULT_SCOPE__ || {};
+            const itemStruct =
+              defaultScope?.['webapp.video-detail']?.itemInfo?.itemStruct ||
+              defaultScope?.['webapp.reflow.video.detail']?.itemInfo?.itemStruct;
 
-          if (itemStruct) {
-            urlVideoId = String(itemStruct.id || urlVideoId || '');
-            const createTimeSec = Number(itemStruct.createTime || 0);
-            const pubDate =
-              createTimeSec > 0
-                ? new Date(createTimeSec * 1000)
-                : decodeTikTokVideoIdTimestamp(urlVideoId) || null;
-            if (pubDate) {
-              publishedTimeFormatted = formatVnDateTime(pubDate).formatted;
-            }
-
-            authorHandle = String(itemStruct.author?.uniqueId || authorHandle || '').toLowerCase();
-            authorNickname = String(itemStruct.author?.nickname || authorNickname || authorHandle);
-            caption = String(itemStruct.desc || caption || '').trim();
-
-            const video = itemStruct.video || {};
-            if (Number(video.duration) > 0) {
-              durationSeconds = Number(video.duration);
-            }
-            coverUrl = video.originCover || video.cover || coverUrl;
-            originCoverUrl = video.originCover || video.dynamicCover || coverUrl;
-
-            // Lấy danh sách đường dẫn luồng phát MP4 (PlayAddr / DownloadAddr / BitrateInfo)
-            const rawPlayUrls: unknown[] = [
-              video.playAddr,
-              video.downloadAddr,
-              ...(Array.isArray(video?.PlayAddrStruct?.UrlList) ? video.PlayAddrStruct.UrlList : []),
-              ...(Array.isArray(video?.bitrateInfo)
-                ? video.bitrateInfo.flatMap((b: { PlayAddr?: { UrlList?: unknown[] } }) =>
-                    Array.isArray(b?.PlayAddr?.UrlList) ? b.PlayAddr.UrlList : []
-                  )
-                : []),
-            ];
-
-            for (const u of rawPlayUrls) {
-              if (typeof u === 'string' && u.startsWith('http') && !candidateStreamUrls.includes(u)) {
-                candidateStreamUrls.push(u);
+            if (itemStruct) {
+              urlVideoId = String(itemStruct.id || urlVideoId || '');
+              const createTimeSec = Number(itemStruct.createTime || 0);
+              const pubDate =
+                createTimeSec > 0
+                  ? new Date(createTimeSec * 1000)
+                  : decodeTikTokVideoIdTimestamp(urlVideoId) || null;
+              if (pubDate) {
+                publishedTimeFormatted = formatVnDateTime(pubDate).formatted;
               }
-            }
 
-            // Chữ chèn trên màn hình
-            if (Array.isArray(itemStruct.stickersOnItem)) {
-              for (const st of itemStruct.stickersOnItem) {
-                if (Array.isArray(st?.stickerText)) {
-                  for (const t of st.stickerText) {
-                    if (typeof t === 'string' && t.trim()) {
-                      onScreenStickers.push(t.trim());
+              authorHandle = String(itemStruct.author?.uniqueId || authorHandle || '').toLowerCase();
+              authorNickname = String(
+                itemStruct.author?.nickname || authorNickname || authorHandle
+              );
+              caption = String(itemStruct.desc || caption || '').trim();
+
+              const video = itemStruct.video || {};
+              if (Number(video.duration) > 0) {
+                durationSeconds = Number(video.duration);
+              }
+              coverUrl = video.originCover || video.cover || coverUrl;
+              originCoverUrl = video.originCover || video.dynamicCover || coverUrl;
+
+              // Phân loại ưu tiên luồng H.264 trước ByteVC1/HEVC để trình duyệt giải mã 100%
+              if (Array.isArray(video?.bitrateInfo)) {
+                for (const b of video.bitrateInfo as Array<{
+                  CodecType?: string;
+                  PlayAddr?: { UrlList?: unknown[] };
+                }>) {
+                  const isHevc = /bytevc|hevc|h265/i.test(String(b?.CodecType || ''));
+                  const urls = Array.isArray(b?.PlayAddr?.UrlList) ? b.PlayAddr.UrlList : [];
+                  for (const u of urls) {
+                    if (typeof u === 'string' && u.startsWith('http')) {
+                      if (isHevc) {
+                        fallbackStreamUrls.push(u);
+                      } else {
+                        h264StreamUrls.push(u);
+                      }
                     }
                   }
                 }
               }
-            }
 
-            // Giỏ hàng
-            const anchorInfo = extractTikTokShopAnchorInfo(itemStruct);
-            cartAnchorTitle = anchorInfo.cartAnchorTitle || '';
+              const directPlayCandidates: unknown[] = [
+                video.playAddr,
+                video.downloadAddr,
+                ...(Array.isArray(video?.PlayAddrStruct?.UrlList)
+                  ? video.PlayAddrStruct.UrlList
+                  : []),
+              ];
+              for (const u of directPlayCandidates) {
+                if (typeof u === 'string' && u.startsWith('http')) {
+                  h264StreamUrls.push(u);
+                }
+              }
 
-            // Phụ đề WebVTT để lấy mốc giây nhắc tên sản phẩm
-            const captionInfos: Array<{
-              languageCodeName?: string;
-              LanguageCodeName?: string;
-              url?: string;
-              Url?: string;
-              urlList?: string[];
-            }> = [
-              ...(Array.isArray(video?.claInfo?.captionInfos) ? video.claInfo.captionInfos : []),
-              ...(Array.isArray(video?.subtitleInfos) ? video.subtitleInfos : []),
-            ];
-            const preferredSub =
-              captionInfos.find((c) =>
-                (c.languageCodeName || c.LanguageCodeName || '').toLowerCase().includes('vie')
-              ) || captionInfos[0];
-
-            const subUrls = [
-              preferredSub?.url,
-              preferredSub?.Url,
-              ...(Array.isArray(preferredSub?.urlList) ? preferredSub.urlList : []),
-            ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
-
-            for (const subUrl of subUrls) {
-              try {
-                const subRes = await fetch(subUrl, {
-                  headers: {
-                    'User-Agent':
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    Referer: 'https://www.tiktok.com/',
-                  },
-                  signal: AbortSignal.timeout(3500),
-                  cache: 'no-store',
-                });
-                if (subRes.ok) {
-                  const vttText = await subRes.text();
-                  const segs = parseWebVttToSegments(vttText);
-                  if (segs.length > 0) {
-                    subtitleSegments = segs;
-                    break;
+              if (Array.isArray(itemStruct.stickersOnItem)) {
+                for (const st of itemStruct.stickersOnItem) {
+                  if (Array.isArray(st?.stickerText)) {
+                    for (const t of st.stickerText) {
+                      if (typeof t === 'string' && t.trim()) {
+                        onScreenStickers.push(t.trim());
+                      }
+                    }
                   }
                 }
-              } catch {
-                // Thử link phụ đề tiếp theo
+              }
+
+              const anchorInfo = extractTikTokShopAnchorInfo(itemStruct);
+              cartAnchorTitle = anchorInfo.cartAnchorTitle || '';
+
+              const captionInfos: Array<{
+                languageCodeName?: string;
+                LanguageCodeName?: string;
+                url?: string;
+                Url?: string;
+                urlList?: string[];
+              }> = [
+                ...(Array.isArray(video?.claInfo?.captionInfos) ? video.claInfo.captionInfos : []),
+                ...(Array.isArray(video?.subtitleInfos) ? video.subtitleInfos : []),
+              ];
+              const preferredSub =
+                captionInfos.find((c) =>
+                  (c.languageCodeName || c.LanguageCodeName || '').toLowerCase().includes('vie')
+                ) || captionInfos[0];
+
+              const subUrls = [
+                preferredSub?.url,
+                preferredSub?.Url,
+                ...(Array.isArray(preferredSub?.urlList) ? preferredSub.urlList : []),
+              ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0);
+
+              for (const subUrl of subUrls) {
+                try {
+                  const subRes = await fetch(subUrl, {
+                    headers: {
+                      'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                      Referer: 'https://www.tiktok.com/',
+                    },
+                    signal: AbortSignal.timeout(3000),
+                    cache: 'no-store',
+                  });
+                  if (subRes.ok) {
+                    const vttText = await subRes.text();
+                    const segs = parseWebVttToSegments(vttText);
+                    if (segs.length > 0) {
+                      subtitleSegments = segs;
+                      break;
+                    }
+                  }
+                } catch {
+                  // Thử link phụ đề tiếp theo
+                }
               }
             }
+          } catch {
+            // Bỏ qua lỗi parse JSON SSR
           }
         }
       }
-    } catch {
-      // Tiếp tục kiểm tra nguồn dự phòng
-    }
 
-    // 3. Dự phòng lấy luồng MP4 không khoá cookie qua cổng công khai nếu SSR chưa trả về playAddr hoặc để làm fallback
-    try {
-      const tikwmRes = await fetch(
-        `https://www.tikwm.com/api/?url=${encodeURIComponent(resolvedUrl)}`,
-        {
-          headers: { Accept: 'application/json' },
-          signal: AbortSignal.timeout(4500),
-          cache: 'no-store',
+      // 3. Kết quả TikWM (luồng MP4 H.264 trực tiếp không khóa cookie)
+      if (tikwmTask.status === 'fulfilled' && tikwmTask.value?.data) {
+        const data = tikwmTask.value.data;
+        const playUrl = data.play || data.wmplay || data.hdplay;
+        if (typeof playUrl === 'string' && playUrl.startsWith('http')) {
+          h264StreamUrls.unshift(playUrl);
         }
-      );
-      if (tikwmRes.ok) {
-        const tikwmJson = await tikwmRes.json();
-        const data = tikwmJson?.data;
-        if (data) {
-          const playUrl = data.play || data.hdplay || data.wmplay;
-          if (typeof playUrl === 'string' && playUrl.startsWith('http')) {
-            // Đưa nguồn MP4 trực tiếp không cần cookie lên đầu để trình duyệt seek nhanh nhất
-            candidateStreamUrls.unshift(playUrl);
-          }
-          if (!coverUrl && typeof data.origin_cover === 'string') {
-            coverUrl = data.origin_cover;
-          }
-          if (!authorHandle && data.author?.unique_id) {
-            authorHandle = String(data.author.unique_id).toLowerCase();
-          }
-          if ((!authorNickname || authorNickname === 'KOC') && data.author?.nickname) {
-            authorNickname = String(data.author.nickname);
-          }
-          if (!caption && typeof data.title === 'string') {
-            caption = data.title;
-          }
-          if (Number(data.duration) > 0 && durationSeconds === 22) {
-            durationSeconds = Number(data.duration);
-          }
+        if (!coverUrl && typeof data.origin_cover === 'string') {
+          coverUrl = data.origin_cover;
+        }
+        if (!authorHandle && data.author?.unique_id) {
+          authorHandle = String(data.author.unique_id).toLowerCase();
+        }
+        if ((!authorNickname || authorNickname === 'KOC') && data.author?.nickname) {
+          authorNickname = String(data.author.nickname);
+        }
+        if (!caption && typeof data.title === 'string') {
+          caption = data.title;
+        }
+        if (Number(data.duration) > 0 && durationSeconds === 22) {
+          durationSeconds = Number(data.duration);
         }
       }
-    } catch {
-      // Bỏ qua nếu cổng dự phòng không phản hồi
-    }
 
-    if (!publishedTimeFormatted && urlVideoId) {
-      const decoded = decodeTikTokVideoIdTimestamp(urlVideoId);
-      if (decoded) {
-        publishedTimeFormatted = formatVnDateTime(decoded).formatted;
+      if (!publishedTimeFormatted && urlVideoId) {
+        const decoded = decodeTikTokVideoIdTimestamp(urlVideoId);
+        if (decoded) {
+          publishedTimeFormatted = formatVnDateTime(decoded).formatted;
+        }
+      }
+
+      const dedupedStreams = Array.from(new Set([...h264StreamUrls, ...fallbackStreamUrls]));
+      meta = {
+        resolvedUrl,
+        videoId: urlVideoId,
+        authorHandle,
+        authorNickname,
+        caption,
+        durationSeconds,
+        publishedTimeFormatted,
+        coverUrl,
+        originCoverUrl,
+        cartAnchorTitle,
+        subtitleSegments,
+        onScreenStickers,
+        candidateStreamUrls: dedupedStreams,
+        sessionCookies,
+        cachedAt: Date.now(),
+      };
+      if (dedupedStreams.length > 0) {
+        rawMetaCache.set(cacheKey, meta);
       }
     }
 
     // 4. Dò các mốc giây sản phẩm xuất hiện trong lời thoại
     const mentionDetection = detectProductMentionMoments({
-      segments: subtitleSegments,
+      segments: meta.subtitleSegments,
       brandName,
       productName,
-      cartAnchorTitle,
-      caption,
+      cartAnchorTitle: meta.cartAnchorTitle,
+      caption: meta.caption,
       uspKeywords,
     });
 
     const suggestedMoments = buildSuggestedMoments({
-      durationSeconds,
+      durationSeconds: meta.durationSeconds,
       productMentionMoments: mentionDetection.productMentionMoments,
-      subtitleSegments,
-      productName: productName || cartAnchorTitle,
+      subtitleSegments: meta.subtitleSegments,
+      productName: productName || meta.cartAnchorTitle,
       brandName,
     });
 
     let streamProxyUrl: string | null = null;
-    if (candidateStreamUrls.length > 0) {
-      const token = randomUUID();
-      getStreamSessionMap().set(token, {
-        streamUrls: candidateStreamUrls,
-        cookies: sessionCookies,
+    let streamToken: string | null = null;
+    if (meta.candidateStreamUrls.length > 0) {
+      streamToken = randomUUID();
+      getStreamSessionMap().set(streamToken, {
+        streamUrls: meta.candidateStreamUrls,
+        cookies: meta.sessionCookies,
         referer: 'https://www.tiktok.com/',
         createdAt: Date.now(),
       });
-      streamProxyUrl = `/api/integrations/tiktok-koc/video-frame?streamToken=${encodeURIComponent(token)}`;
+      streamProxyUrl = `/api/integrations/tiktok-koc/video-frame?streamToken=${encodeURIComponent(streamToken)}`;
     }
 
-    const proxiedCoverUrl = coverUrl
-      ? `/api/integrations/tiktok-koc/video-frame?imageUrl=${encodeURIComponent(coverUrl)}`
-      : originCoverUrl
-        ? `/api/integrations/tiktok-koc/video-frame?imageUrl=${encodeURIComponent(originCoverUrl)}`
+    const proxiedCoverUrl = meta.coverUrl
+      ? `/api/integrations/tiktok-koc/video-frame?imageUrl=${encodeURIComponent(meta.coverUrl)}`
+      : meta.originCoverUrl
+        ? `/api/integrations/tiktok-koc/video-frame?imageUrl=${encodeURIComponent(meta.originCoverUrl)}`
         : null;
+
+    const serverFrameCaptureAvailable =
+      Boolean(streamToken) && (await checkFfmpegAvailable());
 
     return NextResponse.json({
       success: true,
       data: {
-        resolvedUrl,
-        videoId: urlVideoId || '',
-        authorHandle: authorHandle || 'koc',
-        authorNickname: authorNickname || authorHandle || 'KOC',
-        caption,
-        durationSeconds,
-        publishedTimeFormatted,
-        cartAnchorTitle,
-        onScreenStickers,
+        resolvedUrl: meta.resolvedUrl,
+        videoId: meta.videoId || '',
+        authorHandle: meta.authorHandle || 'koc',
+        authorNickname: meta.authorNickname || meta.authorHandle || 'KOC',
+        caption: meta.caption,
+        durationSeconds: meta.durationSeconds,
+        publishedTimeFormatted: meta.publishedTimeFormatted,
+        cartAnchorTitle: meta.cartAnchorTitle,
+        onScreenStickers: meta.onScreenStickers,
         hasDirectVideoStream: Boolean(streamProxyUrl),
+        streamToken,
         streamProxyUrl,
+        serverFrameCaptureAvailable,
         proxiedCoverUrl,
-        rawCoverUrl: coverUrl || originCoverUrl || null,
+        rawCoverUrl: meta.coverUrl || meta.originCoverUrl || null,
         firstProductAppearanceSec: mentionDetection.firstProductAppearanceSec,
         firstProductMentionTerm: mentionDetection.firstProductMentionTerm,
         firstProductMentionQuote: mentionDetection.firstProductMentionQuote,
         productMentionMoments: mentionDetection.productMentionMoments,
         suggestedMoments,
-        subtitleSegments,
+        subtitleSegments: meta.subtitleSegments,
       },
     });
   } catch (err) {

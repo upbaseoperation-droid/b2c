@@ -52,3 +52,20 @@
     3. Có luồng xử lý dự phòng nội bộ (`INTERNAL`) trong `/api/integrations/llm/route.ts` để tính năng luôn hoạt động ổn định kể cả khi chưa nhập khóa API ngoài hoặc máy chủ mô hình quá tải.
   - **`RULE-API-02` (Cấm tự động gọi API mô hình / cào dữ liệu khi vừa mở hộp thoại hoặc màn hình):** Tuyệt đối KHÔNG gọi `executeOperationalReport`, `/api/integrations/llm`, `/api/integrations/tiktok-koc/social-discovery`, `/api/integrations/tiktok-koc/scrape` hay các API phân tích/thu thập dữ liệu bên trong `useEffect` khi vừa mở Modal/Drawer (`open` / `isOpen`). Chỉ được phép gọi API khi người dùng chủ động bấm nút hành động tường minh (`Đánh giá`, `Chạy phân tích`, `Dò tìm kênh tự động`, `Lấy dữ liệu kênh`...).
 
+## 6. Quy Tắc Phân Tầng Mô Hình (Model Routing) & Hàng Rào 5 Cổng Kiểm Soát QA (Tối Ưu Token)
+Khi điều phối `invoke_subagent`, bắt buộc phân bổ tham số `Model` theo đúng 3 phân khu (10 vị trí chuyên biệt) để tiết kiệm ~60%–75% lượng Token mà vẫn giữ chất lượng kiểm duyệt cao nhất:
+- **Khu 1 — Chỉ Huy & Kiến Trúc (`Model: "inherit"` hoặc `"pro"` — Gemini 4 Argon):**
+  1. **Điều phối chính (`Orchestrator`):** Phân rã bài toán, định tuyến công việc và chốt quyết định cuối.
+  2. **Kiến trúc sư (`architect` / `planner` / `code-architect`):** Chốt đặc tả kỹ thuật, cấu trúc dữ liệu, chữ ký hàm và ranh giới phân quyền trước khi giao xuống nhóm thực thi.
+- **Khu 2 — Thực Thi Tốc Độ Cao (`Model: "flash"` hoặc `"flash_lite"` — Gemini 3.8 Flash / Lite):**
+  3. **Kỹ sư Giao diện (`react-reviewer` / UI Coder — `Model: "flash"`):** Viết/sửa component React, Tailwind theo đúng đặc tả của Khu 1.
+  4. **Kỹ sư Logic & API (`typescript-reviewer` / Backend Coder — `Model: "flash"`):** Viết xử lý dữ liệu, route API và cập nhật state.
+  5. **Đồng bộ Tài liệu (`doc-updater` / `research` — `Model: "flash_lite"`):** Tra cứu nhanh tệp tin và cập nhật đồng bộ tài liệu `blueprint/` theo Quy tắc 4.
+- **Khu 3 — Hàng Rào 5 Cổng Kiểm Soát & QA Nối Tiếp (Multi-Gate QA Pipeline):**
+  - **Cổng 1 — Kiểm soát Biên dịch & Kiểu tĩnh (`build-error-resolver` / `react-build-resolver` — `Model: "flash_lite"`):** Kiểm tra `tsc --noEmit` và `npm run build`, chặn ngay lỗi cú pháp và sai kiểu Props (`RULE-TS-01`).
+  - **Cổng 2 — Thanh tra Quy chuẩn `GEMINI.md` (`code-reviewer` — `Model: "flash"`):** Quét bản thay đổi để chặn lỗi dùng hàm băm/ngẫu nhiên giả (`RULE-DATA-01`), lệch trạng thái bảng/chi tiết (`RULE-SYNC-01`), từ ngữ hoa mỹ hoặc dòng phụ đề xám dưới tiêu đề.
+  - **Cổng 3 — Kiểm soát Bảo mật & An toàn API (`security-reviewer` / `silent-failure-hunter` — `Model: "flash"`):** Chặn lỗi tự động gọi API trong `useEffect` khi mở hộp thoại (`RULE-API-02`), kiểm tra quản lý cấu hình API tập trung (`RULE-API-01`) và lỗi nuốt ngoại lệ ngầm.
+  - **Cổng 4 — Kiểm thử Tương tác & Luồng bấm nút (`e2e-runner` — `Model: "flash_lite"`):** Kiểm tra luồng đóng/mở Modal, trạng thái nút bấm và đối chiếu đồng bộ tài liệu hệ thống.
+  - **Cổng 5 — Nghiệm thu Cuối cùng (`code-reviewer` cấp Trưởng ban — `Model: "pro"` / Gemini 4 Argon):** Chỉ được gọi sau khi mã nguồn đã vượt qua đủ 4 cổng lọc phía trên; chỉ đọc phần `git diff` rút gọn để ký duyệt xuất xưởng (tránh lãng phí token của mô hình lớn vào các vòng lặp sửa lỗi cơ học).
+
+

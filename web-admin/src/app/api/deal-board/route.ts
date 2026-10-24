@@ -5,9 +5,8 @@ import { planJobToBookingDeal } from '@/lib/planDealLink';
 import type { BookingDealItem } from '@/lib/types';
 import {
   EMPTY_DEAL_BOARD,
-  FRAMEWORK_STATE_LABEL,
-  frameworkState,
   jobPaymentBlocker,
+  jobTotalFee,
   normHandle,
   sanitizeDealBoard,
   syncDealSummaryFields,
@@ -99,12 +98,78 @@ export async function PUT(request: NextRequest) {
           const oldJob = oldJobMap.get(j.id);
           if (!j.code || jobCodes.has(j.code)) throw new RecordError(`Mã job ${j.code || '(trống)'} trong deal ${d.code} trống hoặc bị trùng.`, 400);
           jobCodes.add(j.code);
-          // Đề nghị hoặc ghi nhận thanh toán theo Job: phải qua nghiệm thu của Job đó
+
+          // D5: Khóa sửa phí / phụ lục khi Job đã lập đề nghị thanh toán hoặc đã thanh toán
+          if (oldJob && oldJob.payment.status !== 'NONE') {
+            if (
+              j.videoFee !== oldJob.videoFee ||
+              jobTotalFee(j) !== jobTotalFee(oldJob) ||
+              (oldJob.appendixNo.trim() && j.appendixNo.trim() !== oldJob.appendixNo.trim())
+            ) {
+              throw new RecordError(
+                `Job ${j.code} đã lập đề nghị thanh toán hoặc đã thanh toán, không được sửa đơn giá hoặc mã phụ lục.`,
+                400
+              );
+            }
+          }
+
+          // S6: Kiểm soát vai trò trên máy chủ đối với các trạng thái phê duyệt nhạy cảm
+          if (j.legalReviewStatus === 'APPROVED' && oldJob?.legalReviewStatus !== 'APPROVED') {
+            if (!['LEGAL', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role)) {
+              throw new RecordError('Chỉ Pháp chế hoặc Quản lý mới có quyền duyệt thẩm định Pháp chế.', 403);
+            }
+          }
+          if (j.financeReviewStatus === 'APPROVED' && oldJob?.financeReviewStatus !== 'APPROVED') {
+            if (!['FINANCE', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role) && !actor.permissions?.includes('canApprovePayment')) {
+              throw new RecordError('Chỉ Kế toán hoặc Quản lý mới có quyền duyệt thẩm định Tài chính.', 403);
+            }
+          }
+          if (j.payment.status === 'PAID' && oldJob?.payment.status !== 'PAID') {
+            if (!['FINANCE', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role) && !actor.permissions?.includes('canApprovePayment')) {
+              throw new RecordError('Chỉ Kế toán hoặc cấp Phê duyệt mới có quyền xác nhận Đã thanh toán (PAID).', 403);
+            }
+          }
+          const wasLeadConfirmed = Boolean(
+            oldJob?.lateSigningExplanation?.leadConfirmed ||
+              oldJob?.lateSigningExplanation?.confirmedByLead?.trim() ||
+              oldJob?.lateSigningExplanation?.leadConfirmedBy?.trim()
+          );
+          const isLeadConfirmed = Boolean(
+            j.lateSigningExplanation?.leadConfirmed ||
+              j.lateSigningExplanation?.confirmedByLead?.trim() ||
+              j.lateSigningExplanation?.leadConfirmedBy?.trim()
+          );
+          if (isLeadConfirmed && !wasLeadConfirmed) {
+            if (!['LEADER', 'ADMIN', 'DIRECTOR', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(actor.role)) {
+              throw new RecordError('Chỉ Trưởng nhóm (Leader) hoặc Quản lý mới có quyền xác nhận Giải trình ký muộn.', 403);
+            }
+          }
+
+          // Đề nghị hoặc ghi nhận thanh toán theo Job: phải qua nghiệm thu của Job đó và có HĐNT/Phụ lục nếu có phí (D1)
           const payChanged = j.payment.status !== (oldJob?.payment.status ?? 'NONE');
           if (payChanged && j.payment.status !== 'NONE') {
+            if (jobTotalFee(j) > 0 && !d.appendixNo.trim() && !j.appendixNo.trim()) {
+              throw new RecordError(`Job ${j.code} có phí nhưng chưa có số Hợp đồng nguyên tắc (HĐNT) / Phụ lục SOW.`, 400);
+            }
             const reason = jobPaymentBlocker(j);
             if (reason) throw new RecordError(`Job ${j.code} chưa thanh toán được: ${reason}`, 400);
           }
+
+          // Nếu đổi link air thì xóa xác nhận nghiệm thu cũ để bắt buộc nghiệm thu lại
+          const airLinkChanged = Boolean(oldJob && j.airLink.trim() !== oldJob.airLink.trim());
+          if (airLinkChanged) {
+            return {
+              ...j,
+              acceptance: {
+                ...j.acceptance,
+                status: j.airLink.trim() ? j.acceptance.status : 'PENDING',
+                confirmedBy: '',
+                confirmedAt: '',
+                confirmNote: '',
+              },
+            };
+          }
+
           // Người xác nhận nghiệm thu Job do máy chủ ghi
           const confirmChanged = j.acceptance.confirmedBy !== (oldJob?.acceptance.confirmedBy ?? '');
           if (confirmChanged) {

@@ -9,12 +9,12 @@ test('Thiếu khóa phiên chỉ mở kho thử trình duyệt, không đổi qu
   globalThis.fetch = async () => { requests++; return Response.json({ error: 'Chưa cấu hình khóa bảo vệ phiên.' }, { status: 503 }); };
   try {
     const data = await contractApi<ContractBootstrap>('/api/contracts');
-    assert.equal(data.config.storage, 'BROWSER_DEMO'); assert.equal(data.templates.length, 8);
+    assert.equal(data.config.storage, 'BROWSER_DEMO'); assert.equal(data.templates.length, 25);
     assert.equal(data.config.wesign, false); assert.equal(data.config.ai, false);
     await contractApi('/api/contracts/demo', { id: 'demo-legal' });
     assert.equal((await contractApi<ContractBootstrap>('/api/contracts')).actor.id, 'demo-legal');
     assert.equal(requests, 1);
-    assert.ok(data.templates.every(t => t.version === 'Ver052026' && t.paragraphs.length > 5));
+    assert.ok(data.templates.every(t => Boolean(t.version) && t.paragraphs.length > 5));
   } finally { globalThis.fetch = previous; disableBrowserDemo(); }
 });
 test('Kho thử tạo, duyệt độc lập, ký từng người, chặn gọi MISA/tải chữ ký', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Calculator,
   TrendingUp,
@@ -20,12 +20,16 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertTriangle,
+  Award,
+  CalendarCheck,
+  Download,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type {
   BrandDetail,
   BookingDealItem,
   KocItem,
+  StoreDifficultyTier,
   StorePortfolioItem,
   UserProfile,
 } from '../../lib/types';
@@ -37,6 +41,23 @@ import {
   CONTENT_TAG_OPTIONS,
 } from '../../lib/staffBrandListingSheet';
 import { extractTikTokChannelAndVideoFromInput } from '../../lib/approvedBookingList';
+import { getVietnamDateYmd } from '../../lib/format';
+import {
+  VIETQR_BANKS,
+  TIKTOK_RESTRICTED_DICTIONARY,
+  formatVnd,
+  stripVietnameseTones,
+  matchBankBinByName,
+  parseBatchQuoteLines,
+  computeSlaTimelineFromAirDate,
+  computeP3SimulationRow,
+  downloadTextFile,
+  type ToolCategoryKey,
+  type ToolId,
+  type RestrictedWordRule,
+  type BatchTaxRow,
+  type SlaMilestoneRow,
+} from '../../lib/workToolkitRules';
 import {
   StatRow,
   Stat,
@@ -65,20 +86,6 @@ export interface WorkToolkitHubViewProps {
   onNotify?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
 }
 
-type ToolCategoryKey = 'ALL' | 'PINNED' | 'FINANCE' | 'OPERATIONS' | 'CONTENT';
-
-type ToolId =
-  | 'tax-gross-net'
-  | 'roas-breakeven'
-  | 'kpi-splitter'
-  | 'bulk-link-extractor'
-  | 'vietqr-generator'
-  | 'utm-builder'
-  | 'script-policy-checker'
-  | 'voiceover-timer'
-  | 'brief-hashtag-builder'
-  | 'list-diff-checker';
-
 interface ToolCatalogItem {
   id: ToolId;
   title: string;
@@ -95,7 +102,7 @@ const TOOL_CATALOG: ToolCatalogItem[] = [
     title: 'Quy đổi Gross ↔ Net & Bậc KL',
     category: 'FINANCE',
     categoryLabel: 'Tài chính & Định mức',
-    badgeText: 'Thuế TNCN 10% · VAT',
+    badgeText: 'Đơn lẻ & Hàng loạt · TNCN/VAT',
     targetRoles: 'Booking · Kế toán · Quản lý',
     icon: Calculator,
   },
@@ -149,7 +156,7 @@ const TOOL_CATALOG: ToolCatalogItem[] = [
     title: 'Kiểm tra từ hạn chế TikTok Shop',
     category: 'CONTENT',
     categoryLabel: 'Nội dung & Đối soát',
-    badgeText: '5 nhóm rủi ro · Gợi ý sửa',
+    badgeText: '6 nhóm rủi ro · Gợi ý sửa',
     targetRoles: 'Content · Booking · Leader',
     icon: ShieldAlert,
   },
@@ -180,88 +187,33 @@ const TOOL_CATALOG: ToolCatalogItem[] = [
     targetRoles: 'Kế toán · Quản lý · Booking',
     icon: GitCompare,
   },
+  {
+    id: 'p3-workload-calc',
+    title: 'Tính điểm Tải công việc & Thưởng P3',
+    category: 'MANAGEMENT',
+    categoryLabel: 'Quản trị & SLA',
+    badgeText: 'Hệ số Gian 0.80–1.50 · P3',
+    targetRoles: 'Quản lý · Leader · Nhân sự',
+    icon: Award,
+  },
+  {
+    id: 'sla-timeline-calc',
+    title: 'Tra cứu Mốc hạn SLA từ Ngày Air',
+    category: 'MANAGEMENT',
+    categoryLabel: 'Quản trị & SLA',
+    badgeText: 'T-7 → T+7 · Khóa sổ mùng 02',
+    targetRoles: 'Booking · Kế toán · Leader',
+    icon: CalendarCheck,
+  },
 ];
 
 const PINNED_TOOLS_STORAGE_KEY = 'upbase_b2c_pinned_work_tools_v1';
-
-interface BankOption {
-  code: string;
-  bin: string;
-  shortName: string;
-}
-
-const VIETQR_BANKS: BankOption[] = [
-  { code: 'VCB', bin: '970436', shortName: 'Vietcombank' },
-  { code: 'TCB', bin: '970407', shortName: 'Techcombank' },
-  { code: 'MB', bin: '970422', shortName: 'MBBank' },
-  { code: 'ACB', bin: '970416', shortName: 'ACB' },
-  { code: 'BIDV', bin: '970418', shortName: 'BIDV' },
-  { code: 'ICB', bin: '970415', shortName: 'VietinBank' },
-  { code: 'VPB', bin: '970432', shortName: 'VPBank' },
-  { code: 'TPB', bin: '970423', shortName: 'TPBank' },
-  { code: 'STB', bin: '970403', shortName: 'Sacombank' },
-  { code: 'VIB', bin: '970441', shortName: 'VIB' },
-  { code: 'SHB', bin: '970443', shortName: 'SHB' },
-  { code: 'HDB', bin: '970437', shortName: 'HDBank' },
-  { code: 'OCB', bin: '970448', shortName: 'OCB' },
-  { code: 'MSB', bin: '970426', shortName: 'MSB' },
-  { code: 'LPB', bin: '970449', shortName: 'LPBank' },
-  { code: 'VBA', bin: '970405', shortName: 'Agribank' },
+const DEFAULT_PINNED_TOOLS: ToolId[] = [
+  'tax-gross-net',
+  'bulk-link-extractor',
+  'script-policy-checker',
+  'vietqr-generator',
 ];
-
-interface RestrictedWordRule {
-  term: string;
-  category: 'CAM_KET_TUYET_DOI' | 'Y_TE_DIEU_TRI' | 'DIEU_HUONG_NGOAI_SAN' | 'SO_SANH_NHAI' | 'KHUYEN_MAI_AO';
-  categoryLabel: string;
-  severity: 'CAO' | 'TRUNG_BINH';
-  suggestion: string;
-}
-
-const TIKTOK_RESTRICTED_DICTIONARY: RestrictedWordRule[] = [
-  { term: '100%', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'CAO', suggestion: 'hỗ trợ rõ rệt / tỷ lệ cao' },
-  { term: 'tuyệt đối', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'CAO', suggestion: 'tối ưu / đáng kể' },
-  { term: 'vĩnh viễn', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'CAO', suggestion: 'duy trì lâu dài' },
-  { term: 'nhất thị trường', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'CAO', suggestion: 'nổi bật trong phân khúc' },
-  { term: 'số 1', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'TRUNG_BINH', suggestion: 'được ưa chuộng hàng đầu' },
-  { term: 'tức thì', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'TRUNG_BINH', suggestion: 'nhanh chóng sau khi thoa' },
-  { term: 'ngay lập tức', category: 'CAM_KET_TUYET_DOI', categoryLabel: 'Cam kết tuyệt đối', severity: 'TRUNG_BINH', suggestion: 'cảm nhận sớm' },
-  { term: 'trị dứt điểm', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'hỗ trợ cải thiện tình trạng' },
-  { term: 'chữa khỏi', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'làm dịu và phục hồi' },
-  { term: 'đặc trị', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'chuyên biệt cho làn da' },
-  { term: 'thuốc', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'sản phẩm / tinh chất dưỡng' },
-  { term: 'viêm da', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'da nhạy cảm / dễ kích ứng' },
-  { term: 'bác sĩ khuyên dùng', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'đã qua kiểm nghiệm da liễu' },
-  { term: 'trị mụn', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'TRUNG_BINH', suggestion: 'hỗ trợ giảm mụn / ngừa mụn' },
-  { term: 'trị nám', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'TRUNG_BINH', suggestion: 'hỗ trợ làm mờ thâm sạm' },
-  { term: 'kích trắng', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'dưỡng sáng nâng tông tự nhiên' },
-  { term: 'lột tẩy', category: 'Y_TE_DIEU_TRI', categoryLabel: 'Y tế & Điều trị', severity: 'CAO', suggestion: 'làm sạch tế bào chết dịu nhẹ' },
-  { term: 'zalo', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'CAO', suggestion: 'nhắn tin trực tiếp tại gian hàng' },
-  { term: 'phở bò', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'CAO', suggestion: 'kênh chính thức của nhãn' },
-  { term: 'facebook', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'CAO', suggestion: 'gian hàng chính hãng' },
-  { term: 'shopee', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'CAO', suggestion: 'giỏ hàng góc trái màn hình' },
-  { term: 'chuyển khoản', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'CAO', suggestion: 'thanh toán trên đơn hàng' },
-  { term: 'inbox riêng', category: 'DIEU_HUONG_NGOAI_SAN', categoryLabel: 'Điều hướng ngoài sàn', severity: 'TRUNG_BINH', suggestion: 'bấm vào mục chat với shop' },
-  { term: 'rep 1:1', category: 'SO_SANH_NHAI', categoryLabel: 'Hàng nhái / So sánh', severity: 'CAO', suggestion: 'hàng chính hãng có tem phụ' },
-  { term: 'hàng auth giá rẻ', category: 'SO_SANH_NHAI', categoryLabel: 'Hàng nhái / So sánh', severity: 'TRUNG_BINH', suggestion: 'sản phẩm chính hãng ưu đãi' },
-  { term: 'miễn phí 100%', category: 'KHUYEN_MAI_AO', categoryLabel: 'Khuyến mãi quá đà', severity: 'CAO', suggestion: 'quà tặng kèm theo đơn' },
-  { term: 'rẻ nhất', category: 'KHUYEN_MAI_AO', categoryLabel: 'Khuyến mãi quá đà', severity: 'TRUNG_BINH', suggestion: 'mức giá tiết kiệm' },
-];
-
-function formatVnd(amount: number): string {
-  const n = Math.round(Number(amount) || 0);
-  return `${n.toLocaleString('vi-VN')} ₫`;
-}
-
-function stripVietnameseTones(str: string): string {
-  return (str || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .replace(/[^a-zA-Z0-9\s_-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
   brands,
@@ -272,27 +224,22 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ToolCategoryKey>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeToolId, setActiveToolId] = useState<ToolId>('tax-gross-net');
-  const [pinnedIds, setPinnedIds] = useState<ToolId[]>([
-    'tax-gross-net',
-    'bulk-link-extractor',
-    'script-policy-checker',
-    'vietqr-generator',
-  ]);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  useEffect(() => {
+  const [pinnedIds, setPinnedIds] = useState<ToolId[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_PINNED_TOOLS;
     try {
-      const saved = localStorage.getItem(PINNED_TOOLS_STORAGE_KEY);
+      const saved = window.localStorage.getItem(PINNED_TOOLS_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as ToolId[];
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setPinnedIds(parsed);
+          return parsed;
         }
       }
     } catch {
       // ignore storage errors
     }
-  }, []);
+    return DEFAULT_PINNED_TOOLS;
+  });
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const togglePinTool = (id: ToolId, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -590,11 +537,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
     }
     if (found.rateCardVideo) setQrAmountNet(String(found.rateCardVideo));
     if (found.bankName) {
-      const bankLower = found.bankName.toLowerCase();
-      const matchedBank = VIETQR_BANKS.find(
-        (b) => bankLower.includes(b.shortName.toLowerCase()) || bankLower.includes(b.code.toLowerCase())
-      );
-      if (matchedBank) setQrBankBin(matchedBank.bin);
+      setQrBankBin(matchBankBinByName(found.bankName));
     }
   };
 
@@ -834,6 +777,53 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
   }, [listAText, listBText]);
 
   // =========================================================================
+  // 11. STATE: BÁO GIÁ HÀNG LOẠT & TÍNH ĐIỂM P3 / MỐC SLA
+  // =========================================================================
+  const [batchQuoteInput, setBatchQuoteInput] = useState<string>(
+    'goc.cua.ru\t2500000\t1\nreview.mypham.chinhhang\t4500000\t2'
+  );
+  const batchTaxRows = useMemo(
+    () => parseBatchQuoteLines(batchQuoteInput, taxScheme, kocLookupByHandle),
+    [batchQuoteInput, taxScheme, kocLookupByHandle]
+  );
+
+  const [p3SelectedStoreId, setP3SelectedStoreId] = useState<string>(stores[0]?.id || '');
+  const [p3CompletedCases, setP3CompletedCases] = useState<string>('32');
+  const [p3QualityMultiplier, setP3QualityMultiplier] = useState<string>('1.1');
+  const [p3SlaMultiplier, setP3SlaMultiplier] = useState<string>('1.0');
+  const [p3UnitRateVnd, setP3UnitRateVnd] = useState<string>('120000');
+
+  const p3Simulation = useMemo(() => {
+    const selectedStore = stores.find((s) => s.id === p3SelectedStoreId) || stores[0];
+    const tier: StoreDifficultyTier = selectedStore?.difficultyTier || 'Tiêu chuẩn';
+    return computeP3SimulationRow({
+      id: selectedStore?.id || 'sim-1',
+      storeName: selectedStore?.storeName || 'Gian hàng B2C',
+      brandName: selectedStore?.brandName || 'Thương hiệu',
+      picName: selectedStore?.b2cOwnerName || 'Chuyên viên B2C',
+      difficultyTier: tier,
+      completedCases: Math.max(0, Number(p3CompletedCases) || 0),
+      qualityMultiplier: Math.max(0.5, Number(p3QualityMultiplier) || 1),
+      slaMultiplier: Math.max(0.5, Number(p3SlaMultiplier) || 1),
+      unitRateVnd: Math.max(0, Number(p3UnitRateVnd) || 0),
+    });
+  }, [stores, p3SelectedStoreId, p3CompletedCases, p3QualityMultiplier, p3SlaMultiplier, p3UnitRateVnd]);
+
+  const [slaAirDateIso, setSlaAirDateIso] = useState<string>(() => getVietnamDateYmd());
+  const [slaHasSampleOnHand, setSlaHasSampleOnHand] = useState<'NO' | 'YES'>('NO');
+  const [slaDealFeeNet, setSlaDealFeeNet] = useState<string>('2500000');
+
+  const slaTimelineRows = useMemo(
+    () =>
+      computeSlaTimelineFromAirDate(
+        slaAirDateIso,
+        slaHasSampleOnHand === 'YES',
+        Math.max(0, Number(slaDealFeeNet) || 0)
+      ),
+    [slaAirDateIso, slaHasSampleOnHand, slaDealFeeNet]
+  );
+
+  // =========================================================================
   // FILTERED TOOL CARDS
   // =========================================================================
   const filteredTools = useMemo(() => {
@@ -1030,6 +1020,11 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
             label: 'Nội dung & Đối soát',
             count: TOOL_CATALOG.filter((t) => t.category === 'CONTENT').length,
           },
+          {
+            key: 'MANAGEMENT' as ToolCategoryKey,
+            label: 'Quản trị & SLA',
+            count: TOOL_CATALOG.filter((t) => t.category === 'MANAGEMENT').length,
+          },
         ]}
         value={selectedCategory}
         onChange={setSelectedCategory}
@@ -1045,7 +1040,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
       />
 
       {/* BENTO GRID KHO CÔNG CỤ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-2.5">
         {filteredTools.map((tool) => {
           const Icon = tool.icon;
           const isSelected = tool.id === activeTool.id;
@@ -1062,7 +1057,7 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                   setActiveToolId(tool.id);
                 }
               }}
-              className={`group relative rounded-xl border p-3.5 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+              className={`group relative rounded-xl border p-3.5 text-left transition-colors cursor-pointer flex flex-col justify-between gap-2.5 ${
                 isSelected
                   ? 'bg-accent-soft/45 border-accent shadow-xs'
                   : 'bg-surface border-line hover:border-line-strong hover:bg-canvas/60'
@@ -1269,6 +1264,76 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
                   Khung lương B2C: <strong>Freecast</strong> (0đ) · <strong>KL1</strong> (&lt;500k) · <strong>KL2</strong> (500k–&lt;1.5M) · <strong>KL3</strong> (1.5M–&lt;3M) · <strong>KL4</strong> (3M–&lt;5M) · <strong>KL5</strong> (5M–&lt;10M) · <strong>KL6</strong> (10M–&lt;30M) · <strong>KL7</strong> (≥30M)
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-line grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-4">
+              <Field label="Tính thuế & đối chiếu Ratecard hàng loạt (ID KOC | Giá Net | SL)">
+                <Textarea
+                  rows={5}
+                  value={batchQuoteInput}
+                  onChange={(e) => setBatchQuoteInput(e.target.value)}
+                  placeholder="goc.cua.ru 2500000 1"
+                />
+              </Field>
+            </div>
+            <div className="lg:col-span-8 border border-line rounded-xl overflow-hidden">
+              <DataTable<BatchTaxRow>
+                rowKey={(r) => r.id}
+                rows={batchTaxRows}
+                columns={[
+                  {
+                    key: 'handle',
+                    header: 'Kênh KOC',
+                    width: 170,
+                    render: (r) => (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-ink">@{r.handle}</span>
+                        <span className="text-2xs text-ink-3">{r.kocName}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'klGrade',
+                    header: 'Bậc KL',
+                    width: 90,
+                    render: (r) => <Status tone="info">{r.klGrade}</Status>,
+                  },
+                  {
+                    key: 'totalNet',
+                    header: 'Tổng Net',
+                    align: 'right',
+                    width: 130,
+                    render: (r) => (
+                      <span className="tabular-nums font-semibold text-ink">
+                        {formatVnd(r.totalNet)} ({r.videoQty}v)
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'totalGross',
+                    header: 'Tổng Gross',
+                    align: 'right',
+                    width: 130,
+                    render: (r) => (
+                      <span className="tabular-nums font-medium text-accent">{formatVnd(r.totalGross)}</span>
+                    ),
+                  },
+                  {
+                    key: 'compliance',
+                    header: 'Quy chuẩn Hợp đồng',
+                    render: (r) =>
+                      r.requiresLegalFinanceReview ? (
+                        <Status tone="critical">≥50M: Duyệt Pháp chế & KT</Status>
+                      ) : r.requiresContract ? (
+                        <Status tone="warning">&gt;9M: Bắt buộc HĐ/SOW</Status>
+                      ) : (
+                        <Status tone="positive">Chuẩn khung</Status>
+                      ),
+                  },
+                ]}
+              />
             </div>
           </div>
         </Panel>
@@ -2061,6 +2126,212 @@ export const WorkToolkitHubView: React.FC<WorkToolkitHubViewProps> = ({
               </div>
             </div>
           </div>
+        </Panel>
+      )}
+
+      {activeTool.id === 'p3-workload-calc' && (
+        <Panel
+          title="11. Tính điểm Tải công việc & Ước tính Thưởng P3 theo Hệ số Gian hàng"
+          actions={
+            <Button
+              variant="primary"
+              size="sm"
+              icon={copiedKey === 'copy-p3-sim' ? Check : Copy}
+              onClick={() => {
+                const summary = [
+                  `ƯỚC TÍNH ĐIỂM TẢI & THƯỞNG P3 — ${p3Simulation.storeName}`,
+                  `- Thương hiệu: ${p3Simulation.brandName} · PIC: ${p3Simulation.picName}`,
+                  `- Phân hạng Gian hàng: ${p3Simulation.difficultyTier} (Hệ số ×${p3Simulation.storeMultiplier.toFixed(2)})`,
+                  `- Số đầu việc hoàn thành: ${p3Simulation.completedCases}`,
+                  `- Điểm tải quy đổi: ${p3Simulation.workloadPoints} điểm`,
+                  `- Thưởng P3 dự kiến: ${formatVnd(p3Simulation.estimatedBonusVnd)}`,
+                ].join('\n');
+                handleCopyText(summary, 'Bảng tính Điểm tải & Thưởng P3', 'copy-p3-sim');
+              }}
+            >
+              Sao chép kết quả P3
+            </Button>
+          }
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Chọn Gian hàng B2C" className="sm:col-span-2">
+                <Select value={p3SelectedStoreId} onChange={(e) => setP3SelectedStoreId(e.target.value)}>
+                  {stores.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.storeName} ({s.brandName} · {s.difficultyTier || 'Tiêu chuẩn'})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Số Video / Đầu việc nghiệm thu">
+                <Input
+                  type="number"
+                  min={0}
+                  value={p3CompletedCases}
+                  onChange={(e) => setP3CompletedCases(e.target.value)}
+                />
+              </Field>
+              <Field label="Đơn giá thưởng / 1 điểm tải (₫)">
+                <Input
+                  type="number"
+                  min={0}
+                  step={10000}
+                  value={p3UnitRateVnd}
+                  onChange={(e) => setP3UnitRateVnd(e.target.value)}
+                />
+              </Field>
+              <Field label="Hệ số Chất lượng (Quality)">
+                <Select value={p3QualityMultiplier} onChange={(e) => setP3QualityMultiplier(e.target.value)}>
+                  <option value="0.8">0.80 — Cần cải thiện</option>
+                  <option value="1.0">1.00 — Đạt chuẩn</option>
+                  <option value="1.1">1.10 — Tốt</option>
+                  <option value="1.25">1.25 — Xuất sắc</option>
+                </Select>
+              </Field>
+              <Field label="Hệ số Đúng hạn (SLA)">
+                <Select value={p3SlaMultiplier} onChange={(e) => setP3SlaMultiplier(e.target.value)}>
+                  <option value="0.85">0.85 — Trễ hạn nhẹ</option>
+                  <option value="1.0">1.00 — Đúng hạn SLA</option>
+                  <option value="1.1">1.10 — Vượt tiến độ</option>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="lg:col-span-6 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                  <span className="text-2xs text-ink-3">Điểm tải quy đổi (Workload Points)</span>
+                  <div className="text-xl font-semibold text-ink tabular-nums">
+                    {p3Simulation.workloadPoints} điểm
+                  </div>
+                  <Status tone="info">
+                    Hệ số gian ×{p3Simulation.storeMultiplier.toFixed(2)} ({p3Simulation.difficultyTier})
+                  </Status>
+                </div>
+                <div className="rounded-xl border border-line bg-canvas p-3.5 space-y-1">
+                  <span className="text-2xs text-ink-3">Thưởng P3 ước tính</span>
+                  <div className="text-xl font-semibold text-positive tabular-nums">
+                    {formatVnd(p3Simulation.estimatedBonusVnd)}
+                  </div>
+                  <span className="text-2xs text-ink-2">PIC: {p3Simulation.picName}</span>
+                </div>
+              </div>
+              <div className="rounded-xl border border-line bg-surface p-3.5 text-xs text-ink-2">
+                Công thức chuẩn B2C: <strong>Điểm tải = Số đầu việc × Hệ số Gian hàng (0.80 / 1.00 / 1.25 / 1.50) × Hệ số Chất lượng × Hệ số SLA</strong>.
+              </div>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      {activeTool.id === 'sla-timeline-calc' && (
+        <Panel
+          title="12. Tra cứu Mốc hạn SLA Booking & Khóa sổ Nghiệm thu từ Ngày Air"
+          flush
+          actions={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Download}
+                onClick={() => {
+                  const csv = [
+                    'Mốc hạn,Ngày mục tiêu,Đầu việc,Quy tắc SLA,Phụ trách,Trạng thái',
+                    ...slaTimelineRows.map(
+                      (r) =>
+                        `"${r.stepCode}","${r.targetDateStr}","${r.milestoneName}","${r.ruleSummary}","${r.ownerRole}","${r.statusLabel}"`
+                    ),
+                  ].join('\n');
+                  downloadTextFile(`sla-timeline-${slaAirDateIso}.csv`, csv);
+                }}
+              >
+                Tải CSV
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={copiedKey === 'copy-sla-timeline' ? Check : Copy}
+                onClick={() => {
+                  const text = slaTimelineRows
+                    .map((r) => `[${r.stepCode} · ${r.targetDateStr}] ${r.milestoneName} (${r.statusLabel})`)
+                    .join('\n');
+                  handleCopyText(text, 'Lịch mốc hạn SLA Booking', 'copy-sla-timeline');
+                }}
+              >
+                Sao chép lịch SLA
+              </Button>
+            </div>
+          }
+        >
+          <div className="p-3.5 sm:p-4 border-b border-line grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Ngày dự kiến KOC Air Video (T0)">
+              <Input
+                type="date"
+                value={slaAirDateIso}
+                onChange={(e) => setSlaAirDateIso(e.target.value)}
+              />
+            </Field>
+            <Field label="Tình trạng sản phẩm mẫu của KOC">
+              <Segmented
+                items={[
+                  { key: 'NO', label: 'Chưa có mẫu (Cần gửi hàng)' },
+                  { key: 'YES', label: 'Đã cầm sẵn sản phẩm trên tay' },
+                ]}
+                value={slaHasSampleOnHand}
+                onChange={setSlaHasSampleOnHand}
+              />
+            </Field>
+            <Field label="Đơn giá Cát-xê Net của Job (₫)">
+              <Input
+                type="number"
+                min={0}
+                step={100000}
+                value={slaDealFeeNet}
+                onChange={(e) => setSlaDealFeeNet(e.target.value)}
+              />
+            </Field>
+          </div>
+          <DataTable<SlaMilestoneRow>
+            rowKey={(r) => r.id}
+            rows={slaTimelineRows}
+            columns={[
+              {
+                key: 'stepCode',
+                header: 'Mốc SLA',
+                width: 130,
+                render: (r) => <span className="font-semibold text-ink">{r.stepCode}</span>,
+              },
+              {
+                key: 'targetDateStr',
+                header: 'Ngày hạn chót',
+                width: 120,
+                render: (r) => <span className="font-mono text-xs font-semibold text-accent">{r.targetDateStr}</span>,
+              },
+              {
+                key: 'milestoneName',
+                header: 'Hạng mục công việc & Quy chuẩn kiểm soát',
+                render: (r) => (
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-ink">{r.milestoneName}</div>
+                    <div className="text-2xs text-ink-3">{r.ruleSummary}</div>
+                  </div>
+                ),
+              },
+              {
+                key: 'ownerRole',
+                header: 'Vai trò',
+                width: 135,
+                render: (r) => <span className="text-xs text-ink-2">{r.ownerRole}</span>,
+              },
+              {
+                key: 'statusLabel',
+                header: 'Trạng thái hạn',
+                width: 135,
+                render: (r) => <Status tone={r.statusTone}>{r.statusLabel}</Status>,
+              },
+            ]}
+          />
         </Panel>
       )}
     </div>

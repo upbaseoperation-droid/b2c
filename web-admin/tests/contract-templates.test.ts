@@ -5,9 +5,9 @@ import { loadTemplate, renderTemplate, templateCatalog, archiveTemplate, saveTem
 import { mkdtemp, writeFile, mkdir, unlink, rmdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-test('Đọc đủ 8 mẫu gốc và phát hiện trường trong bảng/đoạn văn', async () => {
-  const catalog = await templateCatalog(); assert.equal(catalog.length, 8);
-  for (const item of catalog) { const { template } = await loadTemplate(item.id); assert.ok(template.fields.length > 5); assert.ok(template.paragraphs.length > 30); }
+test('Đọc đủ 25 mẫu chuẩn (17 mẫu mới + 8 mẫu kế thừa) và phát hiện trường trong bảng/đoạn văn', async () => {
+  const catalog = await templateCatalog(); assert.equal(catalog.length, 25);
+  for (const item of catalog) { const { template } = await loadTemplate(item.id); assert.ok(template.fields.length > 5); assert.ok(template.paragraphs.length > 10); }
 });
 test('Điền mẫu giữ nguyên điều khoản, bảng, styles và nội dung tiếng Việt', async () => {
   const { template, zip } = await loadTemplate('IND-HD');
@@ -112,11 +112,36 @@ test('Quản lý danh mục hợp đồng: cập nhật cấu hình danh mục v
     assert.ok(created.fields.length > 5);
 
     const catalog = await templateCatalog();
-    assert.equal(catalog.length, 9);
+    assert.equal(catalog.length, 26);
     assert.ok(catalog.some(t => t.id === 'LIV-HD' && t.name === 'Hợp đồng dịch vụ Livestream · Cá nhân'));
   } finally {
     if (previousData === undefined) delete process.env.CONTRACT_DATA_DIR;
     else process.env.CONTRACT_DATA_DIR = previousData;
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('Bộ 17 mẫu mới (HĐNT -> SOW -> BBNT Video & Livestream) trích xuất đủ trường ngân hàng, thuế, thanh toán và render chính xác', async () => {
+  for (const id of ['IND-HDNT', 'IND-SOW', 'IND-VID-BBNT', 'HKD-HDNT', 'HKD-SOW', 'HKD-VID-BBNT', 'COM-HDNT', 'COM-SOW', 'COM-VID-BBNT', 'IND-LIVE-HD', 'IND-LIVE-BBNT', 'HKD-LIVE-HD', 'HKD-LIVE-BBNT', 'COM-LIVE-HD', 'COM-LIVE-BBNT', 'CTV-HDNT', 'CTV-BBNT']) {
+    const { template } = await loadTemplate(id);
+    assert.ok(template.fields.length >= 6, `${id} phải có ít nhất 6 trường điền`);
+  }
+  const { template: hdnt } = await loadTemplate('IND-HDNT');
+  assert.ok(hdnt.fields.some(f => f.source === 'bankAccountName'));
+  assert.ok(hdnt.fields.some(f => f.source === 'bankAccountNumber'));
+  assert.ok(hdnt.fields.some(f => f.source === 'bankName'));
+  assert.ok(hdnt.fields.some(f => f.source === 'channelLink'));
+
+  const { template: sow } = await loadTemplate('IND-SOW');
+  assert.ok(sow.fields.some(f => f.source === 'parentContractDate'));
+  assert.ok(sow.fields.some(f => f.source === 'brand'));
+  assert.ok(sow.fields.some(f => f.source === 'airDate'));
+  assert.ok(sow.fields.some(f => f.source === 'grossTotal'));
+  assert.ok(sow.fields.some(f => f.source === 'pitAmount'));
+
+  const { template: bbnt } = await loadTemplate('IND-VID-BBNT');
+  assert.ok(bbnt.fields.some(f => f.source === 'parentContractDate'));
+  assert.ok(bbnt.fields.some(f => f.source === 'parentSowDate'));
+  assert.ok(bbnt.fields.some(f => f.source === 'advanceAmount'));
+  assert.ok(bbnt.fields.some(f => f.source === 'remainingAmount'));
 });

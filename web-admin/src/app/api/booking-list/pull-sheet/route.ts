@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { GoogleSheetsError, isGoogleSheetsConfigured, parseSpreadsheetId, readTab } from '@/lib/server/googleSheets';
-import { applyBrandDecision, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
+import { applyBrandDecision, columnOf, parseBrandDecision, type BrandDecision } from '@/lib/listingBoardRules';
 import { addKocToSlot, removeKocFromSlot, slotKocHandles, type ContentPlanData } from '@/lib/contentPlanRules';
 import { EMPTY_DEAL_BOARD, sanitizeDealBoard, syncDealSummaryFields, type DealBoardData, type ScriptStatus } from '@/lib/dealBoardRules';
 import type { KocListingItem } from '@/lib/types';
@@ -28,7 +28,20 @@ const normHeader = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g,
 
 const parseFeeCell = (v: string | undefined): number | null => {
   if (!v) return null;
-  const cleaned = String(v).replace(/[^\d]/g, '');
+  const text = String(v).trim().toLowerCase();
+  if (!text) return null;
+  const firstPart = text.split(/[+;(\n]/)[0].trim();
+  const trMatch = firstPart.match(/^(\d+(?:[.,]\d+)?)\s*(?:tr|triệu|trieu|m)\b/i);
+  if (trMatch) {
+    return Math.round(parseFloat(trMatch[1].replace(',', '.')) * 1_000_000);
+  }
+  const kMatch = firstPart.match(/^(\d+(?:[.,]\d+)?)\s*k\b/i);
+  if (kMatch) {
+    return Math.round(parseFloat(kMatch[1].replace(',', '.')) * 1_000);
+  }
+  const numGroup = firstPart.match(/\d[\d.,]*/);
+  if (!numGroup) return null;
+  const cleaned = numGroup[0].replace(/[^\d]/g, '');
   if (!cleaned) return null;
   const num = Number(cleaned);
   return Number.isFinite(num) && num >= 0 ? num : null;
@@ -177,8 +190,13 @@ export async function POST(request: NextRequest) {
         }
         const r = applyBrandDecision(item, d.decision, { reason: d.reason, note: d.note, actor: actor.name });
         let updatedItem = r.item;
-        // Đồng bộ lại Giá net video nếu Brand sửa giá trên Sheet
-        if (typeof d.fee === 'number' && d.fee >= 0 && d.fee !== (updatedItem.finalFee ?? updatedItem.proposedFee)) {
+        // Đồng bộ lại Giá net video nếu Brand sửa giá trên Sheet (nhưng không ghi đè item đã CONFIRMED — L4)
+        if (
+          columnOf(updatedItem) !== 'CONFIRMED' &&
+          typeof d.fee === 'number' &&
+          d.fee >= 0 &&
+          d.fee !== (updatedItem.finalFee ?? updatedItem.proposedFee)
+        ) {
           updatedItem = { ...updatedItem, proposedFee: d.fee, finalFee: d.fee };
         }
         if (!r.changed) c.unchanged += 1;
@@ -209,6 +227,13 @@ export async function POST(request: NextRequest) {
 
     // 2. Kế hoạch content: hỗ trợ 1 Brief - N KOC (removeKocFromSlot / addKocToSlot) và đồng bộ Sản phẩm/Giá nếu Brand sửa trên Sheet
     if (summary.rejectedHandles.length > 0 || summary.restoredHandles.length > 0 || decisionsByComposite.size > 0) {
+      const latestListingRec = await readRecord<{ items: KocListingItem[] }>(listingKey(planId), { items: [] });
+      const confirmedHandles = new Set(
+        (latestListingRec.data.items || [])
+          .filter(it => columnOf(it) === 'CONFIRMED')
+          .map(it => normHandle(it.kocHandle || ''))
+          .filter(Boolean)
+      );
       const rejected = new Set(summary.rejectedHandles);
       const restored = new Set(summary.restoredHandles);
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -227,7 +252,8 @@ export async function POST(request: NextRequest) {
               touched = true;
               nextSlot = { ...nextSlot, product: d.productName, updatedAt: now };
             }
-            if (h && (d?.decision === 'REJECTED' || (!bCode && rejected.has(h)))) {
+            // Không gỡ KOC đã chốt Deal (CONFIRMED) khỏi ô kế hoạch content (L6)
+            if (h && !confirmedHandles.has(h) && (d?.decision === 'REJECTED' || (!bCode && rejected.has(h)))) {
               touched = true;
               const reason = d?.reason || decisions.get(h)?.reason;
               const note = `Brand từ chối @${h}${reason ? `: ${reason}` : ''}`;
@@ -279,7 +305,7 @@ export async function POST(request: NextRequest) {
           const bCode = (job.briefCode || (job.slotId ? briefCodeBySlotId.get(job.slotId) : '') || '').trim().toUpperCase();
           const d = (bCode ? decisionsByComposite.get(`${h}::${bCode}`) : undefined) || decisions.get(h);
           if (!d) return job;
-          let nextJob = { ...job, script: { ...job.script } };
+          const nextJob = { ...job, script: { ...job.script } };
           let jobTouched = false;
           if (d.scriptLink && !nextJob.script.scriptUrl) {
             nextJob.script.scriptUrl = d.scriptLink;

@@ -52,7 +52,12 @@ export function submitContract(record: ContractRecord, actor: ContractActor, rev
   requireCondition(finance && finance.id !== actor.id && inScope(record.brand, finance), 'Kế toán không có quyền hoặc trùng người tạo.');
 
   const legal = reviewers.find(r => r.roles.includes('LEGAL'));
-  const needsLegal = options?.requireLegal ?? (record.hasCustomTerms || Boolean(legal));
+  const needsLegal = Boolean(
+    record.isKocOwnForm ||
+    record.hasCustomTerms ||
+    options?.requireLegal ||
+    (options?.requireLegal === undefined && Boolean(legal))
+  );
   if (needsLegal) {
     requireCondition(legal && legal.id !== actor.id && inScope(record.brand, legal), 'Pháp chế không có quyền hoặc trùng người tạo.');
     requireCondition(legal.id !== finance.id, 'Pháp chế và kế toán cần hai người độc lập.');
@@ -82,6 +87,10 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
   requireCondition(index >= 0 && actor.id !== record.ownerId && inScope(record.brand, actor), 'Không có bước duyệt được giao cho bạn.', 403);
   requireCondition(['APPROVED', 'CHANGES', 'REJECTED'].includes(decision), 'Quyết định không hợp lệ.');
   requireCondition(decision === 'APPROVED' || note.trim(), 'Cần nêu lý do yêu cầu sửa hoặc từ chối.');
+  if (decision === 'APPROVED' && index > 0) {
+    const previousPending = record.steps.slice(0, index).find(s => s.status !== 'APPROVED');
+    requireCondition(!previousPending, 'Cần bước thẩm định trước hoàn tất phê duyệt trước khi duyệt bước này.');
+  }
   const next = structuredClone(record); Object.assign(next.steps[index], { status: decision, note, decidedAt: new Date().toISOString() });
   next.approval = decision === 'CHANGES' ? 'CHANGES' : decision === 'REJECTED' ? 'REJECTED' : next.steps.every(s => s.status === 'APPROVED') ? 'APPROVED' : 'IN_REVIEW';
   event(next, actor, decision, note); return next;

@@ -3,7 +3,40 @@ export interface ContractActor { id: string; name: string; roles: ContractRole[]
 export type FieldGroup = 'NUMBER' | 'PARTY' | 'DATE' | 'SCOPE' | 'MONEY' | 'OTHER';
 export type FieldKind = 'text' | 'long' | 'money' | 'number' | 'date';
 /** Dữ liệu có sẵn trong hệ thống dùng để điền sẵn ô (hồ sơ KOC, booking, ngày lập). */
-export type FieldSource = 'partyName' | 'ownerName' | 'representative' | 'cccd' | 'taxCode' | 'address' | 'phone' | 'email' | 'kocId' | 'docDate' | 'signDay' | 'signMonth' | 'signYearDigit' | 'product' | 'unitPrice' | 'quantity' | 'lineTotal' | 'netTotal';
+export type FieldSource =
+  | 'partyName'
+  | 'ownerName'
+  | 'representative'
+  | 'cccd'
+  | 'taxCode'
+  | 'address'
+  | 'phone'
+  | 'email'
+  | 'kocId'
+  | 'brand'
+  | 'channelLink'
+  | 'bankAccountName'
+  | 'bankAccountNumber'
+  | 'bankName'
+  | 'airDate'
+  | 'docDate'
+  | 'parentContractDate'
+  | 'parentSowDate'
+  | 'signDay'
+  | 'signMonth'
+  | 'signYearDigit'
+  | 'product'
+  | 'unitPrice'
+  | 'quantity'
+  | 'lineTotal'
+  | 'netTotal'
+  | 'grossTotal'
+  | 'vatAmount'
+  | 'pitAmount'
+  | 'advanceAmount'
+  | 'adjustmentAmount'
+  | 'remainingAmount'
+  | 'amountInWords';
 export interface ContractField {
   key: string; label: string; context: string; required: boolean; part: string; paragraph: number; start?: number; end?: number;
   /** Nhãn hiển thị trên form; `label` giữ nguyên chữ trong mẫu. */

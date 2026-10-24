@@ -456,21 +456,42 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
 
   const saveEdit = () => {
     if (!editing) return;
+    const oldFee = itemFee(editing);
+    const nextFee = editForm.finalFee > 0 ? editForm.finalFee : editForm.proposedFee;
+    const wasApproved =
+      editing.brandApprovalStatus === 'BRAND_APPROVED' || editing.overallStatus === 'FINAL_APPROVED';
+    const feeIncreasedAfterApproval = wasApproved && nextFee > oldFee;
+
     update(
-      items.map(i =>
-        i.id === editing.id
-          ? {
-              ...i,
-              proposedFee: editForm.proposedFee,
-              finalFee: editForm.finalFee > 0 ? editForm.finalFee : undefined,
-              salaryGrade: editForm.grade,
-              batchCycle: editForm.batchCycle,
-              negotiationNote: editForm.note || undefined,
-              updatedAt: new Date().toISOString(),
-            }
-          : i
-      )
+      items.map(i => {
+        if (i.id !== editing.id) return i;
+        const updated: KocListingItem = {
+          ...i,
+          proposedFee: editForm.proposedFee,
+          finalFee: editForm.finalFee > 0 ? editForm.finalFee : undefined,
+          salaryGrade: editForm.grade,
+          batchCycle: editForm.batchCycle,
+          negotiationNote: editForm.note || undefined,
+          updatedAt: new Date().toISOString(),
+        };
+        if (feeIncreasedAfterApproval) {
+          return {
+            ...updated,
+            overallStatus: 'SUBMITTED',
+            brandApprovalStatus: 'BRAND_PENDING',
+            lastSheetDecision: undefined,
+            lastSheetDecisionAt: undefined,
+          };
+        }
+        return updated;
+      })
     );
+    if (feeIncreasedAfterApproval) {
+      notify(
+        'Do tăng mức phí sau khi Brand duyệt, KOC đã được chuyển về cột Chờ Brand duyệt lại (Bước 17/19).',
+        'warning'
+      );
+    }
     setEditing(null);
   };
 
@@ -887,16 +908,19 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                                   {next.label}
                                 </button>
                               )}
-                              {(col.key === 'DRAFT' || col.key === 'WAIT_BRAND') && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleMove(it.id, 'CONFIRMED')}
-                                  className="rounded bg-success-soft px-2 py-0.5 text-2xs font-medium text-success hover:bg-success hover:text-white"
-                                  title="Chốt thẳng cho KOC FOC 0đ hoặc KOL do Brand chỉ định"
-                                >
-                                  Chốt thẳng
-                                </button>
-                              )}
+                              {(col.key === 'DRAFT' || col.key === 'WAIT_BRAND') &&
+                                (itemFee(it) <= 0 ||
+                                  it.salaryGrade === 'TAP UpAffiliate' ||
+                                  /brand\s*chỉ\s*định|kol\s*chỉ\s*định/i.test(it.negotiationNote || '')) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMove(it.id, 'CONFIRMED')}
+                                    className="rounded bg-success-soft px-2 py-0.5 text-2xs font-medium text-success hover:bg-success hover:text-white"
+                                    title="Chốt thẳng cho KOC FOC 0đ hoặc KOL do Brand chỉ định"
+                                  >
+                                    Chốt thẳng
+                                  </button>
+                                )}
                               {col.key === 'NEGOTIATING' && (
                                 <button
                                   type="button"

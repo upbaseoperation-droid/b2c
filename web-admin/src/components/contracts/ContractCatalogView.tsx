@@ -60,6 +60,21 @@ const SOURCE_LABELS: Record<string, string> = {
   quantity: 'Số lượng video (Deal Booking)',
   lineTotal: 'Thành tiền hạng mục (Deal Booking)',
   netTotal: 'Tổng giá trị hợp đồng (Deal Booking)',
+  brand: 'Mã nhãn hàng (Brand)',
+  channelLink: 'Link kênh TikTok / Mạng xã hội',
+  bankAccountName: 'Tên chủ tài khoản ngân hàng',
+  bankAccountNumber: 'Số tài khoản ngân hàng',
+  bankName: 'Tên ngân hàng & Chi nhánh',
+  airDate: 'Ngày đăng tải video (Air date)',
+  parentContractDate: 'Ngày ký Hợp đồng nguyên tắc gốc',
+  parentSowDate: 'Ngày ký Phụ lục SOW gốc',
+  grossTotal: 'Tổng giá trị đã bao gồm thuế (Gross)',
+  vatAmount: 'Thuế GTGT (VAT)',
+  pitAmount: 'Thuế TNCN khấu trừ tại nguồn (10%)',
+  advanceAmount: 'Số tiền đã tạm ứng đợt 1',
+  adjustmentAmount: 'Chi phí phát sinh tăng/giảm',
+  remainingAmount: 'Số tiền còn phải thanh toán',
+  amountInWords: 'Số tiền bằng chữ',
 };
 
 type SubTab = 'PREVIEW' | 'FIELDS' | 'META';

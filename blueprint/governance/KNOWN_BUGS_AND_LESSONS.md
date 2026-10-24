@@ -707,6 +707,79 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** đã tìm mọi chỗ tự điền STK/CCCD mẫu (3 hàm đẩy phiếu ở `PlanDealBoard.tsx` và modal), mọi chỗ cộng `totalValue` vào ngân sách, và các nơi lọc deal theo tiền tố id.
 
 ---
+
+### BUG-041 — Chuẩn Hóa Bộ 17 Mẫu Hợp Đồng / Phụ Lục SOW / Biên Bản Nghiệm Thu Mới, Kế Thừa 3 Chặng (`HĐNT → SOW → BBNT`) & Chốt Chặn Thẩm Định Pháp Chế Tuần Tự
+- **Ngày phát hiện:** 24/10/2026 (`blueprint/audits/2026-10-24-booking-e2e-flow-audit.md`, nhóm Hợp đồng & Pháp chế: `C1`, `C2` + yêu cầu nâng cấp bộ 17 mẫu `.docx` mới trong `Quản lý hợp đồng/`).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/contracts/types.ts`, `web-admin/src/lib/contracts/templates.ts`, `web-admin/src/lib/contracts/builtInTemplatesSnapshot.ts`, `web-admin/src/lib/contracts/domain.ts`, `web-admin/src/app/api/contracts/route.ts`, `web-admin/src/app/api/contracts/templates/[id]/route.ts`, `web-admin/src/components/contracts/contractUi.ts`, `web-admin/src/components/contracts/ContractForm.tsx`, `web-admin/src/components/contracts/ContractDetail.tsx`, `web-admin/src/components/views/ContractManagementView.tsx`, `web-admin/src/components/contracts/browserDemo.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Một số trường trong bộ 17 mẫu `.docx` mới chưa được nhận diện đầy đủ (`templates.ts`):**
+     - Các dòng thông tin tài khoản ngân hàng độc lập (`Tên chủ tài khoản:`, `Số tài khoản:`, `Tại Ngân hàng:`, `Ngân hàng:`) trong `*-HDNT` và `*-LIVE-HD` có `end === start` (cuối dòng sau dấu `:`), chưa được trích xuất thành trường điền và khi điền vào file Word dễ bị dính liền sau dấu `:`.
+     - Các mã số hợp đồng/phụ lục/BBNT không bọc ngoặc vuông (`Số: ddmmyy/HĐNT/UPB - ID KOC`, `Số: 01/SOW/UPB - BRAND - ID KOC`, `Kèm theo Hợp đồng nguyên tắc số: ddmmyy/HĐNT...`, `Căn cứ Phụ lục số: 01/SOW...`) cần phân biệt rõ `token:[dd.mm.yy]` (ngày của chính văn bản) với `token:[Ngày HĐNT]` và `token:[Ngày SOW]` (ngày văn bản gốc tham chiếu).
+     - Các dòng tổng kết tài chính và quyết toán trong bảng SOW & BBNT (`Tổng giá trị...`, `Thuế TNCN`, `Thuế VAT`, `Giá trị đã tạm ứng`, `Chi phí phát sinh`, `Giá trị Bên A còn phải thanh toán`) chưa được gán `FieldSource` riêng (`grossTotal`, `pitAmount`, `vatAmount`, `advanceAmount`, `adjustmentAmount`, `remainingAmount`).
+  2. **Kế thừa 3 chặng `HĐNT → Phụ lục SOW → BBNT` trên giao diện bị thiếu `parentFields` (`contractUi.ts`):** `GET /api/contracts` trả về danh mục mẫu rút gọn (`fields: []` để giảm dung lượng), khiến `parentFields` truyền vào `prefill()` trên trình duyệt bị rỗng, không tự động lấy được thông tin Bên B / Ngân hàng từ `HĐNT` sang `SOW` và từ `HĐNT + SOW` sang `BBNT`.
+  3. **Báo sai `"Vượt Booking"` trên màn chi tiết hợp đồng (`ContractDetail.tsx`):** `parsedContractValue` từng lấy `Math.max(...)` trên tất cả các ô tiền (bao gồm cả `grossTotal` đã cộng 10% TNCN hoặc 10% VAT) rồi so sánh với `linkedDeal.totalValue` (giá trị trước thuế), làm hợp đồng khớp 100% vẫn báo đỏ `"Vượt Booking"`; đồng thời truyền `totalValue === actualSettledValue` vào `evaluateContractRules` làm mất cảnh báo chênh lệch nghiệm thu (`BR-04`).
+  4. **Lỗ hổng bỏ qua bước Pháp chế (`C1`, `C2`) và duyệt song song (`domain.ts`, `route.ts`, `templates/[id]/route.ts`):** Máy chủ từng cho phép client gửi `requireLegal: false` ngay cả khi dùng form riêng của KOC (`isKocOwnForm`), có sửa điều khoản (`hasCustomTerms`) hoặc mẫu không thuộc diện miễn duyệt (`exemptLegalReview === false`); đồng thời Kế toán (`FINANCE`) có thể bấm duyệt trước khi Pháp chế (`LEGAL`) hoàn tất thẩm định.
+- **Cách khắc phục:**
+  1. Nâng cấp `extractFields` & `describeFields` trong `templates.ts` và tái tạo `builtInTemplatesSnapshot.ts` cho toàn bộ 25 mẫu (17 mẫu mới + 8 mẫu kế thừa), bổ sung đầy đủ 15 `FieldSource` mới (`brand`, `channelLink`, `bankAccountName`, `bankAccountNumber`, `bankName`, `airDate`, `parentContractDate`, `parentSowDate`, `grossTotal`, `vatAmount`, `pitAmount`, `advanceAmount`, `adjustmentAmount`, `remainingAmount`, `amountInWords`) và tự động chèn khoảng trắng sau dấu `:` khi thay thế trường độ dài 0.
+  2. Nâng cấp `prefill()`, `templateFor()`, `inferAcceptanceTemplateId()` trong `contractUi.ts`: tự động tra cứu `OFFICIAL_TEMPLATES_SNAPSHOT` khi `parentFields` rỗng, kế thừa xuyên suốt 3 chặng (`HĐNT → SOW → BBNT` cho Video, `LIVE-HD → LIVE-BBNT` cho Livestream, `CTV-HDNT → CTV-BBNT` cho CTV tháng) và bổ sung nút **"Tạo phụ lục SOW"** trực tiếp từ màn chi tiết `HĐNT`.
+  3. Trong `ContractDetail.tsx`: tách bạch `baseContractValue` (`netTotal` / `lineTotal`) và `grossContractValue` (`grossTotal`), đối soát `baseContractValue` với `linkedDeal.totalValue` và truyền đúng `actualSettledValue` cho `evaluateContractRules` (`BR-04`).
+  4. Chốt chặn bảo mật tại `route.ts`, `templates/[id]/route.ts` và `domain.ts`: bắt buộc có `LEGAL` khi `isKocOwnForm || hasCustomTerms || !template.exemptLegalReview`, bắt buộc thứ tự duyệt tuần tự (`LEGAL` phải `APPROVED` trước khi `FINANCE` được duyệt), kiểm tra hồ sơ cha của `-SOW` phải là `-HDNT` cùng KOC, và chỉ `LEGAL`/`LEAD` mới được bật cờ `exemptLegalReview`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm thử tự động toàn bộ 25 mẫu hợp đồng/phụ lục/nghiệm thu (`87/87` unit & integration tests pass) và đồng bộ trình giả lập `browserDemo.ts`.
+
+---
+
+### BUG-042 — Khắc Phục Toàn Diện Nhóm 3–5 Audit E2E Booking (Chốt Chặn Máy Chủ Listing/Deal-Board, Định Danh Mã Nhân Sự, Khử Dữ Liệu Giả UpAffiliate/BBNT & Mở Rộng 12 Công Cụ Tiện Ích Nghiệp Vụ)
+- **Ngày phát hiện:** 24/10/2026 (`blueprint/audits/2026-10-24-booking-e2e-flow-audit.md`, nhóm 3–5: `L1`–`L6`, `D1`, `D5`, `D6`, `S4`, `S6`, `S7`, `P2` + nâng cấp `WorkToolkitHubView`).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/listingBoardRules.ts`, `web-admin/src/components/views/PlanListingBoard.tsx`, `web-admin/src/app/api/listing-board/route.ts`, `web-admin/src/app/api/booking-list/pull-sheet/route.ts`, `web-admin/src/app/api/deal-board/route.ts`, `web-admin/src/components/views/PlanDealBoard.tsx`, `web-admin/src/lib/server/accessPolicy.ts`, `web-admin/src/lib/larkAuth.ts`, `web-admin/src/lib/approvedBookingList.ts`, `web-admin/src/lib/larkPaymentRequestEngine.ts`, `web-admin/src/app/api/integrations/larkbase/payment-requests/route.ts`, `web-admin/src/app/api/koc-framework/route.ts`, `web-admin/src/lib/storeAirPlanData.ts`, `web-admin/src/lib/planDealLink.ts`, `web-admin/src/lib/workToolkitRules.ts`, `web-admin/src/components/views/WorkToolkitHubView.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Listing (`L1`–`L6`):**
+     - KOC trả phí ở cột `DRAFT` / `WAIT_BRAND` bấm được `"Chốt thẳng"` sang `CONFIRMED` mà không qua Brand duyệt; khôi phục từ `DROPPED` sang `NEGOTIATING` tự gán `BRAND_APPROVED` dù Brand chưa duyệt (`L2`).
+     - Sửa tăng `proposedFee`/`finalFee` ở cột `NEGOTIATING`/`CONFIRMED` không tự động đưa về `WAIT_BRAND` để trình lại Brand theo Bước 17/19 (`L3`, `L1`).
+     - Khi trình lại Brand (`WAIT_BRAND`), `lastSheetDecision` không được xóa khiến lần đọc Sheet tiếp theo bị kẹt ở giá trị cũ (`L5`).
+     - `parseFeeCell("5tr + 10% hoa hồng")` trong `pull-sheet/route.ts` nối mọi chữ số thành `510`đ và ghi đè giá của cả KOC đã `CONFIRMED` (`L4`), đồng thời gỡ KOC đã `CONFIRMED` khỏi ô kế hoạch content (`L6`).
+  2. **Deal / Job & Bảo mật máy chủ (`S4`, `S6`, `D1`, `D5`, `D6`):**
+     - `PUT /api/deal-board` chưa chặn sửa đơn giá / mã phụ lục sau khi Job đã lập đề nghị thanh toán (`D5`), chưa kiểm tra vai trò máy chủ khi đặt `legalReviewStatus = 'APPROVED'`, `financeReviewStatus = 'APPROVED'`, `payment.status = 'PAID'`, `leadConfirmed` (`S6`), và giữ nguyên xác nhận nghiệm thu cũ khi đổi `airLink`.
+     - Nút `"Đồng bộ UpAffiliate"` trong `PlanDealBoard.tsx` tự sinh số liệu giả (`18500` views, `GMV = phí × 2.8`) khi KOC chưa có dữ liệu thực (`D6`, vi phạm `RULE-DATA-01`).
+     - `POST /api/integrations/larkbase/payment-requests` chưa đối chiếu phạm vi thương hiệu (`assignedBrands` / `bookingPic`) của chuyên viên lập phiếu (`S4`), và `GET` trả đầy đủ STK/CCCD của mọi phiếu cho nhân sự không liên quan.
+  3. **Định danh nhân sự trùng tên (`S7`) & Gán nhầm Leader gian `"Mine"`:**
+     - `userWithPolicy` (`accessPolicy.ts`) gọi `.find(s => s.id === user.id || ... || sameName(s.name))` khiến nhân sự trùng tên đứng trước trong danh bạ (ví dụ `Bùi Phương Linh` `HN374` bị khóa) ghi đè lên nhân sự `HN509` đang hoạt động; `matchPersonName` (`larkAuth.ts`) dùng `.includes()` dễ khớp nhầm tên con.
+     - `resolveStoreBookingLeader` và `resolveBookingLeader` dùng `.includes('mine')` làm các gian `Jasmine`, `Mineral` và `Mine_Shopee_E2E-C` bị gán nhầm Trưởng nhóm `Nguyễn Thị Ngọc Tâm`.
+  4. **Dữ liệu tự sinh ở Nghiệm thu / Thanh toán (`P2`) & Cộng trùng đơn hàng 14d+30d:**
+     - `approvedBookingList.ts` tự gán `contractAppendixStatus = 'ĐÃ_KÝ'` khi có `actualAirDate` và tự sinh link `https://drive.google.com/drive/folders/upbase-pl-...`; `larkPaymentRequestEngine.ts` mặc định `adsCodeStatus = 'ĐÃ_NGHIỆM_THU'` kể cả khi chưa có mã Spark Ads.
+     - `storeAirPlanData.ts` cộng dồn `orders14d + orders30d` và `views14d + views30d` làm nhân đôi chỉ số thực tế.
+- **Cách khắc phục:**
+  1. Chốt chặn tại `listingBoardRules.ts`, `PlanListingBoard.tsx`, `listing-board/route.ts` và `pull-sheet/route.ts`: chỉ cho `"Chốt thẳng"` với KOC FOC 0đ hoặc KOL do Brand chỉ định; tự động đưa về `WAIT_BRAND` và xóa `lastSheetDecision` khi tăng giá sau duyệt; nâng cấp `parseFeeCell` tách phần tiền đầu tiên (`5tr`, `500k`) và bảo vệ KOC đã `CONFIRMED` khi kéo Sheet.
+  2. Bổ sung kiểm tra RBAC và bất biến tài chính trong `PUT /api/deal-board` (`S6`, `D1`, `D5`), xóa xác nhận nghiệm thu cũ khi đổi `airLink`, loại bỏ hoàn toàn số liệu giả trong `syncJobPerformanceFromUpaffiliate` (`D6`), kiểm tra phạm vi thương hiệu và che một phần STK/CCCD trên `/api/integrations/larkbase/payment-requests` & `/api/koc-framework` (`S4`).
+  3. Trong `userWithPolicy` (`accessPolicy.ts`): tách bước tìm theo `id`/`staffCode`/`email` trước, chỉ fallback theo tên khi không có mã nhân sự/email; dùng khớp tên đầy đủ trong `matchPersonName` (`larkAuth.ts`); dùng biểu thức chính quy ranh giới từ `\bmine\b` và loại trừ các gian Shopee ngoài ClubClio trong `resolveStoreBookingLeader` / `resolveBookingLeader`.
+  4. Xóa bỏ tự suy diễn `ĐÃ_KÝ` từ ngày Air và link Drive giả trong `approvedBookingList.ts` / `larkPaymentRequestEngine.ts` (`P2`); sửa `storeAirPlanData.ts` dùng `Math.max` giữa 14d và 30d; ưu tiên hồ sơ đã ký (`recordSigned`) trong `documentsOfJob` (`planDealLink.ts`).
+  5. Mở rộng `WorkToolkitHubView.tsx` & `workToolkitRules.ts` lên **12 công cụ tiện ích nghiệp vụ** (bổ sung bảng tính thuế & đối chiếu Ratecard hàng loạt, công cụ 11 **Tính điểm Tải công việc & Thưởng P3 theo Hệ số Gian hàng**, công cụ 12 **Tra cứu Mốc hạn SLA Booking & Khóa sổ từ Ngày Air**).
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã bổ sung bộ kiểm thử hồi quy `tests/booking-e2e-audit-group3.test.ts` (`91/91` tests pass), đạt `0 errors` ESLint và `0 errors` TypeScript.
+
+---
+
+### BUG-043 — Công Cụ Cắt Khung Hình KOC Cầm Sản Phẩm Từ Link Air (`video-frame`) Dò Sai Từ Khóa Tiếng Việt Có Dấu & Bỏ Sót Đoạn Cận Cảnh Cầm Sản Phẩm Ở Giữa/Cuối Video
+- **Ngày phát hiện:** 24/10/2026 (Khi kiểm thử trực tiếp trên Link Air thực tế `BO260859267` — `https://www.tiktok.com/@soanhtran98/video/7594065944612179221`).
+- **Phân hệ / File liên quan:** `web-admin/src/lib/tiktokVideoInspector.ts`, `web-admin/src/app/api/integrations/tiktok-koc/video-frame/route.ts`, `web-admin/src/components/contracts/VideoProductScreenshotModal.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Cắt đứt từ tiếng Việt có dấu và nhận nhầm từ phổ thông làm tên riêng thương hiệu (`detectProductMentionMoments` trong `tiktokVideoInspector.ts`):**
+     - Biểu thức chính quy `\b[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*){1,2}\b` chỉ khớp ký tự ASCII nên cắt đứt từ tiếng Việt ngay trước nguyên âm có dấu (ví dụ `"Dung Dịch"` bị cắt thành `"Dung D"`).
+     - Điều kiện `tok.toLowerCase() === foldedTok && /^[A-Z]/.test(tok)` nhận nhầm các âm tiết không dấu viết hoa đầu từ trong tiêu đề giỏ hàng (`"Dung"`, `"Sinh"`, `"Ngay"`) làm tên riêng thương hiệu ưu tiên 1. Khi quy về chữ không dấu (`foldForMatch`), `"Dung"` khớp nhầm với mọi câu KOC nói chữ `"dùng"` (`"em dùng"`, `"dùng cả 2 chai"`) và `"Sinh"` khớp nhầm với `"vệ sinh sạch sẽ"` ở giây `28.1s` (lúc KOC còn đang diễn tiểu phẩm, chưa cầm sản phẩm).
+     - Trường `productName` có dấu hoặc viết tắt nghiệp vụ (`"HLC + Vỏ sồi"`) chưa được tách cụm từ và giải nghĩa viết tắt (`HLC` → `hoa lan chuông`, `DDVS` → `dung dịch vệ sinh`) để đưa vào danh sách từ khóa ưu tiên 1.
+  2. **Dồn toàn bộ 6 khung hình vào đầu video, bỏ sót đoạn KOC cầm sản phẩm ở nửa sau (`buildSuggestedMoments` trong `video-frame/route.ts` & `VideoProductScreenshotModal.tsx`):**
+     - Với các video Storytelling/Skit dài 60s–95s, nửa đầu video KOC mới nhắc tên sản phẩm trong thoại tình huống (`00:36`, `00:44`), còn từ `00:59–01:12` mới giơ sản phẩm lên trước ống kính và test chất (`"ly cũng đang dùng chai dung dịch vệ sinh..."`, `"nên xài em vỏ sồi"`, `"xài em HOA LAN chuông"`).
+     - Hàm `buildSuggestedMoments` trước đó nhân đôi mỗi mốc từ đầu mảng rồi cắt cứng `.slice(0, 8)` theo thứ tự thời gian, làm các mốc cầm sản phẩm thực tế ở `60.5s`, `63.4s`, `67.5s`, `70.2s` bị đẩy ra ngoài.
+- **Cách khắc phục:**
+  1. Trong `tiktokVideoInspector.ts`: Tách từ theo khoảng trắng/dấu câu trước khi ghép cụm tên riêng Latin thuần ASCII (`isPureLatinProperToken`); bổ sung các âm tiết phổ thông (`dung`, `dich`, `sinh`, `ngay`, `thom`, `mat`...) vào `GENERIC_TITLE_STOPWORDS`; tách trực tiếp các vế của `productName` kèm bảng viết tắt `PRODUCT_SHORTHAND_EXPANSIONS` (`HLC` → `hoa lan chuông`, `DDVS` → `dung dịch vệ sinh`, `KCN` → `kem chống nắng`, `SRM` → `sữa rửa mặt`) và bắt buộc khớp theo ranh giới từ (` ${cand.folded} `).
+  2. Trong `video-frame/route.ts`:
+     - Chuyển sang truy vấn song song (`Promise.allSettled`) cả 3 nguồn (`oEmbed`, `SSR WAF`, `TikWM`) kèm bộ nhớ đệm metadata 10 phút và ưu tiên luồng `H.264` trước `ByteVC1/HEVC`, giảm thời gian phân tích từ ~9–12s xuống ~1.5s (3ms khi ấm cache).
+     - Phân hạng 3 mức ưu tiên cho mốc phụ đề: `HOLDING_SHOWCASE` (cầm SP trên tay: `đang dùng`, `xài em`, `chai này`, `em này`, `2 chai`, `trên tay`, `cầm` — 96đ) > `TEXTURE_DEMO` (test chất: `bôi`, `thoa`, `test`, `tạo bọt` — 88đ) > `VERBAL_MENTION` (nhắc tên — 76đ), cắt tại `startSec + 1.0s` và `endSec + 1.5s`.
+     - Bổ sung nhánh cắt khung hình trực tiếp trên máy chủ qua `ffmpeg` (`GET /api/integrations/tiktok-koc/video-frame?streamToken=...&captureSec=...`, có cache theo giây) để cắt ảnh thực tế ngay cả khi trình duyệt không giải mã được codec video.
+  3. Trong `VideoProductScreenshotModal.tsx`:
+     - Hỗ trợ cắt 8 khung hình song song từ máy chủ hoặc `<video>` + `<canvas>`, chấm điểm độ nét biên (`analyzeCanvasFrameQuality`) và tự động nhích `+0.45s` nếu gặp khung hình tối đen lúc chuyển cảnh.
+     - Bổ sung nút **Tự chọn 2 ảnh rõ nhất**, nút **Quét ±2s (Cắt 6 khung liên tiếp quanh mốc đang xem)**, tuỳ chọn **Zoom cận cảnh sản phẩm (1.25x)** và nút **Tải ảnh `.JPG` về máy** trên từng ảnh nghiệm thu.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm thử thực tế trên luồng MP4 của Link Air `BO260859267`, kiểm tra ESLint, `tsc --noEmit` và `npm run build` đạt 0 lỗi.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

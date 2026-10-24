@@ -188,11 +188,12 @@ const renderParagraphs = (record: ContractRecord): string[] => {
     for (const f of pFields) {
       const val = record.values[f.key]?.trim();
       if (!val) continue;
-      if (f.key.startsWith('token:')) {
+      if (f.paragraph === idx && f.start !== undefined && f.end !== undefined) {
+        const sep = f.start === f.end && res.slice(0, f.start).endsWith(':') ? ' ' : '';
+        res = res.slice(0, f.start) + sep + val + res.slice(f.end);
+      } else if (f.key.startsWith('token:')) {
         const tokenStr = f.key.slice('token:'.length);
         res = res.split(tokenStr).join(val);
-      } else if (f.paragraph === idx && f.start !== undefined && f.end !== undefined) {
-        res = res.slice(0, f.start) + val + res.slice(f.end);
       } else if (f.paragraph === idx && f.start === undefined) {
         res = res ? `${res} ${val}` : val;
       }
@@ -390,11 +391,12 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
       );
     }
     requireCondition(Array.isArray(body.reviewers), 'Cần chọn người duyệt.');
+    const mandatoryLegal = Boolean(record.isKocOwnForm || record.hasCustomTerms || template?.exemptLegalReview === false);
     next = submitContract(
       record,
       actor,
       actors.filter(a => (body.reviewers as string[]).includes(a.id)),
-      { requireLegal: record.isKocOwnForm ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
+      { requireLegal: mandatoryLegal ? true : (typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined) },
     );
   } else if (body.action === 'ADD_NOTE') {
     requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');

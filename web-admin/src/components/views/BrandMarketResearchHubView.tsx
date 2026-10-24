@@ -2541,65 +2541,183 @@ export const BrandMarketResearchHubView: React.FC<BrandMarketResearchHubViewProp
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <Panel
-              title="Điểm mạnh / Điểm yếu & Rủi ro"
+              title="Ma trận SWOT"
               className="lg:col-span-6"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 border border-line rounded-lg overflow-hidden divide-y sm:divide-y-0 sm:divide-x divide-line">
-                <div className="divide-y divide-line">
-                  <div className="p-3.5 space-y-1.5">
-                    <div className="text-xs font-semibold text-positive">
-                      Điểm mạnh
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* S · Điểm mạnh */}
+                <div className="rounded-xl border border-positive/30 bg-positive-soft/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-positive/20">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded flex items-center justify-center bg-positive text-white text-2xs font-semibold shrink-0">
+                          S
+                        </span>
+                        <span className="text-xs font-semibold text-positive">
+                          Điểm mạnh (Strengths)
+                        </span>
+                      </div>
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-positive-soft text-positive border border-positive/30 tabular-nums">
+                        {dossier.swotAndCompliance.strengths.length}
+                      </span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {dossier.swotAndCompliance.strengths.map((s, i) => (
-                        <li key={i} className="text-xs">
-                          <div className="font-medium text-ink">{s.point}</div>
-                          <div className="text-2xs text-ink-3">→ {s.strategicImpact}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="p-3.5 space-y-1.5">
-                    <div className="text-xs font-semibold text-accent">
-                      Cơ hội
+                    <div className="space-y-2">
+                      {dossier.swotAndCompliance.strengths.length === 0 ? (
+                        <div className="text-2xs text-ink-3 italic py-2">Chưa ghi nhận mục nào</div>
+                      ) : (
+                        dossier.swotAndCompliance.strengths.map((s, i) => (
+                          <div
+                            key={i}
+                            className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          >
+                            <div className="text-xs font-medium text-ink leading-relaxed">
+                              {s.point}
+                            </div>
+                            {s.strategicImpact && (
+                              <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                                <ArrowRight className="w-3.5 h-3.5 text-positive shrink-0 mt-0.5" />
+                                <span>
+                                  <strong className="text-ink font-semibold">Khai thác: </strong>
+                                  {s.strategicImpact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
-                    <ul className="space-y-1.5">
-                      {dossier.swotAndCompliance.opportunities.map((o, i) => (
-                        <li key={i} className="text-xs">
-                          <div className="font-medium text-ink">{o.point}</div>
-                          <div className="text-2xs text-ink-3">→ {o.strategicImpact}</div>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </div>
 
-                <div className="divide-y divide-line">
-                  <div className="p-3.5 space-y-1.5">
-                    <div className="text-xs font-semibold text-warning">
-                      Điểm yếu
+                {/* W · Điểm yếu */}
+                <div className="rounded-xl border border-warning/30 bg-warning-soft/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-warning/20">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded flex items-center justify-center bg-warning text-white text-2xs font-semibold shrink-0">
+                          W
+                        </span>
+                        <span className="text-xs font-semibold text-warning">
+                          Điểm yếu (Weaknesses)
+                        </span>
+                      </div>
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-warning-soft text-warning border border-warning/30 tabular-nums">
+                        {dossier.swotAndCompliance.weaknesses.length}
+                      </span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {dossier.swotAndCompliance.weaknesses.map((w, i) => (
-                        <li key={i} className="text-xs">
-                          <div className="font-medium text-ink">{w.point}</div>
-                          <div className="text-2xs text-ink-3">→ {w.strategicImpact}</div>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2">
+                      {dossier.swotAndCompliance.weaknesses.length === 0 ? (
+                        <div className="text-2xs text-ink-3 italic py-2">Chưa ghi nhận mục nào</div>
+                      ) : (
+                        dossier.swotAndCompliance.weaknesses.map((w, i) => (
+                          <div
+                            key={i}
+                            className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          >
+                            <div className="text-xs font-medium text-ink leading-relaxed">
+                              {w.point}
+                            </div>
+                            {w.strategicImpact && (
+                              <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                                <ArrowRight className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+                                <span>
+                                  <strong className="text-ink font-semibold">Khắc phục: </strong>
+                                  {w.strategicImpact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
-                  <div className="p-3.5 space-y-1.5">
-                    <div className="text-xs font-semibold text-critical">
-                      Rủi ro
+                </div>
+
+                {/* O · Cơ hội */}
+                <div className="rounded-xl border border-accent/30 bg-accent-soft/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-accent/20">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded flex items-center justify-center bg-accent text-white text-2xs font-semibold shrink-0">
+                          O
+                        </span>
+                        <span className="text-xs font-semibold text-accent">
+                          Cơ hội (Opportunities)
+                        </span>
+                      </div>
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-accent-soft text-accent border border-accent/30 tabular-nums">
+                        {dossier.swotAndCompliance.opportunities.length}
+                      </span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {dossier.swotAndCompliance.threats.map((t, i) => (
-                        <li key={i} className="text-xs">
-                          <div className="font-medium text-ink">{t.point}</div>
-                          <div className="text-2xs text-ink-3">→ {t.strategicImpact}</div>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-2">
+                      {dossier.swotAndCompliance.opportunities.length === 0 ? (
+                        <div className="text-2xs text-ink-3 italic py-2">Chưa ghi nhận mục nào</div>
+                      ) : (
+                        dossier.swotAndCompliance.opportunities.map((o, i) => (
+                          <div
+                            key={i}
+                            className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          >
+                            <div className="text-xs font-medium text-ink leading-relaxed">
+                              {o.point}
+                            </div>
+                            {o.strategicImpact && (
+                              <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                                <ArrowRight className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                                <span>
+                                  <strong className="text-ink font-semibold">Tận dụng: </strong>
+                                  {o.strategicImpact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* T · Thách thức & Rủi ro */}
+                <div className="rounded-xl border border-critical/30 bg-critical-soft/20 p-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-critical/20">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded flex items-center justify-center bg-critical text-white text-2xs font-semibold shrink-0">
+                          T
+                        </span>
+                        <span className="text-xs font-semibold text-critical">
+                          Thách thức (Threats)
+                        </span>
+                      </div>
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-critical-soft text-critical border border-critical/30 tabular-nums">
+                        {dossier.swotAndCompliance.threats.length}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {dossier.swotAndCompliance.threats.length === 0 ? (
+                        <div className="text-2xs text-ink-3 italic py-2">Chưa ghi nhận mục nào</div>
+                      ) : (
+                        dossier.swotAndCompliance.threats.map((t, i) => (
+                          <div
+                            key={i}
+                            className="p-2.5 rounded-lg bg-surface border border-line shadow-2xs space-y-1.5"
+                          >
+                            <div className="text-xs font-medium text-ink leading-relaxed">
+                              {t.point}
+                            </div>
+                            {t.strategicImpact && (
+                              <div className="flex items-start gap-1.5 px-2 py-1.5 rounded bg-sunken/80 text-2xs text-ink-2 leading-relaxed">
+                                <ArrowRight className="w-3.5 h-3.5 text-critical shrink-0 mt-0.5" />
+                                <span>
+                                  <strong className="text-ink font-semibold">Phòng ngừa: </strong>
+                                  {t.strategicImpact}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

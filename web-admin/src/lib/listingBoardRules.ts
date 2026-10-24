@@ -56,6 +56,12 @@ export interface MoveResult {
   error?: string;
 }
 
+export const isDirectConfirmEligible = (item: KocListingItem): boolean => {
+  if (itemFee(item) <= 0 || item.salaryGrade === 'TAP UpAffiliate') return true;
+  if (item.brandApprovalStatus === 'BRAND_APPROVED') return true;
+  return Boolean(item.negotiationNote && /brand\s*chỉ\s*định|kol\s*chỉ\s*định/i.test(item.negotiationNote));
+};
+
 export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, reason?: string): MoveResult {
   const from = columnOf(item);
   if (from === to) return { item };
@@ -64,7 +70,17 @@ export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, r
   const base: KocListingItem = { ...item, updatedAt: now };
   switch (to) {
     case 'DRAFT':
-      return { item: { ...base, overallStatus: 'DRAFT', brandApprovalStatus: 'BRAND_PENDING', kocNegotiationStatus: 'NOT_CONTACTED', dropReason: undefined } };
+      return {
+        item: {
+          ...base,
+          overallStatus: 'DRAFT',
+          brandApprovalStatus: 'BRAND_PENDING',
+          kocNegotiationStatus: 'NOT_CONTACTED',
+          dropReason: undefined,
+          lastSheetDecision: undefined,
+          lastSheetDecisionAt: undefined,
+        },
+      };
     case 'WAIT_BRAND':
       return {
         item: {
@@ -75,9 +91,14 @@ export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, r
           brandApprovedAt: undefined,
           brandApprovedBy: undefined,
           brandDecidedAt: undefined,
+          lastSheetDecision: undefined,
+          lastSheetDecisionAt: undefined,
         },
       };
     case 'NEGOTIATING':
+      if (from === 'DROPPED' && !item.brandApprovedAt) {
+        return { error: 'KOC chưa được Brand duyệt nên chỉ có thể khôi phục về cột Nháp hoặc Chờ Brand duyệt.' };
+      }
       return {
         item: {
           ...base,
@@ -85,10 +106,21 @@ export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, r
           brandApprovalStatus: 'BRAND_APPROVED',
           brandApprovedAt: item.brandApprovedAt || now,
           brandApprovedBy: item.brandApprovedBy || actor,
-          kocNegotiationStatus: item.kocNegotiationStatus === 'TERMS_AGREED' ? 'CONTACTING' : item.kocNegotiationStatus === 'NOT_CONTACTED' ? 'CONTACTING' : item.kocNegotiationStatus,
+          kocNegotiationStatus:
+            item.kocNegotiationStatus === 'TERMS_AGREED'
+              ? 'CONTACTING'
+              : item.kocNegotiationStatus === 'NOT_CONTACTED'
+              ? 'CONTACTING'
+              : item.kocNegotiationStatus,
         },
       };
     case 'CONFIRMED':
+      if ((from === 'DRAFT' || from === 'WAIT_BRAND') && !isDirectConfirmEligible(item)) {
+        return {
+          error:
+            'Chỉ được chốt thẳng khi là KOC FOC (0đ) hoặc KOL do Brand chỉ định; các KOC trả phí phải qua bước Brand duyệt.',
+        };
+      }
       return {
         item: {
           ...base,

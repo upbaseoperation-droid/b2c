@@ -473,11 +473,9 @@ export function recalculateApprovedBookingItem(
       : '');
   const contractAppendixStatus: DealContractAppendixStatus =
     item.contractAppendixStatus ||
-    (hasAir
-      ? 'ĐÃ_KÝ'
-      : item.bookingOrderCreated && item.maBooking
-        ? 'CHỜ_KÝ'
-        : 'CHƯA_LẬP');
+    (item.bookingOrderCreated && item.maBooking
+      ? 'CHỜ_KÝ'
+      : 'CHƯA_LẬP');
 
   // Số tiền cần thanh toán theo Deal = Tổng giá Deal - Khấu trừ phần hủy - Tạm ứng
   const canThanhToan = Math.max(0, finalNet - khauTruHangMucHuy - tamUng);
@@ -1010,18 +1008,8 @@ export function buildBookingDealFromApprovedItem(
     kocBankHolder: normalized.tenTaiKhoanNganHang || undefined,
     kocIdCardNumber: normalized.soCccd || undefined,
     hasIdCardScan: Boolean(normalized.soCccd?.trim()),
-    contractScanUrl:
-      normalized.contractAppendixStatus === 'ĐÃ_KÝ'
-        ? `https://drive.google.com/drive/folders/upbase-pl-${(
-            normalized.contractAppendixCode || maBo
-          ).toLowerCase()}`
-        : undefined,
-    signedContractUrl:
-      normalized.contractAppendixStatus === 'ĐÃ_KÝ'
-        ? `https://drive.google.com/drive/folders/upbase-pl-${(
-            normalized.contractAppendixCode || maBo
-          ).toLowerCase()}`
-        : undefined,
+    contractScanUrl: undefined,
+    signedContractUrl: undefined,
     larkFinalApprovalCode: normalized.larkApprovalInstanceCode || undefined,
     dealType: addons.length > 0 ? 'MULTI_PLATFORM_CONTENT' : 'SINGLE_CONTENT',
     pricingDisplayMode:

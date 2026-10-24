@@ -140,7 +140,13 @@ export function planJobToBookingDeal(
     videoAssetCostVnd: isPackageAllIn ? totalNet : videoNet,
     addonsCostVnd: isPackageAllIn ? 0 : addonsNet,
     droppedCostVnd: droppedNet,
-    advanceAmount: 0,
+    advanceAmount:
+      job.payment.status !== 'NONE' &&
+      typeof job.payment.amount === 'number' &&
+      job.payment.amount > 0 &&
+      job.payment.amount < amountBreakdown.contractDisplayValue
+        ? job.payment.amount
+        : 0,
     finalAmount: amountBreakdown.contractDisplayValue,
     deadlinePost: job.deadline,
     tiktokVideoUrl: job.airLink || undefined,
@@ -236,6 +242,17 @@ const APPROVAL_LABEL: Record<ContractRecord['approval'], string> = {
   APPROVED: 'Đã duyệt, chờ ký',
 };
 
+const pickBestContractRecord = (pool: ContractRecord[]): ContractRecord | undefined =>
+  [...pool].sort((a, b) => {
+    const aSigned = recordSigned(a).signed ? 1 : 0;
+    const bSigned = recordSigned(b).signed ? 1 : 0;
+    if (aSigned !== bSigned) return bSigned - aSigned;
+    const aApproved = a.approval === 'APPROVED' ? 1 : 0;
+    const bApproved = b.approval === 'APPROVED' ? 1 : 0;
+    if (aApproved !== bApproved) return bApproved - aApproved;
+    return b.updatedAt.localeCompare(a.updatedAt);
+  })[0];
+
 /**
  * Hồ sơ hợp đồng theo từng Job:
  * - HDNT: Dùng chung cho KOC.
@@ -252,13 +269,13 @@ export function documentsOfJob(deal: PlanDeal, job: DealJob, records: ContractRe
   const kocKey = normHandle(deal.kocHandle);
   return (['HDNT', 'SOW', 'BBNT'] as ContractDocument[]).map(document => {
     let pool = own.filter(r => documentOfTemplate(r.templateId) === document);
-    // Hợp đồng nguyên tắc dùng chung cho KOC: nhận cả hồ sơ soạn từ deal/job khác của cùng KOC
+    // Hợp đồng nguyên tắc dùng chung cho KOC: nhận cả hồ sơ soạn từ deal/job khác của cùng KOC (chỉ khớp theo mã/handle KOC chuẩn)
     if (document === 'HDNT' && pool.length === 0) {
       pool = frameworkRecords.filter(
-        r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && (normHandle(v) === kocKey || v === deal.kocName))
+        r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && normHandle(v) === kocKey)
       );
     }
-    const record = [...pool].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    const record = pickBestContractRecord(pool);
     if (!record) return { document, label: 'Chưa soạn', signed: false, signedAt: '' };
     const s = recordSigned(record);
     return { document, record, label: s.signed ? 'Đã ký' : APPROVAL_LABEL[record.approval], signed: s.signed, signedAt: s.at };
@@ -273,8 +290,10 @@ export function documentsOfDeal(deal: PlanDeal, records: ContractRecord[], frame
   const kocKey = normHandle(deal.kocHandle);
   return (['HDNT', 'SOW', 'BBNT'] as ContractDocument[]).map(document => {
     let pool = own.filter(r => documentOfTemplate(r.templateId) === document);
-    if (document === 'HDNT' && pool.length === 0) pool = frameworkRecords.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && (normHandle(v) === kocKey || v === deal.kocName)));
-    const record = [...pool].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    if (document === 'HDNT' && pool.length === 0) {
+      pool = frameworkRecords.filter(r => documentOfTemplate(r.templateId) === 'HDNT' && [r.kocId, r.partner].some(v => v && normHandle(v) === kocKey));
+    }
+    const record = pickBestContractRecord(pool);
     if (!record) return { document, label: 'Chưa soạn', signed: false, signedAt: '' };
     const s = recordSigned(record);
     return { document, record, label: s.signed ? 'Đã ký' : APPROVAL_LABEL[record.approval], signed: s.signed, signedAt: s.at };

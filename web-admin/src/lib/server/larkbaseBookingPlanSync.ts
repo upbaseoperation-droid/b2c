@@ -11,23 +11,26 @@ import type {
 } from '../types';
 
 // 8 gian hàng có Trưởng nhóm Nguyễn Thị Ngọc Tâm sơ duyệt (Cột 55 File 4.1.1)
-const NGOC_TAM_MANAGED_STORES = [
-  'clubclio',
-  'cindy bloom',
-  'mine',
-  'eupc',
-  'l\'occitane',
-  'loccitane',
-  'bye bye blemish',
-  'rejuran'
+const NGOC_TAM_MANAGED_PATTERNS: RegExp[] = [
+  /\bclub\s*clio\b/i,
+  /\bcindy\s*bloom\b/i,
+  /\bmine\b/i,
+  /\beupc\b/i,
+  /\bl['’]?occitane\b/i,
+  /\bbye\s*bye\s*blemish\b/i,
+  /\brejuran\b/i,
 ];
 
 export function resolveBookingLeader(storeName: string, rawLeader?: string | null): string | undefined {
   if (rawLeader && rawLeader.trim().toLowerCase().includes('ngọc tâm')) {
     return 'Nguyễn Thị Ngọc Tâm';
   }
-  const normalized = storeName.toLowerCase();
-  if (NGOC_TAM_MANAGED_STORES.some(s => normalized.includes(s))) {
+  const normalized = (storeName || '').replace(/[_-]+/g, ' ').trim().toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized.includes('shopee') && !/\bclub\s*clio\b/i.test(normalized)) {
+    return undefined;
+  }
+  if (NGOC_TAM_MANAGED_PATTERNS.some(re => re.test(normalized))) {
     return 'Nguyễn Thị Ngọc Tâm';
   }
   return undefined;

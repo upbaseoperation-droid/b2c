@@ -40,14 +40,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     const { id } = await context.params;
     const body = (await req.json()) as Record<string, unknown>;
     const action = body.action as string;
+    const isLegalOrLead = actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r));
     const isKocCustomUpload = action === 'UPLOAD_DOCX' && body.scope === 'KOC_CUSTOM';
     requireCondition(
-      actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)) || (isKocCustomUpload && actor.roles.includes('CREATOR')),
+      isLegalOrLead || (isKocCustomUpload && actor.roles.includes('CREATOR')),
       'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền cập nhật danh mục mẫu hợp đồng.',
       403,
     );
 
     if (action === 'SAVE_META') {
+      requireCondition(isLegalOrLead, 'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền sửa cấu hình biểu mẫu.', 403);
       const template = await saveTemplateMeta(id, actor.name, {
         name: typeof body.name === 'string' ? body.name : undefined,
         subject: typeof body.subject === 'string' ? body.subject : undefined,
@@ -87,12 +89,12 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         defaultReviewRoles: Array.isArray(body.defaultReviewRoles)
           ? (body.defaultReviewRoles.filter(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(String(r))) as ('LEGAL' | 'FINANCE' | 'LEAD')[])
           : undefined,
-        exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined,
+        exemptLegalReview: isLegalOrLead ? (typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined) : false,
         scope: body.scope === 'KOC_CUSTOM' ? 'KOC_CUSTOM' : body.scope === 'GLOBAL' ? 'GLOBAL' : undefined,
         kocId: typeof body.kocId === 'string' ? body.kocId : undefined,
         kocName: typeof body.kocName === 'string' ? body.kocName : undefined,
-        approvedByLegal: typeof body.approvedByLegal === 'string' ? body.approvedByLegal : undefined,
-        approvedAt: typeof body.approvedAt === 'string' ? body.approvedAt : undefined,
+        approvedByLegal: isLegalOrLead && typeof body.approvedByLegal === 'string' ? body.approvedByLegal : undefined,
+        approvedAt: isLegalOrLead && typeof body.approvedAt === 'string' ? body.approvedAt : undefined,
         originalContractId: typeof body.originalContractId === 'string' ? body.originalContractId : undefined,
         customType: body.customType === 'UPBASE_AMENDED' || body.customType === 'KOC_FORM' ? body.customType : undefined,
         legalNotes: typeof body.legalNotes === 'string' ? body.legalNotes : undefined,

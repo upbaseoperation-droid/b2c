@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { 
   ActionMenu,
   Button, 
@@ -23,7 +24,7 @@ import {
   ShopeeLogo,
   TikTokLogo
 } from '../ui';
-import { type MasterCatalog } from '../../lib/masterCatalog';
+import { DEFAULT_MASTER_CATALOG, INITIAL_MASTER_PRODUCTS, type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
 import { formatVnd, getVietnamDateYmd } from '../../lib/format';
 import { 
@@ -44,7 +45,16 @@ import {
   UPBASE_STAFF_MASTER,
   UPBASE_MASTER_PILLARS
 } from '../../lib/importedMasterData';
-import { KocMasterDataView } from './KocMasterDataView';
+const KocMasterDataView = dynamic(
+  () => import('./KocMasterDataView').then((m) => m.KocMasterDataView),
+  {
+    loading: () => (
+      <div className="rounded-xl border border-line bg-surface p-12 text-center text-xs text-ink-3">
+        Đang tải Danh bạ KOC...
+      </div>
+    ),
+  }
+);
 import { 
   CastTiersMasterView, 
   KocNichesMasterView, 
@@ -53,7 +63,16 @@ import {
   StaffMasterView,
   ContributorsMasterView
 } from './master-data';
-import { ProductCatalogView } from './ProductCatalogView';
+const ProductCatalogView = dynamic(
+  () => import('./ProductCatalogView').then((m) => m.ProductCatalogView),
+  {
+    loading: () => (
+      <div className="rounded-xl border border-line bg-surface p-12 text-center text-xs text-ink-3">
+        Đang tải Danh mục sản phẩm...
+      </div>
+    ),
+  }
+);
 import {
   UPBASE_MASTER_SLA_CONFIG,
   UPBASE_MASTER_KPI_DEFINITIONS
@@ -89,6 +108,27 @@ export interface MasterProductItem {
   sampleAvailableCount?: number;
   usp?: string;
 }
+
+interface CachedMasterCatalogPayload {
+  revision: number;
+  data: MasterCatalog;
+  canEdit: boolean;
+  userId: string;
+  cachedAt: number;
+}
+
+let clientMasterCatalogCache: CachedMasterCatalogPayload | null = null;
+
+const serializeCatalog = (c: MasterCatalog): string =>
+  JSON.stringify({
+    brands: c.brands,
+    stores: c.stores,
+    products: c.products,
+    pillars: c.pillars,
+    castTiers: c.castTiers,
+    niches: c.niches,
+    formats: c.formats,
+  });
 
 interface MasterDataHubViewProps {
   currentUser: UserProfile;
@@ -138,7 +178,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Brand state (Tải 625 thương hiệu chuẩn Upbase Master Data)
   const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
-    brands ?? []
+    clientMasterCatalogCache?.data.brands || (brands && brands.length > 0 ? brands : DEFAULT_MASTER_CATALOG.brands)
   );
 
   const [brandSearch, setBrandSearch] = useState('');
@@ -181,7 +221,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Store state (Đồng bộ danh mục 353 gian hàng chuẩn Upbase Master Data)
   const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
-    stores ?? []
+    clientMasterCatalogCache?.data.stores || (stores && stores.length > 0 ? stores : DEFAULT_MASTER_CATALOG.stores)
   );
 
   const handleStoreUpdated = (updated: StorePortfolioItem) => {
@@ -191,7 +231,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
   // Master Product Catalog state (Dữ liệu gốc sản phẩm)
-  const [productList, setProductList] = useState<MasterProductItem[]>([]);
+  const [productList, setProductList] = useState<MasterProductItem[]>(() =>
+    clientMasterCatalogCache?.data.products || INITIAL_MASTER_PRODUCTS
+  );
   const [productSearch, setProductSearch] = useState('');
   const [selectedProductBrand, setSelectedProductBrand] = useState('ALL');
   const [selectedProductPlatform, setSelectedProductPlatform] = useState('ALL');
@@ -226,7 +268,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [deletingProduct, setDeletingProduct] = useState<MasterProductItem | null>(null);
 
   // Master Content Pillars state (15 Trụ cột nội dung chuẩn Upbase Master Data 5.5)
-  const [pillarList, setPillarList] = useState<MasterContentPillar[]>(UPBASE_MASTER_PILLARS);
+  const [pillarList, setPillarList] = useState<MasterContentPillar[]>(() =>
+    clientMasterCatalogCache?.data.pillars || UPBASE_MASTER_PILLARS
+  );
   const [pillarSearch, setPillarSearch] = useState('');
   const [selectedPillarStatus, setSelectedPillarStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [isPillarModalOpen, setIsPillarModalOpen] = useState(false);
@@ -709,34 +753,68 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
 
-  const [extraCatalog, setExtraCatalog] = useState<Pick<MasterCatalog, "castTiers" | "niches" | "formats">>({ castTiers: [], niches: [], formats: [] });
-  const [catalogRevision, setCatalogRevision] = useState<number | null>(null);
+  const [extraCatalog, setExtraCatalog] = useState<Pick<MasterCatalog, "castTiers" | "niches" | "formats">>(() => ({
+    castTiers: clientMasterCatalogCache?.data.castTiers || DEFAULT_MASTER_CATALOG.castTiers,
+    niches: clientMasterCatalogCache?.data.niches || DEFAULT_MASTER_CATALOG.niches,
+    formats: clientMasterCatalogCache?.data.formats || DEFAULT_MASTER_CATALOG.formats,
+  }));
+  const [catalogRevision, setCatalogRevision] = useState<number | null>(() => clientMasterCatalogCache?.revision ?? null);
   const [catalogBusy, setCatalogBusy] = useState(false);
   const [catalogError, setCatalogError] = useState('');
-  const [canEditCatalog, setCanEditCatalog] = useState(false);
-  const [savedCatalog, setSavedCatalog] = useState('');
+  const [canEditCatalog, setCanEditCatalog] = useState(() => clientMasterCatalogCache?.canEdit ?? false);
+  const [savedCatalog, setSavedCatalog] = useState(() => clientMasterCatalogCache ? serializeCatalog(clientMasterCatalogCache.data) : '');
   const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
-  const serializeCatalog = (c: MasterCatalog): string => JSON.stringify({ brands: c.brands, stores: c.stores, products: c.products, pillars: c.pillars, castTiers: c.castTiers, niches: c.niches, formats: c.formats });
   const catalogDirty = savedCatalog !== '' && serializeCatalog(draftCatalog) !== savedCatalog;
-  const acceptCatalog = useCallback((body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
+  const acceptCatalog = useCallback((body: { revision: number; data: MasterCatalog; canEdit: boolean }, userId?: string) => {
     const data = body.data;
     setBrandList(data.brands); setStoreList(data.stores); setProductList(data.products); setPillarList(data.pillars);
     setExtraCatalog({ castTiers: data.castTiers, niches: data.niches, formats: data.formats });
     setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(serializeCatalog(data));
+    if (userId) {
+      clientMasterCatalogCache = {
+        revision: body.revision,
+        data,
+        canEdit: body.canEdit,
+        userId,
+        cachedAt: Date.now(),
+      };
+    }
   }, []);
   const reloadCatalog = async () => {
     const res = await fetch('/api/master-data', { cache: 'no-store' });
     const body = await res.json(); if (!res.ok) throw new Error(body.error);
-    acceptCatalog(body); setCatalogError('');
+    acceptCatalog(body, currentUser.id); setCatalogError('');
   };
   const [prevCatalogUserId, setPrevCatalogUserId] = useState(currentUser.id);
   if (currentUser.id !== prevCatalogUserId) {
     setPrevCatalogUserId(currentUser.id);
-    setBrandList([]); setStoreList([]); setProductList([]); setExtraCatalog({ castTiers: [], niches: [], formats: [] }); setSavedCatalog(''); setCatalogError(''); setCatalogRevision(null); setCanEditCatalog(false);
+    clientMasterCatalogCache = null;
+    setBrandList(brands && brands.length > 0 ? brands : DEFAULT_MASTER_CATALOG.brands);
+    setStoreList(stores && stores.length > 0 ? stores : DEFAULT_MASTER_CATALOG.stores);
+    setProductList(INITIAL_MASTER_PRODUCTS);
+    setPillarList(UPBASE_MASTER_PILLARS);
+    setExtraCatalog({
+      castTiers: DEFAULT_MASTER_CATALOG.castTiers,
+      niches: DEFAULT_MASTER_CATALOG.niches,
+      formats: DEFAULT_MASTER_CATALOG.formats,
+    });
+    setSavedCatalog('');
+    setCatalogError('');
+    setCatalogRevision(null);
+    setCanEditCatalog(false);
   }
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/master-data', { cache: 'no-store' }).then(async res => { const body = await res.json(); if (!res.ok) throw new Error(body.error); if (!cancelled) acceptCatalog(body); }).catch(e => { if (!cancelled) setCatalogError(e.message); });
+    const isFresh = clientMasterCatalogCache && clientMasterCatalogCache.userId === currentUser.id && (Date.now() - clientMasterCatalogCache.cachedAt < 60_000);
+    if (!isFresh) {
+      fetch('/api/master-data', { cache: 'no-store' }).then(async res => {
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error);
+        if (!cancelled) acceptCatalog(body, currentUser.id);
+      }).catch(e => {
+        if (!cancelled) setCatalogError(e.message);
+      });
+    }
     return () => { cancelled = true; };
   }, [currentUser.id, acceptCatalog]);
   useEffect(() => {
@@ -749,7 +827,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     try {
       const res = await fetch('/api/master-data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ revision: catalogRevision, data: draftCatalog }) });
       const body = await res.json(); if (!res.ok) throw new Error(body.error);
-      acceptCatalog(body); window.dispatchEvent(new Event('upbase-master-data-updated'));
+      acceptCatalog(body, currentUser.id); window.dispatchEvent(new Event('upbase-master-data-updated'));
       onNotify?.('Đã lưu danh mục dùng chung trên máy chủ.', 'success');
     } catch (e) { setCatalogError((e as Error).message); }
     finally { setCatalogBusy(false); }

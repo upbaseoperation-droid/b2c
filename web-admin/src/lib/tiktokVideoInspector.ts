@@ -579,7 +579,58 @@ const GENERIC_TITLE_STOPWORDS = new Set([
   'extract',
   'complex',
   'formula',
+  'dung',
+  'dich',
+  'sinh',
+  'ngay',
+  'khong',
+  'thom',
+  'mat',
+  'nhe',
+  'can',
+  'bang',
+  'tu',
+  'nhien',
+  'dem',
+  'lai',
+  'giac',
+  'thoai',
+  'duy',
+  'nhat',
+  'hom',
+  'nay',
+  'phu',
+  'nu',
+  'nam',
+  'xanh',
+  'hong',
+  'vang',
+  'tim',
+  'loai',
+  'dong',
+  'cung',
+  'nhieu',
+  'luon',
+  'duoc',
+  'trong',
+  'ngoai',
+  'tren',
+  'duoi',
+  'san',
+  'pham',
+  'chu',
+  'luc',
 ]);
+
+const PRODUCT_SHORTHAND_EXPANSIONS: Record<string, string[]> = {
+  hlc: ['hoa lan chuông'],
+  ddvs: ['dung dịch vệ sinh'],
+  kcn: ['kem chống nắng'],
+  srm: ['sữa rửa mặt'],
+  ntt: ['nước tẩy trang'],
+  tdc: ['tẩy da chết', 'tẩy tế bào chết'],
+  kda: ['kem dưỡng ẩm'],
+};
 
 /**
  * Dò mốc giây xuất hiện tên sản phẩm / thương hiệu / dòng sản phẩm trong lời thoại phụ đề (WebVTT).
@@ -624,14 +675,34 @@ export function detectProductMentionMoments(params: {
     candidateTerms.push({ label: clean, folded, priority });
   };
 
-  // 1. Tên thương hiệu (ưu tiên cao nhất)
+  // 1. Tên thương hiệu & Tên sản phẩm cụ thể từ Booking Deal (ưu tiên cao nhất)
   if (brandName && brandName.trim()) {
     addCandidate(brandName.trim(), 1);
     const hyphenNormalized = brandName.replace(/[-_]+/g, ' ').trim();
     if (hyphenNormalized !== brandName.trim()) addCandidate(hyphenNormalized, 1);
   }
 
-  // 2. Các từ riêng (Latin / Tên thương hiệu / Tên dòng SP như Anthelios, Cetaphil, Cocoon, Skin1004, Centella...) trong tên giỏ hàng & caption
+  if (productName && productName.trim()) {
+    const rawParts = productName
+      .split(/[,+/|;&()[\]]+/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    for (const part of rawParts) {
+      const foldedPart = foldForMatch(part);
+      if (!foldedPart || foldedPart === 'san pham chu luc' || foldedPart === 'san pham') continue;
+      const expansions = PRODUCT_SHORTHAND_EXPANSIONS[foldedPart];
+      if (expansions) {
+        for (const exp of expansions) {
+          addCandidate(exp, 1);
+        }
+      }
+      if (foldedPart.length >= 4 && !GENERIC_TITLE_STOPWORDS.has(foldedPart)) {
+        addCandidate(part, 1);
+      }
+    }
+  }
+
+  // 2. Các từ riêng (Latin / Tên thương hiệu / Tên dòng SP như Anthelios, Cetaphil, Cocoon, Skin1004, Centella, Ziaja...) trong tên giỏ hàng & caption
   const allProductTitles = [
     productName || '',
     cartAnchorTitle || '',
@@ -641,22 +712,6 @@ export function detectProductMentionMoments(params: {
     .filter(Boolean)
     .join(' ');
 
-  // Ưu tiên cụm từ tên riêng Latin 2-3 từ đi liền nhau (VD: "Nucos Super White", "La Roche Posay", "Club Clio")
-  const latinPhrases =
-    allProductTitles
-      .replace(/\[[^\]]*\]/g, ' ')
-      .match(/\b[A-Z][A-Za-z0-9]*(?:\s+[A-Z][A-Za-z0-9]*){1,2}\b/g) || [];
-  for (const phrase of latinPhrases) {
-    const words = phrase.trim().split(/\s+/);
-    const hasSpecificWord = words.some((w) => {
-      const f = foldForMatch(w);
-      return f.length >= 4 && !GENERIC_TITLE_STOPWORDS.has(f);
-    });
-    if (hasSpecificWord) {
-      addCandidate(phrase.trim(), 1);
-    }
-  }
-
   const rawTokens = allProductTitles
     .replace(/\[[^\]]*\]/g, ' ')
     .replace(/#[\p{L}\p{N}_]+/gu, ' ')
@@ -664,14 +719,36 @@ export function detectProductMentionMoments(params: {
     .map((t) => t.trim())
     .filter(Boolean);
 
+  // Ghép cụm từ tên riêng Latin (chỉ ghép các từ hoàn toàn ASCII để không cắt đứt từ tiếng Việt có dấu như "Dung Dịch" -> "Dung D")
+  const isPureLatinProperToken = (tok: string): boolean => {
+    if (!/^[A-Z][A-Za-z0-9]{2,}$/.test(tok)) return false;
+    const f = foldForMatch(tok);
+    return f.length >= 3 && !GENERIC_TITLE_STOPWORDS.has(f);
+  };
+
+  for (let i = 0; i < rawTokens.length - 1; i++) {
+    if (isPureLatinProperToken(rawTokens[i]) && isPureLatinProperToken(rawTokens[i + 1])) {
+      addCandidate(`${rawTokens[i]} ${rawTokens[i + 1]}`, 1);
+      if (i + 2 < rawTokens.length && isPureLatinProperToken(rawTokens[i + 2])) {
+        addCandidate(`${rawTokens[i]} ${rawTokens[i + 1]} ${rawTokens[i + 2]}`, 1);
+      }
+    }
+  }
+
   for (const tok of rawTokens) {
     const foldedTok = foldForMatch(tok);
+    const expansions = PRODUCT_SHORTHAND_EXPANSIONS[foldedTok];
+    if (expansions) {
+      for (const exp of expansions) {
+        addCandidate(exp, 1);
+      }
+    }
     if (
       foldedTok.length >= 4 &&
       !/^\d+(?:ml|g|gr|kg|l|oz|spf|pa)?$/i.test(foldedTok) &&
       !GENERIC_TITLE_STOPWORDS.has(foldedTok) &&
-      // Từ không dấu hoặc tên riêng viết hoa toàn bộ (VD: CETAPHIL, SKIN1004, ANTHELIOS, CERAVE, COCOON, POSAY)
-      (/^[A-Z0-9]{4,}$/.test(tok) || (tok.toLowerCase() === foldedTok && /^[A-Z]/.test(tok)))
+      // Từ hoàn toàn ASCII viết hoa hoặc chữ cái đầu viết hoa không nằm trong từ điển từ phổ thông tiếng Việt
+      (/^[A-Z0-9]{4,}$/.test(tok) || (/^[A-Z][a-z0-9]{3,}$/.test(tok) && tok.toLowerCase() === foldedTok))
     ) {
       addCandidate(tok, 1);
     }
@@ -685,7 +762,7 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "tẩy da chết"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
+  // 3. Cụm danh mục sản phẩm (VD: "kem chống nắng", "sữa rửa mặt", "dung dịch vệ sinh"...) có xuất hiện trong tên sản phẩm hoặc bài đăng
   const foldedAllTitles = foldForMatch(allProductTitles);
   for (const phrase of PRODUCT_CATEGORY_PHRASES) {
     if (!foldedAllTitles || foldedAllTitles.includes(foldForMatch(phrase))) {
@@ -700,7 +777,7 @@ export function detectProductMentionMoments(params: {
     }
   }
 
-  // Sắp xếp theo độ ưu tiên (Tên Brand/Dòng SP -> Cụm loại SP -> USP)
+  // Sắp xếp theo độ ưu tiên (Tên Brand/Dòng SP -> Cụm loại SP -> USP) và ưu tiên cụm dài hơn
   candidateTerms.sort((a, b) => a.priority - b.priority || b.folded.length - a.folded.length);
 
   const moments: TikTokProductMentionMoment[] = [];
@@ -712,7 +789,8 @@ export function detectProductMentionMoments(params: {
 
     let matchedLabel: string | undefined;
     for (const cand of candidateTerms) {
-      if (foldedSeg.includes(` ${cand.folded} `) || foldedSeg.includes(cand.folded)) {
+      // Bắt buộc khớp theo ranh giới từ (` ${cand.folded} `) để tránh từ ngắn khớp nhầm vào giữa từ khác
+      if (foldedSeg.includes(` ${cand.folded} `)) {
         matchedLabel = cand.label;
         break;
       }
