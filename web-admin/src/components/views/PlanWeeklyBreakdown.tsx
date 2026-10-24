@@ -400,12 +400,14 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     if (def.kind !== 'tier') return '';
     const qty = readQty(row, def);
     const budget = readBudget(row, def);
-    if (sub === 1 && qty > 0 && budget === 0) return 'border-critical bg-critical-soft';
-    if (sub === 0 && qty === 0 && budget > 0) return 'border-critical bg-critical-soft';
+    if (sub === 1 && qty > 0 && budget === 0) return 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-300';
+    if (sub === 0 && qty === 0 && budget > 0) return 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-300';
     if (sub === 1 && qty > 0 && budget > 0) {
       const unit = budget / qty;
       const range = TIER_RANGE[def.tier!];
-      if (unit < range.min || (range.max !== null && unit > range.max)) return 'border-warning bg-warning-soft';
+      if (unit < range.min || (range.max !== null && unit > range.max)) {
+        return 'bg-amber-50/70 text-amber-800';
+      }
     }
     return '';
   };
@@ -415,6 +417,24 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     const row = rows[wi];
     const stored = sub === 0 ? readQty(row, def) : readBudget(row, def);
     const shown = sub === 1 && grossMode ? grossFromNet(stored) : stored;
+    const tone = cellTone(row, def, sub);
+
+    if (effectiveReadOnly) {
+      return (
+        <div
+          className={`flex h-8 w-full items-center justify-end px-2 text-right text-xs tabular-nums ${
+            shown > 0
+              ? sub === 0
+                ? 'font-semibold text-slate-900'
+                : 'font-medium text-slate-700'
+              : 'text-slate-300'
+          } ${tone}`}
+        >
+          {shown > 0 ? fmt(shown) : '—'}
+        </div>
+      );
+    }
+
     return (
       <input
         ref={el => {
@@ -423,9 +443,8 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         }}
         type="text"
         inputMode="numeric"
-        disabled={effectiveReadOnly}
         value={shown ? fmt(shown) : ''}
-        placeholder="0"
+        placeholder="—"
         onChange={e => {
           const v = parseNumber(e.target.value);
           setCell(wi, def, sub, sub === 1 && grossMode ? netFromGross(v) : v);
@@ -440,8 +459,42 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
             focusCell(r - 1, c);
           }
         }}
-        className={`w-full rounded border px-1.5 py-1 text-right text-xs tabular-nums text-ink outline-none focus:border-accent disabled:bg-transparent ${
-          cellTone(row, def, sub) || 'border-line bg-surface'
+        className={`h-8 w-full border-0 bg-transparent px-2 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-indigo-50/50 focus:ring-1 focus:ring-inset focus:ring-indigo-600 ${
+          sub === 0 ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
+        } ${tone}`}
+      />
+    );
+  };
+
+  const renderFlushCellInput = (
+    value: number,
+    onChangeVal: (v: number) => void,
+    isBold = false
+  ) => {
+    if (effectiveReadOnly) {
+      return (
+        <div
+          className={`flex h-8 w-full items-center justify-end px-2.5 text-right text-xs tabular-nums ${
+            value > 0
+              ? isBold
+                ? 'font-semibold text-slate-900'
+                : 'font-medium text-slate-700'
+              : 'text-slate-300'
+          }`}
+        >
+          {value > 0 ? fmt(value) : '—'}
+        </div>
+      );
+    }
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value ? fmt(value) : ''}
+        placeholder="—"
+        onChange={e => onChangeVal(parseNumber(e.target.value))}
+        className={`h-8 w-full border-0 bg-transparent px-2.5 text-right text-xs tabular-nums outline-none transition placeholder:text-slate-300 hover:bg-slate-50/80 focus:bg-indigo-50/50 focus:ring-1 focus:ring-inset focus:ring-indigo-600 ${
+          isBold ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
         }`}
       />
     );
@@ -485,57 +538,69 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     const c = key ? cmp(key) : undefined;
     if (!c) return null;
     return (
-      <span className={c.matched ? 'text-positive font-semibold' : c.diff > 0 ? 'text-critical font-semibold' : 'text-warning font-semibold'}>
+      <span className={c.matched ? 'text-emerald-700 font-semibold' : c.diff > 0 ? 'text-rose-600 font-semibold' : 'text-amber-700 font-semibold'}>
         {c.matched ? 'Khớp' : `${c.diff > 0 ? '+' : ''}${fmt(c.diff)}`}
       </span>
     );
   };
 
   const renderInlineDiff = (planned: number, reference: number | null) => {
-    if (reference === null || reference === undefined) return null;
+    if (reference === null || reference === undefined) return <span className="text-slate-300">—</span>;
     const diff = planned - reference;
-    if (diff === 0 && reference === 0 && planned === 0) return <span className="text-ink-3">—</span>;
-    if (diff === 0) return <span className="font-semibold text-positive">Khớp</span>;
+    if (diff === 0 && reference === 0 && planned === 0) return <span className="text-slate-300">—</span>;
+    if (diff === 0) return <span className="font-semibold text-emerald-700">Khớp</span>;
     return (
-      <span className={`font-semibold ${diff > 0 ? 'text-critical' : 'text-warning'}`}>
+      <span className={`font-semibold ${diff > 0 ? 'text-rose-600' : 'text-amber-700'}`}>
         {diff > 0 ? `+${fmt(diff)}` : fmt(diff)}
       </span>
     );
   };
 
-  const weekHeader = (r: PlanWeekRow, wi: number) => (
-    <th key={r.week} colSpan={2} className="min-w-[185px] border-l border-line px-2 py-2 text-center align-bottom font-medium text-ink">
-      <div className="flex items-center justify-between gap-1">
-        <span className="truncate text-xs font-semibold">{r.week}</span>
-        {!effectiveReadOnly && (
-          <span className="flex shrink-0 gap-0.5">
-            {wi > 0 && (
+  const formatWeekTitle = (w: string) => {
+    const cleaned = (w || '').replace(/\[/g, '(').replace(/\]/g, ')');
+    const parts = cleaned.split(/\s+/);
+    const code = parts[0] || w;
+    const range = parts.slice(1).join(' ');
+    return { code, range };
+  };
+
+  const weekHeader = (r: PlanWeekRow, wi: number) => {
+    const { code, range } = formatWeekTitle(r.week);
+    return (
+      <th
+        key={r.week}
+        colSpan={2}
+        className="group border-b border-l border-slate-200 bg-slate-50 px-2 py-1.5 text-center align-middle"
+      >
+        <div className="flex items-center justify-center gap-1">
+          <span className="text-xs font-bold text-slate-800">{code}</span>
+          {range && <span className="text-2xs font-normal text-slate-500">{range}</span>}
+          {!effectiveReadOnly && (
+            <span className="ml-1 hidden items-center gap-0.5 group-hover:inline-flex">
+              {wi > 0 && (
+                <button
+                  type="button"
+                  title="Sao chép tuần trước"
+                  onClick={() => copyPrevious(wi)}
+                  className="rounded p-0.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              )}
               <button
                 type="button"
-                title="Sao chép tuần trước"
-                onClick={() => copyPrevious(wi)}
-                className="rounded p-1 text-ink-3 hover:bg-accent-soft hover:text-accent cursor-pointer"
+                title="Xóa số tuần này"
+                onClick={() => clearWeek(wi)}
+                className="rounded p-0.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
               >
-                <Copy className="h-3.5 w-3.5" />
+                <Eraser className="h-3 w-3" />
               </button>
-            )}
-            <button
-              type="button"
-              title="Xóa số tuần này"
-              onClick={() => clearWeek(wi)}
-              className="rounded p-1 text-ink-3 hover:bg-critical-soft hover:text-critical cursor-pointer"
-            >
-              <Eraser className="h-3.5 w-3.5" />
-            </button>
-          </span>
-        )}
-      </div>
-      <div className="mt-1 grid grid-cols-2 text-2xs font-normal text-ink-3">
-        <span>SL</span>
-        <span>Net{grossMode ? ' (nhập Gross)' : ''}</span>
-      </div>
-    </th>
-  );
+            </span>
+          )}
+        </div>
+      </th>
+    );
+  };
 
   const ref41MultiTotals = useMemo(() => {
     const mp = ref41?.multiPlatform;
@@ -568,23 +633,31 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
   const rolePics = ref41?.rolePics;
 
-  // Dữ liệu 5 dòng chuẩn cho BẢNG TỔNG QUAN ĐỐI SOÁT 4.1 VS 4.1.1 (Cố định ở nửa trên)
+  // Chuẩn hóa số mục tiêu 4.1 (nếu kế hoạch tháng 10 chưa có reference41 thì lấy từ coreMetricsLayer1 / chỉ tiêu tháng)
   const overviewMatrixRows = useMemo(() => {
     const r = ref41;
-    const castRefQty = r?.cast || 0;
-    const castRefNet = r?.affCostNet || 0;
-    const focRefQty = r?.foc || 0;
-    const selfRefQty = r?.selfVideos || 0;
-    const selfRefNet = r?.selfCostNet || 0;
-    const multiRefQty = ref41MultiTotals.affQty + ref41MultiTotals.reupQty + (r?.tiktokReup || 0);
-    const multiRefNet = ref41MultiTotals.costNet;
-    const liveRefQty = (r?.liveSessions || 0) + (r?.liveSelf?.inhouse3h || 0) + (r?.liveSelf?.ctv2h || 0) + (r?.liveSelf?.brand2h || 0);
-    const liveRefNet = (r?.liveCostNet || 0) + (r?.liveSelf?.totalCostNet || 0);
+    const l1 = plan.coreMetricsLayer1;
 
     const multiPlannedQty = totals.multiTotalAffQty + totals.multiTotalReupQty;
     const multiPlannedNet = totals.multiTotalBudget;
     const livePlannedQty = totals.liveSessions + totals.liveSelfInhouse + totals.liveSelfCtv + totals.liveSelfBrand;
     const livePlannedNet = totals.liveBudget + totals.liveSelfBudget;
+
+    const castRefQty = r ? r.cast || 0 : l1?.qtyAffiliatePaid ?? (plan.targetAffiliateContents || storeTotals.castQty);
+    const castRefNet = r ? r.affCostNet || 0 : l1?.budgetAffiliateNet ?? (plan.budgetAffiliate || storeTotals.castBudget);
+    const focRefQty = r ? r.foc || 0 : l1?.qtyFocSample ?? storeTotals.focQty;
+    const selfRefQty = r ? r.selfVideos || 0 : l1?.qtySelfChannel ?? (plan.targetSelfChannelContents || storeTotals.selfQty);
+    const selfRefNet = r ? r.selfCostNet || 0 : l1?.budgetSelfChannelNet ?? (plan.budgetSelfChannel || storeTotals.selfBudget);
+    const multiRefQty = r
+      ? ref41MultiTotals.affQty + ref41MultiTotals.reupQty + (r.tiktokReup || 0)
+      : l1?.qtyMultiPlatform ?? multiPlannedQty;
+    const multiRefNet = r ? ref41MultiTotals.costNet : l1?.budgetMultiPlatformNet ?? multiPlannedNet;
+    const liveRefQty = r
+      ? (r.liveSessions || 0) + (r.liveSelf?.inhouse3h || 0) + (r.liveSelf?.ctv2h || 0) + (r.liveSelf?.brand2h || 0)
+      : l1?.qtyLivestreamSessions ?? livePlannedQty;
+    const liveRefNet = r
+      ? (r.liveCostNet || 0) + (r.liveSelf?.totalCostNet || 0)
+      : l1?.budgetLivestreamNet ?? livePlannedNet;
 
     return [
       {
@@ -651,7 +724,21 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
         extraTag: undefined,
       },
     ];
-  }, [ref41, ref41MultiTotals, totals, rolePics, plan.primaryPic, plan.pic, kl4PlusPlanned]);
+  }, [
+    ref41,
+    plan.coreMetricsLayer1,
+    plan.targetAffiliateContents,
+    plan.budgetAffiliate,
+    plan.targetSelfChannelContents,
+    plan.budgetSelfChannel,
+    ref41MultiTotals,
+    totals,
+    storeTotals,
+    rolePics,
+    plan.primaryPic,
+    plan.pic,
+    kl4PlusPlanned,
+  ]);
 
   const overviewGrandTotals = useMemo(() => {
     return overviewMatrixRows.reduce(
@@ -665,6 +752,20 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
     );
   }, [overviewMatrixRows]);
 
+  const activeRoleBadges = useMemo(() => {
+    const list: { role: string; names: string }[] = [];
+    const bookingNames = rolePics?.bookingPics?.length
+      ? rolePics.bookingPics.join(', ')
+      : plan.primaryPic || plan.pic || '';
+    if (bookingNames) list.push({ role: 'Booking', names: bookingNames });
+    if (rolePics?.growthPics?.length) list.push({ role: 'Growth', names: rolePics.growthPics.join(', ') });
+    if (rolePics?.accountPics?.length) list.push({ role: 'Account', names: rolePics.accountPics.join(', ') });
+    if (rolePics?.focPics?.length) list.push({ role: 'FOC', names: rolePics.focPics.join(', ') });
+    const contentLive = [...(rolePics?.contentPics || []), ...(rolePics?.livePics || [])].filter(Boolean);
+    if (contentLive.length > 0) list.push({ role: 'Content/Live', names: contentLive.join(', ') });
+    return list;
+  }, [rolePics, plan.primaryPic, plan.pic]);
+
   const handleSelectWorkstreamFromOverview = (tab: WorkstreamTab) => {
     setActiveTab(prev => (prev === tab ? 'ALL' : tab));
     if (detailAnchorRef.current) {
@@ -675,312 +776,270 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
   let flatIndex = -1;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="xl:col-span-8 rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-4 py-2.5">
-              <h4 className="text-xs font-bold text-slate-900">
-                Tổng quan kế hoạch (4.1 &amp; 4.1.1)
-              </h4>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {!effectiveReadOnly && hasRef && (
-                  <button
-                    type="button"
-                    onClick={handleDistributeFromRef41}
-                    className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
-                  >
-                    Khớp theo 4.1
-                  </button>
-                )}
-                {activeTab !== 'ALL' && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('ALL')}
-                    className="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-2xs font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
-                  >
-                    Xem tất cả
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/50 text-2xs font-semibold text-slate-600">
-                    <th className="px-3.5 py-2 text-left">Hạng mục</th>
-                    <th className="px-2.5 py-2 text-left">PIC</th>
-                    <th className="border-l border-slate-200 px-2.5 py-2 text-right">SL 4.1</th>
-                    <th className="px-2.5 py-2 text-right">SL 4.1.1</th>
-                    <th className="border-l border-slate-200 px-2.5 py-2 text-right">Net 4.1</th>
-                    <th className="px-2.5 py-2 text-right">Net 4.1.1</th>
-                    <th className="border-l border-slate-200 px-3 py-2 text-right">Lệch</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {overviewMatrixRows.map(row => {
-                    const qtyDiff = row.plannedQty - row.refQty;
-                    const budDiff = row.plannedBudgetNet - row.refBudgetNet;
-                    const isQtyMatched = qtyDiff === 0;
-                    const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
-                    const isAllMatched = isQtyMatched && isBudMatched;
-                    const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
-                    const isFocused = activeTab === row.id;
-
-                    return (
-                      <tr
-                        key={row.id}
-                        onClick={() => handleSelectWorkstreamFromOverview(row.id)}
-                        className={`cursor-pointer transition ${
-                          isFocused
-                            ? 'bg-indigo-50/70 hover:bg-indigo-50'
-                            : 'hover:bg-slate-50/80'
-                        }`}
-                      >
-                        <td className="px-3.5 py-2.5 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-900">{row.title}</span>
-                            {row.extraTag && (
-                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs font-semibold text-slate-700">
-                                {row.extraTag}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-2.5 py-2.5 align-middle">
-                          <span className="inline-block max-w-[130px] truncate font-medium text-slate-800" title={row.picText}>
-                            {row.picText}
-                          </span>
-                        </td>
-                        <td className="border-l border-slate-100 px-2.5 py-2.5 text-right align-middle tabular-nums font-semibold text-slate-700">
-                          {fmt(row.refQty)} <span className="text-2xs font-normal text-slate-400">{row.unitLabel}</span>
-                        </td>
-                        <td className="px-2.5 py-2.5 text-right align-middle tabular-nums font-bold text-slate-900">
-                          {fmt(row.plannedQty)} <span className="text-2xs font-normal text-slate-400">{row.unitLabel}</span>
-                        </td>
-                        <td className="border-l border-slate-100 px-2.5 py-2.5 text-right align-middle tabular-nums text-slate-600">
-                          {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : '0đ'}
-                        </td>
-                        <td className="px-2.5 py-2.5 text-right align-middle tabular-nums font-semibold text-indigo-900">
-                          {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : '0đ'}
-                        </td>
-                        <td className="border-l border-slate-100 px-3 py-2.5 text-right align-middle tabular-nums">
-                          {isEmpty ? (
-                            <span className="text-2xs text-slate-400">—</span>
-                          ) : isAllMatched ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-2xs font-semibold text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="h-3 w-3" /> Khớp
-                            </span>
-                          ) : (
-                            <div className="space-y-0.5">
-                              {!isQtyMatched && (
-                                <div className={`text-2xs font-semibold ${qtyDiff > 0 ? 'text-rose-600' : 'text-amber-700'}`}>
-                                  SL: {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)}
-                                </div>
-                              )}
-                              {!isBudMatched && (
-                                <div className={`text-2xs font-semibold ${budDiff > 0 ? 'text-rose-600' : 'text-amber-700'}`}>
-                                  Net: {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-slate-200 bg-slate-50 font-bold text-slate-900">
-                    <td className="px-3.5 py-2.5" colSpan={2}>
-                      Tổng cộng
-                    </td>
-                    <td className="border-l border-slate-200 px-2.5 py-2.5 text-right tabular-nums">
-                      {fmt(overviewGrandTotals.refQty)}
-                    </td>
-                    <td className="px-2.5 py-2.5 text-right tabular-nums text-indigo-700">
-                      {fmt(overviewGrandTotals.plannedQty)}
-                    </td>
-                    <td className="border-l border-slate-200 px-2.5 py-2.5 text-right tabular-nums">
-                      {fmt(overviewGrandTotals.refBudgetNet)}đ
-                    </td>
-                    <td className="px-2.5 py-2.5 text-right tabular-nums text-indigo-700">
-                      {fmt(overviewGrandTotals.plannedBudgetNet)}đ
-                    </td>
-                    <td className="border-l border-slate-200 px-3 py-2.5 text-right tabular-nums">
-                      {overviewGrandTotals.plannedQty === overviewGrandTotals.refQty &&
-                      Math.abs(overviewGrandTotals.plannedBudgetNet - overviewGrandTotals.refBudgetNet) <= 2000 ? (
-                        <span className="text-emerald-700">Khớp</span>
-                      ) : (
-                        <span className="text-amber-700 inline-flex items-center gap-1">
-                          <AlertTriangle className="h-3.5 w-3.5" /> Lệch
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
-          {ref41?.gmvTargets && (
-            <div className="border-t border-slate-200 bg-slate-50/60 px-3.5 py-2.5">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-2xs">
-                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                  <div className="text-slate-500">NMV mục tiêu</div>
-                  <div className="font-bold tabular-nums text-slate-900">
-                    {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                  <div className="text-slate-500">GMV Affiliate</div>
-                  <div className="font-bold tabular-nums text-emerald-700">
-                    {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                  <div className="text-slate-500">GMV Kênh Brand</div>
-                  <div className="font-bold tabular-nums text-indigo-700">
-                    {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                  <div className="text-slate-500">GMV Live Brand</div>
-                  <div className="font-bold tabular-nums text-teal-700">
-                    {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
-                      ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
-                      : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1.5">
-                  <div className="text-amber-800">GMV 30 ngày trước</div>
-                  <div className="font-bold tabular-nums text-amber-950">
-                    {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 py-1.5">
-                  <div className="text-emerald-800">GMV 30 ngày này</div>
-                  <div className="font-bold tabular-nums text-emerald-950">
-                    {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="xl:col-span-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs flex flex-col justify-between space-y-3">
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-              <h4 className="text-xs font-bold text-slate-800">
-                Nhân sự phụ trách
-              </h4>
-              <span className="rounded bg-slate-100 px-2 py-0.5 text-2xs font-semibold text-slate-700">
+    <div className="space-y-3.5">
+      {/* TẦNG 1: BẢNG TỔNG QUAN 4.1 & 4.1.1 (FULL WIDTH + DẢI NHÂN SỰ GỌN) */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50/80 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-xs font-bold text-slate-900">
+              Tổng quan 4.1 &amp; 4.1.1
+            </h4>
+            <span className="text-slate-300">|</span>
+            <div className="flex flex-wrap items-center gap-1.5 text-2xs">
+              {activeRoleBadges.map(b => (
+                <span
+                  key={b.role}
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-slate-700"
+                >
+                  <span className="text-slate-400">{b.role}:</span>
+                  <strong className="font-semibold text-slate-900">{b.names}</strong>
+                </span>
+              ))}
+              <span className="rounded-md bg-slate-200/70 px-2 py-0.5 font-semibold text-slate-700">
                 {plan.hasBookingLeader && plan.bookingLeader
                   ? `Leader: ${plan.bookingLeader}`
                   : 'Duyệt trực tiếp'}
               </span>
             </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5">
-                <div className="text-2xs text-slate-500">Growth PIC</div>
-                <div className="font-semibold text-slate-900 truncate">
-                  {rolePics?.growthPics?.length ? rolePics.growthPics.join(', ') : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5">
-                <div className="text-2xs text-slate-500">Account PIC</div>
-                <div className="font-semibold text-slate-900 truncate">
-                  {rolePics?.accountPics?.length ? rolePics.accountPics.join(', ') : '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 px-2.5 py-1.5">
-                <div className="text-2xs text-emerald-700">Booking PIC</div>
-                <div className="font-semibold text-emerald-950 truncate">
-                  {rolePics?.bookingPics?.length ? rolePics.bookingPics.join(', ') : plan.primaryPic || plan.pic || '—'}
-                </div>
-              </div>
-              <div className="rounded-lg border border-amber-200/80 bg-amber-50/40 px-2.5 py-1.5">
-                <div className="text-2xs text-amber-800">FOC PIC</div>
-                <div className="font-semibold text-amber-950 truncate">
-                  {rolePics?.focPics?.length ? rolePics.focPics.join(', ') : ref41 && ref41.foc > 0 ? 'Trần Thị Hảo' : '—'}
-                </div>
-              </div>
-              <div className="col-span-2 rounded-lg border border-purple-200/80 bg-purple-50/40 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                <span className="text-2xs text-purple-700 shrink-0">Content / Live:</span>
-                <span className="font-semibold text-purple-950 truncate">
-                  {[...(rolePics?.contentPics || []), ...(rolePics?.livePics || [])].filter(Boolean).join(', ') || '—'}
-                </span>
-              </div>
-            </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-2.5 space-y-1.5">
-            <div className="flex items-center justify-between text-2xs font-semibold text-slate-600">
-              <span>Theo người nhập ({staffSlices.length || 1})</span>
-              {activeSliceObj && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {staffSlices.length > 1 && (
+              <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 text-2xs">
                 <button
                   type="button"
                   onClick={() => setSelectedStaffSlice('ALL_STORE')}
-                  className="text-indigo-600 hover:underline cursor-pointer"
+                  className={`rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
+                    selectedStaffSlice === 'ALL_STORE'
+                      ? 'bg-slate-900 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
-                  Tất cả
+                  Toàn gian hàng
                 </button>
-              )}
-            </div>
+                {staffSlices.map(slice => {
+                  const isSelected = selectedStaffSlice === slice.staffName;
+                  return (
+                    <button
+                      key={slice.staffName}
+                      type="button"
+                      onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
+                      className={`rounded px-2 py-0.5 font-semibold transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {slice.staffName}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            <div className="space-y-1.5 max-h-[195px] overflow-y-auto pr-0.5">
+            {!effectiveReadOnly && hasRef && (
               <button
                 type="button"
-                onClick={() => setSelectedStaffSlice('ALL_STORE')}
-                className={`w-full flex items-center justify-between rounded-lg border px-2.5 py-2 text-left transition cursor-pointer ${
-                  selectedStaffSlice === 'ALL_STORE'
-                    ? 'border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
+                onClick={handleDistributeFromRef41}
+                className="rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-800 hover:bg-emerald-100 transition cursor-pointer"
               >
-                <span className="text-xs font-bold text-slate-900">Toàn gian hàng</span>
-                <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-2xs font-semibold text-indigo-800 tabular-nums">
-                  {fmt(storeTotals.totalBudget)}đ
-                </span>
+                Khớp theo 4.1
               </button>
-
-              {staffSlices.map(slice => {
-                const st = sumBreakdown(slice.weeklyBreakdown);
-                const isSelected = selectedStaffSlice === slice.staffName;
-                return (
-                  <button
-                    key={slice.staffName}
-                    type="button"
-                    onClick={() => setSelectedStaffSlice(isSelected ? 'ALL_STORE' : slice.staffName)}
-                    className={`w-full flex items-center justify-between rounded-lg border px-2.5 py-2 text-left transition cursor-pointer ${
-                      isSelected
-                        ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="min-w-0 pr-2 flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-900 truncate">{slice.staffName}</span>
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs text-slate-600 shrink-0">
-                        {slice.roleLabel}
-                      </span>
-                    </div>
-                    <span className="shrink-0 text-2xs font-semibold text-slate-700 tabular-nums">
-                      {fmt(st.castQty + st.focQty + st.selfQty + st.multiTotalAffQty + st.multiTotalReupQty)} video · {slice.rowCount} tuần
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            )}
+            {activeTab !== 'ALL' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('ALL')}
+                className="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-2xs font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+              >
+                Xem tất cả
+              </button>
+            )}
           </div>
         </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/50 text-2xs font-semibold text-slate-500">
+                <th className="px-4 py-2 text-left">Hạng mục</th>
+                <th className="px-3 py-2 text-left">Phụ trách</th>
+                <th className="border-l border-slate-200 px-3 py-2 text-right w-[120px]">SL 4.1</th>
+                <th className="px-3 py-2 text-right w-[120px] bg-indigo-50/30 text-indigo-950">SL 4.1.1</th>
+                <th className="border-l border-slate-200 px-3 py-2 text-right w-[150px]">Net 4.1</th>
+                <th className="px-3 py-2 text-right w-[150px] bg-indigo-50/30 text-indigo-950">Net 4.1.1</th>
+                <th className="border-l border-slate-200 px-4 py-2 text-right w-[140px]">Đối soát</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {overviewMatrixRows.map(row => {
+                const qtyDiff = row.plannedQty - row.refQty;
+                const budDiff = row.plannedBudgetNet - row.refBudgetNet;
+                const isQtyMatched = qtyDiff === 0;
+                const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
+                const isAllMatched = isQtyMatched && isBudMatched;
+                const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
+                const isFocused = activeTab === row.id;
+
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => handleSelectWorkstreamFromOverview(row.id)}
+                    className={`cursor-pointer transition ${
+                      isFocused
+                        ? 'bg-indigo-50/60'
+                        : 'hover:bg-slate-50/70'
+                    }`}
+                  >
+                    <td className="px-4 py-2 align-middle">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-900">{row.title}</span>
+                        {row.extraTag && (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs font-medium text-slate-600">
+                            {row.extraTag}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 align-middle">
+                      <span className="text-slate-700 font-medium">{row.picText}</span>
+                    </td>
+                    <td className="border-l border-slate-100 px-3 py-2 text-right align-middle tabular-nums text-slate-600">
+                      {row.refQty > 0 ? (
+                        <>
+                          <span className="font-semibold text-slate-800">{fmt(row.refQty)}</span>{' '}
+                          <span className="text-2xs text-slate-400">{row.unitLabel}</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right align-middle tabular-nums bg-indigo-50/20">
+                      {row.plannedQty > 0 ? (
+                        <>
+                          <span className="font-bold text-slate-900">{fmt(row.plannedQty)}</span>{' '}
+                          <span className="text-2xs text-slate-400">{row.unitLabel}</span>
+                        </>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                    <td className="border-l border-slate-100 px-3 py-2 text-right align-middle tabular-nums text-slate-600">
+                      {row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : <span className="text-slate-300">—</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right align-middle tabular-nums font-semibold text-indigo-950 bg-indigo-50/20">
+                      {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : <span className="text-slate-300 font-normal">—</span>}
+                    </td>
+                    <td className="border-l border-slate-100 px-4 py-2 text-right align-middle tabular-nums">
+                      {isEmpty ? (
+                        <span className="text-slate-300">—</span>
+                      ) : isAllMatched ? (
+                        <span className="inline-flex items-center gap-1 text-2xs font-semibold text-emerald-700">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
+                        </span>
+                      ) : (
+                        <div className="inline-flex flex-wrap items-center justify-end gap-1.5 text-2xs font-semibold">
+                          {!isQtyMatched && (
+                            <span className={qtyDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
+                              {qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} {row.unitLabel}
+                            </span>
+                          )}
+                          {!isBudMatched && (
+                            <span className={budDiff > 0 ? 'text-rose-600' : 'text-amber-700'}>
+                              {budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-slate-200 bg-slate-50/90 font-bold text-slate-900">
+                <td className="px-4 py-2" colSpan={2}>
+                  Tổng cộng
+                </td>
+                <td className="border-l border-slate-200 px-3 py-2 text-right tabular-nums">
+                  {fmt(overviewGrandTotals.refQty)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-indigo-700 bg-indigo-50/40">
+                  {fmt(overviewGrandTotals.plannedQty)}
+                </td>
+                <td className="border-l border-slate-200 px-3 py-2 text-right tabular-nums">
+                  {fmt(overviewGrandTotals.refBudgetNet)}đ
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-indigo-700 bg-indigo-50/40">
+                  {fmt(overviewGrandTotals.plannedBudgetNet)}đ
+                </td>
+                <td className="border-l border-slate-200 px-4 py-2 text-right tabular-nums">
+                  {overviewGrandTotals.plannedQty === overviewGrandTotals.refQty &&
+                  Math.abs(overviewGrandTotals.plannedBudgetNet - overviewGrandTotals.refBudgetNet) <= 2000 ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-700">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
+                    </span>
+                  ) : (
+                    <span className="text-amber-700 inline-flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Lệch
+                    </span>
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {ref41?.gmvTargets && (
+          <div className="border-t border-slate-200 bg-slate-50/60 px-4 py-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 text-2xs">
+              <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                <div className="text-slate-500">NMV mục tiêu</div>
+                <div className="font-bold tabular-nums text-slate-900">
+                  {ref41.gmvTargets.nmvPlan > 0 ? `${fmt(ref41.gmvTargets.nmvPlan)}đ` : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                <div className="text-slate-500">GMV Affiliate</div>
+                <div className="font-bold tabular-nums text-emerald-700">
+                  {ref41.gmvTargets.videoAff > 0 ? `${fmt(ref41.gmvTargets.videoAff)}đ` : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                <div className="text-slate-500">GMV Kênh Brand</div>
+                <div className="font-bold tabular-nums text-indigo-700">
+                  {ref41.gmvTargets.videoSelf > 0 ? `${fmt(ref41.gmvTargets.videoSelf)}đ` : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                <div className="text-slate-500">GMV Live Brand</div>
+                <div className="font-bold tabular-nums text-teal-700">
+                  {ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv > 0
+                    ? `${fmt(ref41.gmvTargets.liveInhouse + ref41.gmvTargets.liveCtv)}đ`
+                    : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-2.5 py-1.5">
+                <div className="text-amber-800">GMV 30 ngày trước</div>
+                <div className="font-bold tabular-nums text-amber-950">
+                  {ref41.gmvTargets.lastMonth30d > 0 ? `${fmt(ref41.gmvTargets.lastMonth30d)}đ` : '—'}
+                </div>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-2.5 py-1.5">
+                <div className="text-emerald-800">GMV 30 ngày này</div>
+                <div className="font-bold tabular-nums text-emerald-950">
+                  {ref41.gmvTargets.thisMonth30d > 0 ? `${fmt(ref41.gmvTargets.thisMonth30d)}đ` : '—'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div ref={detailAnchorRef} className="space-y-3 pt-1">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/90 p-2">
-          <div className="flex flex-wrap items-center gap-1.5">
+      {/* TẦNG 2: BẢNG CHI TIẾT PHÂN RÃ TUẦN 4.1.1 (CHUẨN SPREADSHEET) */}
+      <div ref={detailAnchorRef} className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-slate-100/80 p-1">
             {(
               [
                 {
@@ -1022,10 +1081,10 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
                     active
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -1041,20 +1100,20 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDistributeFromStep2('EVEN')}
-                  className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-2xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                 >
                   Chia đều
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDistributeFromStep2('CAMPAIGN_PEAK')}
-                  className="rounded-md border border-line bg-white px-2 py-1 text-2xs font-semibold text-ink hover:border-accent hover:bg-accent-soft hover:text-accent transition cursor-pointer"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-2xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                 >
                   Dồn W2–W3
                 </button>
               </div>
             )}
-            <label className="flex cursor-pointer items-center gap-1.5 text-2xs font-medium text-ink-2">
+            <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-2xs font-medium text-slate-700">
               <input type="checkbox" checked={grossMode} onChange={e => setGrossMode(e.target.checked)} />
               Nhập theo Gross
             </label>
@@ -1102,26 +1161,72 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-              <table className="w-full min-w-[1150px] border-collapse text-xs">
-                <thead className="bg-surface text-ink-3">
-                  <tr className="border-b border-line">
-                    <th className="sticky left-0 z-10 min-w-[180px] bg-surface px-3 py-2 text-left font-medium text-ink">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+              <table className="w-full min-w-[1100px] border-collapse text-xs">
+                <thead>
+                  <tr>
+                    <th
+                      rowSpan={2}
+                      className="sticky left-0 z-20 min-w-[190px] border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left font-bold text-slate-800"
+                    >
                       Hạng mục
                     </th>
+                    <th
+                      rowSpan={2}
+                      className="min-w-[88px] border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-right font-semibold text-slate-500 text-2xs"
+                    >
+                      Đơn giá TB
+                    </th>
                     {rows.map((r, wi) => weekHeader(r, wi))}
-                    <th colSpan={2} className="min-w-[165px] border-l border-line px-2 py-2 text-center font-medium text-ink">
+                    <th
+                      colSpan={2}
+                      className="border-b border-l border-slate-200 bg-indigo-50/60 px-2 py-1.5 text-center font-bold text-indigo-950"
+                    >
                       Tổng 4.1.1
                     </th>
                     {hasRef && (
-                      <th colSpan={2} className="min-w-[155px] border-l border-line px-2 py-2 text-center font-medium text-ink">
-                        4.1
+                      <th
+                        colSpan={2}
+                        className="border-b border-l border-slate-200 bg-slate-100/80 px-2 py-1.5 text-center font-bold text-slate-700"
+                      >
+                        Chỉ tiêu 4.1
                       </th>
                     )}
                     {hasRef && (
-                      <th colSpan={2} className="min-w-[130px] border-l border-line px-2 py-2 text-center font-medium text-ink">
-                        Lệch
+                      <th
+                        rowSpan={2}
+                        className="min-w-[90px] border-b border-l border-slate-200 bg-slate-50 px-2.5 py-2 text-right font-bold text-slate-700"
+                      >
+                        Đối soát
                       </th>
+                    )}
+                  </tr>
+                  <tr className="border-b border-slate-200 bg-slate-50/70 text-2xs font-semibold text-slate-500">
+                    {rows.map(r => (
+                      <React.Fragment key={`sub-${r.week}`}>
+                        <th className="w-[52px] min-w-[52px] border-l border-slate-200 px-1.5 py-1 text-right">
+                          SL
+                        </th>
+                        <th className="w-[96px] min-w-[96px] border-l border-slate-100 px-2 py-1 text-right">
+                          {grossMode ? 'Gross' : 'Net'}
+                        </th>
+                      </React.Fragment>
+                    ))}
+                    <th className="w-[56px] min-w-[56px] border-l border-slate-200 bg-indigo-50/40 px-2 py-1 text-right text-indigo-900">
+                      SL
+                    </th>
+                    <th className="w-[104px] min-w-[104px] border-l border-indigo-100 bg-indigo-50/40 px-2 py-1 text-right text-indigo-900">
+                      Net
+                    </th>
+                    {hasRef && (
+                      <>
+                        <th className="w-[56px] min-w-[56px] border-l border-slate-200 bg-slate-100/50 px-2 py-1 text-right">
+                          SL
+                        </th>
+                        <th className="w-[104px] min-w-[104px] border-l border-slate-200/60 bg-slate-100/50 px-2 py-1 text-right">
+                          Net
+                        </th>
+                      </>
                     )}
                   </tr>
                 </thead>
@@ -1134,12 +1239,14 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     const budgetRef = refKeys.budgetKey ? cmp(refKeys.budgetKey) : undefined;
                     const secQty = sub.reduce((s, x) => s + x.qty, 0);
                     const secBudget = sub.reduce((s, x) => s + x.budget, 0);
+                    const totalColSpan = 2 + rows.length * 2 + 2 + (hasRef ? 3 : 0);
+
                     return (
                       <React.Fragment key={section}>
-                        <tr className="bg-accent-soft/40">
+                        <tr className="bg-slate-100/80 border-y border-slate-200">
                           <td
-                            colSpan={2 + rows.length * 2 + (hasRef ? 4 : 0)}
-                            className="sticky left-0 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wide text-ink-2"
+                            colSpan={totalColSpan}
+                            className="sticky left-0 px-3 py-1.5 text-2xs font-bold uppercase tracking-wide text-slate-700"
                           >
                             {section}
                           </td>
@@ -1149,87 +1256,93 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           const r = flatIndex;
                           const t = totalCell(def);
                           const rowRefQty = getRowRef41Qty(def);
+                          const avgUnit =
+                            def.hasQty && def.hasBudget && t.qty > 0 && t.budget > 0
+                              ? Math.round(t.budget / t.qty)
+                              : 0;
+
                           return (
-                            <tr key={def.id} className="border-t border-line">
-                              <td className="sticky left-0 z-10 bg-surface px-3 py-1 text-ink-2">{def.label}</td>
-                              {rows.map((row, wi) => {
-                                const qty = readQty(row, def);
-                                const budget = readBudget(row, def);
-                                return (
-                                  <React.Fragment key={row.week}>
-                                    <td className="border-l border-line px-1 py-1">
-                                      {def.hasQty ? renderInput(r, def, wi, 0) : <span className="block" />}
-                                    </td>
-                                    <td className="px-1 py-1">
-                                      {def.hasBudget ? (
-                                        <div>
-                                          {renderInput(r, def, wi, 1)}
-                                          {def.kind === 'tier' && qty > 0 && budget > 0 && (
-                                            <div className="pr-1 text-right text-2xs text-ink-3">{fmt(budget / qty)}đ/video</div>
-                                          )}
-                                        </div>
-                                      ) : (
-                                        <span className="block" />
-                                      )}
-                                    </td>
-                                  </React.Fragment>
-                                );
-                              })}
-                              <td className="border-l border-line px-2 py-1 text-right tabular-nums font-medium text-ink">
-                                {def.hasQty ? fmt(t.qty) : ''}
+                            <tr key={def.id} className="border-b border-slate-100 hover:bg-slate-50/40">
+                              <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-1 font-medium text-slate-800">
+                                {def.label}
                               </td>
-                              <td className="px-2 py-1 text-right tabular-nums text-ink">
-                                {def.hasBudget ? fmt(t.budget) : ''}
+                              <td className="border-r border-slate-200 px-2 py-1 text-right tabular-nums text-2xs text-slate-400">
+                                {avgUnit > 0 ? `${fmt(avgUnit)}đ` : '—'}
+                              </td>
+                              {rows.map((row, wi) => (
+                                <React.Fragment key={row.week}>
+                                  <td className="border-l border-slate-200 p-0 align-middle">
+                                    {def.hasQty ? (
+                                      renderInput(r, def, wi, 0)
+                                    ) : (
+                                      <span className="block h-8 bg-slate-50/40" />
+                                    )}
+                                  </td>
+                                  <td className="border-l border-slate-100 p-0 align-middle">
+                                    {def.hasBudget ? (
+                                      renderInput(r, def, wi, 1)
+                                    ) : (
+                                      <span className="block h-8 bg-slate-50/40" />
+                                    )}
+                                  </td>
+                                </React.Fragment>
+                              ))}
+                              <td className="border-l border-slate-200 bg-indigo-50/20 px-2 py-1 text-right tabular-nums font-bold text-slate-900">
+                                {def.hasQty ? (t.qty > 0 ? fmt(t.qty) : <span className="text-slate-300 font-normal">—</span>) : ''}
+                              </td>
+                              <td className="border-l border-indigo-100/70 bg-indigo-50/20 px-2 py-1 text-right tabular-nums font-semibold text-indigo-950">
+                                {def.hasBudget ? (t.budget > 0 ? fmt(t.budget) : <span className="text-slate-300 font-normal">—</span>) : ''}
                               </td>
                               {hasRef && (
                                 <>
-                                  <td className="border-l border-line px-2 py-1 text-right tabular-nums text-ink-2">
-                                    {rowRefQty !== null ? fmt(rowRefQty) : ''}
+                                  <td className="border-l border-slate-200 bg-slate-50/50 px-2 py-1 text-right tabular-nums text-slate-600">
+                                    {rowRefQty !== null ? (rowRefQty > 0 ? fmt(rowRefQty) : <span className="text-slate-300">—</span>) : ''}
                                   </td>
-                                  <td className="px-2 py-1 text-right tabular-nums text-ink-3" />
-                                  <td className="border-l border-line px-2 py-1 text-right tabular-nums">
+                                  <td className="border-l border-slate-100 bg-slate-50/50 px-2 py-1 text-right tabular-nums text-slate-400">
+                                    —
+                                  </td>
+                                  <td className="border-l border-slate-200 px-2.5 py-1 text-right tabular-nums">
                                     {renderInlineDiff(t.qty, rowRefQty)}
                                   </td>
-                                  <td className="px-2 py-1 text-right tabular-nums" />
                                 </>
                               )}
                             </tr>
                           );
                         })}
                         {defs.length > 1 ? (
-                          <tr className="border-t border-line bg-surface font-semibold">
-                            <td className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-ink">
+                          <tr className="border-b border-slate-200 bg-slate-50/90 font-bold text-slate-900">
+                            <td className="sticky left-0 z-10 border-r border-slate-200 bg-slate-50 px-3 py-1.5">
                               Cộng {section.toLowerCase()}
+                            </td>
+                            <td className="border-r border-slate-200 px-2 py-1.5 text-right tabular-nums text-2xs font-normal text-slate-500">
+                              {secQty > 0 && secBudget > 0 ? `${fmt(Math.round(secBudget / secQty))}đ` : '—'}
                             </td>
                             {sub.map((x, wi) => (
                               <React.Fragment key={rows[wi].week}>
-                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
-                                  {x.qty ? fmt(x.qty) : ''}
+                                <td className="border-l border-slate-200 px-2 py-1.5 text-right tabular-nums">
+                                  {x.qty > 0 ? fmt(x.qty) : <span className="text-slate-300 font-normal">—</span>}
                                 </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                                  {x.budget ? fmt(x.budget) : ''}
+                                <td className="border-l border-slate-100 px-2 py-1.5 text-right tabular-nums">
+                                  {x.budget > 0 ? fmt(x.budget) : <span className="text-slate-300 font-normal">—</span>}
                                 </td>
                               </React.Fragment>
                             ))}
-                            <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink">
+                            <td className="border-l border-slate-200 bg-indigo-50/50 px-2 py-1.5 text-right tabular-nums text-indigo-950">
                               {fmt(secQty)}
                             </td>
-                            <td className="px-2 py-1.5 text-right tabular-nums text-ink">
-                              {section === 'Suất FOC (0đ)' ? '' : fmt(secBudget)}
+                            <td className="border-l border-indigo-100 bg-indigo-50/50 px-2 py-1.5 text-right tabular-nums text-indigo-950">
+                              {section === 'Suất FOC (0đ)' ? '0' : fmt(secBudget)}
                             </td>
                             {hasRef && (
                               <>
-                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums text-ink-2">
-                                  {qtyRef ? fmt(qtyRef.reference) : ''}
+                                <td className="border-l border-slate-200 bg-slate-100/60 px-2 py-1.5 text-right tabular-nums text-slate-700">
+                                  {qtyRef ? fmt(qtyRef.reference) : '—'}
                                 </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-ink-2">
-                                  {budgetRef ? fmt(budgetRef.reference) : ''}
+                                <td className="border-l border-slate-200/60 bg-slate-100/60 px-2 py-1.5 text-right tabular-nums text-slate-700">
+                                  {budgetRef ? fmt(budgetRef.reference) : '—'}
                                 </td>
-                                <td className="border-l border-line px-2 py-1.5 text-right tabular-nums">
-                                  {diffCell(refKeys.qtyKey)}
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums">
-                                  {diffCell(refKeys.budgetKey)}
+                                <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums">
+                                  {diffCell(refKeys.qtyKey || refKeys.budgetKey)}
                                 </td>
                               </>
                             )}
@@ -1320,35 +1433,27 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="border-b border-slate-100">
+                          <tr className="border-b border-slate-100 hover:bg-slate-50/40">
                             <td className="px-3 py-1.5 font-medium text-slate-700">Video Affiliate</td>
                             {rows.map((r, wi) => {
                               const v = r.multiPlatform?.[mp.key]?.affQty || 0;
                               return (
-                                <td key={r.week} className="border-l border-slate-100 p-1">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    disabled={effectiveReadOnly}
-                                    value={v ? fmt(v) : ''}
-                                    placeholder="0"
-                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'affQty', parseNumber(e.target.value))}
-                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                  />
+                                <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                                  {renderFlushCellInput(v, val => setMultiPlatformCell(wi, mp.key, 'affQty', val), false)}
                                 </td>
                               );
                             })}
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                              {fmt(pTot.affQty)}
+                            <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {pTot.affQty ? fmt(pTot.affQty) : '—'}
                             </td>
                             {hasRef && (
                               <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                                {fmt(refAff)}
+                                {refAff ? fmt(refAff) : '—'}
                               </td>
                             )}
                           </tr>
 
-                          <tr className="border-b border-slate-100">
+                          <tr className="border-b border-slate-100 hover:bg-slate-50/40">
                             <td className="px-3 py-1.5 font-medium text-slate-700">
                               Ngân sách ({grossMode ? 'Gross' : 'Net'})
                             </td>
@@ -1356,53 +1461,41 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                               const netVal = r.multiPlatform?.[mp.key]?.budgetNet || 0;
                               const shown = grossMode ? grossFromNet(netVal) : netVal;
                               return (
-                                <td key={r.week} className="border-l border-slate-100 p-1">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    disabled={effectiveReadOnly}
-                                    value={shown ? fmt(shown) : ''}
-                                    placeholder="0"
-                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'budgetNet', parseNumber(e.target.value))}
-                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                  />
+                                <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                                  {renderFlushCellInput(
+                                    shown,
+                                    val => setMultiPlatformCell(wi, mp.key, 'budgetNet', grossMode ? netFromGross(val) : val),
+                                    true,
+                                  )}
                                 </td>
                               );
                             })}
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                              {fmt(pTot.budgetNet)}
+                            <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {pTot.budgetNet ? fmt(pTot.budgetNet) : '—'}
                             </td>
                             {hasRef && (
                               <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                                {fmt(refNet)}
+                                {refNet ? fmt(refNet) : '—'}
                               </td>
                             )}
                           </tr>
 
-                          <tr>
+                          <tr className="hover:bg-slate-50/40">
                             <td className="px-3 py-1.5 font-medium text-slate-700">Video Reup (0đ)</td>
                             {rows.map((r, wi) => {
                               const v = r.multiPlatform?.[mp.key]?.reupQty || 0;
                               return (
-                                <td key={r.week} className="border-l border-slate-100 p-1">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    disabled={effectiveReadOnly}
-                                    value={v ? fmt(v) : ''}
-                                    placeholder="0"
-                                    onChange={e => setMultiPlatformCell(wi, mp.key, 'reupQty', parseNumber(e.target.value))}
-                                    className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-indigo-500 disabled:bg-transparent"
-                                  />
+                                <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                                  {renderFlushCellInput(v, val => setMultiPlatformCell(wi, mp.key, 'reupQty', val), false)}
                                 </td>
                               );
                             })}
-                            <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                              {fmt(pTot.reupQty)}
+                            <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                              {pTot.reupQty ? fmt(pTot.reupQty) : '—'}
                             </td>
                             {hasRef && (
                               <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                                {fmt(refReup)}
+                                {refReup ? fmt(refReup) : '—'}
                               </td>
                             )}
                           </tr>
@@ -1458,35 +1551,27 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-100">
+                    <tr className="border-b border-slate-100 hover:bg-slate-50/40">
                       <td className="px-3 py-1.5 font-medium text-slate-700">Số phiên</td>
                       {rows.map((r, wi) => {
                         const liveDef = ROWS.find(d => d.id === 'live')!;
                         const v = r.live?.sessions || 0;
                         return (
-                          <td key={r.week} className="border-l border-slate-100 p-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              disabled={effectiveReadOnly}
-                              value={v ? fmt(v) : ''}
-                              placeholder="0"
-                              onChange={e => setCell(wi, liveDef, 0, parseNumber(e.target.value))}
-                              className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-rose-500 disabled:bg-transparent"
-                            />
+                          <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                            {renderFlushCellInput(v, val => setCell(wi, liveDef, 0, val), false)}
                           </td>
                         );
                       })}
-                      <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {fmt(totals.liveSessions)}
+                      <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                        {totals.liveSessions ? fmt(totals.liveSessions) : '—'}
                       </td>
                       {hasRef && (
                         <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                          {fmt(ref41?.liveSessions || 0)}
+                          {ref41?.liveSessions ? fmt(ref41.liveSessions) : '—'}
                         </td>
                       )}
                     </tr>
-                    <tr>
+                    <tr className="hover:bg-slate-50/40">
                       <td className="px-3 py-1.5 font-medium text-slate-700">
                         Ngân sách ({grossMode ? 'Gross' : 'Net'})
                       </td>
@@ -1495,28 +1580,21 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         const netVal = r.live?.budgetNet || 0;
                         const shown = grossMode ? grossFromNet(netVal) : netVal;
                         return (
-                          <td key={r.week} className="border-l border-slate-100 p-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              disabled={effectiveReadOnly}
-                              value={shown ? fmt(shown) : ''}
-                              placeholder="0"
-                              onChange={e => {
-                                const parsed = parseNumber(e.target.value);
-                                setCell(wi, liveDef, 1, grossMode ? netFromGross(parsed) : parsed);
-                              }}
-                              className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-rose-500 disabled:bg-transparent"
-                            />
+                          <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                            {renderFlushCellInput(
+                              shown,
+                              val => setCell(wi, liveDef, 1, grossMode ? netFromGross(val) : val),
+                              true,
+                            )}
                           </td>
                         );
                       })}
-                      <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {fmt(totals.liveBudget)}
+                      <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                        {totals.liveBudget ? fmt(totals.liveBudget) : '—'}
                       </td>
                       {hasRef && (
                         <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                          {fmt(ref41?.liveCostNet || 0)}
+                          {ref41?.liveCostNet ? fmt(ref41.liveCostNet) : '—'}
                         </td>
                       )}
                     </tr>
@@ -1569,61 +1647,45 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-slate-100">
+                    <tr className="border-b border-slate-100 hover:bg-slate-50/40">
                       <td className="px-3 py-1.5 font-medium text-slate-700">Inhouse (3h)</td>
                       {rows.map((r, wi) => {
                         const v = r.liveSelf?.inhouse3h || 0;
                         return (
-                          <td key={r.week} className="border-l border-slate-100 p-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              disabled={effectiveReadOnly}
-                              value={v ? fmt(v) : ''}
-                              placeholder="0"
-                              onChange={e => setLiveSelfCell(wi, 'inhouse3h', parseNumber(e.target.value))}
-                              className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-teal-600 disabled:bg-transparent"
-                            />
+                          <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                            {renderFlushCellInput(v, val => setLiveSelfCell(wi, 'inhouse3h', val), false)}
                           </td>
                         );
                       })}
-                      <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {fmt(totals.liveSelfInhouse)}
+                      <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                        {totals.liveSelfInhouse ? fmt(totals.liveSelfInhouse) : '—'}
                       </td>
                       {hasRef && (
                         <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                          {fmt(ref41?.liveSelf?.inhouse3h || 0)}
+                          {ref41?.liveSelf?.inhouse3h ? fmt(ref41.liveSelf.inhouse3h) : '—'}
                         </td>
                       )}
                     </tr>
-                    <tr className="border-b border-slate-100">
+                    <tr className="border-b border-slate-100 hover:bg-slate-50/40">
                       <td className="px-3 py-1.5 font-medium text-slate-700">CTV ngoài (2h)</td>
                       {rows.map((r, wi) => {
                         const v = r.liveSelf?.ctv2h || 0;
                         return (
-                          <td key={r.week} className="border-l border-slate-100 p-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              disabled={effectiveReadOnly}
-                              value={v ? fmt(v) : ''}
-                              placeholder="0"
-                              onChange={e => setLiveSelfCell(wi, 'ctv2h', parseNumber(e.target.value))}
-                              className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-teal-600 disabled:bg-transparent"
-                            />
+                          <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                            {renderFlushCellInput(v, val => setLiveSelfCell(wi, 'ctv2h', val), false)}
                           </td>
                         );
                       })}
-                      <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {fmt(totals.liveSelfCtv)}
+                      <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                        {totals.liveSelfCtv ? fmt(totals.liveSelfCtv) : '—'}
                       </td>
                       {hasRef && (
                         <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                          {fmt(ref41?.liveSelf?.ctv2h || 0)}
+                          {ref41?.liveSelf?.ctv2h ? fmt(ref41.liveSelf.ctv2h) : '—'}
                         </td>
                       )}
                     </tr>
-                    <tr>
+                    <tr className="hover:bg-slate-50/40">
                       <td className="px-3 py-1.5 font-medium text-slate-700">
                         Ngân sách ({grossMode ? 'Gross' : 'Net'})
                       </td>
@@ -1631,25 +1693,21 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                         const netVal = r.liveSelf?.budgetNet || 0;
                         const shown = grossMode ? grossFromNet(netVal) : netVal;
                         return (
-                          <td key={r.week} className="border-l border-slate-100 p-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              disabled={effectiveReadOnly}
-                              value={shown ? fmt(shown) : ''}
-                              placeholder="0"
-                              onChange={e => setLiveSelfCell(wi, 'budgetNet', parseNumber(e.target.value))}
-                              className="w-full rounded border border-slate-200 bg-white px-1.5 py-1 text-right text-xs tabular-nums text-slate-900 outline-none focus:border-teal-600 disabled:bg-transparent"
-                            />
+                          <td key={r.week} className="border-l border-slate-100 p-0 align-middle">
+                            {renderFlushCellInput(
+                              shown,
+                              val => setLiveSelfCell(wi, 'budgetNet', grossMode ? netFromGross(val) : val),
+                              true,
+                            )}
                           </td>
                         );
                       })}
-                      <td className="border-l border-slate-200 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {fmt(totals.liveSelfBudget)}
+                      <td className="border-l border-slate-200 bg-slate-50/30 px-2.5 py-1.5 text-right font-semibold tabular-nums text-slate-900">
+                        {totals.liveSelfBudget ? fmt(totals.liveSelfBudget) : '—'}
                       </td>
                       {hasRef && (
                         <td className="border-l border-slate-200 px-2.5 py-1.5 text-right tabular-nums text-slate-600">
-                          {fmt(ref41?.liveSelf?.totalCostNet || 0)}
+                          {ref41?.liveSelf?.totalCostNet ? fmt(ref41.liveSelf.totalCostNet) : '—'}
                         </td>
                       )}
                     </tr>
