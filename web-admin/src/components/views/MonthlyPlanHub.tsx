@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Progress,
   ChannelTag,
@@ -18,6 +18,7 @@ import {
   Textarea,
   Pagination,
   PageActions,
+  ActionMenu,
   Status,
   Avatar,
   BrandAvatar,
@@ -364,6 +365,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [brandModalTab, setBrandModalTab] = useState<'ONE_SHEET' | 'POSITIONS'>('ONE_SHEET');
   const [oneSheetBrandPlan, setOneSheetBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
 
+  // Khôi phục Kế hoạch tháng theo Brand đã lưu từ localStorage (nếu có)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('b2c_brand_monthly_plans_v1');
+      if (!raw) return;
+      const saved = JSON.parse(raw) as BrandMonthlyPlanItem[];
+      if (!Array.isArray(saved) || saved.length === 0) return;
+      const savedMap = new Map(saved.map(item => [item.id, item]));
+      setBrandMonthlyPlans(prev => prev.map(item => savedMap.get(item.id) || item));
+    } catch {
+      /* bỏ qua lỗi đọc localStorage */
+    }
+  }, []);
+
   const brandPositionStaffList = useMemo(() => {
     const set = new Set<string>([
       ...B2C_BRAND_POSITION_STAFF_POOL.contentBrandMain,
@@ -464,8 +480,66 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return map;
   }, [brandMonthlyPlans, effectiveStores, scopedPlans, selectedMonth]);
 
+  // Lưu Kế hoạch tháng theo Brand vào state + localStorage + đồng bộ sang các Plan Gian hàng thuộc Brand
+  const persistBrandMonthlyPlan = (updatedRaw: BrandMonthlyPlanItem) => {
+    const os = updatedRaw.oneSheetPlanData;
+    const syncedContentPlan = os
+      ? {
+          ...updatedRaw.contentBrandMainPlan,
+          contentPillarsCount: os.contentPillars?.length || updatedRaw.contentBrandMainPlan.contentPillarsCount,
+          heroScriptsTarget:
+            (os.tiktokContentRows?.length || 0) + (os.shopeeContentRows?.length || 0) ||
+            updatedRaw.contentBrandMainPlan.heroScriptsTarget,
+          focusPillars:
+            os.contentPillars?.map(p => p.pillarName).join(' • ') ||
+            updatedRaw.contentBrandMainPlan.focusPillars,
+        }
+      : updatedRaw.contentBrandMainPlan;
+
+    const syncedStrategyPlan = os
+      ? {
+          ...updatedRaw.planStrategyPlan,
+          bigIdeaAndKeyMessage:
+            os.orientation?.bigIdeaMonthlyTheme || updatedRaw.planStrategyPlan.bigIdeaAndKeyMessage,
+        }
+      : updatedRaw.planStrategyPlan;
+
+    const syncedKvPlan = os
+      ? {
+          ...updatedRaw.keyVisualSisPlan,
+          designTheme: os.keyVisual?.theme || updatedRaw.keyVisualSisPlan.designTheme,
+        }
+      : updatedRaw.keyVisualSisPlan;
+
+    const updated: BrandMonthlyPlanItem = {
+      ...updatedRaw,
+      contentBrandMainPlan: syncedContentPlan,
+      planStrategyPlan: syncedStrategyPlan,
+      keyVisualSisPlan: syncedKvPlan,
+    };
+
+    setBrandMonthlyPlans(prev => {
+      const next = prev.map(item => (item.id === updated.id ? updated : item));
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem('b2c_brand_monthly_plans_v1', JSON.stringify(next));
+        } catch {
+          /* bỏ qua lỗi lưu localStorage */
+        }
+      }
+      return next;
+    });
+
+    if (os && onUpdatePlan) {
+      const rollup = brandStoreRollupMap.get(updated.id);
+      for (const sp of rollup?.storePlans || []) {
+        onUpdatePlan(sp.id, { oneSheetPlanData: os });
+      }
+    }
+  };
+
   const brandPlanKpis = useMemo(() => {
-    const list = brandMonthlyPlans.filter(bp => selectedMonth === 'ALL' || bp.month === selectedMonth || selectedMonth === '2026/11');
+    const list = brandMonthlyPlans;
     const total = list.length;
     const totalBudget = list.reduce((s, b) => {
       const rollup = brandStoreRollupMap.get(b.id);
@@ -492,7 +566,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       completeCoverageCount,
       inExecutionCount
     };
-  }, [brandMonthlyPlans, selectedMonth, brandStoreRollupMap]);
+  }, [brandMonthlyPlans, brandStoreRollupMap]);
 
   const filteredBrandMonthlyPlans = useMemo(() => {
     const q = brandPlanSearch.trim().toLowerCase();
@@ -500,7 +574,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (!isStaffGlobalAdminOrManager(currentUser) && !isBrandManagedByUser(bp.brandName, currentUser, effectiveStores)) {
         return false;
       }
-      if (selectedMonth !== 'ALL' && bp.month !== selectedMonth && selectedMonth !== '2026/11') return false;
       if (brandPlanCampaignFilter === 'HAS_CAMPAIGN' && !bp.hasCampaign) return false;
       if (brandPlanCampaignFilter === 'NO_CAMPAIGN' && bp.hasCampaign) return false;
       if (brandPlanStatusFilter !== 'ALL' && bp.status !== brandPlanStatusFilter) return false;
@@ -523,7 +596,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       }
       return true;
     });
-  }, [brandMonthlyPlans, selectedMonth, brandPlanCampaignFilter, brandPlanStatusFilter, brandPlanStaffFilter, brandPlanPositionFilter, brandPlanSearch, currentUser, effectiveStores]);
+  }, [brandMonthlyPlans, brandPlanCampaignFilter, brandPlanStatusFilter, brandPlanStaffFilter, brandPlanPositionFilter, brandPlanSearch, currentUser, effectiveStores]);
 
   // Bộ lọc cho Tab Kế hoạch của riêng từng nhân sự
   const [personalRoleFilter, setPersonalRoleFilter] = useState<
@@ -1228,27 +1301,40 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     <div className="space-y-6">
       <PageActions>
         <div className="hidden md:block">{syncBadge}</div>
-        {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
-          <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>
-            <span className="sm:hidden">Tải 4.1</span>
-            <span className="hidden sm:inline">Tải Plan order tổng</span>
+        <div className="hidden sm:flex items-center gap-1.5">
+          {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
+            <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>
+              Tải Plan order tổng
+            </Button>
+          )}
+          <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>
+            Đồng bộ Larkbase
           </Button>
-        )}
-        <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>
-          <span className="sm:hidden">Larkbase</span>
-          <span className="hidden sm:inline">Đồng bộ Larkbase</span>
-        </Button>
-        {onOpenPlanReport && (
-          <Button
-            variant="secondary"
-            size="md"
-            icon={FileText}
-            onClick={onOpenPlanReport}
-          >
-            <span className="sm:hidden">Thẩm định</span>
-            <span className="hidden sm:inline">Báo cáo thẩm định kế hoạch</span>
-          </Button>
-        )}
+          {onOpenPlanReport && (
+            <Button
+              variant="secondary"
+              size="md"
+              icon={FileText}
+              onClick={onOpenPlanReport}
+            >
+              Báo cáo thẩm định kế hoạch
+            </Button>
+          )}
+        </div>
+        <div className="sm:hidden">
+          <ActionMenu
+            label="Tác vụ kế hoạch"
+            items={[
+              ...(onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser)
+                ? [{ label: 'Tải Plan order tổng (4.1)', icon: Upload, onSelect: () => setIsPlanOrderUploadOpen(true) }]
+                : []),
+              { label: 'Đồng bộ Larkbase', icon: Database, onSelect: () => setIsLarkbaseModalOpen(true) },
+              ...(onOpenPlanReport
+                ? [{ label: 'Báo cáo thẩm định kế hoạch', icon: FileText, onSelect: onOpenPlanReport }]
+                : []),
+            ]}
+          />
+        </div>
         <Button
           variant="primary"
           size="md"
@@ -1344,7 +1430,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C (BỎ CHỮ PHỤ RƯỜM RÀ) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y lg:divide-y-0 sm:divide-x divide-line bg-surface">
-              <div className="px-3.5 py-2.5">
+              <div className="col-span-2 sm:col-span-1 px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium">Tổng hạn mức Net B2C</div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-ink tabular-nums">{formatVndShort(governanceStats.totalBudget)}</span>
@@ -1494,20 +1580,20 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       </div>
 
                       <div className="grid grid-cols-2 gap-1.5 text-2xs tabular-nums">
-                        <div className="rounded-lg bg-sunken/50 border border-line px-2.5 py-1.5 flex items-center justify-between">
-                          <span className="text-ink-3">Ngân sách Net:</span>
+                        <div className="rounded-lg bg-sunken/50 border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
+                          <span className="text-ink-3">Ngân sách Net</span>
                           <strong className="text-ink font-semibold">{formatVndShort(bd.totalBudget)} ({bd.totalVideos} vid)</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
-                          <span className="text-ink-3">1. KOC trả phí:</span>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
+                          <span className="text-ink-3">1. KOC trả phí</span>
                           <strong className="text-ink font-semibold">{bd.affPaidQty} vid · {formatVndShort(bd.affPaidBudget)}</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
-                          <span className="text-ink-3">2. Mẫu FOC (0đ):</span>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
+                          <span className="text-ink-3">2. Mẫu FOC (0đ)</span>
                           <strong className="text-positive font-semibold">{bd.focQty} mẫu</strong>
                         </div>
-                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
-                          <span className="text-ink-3">3. Brand / Đa sàn:</span>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex flex-col gap-0.5">
+                          <span className="text-ink-3">3. Brand / Đa sàn</span>
                           <strong className="text-ink font-semibold">{bd.selfQty + bd.otherQty} vid · {formatVndShort(bd.selfBudget + bd.otherBudget)}</strong>
                         </div>
                       </div>
@@ -2141,8 +2227,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 })}
               </div>
 
-              {/* Chuyển đổi Dạng Bảng / Dạng Thẻ */}
-              <div className="flex items-center gap-1 bg-surface border border-line rounded-lg p-0.5">
+              {/* Chuyển đổi Dạng Bảng / Dạng Thẻ (Ẩn trên mobile vì mobile luôn hiển thị dạng thẻ chuẩn) */}
+              <div className="hidden md:flex items-center gap-1 bg-surface border border-line rounded-lg p-0.5">
                 <button
                   type="button"
                   onClick={() => setBrandViewMode('TABLE')}
@@ -2232,10 +2318,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               )}
             </div>
 
-            {/* 3. NỘI DUNG CHÍNH: DẠNG BẢNG HOẶC DẠNG THẺ */}
-            {brandViewMode === 'TABLE' ? (
-              /* ================= DẠNG BẢNG (TABLE VIEW — GỌN VỪA KHUNG NHÌN, KHÔNG CẦN KÉO NGANG) ================= */
-              <div className="w-full overflow-x-auto">
+            {/* 3. NỘI DUNG CHÍNH: DẠNG BẢNG (>= 768px khi chọn TABLE) & DẠNG THẺ (< 768px hoặc khi chọn CARDS) */}
+            {brandViewMode === 'TABLE' && (
+              /* ================= DẠNG BẢNG (TABLE VIEW — GỌN VỪA KHUNG NHÌN TRÊN DESKTOP) ================= */
+              <div className="hidden md:block w-full overflow-x-auto">
                 <table key="brand-monthly-plans-table" className="w-full min-w-[780px] md:table-fixed text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-sunken/60 border-b border-line text-ink-2 font-semibold text-2xs">
@@ -2301,10 +2387,27 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-2xs text-ink-3 mt-0.5 truncate">
-                                    {stores.length > 0 ? `${stores.length} gian` : '1 gian'}
-                                    {storePlansCount > 0 && (
-                                      <span className="text-positive font-medium"> · {storePlansCount} plan gian</span>
+                                  <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                                    <span>{stores.length > 0 ? `${stores.length} gian` : '1 gian'}</span>
+                                    {(rollup?.storePlans || []).length > 0 && (
+                                      <>
+                                        <span>·</span>
+                                        {(rollup?.storePlans || []).map(sp => {
+                                          const st = stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
+                                          const platShort = st?.platform === 'TikTok Shop' ? 'TikTok' : st?.platform === 'Shopee Mall' ? 'Shopee' : (sp.storeName || 'Gian');
+                                          return (
+                                            <button
+                                              key={sp.id}
+                                              type="button"
+                                              onClick={() => onSelectPlan(sp)}
+                                              className="text-2xs font-medium text-accent hover:underline cursor-pointer"
+                                              title={`Mở phân rã 4.1.1 của gian hàng ${sp.storeName || bp.brandName}`}
+                                            >
+                                              {platShort} ↗
+                                            </button>
+                                          );
+                                        })}
+                                      </>
                                     )}
                                   </div>
                                 </div>
@@ -2379,9 +2482,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </tbody>
                 </table>
               </div>
-            ) : (
-              /* ================= DẠNG THẺ (CARD GRID VIEW) ================= */
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            )}
+
+            {/* ================= DẠNG THẺ (LUÔN HIỆN TRÊN MOBILE < 768px HOẶC KHI CHỌN CHẾ ĐỘ CARDS) ================= */}
+            <div className={cx('p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4', brandViewMode === 'CARDS' ? 'grid' : 'grid md:hidden')}>
                 {filteredBrandMonthlyPlans.length === 0 ? (
                   <div className="col-span-full py-12 text-center text-ink-3">
                     Không tìm thấy kế hoạch Brand nào khớp với bộ lọc hiện tại.
@@ -2496,7 +2600,24 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </div>
                         </div>
 
-                        <div className="pt-2 border-t border-line flex items-center justify-end gap-2">
+                        <div className="pt-2 border-t border-line flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {(rollup?.storePlans || []).map(sp => {
+                              const st = stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
+                              const platShort = st?.platform === 'TikTok Shop' ? 'TikTok' : st?.platform === 'Shopee Mall' ? 'Shopee' : (sp.storeName || 'Gian');
+                              return (
+                                <button
+                                  key={`card-sp-${sp.id}`}
+                                  type="button"
+                                  onClick={() => onSelectPlan(sp)}
+                                  className="px-2 py-0.5 rounded bg-accent/10 text-accent text-2xs font-medium hover:underline cursor-pointer"
+                                  title={`Mở phân rã 4.1.1 của gian hàng ${sp.storeName || bp.brandName}`}
+                                >
+                                  {platShort} ↗
+                                </button>
+                              );
+                            })}
+                          </div>
                           <Button
                             size="sm"
                             variant="primary"
@@ -2504,7 +2625,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               setBrandModalTab('ONE_SHEET');
                               setEditingBrandPlan(bp);
                             }}
-                            className="h-7 px-3 text-2xs font-medium"
+                            className="h-7 px-3 text-2xs font-medium ml-auto"
                           >
                             Nhập Plan Brand
                           </Button>
@@ -2514,7 +2635,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   })
                 )}
               </div>
-            )}
           </Panel>
         </div>
       ) : activeHubTab === 'STORE_COEFFICIENTS' ? (
@@ -3653,8 +3773,59 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 Chưa có bản ghi kế hoạch nào cho kỳ {selectedMonth}. Nhấn <strong>&ldquo;Kéo kế hoạch đã duyệt về hệ thống&rdquo;</strong> để đồng bộ từ Larkbase.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+              <>
+                <div className="md:hidden divide-y divide-line">
+                  {larkbaseRecords.map((rec, idx) => {
+                    const convertedPlan = larkbaseConvertedPlans[idx];
+                    return (
+                      <div key={`m-lark-${rec.larkRecordId}`} className="p-3 space-y-2 text-xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="font-semibold text-ink">{rec.storeName}</div>
+                            <div className="text-2xs text-ink-3">
+                              {rec.brandName} • {rec.platform} • {rec.versionCode} ({rec.month})
+                            </div>
+                          </div>
+                          <Status tone="positive">Đã duyệt</Status>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 p-2 rounded-lg bg-canvas border border-line text-2xs">
+                          <div>
+                            <span className="text-ink-3 block">PIC / Cấp duyệt</span>
+                            <span className="font-semibold text-ink">{rec.b2cPic}</span>
+                          </div>
+                          <div className="text-right tabular-nums">
+                            <span className="text-ink-3 block">Net / GMV</span>
+                            <span className="font-semibold text-emerald-700">{formatVndShort(rec.budgetNet)}</span>
+                            <span className="text-ink-3"> / {formatVndShort(rec.targetGmv)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <span className="text-2xs text-ink-3">
+                            KOC: {rec.affiliatePaidVideos} • FOC: {rec.focFreeVideos} • Self: {rec.selfChannelVideos}
+                          </span>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              if (convertedPlan) {
+                                if (onImportLarkbasePlans) {
+                                  onImportLarkbasePlans([convertedPlan]);
+                                }
+                                setIsLarkbaseModalOpen(false);
+                                onSelectPlan(convertedPlan);
+                                notify(`Đã nạp kế hoạch "${convertedPlan.storeName}" (${rec.versionCode}) từ bảng hứng Larkbase.`);
+                              }
+                            }}
+                          >
+                            Nạp &amp; Mở phân rã
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full min-w-[820px] text-left border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-line bg-sunken/60 text-2xs font-semibold text-ink-3 uppercase">
                       <th className="py-2.5 px-3">Record Larkbase &amp; Phiên bản</th>
@@ -3798,6 +3969,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </div>
@@ -3836,9 +4008,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     approvedBy: currentUser?.name || 'Đặng Thị Yến Nhi',
                     approvedAt: new Date().toISOString(),
                   };
-                  setBrandMonthlyPlans(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+                  persistBrandMonthlyPlan(updated);
                   setEditingBrandPlan(null);
-                  notify(`Đã duyệt kế hoạch tháng cấp Brand cho ${updated.brandName} (${updated.month})!`);
+                  notify(`Đã duyệt và đồng bộ kế hoạch tháng cấp Brand cho ${updated.brandName} (${updated.month})!`);
                 }}
               >
                 Duyệt kế hoạch Brand
@@ -3851,10 +4023,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     updatedAt: new Date().toISOString(),
                     updatedBy: currentUser?.name || editingBrandPlan.planStrategyPic,
                   };
-                  setBrandMonthlyPlans(prev => prev.map(item => (item.id === updated.id ? updated : item)));
+                  persistBrandMonthlyPlan(updated);
                   setEditingBrandPlan(null);
                   notify(
-                    `Đã lưu kế hoạch tháng cấp Brand của ${updated.brandName}!`
+                    `Đã lưu và đồng bộ kế hoạch tháng cấp Brand của ${updated.brandName}!`
                   );
                 }}
               >
@@ -3878,11 +4050,29 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               {/* Thanh tổng hợp tự động từ Plan các Gian hàng + Chuyển tab */}
               <div className="p-3 rounded-xl bg-sunken/60 border border-line flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-ink-3 mr-1">Gian hàng thuộc Brand:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-ink-3">Gian hàng thuộc Brand:</span>
                     <strong className="text-ink font-semibold">
-                      {rollup?.stores.length || 1} gian ({rollup?.storePlans.length || 0} đã có plan)
+                      {rollup?.stores.length || 1} gian
                     </strong>
+                    {(rollup?.storePlans || []).map(sp => {
+                      const st = rollup?.stores.find(s => s.id === sp.storeId || normStoreSlug(s.storeName) === normStoreSlug(sp.storeName));
+                      const label = st?.platform || sp.storeName || 'Gian hàng';
+                      return (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          onClick={() => {
+                            setEditingBrandPlan(null);
+                            onSelectPlan(sp);
+                          }}
+                          className="px-2 py-0.5 rounded bg-surface hover:bg-accent-soft text-accent border border-line text-2xs font-semibold transition cursor-pointer"
+                          title={`Mở bảng phân rã 4.1.1 của gian hàng ${sp.storeName || editingBrandPlan.brandName}`}
+                        >
+                          {label} (4.1.1) ↗
+                        </button>
+                      );
+                    })}
                   </div>
                   <div>
                     <span className="text-ink-3 mr-1">Ngân sách Net (cộng từ gian):</span>
@@ -3909,30 +4099,32 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   )}
                 </div>
 
-                <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+                <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto rounded-lg border border-line bg-surface p-0.5">
                   <button
                     type="button"
                     onClick={() => setBrandModalTab('ONE_SHEET')}
                     className={cx(
-                      'px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer',
+                      'px-2 sm:px-3 py-1.5 rounded-md text-xs font-semibold text-center transition cursor-pointer',
                       brandModalTab === 'ONE_SHEET'
                         ? 'bg-primary text-white'
                         : 'text-ink-2 hover:text-ink'
                     )}
                   >
-                    1. Biểu mẫu Plan Brand (01 → 05)
+                    <span className="sm:hidden">1. Biểu mẫu (01→05)</span>
+                    <span className="hidden sm:inline">1. Biểu mẫu Plan Brand (01 → 05)</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setBrandModalTab('POSITIONS')}
                     className={cx(
-                      'px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer',
+                      'px-2 sm:px-3 py-1.5 rounded-md text-xs font-semibold text-center transition cursor-pointer',
                       brandModalTab === 'POSITIONS'
                         ? 'bg-primary text-white'
                         : 'text-ink-2 hover:text-ink'
                     )}
                   >
-                    2. Phân công 3 vị trí &amp; Chiến dịch
+                    <span className="sm:hidden">2. Phân công 3 vị trí</span>
+                    <span className="hidden sm:inline">2. Phân công 3 vị trí &amp; Chiến dịch</span>
                   </button>
                 </div>
               </div>
@@ -3946,19 +4138,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   storePortfolios={storePortfolios}
                   campaigns={effectiveCampaigns}
                   defaultEditMode={true}
+                  onChangeOneSheetData={(draftData) => {
+                    setEditingBrandPlan(prev => (prev ? { ...prev, oneSheetPlanData: draftData } : null));
+                  }}
                   onSaveOneSheetData={(newData) => {
-                    setBrandMonthlyPlans(prev =>
-                      prev.map(item =>
-                        item.id === editingBrandPlan.id
-                          ? {
-                              ...item,
-                              oneSheetPlanData: newData,
-                              updatedAt: new Date().toLocaleDateString('vi-VN'),
-                            }
-                          : item
-                      )
-                    );
-                    setEditingBrandPlan(prev => (prev ? { ...prev, oneSheetPlanData: newData } : null));
+                    const nextItem: BrandMonthlyPlanItem = {
+                      ...editingBrandPlan,
+                      oneSheetPlanData: newData,
+                      updatedAt: new Date().toISOString(),
+                      updatedBy: currentUser?.name || editingBrandPlan.planStrategyPic,
+                    };
+                    persistBrandMonthlyPlan(nextItem);
+                    setEditingBrandPlan(nextItem);
                     if (onNotify) {
                       onNotify(`Đã lưu Biểu mẫu Plan Brand cho ${editingBrandPlan.brandName} (${editingBrandPlan.month}).`);
                     }
@@ -3975,7 +4166,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           Chế độ Chiến dịch (Campaign) của Brand {editingBrandPlan.brandName} kỳ {editingBrandPlan.month}
                         </span>
                       </div>
-                      <div className="inline-flex rounded-lg border border-line bg-white p-0.5">
+                      <div className="grid grid-cols-2 sm:inline-flex w-full sm:w-auto rounded-lg border border-line bg-white p-0.5">
                         <button
                           type="button"
                           onClick={() => {

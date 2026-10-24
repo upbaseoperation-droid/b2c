@@ -1535,7 +1535,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             title="Quay lại danh sách kế hoạch tháng"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Danh sách</span>
+            <span className="hidden sm:inline">Danh sách</span>
           </button>
 
           <select
@@ -1547,7 +1547,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[165px] sm:max-w-[200px] xl:max-w-[250px] truncate"
+            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[140px] sm:max-w-[200px] xl:max-w-[250px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
@@ -1845,18 +1845,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       )}
 
       <div className="bg-white rounded-xl border border-slate-200/90 px-2.5 py-1 shadow-2xs flex items-center justify-between gap-2 flex-wrap">
-        <div className="inline-flex max-w-full items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto">
+        <div className="inline-flex max-w-full items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 gap-0.5 shrink-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               activeTab === 'OVERVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>1. Chỉ tiêu tháng</span>
-            <span className="text-2xs font-normal text-slate-500">
+            <span className="sm:hidden">1. Chỉ tiêu</span>
+            <span className="hidden sm:inline">1. Chỉ tiêu tháng</span>
+            <span className="hidden sm:inline text-2xs font-normal text-slate-500">
               · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
             </span>
           </button>
@@ -1865,47 +1866,51 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             onClick={() => {
               if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
             }}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1.5 cursor-pointer shrink-0 ${
               isDetailBreakdownTab
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>2. Phân bổ kênh &amp; KOC</span>
+            <span className="sm:hidden">2. Phân bổ</span>
+            <span className="hidden sm:inline">2. Phân bổ kênh &amp; KOC</span>
           </button>
           <button
             type="button"
             onClick={handleOpenWeeklyMatrixStep}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'WEEKLY_MATRIX'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            3. Phân rã tuần
+            <span className="sm:hidden">3. Lịch tuần</span>
+            <span className="hidden sm:inline">3. Phân rã tuần</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('EXCEL_PREVIEW')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'EXCEL_PREVIEW'
                 ? 'bg-white text-blue-700 shadow-2xs'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            4. Biểu mẫu tổng hợp
+            <span className="sm:hidden">4. Tổng hợp</span>
+            <span className="hidden sm:inline">4. Biểu mẫu tổng hợp</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('BRAND_ONE_SHEET')}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
+            className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer shrink-0 ${
               activeTab === 'BRAND_ONE_SHEET'
                 ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'text-emerald-800 hover:bg-emerald-50'
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>5. Bản duyệt Brand</span>
+            <span className="sm:hidden">5. Brand</span>
+            <span className="hidden sm:inline">5. Bản duyệt Brand</span>
           </button>
         </div>
 
@@ -2416,7 +2421,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         KL1–KL7 →
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <div>
                         <span className="text-2xs text-slate-500 block">Sản lượng (video)</span>
                         <input
@@ -2436,7 +2441,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
                         />
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
@@ -2528,7 +2533,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         Kênh Brand →
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <div>
                         <span className="text-2xs text-slate-500 block">Sản lượng (video)</span>
                         <input
@@ -2548,7 +2553,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
                         />
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
@@ -2650,7 +2655,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         );
                       })()}
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <div>
                         <span className="text-2xs text-slate-500 block">Số phiên live</span>
                         <input
@@ -2670,7 +2675,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           className="w-full h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-xs text-blue-700 disabled:bg-slate-100"
                         />
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <span className="text-2xs text-slate-500 block">Mục tiêu GMV</span>
                         <FormattedNumberInput
                           disabled={isLayer1Locked}
@@ -3802,16 +3807,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'EXCEL_PREVIEW' && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-          <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface text-ink">
-            <div className="flex items-center gap-2.5">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-              <div>
-                <h3 className="text-sm font-semibold">Đối chiếu Sheet 4.1.1 Input Plan</h3>
-              </div>
+          <div className="px-3.5 sm:px-6 py-3 sm:py-4 border-b border-line flex flex-wrap items-center justify-between gap-2 bg-surface text-ink">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 shrink-0" />
+              <h3 className="text-xs sm:text-sm font-semibold">Đối chiếu Sheet 4.1.1 Input Plan</h3>
             </div>
             <button
               onClick={handleExportExcel}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Tải File .xlsx này</span>
@@ -3819,7 +3822,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
 
           <div className="overflow-x-auto max-h-[460px]">
-            <table className="w-full text-xs text-left border-collapse font-mono">
+            <table className="w-full min-w-[1350px] whitespace-nowrap text-xs text-left border-collapse font-mono">
               <thead className="sticky top-0 bg-slate-100 text-slate-800 z-10 text-2xs">
                 <tr>
                   <th className="p-2.5 border border-slate-200">Tháng</th>
@@ -4051,11 +4054,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   Chi tiết phân bổ từng phân bậc KOC &amp; kênh
                 </h4>
               </div>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 overflow-x-auto max-w-full whitespace-nowrap">
                 <button
                   type="button"
                   onClick={() => setAllocationFilterChannel('ALL')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition shrink-0 ${
                     allocationFilterChannel === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -4064,7 +4067,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setAllocationFilterChannel('TIKTOK')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition shrink-0 ${
                     allocationFilterChannel === 'TIKTOK' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -4073,7 +4076,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setAllocationFilterChannel('SHOPEE')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition shrink-0 ${
                     allocationFilterChannel === 'SHOPEE' ? 'bg-white text-amber-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -4082,7 +4085,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setAllocationFilterChannel('SELF_CHANNEL')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition shrink-0 ${
                     allocationFilterChannel === 'SELF_CHANNEL' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -4091,7 +4094,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setAllocationFilterChannel('LIVESTREAM')}
-                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition shrink-0 ${
                     allocationFilterChannel === 'LIVESTREAM' ? 'bg-white text-slate-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -4101,8 +4104,72 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </div>
 
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-              <div className="overflow-x-auto max-h-[380px]">
-                <table className="w-full text-left text-xs border-collapse">
+              {/* MOBILE CARDS (< 768px) */}
+              <div className="md:hidden divide-y divide-slate-100 max-h-[420px] overflow-y-auto">
+                {planState.items
+                  .filter(item => {
+                    if (allocationFilterChannel === 'ALL') return true;
+                    if (allocationFilterChannel === 'TIKTOK') return item.channel === 'TIKTOK';
+                    if (allocationFilterChannel === 'SHOPEE') return ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(item.channel);
+                    if (allocationFilterChannel === 'SELF_CHANNEL') return item.channel === 'SELF_CHANNEL';
+                    if (allocationFilterChannel === 'LIVESTREAM') return item.channel === 'LIVESTREAM';
+                    return true;
+                  })
+                  .map(item => {
+                    const isPicAssigned = !item.assignedStaff || item.assignedStaff === planState.pic;
+
+                    return (
+                      <div key={`m-alloc-${item.id}`} className="p-3 space-y-2 text-xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-2xs font-code px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
+                                {item.tierCode === 'Video AI' ? 'Giọng máy' : item.tierCode}
+                              </span>
+                              <span className="font-semibold text-slate-900">
+                                {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
+                              </span>
+                            </div>
+                            <div className="text-2xs text-slate-500 mt-0.5">{item.contentFormat}</div>
+                          </div>
+                          <div className="text-right font-mono shrink-0">
+                            <div className="font-semibold text-slate-900">{item.qty} clip</div>
+                            <div className="text-2xs text-blue-700 font-semibold">{formatVndShort(item.totalBudget)}</div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <select
+                            value={item.assignedStaff || planState.pic}
+                            onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                            className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
+                              !isPicAssigned
+                                ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                                : 'bg-white border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            {PIC_OPTIONS.map(staff => (
+                              <option key={staff} value={staff}>
+                                {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="Ghi chú tác nghiệp (VD: KOC lên link bio, reup Shopee...)"
+                            value={item.staffNotes || ''}
+                            onChange={(e) => handleUpdateItemStaffNotes(item.id, e.target.value)}
+                            className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* DESKTOP TABLE (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto max-h-[380px]">
+                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                   <thead className="sticky top-0 bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
                     <tr>
                       <th className="py-2.5 px-3 w-40">Phân bậc KOC</th>

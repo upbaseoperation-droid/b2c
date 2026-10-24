@@ -33,7 +33,9 @@ interface BrandOneSheetPlanViewProps {
   storePlans?: InputPlanBreakdownState[];
   storePortfolios?: StorePortfolioItem[];
   campaigns?: CampaignItem[];
+  defaultEditMode?: boolean;
   onSaveOneSheetData?: (data: BrandOneSheetPlanData) => void;
+  onChangeOneSheetData?: (data: BrandOneSheetPlanData) => void;
   onOpenCampaignModal?: () => void;
   onNotify?: (msg: string) => void;
 }
@@ -45,7 +47,9 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
   storePlans = [],
   storePortfolios = [],
   campaigns = [],
+  defaultEditMode = false,
   onSaveOneSheetData,
+  onChangeOneSheetData,
   onOpenCampaignModal,
   onNotify,
 }) => {
@@ -62,13 +66,23 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
     [brandName, month, brandPlan, storePlans, storePortfolios, campaigns]
   );
 
+  const identityKey = `${brandName}__${month}`;
   const [formData, setFormData] = useState<BrandOneSheetPlanData>(synthesizedData);
-  const [prevSynthesizedData, setPrevSynthesizedData] = useState<BrandOneSheetPlanData>(synthesizedData);
-  if (synthesizedData !== prevSynthesizedData) {
-    setPrevSynthesizedData(synthesizedData);
+  const [prevIdentityKey, setPrevIdentityKey] = useState<string>(identityKey);
+  if (identityKey !== prevIdentityKey) {
+    setPrevIdentityKey(identityKey);
     setFormData(synthesizedData);
   }
-  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+
+  const updateFormData = (updater: (prev: BrandOneSheetPlanData) => BrandOneSheetPlanData) => {
+    setFormData((prev) => {
+      const next = updater(prev);
+      onChangeOneSheetData?.(next);
+      return next;
+    });
+  };
+
+  const [isEditMode, setIsEditMode] = useState<boolean>(defaultEditMode);
   const [sectionFilter, setSectionFilter] = useState<
     'ALL' | 'SEC_01' | 'SEC_02' | 'SEC_03' | 'SEC_04' | 'SEC_05'
   >('ALL');
@@ -178,7 +192,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       storePortfolios,
       campaigns,
     });
-    setFormData(fresh);
+    updateFormData(() => fresh);
     onNotify?.('Đã đồng bộ lại dữ liệu mới nhất từ Campaign, Content và Booking!');
   };
 
@@ -197,7 +211,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       budgetVnd: 0,
       pic: formData.preparedBy,
     };
-    setFormData((prev) => ({
+    updateFormData((prev) => ({
       ...prev,
       tiktokContentRows: [...prev.tiktokContentRows, newRow],
     }));
@@ -221,7 +235,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       budgetVnd: 2000000,
       ownerDeadlineKvNote: `Content Shopee; draft trước air 2 ngày; KV${monthNum}`,
     };
-    setFormData((prev) => ({
+    updateFormData((prev) => ({
       ...prev,
       shopeeContentRows: [...prev.shopeeContentRows, newRow],
     }));
@@ -240,7 +254,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       videoWeightRatio: 0.1,
       monthlyVideoCount: 4,
     };
-    setFormData((prev) => ({
+    updateFormData((prev) => ({
       ...prev,
       contentPillars: [...prev.contentPillars, newPillar],
     }));
@@ -257,7 +271,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {/* HEADER BAR: THÔNG TIN TỔNG QUAN & CÁC NÚT THAO TÁC TRÌNH BRAND        */}
       {/* ===================================================================== */}
-      <div className="bg-surface text-ink rounded-xl p-4 border border-line space-y-3">
+      <div className="sm:sticky sm:top-0 z-20 bg-surface/95 backdrop-blur-xs text-ink rounded-xl p-3 sm:p-4 border border-line space-y-3 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-sm font-semibold text-ink">
@@ -293,7 +307,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               title="Lấy lại dữ liệu gốc từ Campaign và Kế hoạch Gian hàng"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Đồng bộ</span>
+              <span>Đồng bộ từ Plan Gian</span>
             </button>
             <button
               type="button"
@@ -314,7 +328,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Lưu</span>
+                <span>Lưu biểu mẫu</span>
               </button>
             )}
             <button
@@ -329,21 +343,21 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
         </div>
 
         {/* Meta Info & Section Filter Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-line text-xs">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-line text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto max-w-full whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 sm:pb-0 sm:flex-wrap">
             {[
               { id: 'ALL', label: 'Tất cả (01 → 05)' },
               { id: 'SEC_01', label: '01. Định hướng' },
               { id: 'SEC_02', label: '02. KPI 2 Sàn' },
               { id: 'SEC_03', label: '03. Key Visual' },
-              { id: 'SEC_04', label: '04. TikTok Shop' },
-              { id: 'SEC_05', label: '05. Shopee' },
+              { id: 'SEC_04', label: `04. TikTok (${formData.tiktokContentRows.length} dòng)` },
+              { id: 'SEC_05', label: `05. Shopee (${formData.contentPillars.length} Pillar · ${formData.shopeeContentRows.length} dòng)` },
             ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setSectionFilter(tab.id as typeof sectionFilter)}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
                   sectionFilter === tab.id
                     ? 'bg-primary text-white'
                     : 'bg-canvas text-ink-2 hover:bg-sunken border border-line'
@@ -361,7 +375,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <input
                   type="text"
                   value={formData.preparedBy}
-                  onChange={(e) => setFormData((p) => ({ ...p, preparedBy: e.target.value }))}
+                  onChange={(e) => updateFormData((p) => ({ ...p, preparedBy: e.target.value }))}
                   className="w-32 px-2 py-0.5 rounded bg-canvas border border-line text-ink text-xs"
                 />
               ) : (
@@ -375,7 +389,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <input
                   type="text"
                   value={formData.statusAndCutoffNote}
-                  onChange={(e) => setFormData((p) => ({ ...p, statusAndCutoffNote: e.target.value }))}
+                  onChange={(e) => updateFormData((p) => ({ ...p, statusAndCutoffNote: e.target.value }))}
                   className="w-40 px-2 py-0.5 rounded bg-canvas border border-line text-ink text-xs"
                 />
               ) : (
@@ -424,7 +438,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       rows={2}
                       value={formData.orientation[fieldKey]}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        updateFormData((prev) => ({
                           ...prev,
                           orientation: { ...prev.orientation, [fieldKey]: e.target.value },
                         }))
@@ -446,9 +460,14 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {/* ===================================================================== */}
       {showSec02 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-accent">02.</span>
-            <h3 className="text-xs font-semibold text-ink uppercase">KẾ HOẠCH KPI THÁNG</h3>
+          <div className="px-4 py-3 bg-canvas border-b border-line flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-accent">02.</span>
+              <h3 className="text-xs font-semibold text-ink uppercase">KẾ HOẠCH KPI THÁNG</h3>
+            </div>
+            <span className="text-2xs font-medium text-ink-3 bg-sunken px-2 py-0.5 rounded border border-line">
+              Tự động cộng gộp GMV &amp; Ngân sách Booking từ Plan Gian hàng (4.1 / 4.1.1)
+            </span>
           </div>
 
           <div className="overflow-x-auto">
@@ -689,7 +708,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       type="text"
                       value={formData.keyVisual[fieldKey] || ''}
                       onChange={(e) =>
-                        setFormData((prev) => ({
+                        updateFormData((prev) => ({
                           ...prev,
                           keyVisual: { ...prev.keyVisual, [fieldKey]: e.target.value },
                         }))
@@ -839,12 +858,12 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           {/* 4B. Bảng Số lượng & Ngân sách theo tuần (W1-W5) */}
-          <div className="px-5 space-y-3">
+          <div className="px-3.5 sm:px-5 space-y-3">
             <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
               4.2 Phân bổ Số lượng &amp; Ngân sách KOC/KOL theo Tuần (W1–W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[680px] text-xs border-collapse font-mono">
+              <table className="w-full min-w-[920px] text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs">
                     <th className="py-2 px-3 text-left border-r border-slate-200">Tuần</th>
@@ -946,8 +965,8 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           {/* 4C. Chi tiết Content TikTok Shop */}
-          <div className="px-5 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="px-3.5 sm:px-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 4.3 Chi tiết Content TikTok Shop (Video Affiliate &amp; Video Self / Ảnh trượt)
               </h4>
@@ -955,7 +974,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <button
                   type="button"
                   onClick={handleAddTikTokContentRow}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm dòng Content TikTok</span>
@@ -963,7 +982,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[680px] text-xs border-collapse">
+              <table className="w-full min-w-[1080px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-28">Tuần / Ngày air</th>
@@ -990,7 +1009,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                             value={row.weekAndAirDate}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setFormData((p) => ({
+                              updateFormData((p) => ({
                                 ...p,
                                 tiktokContentRows: p.tiktokContentRows.map((r, i) =>
                                   i === idx ? { ...r, weekAndAirDate: val } : r
@@ -1003,15 +1022,121 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                           row.weekAndAirDate
                         )}
                       </td>
-                      <td className="p-2 border-r border-slate-200 font-medium text-slate-800">{row.skuOrCombo}</td>
-                      <td className="p-2 border-r border-slate-200">
-                        <span className="text-xs text-ink-2 font-medium">
-                          {row.touchpointSource}
-                        </span>
+                      <td className="p-2 border-r border-slate-200 font-medium text-slate-800">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.skuOrCombo}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, skuOrCombo: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.skuOrCombo
+                        )}
                       </td>
-                      <td className="p-2 border-r border-slate-200 text-slate-700">{row.klGroup}</td>
-                      <td className="p-2 border-r border-slate-200 text-slate-600">{row.kocCriteria}</td>
-                      <td className="p-2 border-r border-slate-200 font-semibold text-slate-800">{row.pillar}</td>
+                      <td className="p-2 border-r border-slate-200">
+                        {isEditMode ? (
+                          <select
+                            value={row.touchpointSource}
+                            onChange={(e) => {
+                              const val = e.target.value as BrandOneSheetTikTokContentRow['touchpointSource'];
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, touchpointSource: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="Video affiliate">Video affiliate</option>
+                            <option value="Video self">Video self</option>
+                            <option value="Livestream">Livestream</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs text-ink-2 font-medium">
+                            {row.touchpointSource}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 text-slate-700">
+                        {isEditMode ? (
+                          <select
+                            value={row.klGroup}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, klGroup: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="Mix KL / TAP">Mix KL / TAP</option>
+                            <option value="TAP">TAP (0đ)</option>
+                            <option value="KL1">KL1</option>
+                            <option value="KL2">KL2</option>
+                            <option value="KL3">KL3</option>
+                            <option value="KL4">KL4</option>
+                            <option value="KL5">KL5</option>
+                            <option value="KL6">KL6</option>
+                            <option value="KL7">KL7</option>
+                            <option value="Không áp dụng">Không áp dụng</option>
+                          </select>
+                        ) : (
+                          row.klGroup
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 text-slate-600">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.kocCriteria}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, kocCriteria: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.kocCriteria
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 font-semibold text-slate-800">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.pillar}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, pillar: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.pillar
+                        )}
+                      </td>
                       <td className="p-2 border-r border-slate-200 text-slate-800">
                         {isEditMode ? (
                           <textarea
@@ -1019,7 +1144,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                             value={row.angleAndBrief}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setFormData((p) => ({
+                              updateFormData((p) => ({
                                 ...p,
                                 tiktokContentRows: p.tiktokContentRows.map((r, i) =>
                                   i === idx ? { ...r, angleAndBrief: val } : r
@@ -1032,18 +1157,100 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                           row.angleAndBrief
                         )}
                       </td>
-                      <td className="p-2 border-r border-slate-200 text-center font-medium">{row.contentType}</td>
-                      <td className="p-2 border-r border-slate-200 text-center font-mono font-semibold">{row.qty}</td>
-                      <td className="p-2 border-r border-slate-200 text-right font-mono">
-                        {row.budgetVnd > 0 ? row.budgetVnd.toLocaleString('vi-VN') : '0'}
+                      <td className="p-2 border-r border-slate-200 text-center font-medium">
+                        {isEditMode ? (
+                          <select
+                            value={row.contentType}
+                            onChange={(e) => {
+                              const val = e.target.value as BrandOneSheetTikTokContentRow['contentType'];
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, contentType: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="Video">Video</option>
+                            <option value="Ảnh trượt">Ảnh trượt</option>
+                            <option value="Livestream">Livestream</option>
+                          </select>
+                        ) : (
+                          row.contentType
+                        )}
                       </td>
-                      <td className="p-2 font-medium text-slate-800">{row.pic}</td>
+                      <td className="p-2 border-r border-slate-200 text-center font-mono font-semibold">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            value={row.qty}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, qty: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-14 px-1 py-1 border border-slate-300 rounded text-xs text-center"
+                          />
+                        ) : (
+                          row.qty
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 text-right font-mono">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            step={500000}
+                            value={row.budgetVnd}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, budgetVnd: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-24 px-1.5 py-1 border border-slate-300 rounded text-xs text-right"
+                          />
+                        ) : row.budgetVnd > 0 ? (
+                          row.budgetVnd.toLocaleString('vi-VN')
+                        ) : (
+                          '0'
+                        )}
+                      </td>
+                      <td className="p-2 font-medium text-slate-800">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.pic}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((p) => ({
+                                ...p,
+                                tiktokContentRows: p.tiktokContentRows.map((r, i) =>
+                                  i === idx ? { ...r, pic: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.pic
+                        )}
+                      </td>
                       {isEditMode && (
                         <td className="p-2 text-center">
                           <button
                             type="button"
                             onClick={() =>
-                              setFormData((p) => ({
+                              updateFormData((p) => ({
                                 ...p,
                                 tiktokContentRows: p.tiktokContentRows.filter((_, i) => i !== idx),
                               }))
@@ -1076,8 +1283,8 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           {/* 5A. Bảng Chiến lược Pillar P01 - P05 */}
-          <div className="px-5 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="px-3.5 sm:px-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 5.1 Bảng Chiến lược Tuyến Nội dung (Content Pillars P01 → P05)
               </h4>
@@ -1085,7 +1292,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <button
                   type="button"
                   onClick={handleAddPillarRow}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm Pillar</span>
@@ -1093,7 +1300,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[680px] text-xs border-collapse">
+              <table className="w-full min-w-[960px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-20">Pillar ID</th>
@@ -1103,13 +1310,14 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                     <th className="py-2.5 px-3 text-left border-r border-slate-200 w-48">Thông điệp / RTB</th>
                     <th className="py-2.5 px-3 text-left border-r border-slate-200">Angle ưu tiên</th>
                     <th className="py-2.5 px-3 text-left border-r border-slate-200 w-36">Format phù hợp</th>
-                    <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-24">Tỷ trọng</th>
+                    <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-24">Tỷ trọng (%)</th>
                     <th className="py-2.5 px-2.5 text-center w-24">Số video tháng</th>
+                    {isEditMode && <th className="py-2.5 px-2 w-10" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {formData.contentPillars.map((p, idx) => (
-                    <tr key={p.pillarId} className="hover:bg-slate-50">
+                    <tr key={p.pillarId} className="hover:bg-slate-50 align-top">
                       <td className="p-2.5 text-center border-r border-slate-200 font-mono font-semibold text-blue-700 bg-blue-50/40">
                         {p.pillarId}
                       </td>
@@ -1120,7 +1328,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                             value={p.pillarName}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setFormData((prev) => ({
+                              updateFormData((prev) => ({
                                 ...prev,
                                 contentPillars: prev.contentPillars.map((item, i) =>
                                   i === idx ? { ...item, pillarName: val } : item
@@ -1133,21 +1341,167 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                           p.pillarName
                         )}
                       </td>
-                      <td className="p-2.5 border-r border-slate-200 text-slate-700">{p.behaviorObjective}</td>
-                      <td className="p-2.5 border-r border-slate-200 text-slate-600">{p.insightAndBarrier}</td>
-                      <td className="p-2.5 border-r border-slate-200 text-slate-800 font-medium">{p.messageAndRtb}</td>
-                      <td className="p-2.5 border-r border-slate-200 text-slate-800">{p.priorityAngle}</td>
+                      <td className="p-2.5 border-r border-slate-200 text-slate-700">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={p.behaviorObjective}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, behaviorObjective: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          p.behaviorObjective
+                        )}
+                      </td>
+                      <td className="p-2.5 border-r border-slate-200 text-slate-600">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={p.insightAndBarrier}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, insightAndBarrier: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          p.insightAndBarrier
+                        )}
+                      </td>
+                      <td className="p-2.5 border-r border-slate-200 text-slate-800 font-medium">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={p.messageAndRtb}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, messageAndRtb: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          p.messageAndRtb
+                        )}
+                      </td>
+                      <td className="p-2.5 border-r border-slate-200 text-slate-800">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={p.priorityAngle}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, priorityAngle: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          p.priorityAngle
+                        )}
+                      </td>
                       <td className="p-2.5 border-r border-slate-200">
-                        <span className="text-xs text-ink-2">
-                          {p.suitableFormat}
-                        </span>
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={p.suitableFormat}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, suitableFormat: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          <span className="text-xs text-ink-2">
+                            {p.suitableFormat}
+                          </span>
+                        )}
                       </td>
                       <td className="p-2.5 text-center border-r border-slate-200 font-mono font-semibold">
-                        {Math.round(p.videoWeightRatio * 100)}%
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={Math.round(p.videoWeightRatio * 100)}
+                            onChange={(e) => {
+                              const pct = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, videoWeightRatio: pct / 100 } : item
+                                ),
+                              }));
+                            }}
+                            className="w-16 px-1 py-1 border border-slate-300 rounded text-xs text-center"
+                          />
+                        ) : (
+                          `${Math.round(p.videoWeightRatio * 100)}%`
+                        )}
                       </td>
                       <td className="p-2.5 text-center font-mono font-semibold text-emerald-700">
-                        {p.monthlyVideoCount}
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            value={p.monthlyVideoCount}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.map((item, i) =>
+                                  i === idx ? { ...item, monthlyVideoCount: val } : item
+                                ),
+                              }));
+                            }}
+                            className="w-16 px-1 py-1 border border-slate-300 rounded text-xs text-center"
+                          />
+                        ) : (
+                          p.monthlyVideoCount
+                        )}
                       </td>
+                      {isEditMode && (
+                        <td className="p-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateFormData((prev) => ({
+                                ...prev,
+                                contentPillars: prev.contentPillars.filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -1156,12 +1510,12 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           {/* 5B. Target Tuần Content Shopee */}
-          <div className="px-5 space-y-3">
+          <div className="px-3.5 sm:px-5 space-y-3">
             <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
               5.2 Bảng Target Tuần Content Shopee (W1 → W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[680px] text-xs border-collapse font-mono">
+              <table className="w-full min-w-[820px] text-xs border-collapse font-mono">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2 px-3 text-left border-r border-slate-200">Tuần</th>
@@ -1207,8 +1561,8 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           </div>
 
           {/* 5C. Lịch sản xuất & air Content Shopee gắn mã Pillar P01-P05 */}
-          <div className="px-5 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="px-3.5 sm:px-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 5.3 Lịch Sản xuất &amp; Air Content Shopee (Gắn mã Pillar P01–P05 &amp; Phương thức VJ / Remix)
               </h4>
@@ -1216,7 +1570,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <button
                   type="button"
                   onClick={handleAddShopeeContentRow}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm dòng Lịch Air Shopee</span>
@@ -1224,7 +1578,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               )}
             </div>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full min-w-[680px] text-xs border-collapse">
+              <table className="w-full min-w-[1150px] text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2 text-center border-r border-slate-200 w-14">Tuần</th>
@@ -1239,21 +1593,125 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                     <th className="py-2.5 px-2 text-center border-r border-slate-200 w-14">SL</th>
                     <th className="py-2.5 px-2.5 text-right border-r border-slate-200 w-28">Ngân sách</th>
                     <th className="py-2.5 px-2.5 text-left w-48">Owner / Deadline / KV</th>
+                    {isEditMode && <th className="py-2.5 px-2 w-10" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {formData.shopeeContentRows.map((row, idx) => (
-                    <tr key={row.id} className="hover:bg-slate-50">
-                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">{row.week}</td>
-                      <td className="p-2 border-r border-slate-200 font-medium text-slate-800">{row.skuOrCombo}</td>
-                      <td className="p-2 border-r border-slate-200 text-slate-600">{row.touchpointSource}</td>
+                    <tr key={row.id} className="hover:bg-slate-50 align-top">
+                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">
+                        {isEditMode ? (
+                          <select
+                            value={row.week}
+                            onChange={(e) => {
+                              const val = e.target.value as BrandOneSheetShopeeContentRow['week'];
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, week: val } : r
+                                ),
+                              }));
+                            }}
+                            className="px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            {(['W1', 'W2', 'W3', 'W4', 'W5'] as const).map((w) => (
+                              <option key={w} value={w}>
+                                {w}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          row.week
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 font-medium text-slate-800">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.skuOrCombo}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, skuOrCombo: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.skuOrCombo
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 text-slate-600">
+                        {isEditMode ? (
+                          <select
+                            value={row.touchpointSource}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, touchpointSource: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="Video self">Video self</option>
+                            <option value="Shopee Video Aff">Shopee Video Aff</option>
+                            <option value="Livestream">Livestream</option>
+                          </select>
+                        ) : (
+                          row.touchpointSource
+                        )}
+                      </td>
                       <td className="p-2 text-center border-r border-slate-200 font-mono text-slate-800">
-                        {row.airOrHandoverDate}
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.airOrHandoverDate}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, airOrHandoverDate: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs text-center"
+                          />
+                        ) : (
+                          row.airOrHandoverDate
+                        )}
                       </td>
                       <td className="p-2 border-r border-slate-200">
-                        <span className="text-xs text-ink-2">
-                          {row.behaviorObjective}
-                        </span>
+                        {isEditMode ? (
+                          <select
+                            value={row.behaviorObjective}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, behaviorObjective: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="Awareness">Awareness</option>
+                            <option value="Consideration">Consideration</option>
+                            <option value="Conversion">Conversion</option>
+                            <option value="Loyalty">Loyalty</option>
+                          </select>
+                        ) : (
+                          <span className="text-xs text-ink-2">
+                            {row.behaviorObjective}
+                          </span>
+                        )}
                       </td>
                       <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold text-blue-700">
                         {isEditMode ? (
@@ -1261,7 +1719,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                             value={row.pillarId}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setFormData((prev) => ({
+                              updateFormData((prev) => ({
                                 ...prev,
                                 shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
                                   i === idx ? { ...r, pillarId: val } : r
@@ -1280,18 +1738,151 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                           row.pillarId
                         )}
                       </td>
-                      <td className="p-2 border-r border-slate-200 text-slate-800">{row.angleAndBrief}</td>
-                      <td className="p-2 border-r border-slate-200 text-slate-700 font-medium">{row.format}</td>
+                      <td className="p-2 border-r border-slate-200 text-slate-800">
+                        {isEditMode ? (
+                          <textarea
+                            rows={2}
+                            value={row.angleAndBrief}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, angleAndBrief: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.angleAndBrief
+                        )}
+                      </td>
+                      <td className="p-2 border-r border-slate-200 text-slate-700 font-medium">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.format}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, format: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.format
+                        )}
+                      </td>
                       <td className="p-2 text-center border-r border-slate-200">
-                        <span className="font-mono text-xs font-semibold text-ink-2">
-                          {row.productionMethod}
-                        </span>
+                        {isEditMode ? (
+                          <select
+                            value={row.productionMethod}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, productionMethod: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1 py-1 border border-slate-300 rounded text-xs"
+                          >
+                            <option value="VJ">VJ</option>
+                            <option value="Remix">Remix</option>
+                            <option value="Inhouse">Inhouse</option>
+                            <option value="KOC Reup">KOC Reup</option>
+                          </select>
+                        ) : (
+                          <span className="font-mono text-xs font-semibold text-ink-2">
+                            {row.productionMethod}
+                          </span>
+                        )}
                       </td>
-                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">{row.qty}</td>
+                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            value={row.qty}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, qty: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-14 px-1 py-1 border border-slate-300 rounded text-xs text-center"
+                          />
+                        ) : (
+                          row.qty
+                        )}
+                      </td>
                       <td className="p-2 text-right border-r border-slate-200 font-mono">
-                        {row.budgetVnd.toLocaleString('vi-VN')}
+                        {isEditMode ? (
+                          <input
+                            type="number"
+                            min={0}
+                            step={500000}
+                            value={row.budgetVnd}
+                            onChange={(e) => {
+                              const val = Math.max(0, Number(e.target.value) || 0);
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, budgetVnd: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-24 px-1.5 py-1 border border-slate-300 rounded text-xs text-right"
+                          />
+                        ) : (
+                          row.budgetVnd.toLocaleString('vi-VN')
+                        )}
                       </td>
-                      <td className="p-2 text-slate-600 text-2xs">{row.ownerDeadlineKvNote}</td>
+                      <td className="p-2 text-slate-600 text-2xs">
+                        {isEditMode ? (
+                          <input
+                            type="text"
+                            value={row.ownerDeadlineKvNote}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.map((r, i) =>
+                                  i === idx ? { ...r, ownerDeadlineKvNote: val } : r
+                                ),
+                              }));
+                            }}
+                            className="w-full px-1.5 py-1 border border-slate-300 rounded text-xs"
+                          />
+                        ) : (
+                          row.ownerDeadlineKvNote
+                        )}
+                      </td>
+                      {isEditMode && (
+                        <td className="p-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateFormData((prev) => ({
+                                ...prev,
+                                shopeeContentRows: prev.shopeeContentRows.filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

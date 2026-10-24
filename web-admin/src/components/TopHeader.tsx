@@ -93,7 +93,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <h1 className="text-base sm:text-lg font-semibold text-ink leading-6 tracking-tight whitespace-nowrap">{title}</h1>
+        <h1 className="text-sm sm:text-lg font-semibold text-ink leading-6 tracking-tight truncate max-w-[180px] sm:max-w-none">{title}</h1>
       </div>
 
       {/* Khối 2: Cụm thao tác trang & Đăng xuất (Mobile: cạnh tiêu đề; Desktop: phía cuối thanh) */}

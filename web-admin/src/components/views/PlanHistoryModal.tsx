@@ -694,7 +694,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       Bảng đối chiếu biến động giữa các phiên bản trong tháng {plan.month}:
                     </div>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
-                      <table className="w-full text-left text-xs border-collapse">
+                      <table className="w-full min-w-[640px] text-left text-xs border-collapse">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-200 text-2xs font-semibold text-slate-600">
                             <th className="py-2 px-3">Phiên bản</th>

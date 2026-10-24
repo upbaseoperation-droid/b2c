@@ -287,7 +287,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
   return (
     <div className="space-y-4">
       {/* 4 THẺ LỌC NHANH THEO MỨC HỆ SỐ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {STORE_COEFFICIENT_TABLE_2.rows.map(rule => {
           const isSelected = tierFilter === rule.tier;
           const count = tierCounts[rule.tier] || 0;
@@ -348,7 +348,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 shrink-0 w-full lg:w-auto">
             {tierFilter !== 'ALL' && (
               <Button size="sm" variant="ghost" onClick={() => setTierFilter('ALL')}>
                 Bỏ lọc mức {tierFilter}
@@ -357,7 +357,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             <Select
               value={picFilter}
               onChange={e => setPicFilter(e.target.value)}
-              className="w-44 h-8 text-xs"
+              className="w-full sm:w-44 h-8 text-xs"
             >
               <option value="ALL">Tất cả PIC ({picNames.length})</option>
               {picNames.map(p => (
@@ -369,7 +369,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             <Select
               value={brandFilter}
               onChange={e => setBrandFilter(e.target.value)}
-              className="w-44 h-8 text-xs"
+              className="w-full sm:w-44 h-8 text-xs"
             >
               <option value="ALL">Tất cả thương hiệu ({brandNames.length})</option>
               {brandNames.map(b => (
@@ -411,8 +411,123 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        {/* MOBILE CARDS (< 768px) */}
+        <div className="md:hidden divide-y divide-line">
+          {filteredStores.length === 0 ? (
+            <div className="py-10 px-4 text-center text-xs text-ink-3">
+              Không tìm thấy gian hàng phù hợp với bộ lọc.
+            </div>
+          ) : (
+            <>
+              <div className="px-3.5 py-2 bg-surface-2/60 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={toggleSelectAllFiltered}
+                  className="inline-flex items-center gap-2 text-ink-2 font-medium cursor-pointer"
+                >
+                  {allFilteredSelected ? (
+                    <CheckSquare className="w-4 h-4 text-brand shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-ink-3 shrink-0" />
+                  )}
+                  <span>Chọn tất cả ({filteredStores.length} gian hàng)</span>
+                </button>
+              </div>
+              {filteredStores.map(store => {
+                const norm = normalizeStoreCoefficient(
+                  store.difficultyTier,
+                  store.difficultyMultiplier
+                );
+                const isChecked = selectedStoreIds.has(store.id);
+                const pic = getStorePrimaryPic(store);
+
+                return (
+                  <div
+                    key={`m-coeff-${store.id}`}
+                    className={`p-3.5 space-y-2.5 transition-colors ${
+                      isChecked ? 'bg-brand/5' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectStore(store.id)}
+                          className="mt-0.5 inline-flex items-center justify-center text-ink-3 hover:text-ink cursor-pointer shrink-0"
+                        >
+                          {isChecked ? (
+                            <CheckSquare className="w-4 h-4 text-brand" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-xs text-ink">{store.storeName}</span>
+                            <ChannelTag channel={store.platform} />
+                          </div>
+                          <div className="text-2xs text-ink-3 mt-0.5 font-mono">
+                            {store.storeOperationId || store.id} · Gói {store.servicePackage || 'E2E-S'}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-2xs font-mono font-semibold border shrink-0 ${TIER_STYLES[norm.tier].badgeBg}`}
+                      >
+                        {norm.tier} ×{norm.multiplier.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2 pl-6">
+                      <div className="flex items-center gap-1.5">
+                        <BrandAvatar
+                          brandName={store.brandName}
+                          brandId={store.brandId}
+                          size={16}
+                        />
+                        <span className="font-medium">{store.brandName}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Person name={pic} size={16} />
+                        {store.hasBookingLeader && store.bookingLeader && (
+                          <span className="text-ink-3">· TN: {store.bookingLeader}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      {STORE_COEFFICIENT_TABLE_2.rows.map(rule => {
+                        const active = norm.tier === rule.tier;
+                        return (
+                          <button
+                            key={rule.tier}
+                            type="button"
+                            disabled={!isManager}
+                            onClick={() => applyTierToStore(store, rule.tier)}
+                            className={`px-2.5 py-1.5 rounded-md text-xs border transition cursor-pointer flex items-center justify-between ${
+                              active
+                                ? TIER_STYLES[rule.tier].activeBtn
+                                : 'bg-surface-2/60 border-line text-ink-2 hover:text-ink hover:bg-surface'
+                            } ${!isManager ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          >
+                            <span>{rule.tier}</span>
+                            <span className="font-mono text-2xs opacity-90">
+                              ×{rule.multiplierLabel}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* DESKTOP TABLE (>= 768px) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left border-collapse">
             <thead>
               <tr className="bg-surface-2/60 border-b border-line text-2xs font-semibold uppercase tracking-wider text-ink-3">
                 <th className="py-2.5 px-3 w-10 text-center">

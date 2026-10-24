@@ -292,7 +292,85 @@ export const PlanOrderUploadModal: React.FC<PlanOrderUploadModalProps> = ({ open
             </div>
 
             <div className="max-h-80 overflow-auto rounded-md border border-line">
-              <table className="w-full text-xs">
+              {/* MOBILE CARDS (< 768px) */}
+              <div className="md:hidden divide-y divide-line">
+                {filteredPreviewPlans.map(p => {
+                  const isLocked41 = p.isGrowthLocked !== false;
+                  return (
+                    <div
+                      key={`m-prev-${p.id}`}
+                      className={`p-3 space-y-1.5 text-xs ${
+                        p.relation === 'locked' && p.lockedHasDiff
+                          ? 'bg-rose-50/50'
+                          : !isLocked41
+                          ? 'bg-amber-50/40'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-ink">{p.storeName || p.brandName}</div>
+                          <div className="text-2xs text-ink-3">
+                            PIC: {p.pic || '—'} {p.bookingLeader ? `· Leader: ${p.bookingLeader}` : ''}
+                          </div>
+                        </div>
+                        {isLocked41 ? (
+                          <Status tone="positive">Đã chốt</Status>
+                        ) : (
+                          <Status tone="warning">{p.growthLockLabel || 'Chưa chốt'}</Status>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-2xs tabular-nums bg-surface-2/60 rounded px-2 py-1 border border-line">
+                        <span>Số nội dung: <strong className="text-ink">{p.totalTargetContents}</strong></span>
+                        <span>Ngân sách Net: <strong className="text-ink">{fmtMoney(p.totalTargetBudget)}</strong></span>
+                      </div>
+
+                      <div className="text-2xs">
+                        {p.relation === 'new' ? (
+                          <span className="text-ink-2">
+                            Tạo mới Nháp{!isLocked41 ? ' · Chặn gửi duyệt (chờ Chốt 4.1)' : ''}
+                          </span>
+                        ) : p.relation === 'draft' ? (
+                          <div className="space-y-0.5">
+                            <div className={p.mismatches > 0 || (p.mismatchDetails && p.mismatchDetails.length > 0) ? 'font-semibold text-amber-800' : 'text-ink-2'}>
+                              {p.mismatches > 0
+                                ? `Đang nháp · Lệch ${p.mismatches} chỉ tiêu phân rã`
+                                : p.mismatchDetails && p.mismatchDetails.length > 0
+                                ? 'Đang nháp · Có thay đổi số 4.1'
+                                : 'Đang nháp · Khớp bảng 4.1'}
+                            </div>
+                            {p.mismatchDetails && p.mismatchDetails.length > 0 && (
+                              <div className="text-2xs text-amber-700">
+                                {p.mismatchDetails.slice(0, 3).join(' · ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : p.lockedHasDiff ? (
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-rose-700">
+                              Đã duyệt / Đang trình · Lệch số 4.1 mới (Giữ nguyên &amp; gắn cờ)
+                            </div>
+                            {p.diffSummary && p.diffSummary.length > 0 && (
+                              <div className="text-2xs text-rose-600">
+                                {p.diffSummary.join(' · ')}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Đã gửi duyệt / Đã duyệt · Khớp 4.1 (Giữ nguyên)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* DESKTOP TABLE (>= 768px) */}
+              <table className="hidden md:table w-full min-w-[680px] text-xs">
                 <thead className="sticky top-0 bg-surface text-left text-ink-3 border-b border-line">
                   <tr>
                     <th className="px-3 py-2 font-medium">Gian hàng</th>

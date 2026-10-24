@@ -1237,13 +1237,13 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
+            <div className="overflow-x-auto touch-pan-x rounded-xl border border-slate-200 bg-white shadow-2xs">
               <table className="w-full min-w-[1100px] border-collapse text-xs">
                 <thead>
                   <tr>
                     <th
                       rowSpan={2}
-                      className="sticky left-0 z-20 min-w-[130px] sm:min-w-[190px] max-w-[145px] sm:max-w-none border-b border-r border-slate-200 bg-slate-50 px-2.5 sm:px-3 py-2 text-left font-bold text-slate-800"
+                      className="sticky left-0 z-20 min-w-[105px] max-w-[115px] sm:min-w-[190px] sm:max-w-none border-b border-r border-slate-200 bg-slate-50 px-2 sm:px-3 py-2 text-left font-bold text-slate-800"
                     >
                       Hạng mục
                     </th>
@@ -1339,7 +1339,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
                           return (
                             <tr key={def.id} className="border-b border-slate-100 hover:bg-slate-50/40">
-                              <td className="sticky left-0 z-10 max-w-[145px] sm:max-w-none truncate border-r border-slate-200 bg-white px-2.5 sm:px-3 py-1 font-medium text-slate-800" title={def.label}>
+                              <td className="sticky left-0 z-10 max-w-[115px] sm:max-w-none truncate border-r border-slate-200 bg-white px-2 sm:px-3 py-1 font-medium text-slate-800" title={def.label}>
                                 {def.label}
                               </td>
                               <td className="border-r border-slate-200 px-2 py-1 text-right tabular-nums text-2xs text-slate-400">
