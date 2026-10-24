@@ -10,8 +10,10 @@ import type {
   PlanDiscussionMessage,
   PlanDiscussionRole,
   PlanVersionSnapshot,
+  StorePortfolioItem,
   UserProfile
 } from '../types';
+import { brandPlanSectionsOf, FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess } from '../brandPlanAccess';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
 import { checkBreakdownForSubmit } from '../planBreakdownRules';
 import type { PlanChatMessage, UserMessageType } from '../planChat';
@@ -175,6 +177,50 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
   await assertPlanAccess(plan, actor, action);
   return plan;
 }
+/**
+ * Quyền với Plan tháng của Brand của một kế hoạch: PIC gian / quản lý sửa cả plan;
+ * người chỉ giữ vị trí Plan / Strategy hoặc Key Visual / SIS của gian sửa đúng phần đó; còn lại chỉ xem nếu có quyền xem.
+ */
+async function brandPlanAccessFor(plan: InputPlanBreakdownState, actor: UserProfile, stores: StorePortfolioItem[]): Promise<BrandPlanAccess> {
+  try {
+    await assertPlanAccess(plan, actor, 'write');
+    return FULL_BRAND_PLAN_ACCESS;
+  } catch (err) {
+    if (!(err instanceof PlanStoreError) || err.code !== 'FORBIDDEN') throw err;
+  }
+  const store = stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
+  const sections = brandPlanSectionsOf(store, actor.name);
+  if (sections.length > 0) return { full: false, sections };
+  await assertPlanAccess(plan, actor, 'read');
+  return { full: false, sections: [] };
+}
+
+export async function resolveBrandPlanAccess(id: string, actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }> {
+  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+  if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  const plan = toStored(row).plan;
+  const { data } = await readMasterCatalog();
+  return { plan, access: await brandPlanAccessFor(plan, actor, data.stores) };
+}
+
+/** Kế hoạch mở được ở màn Plan tháng của Brand: kế hoạch trong phạm vi + kế hoạch của gian mình giữ vị trí Plan / Strategy, Key Visual / SIS. */
+export async function listBrandPlanPlans(actor: UserProfile): Promise<{ plan: InputPlanBreakdownState; access: BrandPlanAccess }[]> {
+  const [rows, { data }] = await Promise.all([
+    prisma.monthlyPlan.findMany({ where: { deletedAt: null }, include: planInclude, orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }] }),
+    readMasterCatalog(),
+  ]);
+  const out: { plan: InputPlanBreakdownState; access: BrandPlanAccess }[] = [];
+  for (const row of rows) {
+    const plan = toStored(row).plan;
+    try {
+      out.push({ plan, access: await brandPlanAccessFor(plan, actor, data.stores) });
+    } catch (err) {
+      if (!(err instanceof PlanStoreError) || err.code !== 'FORBIDDEN') throw err;
+    }
+  }
+  return out;
+}
+
 /** Lấy danh sách kế hoạch. Lần đầu khi bảng trống sẽ nạp bộ kế hoạch mẫu ban đầu. */
 export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthlyPlan[]> {
   const [initialRows, { data }, allowed] = await Promise.all([

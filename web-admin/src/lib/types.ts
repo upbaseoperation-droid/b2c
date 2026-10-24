@@ -2416,6 +2416,10 @@ export interface StorePortfolioItem {
   growthPic?: string; // PIC phụ trách Growth
   contentPic?: string; // PIC phụ trách Content
   mediaPic?: string; // PIC phụ trách Media
+  /** Giám đốc gán theo gian: chỉ nhập phần Định hướng của Plan tháng của Brand */
+  planStrategyPic?: string;
+  /** Giám đốc gán theo gian: chỉ nhập phần Key Visual của Plan tháng của Brand */
+  keyVisualSisPic?: string;
   csListingPic?: string; // PIC CS Listing
   csDesignPic?: string; // PIC CS Design
   livestreamPic?: string; // PIC Livestream inhouse

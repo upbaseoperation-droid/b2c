@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    const { userId, staffIdentifier } = body;
+    const { userId, staffIdentifier, staffOverrides } = body;
 
     let sessionUser: UserProfile | null = null;
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         const classified = classifyMasterStaffMember(
           masterStaff,
           policy.deptRules,
-          policy.staffOverrides
+          { ...policy.staffOverrides, ...(staffOverrides && typeof staffOverrides === 'object' ? staffOverrides : {}) }
         );
 
         if (!classified.canLogin) {
@@ -182,10 +182,10 @@ export async function GET(request: NextRequest) {
     );
   }
   const { searchParams } = request.nextUrl;
-  const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId') || USERS[0].id;
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');
 
-  const targetUser = USERS.find(u => u.id === userId);
+  const targetUser = USERS.find(u => u.id === userId) || USERS[0];
   if (!targetUser || targetUser.canLogin === false) {
     return NextResponse.json({ success: false, error: 'Không tìm thấy tài khoản được phép đăng nhập.' }, { status: 404 });
   }

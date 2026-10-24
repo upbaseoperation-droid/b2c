@@ -62,6 +62,7 @@ import {
 import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDataset';
 import { WeeklyAirSyncDashboardSection } from './WeeklyAirSyncDashboardSection';
 import { StorePipelineFunnelOverview } from './StorePipelineFunnelOverview';
+import { PlanActualReportView } from './PlanActualReportView';
 
 interface ExecutiveDashboardReportsViewProps {
   currentUser: UserProfile;
@@ -77,6 +78,7 @@ interface ExecutiveDashboardReportsViewProps {
 type DashboardMainTab =
   | 'OVERVIEW_FINANCE'
   | 'STORE_PIPELINE'
+  | 'PLAN_ACTUAL'
   | 'STORE_SELLER'
   | 'VIDEO_CREATIVE'
   | 'TEAM_SLA'
@@ -94,7 +96,8 @@ const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
   'dashboard-staff': 'STAFF_EFFICIENCY',
 };
 
-const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
+// Tab không có mục riêng trên menu trái (Kế hoạch vs thực tế) không đổi tab menu khi chọn
+const DASHBOARD_TO_SIDEBAR_TAB: Partial<Record<DashboardMainTab, string>> = {
   OVERVIEW_FINANCE: 'dashboard-brand',
   STORE_PIPELINE: 'overview',
   STORE_SELLER: 'dashboard-store',
@@ -1179,6 +1182,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     const tabTitleMap: Record<DashboardMainTab, string> = {
       OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu, Ngân sách & Đối soát Kế toán (Gross/Net)',
       STORE_PIPELINE: 'Dashboard B2C — Tiến độ Phễu Vận Hành 69 Gian Hàng (0 → 18)',
+      PLAN_ACTUAL: 'Dashboard B2C — Kế hoạch tháng vs Thực tế theo gian hàng (KL, đợt, tuần)',
       STORE_SELLER: 'Dashboard B2C — 69 Gian hàng & TikTok Seller',
       VIDEO_CREATIVE: 'Dashboard B2C — Hiệu quả Video Booking (Paid/FOC) & Ads Creative',
       TEAM_SLA: 'Dashboard B2C — Lịch Air Tuần (W40–W45), Độ Đồng Loạt & Tiến Độ Video',
@@ -1237,6 +1241,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         items={[
           { key: 'OVERVIEW_FINANCE', label: 'Ngân sách & PnL' },
           { key: 'STORE_PIPELINE', label: 'Tiến độ 69 gian hàng' },
+          { key: 'PLAN_ACTUAL', label: 'Kế hoạch vs thực tế' },
           { key: 'STORE_SELLER', label: 'Gian hàng & Sàn' },
           { key: 'VIDEO_CREATIVE', label: 'Hiệu quả video' },
           { key: 'TEAM_SLA', label: 'Lịch đăng video' },
@@ -1259,6 +1264,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           onNotify={onNotify}
         />
       )}
+
+      {activeTab === 'PLAN_ACTUAL' && <PlanActualReportView onNotify={onNotify} />}
 
       {/* ========================================================================= */}
       {/* TAB 1: BÁO CÁO NGÂN SÁCH & PNL (THƯƠNG HIỆU, DÒNG TIỀN ĐNTT & KIỂM SOÁT)  */}

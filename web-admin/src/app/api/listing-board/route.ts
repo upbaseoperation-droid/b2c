@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { listingBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
 import { columnOf, isDirectConfirmEligible, itemFee } from '@/lib/listingBoardRules';
 import type { KocListingItem } from '@/lib/types';
@@ -13,7 +14,7 @@ interface ListingBoardData {
   items: KocListingItem[];
 }
 
-const keyOf = (planId: string) => `listing-board-${planId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)}`;
+const keyOf = listingBoardKey;
 
 // GET /api/listing-board?planId=... — danh sách KOC đã list cho một kế hoạch tháng
 export async function GET(request: NextRequest) {

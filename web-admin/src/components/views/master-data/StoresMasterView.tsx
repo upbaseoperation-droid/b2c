@@ -136,6 +136,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     hasBookingLeader: false,
     contentPic: '',
     mediaPic: '',
+    planStrategyPic: '',
+    keyVisualSisPic: '',
     backupOwnerName: '',
     isBackupActive: false,
     backupReason: '',
@@ -405,6 +407,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       hasBookingLeader: !!(s.hasBookingLeader && s.bookingLeader),
       contentPic: s.contentPic || '',
       mediaPic: s.mediaPic || '',
+      planStrategyPic: s.planStrategyPic || '',
+      keyVisualSisPic: s.keyVisualSisPic || '',
       backupOwnerName: s.backupOwnerName || '',
       isBackupActive: s.isBackupActive || false,
       backupReason: s.backupReason || '',
@@ -448,6 +452,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       hasBookingLeader: isLeaderSet,
       contentPic: form.contentPic.trim() || editingStore.contentPic,
       mediaPic: form.mediaPic.trim() || editingStore.mediaPic,
+      // Bỏ trống thì gỡ người phụ trách
+      planStrategyPic: form.planStrategyPic.trim() || undefined,
+      keyVisualSisPic: form.keyVisualSisPic.trim() || undefined,
       backupOwnerName: form.backupOwnerName.trim() || undefined,
       isBackupActive: form.isBackupActive,
       backupReason: form.backupReason.trim() || undefined,
@@ -1279,6 +1286,24 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     value={form.accountOwnerName}
                     departmentHint="ACCOUNT"
                     onChange={(name) => setForm(prev => ({ ...prev, accountOwnerName: name }))}
+                  />
+
+                  <StaffSearchSelect
+                    label="PIC Plan / Strategy"
+                    sublabel="(Chỉ nhập phần Định hướng của Plan tháng của Brand)"
+                    badgeColorClass="text-accent"
+                    placeholder="Chọn PIC Plan / Strategy..."
+                    value={form.planStrategyPic}
+                    onChange={(name) => setForm(prev => ({ ...prev, planStrategyPic: name }))}
+                  />
+
+                  <StaffSearchSelect
+                    label="PIC Key Visual / SIS"
+                    sublabel="(Chỉ nhập phần Key Visual của Plan tháng của Brand)"
+                    badgeColorClass="text-accent"
+                    placeholder="Chọn PIC Key Visual / SIS..."
+                    value={form.keyVisualSisPic}
+                    onChange={(name) => setForm(prev => ({ ...prev, keyVisualSisPic: name }))}
                   />
                 </div>
               </div>

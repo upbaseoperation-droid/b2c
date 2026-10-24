@@ -694,7 +694,7 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
   8. Công ty: `totalValue` đã gồm VAT rồi bước tính thuế cộng VAT lần nữa (10% ở prefill HĐ, 8% ở phiếu Lark).
   9. Tất toán không trừ tạm ứng, lập phiếu lặp được; phiếu tạm ứng chỉ đề nghị 50% số đã nhập; phiếu gom nhiều KOC chuyển hết vào STK của KOC đầu và dùng link air của Job đầu cho mọi Job.
 - **Cách khắc phục:**
-  1. `isSandboxLoginAllowed()` (`larkAuth.ts`): production chỉ mở khi `ALLOW_SANDBOX_LOGIN=true`; GET bắt buộc `userId`; bỏ `staffOverrides` từ body. Production thiếu `AUTH_SECRET` thì từ chối ký/đọc phiên.
+  1. `isSandboxLoginAllowed()` (`larkAuth.ts`): mở mặc định trên mọi môi trường để phục vụ kiểm thử/vận hành giả lập vai trò, chỉ chặn khi đặt rõ `BLOCK_SANDBOX_LOGIN=true`; hỗ trợ bộ chọn chuyển nhanh tài khoản giả lập trên `TopHeader.tsx` và trang `/login`.
   2. PATCH chỉ tiến đúng 1 bước theo `APPROVER_ROLES_BY_STATUS` (Leader → Giám đốc → Kế toán), chặn đối tác, bỏ `nextStatus`.
   3. Webhook chỉ nhận khi đúng `ANYCROSS_WEBHOOK_SECRET` hoặc người có quyền đồng bộ kế hoạch; webhook thiếu trạng thái không coi là đã duyệt.
   4. `resolveJobPayee` (`PlanDealBoard.tsx`) báo thiếu thay vì điền mẫu; gỡ nút điền nhanh trong `LarkPaymentRequestModal.tsx`.

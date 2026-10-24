@@ -1,24 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
+import { listBrandPlanPlans, resolveBrandPlanAccess } from '@/lib/server/monthlyPlanStore';
 import { isStaffGlobalAdminOrManager } from '@/lib/rbacScope';
 import { EMPTY_BRAND_PLAN, sanitizeBrandPlan, type BrandPlanData } from '@/lib/brandPlanRules';
+import { fieldsChangedOutside, mergeSections, SECTION_LABEL } from '@/lib/brandPlanAccess';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
 export const dynamic = 'force-dynamic';
 
 const keyOf = (planId: string) => `brand-plan-${planId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)}`;
 
-// GET /api/brand-plan?planId=... — plan tháng của Brand (định hướng, KPI, key visual, content theo sàn)
+// GET /api/brand-plan?planId=... — plan tháng của Brand (định hướng, KPI, key visual, content theo sàn) kèm quyền theo phần
+// GET /api/brand-plan?list=1 — kế hoạch mở được ở màn này (gồm gian mình giữ vị trí Plan / Strategy, Key Visual / SIS)
 export async function GET(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
+  if (request.nextUrl.searchParams.get('list') === '1') {
+    try {
+      return NextResponse.json({ plans: await listBrandPlanPlans(actor) });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
   const planId = request.nextUrl.searchParams.get('planId') || '';
   if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
   try {
-    await assertPlanIdAccess(planId, actor, 'read');
+    const { access } = await resolveBrandPlanAccess(planId, actor);
     const rec = await readRecord<BrandPlanData>(keyOf(planId), EMPTY_BRAND_PLAN);
-    return NextResponse.json({ data: sanitizeBrandPlan(rec.data), revision: rec.revision });
+    return NextResponse.json({ data: sanitizeBrandPlan(rec.data), revision: rec.revision, access });
   } catch (err) {
     if (err instanceof RecordError) return NextResponse.json({ error: err.message }, { status: err.status });
     return handlePlanError(err);
@@ -34,7 +43,10 @@ export async function PUT(request: NextRequest) {
     if (!body.planId || !body.data || typeof body.revision !== 'number') {
       return NextResponse.json({ error: 'Dữ liệu gửi lên không hợp lệ.' }, { status: 400 });
     }
-    const plan = await assertPlanIdAccess(body.planId, actor, 'write');
+    const { plan, access } = await resolveBrandPlanAccess(body.planId, actor);
+    if (!access.full && access.sections.length === 0) {
+      return NextResponse.json({ error: 'Bạn chỉ được xem plan này.' }, { status: 403 });
+    }
     const leaderName = plan.hasBookingLeader !== false ? (plan.bookingLeader || '').trim().toLowerCase() : '';
     const isLeader = Boolean(leaderName) && leaderName === actor.name.trim().toLowerCase();
     const canDecide = isStaffGlobalAdminOrManager(actor) || isLeader;
@@ -46,6 +58,18 @@ export async function PUT(request: NextRequest) {
       const strip = (d: BrandPlanData) => JSON.stringify({ ...d, approval: null });
       const contentChanged = strip(before) !== strip(next);
       const now = new Date().toISOString();
+      if (!access.full) {
+        // Người chỉ giữ vị trí: nhập đúng phần được giao, không gửi / rút / duyệt plan
+        if (from !== to) throw new RecordError('Chỉ PIC gian gửi duyệt hoặc rút lại plan.', 403);
+        const outside = fieldsChangedOutside(before, next, access.sections);
+        if (outside.length > 0) {
+          throw new RecordError(`Bạn chỉ được sửa phần ${access.sections.map(s => SECTION_LABEL[s]).join(', ')} của plan này.`, 403);
+        }
+        if ((from === 'PENDING' || from === 'APPROVED') && contentChanged) {
+          throw new RecordError(from === 'PENDING' ? 'Plan đang chờ duyệt nên không sửa được.' : 'Plan đã được duyệt nên không sửa được.', 423);
+        }
+        return { ...mergeSections(before, next, access.sections), approval: before.approval };
+      }
       if (from === to) {
         // Không đổi trạng thái: giữ nguyên thông tin duyệt, chỉ cho sửa nội dung khi đang là nháp hoặc cần sửa
         if ((from === 'PENDING' || from === 'APPROVED') && contentChanged) {

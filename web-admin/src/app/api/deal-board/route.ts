@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
+import { dealBoardKey } from '@/lib/server/boardKeys';
 import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
 import { planJobToBookingDeal } from '@/lib/planDealLink';
 import type { BookingDealItem } from '@/lib/types';
@@ -17,7 +18,7 @@ import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_s
 
 export const dynamic = 'force-dynamic';
 
-const keyOf = (planId: string) => `deal-board-${planId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)}`;
+const keyOf = dealBoardKey;
 
 // GET /api/deal-board?planId=... — các deal & job của một kế hoạch tháng
 // GET /api/deal-board?all=1 — tổng hợp toàn bộ Deal/Job từ mọi kế hoạch sang định dạng BookingDealItem[] để đồng bộ sang Hồ sơ KOC & Dashboard

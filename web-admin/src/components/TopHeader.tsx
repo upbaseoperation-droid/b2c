@@ -1,12 +1,30 @@
 'use client';
 
 import React from 'react';
-import { Menu, Building2, PanelLeftOpen, PanelLeftClose, LogOut, Loader2 } from 'lucide-react';
+import { Menu, Building2, PanelLeftOpen, PanelLeftClose, LogOut, Loader2, ChevronDown } from 'lucide-react';
 import { UserProfile } from '../lib/types';
+import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
 import { resolveNavGroupTabKey } from '../lib/navGroups';
 import { PageActionsSlot, PageHeaderNavSlot, Segmented } from './ui';
 import type { UserScopeSummary } from '../lib/rbacScope';
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: 'Quản trị',
+  MANAGER: 'Trưởng phòng B2C',
+  GROWTH_MANAGER: 'Trưởng phòng Growth',
+  MEDIA_MANAGER: 'Trưởng phòng Media',
+  LEADER: 'Trưởng nhóm',
+  MEMBER: 'Chuyên viên',
+  BRAND_MEMBER: 'Brand PIC',
+  CONTENT_MEMBER: 'Content',
+  BOOKING_MEMBER: 'Booking B2C',
+  GROWTH_MEMBER: 'Growth',
+  MEDIA_MEMBER: 'Media',
+  BRAND_PARTNER: 'Đối tác Brand',
+  KOC_PARTNER: 'KOC / KOL',
+  CTV_PARTNER: 'Cộng tác viên',
+};
 
 interface TopHeaderProps {
   currentUser: UserProfile;
@@ -29,6 +47,7 @@ interface TopHeaderProps {
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
+  onUserChange,
   title,
   activeTab,
   groupTabs,
@@ -109,6 +128,49 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <PageActionsSlot />
+
+        {onUserChange && (
+          <label className="hidden sm:inline-flex relative items-center h-8 pl-2.5 pr-7 rounded-md border border-line bg-surface hover:bg-sunken transition-colors text-xs text-ink cursor-pointer shrink-0">
+            <span className="text-ink-3 mr-1.5 hidden xl:inline">Vai trò:</span>
+            <select
+              value={USERS.some(u => u.id === currentUser.id) ? currentUser.id : ''}
+              onChange={(e) => {
+                const u = USERS.find((item) => item.id === e.target.value);
+                if (u) onUserChange(u);
+              }}
+              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[210px] truncate"
+              aria-label="Chuyển tài khoản giả lập"
+            >
+              {!USERS.some(u => u.id === currentUser.id) && (
+                <option value="">
+                  {currentUser.name} · {ROLE_LABEL[currentUser.role] ?? currentUser.role}
+                </option>
+              )}
+              <optgroup label="Ban Điều Hành & Quản Trị">
+                {USERS.filter(u => ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(u.role)).map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Trưởng Nhóm & Chuyên Viên Nội Bộ">
+                {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'GROWTH_MEMBER', 'MEDIA_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} · {user.id.startsWith('contract-demo-') ? user.roleTitle : (ROLE_LABEL[user.role] ?? user.role)}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Đối Tác Bên Thứ 3">
+                {USERS.filter(u => ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2 pointer-events-none" />
+          </label>
+        )}
 
         {onLogout && (
           <button

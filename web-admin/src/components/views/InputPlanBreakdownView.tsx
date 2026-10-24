@@ -38,6 +38,7 @@ import {
   InputPlanRowItem, 
   InputPlanChannelType,
   CorePlanMetricsLayer1,
+  PlanTierKey,
   UserProfile, 
   StaffDetailedPlanItem,
   SalaryGrade,
@@ -61,7 +62,13 @@ import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
 import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
 import { MonthlyPlanHub } from './MonthlyPlanHub';
 import { PlanWeeklyBreakdown } from './PlanWeeklyBreakdown';
-import { checkBreakdownForSubmit } from '../../lib/planBreakdownRules';
+import {
+  TIER_KEYS,
+  checkBreakdownForSubmit,
+  distributeItemsToWeeks,
+  hasBreakdownData,
+  resolveWeekRows,
+} from '../../lib/planBreakdownRules';
 import {
   INITIAL_MONTHLY_PLANS,
   getPlanVersionSnapshots,
@@ -1066,54 +1073,119 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return Object.values(summaryMap).filter(s => s.videoCount > 0 || s.staffName === planState.pic);
   }, [planState.items, planState.pic]);
 
+  const handleDistributeStep2ToWeeksAndOpen = () => {
+    const nextRows = distributeItemsToWeeks(planState, 'EVEN');
+    setPlanState(prev => ({ ...prev, weeklyBreakdown: nextRows }));
+    setActiveTab('WEEKLY_MATRIX');
+    notify('Đã tự động phân bổ số lượng & ngân sách từ Bước 2 xuống 4 tuần.');
+  };
+
+  const handleOpenWeeklyMatrixStep = () => {
+    if (!isPlanLocked) {
+      const currentRows = resolveWeekRows(planState);
+      const hasStep2Data = (planState.items || []).some(it => !it.id.startsWith('WB-') && (it.qty > 0 || it.totalBudget > 0));
+      if (!hasBreakdownData(currentRows) && hasStep2Data) {
+        const nextRows = distributeItemsToWeeks(planState, 'EVEN');
+        setPlanState(prev => ({ ...prev, weeklyBreakdown: nextRows }));
+        notify('Đã tự động chia đều số lượng & ngân sách Bước 2 xuống 4 tuần (có thể đổi tỷ trọng hoặc sửa từng ô).');
+      }
+    }
+    setActiveTab('WEEKLY_MATRIX');
+  };
+
   const handleGenerateBookingSlots = () => {
     const generatedSlots: StaffDetailedPlanItem[] = [];
     const brandOnly = planState.brandName.split('_')[0] || planState.brandName;
+    const weekRows = resolveWeekRows(planState);
+    const weekKeys: Array<'W1' | 'W2' | 'W3' | 'W4'> = ['W1', 'W2', 'W3', 'W4'];
 
-    planState.items.forEach(item => {
-      if (item.qty <= 0) return;
-      const slotsToGen = Math.min(item.qty, 8);
-      const assignee = item.assignedStaff || planState.pic;
-
-      for (let i = 1; i <= slotsToGen; i++) {
+    planState.items
+      .filter(it => !it.id.startsWith('WB-'))
+      .forEach(item => {
+        if (item.qty <= 0) return;
+        const assignee = item.assignedStaff || planState.pic;
         const salaryGrade = (item.salaryGrade || (item.tierCode.startsWith('KL') ? item.tierCode : 'KL3')) as SalaryGrade;
-        const kocTier = ['KL6', 'KL7'].includes(salaryGrade) 
-          ? 'TIER_1_CELEB' 
-          : ['KL4', 'KL5'].includes(salaryGrade) 
-          ? 'TIER_2_MACRO' 
-          : salaryGrade === 'KL3' 
-          ? 'TIER_3_MICRO' 
+        const kocTier = ['KL6', 'KL7'].includes(salaryGrade)
+          ? 'TIER_1_CELEB'
+          : ['KL4', 'KL5'].includes(salaryGrade)
+          ? 'TIER_2_MACRO'
+          : salaryGrade === 'KL3'
+          ? 'TIER_3_MICRO'
           : 'TIER_4_AFFILIATE';
 
-        generatedSlots.push({
-          id: `slot-auto-${Date.now()}-${item.id}-${i}`,
-          staffName: assignee,
-          month: planState.month,
-          brandName: brandOnly,
-          tier: kocTier,
-          salaryGrade: salaryGrade,
-          targetWeek: 'W1',
-          kocStageName: `[Slot ${item.tierLabel.split(':')[0]}] #${i}`,
-          channelId: `@koc_${item.platform.toLowerCase()}_${i}`,
-          tepKenh: 'Beauty',
-          contentPillar: item.contentFormat,
-          budgetEstimated: item.unitCost,
-          targetGmv: item.unitCost * item.expectedRoiMultiplier,
-          status: 'DRAFT',
-          leadNotes: item.staffNotes
-            ? `[Giao bởi PIC ${planState.pic}]: ${item.staffNotes} (${item.platform} - ${item.contentFormat})`
-            : `[Giao bởi PIC ${planState.pic}]: Phân rã từ Input Plan (${item.platform} - ${item.contentFormat})`,
-          updatedAt: getVietnamDateTimeShort()
+        // Tính tỷ trọng từng tuần từ bảng phân rã tuần (nếu đã chia tuần)
+        const upperTier = item.tierCode.toUpperCase() as PlanTierKey;
+        const rawWeekWeights = weekKeys.map((_, wi) => {
+          const r = weekRows[wi];
+          if (!r) return 1;
+          if (item.channel === 'TIKTOK' && TIER_KEYS.includes(upperTier)) {
+            return r.tiers?.[upperTier]?.qty || 0;
+          }
+          if (item.tierCode.includes('TAP') || item.id === 'row-tt-tap' || item.unitCost === 0) {
+            return (r.foc?.tapBrand || 0) + (r.foc?.tap || 0) + (r.foc?.tapUp || 0);
+          }
+          if (item.channel === 'SELF_CHANNEL') {
+            return (
+              (r.self?.reviewVoice || 0) +
+              (r.self?.videoAi || 0) +
+              (r.self?.videoRemix || 0) +
+              (r.self?.videoToLive || 0) +
+              (r.self?.nhacText || 0)
+            );
+          }
+          if (item.channel === 'LIVESTREAM') {
+            return r.live?.sessions || 0;
+          }
+          return 1;
         });
-      }
-    });
+
+        const weightSum = rawWeekWeights.reduce((s, w) => s + w, 0);
+        const normWeights =
+          weightSum > 0 ? rawWeekWeights.map(w => w / weightSum) : weekKeys.map(() => 0.25);
+
+        let rem = item.qty;
+        const slotsPerWeek = normWeights.map((w, idx) => {
+          if (idx === normWeights.length - 1) return Math.max(0, rem);
+          const c = Math.min(rem, Math.max(0, Math.round(item.qty * w)));
+          rem -= c;
+          return c;
+        });
+
+        let slotSeq = 0;
+        slotsPerWeek.forEach((weekCount, wi) => {
+          const targetWeek = weekKeys[wi] || 'W1';
+          for (let k = 0; k < weekCount; k++) {
+            slotSeq += 1;
+            generatedSlots.push({
+              id: `slot-auto-${Date.now()}-${item.id}-${slotSeq}`,
+              staffName: assignee,
+              month: planState.month,
+              brandName: brandOnly,
+              tier: kocTier,
+              salaryGrade: salaryGrade,
+              targetWeek,
+              kocStageName: `[Slot ${item.tierLabel.split(':')[0]}] #${slotSeq} (${targetWeek})`,
+              channelId: `@koc_${item.platform.toLowerCase()}_${slotSeq}`,
+              tepKenh: 'Beauty',
+              contentPillar: item.contentFormat,
+              budgetEstimated: item.unitCost,
+              targetGmv: item.unitCost * item.expectedRoiMultiplier,
+              status: 'DRAFT',
+              leadNotes: item.staffNotes
+                ? `[Giao bởi PIC ${planState.pic} · ${targetWeek}]: ${item.staffNotes} (${item.platform} - ${item.contentFormat})`
+                : `[Giao bởi PIC ${planState.pic} · ${targetWeek}]: Phân rã từ Input Plan (${item.platform} - ${item.contentFormat})`,
+              updatedAt: getVietnamDateTimeShort(),
+            });
+          }
+        });
+      });
 
     if (onGenerateDealsFromPlan && generatedSlots.length > 0) {
       onGenerateDealsFromPlan(generatedSlots);
     }
 
     const assignedCount = staffAllocationSummary.filter(s => s.videoCount > 0).length;
-    notify(`PIC ${planState.pic} đã phân bổ thành công ${generatedSlots.length} slot KOC cho ${assignedCount} nhân sự trong team Booking!`);
+    notify(`PIC ${planState.pic} đã bàn giao ${generatedSlots.length} slot KOC theo tuần (W1–W4) cho ${assignedCount} nhân sự thực thi!`);
     setIsAllocationModalOpen(false);
   };
 
@@ -1675,7 +1747,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('WEEKLY_MATRIX')}
+            onClick={handleOpenWeeklyMatrixStep}
             className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer shrink-0 ${
               activeTab === 'WEEKLY_MATRIX'
                 ? 'bg-white text-blue-700 shadow-2xs'
@@ -2635,16 +2707,27 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               ))}
             </div>
 
-            {/* Bên phải: Thao tác khớp chỉ tiêu + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
+            {/* Bên phải: Thao tác khớp chỉ tiêu + Chia xuống 4 tuần + Chuyển chế độ Bảng / Sơ đồ nhánh */}
             <div className="flex items-center gap-2 flex-wrap">
               {!isPlanLocked && (
-                <button
-                  type="button"
-                  onClick={handleSyncLayer1ToLayer2}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold transition cursor-pointer"
-                >
-                  Khớp theo chỉ tiêu
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSyncLayer1ToLayer2}
+                    className="px-2.5 py-1 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold transition cursor-pointer"
+                  >
+                    Khớp theo chỉ tiêu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDistributeStep2ToWeeksAndOpen}
+                    className="px-2.5 py-1 rounded-lg text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+                    title="Chia số lượng & ngân sách hiện tại xuống 4 tuần và chuyển sang Bước 3"
+                  >
+                    <span>Chia xuống 4 tuần</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </>
               )}
 
               <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
@@ -2971,6 +3054,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           plan={planState}
           readOnly={isPlanLocked || !['DRAFT', 'REVISION_REQUESTED'].includes(planStatus)}
           onChange={patch => setPlanState(prev => ({ ...prev, ...patch }))}
+          onNotify={notify}
         />
       )}
 

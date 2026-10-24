@@ -7,6 +7,7 @@ import { Button, ConfirmDialog, Field, Input, Select, Textarea } from '../ui';
 import { CONTENT_PILLARS } from '../../lib/contentPillars';
 import { weekLabelsForMonth } from '../../lib/planBreakdownRules';
 import { usePlanRecord } from '../../lib/usePlanRecord';
+import { SECTION_FIELDS, SECTION_LABEL, type BrandPlanAccess } from '../../lib/brandPlanAccess';
 import {
   APPROVAL_LABEL,
   CHANNEL_LABEL,
@@ -98,6 +99,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'info') => onNotify?.(msg, type);
 
   const [plans, setPlans] = useState<InputPlanBreakdownState[]>([]);
+  const [accessById, setAccessById] = useState<Record<string, BrandPlanAccess>>({});
   const [plansState, setPlansState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
@@ -108,11 +110,14 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+        // Gồm cả kế hoạch của gian mình giữ vị trí Plan / Strategy, Key Visual / SIS
+        const res = await fetch('/api/brand-plan?list=1', { cache: 'no-store' });
         const body = await res.json().catch(() => null);
         if (!res.ok) throw new Error(body?.error || `Lỗi ${res.status}`);
         if (cancelled) return;
-        setPlans((body.plans as { plan: InputPlanBreakdownState }[]).map(p => p.plan));
+        const rows = body.plans as { plan: InputPlanBreakdownState; access: BrandPlanAccess }[];
+        setPlans(rows.map(p => p.plan));
+        setAccessById(Object.fromEntries(rows.map(p => [p.plan.id, p.access])));
         setPlansState('ready');
       } catch (err) {
         if (cancelled) return;
@@ -222,13 +227,27 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     return normalizeName(r.pic) === normalizeName(currentUserName);
   };
 
+  // Quyền theo phần: PIC gian sửa cả plan; PIC Plan / Strategy, Key Visual / SIS chỉ thấy và sửa phần được giao (máy chủ cũng chặn)
+  const access: BrandPlanAccess = (plan && accessById[plan.id]) || { full: false, sections: [] };
+  const sectionOnly = !access.full && access.sections.length > 0;
+  const readOnly = !access.full && access.sections.length === 0;
+  const allowedFields = useMemo(() => new Set(access.sections.flatMap(s => SECTION_FIELDS[s])), [access.sections]);
+
   const approvalStatus = data.approval.status;
-  const locked = approvalStatus === 'PENDING' || approvalStatus === 'APPROVED';
+  const locked = approvalStatus === 'PENDING' || approvalStatus === 'APPROVED' || readOnly;
   const [decisionNote, setDecisionNote] = useState('');
 
   const patch = (next: Partial<BrandPlanData>) => {
+    if (readOnly) {
+      notify('Bạn chỉ được xem plan này.', 'warning');
+      return;
+    }
     if (locked) {
       notify(approvalStatus === 'PENDING' ? 'Plan đang chờ duyệt, rút lại để sửa tiếp.' : 'Plan đã được duyệt, cần người duyệt yêu cầu mở lại.', 'warning');
+      return;
+    }
+    if (sectionOnly && (Object.keys(next) as (keyof BrandPlanData)[]).some(k => !allowedFields.has(k))) {
+      notify(`Bạn chỉ được sửa phần ${access.sections.map(s => SECTION_LABEL[s]).join(', ')}.`, 'warning');
       return;
     }
     update({ ...data, ...next });
@@ -241,7 +260,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
   };
   const patchRow = (id: string, next: Partial<BrandPlanRow>) => patch({ rows: data.rows.map(r => (r.id === id ? { ...r, ...next } : r)) });
 
-  const tabs: { key: PlanTab; label: string }[] = [
+  const allTabs: { key: PlanTab; label: string }[] = [
     { key: 'DIRECTION', label: '1. Định hướng' },
     { key: 'KPI', label: '2. KPI tháng' },
     { key: 'KEY_VISUAL', label: '3. Key Visual' },
@@ -250,6 +269,10 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
     { key: 'PILLAR', label: 'Pillar' },
     { key: 'CHECK', label: issues.length ? `Kiểm tra (${issues.length})` : 'Kiểm tra' },
   ];
+  const tabs = sectionOnly
+    ? allTabs.filter(t => (t.key === 'DIRECTION' && access.sections.includes('STRATEGY')) || (t.key === 'KEY_VISUAL' && access.sections.includes('KEY_VISUAL')))
+    : allTabs;
+  const activeTab: PlanTab = tabs.some(t => t.key === tab) ? tab : tabs[0]?.key ?? 'DIRECTION';
 
   /* ------------------------------------------------------- 1. Định hướng */
   const renderDirection = () => {
@@ -1010,12 +1033,12 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                   {data.approval.decidedBy && approvalStatus !== 'PENDING' ? ` · ${data.approval.decidedBy}` : ''}
                   {approvalStatus === 'PENDING' && data.approval.submittedBy ? ` · ${data.approval.submittedBy} gửi` : ''}
                 </span>
-                {(approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
+                {access.full && (approvalStatus === 'DRAFT' || approvalStatus === 'CHANGES') && (
                   <Button size="md" variant="primary" disabled={errorCount > 0} title={errorCount > 0 ? 'Còn lỗi ở tab Kiểm tra' : undefined} onClick={() => changeApproval('PENDING')}>
                     {catalogStore?.bookingLeader ? `Gửi Trưởng nhóm (${catalogStore.bookingLeader})` : 'Trình duyệt Giám đốc Marketing'}
                   </Button>
                 )}
-                {approvalStatus === 'PENDING' && (
+                {access.full && approvalStatus === 'PENDING' && (
                   <>
                     <Button size="md" variant="primary" onClick={() => changeApproval('APPROVED')}>
                       Duyệt
@@ -1028,7 +1051,7 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                     </Button>
                   </>
                 )}
-                {approvalStatus === 'APPROVED' && (
+                {access.full && approvalStatus === 'APPROVED' && (
                   <Button size="md" variant="secondary" disabled={!decisionNote.trim()} title={decisionNote.trim() ? undefined : 'Nhập lý do mở lại'} onClick={() => changeApproval('CHANGES', decisionNote.trim())}>
                     Mở lại để sửa
                   </Button>
@@ -1048,28 +1071,34 @@ export const BrandMonthlyPlanForm: React.FC<BrandMonthlyPlanFormProps> = ({ curr
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`rounded-md px-3 py-1.5 text-[13px] transition ${tab === t.key ? 'bg-accent-soft font-medium text-ink' : 'text-ink-3 hover:bg-sunken'}`}
+                  className={`rounded-md px-3 py-1.5 text-[13px] transition ${activeTab === t.key ? 'bg-accent-soft font-medium text-ink' : 'text-ink-3 hover:bg-sunken'}`}
                 >
                   {t.label}
                 </button>
               ))}
             </div>
 
+            {sectionOnly && (
+              <div className="text-xs text-ink-3">
+                Bạn được giao phần {access.sections.map(s => SECTION_LABEL[s]).join(', ')} của gian này. PIC gian gửi duyệt cả plan.
+              </div>
+            )}
+            {readOnly && <div className="text-xs text-ink-3">Bạn chỉ được xem plan này.</div>}
             {approvalStatus === 'CHANGES' && data.approval.note && <div className="rounded-md border border-critical px-3 py-2 text-[13px] text-critical">Cần sửa: {data.approval.note}</div>}
-            {(approvalStatus === 'PENDING' || approvalStatus === 'APPROVED') && (
+            {access.full && (approvalStatus === 'PENDING' || approvalStatus === 'APPROVED') && (
               <div className="flex flex-wrap items-center gap-2">
                 <Input className="max-w-[420px]" placeholder={approvalStatus === 'PENDING' ? 'Lý do khi yêu cầu sửa' : 'Lý do khi mở lại'} value={decisionNote} onChange={e => setDecisionNote(e.target.value)} />
                 <span className="text-xs text-ink-3">{approvalStatus === 'PENDING' ? 'Plan đang chờ duyệt, không sửa được.' : 'Plan đã duyệt, không sửa được.'}</span>
               </div>
             )}
             <div className={locked ? 'pointer-events-none select-none opacity-60' : ''}>
-            {tab === 'DIRECTION' && renderDirection()}
-            {tab === 'KPI' && renderKpi()}
-            {tab === 'KEY_VISUAL' && renderKeyVisual()}
-            {tab === 'TIKTOK' && renderChannel('TIKTOK')}
-            {tab === 'SHOPEE' && renderChannel('SHOPEE')}
-            {tab === 'PILLAR' && renderPillars()}
-            {tab === 'CHECK' && renderChecks()}
+            {activeTab === 'DIRECTION' && renderDirection()}
+            {activeTab === 'KPI' && renderKpi()}
+            {activeTab === 'KEY_VISUAL' && renderKeyVisual()}
+            {activeTab === 'TIKTOK' && renderChannel('TIKTOK')}
+            {activeTab === 'SHOPEE' && renderChannel('SHOPEE')}
+            {activeTab === 'PILLAR' && renderPillars()}
+            {activeTab === 'CHECK' && renderChecks()}
             </div>
           </>
         )}
