@@ -32,7 +32,14 @@ export async function GET(request: NextRequest) {
         listMonthlyPlans(actor),
         readRecord<{ items: FrameworkContract[] }>('koc-framework-contracts', { items: [] }),
       ]);
-      const fwById = new Map((frameworks.data.items || []).map(i => [i.id, i]));
+      const fwById = new Map<string, FrameworkContract>();
+      for (const item of frameworks.data.items || []) {
+        fwById.set(normHandle(item.id), item);
+        for (const ch of item.coveredHandles || []) {
+          const normCh = normHandle(ch);
+          if (normCh && !fwById.has(normCh)) fwById.set(normCh, item);
+        }
+      }
       const bookingDeals: BookingDealItem[] = [];
       await Promise.all(
         storedPlans.map(async ({ plan }) => {

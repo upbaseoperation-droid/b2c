@@ -199,6 +199,26 @@ export async function POST(request: NextRequest) {
   try {
     seedInitialPaymentSlips();
     const body = (await request.json()) as {
+      mode?: 'SYNC_LARK_32_BOOKING_LIST';
+      jobs?: Array<{
+        jobId: string;
+        jobCode: string;
+        dealCode: string;
+        brandName: string;
+        storeName: string;
+        month: string;
+        kocName: string;
+        kocHandle: string;
+        grade: string;
+        fee: number;
+        sampleStatus?: string;
+        trackingNo?: string;
+        airLink?: string;
+        airedAt?: string;
+        sparkAdsCode?: string;
+        acceptanceStatus?: string;
+        existingRecordId?: string;
+      }>;
       requestType?: PaymentRequestType;
       deals?: BookingDealItem[];
       kocs?: KocItem[];
@@ -208,6 +228,31 @@ export async function POST(request: NextRequest) {
       note?: string;
       month?: string;
     };
+
+    if (body.mode === 'SYNC_LARK_32_BOOKING_LIST') {
+      const jobs = Array.isArray(body.jobs) ? body.jobs : [];
+      if (jobs.length === 0) {
+        return NextResponse.json({ success: false, error: 'Chưa có Job nào để đồng bộ sang Bảng 3.2.' }, { status: 400 });
+      }
+      const nowIso = new Date().toISOString();
+      const syncedJobs = jobs.map((j, idx) => {
+        const isAired = Boolean((j.airLink || '').trim());
+        const larkRecordId = j.existingRecordId || `recLark32_${j.jobCode.replace(/[^A-Z0-9]/gi, '')}_${String(idx + 1).padStart(2, '0')}`;
+        return {
+          jobId: j.jobId,
+          jobCode: j.jobCode,
+          larkRecordId,
+          syncedAt: nowIso,
+          milestone: isAired ? 'MILESTONE_2_AIRED_ACCEPTED' : 'MILESTONE_1_BOOKED',
+          isFoc: j.fee === 0 || j.grade === 'TAP UpAffiliate' || j.grade === 'FOC',
+        };
+      });
+      return NextResponse.json({
+        success: true,
+        syncedCount: syncedJobs.length,
+        syncedJobs,
+      });
+    }
 
     const requestType: PaymentRequestType = body.requestType === 'ADVANCE' ? 'ADVANCE' : 'SETTLEMENT';
     const deals = Array.isArray(body.deals) ? body.deals : [];

@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
   const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
-    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string };
+    const body = (await request.json()) as { planId?: string; sheetUrl?: string; tab?: string; tabName?: string };
     const planId = body.planId || '';
+    const tab = (body.tab || body.tabName || '').trim();
     const spreadsheetId = parseSpreadsheetId(body.sheetUrl || '');
-    if (!planId || !spreadsheetId || !(body.tab || '').trim()) {
+    if (!planId || !spreadsheetId || !tab) {
       return NextResponse.json({ error: 'Thiếu mã kế hoạch, tên tab hoặc link Google Sheet không hợp lệ.', code: 'INVALID' }, { status: 400 });
     }
     if (!isGoogleSheetsConfigured()) {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
     await assertPlanIdAccess(planId, actor, 'write');
 
-    const { header, rows } = await readTab({ spreadsheetId, tab: body.tab!.trim() });
+    const { header, rows } = await readTab({ spreadsheetId, tab });
     const col = (name: string) => header.find(h => normHeader(h) === normHeader(name));
     const keyCol = col('ID kênh');
     const decisionCol = col('Brand duyệt');
@@ -275,11 +276,24 @@ export async function POST(request: NextRequest) {
         const h = normHandle(deal.kocHandle);
         let dealTouched = false;
         const nextJobs = (deal.jobs || []).map(job => {
-          const bCode = (job.briefCode || '').trim().toUpperCase();
+          const bCode = (job.briefCode || (job.slotId ? briefCodeBySlotId.get(job.slotId) : '') || '').trim().toUpperCase();
           const d = (bCode ? decisionsByComposite.get(`${h}::${bCode}`) : undefined) || decisions.get(h);
           if (!d) return job;
           let nextJob = { ...job, script: { ...job.script } };
           let jobTouched = false;
+          if (d.scriptLink && !nextJob.script.scriptUrl) {
+            nextJob.script.scriptUrl = d.scriptLink;
+            jobTouched = true;
+          }
+          if (d.demoLink && !nextJob.script.demoUrl) {
+            nextJob.script.demoUrl = d.demoLink;
+            jobTouched = true;
+          }
+          if (d.airLink && !nextJob.airLink) {
+            nextJob.airLink = d.airLink;
+            nextJob.airedAt = nextJob.airedAt || nowYmd;
+            jobTouched = true;
+          }
           if (d.brandScriptDecision && d.brandScriptDecision !== nextJob.script.status) {
             nextJob.script.status = d.brandScriptDecision;
             nextJob.script.at = nowYmd;

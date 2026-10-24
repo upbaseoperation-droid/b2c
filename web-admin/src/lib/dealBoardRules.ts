@@ -1101,8 +1101,16 @@ export function jobPaymentBlocker(job: DealJob): string {
     if (job.legalReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Pháp chế duyệt (SLA 24h).';
     if (job.financeReviewStatus !== 'APPROVED') return 'Hợp đồng >= 50M (hoặc sửa điều khoản) chưa được Tài chính duyệt (SLA 48h).';
   }
-  if (!isFoc && requiresLateSigningExplanation(job) && !job.lateSigningExplanation?.confirmedByLead?.trim()) {
+  const leadConfirmed = Boolean(
+    job.lateSigningExplanation?.leadConfirmed ||
+      job.lateSigningExplanation?.confirmedByLead?.trim() ||
+      job.lateSigningExplanation?.leadConfirmedBy?.trim()
+  );
+  if (!isFoc && requiresLateSigningExplanation(job) && !leadConfirmed) {
     return 'Phụ lục ký muộn (< 1 ngày trước Air hoặc sau Air) — bắt buộc điền Giải trình ký muộn (Mục 3.5) có xác nhận của Booking Lead.';
+  }
+  if (job.closingAudit?.accountStatus === 'RETURNED' || job.closingAudit?.financeStatus === 'RETURNED') {
+    return 'Hồ sơ nghiệm thu của Job đang bị Account / Kế toán trả lỗi (Pipeline 14.3) — cần khắc phục trước khi thanh toán.';
   }
   if (!job.airLink.trim() && job.productionMode !== 'PRODUCTION_ONLY') return 'Job chưa có link video lên sóng (link air).';
   const videoCleared = job.acceptance.status === 'PASSED' || Boolean(job.acceptance.confirmedBy);
@@ -1500,7 +1508,12 @@ export function dealIssues(deals: PlanDeal[], now = today()): DealIssue[] {
       if (!sampleBlockedByBrand && j.airedAt && j.deadline && j.airedAt > j.deadline) {
         out.push({ level: 'warning', dealCode: j.code, text: `Air trễ ${dayDiff(j.deadline, j.airedAt)} ngày.` });
       }
-      if (requiresLateSigningExplanation(j) && !j.lateSigningExplanation?.confirmedByLead?.trim()) {
+      const isLeadConfirmed = Boolean(
+        j.lateSigningExplanation?.leadConfirmed ||
+          j.lateSigningExplanation?.confirmedByLead?.trim() ||
+          j.lateSigningExplanation?.leadConfirmedBy?.trim()
+      );
+      if (requiresLateSigningExplanation(j) && !isLeadConfirmed) {
         out.push({
           level: 'error',
           dealCode: j.code,

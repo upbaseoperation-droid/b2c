@@ -423,33 +423,37 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         const pRes = await fetch('/api/monthly-plans', { cache: 'no-store' });
         const pBody = await pRes.json().catch(() => null);
         const allPlans = ((pBody?.plans as Array<{ plan: { id: string; storeName?: string; brandName?: string } }>) || []).map(p => p.plan);
-        const matchedPlans = allPlans.filter(
-          p =>
-            (p.storeName || '').toLowerCase() === (targetStore.storeName || '').toLowerCase() ||
-            (p.brandName || '').toLowerCase() === (targetStore.brandName || '').toLowerCase()
-        );
+        const matchedPlans = allPlans.filter(p => {
+          const pStore = (p.storeName || '').trim().toLowerCase();
+          const tStore = (targetStore.storeName || '').trim().toLowerCase();
+          if (pStore && tStore) return pStore === tStore;
+          return (p.brandName || '').trim().toLowerCase() === (targetStore.brandName || '').trim().toLowerCase();
+        });
         for (const mp of matchedPlans) {
           const dRes = await fetch(`/api/deal-board?planId=${encodeURIComponent(mp.id)}`, { cache: 'no-store' });
           const dBody = await dRes.json().catch(() => null);
           const board = dBody?.data as { deals?: Array<{ id: string; pic?: string; jobs?: Array<{ id: string; pic?: string; payment?: { status?: string } }> }> } | undefined;
+          const revision = typeof dBody?.revision === 'number' ? dBody.revision : 0;
           if (dRes.ok && board?.deals && board.deals.length > 0) {
-            let changed = false;
+            let planChanged = false;
             const nextDeals = board.deals.map(deal => {
+              let dealChanged = false;
               const nextJobs = (deal.jobs || []).map(job => {
                 if (job.payment?.status !== 'PAID') {
                   transferredCount += 1;
-                  changed = true;
+                  dealChanged = true;
+                  planChanged = true;
                   return { ...job, pic: nextOwner };
                 }
                 return job;
               });
-              return changed ? { ...deal, pic: nextOwner, jobs: nextJobs } : deal;
+              return dealChanged ? { ...deal, pic: nextOwner, jobs: nextJobs } : deal;
             });
-            if (changed) {
+            if (planChanged) {
               await fetch('/api/deal-board', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ planId: mp.id, data: { ...board, deals: nextDeals } }),
+                body: JSON.stringify({ planId: mp.id, revision, data: { ...board, deals: nextDeals } }),
               });
             }
           }

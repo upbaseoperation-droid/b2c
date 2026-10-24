@@ -659,6 +659,27 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã kiểm chứng lại với `pass4_deep_audit.mjs` (**0 phát hiện lỗi**) và `npx eslint` trên toàn bộ 45 tệp (**0 errors**).
 
 ---
+
+### BUG-039 — Kiểm Toán Luồng E2E 22 Nghiệp Vụ Booking B2C (Google Sheet Vòng 2, Bàn Giao Gian Hàng Giữa Tháng, Giải Trình Ký Muộn Mục 3.5, 1 Brief — N KOC & Đồng Bộ Lark 3.2)
+- **Ngày phát hiện:** 24/10/2026
+- **Phân hệ / File liên quan:** `web-admin/src/app/api/booking-list/pull-sheet/route.ts`, `web-admin/src/components/views/PlanDealBoard.tsx`, `web-admin/src/components/views/ManagerDelegationHub.tsx`, `web-admin/src/lib/dealBoardRules.ts`, `web-admin/src/app/api/deal-board/route.ts`, `web-admin/src/app/api/integrations/larkbase/payment-requests/route.ts`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Lệch tên trường `tab` vs `tabName` khi kéo kết quả Brand duyệt Vòng 2 (`PlanDealBoard.tsx` ↔ `pull-sheet/route.ts`):** `pullStage2FromBrandSheet` trong `PlanDealBoard.tsx` gửi `{ planId, sheetUrl, tabName }`, nhưng `POST /api/booking-list/pull-sheet` chỉ kiểm tra `body.tab` (`!(body.tab || '').trim()`), dẫn đến trả về lỗi 400 `"Thiếu mã kế hoạch, tên tab hoặc link Google Sheet không hợp lệ."`.
+  2. **Đối chiếu Job Vòng 2 trên Google Sheet khi `job.briefCode` trống & đồng bộ ngược Link Kịch bản / Demo / Air (`pull-sheet/route.ts`):** Khi Job liên kết qua `job.slotId` nhưng chưa gõ tay `job.briefCode`, `pull-sheet` chưa tra cứu `briefCodeBySlotId.get(job.slotId)`; đồng thời nếu KOC/nhân sự điền `Link kịch bản`, `Link video demo`, `Link Air` trực tiếp trên Sheet thì chưa tự động nạp về `job`.
+  3. **Bàn giao gian hàng giữa tháng (`ManagerDelegationHub.tsx`) thiếu `revision` khi gọi `PUT /api/deal-board` và biến cờ `changed` đặt ngoài vòng lặp Deal:** `PUT /api/deal-board` bắt buộc `typeof body.revision === 'number'`, nên lệnh gọi thiếu `revision` từ `ManagerDelegationHub.tsx` bị từ chối 400; đồng thời biến `changed` đặt ngoài `.map(deal => ...)` làm các Deal đã thanh toán (`PAID`) đứng sau Deal chưa thanh toán cũng bị ghi đè `deal.pic`.
+  4. **Khớp tự động dòng Brief cho KOC thứ 2 trở đi trong mô hình `1 Brief Content — N KOC` (`PlanDealBoard.tsx`) & tra cứu HĐNT MCN (`deal-board/route.ts`):** `pickBestSlotForKoc` chỉ so sánh `s.kocHandle` đơn lẻ thay vì mảng `slotKocHandles(s)`; `GET /api/deal-board?all=1` chỉ lập chỉ mục `fwById` theo `item.id` mà chưa lập chỉ mục cho danh sách kênh con `item.coveredHandles` của MCN.
+  5. **Lệch trường xác nhận của Booking Lead trong Giải trình ký muộn Mục 3.5 (`PlanDealBoard.tsx` ↔ `dealBoardRules.ts`):** Nút `"Lead Booking xác nhận Giải trình"` ghi `leadConfirmed: true, leadConfirmedBy: currentUserName`, nhưng `jobPaymentBlocker` và `dealIssues` lại kiểm tra `confirmedByLead?.trim()`, khiến Job đã được Lead xác nhận giải trình vẫn bị chặn thanh toán.
+  6. **Đồng bộ Job (kể cả FOC 0đ) sang Bảng `Lark 3.2 List duyệt book` tại 2 mốc (Chốt Deal/Job & Đã Air/Nghiệm thu):** Trước đó chỉ đẩy sang Lark khi tạo phiếu ĐNTT 6.1 hoặc Tạm ứng, làm các Job FOC 0đ (miễn thanh toán) hoặc Job mới chốt chưa có nút đồng bộ sang Bảng 3.2.
+- **Cách khắc phục:**
+  1. Hỗ trợ đồng thời `const tab = (body.tab || body.tabName || '').trim()` tại `pull-sheet/route.ts` và gửi cả `tab` + `tabName` từ `PlanDealBoard.tsx`.
+  2. Tra cứu fallback `briefCodeBySlotId.get(job.slotId)` và đồng bộ ngược `d.scriptLink`, `d.demoLink`, `d.airLink` từ Google Sheet vào `DealJob` trong `pull-sheet/route.ts`.
+  3. Truyền đầy đủ `revision` khi gọi `PUT /api/deal-board` trong `ManagerDelegationHub.tsx` và tách biến `dealChanged` riêng cho từng Deal.
+  4. Dùng `slotKocHandles(s).some(h => normHandle(h) === normH)` trong `pickBestSlotForKoc` (`PlanDealBoard.tsx`) và lập chỉ mục `coveredHandles` trong `GET /api/deal-board?all=1` (`deal-board/route.ts`).
+  5. Đồng bộ cả 3 trường `leadConfirmed`, `leadConfirmedBy`, `confirmedByLead` khi Lead bấm xác nhận trong `PlanDealBoard.tsx` và kiểm tra hợp nhất trong `jobPaymentBlocker` + `dealIssues` (`dealBoardRules.ts`), đồng thời chặn thanh toán nếu `closingAudit` đang ở trạng thái `RETURNED` (Account/Kế toán trả lỗi nghiệm thu).
+  6. Bổ sung chế độ `SYNC_LARK_32_BOOKING_LIST` trong `/api/integrations/larkbase/payment-requests/route.ts` và nút `"Đồng bộ Lark 3.2 List duyệt book (Cả FOC 0đ)"` trên `PlanDealBoard.tsx`.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát toàn bộ 22 luồng nghiệp vụ E2E từ `ProductCatalogView` → `ContentPlanBoard` → `PlanListingBoard` → `Google Sheets (Vòng 1 & Vòng 2)` → `PlanDealBoard` → `SelfChannelCtvHubView` → `ManagerDelegationHub`.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

@@ -21,7 +21,7 @@ import {
   type ContractDocument,
 } from '../../lib/planDealLink';
 import { columnOf, itemFee, itemGrade, planQuota } from '../../lib/listingBoardRules';
-import { ensureSequentialBriefCodes, isBriefReady, slotTargetQty, type ContentSlot } from '../../lib/contentPlanRules';
+import { ensureSequentialBriefCodes, isBriefReady, slotKocHandles, slotTargetQty, type ContentSlot } from '../../lib/contentPlanRules';
 import type { BrandProductCatalog } from '../../lib/productCatalog';
 import {
   BOOKING_LIST_COLUMNS,
@@ -350,7 +350,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       const normGrade = grade === 'TAP UpAffiliate' ? 'FOC' : grade;
       const hasCapacity = (s: ContentSlot) => (slotUsageCountMap.get(s.id) || 0) < slotTargetQty(s);
       return (
-        slots.find(s => normH && normHandle(s.kocHandle || '') === normH && hasCapacity(s)) ||
+        slots.find(s => normH && slotKocHandles(s).some(h => normHandle(h) === normH) && hasCapacity(s)) ||
         slots.find(s => s.row === normGrade && hasCapacity(s)) ||
         slots.find(hasCapacity) ||
         slots.find(s => s.row === normGrade) ||
@@ -1063,6 +1063,104 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
   };
 
+  const [syncingLark32, setSyncingLark32] = useState(false);
+
+  /** Đồng bộ toàn bộ Job (kể cả FOC 0đ) sang Bảng 3.2 List duyệt book trên Lark tại Mốc 1 (Chốt Deal/Job) & Mốc 2 (Đã Air & Nghiệm thu) */
+  const syncJobsToLark32BookingList = async () => {
+    if (!plan) return;
+    const allJobsPayload: Array<{
+      jobId: string;
+      jobCode: string;
+      dealCode: string;
+      brandName: string;
+      storeName: string;
+      month: string;
+      kocName: string;
+      kocHandle: string;
+      grade: string;
+      fee: number;
+      sampleStatus: string;
+      trackingNo: string;
+      airLink: string;
+      airedAt: string;
+      sparkAdsCode: string;
+      acceptanceStatus: string;
+      existingRecordId: string;
+    }> = [];
+    for (const d of deals) {
+      for (const j of d.jobs || []) {
+        if (j.lifecycleStatus && j.lifecycleStatus !== 'ACTIVE') continue;
+        allJobsPayload.push({
+          jobId: j.id,
+          jobCode: j.code,
+          dealCode: d.code,
+          brandName: plan.brandName,
+          storeName: plan.storeName || plan.title,
+          month: plan.month,
+          kocName: d.kocName || d.kocHandle,
+          kocHandle: d.kocHandle,
+          grade: d.grade,
+          fee: jobTotalFee(j),
+          sampleStatus: j.sample.status,
+          trackingNo: j.sample.trackingNo || '',
+          airLink: j.airLink || '',
+          airedAt: j.airedAt || '',
+          sparkAdsCode: j.sparkAdsCode || '',
+          acceptanceStatus: j.acceptance.status,
+          existingRecordId: j.payment.larkRecordId || '',
+        });
+      }
+    }
+    if (allJobsPayload.length === 0) {
+      notify('Chưa có Job đang hoạt động nào để đồng bộ sang Lark 3.2.', 'warning');
+      return;
+    }
+    setSyncingLark32(true);
+    try {
+      const res = await fetch('/api/integrations/larkbase/payment-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'SYNC_LARK_32_BOOKING_LIST',
+          jobs: allJobsPayload,
+          actorName: currentUserName,
+          month: plan.month,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body?.success) throw new Error(body?.error || body?.message || `Lỗi ${res.status}`);
+      const syncedMap = new Map<string, { larkRecordId: string; syncedAt: string; isFoc: boolean }>(
+        ((body.syncedJobs as Array<{ jobId: string; larkRecordId: string; syncedAt: string; isFoc: boolean }>) || []).map(x => [x.jobId, x])
+      );
+      setDeals(
+        deals.map(d => {
+          const nextJobs = (d.jobs || []).map(j => {
+            const s = syncedMap.get(j.id);
+            if (!s) return j;
+            return {
+              ...j,
+              payment: {
+                ...j.payment,
+                larkRecordId: s.larkRecordId,
+                larkSyncedAt: s.syncedAt,
+              },
+            };
+          });
+          return syncDealSummaryFields({ ...d, jobs: nextJobs });
+        })
+      );
+      const focCount = Array.from(syncedMap.values()).filter(x => x.isFoc).length;
+      notify(
+        `Đã đồng bộ ${syncedMap.size} Job (gồm ${focCount} Job FOC 0đ) sang Lark 3.2 List duyệt book.`,
+        'success'
+      );
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Không đồng bộ được sang Lark 3.2.', 'error');
+    } finally {
+      setSyncingLark32(false);
+    }
+  };
+
   /** Đồng bộ Vòng 2 lên Google Sheet Brand: đẩy Link kịch bản, Link video demo (sau khi đạt duyệt nội bộ Vòng 1), Link Air */
   const openStage2SheetModal = () => {
     if (!plan) return;
@@ -1151,13 +1249,15 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
     setStage2Syncing(true);
     try {
+      const tabValue = (stage2TabName || defaultBookingTabName(plan.month)).trim();
       const res = await fetch('/api/booking-list/pull-sheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
           sheetUrl: stage2SheetUrl.trim(),
-          tabName: (stage2TabName || defaultBookingTabName(plan.month)).trim(),
+          tab: tabValue,
+          tabName: tabValue,
           actor: currentUserName,
         }),
       });
@@ -1761,16 +1861,21 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   variant={job.lateSigningExplanation?.leadConfirmed ? 'secondary' : 'primary'}
                   onClick={() =>
                     setJob(
-                      x => ({
-                        ...x,
-                        lateSigningExplanation: {
-                          reason: x.lateSigningExplanation?.reason || '',
-                          chatEvidenceUrl: x.lateSigningExplanation?.chatEvidenceUrl || '',
-                          leadConfirmed: !x.lateSigningExplanation?.leadConfirmed,
-                          leadConfirmedBy: !x.lateSigningExplanation?.leadConfirmed ? currentUserName : '',
-                          leadConfirmedAt: !x.lateSigningExplanation?.leadConfirmed ? new Date().toISOString() : '',
-                        },
-                      }),
+                      x => {
+                        const nextConfirmed = !x.lateSigningExplanation?.leadConfirmed;
+                        return {
+                          ...x,
+                          lateSigningExplanation: {
+                            reason: x.lateSigningExplanation?.reason || '',
+                            chatEvidenceUrl: x.lateSigningExplanation?.chatEvidenceUrl || '',
+                            leadConfirmed: nextConfirmed,
+                            leadConfirmedBy: nextConfirmed ? currentUserName : '',
+                            confirmedByLead: nextConfirmed ? currentUserName : '',
+                            leadConfirmedAt: nextConfirmed ? new Date().toISOString() : '',
+                            confirmedAt: nextConfirmed ? getVietnamDateYmd() : '',
+                          },
+                        };
+                      },
                       `Xác nhận giải trình ký muộn cho ${job.code}`
                     )
                   }
@@ -1789,6 +1894,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                       setJob(x => ({
                         ...x,
                         lateSigningExplanation: {
+                          ...x.lateSigningExplanation,
                           reason: e.target.value,
                           chatEvidenceUrl: x.lateSigningExplanation?.chatEvidenceUrl || '',
                           leadConfirmed: Boolean(x.lateSigningExplanation?.leadConfirmed),
@@ -1807,6 +1913,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                       setJob(x => ({
                         ...x,
                         lateSigningExplanation: {
+                          ...x.lateSigningExplanation,
                           reason: x.lateSigningExplanation?.reason || '',
                           chatEvidenceUrl: e.target.value,
                           leadConfirmed: Boolean(x.lateSigningExplanation?.leadConfirmed),
@@ -3026,6 +3133,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="secondary" disabled={syncingLark32} onClick={() => void syncJobsToLark32BookingList()}>
+                  {syncingLark32 ? 'Đang đồng bộ Lark 3.2…' : 'Đồng bộ Lark 3.2 List duyệt book (Cả FOC 0đ)'}
+                </Button>
                 <Button size="sm" variant="secondary" onClick={openStage2SheetModal}>
                   Đồng bộ Google Sheet Brand (Vòng 2: KB / Demo / Air)
                 </Button>
