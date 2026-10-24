@@ -141,7 +141,7 @@ export function moveItem(item: KocListingItem, to: BoardColumn, actor: string, r
 // Chỉ tiêu và tiến độ
 // ---------------------------------------------------------------------------------------------
 
-export type QuotaKey = KlCode | 'FOC';
+export type QuotaKey = KlCode | 'FOC' | 'SELF';
 
 export interface QuotaLine {
   key: QuotaKey;
@@ -206,7 +206,7 @@ export function computeProgress(plan: InputPlanBreakdownState, items: KocListing
       const requiredBudget = q?.requiredBudget ?? 0;
       return {
         key: k,
-        label: q?.label ?? (k === 'FOC' ? 'FOC (0đ)' : klLabel(k)),
+        label: q?.label ?? (k === 'FOC' ? 'FOC (0đ)' : k === 'SELF' ? 'Kênh tự xây' : klLabel(k)),
         requiredQty,
         requiredBudget,
         listed: alive.length,

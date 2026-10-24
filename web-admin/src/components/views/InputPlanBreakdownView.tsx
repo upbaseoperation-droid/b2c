@@ -517,35 +517,81 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // Hệ số quy đổi Net -> Gross chuẩn kế toán B2C: VAT 8% * TNCN 10% = 1.188 (Net/Gross = 0.8418)
   const GROSS_MULTIPLIER = 1.188;
 
-  // LAYER 1: Khung Chỉ Số Cốt Lõi (Các bên cùng điền, chỉnh sửa & bấm Chốt trước khi sang Layer 2)
+  // LAYER 1: Khung Chỉ Số Cốt Lõi (Ưu tiên đọc số thực tế từ Bảng 4.1 Plan order tổng nếu có)
   const layer1Metrics: CorePlanMetricsLayer1 = useMemo(() => {
     const raw = planState.coreMetricsLayer1;
-    const defaultAffBudget = planState.budgetAffiliate ?? (channelTotals.affiliatePaid.budget || Math.round(planState.totalTargetBudget * 0.65));
-    const defaultSelfBudget = planState.budgetSelfChannel ?? (channelTotals.selfChannel.budget || Math.round(planState.totalTargetBudget * 0.20));
-    const defaultMultiBudget = channelTotals.multiPlatform.budget || Math.max(0, planState.totalTargetBudget - defaultAffBudget - defaultSelfBudget - (planState.budgetAdsTotal || 0));
-    const defaultLiveBudget = channelTotals.livestream.budget || 0;
+    const ref41 = planState.reference41;
+    const refMultiQty = ref41?.multiPlatform
+      ? Object.values(ref41.multiPlatform).reduce((s, m) => s + (m?.affQty || 0), 0)
+      : 0;
+    const refMultiNet = ref41?.multiPlatform
+      ? Object.values(ref41.multiPlatform).reduce((s, m) => s + (m?.costNet || 0), 0)
+      : 0;
+    const refLiveSelfSessions =
+      (ref41?.liveSelf?.inhouse3h || 0) +
+      (ref41?.liveSelf?.ctv2h || 0) +
+      (ref41?.liveSelf?.brand2h || 0);
+    const refLiveTotalSessions = (ref41?.liveSessions || 0) + refLiveSelfSessions;
+    const refLiveTotalNet = (ref41?.liveCostNet || 0) + (ref41?.liveSelf?.totalCostNet || 0);
+    const refTotalNet = ref41
+      ? ref41.affCostNet + ref41.selfCostNet + refMultiNet + refLiveTotalNet
+      : planState.totalTargetBudget || 0;
+    const refNmv =
+      ref41?.gmvTargets?.nmvPlan ||
+      (ref41?.gmvTargets
+        ? (ref41.gmvTargets.videoAff || 0) +
+          (ref41.gmvTargets.videoSelf || 0) +
+          (ref41.gmvTargets.liveInhouse || 0) +
+          (ref41.gmvTargets.liveCtv || 0)
+        : 0) ||
+      planState.targetGmv ||
+      0;
+
+    const defaultAffBudget =
+      ref41 !== undefined
+        ? ref41.affCostNet
+        : (planState.budgetAffiliate ?? (channelTotals.affiliatePaid.budget || Math.round(planState.totalTargetBudget * 0.65)));
+    const defaultSelfBudget =
+      ref41 !== undefined
+        ? ref41.selfCostNet
+        : (planState.budgetSelfChannel ?? (channelTotals.selfChannel.budget || Math.round(planState.totalTargetBudget * 0.20)));
+    const defaultMultiBudget =
+      ref41 !== undefined
+        ? refMultiNet
+        : (channelTotals.multiPlatform.budget || Math.max(0, planState.totalTargetBudget - defaultAffBudget - defaultSelfBudget));
+    const defaultLiveBudget =
+      ref41 !== undefined ? refLiveTotalNet : (channelTotals.livestream.budget || 0);
 
     return {
       isLocked: raw?.isLocked ?? Boolean(planState.status && !['DRAFT', 'REVISION_REQUESTED'].includes(planState.status)),
       lockedBy: raw?.lockedBy,
       lockedAt: raw?.lockedAt,
       alignmentNote: raw?.alignmentNote ?? (planState.growthAlignmentNotes || ''),
-      targetNmvTotal: raw?.targetNmvTotal ?? (planState.targetGmv || 0),
-      targetGmvAffiliate: raw?.targetGmvAffiliate ?? Math.round((planState.targetGmv || 0) * 0.72),
-      targetGmvSelfChannel: raw?.targetGmvSelfChannel ?? Math.round((planState.targetGmv || 0) * 0.18),
-      targetGmvLivestream: raw?.targetGmvLivestream ?? Math.round((planState.targetGmv || 0) * 0.10),
-      pnlTotalBudgetNet: raw?.pnlTotalBudgetNet ?? (planState.totalTargetBudget || 0),
+      targetNmvTotal: raw?.targetNmvTotal ?? refNmv,
+      targetGmvAffiliate:
+        raw?.targetGmvAffiliate ??
+        (ref41?.gmvTargets?.videoAff !== undefined ? ref41.gmvTargets.videoAff : Math.round(refNmv * 0.72)),
+      targetGmvSelfChannel:
+        raw?.targetGmvSelfChannel ??
+        (ref41?.gmvTargets?.videoSelf !== undefined ? ref41.gmvTargets.videoSelf : Math.round(refNmv * 0.18)),
+      targetGmvLivestream:
+        raw?.targetGmvLivestream ??
+        (ref41?.gmvTargets
+          ? (ref41.gmvTargets.liveInhouse || 0) + (ref41.gmvTargets.liveCtv || 0)
+          : Math.round(refNmv * 0.10)),
+      pnlTotalBudgetNet: raw?.pnlTotalBudgetNet ?? (refTotalNet || planState.totalTargetBudget || 0),
       budgetAffiliateNet: raw?.budgetAffiliateNet ?? defaultAffBudget,
       budgetSelfChannelNet: raw?.budgetSelfChannelNet ?? defaultSelfBudget,
       budgetMultiPlatformNet: raw?.budgetMultiPlatformNet ?? defaultMultiBudget,
       budgetLivestreamNet: raw?.budgetLivestreamNet ?? defaultLiveBudget,
       budgetAdsNet: raw?.budgetAdsNet ?? (planState.budgetAdsTotal || 0),
       targetAdsRoas: raw?.targetAdsRoas ?? (planState.multiPartySignOff?.media?.targetRoas || 4.5),
-      qtyAffiliatePaid: raw?.qtyAffiliatePaid ?? channelTotals.affiliatePaid.qty,
-      qtyFocSample: raw?.qtyFocSample ?? channelTotals.tapFreecast.qty,
-      qtySelfChannel: raw?.qtySelfChannel ?? channelTotals.selfChannel.qty,
-      qtyMultiPlatform: raw?.qtyMultiPlatform ?? channelTotals.multiPlatform.qty,
-      qtyLivestreamSessions: raw?.qtyLivestreamSessions ?? (channelTotals.livestream.qty || 4),
+      qtyAffiliatePaid: raw?.qtyAffiliatePaid ?? (ref41 ? ref41.cast : channelTotals.affiliatePaid.qty),
+      qtyFocSample: raw?.qtyFocSample ?? (ref41 ? ref41.foc : channelTotals.tapFreecast.qty),
+      qtySelfChannel: raw?.qtySelfChannel ?? (ref41 ? ref41.selfVideos : channelTotals.selfChannel.qty),
+      qtyMultiPlatform: raw?.qtyMultiPlatform ?? (ref41 ? refMultiQty : channelTotals.multiPlatform.qty),
+      qtyLivestreamSessions:
+        raw?.qtyLivestreamSessions ?? (ref41 ? refLiveTotalSessions : channelTotals.livestream.qty),
     };
   }, [planState, channelTotals]);
 
@@ -554,8 +600,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     layer1Metrics.budgetAffiliateNet +
     layer1Metrics.budgetSelfChannelNet +
     layer1Metrics.budgetMultiPlatformNet +
-    layer1Metrics.budgetLivestreamNet +
-    layer1Metrics.budgetAdsNet;
+    layer1Metrics.budgetLivestreamNet;
   const totalLayer1Videos =
     layer1Metrics.qtyAffiliatePaid +
     layer1Metrics.qtyFocSample +
@@ -1502,12 +1547,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 setPlanState(found);
               }
             }}
-            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[165px] xl:max-w-[210px] truncate"
+            className="h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken border border-line font-semibold text-xs text-ink focus:outline-none cursor-pointer max-w-[200px] xl:max-w-[250px] truncate"
             title="Chuyển sang gian hàng khác"
           >
             {scopedStudioPlans.map(p => (
               <option key={p.id} value={p.id}>
-                {p.brandName} · {p.month}
+                {p.storeName || p.brandName} · {p.month}
               </option>
             ))}
           </select>
@@ -1555,16 +1600,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
         <button
           type="button"
-          onClick={() => setIsPlanReportOpen(true)}
-          className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-surface hover:bg-sunken text-ink border border-line font-semibold text-xs transition cursor-pointer"
-          title="Báo cáo thẩm định kế hoạch"
-        >
-          <FileText className="w-3.5 h-3.5 text-ink-3" />
-          <span className="hidden sm:inline">Báo cáo thẩm định</span>
-        </button>
-
-        <button
-          type="button"
           onClick={async () => {
             setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
             if (!planSync.isPersistent) {
@@ -1597,6 +1632,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
               <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-surface border border-line rounded-xl shadow-lg py-1 text-xs">
                 {[
+                  {
+                    label: 'Báo cáo thẩm định kế hoạch',
+                    icon: <FileText className="w-3.5 h-3.5" />,
+                    onClick: () => setIsPlanReportOpen(true),
+                    disabled: false,
+                    hint: undefined as string | undefined
+                  },
                   ...(onOpenListingForPlan ? [{
                     label: 'Triển khai Listing KOC (KL)',
                     icon: <UserCheck className="w-3.5 h-3.5" />,
@@ -1864,10 +1906,34 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
 
-        {/* Bên phải thanh bước: Đầu mối phụ trách & lối tắt Listing KOC */}
-        <div className="flex items-center gap-2 text-2xs text-slate-600 ml-auto shrink-0">
+        {/* Bên phải thanh bước: Trạng thái 4.1, Đội ngũ 4.1 & lối tắt Listing KOC */}
+        <div className="flex items-center gap-1.5 text-2xs text-slate-600 ml-auto shrink-0 flex-wrap">
+          {planState.reference41 && (
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold ${
+                planState.reference41.isGrowthLocked === false
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              }`}
+              title={`Nguồn 4.1: ${planState.reference41.importedBy || 'Bảng 4.1 Plan order tổng'}`}
+            >
+              <span>4.1: {planState.reference41.isGrowthLocked === false ? (planState.reference41.growthLockLabel || 'Chưa chốt') : 'Đã chốt'}</span>
+            </span>
+          )}
           <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
-            <span>PIC: <strong className="text-slate-900">{planState.primaryPic || planState.pic}</strong></span>
+            {planState.reference41?.rolePics?.growthPics?.length ? (
+              <>
+                <span>Growth: <strong className="text-slate-900">{planState.reference41.rolePics.growthPics.join(', ')}</strong></span>
+                <span className="text-slate-300">·</span>
+              </>
+            ) : null}
+            {planState.reference41?.rolePics?.accountPics?.length ? (
+              <>
+                <span className="hidden xl:inline">Account: <strong className="text-slate-900">{planState.reference41.rolePics.accountPics.join(', ')}</strong></span>
+                <span className="text-slate-300 hidden xl:inline">·</span>
+              </>
+            ) : null}
+            <span>Booking PIC: <strong className="text-slate-900">{planState.reference41?.rolePics?.bookingPics?.join(', ') || planState.primaryPic || planState.pic}</strong></span>
             <span className="text-slate-300">·</span>
             <span>
               Leader:{' '}
@@ -1875,6 +1941,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 {hasLeader ? (resolvedBookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Không có leader'}
               </strong>
             </span>
+            {planState.reference41?.rolePics?.livePics?.length ? (
+              <>
+                <span className="text-slate-300 hidden 2xl:inline">·</span>
+                <span className="hidden 2xl:inline">Live: <strong className="text-slate-900">{planState.reference41.rolePics.livePics.join(', ')}</strong></span>
+              </>
+            ) : null}
           </span>
           {onOpenListingForPlan && (
             <button
@@ -1921,7 +1993,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
                   <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
                     <span className="text-xs font-semibold text-slate-900 uppercase tracking-wide shrink-0">
-                      Đầu vào PnL Growth giao
+                      Đầu vào Bảng 4.1 Plan order tổng
                     </span>
                     <span className="text-slate-300">·</span>
                     <span className="text-2xs font-semibold text-slate-700 shrink-0">
@@ -2166,49 +2238,79 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {/* Ô 1: Mục tiêu NMV tổng */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 items-stretch">
+                  {/* Ô 1: Mục tiêu NMV tổng (4.1) */}
                   <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                    <label className="text-2xs font-semibold text-slate-600 shrink-0">
-                      1. Mục tiêu NMV
-                    </label>
+                    <div className="min-w-0">
+                      <label className="text-2xs font-semibold text-slate-700 block truncate">
+                        1. Mục tiêu NMV (4.1)
+                      </label>
+                      <span className="text-2xs text-slate-500 font-mono truncate block">
+                        Aff {formatVndShort(layer1Metrics.targetGmvAffiliate)} · Self {formatVndShort(layer1Metrics.targetGmvSelfChannel)}
+                      </span>
+                    </div>
                     <FormattedNumberInput
                       disabled={isLayer1Locked}
                       value={layer1Metrics.targetNmvTotal}
                       onChange={(val) => handleUpdateLayer1Metrics({ targetNmvTotal: Math.max(0, val) })}
-                      className="w-32 h-7 px-2 py-0.5 text-right rounded-md border border-slate-300 bg-white font-mono text-xs font-semibold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                      className="w-32 h-7 px-2 py-0.5 text-right rounded-md border border-slate-300 bg-white font-mono text-xs font-semibold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100 shrink-0"
                     />
                   </div>
 
-                  {/* Ô 2: Tổng trần Ngân sách thúc đẩy Net (PnL) */}
+                  {/* Ô 2: Tổng trần Ngân sách thúc đẩy Net (4.1) */}
                   <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                    <label className="text-2xs font-semibold text-slate-600 shrink-0">
-                      2. Trần Ngân sách Net
-                    </label>
+                    <div className="min-w-0">
+                      <label className="text-2xs font-semibold text-slate-700 block truncate">
+                        2. Trần Ngân sách Net (4.1)
+                      </label>
+                      <span className="text-2xs text-slate-500 font-mono truncate block">
+                        Gross: {formatVndShort(Math.round(layer1Metrics.pnlTotalBudgetNet * GROSS_MULTIPLIER))}
+                      </span>
+                    </div>
                     <FormattedNumberInput
                       disabled={isLayer1Locked}
                       value={layer1Metrics.pnlTotalBudgetNet}
                       onChange={(val) => handleUpdateLayer1Metrics({ pnlTotalBudgetNet: Math.max(0, val) })}
-                      className="w-32 h-7 px-2 py-0.5 text-right rounded-md border border-slate-300 bg-white font-mono text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                      className="w-32 h-7 px-2 py-0.5 text-right rounded-md border border-slate-300 bg-white font-mono text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500 disabled:bg-slate-100 shrink-0"
                     />
                   </div>
 
-                  {/* Ô 3: Gói ngân sách Ads tổng giao Media */}
-                  <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <label className="text-2xs font-semibold text-slate-600 block truncate">
-                        3. Gói Ads (ROAS {layer1Metrics.targetAdsRoas}x)
-                      </label>
-                    </div>
-                    <FormattedNumberInput
-                      disabled={isLayer1Locked}
-                      value={layer1Metrics.budgetAdsNet}
-                      onChange={(val) => handleUpdateLayer1Metrics({ budgetAdsNet: Math.max(0, val) })}
-                      className="w-32 h-7 px-2 py-0.5 text-right rounded-md border border-slate-300 bg-white font-mono text-xs font-semibold text-blue-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
-                    />
-                  </div>
+                  {/* Ô 3: Tổng định mức Sản lượng (4.1) */}
+                  {(() => {
+                    const ref41 = planState.reference41;
+                    const reupTiktok = ref41?.tiktokReup || 0;
+                    const reupMulti = ref41?.multiPlatform
+                      ? Object.values(ref41.multiPlatform).reduce((s, m) => s + (m?.reupQty || 0), 0)
+                      : 0;
+                    const totalReup = reupTiktok + reupMulti;
+                    const liveAff = ref41?.liveSessions || 0;
+                    const liveSelf =
+                      (ref41?.liveSelf?.inhouse3h || 0) +
+                      (ref41?.liveSelf?.ctv2h || 0) +
+                      (ref41?.liveSelf?.brand2h || 0);
+                    return (
+                      <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-2xs font-semibold text-slate-700 block truncate">
+                            3. Sản lượng 4.1 giao
+                          </span>
+                          <span className="text-2xs text-slate-500 font-mono truncate block">
+                            Cast {layer1Metrics.qtyAffiliatePaid} · FOC {layer1Metrics.qtyFocSample} · Reup {totalReup}
+                          </span>
+                        </div>
+                        <div className="text-right font-mono shrink-0">
+                          <div className="text-xs font-semibold text-blue-700">
+                            {totalLayer1Videos} video
+                          </div>
+                          <div className="text-2xs text-slate-500">
+                            {layer1Metrics.qtyLivestreamSessions} live ({liveAff} Aff · {liveSelf} Self)
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  {/* Ô 4: Đối soát tổng khung Layer 1 vs Số tổng PnL */}
+                  {/* Ô 4: Đối soát tổng khung Layer 1 vs Số tổng 4.1 */}
                   <div className={`rounded-lg border px-2.5 py-1.5 flex items-center justify-between gap-2 ${
                     layer1BudgetGapVsPnl < 0
                       ? 'border-rose-200 bg-rose-50/50'
@@ -2218,7 +2320,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   }`}>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-2xs font-semibold text-slate-600">4. Đối soát PnL</span>
+                        <span className="text-2xs font-semibold text-slate-700">4. Đối soát Trần Net</span>
                         <span className={`text-2xs font-mono font-semibold tabular-nums ${
                           layer1BudgetGapVsPnl < 0
                             ? 'text-rose-700'
@@ -2233,8 +2335,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             : `Chưa chia ${formatVndShort(layer1BudgetGapVsPnl)}`})
                         </span>
                       </div>
-                      <div className="text-2xs text-slate-600 truncate">
-                        <strong>{totalLayer1Videos} video</strong> + <strong>{layer1Metrics.qtyLivestreamSessions} live</strong>
+                      <div className="text-2xs text-slate-500 font-mono truncate">
+                        Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
                       </div>
                     </div>
                     <div className="text-xs font-semibold font-mono text-slate-900 text-right shrink-0">
@@ -2248,332 +2350,410 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           })()}
 
           {/* 1B. BẢNG THỐNG NHẤT CHỈ TIÊU CỐT LÕI GIỮA CÁC BÊN */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-            <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
-              <div className="px-3 py-1.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                    Chỉ tiêu theo kênh
-                  </h3>
-                  <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                    isLayer1Locked ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {isLayer1Locked ? 'Đã chốt chỉ tiêu' : 'Đang điền'}
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch">
+            <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs flex flex-col justify-between">
+              <div>
+                <div className="px-3 py-1.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                      Chỉ tiêu theo kênh (Đối soát Bảng 4.1)
+                    </h3>
+                    <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                      isLayer1Locked ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {isLayer1Locked ? 'Đã chốt chỉ tiêu' : 'Đang điền'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {!isPlanLocked && (
+                      <button
+                        type="button"
+                        onClick={handleSyncLayer1ToLayer2}
+                        className="px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
+                        title="Cập nhật các dòng KL1-KL7, FOC, Kênh Brand khớp theo bảng chỉ tiêu này"
+                      >
+                        Đồng bộ sang Phân bổ
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {!isPlanLocked && (
-                    <button
-                      type="button"
-                      onClick={handleSyncLayer1ToLayer2}
-                      className="px-2 py-0.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
-                      title="Cập nhật các dòng KL1-KL7, FOC, Kênh Brand khớp theo bảng chỉ tiêu này"
-                    >
-                      Đồng bộ sang Phân bổ
-                    </button>
-                  )}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/50">
+                        <th className="py-1.5 px-2.5">Hạng mục &amp; Chi tiết Bảng 4.1</th>
+                        <th className="py-1.5 px-2 text-right">Sản lượng</th>
+                        <th className="py-1.5 px-2 text-right">Trần Net (VNĐ)</th>
+                        <th className="py-1.5 px-2 text-right">Quy đổi Gross</th>
+                        <th className="py-1.5 px-2 text-right">Mục tiêu GMV</th>
+                        <th className="py-1.5 px-2.5 text-right">Đã phân bổ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {/* Dòng 1: Video KOC trả phí */}
+                      <tr className="hover:bg-slate-50/70">
+                        <td className="py-1.5 px-2.5">
+                          <div className="font-semibold text-slate-900">1. Cast trả phí (Affiliate Paid)</div>
+                          {(() => {
+                            const tiers = planState.reference41?.tiers;
+                            const kl4Plus = planState.reference41?.kl4PlusTarget;
+                            const activeTiers = tiers
+                              ? (['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const)
+                                  .filter(k => (tiers[k] || 0) > 0)
+                                  .map(k => `${k}:${tiers[k]}`)
+                              : [];
+                            return (
+                              <div className="text-2xs text-slate-500 font-mono truncate">
+                                {activeTiers.length > 0 ? activeTiers.join(' · ') : '4.1 KL1–KL7: Chưa tách bậc'}
+                                {kl4Plus !== undefined ? ` · KL4+: ${kl4Plus}` : ''}
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.qtyAffiliatePaid}
+                              onChange={(e) => handleUpdateLayer1Metrics({ qtyAffiliatePaid: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-16 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            />
+                            <span className="w-9 text-left text-2xs text-slate-500">video</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.budgetAffiliateNet}
+                              onChange={(val) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-600 tabular-nums">
+                          {formatVndShort(Math.round(layer1Metrics.budgetAffiliateNet * GROSS_MULTIPLIER))}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.targetGmvAffiliate}
+                              onChange={(val) => handleUpdateLayer1Metrics({ targetGmvAffiliate: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span className={`text-2xs font-mono font-semibold ${
+                              channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
+                                ? 'text-emerald-700'
+                                : 'text-amber-700'
+                            }`}>
+                              {channelTotals.affiliatePaid.qty} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewMode('TABLE');
+                                setActiveTab('AFFILIATE_PAID');
+                              }}
+                              className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              KL1–KL7 →
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Dòng 2: Suất gửi mẫu miễn phí FOC 0đ */}
+                      <tr className="hover:bg-slate-50/70">
+                        <td className="py-1.5 px-2.5">
+                          <div className="font-semibold text-slate-900">2. Mẫu FOC (0đ) &amp; TikTok Reup</div>
+                          {(() => {
+                            const fb = planState.reference41?.focBreakdown;
+                            const reup = planState.reference41?.tiktokReup || 0;
+                            return (
+                              <div className="text-2xs text-slate-500 font-mono truncate">
+                                TAP Brand: {fb?.tapBrand || 0} · TAP: {fb?.tap || 0} · TAP Up: {fb?.tapUp || 0} · Reup TT: {reup}
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.qtyFocSample}
+                              onChange={(e) => handleUpdateLayer1Metrics({ qtyFocSample: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-16 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            />
+                            <span className="w-9 text-left text-2xs text-slate-500">suất</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <span className="inline-flex items-center justify-end w-28 h-7 px-2 rounded border border-slate-200 bg-slate-50/80 font-mono font-semibold text-slate-400">
+                            0 đ (FOC)
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-400 tabular-nums">
+                          0 đ
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <span className="inline-flex items-center justify-end w-28 h-7 px-2 rounded border border-slate-200 bg-slate-50/80 text-2xs text-slate-400">
+                            Gộp GMV Aff
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span className={`text-2xs font-mono font-semibold ${
+                              channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
+                            }`}>
+                              {channelTotals.tapFreecast.qty} suất
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewMode('TABLE');
+                                setActiveTab('TAP_FREECAST');
+                              }}
+                              className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              Chi tiết FOC →
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Dòng 3: Video kênh thương hiệu (Self-channel) */}
+                      <tr className="hover:bg-slate-50/70">
+                        <td className="py-1.5 px-2.5">
+                          <div className="font-semibold text-slate-900">3. Kênh Brand (Self-channel)</div>
+                          <div className="text-2xs text-slate-500 font-mono truncate">
+                            4.1 giao: {planState.reference41?.selfVideos ?? layer1Metrics.qtySelfChannel} video · Net {formatVndShort(planState.reference41?.selfCostNet ?? layer1Metrics.budgetSelfChannelNet)}
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.qtySelfChannel}
+                              onChange={(e) => handleUpdateLayer1Metrics({ qtySelfChannel: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-16 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            />
+                            <span className="w-9 text-left text-2xs text-slate-500">video</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.budgetSelfChannelNet}
+                              onChange={(val) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-600 tabular-nums">
+                          {formatVndShort(Math.round(layer1Metrics.budgetSelfChannelNet * GROSS_MULTIPLIER))}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.targetGmvSelfChannel}
+                              onChange={(val) => handleUpdateLayer1Metrics({ targetGmvSelfChannel: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span className={`text-2xs font-mono font-semibold ${
+                              channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
+                                ? 'text-emerald-700'
+                                : 'text-amber-700'
+                            }`}>
+                              {channelTotals.selfChannel.qty} video · {formatVndShort(channelTotals.selfChannel.budget)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewMode('TABLE');
+                                setActiveTab('SELF_CHANNEL');
+                              }}
+                              className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              Kênh Brand →
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Dòng 4: Đa sàn khác (Shopee, FB, IG, Threads) */}
+                      <tr className="hover:bg-slate-50/70">
+                        <td className="py-1.5 px-2.5">
+                          <div className="font-semibold text-slate-900">4. Đa sàn (Shopee, Threads, FB, IG)</div>
+                          {(() => {
+                            const mp = planState.reference41?.multiPlatform;
+                            const sp = mp?.shopee?.affQty || 0;
+                            const th = mp?.threads?.affQty || 0;
+                            const fb = mp?.facebook?.affQty || 0;
+                            const ig = mp?.instagram?.affQty || 0;
+                            const reupAll =
+                              (mp?.shopee?.reupQty || 0) +
+                              (mp?.threads?.reupQty || 0) +
+                              (mp?.facebook?.reupQty || 0) +
+                              (mp?.instagram?.reupQty || 0);
+                            return (
+                              <div className="text-2xs text-slate-500 font-mono truncate">
+                                Shopee: {sp} · Threads: {th} · FB: {fb} · IG: {ig} (Reup: {reupAll})
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.qtyMultiPlatform}
+                              onChange={(e) => handleUpdateLayer1Metrics({ qtyMultiPlatform: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-16 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            />
+                            <span className="w-9 text-left text-2xs text-slate-500">video</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.budgetMultiPlatformNet}
+                              onChange={(val) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-600 tabular-nums">
+                          {formatVndShort(Math.round(layer1Metrics.budgetMultiPlatformNet * GROSS_MULTIPLIER))}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <span className="inline-flex items-center justify-end w-28 h-7 px-2 rounded border border-slate-200 bg-slate-50/80 text-2xs text-slate-400">
+                            Đa nền tảng
+                          </span>
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span className={`text-2xs font-mono font-semibold ${
+                              channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
+                                ? 'text-emerald-700'
+                                : 'text-amber-700'
+                            }`}>
+                              {channelTotals.multiPlatform.qty} video · {formatVndShort(channelTotals.multiPlatform.budget)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewMode('TABLE');
+                                setActiveTab('MULTI_PLATFORM');
+                              }}
+                              className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              Đa sàn →
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Dòng 5: Livestream */}
+                      <tr className="hover:bg-slate-50/70">
+                        <td className="py-1.5 px-2.5">
+                          <div className="font-semibold text-slate-900">5. Livestream (Affiliate &amp; Kênh Brand)</div>
+                          {(() => {
+                            const ref41 = planState.reference41;
+                            const liveAff = ref41?.liveSessions || 0;
+                            const ih = ref41?.liveSelf?.inhouse3h || 0;
+                            const ctv = ref41?.liveSelf?.ctv2h || 0;
+                            const br = ref41?.liveSelf?.brand2h || 0;
+                            return (
+                              <div className="text-2xs text-slate-500 font-mono truncate">
+                                Live Aff: {liveAff} · Inhouse 3h: {ih} · CTV 2h: {ctv}{br > 0 ? ` · Brand 2h: ${br}` : ''}
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <input
+                              type="number"
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.qtyLivestreamSessions}
+                              onChange={(e) => handleUpdateLayer1Metrics({ qtyLivestreamSessions: Math.max(0, Number(e.target.value) || 0) })}
+                              className="w-16 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            />
+                            <span className="w-9 text-left text-2xs text-slate-500">phiên</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.budgetLivestreamNet}
+                              onChange={(val) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-600 tabular-nums">
+                          {formatVndShort(Math.round(layer1Metrics.budgetLivestreamNet * GROSS_MULTIPLIER))}
+                        </td>
+                        <td className="py-1.5 px-2 text-right">
+                          <div className="inline-flex justify-end">
+                            <FormattedNumberInput
+                              disabled={isLayer1Locked}
+                              value={layer1Metrics.targetGmvLivestream}
+                              onChange={(val) => handleUpdateLayer1Metrics({ targetGmvLivestream: Math.max(0, val) })}
+                              className="w-28 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
+                            />
+                          </div>
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
+                          <span className="text-2xs font-mono text-slate-500">
+                            {layer1Metrics.qtyLivestreamSessions} ca live
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
+                        <td className="py-1.5 px-2.5">
+                          Tổng cộng Chỉ tiêu Bảng 4.1
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono">
+                          {totalLayer1Videos} video + {layer1Metrics.qtyLivestreamSessions} live
+                        </td>
+                        <td className={`py-1.5 px-2 text-right font-mono ${layer1BudgetGapVsPnl < 0 ? 'text-rose-600' : 'text-blue-700'}`}>
+                          {formatVndShort(totalLayer1ChannelBudgetNet)}
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-slate-700">
+                          {formatVndShort(Math.round(totalLayer1ChannelBudgetNet * GROSS_MULTIPLIER))}
+                        </td>
+                        <td className="py-1.5 px-2 text-right font-mono text-emerald-700">
+                          {formatVndShort(layer1Metrics.targetNmvTotal)}
+                        </td>
+                        <td className="py-1.5 px-2.5 text-right font-mono text-2xs">
+                          Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/50">
-                      <th className="py-1.5 px-2.5">Hạng mục</th>
-                      <th className="py-1.5 px-2 text-right">Sản lượng</th>
-                      <th className="py-1.5 px-2 text-right">Trần Net (VNĐ)</th>
-                      <th className="py-1.5 px-2 text-right">Quy đổi Gross</th>
-                      <th className="py-1.5 px-2 text-right">Mục tiêu GMV</th>
-                      <th className="py-1.5 px-2.5 text-right">Đã phân bổ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {/* Dòng 1: Video KOC trả phí */}
-                    <tr className="hover:bg-slate-50/70">
-                      <td className="py-1.5 px-2.5">
-                        <div className="font-semibold text-slate-900">1. Cast trả phí</div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            disabled={isLayer1Locked}
-                            value={layer1Metrics.qtyAffiliatePaid}
-                            onChange={(e) => handleUpdateLayer1Metrics({ qtyAffiliatePaid: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
-                          />
-                          <span className="text-2xs text-slate-500">video</span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.budgetAffiliateNet}
-                          onChange={(val) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-600">
-                        {formatVndShort(Math.round(layer1Metrics.budgetAffiliateNet * GROSS_MULTIPLIER))}
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.targetGmvAffiliate}
-                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvAffiliate: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <span className={`text-2xs font-mono font-semibold ${
-                            channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
-                              ? 'text-emerald-700'
-                              : 'text-amber-700'
-                          }`}>
-                            {channelTotals.affiliatePaid.qty} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setViewMode('TABLE');
-                              setActiveTab('AFFILIATE_PAID');
-                            }}
-                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            KL1–KL7 →
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Dòng 2: Suất gửi mẫu miễn phí FOC 0đ */}
-                    <tr className="hover:bg-slate-50/70">
-                      <td className="py-1.5 px-2.5">
-                        <div className="font-semibold text-slate-900">2. Mẫu FOC (0đ)</div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            disabled={isLayer1Locked}
-                            value={layer1Metrics.qtyFocSample}
-                            onChange={(e) => handleUpdateLayer1Metrics({ qtyFocSample: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
-                          />
-                          <span className="text-2xs text-slate-500">suất</span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono font-semibold text-slate-400">
-                        0 đ (FOC)
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-400">
-                        0 đ
-                      </td>
-                      <td className="py-1.5 px-2 text-right text-2xs text-slate-400">
-                        Gộp trong GMV Aff
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <span className={`text-2xs font-mono font-semibold ${
-                            channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
-                          }`}>
-                            {channelTotals.tapFreecast.qty} suất
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setViewMode('TABLE');
-                              setActiveTab('TAP_FREECAST');
-                            }}
-                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            Chi tiết FOC →
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Dòng 3: Video kênh thương hiệu (Self-channel) */}
-                    <tr className="hover:bg-slate-50/70">
-                      <td className="py-1.5 px-2.5">
-                        <div className="font-semibold text-slate-900">3. Kênh Brand</div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            disabled={isLayer1Locked}
-                            value={layer1Metrics.qtySelfChannel}
-                            onChange={(e) => handleUpdateLayer1Metrics({ qtySelfChannel: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
-                          />
-                          <span className="text-2xs text-slate-500">video</span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.budgetSelfChannelNet}
-                          onChange={(val) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-600">
-                        {formatVndShort(Math.round(layer1Metrics.budgetSelfChannelNet * GROSS_MULTIPLIER))}
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.targetGmvSelfChannel}
-                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvSelfChannel: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <span className={`text-2xs font-mono font-semibold ${
-                            channelTotals.selfChannel.qty === layer1Metrics.qtySelfChannel && channelTotals.selfChannel.budget === layer1Metrics.budgetSelfChannelNet
-                              ? 'text-emerald-700'
-                              : 'text-amber-700'
-                          }`}>
-                            {channelTotals.selfChannel.qty} video · {formatVndShort(channelTotals.selfChannel.budget)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setViewMode('TABLE');
-                              setActiveTab('SELF_CHANNEL');
-                            }}
-                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            Kênh Brand →
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Dòng 4: Đa sàn khác (Shopee, FB, IG, Threads) */}
-                    <tr className="hover:bg-slate-50/70">
-                      <td className="py-1.5 px-2.5">
-                        <div className="font-semibold text-slate-900">4. Đa sàn</div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            disabled={isLayer1Locked}
-                            value={layer1Metrics.qtyMultiPlatform}
-                            onChange={(e) => handleUpdateLayer1Metrics({ qtyMultiPlatform: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
-                          />
-                          <span className="text-2xs text-slate-500">video</span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.budgetMultiPlatformNet}
-                          onChange={(val) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-600">
-                        {formatVndShort(Math.round(layer1Metrics.budgetMultiPlatformNet * GROSS_MULTIPLIER))}
-                      </td>
-                      <td className="py-1.5 px-2 text-right text-2xs text-slate-400">
-                        Đa nền tảng
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center justify-end gap-2">
-                          <span className={`text-2xs font-mono font-semibold ${
-                            channelTotals.multiPlatform.qty === layer1Metrics.qtyMultiPlatform && channelTotals.multiPlatform.budget === layer1Metrics.budgetMultiPlatformNet
-                              ? 'text-emerald-700'
-                              : 'text-amber-700'
-                          }`}>
-                            {channelTotals.multiPlatform.qty} video · {formatVndShort(channelTotals.multiPlatform.budget)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setViewMode('TABLE');
-                              setActiveTab('MULTI_PLATFORM');
-                            }}
-                            className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
-                          >
-                            Đa sàn →
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Dòng 5: Livestream */}
-                    <tr className="hover:bg-slate-50/70">
-                      <td className="py-1.5 px-2.5">
-                        <div className="font-semibold text-slate-900">5. Livestream</div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <div className="inline-flex items-center justify-end gap-1">
-                          <input
-                            type="number"
-                            disabled={isLayer1Locked}
-                            value={layer1Metrics.qtyLivestreamSessions}
-                            onChange={(e) => handleUpdateLayer1Metrics({ qtyLivestreamSessions: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-14 h-7 text-right font-mono font-semibold px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
-                          />
-                          <span className="text-2xs text-slate-500">phiên</span>
-                        </div>
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.budgetLivestreamNet}
-                          onChange={(val) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-600">
-                        {formatVndShort(Math.round(layer1Metrics.budgetLivestreamNet * GROSS_MULTIPLIER))}
-                      </td>
-                      <td className="py-1.5 px-2 text-right">
-                        <FormattedNumberInput
-                          disabled={isLayer1Locked}
-                          value={layer1Metrics.targetGmvLivestream}
-                          onChange={(val) => handleUpdateLayer1Metrics({ targetGmvLivestream: Math.max(0, val) })}
-                          className="w-24 h-7 text-right font-mono font-semibold px-2 py-0.5 rounded border border-slate-200 bg-slate-50 text-emerald-700 disabled:bg-slate-100"
-                        />
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right whitespace-nowrap">
-                        <span className="text-2xs font-mono text-slate-500">
-                          {layer1Metrics.qtyLivestreamSessions} ca live
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
-                      <td className="py-1.5 px-2.5">
-                        Tổng cộng Chỉ tiêu (Kèm gói Ads {formatVndShort(layer1Metrics.budgetAdsNet)})
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono">
-                        {totalLayer1Videos} video + {layer1Metrics.qtyLivestreamSessions} live
-                      </td>
-                      <td className={`py-1.5 px-2 text-right font-mono ${layer1BudgetGapVsPnl < 0 ? 'text-rose-600' : 'text-blue-700'}`}>
-                        {formatVndShort(totalLayer1ChannelBudgetNet)}
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-700">
-                        {formatVndShort(Math.round(totalLayer1ChannelBudgetNet * GROSS_MULTIPLIER))}
-                      </td>
-                      <td className="py-1.5 px-2 text-right font-mono text-emerald-700">
-                        {formatVndShort(layer1Metrics.targetNmvTotal)}
-                      </td>
-                      <td className="py-1.5 px-2.5 text-right font-mono text-2xs">
-                        Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
               </div>
 
               {/* Khu vực ghi chú thống nhất & Nút Chốt gọn 1 dòng */}
@@ -2626,7 +2806,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </div>
 
             {/* Cột phải (4/12): Trạng thái duyệt các bên (Xanh = Duyệt, Đỏ = Chưa) & Tiến độ đối soát */}
-            <div className="lg:col-span-4 flex flex-col gap-2.5">
+            <div className="lg:col-span-4 flex flex-col justify-between gap-2.5">
               {/* Khung 1: Trạng thái duyệt các bên (có bao nhiêu bên thì bấy nhiêu dòng) */}
               <div id="plan-approval-detail">
                 <PlanApprovalStepper

@@ -56,9 +56,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   userScopeSummary,
 }) => {
   return (
-    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2.5 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-12 bg-surface border-b border-line px-3 sm:px-5 lg:px-6 py-1.5 flex flex-wrap items-center justify-start gap-1.5 sm:gap-2 shrink-0">
       {/* Khối 1: Nút menu di động / ẩn menu desktop & Tiêu đề trang */}
-      <div className="order-1 flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
+      <div className="order-1 flex items-center gap-2 min-w-0 shrink-0">
         {onToggleMobileSidebar && (
           <button
             type="button"
@@ -97,8 +97,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       {/* Khối 2: Cụm thao tác trang & Đăng xuất (Mobile: cạnh tiêu đề; Desktop: phía cuối thanh) */}
-      <div className="order-2 sm:order-3 ml-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 shrink-0 max-w-full">
-        {activeTab !== 'tiktok-crawler' && (
+      <div className="order-2 sm:order-3 ml-auto flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-full">
+        {activeTab !== 'tiktok-crawler' && activeTab !== 'input-plan' && (
           currentUser.role === 'BRAND_PARTNER' ? (
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
@@ -126,15 +126,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         <PageActionsSlot />
 
         {onUserChange && (
-          <label className="hidden sm:inline-flex relative items-center h-8 pl-2.5 pr-7 rounded-md border border-line bg-surface hover:bg-sunken transition-colors text-xs text-ink cursor-pointer shrink-0">
-            <span className="text-ink-3 mr-1.5 hidden 2xl:inline">Vai trò:</span>
+          <label className="hidden sm:inline-flex relative items-center h-8 pl-2 pr-6 rounded-md border border-line bg-surface hover:bg-sunken transition-colors text-xs text-ink cursor-pointer shrink-0">
             <select
               value={USERS.some(u => u.id === currentUser.id) ? currentUser.id : ''}
               onChange={(e) => {
                 const u = USERS.find((item) => item.id === e.target.value);
                 if (u) onUserChange(u);
               }}
-              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[165px] xl:max-w-[210px] truncate"
+              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1 max-w-[150px] xl:max-w-[185px] truncate"
               aria-label="Chuyển tài khoản giả lập"
             >
               {!USERS.some(u => u.id === currentUser.id) && (
