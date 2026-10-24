@@ -25,6 +25,7 @@ import {
 import { columnOf, itemFee, itemGrade, planQuota } from '../../lib/listingBoardRules';
 import { ensureSequentialBriefCodes, isBriefReady, slotKocHandles, slotTargetQty, type ContentSlot } from '../../lib/contentPlanRules';
 import type { BrandProductCatalog } from '../../lib/productCatalog';
+import { computeWindowPerformance, videoIdFromAirLink, type DailyVideoPerformanceRow } from '../../lib/upaffiliateDailyPerformance';
 import {
   BOOKING_LIST_COLUMNS,
   defaultBookingTabName,
@@ -623,38 +624,53 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     notify(`Đã tạo Phụ lục SOW phát sinh sau Air (${upsellJob.code}) gắn với video của ${sourceJob.code}.`, 'success');
   };
 
-  /** Đồng bộ số liệu GMV, Đơn hàng, Lượt xem (D14, D30, D60) từ UpAffiliate / TikTok Seller cho Job (RULE-DATA-01: không sinh số giả) */
-  const syncJobPerformanceFromUpaffiliate = (d: PlanDeal, job: DealJob) => {
-    const matchedKoc = kocOfHandle(d.kocHandle);
-    const realViews = job.acceptance.views || matchedKoc?.avgViews || 0;
-    const realGmv30 = matchedKoc?.tiktokGmv30d
-      ? Math.round(matchedKoc.tiktokGmv30d / Math.max(1, matchedKoc.videoCount || 1))
-      : 0;
-    if (realViews <= 0 && realGmv30 <= 0) {
-      notify(
-        `Chưa có số liệu thực tế từ UpAffiliate / TikTok Seller cho @${d.kocHandle}. Vui lòng đồng bộ dữ liệu thực trước.`,
-        'warning'
-      );
+  /** Kéo số liệu daily của video từ UpAffiliate rồi cộng D14 / D30 / D60 tính từ ngày air (RULE-DATA-01: không sinh số giả) */
+  const [syncingPerfJobId, setSyncingPerfJobId] = useState<string | null>(null);
+  const syncJobPerformanceFromUpaffiliate = async (d: PlanDeal, job: DealJob) => {
+    const videoId = videoIdFromAirLink(job.airLink);
+    if (!videoId) {
+      notify(`${job.code} chưa có link air dài chứa Video ID nên chưa kéo được số liệu daily.`, 'warning');
       return;
     }
-    const aov = matchedKoc?.avgOrderValue || matchedKoc?.aov || 0;
-    const calcOrders = (gmv: number) => (aov > 0 && gmv > 0 ? Math.max(1, Math.round(gmv / aov)) : 0);
-    const d30Views = Math.round(realViews);
-    const d30Gmv = Math.round(realGmv30);
-    patchJob(
-      d.id,
-      job.id,
-      cur => ({
-        ...cur,
-        performance: {
-          d14: cur.performance?.d14 || { views: 0, orders: 0, gmv: 0 },
-          d30: { views: d30Views, orders: calcOrders(d30Gmv), gmv: d30Gmv },
-          d60: cur.performance?.d60 || { views: 0, orders: 0, gmv: 0 },
-        },
-      }),
-      `Đồng bộ hiệu suất thực tế từ UpAffiliate cho ${job.code}`
-    );
-    notify(`Đã đồng bộ hiệu suất thực tế từ UpAffiliate cho ${job.code} (GMV 30d: ${fmt(d30Gmv)}đ).`, 'success');
+    if (!job.airedAt) {
+      notify(`${job.code} chưa có ngày air nên chưa tính được D14 / D30 / D60.`, 'warning');
+      return;
+    }
+    setSyncingPerfJobId(job.id);
+    try {
+      const res = await fetch('/api/integrations/upaffiliate/daily-performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId, airDate: job.airedAt }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        rows?: DailyVideoPerformanceRow[];
+        today?: string;
+        error?: string | null;
+      } | null;
+      if (!body?.rows || !body.today) {
+        notify(body?.error || 'Không đồng bộ được số liệu daily từ UpAffiliate.', 'error');
+        return;
+      }
+      if (body.rows.length === 0) {
+        notify(body.error || `UpAffiliate chưa có số liệu daily cho video ${videoId}.`, 'warning');
+        return;
+      }
+      const windows = computeWindowPerformance(body.rows, job.airedAt, body.today);
+      patchJob(
+        d.id,
+        job.id,
+        cur => ({ ...cur, performance: { d14: windows.d14, d30: windows.d30, d60: windows.d60 } }),
+        `Tính hiệu suất D14/D30/D60 từ số liệu daily UpAffiliate cho ${job.code}`
+      );
+      const coverage = (['d14', 'd30', 'd60'] as const).map(k => `${k.toUpperCase()} ${windows[k].daysCovered}/${windows[k].daysInWindow} ngày`).join(' · ');
+      if (body.error) notify(`${body.error} Đã tính lại từ số liệu daily đã lưu (${coverage}).`, 'warning');
+      else notify(`Đã cập nhật hiệu suất ${job.code} từ số liệu daily UpAffiliate (${coverage}).`, 'success');
+    } catch {
+      notify('Không kết nối được máy chủ để đồng bộ số liệu daily.', 'error');
+    } finally {
+      setSyncingPerfJobId(null);
+    }
   };
 
   const removeJobFromDeal = (d: PlanDeal, job: DealJob) => {
@@ -1380,7 +1396,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
 
     const perfRow = (key: 'd14' | 'd30' | 'd60', label: string) => (
       <tr key={key}>
-        <td className={TD}>{label}</td>
+        <td className={TD}>
+          {label}
+          {job.performance[key].daysInWindow !== undefined && (
+            <div className="text-xs text-ink-3">
+              Daily {job.performance[key].daysCovered}/{job.performance[key].daysInWindow} ngày
+            </div>
+          )}
+        </td>
         {(['views', 'orders', 'gmv'] as const).map(f => (
           <td key={f} className={TD}>
             <Input
@@ -1391,7 +1414,11 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
               onChange={e =>
                 setJob(x => ({
                   ...x,
-                  performance: { ...x.performance, [key]: { ...x.performance[key], [f]: e.target.value === '' ? null : Number(e.target.value) } },
+                  // Sửa tay thì bỏ nhãn độ phủ daily vì số không còn là số tự cộng
+                  performance: {
+                    ...x.performance,
+                    [key]: { ...x.performance[key], [f]: e.target.value === '' ? null : Number(e.target.value), daysCovered: undefined, daysInWindow: undefined },
+                  },
                 }))
               }
             />
@@ -3117,8 +3144,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         <section className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-ink">Hiệu suất của {job.code} (Đối soát GMV &amp; Đơn hàng D14 / D30 / D60)</div>
-            <Button size="sm" variant="secondary" onClick={() => syncJobPerformanceFromUpaffiliate(d, job)}>
-              Đồng bộ GMV / Đơn hàng từ UpAffiliate
+            <Button size="sm" variant="secondary" disabled={syncingPerfJobId === job.id} onClick={() => void syncJobPerformanceFromUpaffiliate(d, job)}>
+              {syncingPerfJobId === job.id ? 'Đang kéo số liệu daily…' : 'Đồng bộ GMV / Đơn hàng từ UpAffiliate'}
             </Button>
           </div>
           <div className="overflow-x-auto rounded-lg border border-line">

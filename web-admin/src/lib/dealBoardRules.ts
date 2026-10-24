@@ -232,6 +232,9 @@ export interface DealPerformance {
   views: number | null;
   orders: number | null;
   gmv: number | null;
+  /** Số ngày đã có dữ liệu daily UpAffiliate / số ngày đã trôi qua trong mốc (chỉ có khi đồng bộ tự động). */
+  daysCovered?: number;
+  daysInWindow?: number;
 }
 
 export interface DealEvent {
@@ -1645,7 +1648,16 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
   const n = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
   const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : '');
   const oneOf = <T extends string>(v: unknown, list: readonly T[], fallback: T): T => (list.includes(v as T) ? (v as T) : fallback);
-  const perf = (p: Partial<DealPerformance> | undefined): DealPerformance => ({ views: n(p?.views), orders: n(p?.orders), gmv: n(p?.gmv) });
+  const perf = (p: Partial<DealPerformance> | undefined): DealPerformance => {
+    const out: DealPerformance = { views: n(p?.views), orders: n(p?.orders), gmv: n(p?.gmv) };
+    const covered = n(p?.daysCovered);
+    const inWindow = n(p?.daysInWindow);
+    if (covered !== null && inWindow !== null) {
+      out.daysCovered = covered;
+      out.daysInWindow = inWindow;
+    }
+    return out;
+  };
   const sanitizeAcceptance = (acc: Partial<DealJobAcceptance> | undefined): DealJobAcceptance => ({
     status: oneOf(acc?.status, ['PENDING', 'PASSED', 'REVIEW', 'FAILED'] as const, 'PENDING'),
     checks: (Array.isArray(acc?.checks) ? acc!.checks! : []).slice(0, 30).map(c => ({ key: s(c?.key, 60), label: s(c?.label, 160), passed: Boolean(c?.passed), detail: s(c?.detail, 400) })),
