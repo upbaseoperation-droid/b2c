@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   QrCode,
-  FileCheck2,
   ExternalLink,
   RefreshCw,
 } from 'lucide-react';
@@ -207,41 +206,6 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
     }));
   };
 
-  const handleAutoFillStandardDemoFields = (dealId: string, deal: BookingDealItem) => {
-    const cleanHandle = (deal.kocChannelId || deal.kocStageName || 'creator')
-      .replace(/^@/, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9._]/g, '');
-    const numericSuffix = deal.dealCode.replace(/\D/g, '').slice(-6) || '616068';
-
-    updateDealOverride(dealId, {
-      linkAir:
-        deal.tiktokVideoUrl && !deal.tiktokVideoUrl.includes('vt.tiktok.com')
-          ? deal.tiktokVideoUrl
-          : `https://www.tiktok.com/@${cleanHandle || 'koc.upbase'}/video/742185920384${numericSuffix}`,
-      postedDate: deal.postedDate || deal.postDate || '2026-10-18',
-      sparkAdsCode: deal.sparkAdsCode || `SPARK-TT-${numericSuffix}-60D`,
-      adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-      contractUrl:
-        deal.contractScanUrl ||
-        deal.signedContractUrl ||
-        `https://drive.google.com/drive/folders/upbase-hd-${deal.dealCode.toLowerCase()}`,
-      bbntUrl: `BBNT-${deal.dealCode}-VER052026`,
-      invoiceNumber: `HDGTGT-${numericSuffix}`,
-    });
-
-    setSharedPayeeOverride(prev => ({
-      ...prev,
-      bankName: prev.bankName || evaluation.payee.bankName || 'Techcombank',
-      bankAccount: prev.bankAccount || evaluation.payee.bankAccount || `1903${numericSuffix}8899`,
-      bankHolder:
-        prev.bankHolder ||
-        evaluation.payee.bankHolder ||
-        (evaluation.payee.legalEntityName || deal.kocStageName).toUpperCase(),
-      legalId: prev.legalId || evaluation.payee.legalId || `001196${numericSuffix}`,
-    }));
-  };
-
   const handleSubmitToLark = async () => {
     if (!evaluation.canSubmit || submitting) return;
     setSubmitting(true);
@@ -354,6 +318,8 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
             onSuccessUpdateDeals(matchedDeals, updatedSlip);
           }
         }
+      } else {
+        setSubmitError(json?.message || json?.error || 'Không chuyển được bước duyệt.');
       }
     } catch {
       // Giữ nguyên nếu lỗi mạng
@@ -702,7 +668,6 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
 
                 <div className="space-y-2.5">
                   {evaluation.lineItems.map(line => {
-                    const dealObj = selectedDeals.find(d => d.id === line.dealId);
                     return (
                       <div
                         key={line.dealId}
@@ -733,16 +698,6 @@ export const LarkPaymentRequestModal: React.FC<LarkPaymentRequestModalProps> = (
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {!line.isEligible && dealObj && (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                icon={FileCheck2}
-                                onClick={() => handleAutoFillStandardDemoFields(line.dealId, dealObj)}
-                              >
-                                Điền nhanh hồ sơ mẫu chuẩn
-                              </Button>
-                            )}
                             <span className="text-xs font-semibold text-ink tabular-nums">
                               Thanh toán Deal: {formatVnd(line.netTransferAmount)}
                             </span>

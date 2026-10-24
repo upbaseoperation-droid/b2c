@@ -17,6 +17,7 @@ import {
   type B2cAdsCampaignMetric,
   type B2cBookedVideoRecord,
 } from './b2cAnalyticsDataset';
+import { bookingDealCost } from './planDealLink';
 
 export interface ProfileMonthOption {
   value: string;
@@ -372,7 +373,7 @@ function convertDealToMonthlyBooking(
   month: string
 ): StoreMonthlyBookingRecord {
   const gmv = d.gmv30 || d.affiliateGmv || 0;
-  const cost = d.totalValue || 0;
+  const cost = bookingDealCost(d);
   const costGross = Math.round(cost * GROSS_MULTIPLIER);
   const isAired = Boolean(
     d.videoUrl ||

@@ -775,7 +775,9 @@ export default function App() {
           if (cancelled || !body || !Array.isArray(body.bookingDeals)) return;
           const liveDeals = body.bookingDeals as BookingDealItem[];
           setDeals(prev => {
-            const nonPlanDeals = prev.filter(d => !d.id.startsWith('planjob-'));
+            // Bỏ bản cũ của deal sinh từ plan (id `PJ-…`/`PD-…`) trước khi nạp bản mới, tránh nhân đôi mỗi lần đồng bộ.
+            const liveIds = new Set(liveDeals.map(d => d.id));
+            const nonPlanDeals = prev.filter(d => !d.id.startsWith('PJ-') && !d.id.startsWith('PD-') && !liveIds.has(d.id));
             if (liveDeals.length === 0) return nonPlanDeals;
             return [...liveDeals, ...nonPlanDeals];
           });

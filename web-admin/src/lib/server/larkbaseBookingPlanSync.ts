@@ -598,9 +598,13 @@ export function mapRawBitableRecordToPlanRecord(
   const isB2cManaged = b2cFlagRaw === 1 || b2cFlagRaw === '1' || b2cFlagRaw === true || b2cFlagRaw === 'Có';
   if (!isB2cManaged) return null;
 
-  // Kiểm tra trạng thái đã duyệt trên Larkbase
+  // Kiểm tra trạng thái đã duyệt trên Larkbase. Webhook thiếu trạng thái thì không coi là đã duyệt;
+  // kéo qua API giữ mặc định cũ vì view nguồn chỉ chứa kế hoạch đã duyệt.
   const rawStatus = parseText(
-    fields['Trạng thái duyệt'] ?? fields['Trạng thái'] ?? fields['approval_status'] ?? 'Đã duyệt'
+    fields['Trạng thái duyệt'] ??
+      fields['Trạng thái'] ??
+      fields['approval_status'] ??
+      (syncSource === 'API_PULL' ? 'Đã duyệt' : '')
   ).toUpperCase();
   const isApproved =
     rawStatus.includes('ĐÃ DUYỆT') ||

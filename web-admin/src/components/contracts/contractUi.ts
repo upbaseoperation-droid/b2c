@@ -184,6 +184,7 @@ export function prefill(
   const tax = calculateContractTax({
     subjectKind,
     baseAmount: totalAmount,
+    vatRatePercent: deal?.vatRatePercent,
     isNetPayment: true,
   });
 

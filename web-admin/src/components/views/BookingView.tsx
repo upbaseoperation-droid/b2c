@@ -39,6 +39,7 @@ import {
 } from '../../lib/mockData';
 import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
 import { getVietnamDateTimeShort } from '../../lib/format';
+import { bookingDealCost } from '../../lib/planDealLink';
 import { KocProfileModal } from '../KocProfileModal';
 import { calculateKocPerformanceStats } from '../koc/kocUtils';
 import { CreateKocModal } from '../CreateKocModal';
@@ -791,12 +792,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
       if ((d.gmv30 || 0) > 0) hasGmv++;
       if ((d.roi || 0) >= 1) breakEven++;
       if ((d.totalValue || 0) > 0) paidCount++;
-      totalCost += d.totalValue || 0;
+      totalCost += bookingDealCost(d);
       totalGmv += d.gmv30 || 0;
 
       const stageKey = resolveDealPipelineStage(d);
       byStage[stageKey].count++;
-      byStage[stageKey].cost += d.totalValue || 0;
+      byStage[stageKey].cost += bookingDealCost(d);
       byStage[stageKey].gmv += d.gmv30 || 0;
       if (
         (stageKey === '1_PLAN_SOURCING' && d.brandApprovalStatus === 'CHỜ_DUYỆT') ||
@@ -1009,7 +1010,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       const isPaid = (deal.totalValue || 0) > 0;
       if (isPaid) group.paidDealsCount++;
       else group.focDealsCount++;
-      group.totalCost += deal.totalValue || 0;
+      group.totalCost += bookingDealCost(deal);
       group.totalGmv += deal.gmv30 || 0;
       if ((deal.roi || 0) >= 1) group.breakEvenCount++;
 
@@ -1884,7 +1885,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 {PIPELINE_STAGES.map((st) => {
                   const stageDeals = filteredDeals.filter(d => resolveDealPipelineStage(d) === st.key);
                   const visibleCards = stageDeals.slice(0, kanbanCardLimit);
-                  const stageTotalCost = stageDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
+                  const stageTotalCost = stageDeals.reduce((sum, d) => sum + bookingDealCost(d), 0);
 
                   return (
                     <div

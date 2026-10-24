@@ -39,21 +39,34 @@ export async function GET(request: NextRequest) {
 // POST /api/integrations/larkbase/booking-plans — Nhận dữ liệu đẩy từ Lark AnyCross / Larkbase Automation hoặc chủ động kéo qua API
 export async function POST(request: NextRequest) {
   try {
-    // Nếu có cấu hình ANYCROSS_WEBHOOK_SECRET trong .env thì kiểm tra header bảo mật từ AnyCross
+    // Ghi kế hoạch qua webhook chỉ nhận khi: AnyCross gửi đúng secret, hoặc người đăng nhập có quyền đồng bộ kế hoạch.
     const expectedSecret = process.env.ANYCROSS_WEBHOOK_SECRET?.trim();
-    if (expectedSecret) {
-      const headerSecret =
-        request.headers.get('x-anycross-secret')?.trim() ||
-        request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
-      if (headerSecret && headerSecret !== expectedSecret) {
-        return NextResponse.json({ error: 'Sai mã xác thực AnyCross (x-anycross-secret).' }, { status: 401 });
-      }
+    const headerSecret =
+      request.headers.get('x-anycross-secret')?.trim() ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
+    if (headerSecret && expectedSecret && headerSecret !== expectedSecret) {
+      return NextResponse.json({ error: 'Sai mã xác thực AnyCross (x-anycross-secret).' }, { status: 401 });
     }
+    const viaAnyCross = Boolean(expectedSecret && headerSecret === expectedSecret);
+    const user = getAuthenticatedUser(request);
+    const canSync = Boolean(
+      user &&
+        !user.partnerType &&
+        !user.role.endsWith('_PARTNER') &&
+        (['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'LEADER'].includes(user.role) ||
+          user.permissions?.includes('canApproveBudget'))
+    );
+    const rejectWebhook = () =>
+      NextResponse.json(
+        { error: 'Webhook kế hoạch cần mã xác thực AnyCross hợp lệ hoặc tài khoản có quyền đồng bộ kế hoạch.' },
+        { status: user ? 403 : 401 }
+      );
 
     const rawBody = await request.json().catch(() => ({}));
 
     // 1. Trường hợp AnyCross đẩy mảng nhiều bản ghi cùng lúc (Batch)
     if (Array.isArray(rawBody) || Array.isArray(rawBody?.records)) {
+      if (!viaAnyCross && !canSync) return rejectWebhook();
       const items = (Array.isArray(rawBody) ? rawBody : rawBody.records) as Array<Record<string, unknown>>;
       const acceptedRecords = [];
       const acceptedPlans = [];
@@ -105,6 +118,7 @@ export async function POST(request: NextRequest) {
       Boolean(body.store_name || (rawBody as Record<string, unknown>)['Gian hàng']);
 
     if (isDirectAnyCrossPayload) {
+      if (!viaAnyCross && !canSync) return rejectWebhook();
       const result = await ingestLarkbaseWebhookRecord({
         record_id: body.record_id || String((rawBody as Record<string, unknown>).larkRecordId || `recAnyCross${Date.now()}`),
         app_token: body.app_token || body.appToken,
@@ -118,16 +132,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Trường hợp bấm nút đồng bộ từ giao diện
-    const user = getAuthenticatedUser(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized: Vui lòng đăng nhập để thực hiện đồng bộ kế hoạch.' },
         { status: 401 }
       );
     }
-    const canSync =
-      ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'LEADER'].includes(user.role) ||
-      user.permissions?.includes('canApproveBudget');
     if (!canSync) {
       return NextResponse.json(
         { error: 'Bạn không có quyền kích hoạt đồng bộ kế hoạch từ Larkbase.' },

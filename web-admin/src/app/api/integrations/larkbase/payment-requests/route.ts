@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchLarkAppAccessToken, getLarkConfig, getAuthenticatedUser } from '@/lib/larkAuth';
 import {
   buildLarkPaymentRequestSlip,
+  type DealPaymentLedgerEntry,
   type DealPaymentOverrides,
   type LarkPaymentRequestSlip,
   type PaymentRequestType,
@@ -109,6 +110,29 @@ function seedInitialPaymentSlips() {
   };
   memoryPaymentRequestSlips.set(sampleSlip.id, sampleSlip);
 }
+
+/** Tổng hợp các phiếu đã lập theo mã đơn để chặn lập trùng và trừ tạm ứng khi tất toán. */
+function paymentLedgerByDealCode(): Record<string, DealPaymentLedgerEntry> {
+  const ledger: Record<string, DealPaymentLedgerEntry> = {};
+  for (const slip of memoryPaymentRequestSlips.values()) {
+    for (const item of slip.lineItems) {
+      const entry = (ledger[item.dealCode] ??= { advanceRequestedAmount: 0, settlementRequested: false });
+      if (slip.requestType === 'ADVANCE') entry.advanceRequestedAmount += item.requestBaseNetAmount;
+      else entry.settlementRequested = true;
+    }
+  }
+  return ledger;
+}
+
+type ApprovalStatus = LarkPaymentRequestSlip['larkSync']['approvalStatus'];
+
+/** Vai trò được duyệt ở từng bước; mỗi lần chỉ chuyển sang bước kế tiếp. */
+const APPROVER_ROLES_BY_STATUS: Partial<Record<ApprovalStatus, string[]>> = {
+  PENDING_LEADER: ['LEADER', 'MANAGER', 'ADMIN'],
+  PENDING_DIRECTOR: ['MANAGER', 'ADMIN'],
+  PENDING_FINANCE: ['FINANCE', 'ADMIN'],
+  APPROVED: ['FINANCE', 'ADMIN'],
+};
 
 function getLarkPaymentIntegrationConfig() {
   const lark = getLarkConfig();
@@ -234,10 +258,17 @@ export async function POST(request: NextRequest) {
       if (jobs.length === 0) {
         return NextResponse.json({ success: false, error: 'Chưa có Job nào để đồng bộ sang Bảng 3.2.' }, { status: 400 });
       }
+      // Chưa nối API ghi Bảng 3.2: không sinh mã bản ghi giả, trả rõ là giả lập; production báo chưa hỗ trợ.
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { success: false, error: 'LARK32_SYNC_NOT_CONNECTED', message: 'Đồng bộ Bảng 3.2 chưa được kết nối với Larkbase. Chưa có Job nào được gửi.' },
+          { status: 501 }
+        );
+      }
       const nowIso = new Date().toISOString();
-      const syncedJobs = jobs.map((j, idx) => {
+      const syncedJobs = jobs.map(j => {
         const isAired = Boolean((j.airLink || '').trim());
-        const larkRecordId = j.existingRecordId || `recLark32_${j.jobCode.replace(/[^A-Z0-9]/gi, '')}_${String(idx + 1).padStart(2, '0')}`;
+        const larkRecordId = j.existingRecordId || '';
         return {
           jobId: j.jobId,
           jobCode: j.jobCode,
@@ -249,6 +280,7 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({
         success: true,
+        simulated: true,
         syncedCount: syncedJobs.length,
         syncedJobs,
       });
@@ -257,7 +289,7 @@ export async function POST(request: NextRequest) {
     const requestType: PaymentRequestType = body.requestType === 'ADVANCE' ? 'ADVANCE' : 'SETTLEMENT';
     const deals = Array.isArray(body.deals) ? body.deals : [];
     const kocs = Array.isArray(body.kocs) ? body.kocs : [];
-    const actorName = (body.actorName || 'Chuyên viên Booking B2C').trim();
+    const actorName = user.name;
     const month = (body.month || '2026/10').trim();
 
     if (deals.length === 0) {
@@ -281,6 +313,7 @@ export async function POST(request: NextRequest) {
       createdBy: actorName,
       note: body.note,
       month,
+      ledgerByDealCode: paymentLedgerByDealCode(),
     });
 
     if (!built.canSubmit) {
@@ -297,6 +330,19 @@ export async function POST(request: NextRequest) {
     }
 
     const config = getLarkPaymentIntegrationConfig();
+    const hasLiveLark =
+      config.hasLarkCredentials && config.appToken !== 'bascnUpbaseB2CPlan41' && config.hasLiveApprovalDef;
+    // Production không được "giả lập thành công": thiếu kết nối thì báo lỗi, phiếu không được ghi nhận.
+    if (!hasLiveLark && !config.hasAnycrossWebhook && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'LARK_NOT_CONFIGURED',
+          message: 'Chưa cấu hình kết nối Lark Approval / Larkbase (LARK_APPROVAL_DEFINITION_CODE, LARK_BASE_APP_TOKEN). Phiếu chưa được gửi.',
+        },
+        { status: 503 }
+      );
+    }
     const seq = String(memoryPaymentRequestSlips.size + 1).padStart(3, '0');
     const prefix = requestType === 'ADVANCE' ? 'TU' : 'DNTT';
     const monthCompact = month.replace(/\D/g, '');
@@ -308,13 +354,15 @@ export async function POST(request: NextRequest) {
     let anycrossWebhookDelivered = false;
     let syncMode: LarkPaymentRequestSlip['larkSync']['syncMode'] = 'SANDBOX_SIMULATED';
 
+    let liveSyncError = '';
+
     // 2. Đẩy sang Lark Approval Open API + Larkbase Bitable API v1 nếu đã cấu hình thông tin xác thực thật
-    if (config.hasLarkCredentials && config.appToken !== 'bascnUpbaseB2CPlan41') {
+    if (hasLiveLark) {
       try {
         const accessToken = await fetchLarkAppAccessToken();
 
         // 2a. Tạo phiếu trên Lark Approval v4 (/open-apis/approval/v4/instances)
-        if (config.hasLiveApprovalDef) {
+        {
           const approvalRes = await fetch(
             `https://${config.domain}/open-apis/approval/v4/instances`,
             {
@@ -404,6 +452,8 @@ export async function POST(request: NextRequest) {
           if (approvalJson?.code === 0 && approvalJson?.data?.instance_code) {
             approvalInstanceCode = approvalJson.data.instance_code;
             syncMode = 'LIVE_LARK_API';
+          } else {
+            throw new Error(`Lark Approval từ chối tạo phiếu: ${approvalJson?.msg || `HTTP ${approvalRes.status}`}`);
           }
         }
 
@@ -456,10 +506,24 @@ export async function POST(request: NextRequest) {
         const bitableJson = await bitableRes.json().catch(() => null);
         if (bitableJson?.code === 0 && bitableJson?.data?.record?.record_id) {
           larkbaseRecordId = bitableJson.data.record.record_id;
-          syncMode = 'LIVE_LARK_API';
+        } else {
+          // Phiếu duyệt đã tạo nhưng chưa ghi được Bảng 3.2: vẫn lưu phiếu (tránh tạo trùng phiếu duyệt) và báo rõ.
+          larkbaseRecordId = '';
+          liveSyncError = `Đã tạo phiếu duyệt Lark nhưng chưa ghi được Larkbase 3.2: ${bitableJson?.msg || `HTTP ${bitableRes.status}`}.`;
         }
-      } catch {
-        // Giữ chế độ dự phòng an toàn nếu kết nối mạng ngoài bị gián đoạn
+      } catch (err) {
+        if (syncMode !== 'LIVE_LARK_API') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'LARK_SYNC_FAILED',
+              message: `Không gửi được phiếu sang Lark: ${err instanceof Error ? err.message : 'lỗi kết nối'}. Phiếu chưa được ghi nhận, có thể thử lại.`,
+            },
+            { status: 502 }
+          );
+        }
+        larkbaseRecordId = '';
+        liveSyncError = `Đã tạo phiếu duyệt Lark nhưng chưa ghi được Larkbase 3.2: ${err instanceof Error ? err.message : 'lỗi kết nối'}.`;
       }
     }
 
@@ -494,7 +558,18 @@ export async function POST(request: NextRequest) {
       } catch {
         anycrossWebhookDelivered = false;
       }
+      if (!anycrossWebhookDelivered && !hasLiveLark) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'ANYCROSS_SYNC_FAILED',
+            message: 'Không gửi được phiếu sang AnyCross. Phiếu chưa được ghi nhận, có thể thử lại.',
+          },
+          { status: 502 }
+        );
+      }
     }
+    const simulated = syncMode === 'SANDBOX_SIMULATED';
 
     const slip: LarkPaymentRequestSlip = {
       id: `SLIP-${Date.now()}`,
@@ -531,8 +606,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        simulated,
         slip,
-        message: `Đã tạo phiếu ${slipCode} (${approvalInstanceCode}) và đồng bộ ${built.lineItems.length} Deal lên Lark Approval & Larkbase 3.2.`,
+        message: simulated
+          ? `Giả lập (môi trường thử): đã tạo phiếu ${slipCode} cho ${built.lineItems.length} Deal nhưng CHƯA gửi lên Lark.`
+          : liveSyncError ||
+            `Đã tạo phiếu ${slipCode} (${approvalInstanceCode}) và đồng bộ ${built.lineItems.length} Deal lên ${
+              syncMode === 'LIVE_LARK_API' ? 'Lark Approval & Larkbase 3.2' : 'AnyCross'
+            }.`,
       },
       { status: 201 }
     );
@@ -563,13 +644,18 @@ export async function PATCH(request: NextRequest) {
       { status: 401 }
     );
   }
+  if (user.partnerType || user.role.endsWith('_PARTNER')) {
+    return NextResponse.json(
+      { error: 'Tài khoản đối tác không có quyền duyệt phiếu thanh toán.' },
+      { status: 403 }
+    );
+  }
 
   try {
     seedInitialPaymentSlips();
     const body = (await request.json()) as {
       slipId?: string;
       approvalInstanceCode?: string;
-      nextStatus?: LarkPaymentRequestSlip['larkSync']['approvalStatus'];
     };
 
     const target = Array.from(memoryPaymentRequestSlips.values()).find(
@@ -595,12 +681,23 @@ export async function PATCH(request: NextRequest) {
       ? ['PENDING_LEADER', 'PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID']
       : ['PENDING_DIRECTOR', 'PENDING_FINANCE', 'APPROVED', 'PAID'];
 
-    const currentIdx = order.indexOf(target.larkSync.approvalStatus);
-    const resolvedNext: LarkPaymentRequestSlip['larkSync']['approvalStatus'] =
-      body.nextStatus ||
-      (currentIdx >= 0 && currentIdx < order.length - 1
-        ? order[currentIdx + 1]
-        : 'PAID');
+    // Chỉ tiến đúng một bước theo luồng; không nhận trạng thái đích từ client, không lùi, không bỏ bước.
+    const currentStatus = target.larkSync.approvalStatus;
+    const currentIdx = order.indexOf(currentStatus);
+    if (currentIdx < 0 || currentIdx >= order.length - 1) {
+      return NextResponse.json(
+        { success: false, error: 'SLIP_CLOSED', message: 'Phiếu đã ở bước cuối, không chuyển tiếp được.' },
+        { status: 409 }
+      );
+    }
+    const allowedRoles = APPROVER_ROLES_BY_STATUS[currentStatus] || [];
+    if (!allowedRoles.includes(user.role)) {
+      return NextResponse.json(
+        { success: false, error: 'FORBIDDEN_STEP', message: 'Bạn không có quyền duyệt bước hiện tại của phiếu này.' },
+        { status: 403 }
+      );
+    }
+    const resolvedNext: ApprovalStatus = order[currentIdx + 1];
 
     const updatedSlip: LarkPaymentRequestSlip = {
       ...target,

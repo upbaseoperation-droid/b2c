@@ -12,6 +12,7 @@ import { usePlanRecord } from '../../lib/usePlanRecord';
 import { useListingBoard } from '../../lib/useListingBoard';
 import { contractApi, type ContractBootstrap } from '../contracts/api';
 import type { ContractRecord } from '../../lib/contracts/types';
+import type { DealPaymentOverrides } from '../../lib/larkPaymentRequestEngine';
 import {
   DOCUMENT_LABEL,
   documentOfTemplate,
@@ -773,6 +774,25 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     }
   };
 
+  /** Thông tin thụ hưởng thật của Job; thiếu thì báo và trả null — không bao giờ điền STK/CCCD mẫu. */
+  const resolveJobPayee = (d: PlanDeal, job: DealJob, matchedKoc: KocItem | undefined) => {
+    const bankName = (job.payeeBankName || payeeQuickForm.bankName || matchedKoc?.bankName || '').trim();
+    const bankAccount = (job.payeeBankAccount || payeeQuickForm.bankAccount || matchedKoc?.bankAccount || '').trim();
+    const bankHolder = (job.payeeBankHolder || payeeQuickForm.bankHolder || matchedKoc?.realName || '').trim();
+    const legalId = (job.payeeTaxOrCccd || payeeQuickForm.legalId || matchedKoc?.cccd || matchedKoc?.taxCode || '').trim();
+    const missing = [
+      !bankName && 'ngân hàng',
+      !bankAccount && 'số tài khoản',
+      !bankHolder && 'chủ tài khoản',
+      !legalId && 'CCCD/MST',
+    ].filter(Boolean);
+    if (missing.length > 0) {
+      notify(`${job.code} (@${normHandle(d.kocHandle)}): thiếu ${missing.join(', ')} của người thụ hưởng — bổ sung trước khi lập phiếu.`, 'warning');
+      return null;
+    }
+    return { bankName, bankAccount, bankHolder, legalId };
+  };
+
   /**
    * Đẩy phiếu đề nghị thanh toán về Lark theo từng Job sau khi đã duyệt KOC, ký phụ lục Job và nghiệm thu Job.
    */
@@ -787,10 +807,12 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
     const matchedKoc = kocOfHandle(d.kocHandle);
     const bookingDeal = planJobToBookingDeal(d, job, plan, matchedKoc?.id, fw?.contractNo);
     const taxCalc = computeJobContractAmounts(job);
-    const effectiveAmount = job.payment.amount ?? taxCalc.contractDisplayValue;
+    // Tất toán = tổng − phần đã tạm ứng; máy chủ còn đối chiếu sổ phiếu tạm ứng để trừ lần nữa nếu client chưa cập nhật.
+    const effectiveAmount = job.payment.amount ?? taxCalc.remainingSettlementAmount;
     const dealPayload: BookingDealItem = {
       ...bookingDeal,
-      totalValue: taxCalc.grossPayoutOrInvoice + jobDroppedFee(job),
+      totalValue: taxCalc.netAmount + jobDroppedFee(job),
+      ...(taxCalc.advancePaidAmount > 0 ? { status: 'ADVANCE_PAID' as const, advanceAmount: taxCalc.advancePaidAmount } : {}),
       finalAmount: effectiveAmount,
       postedDate: job.airedAt || getVietnamDateYmd(),
       postDate: job.airedAt || getVietnamDateYmd(),
@@ -798,10 +820,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
     };
 
-    const bankName = (job.payeeBankName || payeeQuickForm.bankName || matchedKoc?.bankName || 'Techcombank').trim();
-    const bankAccount = (job.payeeBankAccount || payeeQuickForm.bankAccount || matchedKoc?.bankAccount || '19036829104018').trim();
-    const bankHolder = (job.payeeBankHolder || payeeQuickForm.bankHolder || matchedKoc?.realName || d.kocName || d.kocHandle).trim();
-    const legalId = (job.payeeTaxOrCccd || payeeQuickForm.legalId || matchedKoc?.cccd || matchedKoc?.taxCode || '001099012345').trim();
+    const payee = resolveJobPayee(d, job, matchedKoc);
+    if (!payee) return;
+    const { bankName, bankAccount, bankHolder, legalId } = payee;
 
     setPushingLarkJobId(job.id);
     try {
@@ -848,7 +869,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
           payment: {
             ...cur.payment,
             status: 'REQUESTED',
-            amount: cur.payment.amount ?? computeJobContractAmounts(cur).contractDisplayValue,
+            amount: cur.payment.amount ?? computeJobContractAmounts(cur).remainingSettlementAmount,
             requestedAt: cur.payment.requestedAt || todayStr,
             larkSlipCode: slip.slipCode || '',
             larkApprovalCode: slip.larkSync?.approvalInstanceCode || '',
@@ -873,25 +894,30 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       notify('Cần điền số phụ lục đã ký trước khi đẩy phiếu Tạm ứng.', 'warning');
       return;
     }
-    const advAmt = job.advancePayment?.amount ?? Math.round(computeJobContractAmounts(job).contractDisplayValue * 0.5);
+    const jobAmounts = computeJobContractAmounts(job);
+    const advAmt = job.advancePayment?.amount ?? Math.round(jobAmounts.netAmount * 0.5);
     if (advAmt <= 0) {
       notify('Số tiền tạm ứng phải lớn hơn 0đ.', 'warning');
+      return;
+    }
+    if (advAmt > jobAmounts.netAmount) {
+      notify(`Số tiền tạm ứng (${fmt(advAmt)}đ) vượt tổng thù lao Net của Job (${fmt(jobAmounts.netAmount)}đ).`, 'warning');
       return;
     }
     const fw = frameworks[normHandle(d.kocHandle)];
     const matchedKoc = kocOfHandle(d.kocHandle);
     const bookingDeal = planJobToBookingDeal(d, job, plan, matchedKoc?.id, fw?.contractNo);
+    // totalValue giữ tổng thù lao (để xét BR-03 đúng giá trị HĐ); số tạm ứng truyền qua advanceAmount.
     const dealPayload: BookingDealItem = {
       ...bookingDeal,
-      totalValue: advAmt,
+      advanceAmount: advAmt,
       finalAmount: advAmt,
       contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
       signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
     };
-    const bankName = (job.payeeBankName || payeeQuickForm.bankName || matchedKoc?.bankName || 'Techcombank').trim();
-    const bankAccount = (job.payeeBankAccount || payeeQuickForm.bankAccount || matchedKoc?.bankAccount || '19036829104018').trim();
-    const bankHolder = (job.payeeBankHolder || payeeQuickForm.bankHolder || matchedKoc?.realName || d.kocName || d.kocHandle).trim();
-    const legalId = (job.payeeTaxOrCccd || payeeQuickForm.legalId || matchedKoc?.cccd || matchedKoc?.taxCode || '001099012345').trim();
+    const payee = resolveJobPayee(d, job, matchedKoc);
+    if (!payee) return;
+    const { bankName, bankAccount, bankHolder, legalId } = payee;
 
     setPushingLarkJobId(job.id);
     try {
@@ -964,15 +990,32 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       }
     }
     const firstPair = selectedPairs[0];
+    // Một phiếu chỉ chuyển cho một người thụ hưởng: chỉ gom các Job của cùng KOC.
+    const handles = new Set(selectedPairs.map(p => normHandle(p.deal.kocHandle)));
+    if (handles.size > 1) {
+      notify(`Đang chọn Job của ${handles.size} KOC khác nhau. Mỗi phiếu ĐNTT chỉ gom Job của cùng một KOC — tách thành nhiều phiếu.`, 'warning');
+      return;
+    }
     const fw = frameworks[normHandle(firstPair.deal.kocHandle)];
     const matchedKoc = kocOfHandle(firstPair.deal.kocHandle);
+    const overridesByDealId: Record<string, DealPaymentOverrides> = {};
     const dealPayloads: BookingDealItem[] = selectedPairs.map(({ deal: d, job }) => {
       const bookingDeal = planJobToBookingDeal(d, job, plan, kocOfHandle(d.kocHandle)?.id, frameworks[normHandle(d.kocHandle)]?.contractNo);
       const taxCalc = computeJobContractAmounts(job);
-      const effectiveAmount = job.payment.amount ?? taxCalc.contractDisplayValue;
+      const effectiveAmount = job.payment.amount ?? taxCalc.remainingSettlementAmount;
+      // Link air / ngày air / mã Ads là của từng Job, không dùng chung của Job đầu tiên.
+      overridesByDealId[bookingDeal.id] = {
+        linkAir: job.airLink.trim(),
+        postedDate: job.airedAt || getVietnamDateYmd(),
+        sparkAdsCode: job.sparkAdsCode || 'DA_NGHIEM_THU',
+        adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+        contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
+        bbntUrl: `BBNT-${job.code}`,
+      };
       return {
         ...bookingDeal,
-        totalValue: taxCalc.grossPayoutOrInvoice + jobDroppedFee(job),
+        totalValue: taxCalc.netAmount + jobDroppedFee(job),
+        ...(taxCalc.advancePaidAmount > 0 ? { status: 'ADVANCE_PAID' as const, advanceAmount: taxCalc.advancePaidAmount } : {}),
         finalAmount: effectiveAmount,
         postedDate: job.airedAt || getVietnamDateYmd(),
         postDate: job.airedAt || getVietnamDateYmd(),
@@ -981,11 +1024,9 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       };
     });
 
-    const j0 = firstPair.job;
-    const bankName = (j0.payeeBankName || matchedKoc?.bankName || 'Techcombank').trim();
-    const bankAccount = (j0.payeeBankAccount || matchedKoc?.bankAccount || '19036829104018').trim();
-    const bankHolder = (j0.payeeBankHolder || matchedKoc?.realName || firstPair.deal.kocName || firstPair.deal.kocHandle).trim();
-    const legalId = (j0.payeeTaxOrCccd || matchedKoc?.cccd || matchedKoc?.taxCode || '001099012345').trim();
+    const payee = resolveJobPayee(firstPair.deal, firstPair.job, matchedKoc);
+    if (!payee) return;
+    const { bankName, bankAccount, bankHolder, legalId } = payee;
 
     setBundlingLark(true);
     try {
@@ -1002,13 +1043,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             bankHolder,
             legalId,
             hasIdCardScan: true,
-            linkAir: j0.airLink.trim(),
-            postedDate: j0.airedAt || getVietnamDateYmd(),
-            sparkAdsCode: j0.sparkAdsCode || 'DA_NGHIEM_THU',
-            adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-            contractUrl: j0.appendixUrl || fw?.fileUrl || `PL-${j0.appendixNo}`,
-            bbntUrl: `BBNT-${j0.code}`,
           },
+          overridesByDealId,
           actorName: currentUserName,
           month: plan.month,
           note: `Gom ${selectedPairs.length} Job (${selectedPairs.map(p => p.job.code).join(', ')}) vào 1 Phiếu ĐNTT Lark 6.1`,
@@ -1036,7 +1072,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                   payment: {
                     ...cur.payment,
                     status: 'REQUESTED' as PaymentStatus,
-                    amount: cur.payment.amount ?? computeJobContractAmounts(cur).contractDisplayValue,
+                    amount: cur.payment.amount ?? computeJobContractAmounts(cur).remainingSettlementAmount,
                     requestedAt: cur.payment.requestedAt || todayStr,
                     larkSlipCode: slip.slipCode || '',
                     larkApprovalCode: slip.larkSync?.approvalInstanceCode || '',
@@ -1128,7 +1164,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         }),
       });
       const body = await res.json().catch(() => null);
-      if (!res.ok || !body?.success) throw new Error(body?.error || body?.message || `Lỗi ${res.status}`);
+      if (!res.ok || !body?.success) throw new Error(body?.message || body?.error || `Lỗi ${res.status}`);
       const syncedMap = new Map<string, { larkRecordId: string; syncedAt: string; isFoc: boolean }>(
         ((body.syncedJobs as Array<{ jobId: string; larkRecordId: string; syncedAt: string; isFoc: boolean }>) || []).map(x => [x.jobId, x])
       );
@@ -1151,8 +1187,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       );
       const focCount = Array.from(syncedMap.values()).filter(x => x.isFoc).length;
       notify(
-        `Đã đồng bộ ${syncedMap.size} Job (gồm ${focCount} Job FOC 0đ) sang Lark 3.2 List duyệt book.`,
-        'success'
+        body.simulated
+          ? `Giả lập: ${syncedMap.size} Job (gồm ${focCount} Job FOC 0đ) CHƯA được gửi lên Lark 3.2.`
+          : `Đã đồng bộ ${syncedMap.size} Job (gồm ${focCount} Job FOC 0đ) sang Lark 3.2 List duyệt book.`,
+        body.simulated ? 'warning' : 'success'
       );
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Không đồng bộ được sang Lark 3.2.', 'error');

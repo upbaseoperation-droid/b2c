@@ -3,13 +3,13 @@ import { USERS } from '@/lib/mockData';
 import { UPBASE_STAFF_MASTER } from '@/lib/importedMasterData';
 import { classifyMasterStaffMember } from '@/lib/rbacData';
 import { readPolicy } from '@/lib/server/accessPolicy';
-import { encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib/larkAuth';
+import { encodeSessionToken, isSandboxLoginAllowed, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib/larkAuth';
 import { UserProfile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  if (process.env.BLOCK_SANDBOX_LOGIN === 'true') {
+  if (!isSandboxLoginAllowed()) {
     return NextResponse.json(
       { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
       { status: 403 }
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    const { userId, staffIdentifier, staffOverrides } = body;
+    const { userId, staffIdentifier } = body;
 
     let sessionUser: UserProfile | null = null;
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         const classified = classifyMasterStaffMember(
           masterStaff,
           policy.deptRules,
-          { ...policy.staffOverrides, ...(staffOverrides || {}) }
+          policy.staffOverrides
         );
 
         if (!classified.canLogin) {
@@ -175,17 +175,20 @@ export async function POST(request: NextRequest) {
  * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
-  if (process.env.BLOCK_SANDBOX_LOGIN === 'true') {
+  if (!isSandboxLoginAllowed()) {
     return NextResponse.json(
       { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
       { status: 403 }
     );
   }
   const { searchParams } = request.nextUrl;
-  const userId = searchParams.get('userId') || USERS[0].id;
+  const userId = searchParams.get('userId');
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');
 
-  const targetUser = USERS.find(u => u.id === userId) || USERS[0];
+  const targetUser = USERS.find(u => u.id === userId);
+  if (!targetUser || targetUser.canLogin === false) {
+    return NextResponse.json({ success: false, error: 'Không tìm thấy tài khoản được phép đăng nhập.' }, { status: 404 });
+  }
   const sessionUser = {
     ...targetUser,
     loginProvider: targetUser.loginProvider === 'GMAIL' ? ('GMAIL' as const) : ('SANDBOX' as const),

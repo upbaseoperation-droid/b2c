@@ -298,13 +298,21 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
 }
 
 
-// Khóa bí mật dùng để ký HMAC token phiên làm việc
-// Sandbox keeps working without configuration, but uses a stable fallback signing key if env secret is missing.
-const fallbackSecret = 'upbase-b2c-session-auth-token-secret-2026';
+// Khóa bí mật dùng để ký HMAC token phiên làm việc.
+// Khóa dự phòng chỉ dùng khi chạy local; production thiếu khóa thì từ chối ký/đọc phiên thay vì dùng chuỗi công khai.
+const devFallbackSecret = 'upbase-b2c-session-auth-token-secret-2026';
 function authSecret() {
   const configured = process.env.AUTH_SECRET || process.env.SESSION_SECRET;
   if (configured) return configured;
-  return fallbackSecret;
+  if (process.env.NODE_ENV === 'production') throw new Error('Chưa cấu hình AUTH_SECRET cho phiên đăng nhập.');
+  return devFallbackSecret;
+}
+
+/** Đăng nhập giả lập: mở khi chạy local; production chỉ mở khi đặt rõ ALLOW_SANDBOX_LOGIN=true. */
+export function isSandboxLoginAllowed(): boolean {
+  if (process.env.BLOCK_SANDBOX_LOGIN === 'true') return false;
+  if (process.env.NODE_ENV !== 'production') return true;
+  return process.env.ALLOW_SANDBOX_LOGIN === 'true';
 }
 
 function signData(data: string): string {

@@ -680,6 +680,33 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Đã rà soát toàn bộ 22 luồng nghiệp vụ E2E từ `ProductCatalogView` → `ContentPlanBoard` → `PlanListingBoard` → `Google Sheets (Vòng 1 & Vòng 2)` → `PlanDealBoard` → `SelfChannelCtvHubView` → `ManagerDelegationHub`.
 
 ---
+
+### BUG-040 — Audit E2E Booking: phiên giả lập, duyệt phiếu thanh toán, dữ liệu thụ hưởng giả và tiền tính sai giữa các chặng
+- **Ngày phát hiện:** 24/10/2026 (`blueprint/audits/2026-10-24-booking-e2e-flow-audit.md`, nhóm 1–2: S1, S2, S3, S5, P3, P4, D3, D2, D4, C3, P1, P5).
+- **Triệu chứng & Nguyên nhân gốc:**
+  1. Đăng nhập giả lập mở mặc định trên production; GET không tham số cấp phiên `USERS[0]` (ADMIN); POST nhận `staffOverrides` từ body. Khóa ký phiên rơi về chuỗi cố định khi thiếu `AUTH_SECRET`.
+  2. `PATCH /api/integrations/larkbase/payment-requests` không kiểm vai trò, nhận `nextStatus` tùy ý → ai đăng nhập cũng đặt được `PAID`.
+  3. Webhook `/api/integrations/larkbase/booking-plans` nhận khi thiếu header secret, mọi phiên (kể cả đối tác) ghi được kế hoạch `APPROVED`; thiếu trạng thái thì mặc định "Đã duyệt".
+  4. Thiếu thông tin thụ hưởng thì tự điền STK/CCCD mẫu (`19036829104018`, `001099012345`); nút "Điền nhanh hồ sơ mẫu chuẩn" bịa link air, HĐ, BBNT, hóa đơn, STK.
+  5. Lark lỗi/chưa cấu hình vẫn trả 201 "đã đồng bộ" kèm mã instance giả; đồng bộ Bảng 3.2 sinh `larkRecordId` giả.
+  6. Deal sinh từ plan bị nhân đôi mỗi lần đồng bộ (lọc `planjob-` nhưng id là `PJ-…`).
+  7. Tổng chi Pipeline cộng `totalValue` (còn gồm phần DROPPED) mà không trừ `droppedCostVnd`.
+  8. Công ty: `totalValue` đã gồm VAT rồi bước tính thuế cộng VAT lần nữa (10% ở prefill HĐ, 8% ở phiếu Lark).
+  9. Tất toán không trừ tạm ứng, lập phiếu lặp được; phiếu tạm ứng chỉ đề nghị 50% số đã nhập; phiếu gom nhiều KOC chuyển hết vào STK của KOC đầu và dùng link air của Job đầu cho mọi Job.
+- **Cách khắc phục:**
+  1. `isSandboxLoginAllowed()` (`larkAuth.ts`): production chỉ mở khi `ALLOW_SANDBOX_LOGIN=true`; GET bắt buộc `userId`; bỏ `staffOverrides` từ body. Production thiếu `AUTH_SECRET` thì từ chối ký/đọc phiên.
+  2. PATCH chỉ tiến đúng 1 bước theo `APPROVER_ROLES_BY_STATUS` (Leader → Giám đốc → Kế toán), chặn đối tác, bỏ `nextStatus`.
+  3. Webhook chỉ nhận khi đúng `ANYCROSS_WEBHOOK_SECRET` hoặc người có quyền đồng bộ kế hoạch; webhook thiếu trạng thái không coi là đã duyệt.
+  4. `resolveJobPayee` (`PlanDealBoard.tsx`) báo thiếu thay vì điền mẫu; gỡ nút điền nhanh trong `LarkPaymentRequestModal.tsx`.
+  5. Production thiếu cấu hình → 503; Lark từ chối → 502, không lưu phiếu; dev trả `simulated: true` và thông báo "CHƯA gửi lên Lark". Đồng bộ 3.2 không sinh mã giả, production trả 501.
+  6. `page.tsx` bỏ bản cũ `PJ-`/`PD-` và trùng id trước khi nạp bản mới.
+  7. `bookingDealCost()` (`planDealLink.ts`) dùng cho tổng chi ở `BookingView.tsx` và `monthlyProfileMetrics.ts`.
+  8. `totalValue` = giá chưa VAT + DROPPED; thêm `BookingDealItem.vatRatePercent`, engine và prefill HĐ dùng đúng % VAT của Job.
+  9. Sổ phiếu theo mã đơn trên máy chủ (`paymentLedgerByDealCode`) trừ tạm ứng khi tất toán, chặn lập trùng (`SETTLEMENT_ALREADY_REQUESTED`, `ADVANCE_ALREADY_REQUESTED`); chặn phiếu nhiều người thụ hưởng (`MIXED_PAYEES`); gom phiếu chỉ cho cùng KOC, link air theo từng Job; màn 3.2 ghi số đã thanh toán theo dòng.
+- **Còn lại / giới hạn:** sổ phiếu vẫn nằm trong bộ nhớ máy chủ (mất khi khởi động lại) — cần lưu bền; trạng thái duyệt chưa đọc ngược từ Lark; link HĐ/BBNT tự dựng (P2) và các mục mức Cao còn lại trong báo cáo audit chưa sửa.
+- **Phạm vi rà soát mở rộng sang phần khác:** đã tìm mọi chỗ tự điền STK/CCCD mẫu (3 hàm đẩy phiếu ở `PlanDealBoard.tsx` và modal), mọi chỗ cộng `totalValue` vào ngân sách, và các nơi lọc deal theo tiền tố id.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

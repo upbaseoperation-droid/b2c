@@ -1262,6 +1262,13 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           createdSlip.larkSync.approvalStatus === 'PAID'
             ? 'Đã thanh toán'
             : 'Đã lập ĐNTT';
+        // Số đã thanh toán của từng dòng lấy theo dòng tương ứng trong phiếu, không lấy tổng cả phiếu.
+        const slipLine = createdSlip.lineItems.find(
+          l =>
+            (it.maBooking && l.dealCode.toUpperCase() === it.maBooking.toUpperCase()) ||
+            l.dealId === `deal-from-32-${it.id}` ||
+            (it.linkedDealId ? l.dealId === it.linkedDealId : false)
+        );
         const recalc = recalculateApprovedBookingItem({
           ...it,
           nganHang: createdSlip.payee.bankName || it.nganHang,
@@ -1271,8 +1278,8 @@ export const ApprovedBookingListView: React.FC<ApprovedBookingListViewProps> = (
           soCccd: createdSlip.payee.legalId || it.soCccd,
           trangThaiPhieuThanhToan: nextPaymentStatus,
           soTienDaThanhToan:
-            createdSlip.larkSync.approvalStatus === 'PAID'
-              ? createdSlip.totals.netTransferTotal
+            createdSlip.larkSync.approvalStatus === 'PAID' && slipLine
+              ? slipLine.netTransferAmount
               : it.soTienDaThanhToan,
           larkApprovalInstanceCode: createdSlip.larkSync.approvalInstanceCode,
           larkSlipCode: createdSlip.slipCode,

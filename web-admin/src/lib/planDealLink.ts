@@ -19,6 +19,11 @@ import {
  * - Phiếu đề nghị thanh toán đẩy về Lark theo từng Job sau nghiệm thu.
  */
 
+/** Chi phí thực của một dòng booking: `totalValue` còn gồm phần DROPPED nên phải trừ `droppedCostVnd` khi cộng ngân sách. */
+export function bookingDealCost(d: Pick<BookingDealItem, 'totalValue' | 'droppedCostVnd'>): number {
+  return Math.max(0, (d.totalValue || 0) - (d.droppedCostVnd || 0));
+}
+
 export type ContractDocument = 'HDNT' | 'SOW' | 'BBNT';
 
 export const DOCUMENT_LABEL: Record<ContractDocument, string> = {
@@ -129,7 +134,9 @@ export function planJobToBookingDeal(
     statusLabel: job.payment.status === 'PAID' ? 'Đã thanh toán' : 'Đã chốt điều khoản',
     assignedStaff: job.pic || deal.pic,
     bookingPic: job.pic || deal.pic,
-    totalValue: amountBreakdown.contractDisplayValue + droppedNet,
+    // Giá chưa VAT + phần DROPPED (nơi dùng tự trừ droppedCostVnd); VAT của Công ty cộng ở bước tính thuế theo vatRatePercent.
+    totalValue: amountBreakdown.netAmount + droppedNet,
+    vatRatePercent: amountBreakdown.entityType === 'COMPANY' ? amountBreakdown.vatPct : undefined,
     videoAssetCostVnd: isPackageAllIn ? totalNet : videoNet,
     addonsCostVnd: isPackageAllIn ? 0 : addonsNet,
     droppedCostVnd: droppedNet,

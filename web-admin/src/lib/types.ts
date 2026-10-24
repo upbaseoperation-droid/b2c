@@ -973,6 +973,7 @@ export interface BookingDealItem {
   videoAssetCostVnd?: number; // Chi phí Net của Asset (Video chính) trong Deal
   addonsCostVnd?: number; // Tổng chi phí Net các Dịch vụ gia tăng trong Deal
   droppedCostVnd?: number; // Khấu trừ hạng mục Dịch vụ gia tăng không thực hiện khi quyết toán Deal
+  vatRatePercent?: number; // % VAT của chủ thể Công ty; totalValue luôn là giá chưa VAT
   sequentialAcceptanceStage?: DealSequentialAcceptanceStage; // Nghiệm thu 2 tầng: (1) Video -> (2) Dịch vụ gia tăng & Quyền lợi
   stage1VideoVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Asset Video (Tầng 1)
   stage2AddonsVerifiedAt?: string; // Thời điểm hoàn tất nghiệm thu Dịch vụ gia tăng / các phần khác (Tầng 2)

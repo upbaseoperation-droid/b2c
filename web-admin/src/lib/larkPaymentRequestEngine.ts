@@ -62,6 +62,12 @@ export interface DealPaymentOverrides {
   advanceRatePct?: number;
 }
 
+/** Các phiếu đã lập trước đó cho cùng mã đơn (máy chủ tự tổng hợp, không nhận từ client). */
+export interface DealPaymentLedgerEntry {
+  advanceRequestedAmount: number;
+  settlementRequested: boolean;
+}
+
 export interface ResolvedPayeeProfile {
   subjectKind: SubjectKind;
   subjectLabel: string;
@@ -354,7 +360,8 @@ export function evaluateDealForPaymentRequest(
   deal: BookingDealItem,
   koc: KocItem | undefined,
   requestType: PaymentRequestType,
-  override?: DealPaymentOverrides
+  override?: DealPaymentOverrides,
+  ledger?: DealPaymentLedgerEntry
 ): DealPaymentLineBreakdown {
   const issues: PaymentValidationIssue[] = [];
   const payee = resolvePayeeProfileForDeal(deal, koc, override);
@@ -391,11 +398,12 @@ export function evaluateDealForPaymentRequest(
       ? Math.round(deal.advanceAmount)
       : Math.round(agreedNetAmount * ((override?.advanceRatePct ?? 50) / 100));
 
+  // Tất toán trừ phần đã tạm ứng: lấy số lớn hơn giữa trạng thái trên deal và sổ phiếu tạm ứng đã lập trên máy chủ
+  const advanceFromDeal =
+    deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode) ? deal.advanceAmount || 0 : 0;
   const advancePaidAmount =
     requestType === 'SETTLEMENT'
-      ? deal.status === 'ADVANCE_PAID' || Boolean(deal.larkAdvanceApprovalCode)
-        ? Math.min(effectiveSettledNetAmount, deal.advanceAmount || 0)
-        : 0
+      ? Math.min(effectiveSettledNetAmount, Math.max(advanceFromDeal, ledger?.advanceRequestedAmount || 0))
       : 0;
 
   const requestBaseNetAmount =
@@ -407,7 +415,7 @@ export function evaluateDealForPaymentRequest(
   const taxResult = calculateContractTax({
     subjectKind: payee.subjectKind,
     baseAmount: requestBaseNetAmount,
-    vatRatePercent: 8,
+    vatRatePercent: deal.vatRatePercent ?? 8,
     isNetPayment: true,
   });
 
@@ -473,6 +481,28 @@ export function evaluateDealForPaymentRequest(
       fieldKey: 'dealValue',
       fieldLabel: 'Số tiền đề nghị thanh toán',
       message: `Số tiền đề nghị thanh toán bằng 0đ (đơn đã thanh toán hết hoặc khấu trừ 100%).`,
+      canQuickFix: false,
+    });
+  }
+
+  if (ledger?.settlementRequested) {
+    issues.push({
+      code: 'SETTLEMENT_ALREADY_REQUESTED',
+      group: 'DEAL_BUDGET',
+      fieldKey: 'dealValue',
+      fieldLabel: 'Phiếu tất toán',
+      message: `Mã đơn ${deal.dealCode} đã có phiếu tất toán trước đó, không lập thêm phiếu.`,
+      canQuickFix: false,
+    });
+  }
+
+  if (requestType === 'ADVANCE' && (ledger?.advanceRequestedAmount || 0) > 0) {
+    issues.push({
+      code: 'ADVANCE_ALREADY_REQUESTED',
+      group: 'DEAL_BUDGET',
+      fieldKey: 'dealValue',
+      fieldLabel: 'Phiếu tạm ứng',
+      message: `Mã đơn ${deal.dealCode} đã có phiếu tạm ứng ${(ledger?.advanceRequestedAmount || 0).toLocaleString('vi-VN')}đ, không lập thêm phiếu tạm ứng.`,
       canQuickFix: false,
     });
   }
@@ -684,6 +714,7 @@ export function buildLarkPaymentRequestSlip(params: {
   createdBy: string;
   note?: string;
   month?: string;
+  ledgerByDealCode?: Record<string, DealPaymentLedgerEntry>;
 }): {
   canSubmit: boolean;
   allIssues: Array<{ dealCode: string; issue: PaymentValidationIssue }>;
@@ -699,6 +730,7 @@ export function buildLarkPaymentRequestSlip(params: {
     overridesByDealId = {},
     sharedPayeeOverride = {},
     month = '2026/10',
+    ledgerByDealCode = {},
   } = params;
 
   const findKocForDeal = (d: BookingDealItem) =>
@@ -715,8 +747,29 @@ export function buildLarkPaymentRequestSlip(params: {
       ...sharedPayeeOverride,
       ...(overridesByDealId[d.id] || {}),
     };
-    return evaluateDealForPaymentRequest(d, koc, requestType, mergedOverride);
+    return evaluateDealForPaymentRequest(d, koc, requestType, mergedOverride, ledgerByDealCode[d.dealCode]);
   });
+
+  // Một phiếu chỉ chuyển cho một người thụ hưởng: các đơn phải cùng số tài khoản (MCN dùng chung STK vẫn gom được).
+  // Xét theo dữ liệu riêng của từng đơn, không theo STK dùng chung của phiếu — nếu không, STK chung sẽ che các KOC khác nhau.
+  const ownPayees = deals.map(d => resolvePayeeProfileForDeal(d, findKocForDeal(d), overridesByDealId[d.id] || {}));
+  const knownAccounts = new Set(ownPayees.map(p => p.bankAccount.replace(/\s/g, '')).filter(Boolean));
+  const channels = new Set(ownPayees.map(p => p.kocChannelId.replace(/^@/, '').toLowerCase()));
+  const allShareOneAccount = knownAccounts.size === 1 && ownPayees.every(p => p.bankAccount.trim());
+  const payeeCount = knownAccounts.size > 1 ? knownAccounts.size : allShareOneAccount ? 1 : channels.size;
+  if (payeeCount > 1) {
+    for (const item of lineItems) {
+      item.issues.push({
+        code: 'MIXED_PAYEES',
+        group: 'PAYEE_TAX',
+        fieldKey: 'bankAccount',
+        fieldLabel: 'Người thụ hưởng',
+        message: `Phiếu đang gom ${payeeCount} người thụ hưởng khác nhau. Mỗi phiếu chỉ được chuyển cho một tài khoản — tách phiếu theo KOC/MCN.`,
+        canQuickFix: false,
+      });
+      item.isEligible = false;
+    }
+  }
 
   const primaryDeal = deals[0];
   const primaryKoc = primaryDeal ? findKocForDeal(primaryDeal) : undefined;
