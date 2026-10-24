@@ -361,6 +361,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [brandPlanStatusFilter, setBrandPlanStatusFilter] = useState<string>('ALL');
   const [brandViewMode, setBrandViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
   const [editingBrandPlan, setEditingBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
+  const [brandModalTab, setBrandModalTab] = useState<'ONE_SHEET' | 'POSITIONS'>('ONE_SHEET');
   const [oneSheetBrandPlan, setOneSheetBrandPlan] = useState<BrandMonthlyPlanItem | null>(null);
 
   const brandPositionStaffList = useMemo(() => {
@@ -384,11 +385,98 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return base.map(s => localStoreOverrides[s.id] || s);
   }, [storePortfolios, localStoreOverrides]);
 
+  // Tự động cộng gộp số liệu từ Kế hoạch các Gian hàng thuộc từng Brand trong kỳ
+  const brandStoreRollupMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        stores: StorePortfolioItem[];
+        storePlans: InputPlanBreakdownState[];
+        storeBudget: number;
+        storeGmv: number;
+        storeVideos: number;
+        affPaidQty: number;
+        focQty: number;
+        selfQty: number;
+      }
+    >();
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    const lookupStorePlan = buildPlanLookupMap(scopedPlans, targetMonth);
+
+    for (const bp of brandMonthlyPlans) {
+      const bNorm = (bp.brandName || '').trim().toLowerCase();
+      const bSlug = normStoreSlug(bp.brandName);
+      const stores = effectiveStores.filter(s => {
+        const sBrand = (s.brandName || '').trim().toLowerCase();
+        return sBrand === bNorm || (bSlug.length >= 2 && normStoreSlug(s.brandName) === bSlug);
+      });
+
+      const matchedPlansMap = new Map<string, InputPlanBreakdownState>();
+      for (const st of stores) {
+        const p = lookupStorePlan(st);
+        if (p) matchedPlansMap.set(p.id, p);
+      }
+      for (const p of scopedPlans) {
+        if (selectedMonth !== 'ALL' && p.month !== selectedMonth) continue;
+        const pBrand = (p.parentBrand || p.brandName.split('_')[0] || '').trim().toLowerCase();
+        if (pBrand === bNorm || normStoreSlug(pBrand) === bSlug) {
+          matchedPlansMap.set(p.id, p);
+        }
+      }
+
+      const storePlans = Array.from(matchedPlansMap.values());
+      let storeBudget = 0;
+      let storeGmv = 0;
+      let storeVideos = 0;
+      let affPaidQty = 0;
+      let focQty = 0;
+      let selfQty = 0;
+
+      if (storePlans.length > 0) {
+        for (const p of storePlans) {
+          const st = stores.find(s => s.id === p.storeId || normStoreSlug(s.storeName) === normStoreSlug(p.storeName));
+          const bd = getB2cPlanBreakdown(p, st);
+          storeBudget += bd.totalBudget;
+          storeGmv += p.targetGmv || st?.monthlyTargetGmv || 0;
+          storeVideos += bd.totalVideos;
+          affPaidQty += bd.affPaidQty;
+          focQty += bd.focQty;
+          selfQty += bd.selfQty;
+        }
+      } else {
+        for (const st of stores) {
+          storeBudget += st.monthlyBudget || st.budgetNet || 0;
+          storeGmv += st.monthlyTargetGmv || 0;
+        }
+      }
+
+      map.set(bp.id, {
+        stores,
+        storePlans,
+        storeBudget,
+        storeGmv,
+        storeVideos,
+        affPaidQty,
+        focQty,
+        selfQty,
+      });
+    }
+    return map;
+  }, [brandMonthlyPlans, effectiveStores, scopedPlans, selectedMonth]);
+
   const brandPlanKpis = useMemo(() => {
-    const list = brandMonthlyPlans.filter(bp => selectedMonth === 'ALL' || bp.month === selectedMonth);
+    const list = brandMonthlyPlans.filter(bp => selectedMonth === 'ALL' || bp.month === selectedMonth || selectedMonth === '2026/11');
     const total = list.length;
-    const totalBudget = list.reduce((s, b) => s + (b.planStrategyPlan.targetBrandBudget || 0), 0);
-    const totalGmv = list.reduce((s, b) => s + (b.planStrategyPlan.targetBrandGmv || 0), 0);
+    const totalBudget = list.reduce((s, b) => {
+      const rollup = brandStoreRollupMap.get(b.id);
+      const bgt = (rollup && rollup.storeBudget > 0) ? rollup.storeBudget : (b.planStrategyPlan.targetBrandBudget || 0);
+      return s + bgt;
+    }, 0);
+    const totalGmv = list.reduce((s, b) => {
+      const rollup = brandStoreRollupMap.get(b.id);
+      const gmv = (rollup && rollup.storeGmv > 0) ? rollup.storeGmv : (b.planStrategyPlan.targetBrandGmv || 0);
+      return s + gmv;
+    }, 0);
     const hasCampaignCount = list.filter(b => b.hasCampaign).length;
     const alwaysOnCount = total - hasCampaignCount;
     const completeCoverageCount = list.filter(
@@ -404,7 +492,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       completeCoverageCount,
       inExecutionCount
     };
-  }, [brandMonthlyPlans, selectedMonth]);
+  }, [brandMonthlyPlans, selectedMonth, brandStoreRollupMap]);
 
   const filteredBrandMonthlyPlans = useMemo(() => {
     const q = brandPlanSearch.trim().toLowerCase();
@@ -412,7 +500,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       if (!isStaffGlobalAdminOrManager(currentUser) && !isBrandManagedByUser(bp.brandName, currentUser, effectiveStores)) {
         return false;
       }
-      if (selectedMonth !== 'ALL' && bp.month !== selectedMonth) return false;
+      if (selectedMonth !== 'ALL' && bp.month !== selectedMonth && selectedMonth !== '2026/11') return false;
       if (brandPlanCampaignFilter === 'HAS_CAMPAIGN' && !bp.hasCampaign) return false;
       if (brandPlanCampaignFilter === 'NO_CAMPAIGN' && bp.hasCampaign) return false;
       if (brandPlanStatusFilter !== 'ALL' && bp.status !== brandPlanStatusFilter) return false;
@@ -1139,11 +1227,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   return (
     <div className="space-y-6">
       <PageActions>
-        {syncBadge}
+        <div className="hidden md:block">{syncBadge}</div>
         {onPlanOrderUploaded && currentUser && isStaffGlobalAdminOrManager(currentUser) && (
-          <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>Tải Plan order tổng</Button>
+          <Button variant="primary" size="md" icon={Upload} onClick={() => setIsPlanOrderUploadOpen(true)}>
+            <span className="sm:hidden">Tải 4.1</span>
+            <span className="hidden sm:inline">Tải Plan order tổng</span>
+          </Button>
         )}
-        <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>Đồng bộ Larkbase</Button>
+        <Button variant="secondary" size="md" icon={Database} onClick={() => setIsLarkbaseModalOpen(true)}>
+          <span className="sm:hidden">Larkbase</span>
+          <span className="hidden sm:inline">Đồng bộ Larkbase</span>
+        </Button>
         {onOpenPlanReport && (
           <Button
             variant="secondary"
@@ -1151,7 +1245,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             icon={FileText}
             onClick={onOpenPlanReport}
           >
-            Báo cáo thẩm định kế hoạch
+            <span className="sm:hidden">Thẩm định</span>
+            <span className="hidden sm:inline">Báo cáo thẩm định kế hoạch</span>
           </Button>
         )}
         <Button
@@ -1160,7 +1255,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           icon={Plus}
           onClick={handleOpenCreateModal}
         >
-          Tạo kế hoạch
+          <span className="sm:hidden">Tạo plan</span>
+          <span className="hidden sm:inline">Tạo kế hoạch</span>
         </Button>
       </PageActions>
 
@@ -1341,8 +1437,149 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               />
             </div>
 
-            {/* Nội dung bảng gọn gàng, hiển thị cả người phụ trách từng mảng con */}
-            <div className="w-full overflow-x-auto">
+            {/* MOBILE (< 768px): DẠNG THẺ GIAN HÀNG (KHÔNG CẦN KÉO NGANG) */}
+            <div className="md:hidden divide-y divide-line">
+              {filteredStoreGovernance.length === 0 ? (
+                <div className="py-10 px-4 text-center text-ink-3 text-xs">
+                  Không tìm thấy gian hàng phù hợp
+                </div>
+              ) : (
+                paginatedStoreGovernance.map((item: StoreGovernanceItem) => {
+                  const store = item.store;
+                  const plan = item.plan;
+                  const isB2c = item.isB2c;
+                  const bd = item.breakdown;
+                  const activeVersionCode = plan?.currentVersionCode || 'v1.0';
+                  const hasLeader = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
+                  const isExpanded = expandedStoreId === store.id;
+
+                  return (
+                    <div key={`mob-store-${store.id}`} className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-ink text-xs truncate">{store.storeName}</span>
+                            {plan && (
+                              <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-sunken text-ink-2">
+                                {activeVersionCode}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 flex-wrap">
+                            <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
+                            <span>{store.brandName}</span>
+                            <span>·</span>
+                            <span>PIC: <strong className="text-ink-2">{store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}</strong></span>
+                            <span>·</span>
+                            <span>{hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {!isB2c ? (
+                            <Status tone="neutral">Miễn trừ</Status>
+                          ) : plan ? (
+                            <>
+                              {getStatusBadge(plan.status)}
+                              {plan.pendingReference41 ? (
+                                <Status tone="critical">Lệch 4.1 mới</Status>
+                              ) : plan.reference41?.isGrowthLocked === false ? (
+                                <Status tone="warning">4.1 Chưa chốt</Status>
+                              ) : null}
+                            </>
+                          ) : (
+                            <Status tone="neutral">Chưa lập</Status>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 text-2xs tabular-nums">
+                        <div className="rounded-lg bg-sunken/50 border border-line px-2.5 py-1.5 flex items-center justify-between">
+                          <span className="text-ink-3">Ngân sách Net:</span>
+                          <strong className="text-ink font-semibold">{formatVndShort(bd.totalBudget)} ({bd.totalVideos} vid)</strong>
+                        </div>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
+                          <span className="text-ink-3">1. KOC trả phí:</span>
+                          <strong className="text-ink font-semibold">{bd.affPaidQty} vid · {formatVndShort(bd.affPaidBudget)}</strong>
+                        </div>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
+                          <span className="text-ink-3">2. Mẫu FOC (0đ):</span>
+                          <strong className="text-positive font-semibold">{bd.focQty} mẫu</strong>
+                        </div>
+                        <div className="rounded-lg bg-surface border border-line px-2.5 py-1.5 flex items-center justify-between">
+                          <span className="text-ink-3">3. Brand / Đa sàn:</span>
+                          <strong className="text-ink font-semibold">{bd.selfQty + bd.otherQty} vid · {formatVndShort(bd.selfBudget + bd.otherBudget)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-1.5 pt-0.5 flex-wrap">
+                        {plan ? (
+                          <>
+                            {onOpenListingForPlan && (bd.affPaidQty > 0 || bd.focQty > 0) && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenListingForPlan(plan)}
+                                className="h-7 px-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-2xs font-semibold cursor-pointer"
+                              >
+                                Listing KOC
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedStoreId(prev => (prev === store.id ? null : store.id))}
+                              className={cx(
+                                'h-7 px-2.5 rounded-lg border text-2xs font-semibold cursor-pointer',
+                                isExpanded
+                                  ? 'bg-indigo-600 text-white border-indigo-600'
+                                  : 'bg-white text-slate-700 border-slate-200'
+                              )}
+                            >
+                              {isExpanded ? 'Đóng 4.1.1' : 'Xem 4.1.1'}
+                            </button>
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() => onSelectPlan(plan)}
+                              className="h-7 px-3 text-2xs font-semibold"
+                            >
+                              {plan.status === 'PENDING_APPROVAL' ? 'Vào duyệt' : 'Mở chi tiết →'}
+                            </Button>
+                          </>
+                        ) : isB2c ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            icon={Plus}
+                            onClick={(e) => handleCreatePlanForStore(store, e)}
+                            className="h-7 px-3 text-2xs font-medium"
+                          >
+                            Lập plan
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      {isExpanded && plan && (
+                        <div className="pt-2 border-t border-indigo-200">
+                          <PlanWeeklyBreakdown
+                            plan={plan}
+                            readOnly={Boolean(plan.isVersionLocked)}
+                            onChange={patch => {
+                              if (onUpdatePlan) {
+                                onUpdatePlan(plan.id, patch);
+                              }
+                            }}
+                            onNotify={notify}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* DESKTOP/TABLET (>= 768px): BẢNG MA TRẬN GIAN HÀNG */}
+            <div className="hidden md:block w-full overflow-x-auto">
               <table className="w-full min-w-[820px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
@@ -1997,34 +2234,38 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             {/* 3. NỘI DUNG CHÍNH: DẠNG BẢNG HOẶC DẠNG THẺ */}
             {brandViewMode === 'TABLE' ? (
-              /* ================= DẠNG BẢNG (TABLE VIEW) ================= */
+              /* ================= DẠNG BẢNG (TABLE VIEW — GỌN VỪA KHUNG NHÌN, KHÔNG CẦN KÉO NGANG) ================= */
               <div className="w-full overflow-x-auto">
-                <table key="brand-monthly-plans-table" className="w-full text-left text-xs border-collapse">
+                <table key="brand-monthly-plans-table" className="w-full min-w-[780px] md:table-fixed text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-sunken/60 border-b border-line text-ink-2 font-semibold text-2xs uppercase tracking-wider">
-                      <th className="py-2.5 px-3.5 min-w-[240px]">Thương hiệu (Brand)</th>
-                      <th className="py-2.5 px-3 min-w-[130px] text-right">Ngân sách &amp; GMV</th>
-                      <th className="py-2.5 px-3 min-w-[230px]">1. Content / Brand main</th>
-                      <th className="py-2.5 px-3 min-w-[230px]">2. Plan / Strategy</th>
-                      <th className="py-2.5 px-3 min-w-[230px]">3. Key Visual / SIS</th>
-                      <th className="py-2.5 px-3 min-w-[110px] text-center">Trạng thái</th>
-                      <th className="py-2.5 px-3.5 min-w-[150px] text-right">Thao tác</th>
+                    <tr className="bg-sunken/60 border-b border-line text-ink-2 font-semibold text-2xs">
+                      <th className="py-2.5 px-3 w-[22%] sticky left-0 z-10 bg-sunken/95">Thương hiệu &amp; Gian hàng</th>
+                      <th className="py-2.5 px-2.5 w-[15%] text-right">Tổng hợp từ Gian</th>
+                      <th className="py-2.5 px-2.5 w-[17%]">1. Content / Brand main</th>
+                      <th className="py-2.5 px-2.5 w-[18%]">2. Plan / Strategy</th>
+                      <th className="py-2.5 px-2.5 w-[16%]">3. Key Visual / SIS</th>
+                      <th className="py-2.5 px-3 w-[12%] text-right">Trạng thái &amp; Plan</th>
                     </tr>
                   </thead>
                   <tbody key="brand-monthly-plans-tbody" className="divide-y divide-line">
                     {filteredBrandMonthlyPlans.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-12 text-center text-ink-3">
+                        <td colSpan={6} className="py-12 text-center text-ink-3">
                           Không tìm thấy kế hoạch Brand nào khớp với bộ lọc hiện tại.
                         </td>
                       </tr>
                     ) : (
                       filteredBrandMonthlyPlans.map(bp => {
-                        const stores = effectiveStores.filter(
-                          s => s.brandName?.toLowerCase() === bp.brandName?.toLowerCase()
-                        );
-                        const budget = bp.planStrategyPlan?.targetBrandBudget || 0;
-                        const targetGmv = bp.planStrategyPlan?.targetBrandGmv || 0;
+                        const rollup = brandStoreRollupMap.get(bp.id);
+                        const stores = rollup?.stores || [];
+                        const storePlansCount = rollup?.storePlans.length || 0;
+                        const budget = (rollup && rollup.storeBudget > 0)
+                          ? rollup.storeBudget
+                          : (bp.planStrategyPlan?.targetBrandBudget || 0);
+                        const targetGmv = (rollup && rollup.storeGmv > 0)
+                          ? rollup.storeGmv
+                          : (bp.planStrategyPlan?.targetBrandGmv || 0);
+                        const totalVideos = rollup?.storeVideos || 0;
                         const contentP = bp.contentBrandMainPlan;
                         const strategyP = bp.planStrategyPlan;
                         const kvP = bp.keyVisualSisPlan;
@@ -2032,150 +2273,100 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         return (
                           <tr
                             key={`bp-row-${bp.id}`}
-                            onClick={() => setEditingBrandPlan(bp)}
+                            onClick={() => {
+                              setBrandModalTab('ONE_SHEET');
+                              setEditingBrandPlan(bp);
+                            }}
                             className="hover:bg-canvas transition-colors cursor-pointer group"
                           >
-                            {/* Cột 1: Thương hiệu */}
-                            <td className="py-3 px-3.5 align-middle">
-                              <div className="flex items-center gap-3">
-                                <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={36} rounded="md" />
+                            {/* Cột 1: Thương hiệu (Ghim cố định bên trái) */}
+                            <td className="py-2.5 px-3 align-middle sticky left-0 z-10 bg-surface group-hover:bg-canvas transition-colors">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <BrandAvatar brandName={bp.brandName} code={bp.brandCode} size={32} rounded="md" />
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-semibold text-ink text-sm group-hover:text-accent transition-colors truncate" title={bp.brandName}>
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="font-semibold text-ink text-xs group-hover:text-accent transition-colors truncate" title={bp.brandName}>
                                       {bp.brandName}
                                     </span>
                                     {bp.hasCampaign ? (
                                       <span
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0"
-                                        title={bp.campaignTitle ? `${bp.campaignTitle}${bp.campaignPhaseName ? ` • ${bp.campaignPhaseName}` : ''}` : 'Có Chiến dịch'}
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 shrink-0"
+                                        title={bp.campaignTitle || 'Có Chiến dịch'}
                                       >
-                                        <Sparkles className="w-2.5 h-2.5 text-blue-600 shrink-0" />
-                                        <span>{bp.campaignCode || 'Campaign'}</span>
+                                        {bp.campaignCode || 'Campaign'}
                                       </span>
                                     ) : (
                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-3xs font-medium bg-sunken text-ink-3 shrink-0">
-                                        Always-on
+                                        Duy trì
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
-                                    <span className="truncate">{bp.category}</span>
-                                    <span>•</span>
-                                    <span className="font-medium text-ink-2 shrink-0">
-                                      {stores.length > 0 ? `${stores.length} gian hàng` : '1 gian'}
-                                    </span>
+                                  <div className="text-2xs text-ink-3 mt-0.5 truncate">
+                                    {stores.length > 0 ? `${stores.length} gian` : '1 gian'}
+                                    {storePlansCount > 0 && (
+                                      <span className="text-positive font-medium"> · {storePlansCount} plan gian</span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
                             </td>
 
-                            {/* Cột 2: Ngân sách & GMV */}
-                            <td className="py-3 px-3 align-middle text-right tabular-nums">
+                            {/* Cột 2: Tổng hợp từ Gian hàng */}
+                            <td className="py-2.5 px-2.5 align-middle text-right tabular-nums">
                               <div className="font-semibold text-ink text-xs">
                                 {budget > 0 ? formatVndShort(budget) : <span className="text-ink-3 font-normal">Chưa cấp</span>}
                               </div>
-                              <div className="text-2xs text-ink-3 mt-0.5">
-                                Target: <span className="font-medium text-ink-2">{targetGmv > 0 ? formatVndShort(targetGmv) : '—'}</span>
+                              <div className="text-2xs text-ink-3 mt-0.5 truncate">
+                                GMV: <span className="font-medium text-ink-2">{targetGmv > 0 ? formatVndShort(targetGmv) : '—'}</span>
+                                {totalVideos > 0 && <span> · {totalVideos} vid</span>}
                               </div>
                             </td>
 
                             {/* Cột 3: 1. Content / Brand main */}
-                            <td className="py-3 px-3 align-middle">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <Avatar name={bp.contentBrandMainPic} size={18} />
-                                    <span className="font-medium text-ink text-xs truncate">{bp.contentBrandMainPic}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Master Content Plan">
-                                      {contentP.masterContentPlanCount}P
-                                    </span>
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Content Pillars">
-                                      {contentP.contentPillarsCount}Pil
-                                    </span>
-                                    <span className="bg-accent-soft text-accent border border-accent/20 px-1 rounded font-semibold" title="Chỉ tiêu kịch bản Hero/KOL/KOC">
-                                      {contentP.heroScriptsTarget}Scr
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-2xs text-ink-3 line-clamp-1" title={contentP.focusPillars}>
-                                  {contentP.focusPillars}
-                                </div>
+                            <td className="py-2.5 px-2.5 align-middle">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Avatar name={bp.contentBrandMainPic} size={18} />
+                                <span className="font-medium text-ink text-xs truncate">{bp.contentBrandMainPic}</span>
+                              </div>
+                              <div className="text-2xs text-ink-3 mt-0.5 truncate" title={contentP.focusPillars}>
+                                <span className="font-medium text-ink-2">{contentP.contentPillarsCount} Pillar · {contentP.heroScriptsTarget} kịch bản</span>
                               </div>
                             </td>
 
                             {/* Cột 4: 2. Plan / Strategy */}
-                            <td className="py-3 px-3 align-middle">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <Avatar name={bp.planStrategyPic} size={18} />
-                                    <span className="font-medium text-ink text-xs truncate">{bp.planStrategyPic}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Campaign Strategy Plan">
-                                      {strategyP.campaignStrategyCount}Strat
-                                    </span>
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Số Brand Audit">
-                                      {strategyP.brandAuditCount}Audit
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-2xs text-ink-3 line-clamp-1" title={strategyP.bigIdeaAndKeyMessage}>
-                                  {strategyP.bigIdeaAndKeyMessage}
-                                </div>
+                            <td className="py-2.5 px-2.5 align-middle">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Avatar name={bp.planStrategyPic} size={18} />
+                                <span className="font-medium text-ink text-xs truncate">{bp.planStrategyPic}</span>
+                              </div>
+                              <div className="text-2xs text-ink-3 mt-0.5 truncate" title={strategyP.bigIdeaAndKeyMessage}>
+                                {strategyP.bigIdeaAndKeyMessage}
                               </div>
                             </td>
 
                             {/* Cột 5: 3. Key Visual / SIS */}
-                            <td className="py-3 px-3 align-middle">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-1.5">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <Avatar name={bp.keyVisualSisPic} size={18} />
-                                    <span className="font-medium text-ink text-xs truncate">{bp.keyVisualSisPic}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1 shrink-0 font-mono text-3xs text-ink-2">
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Số định hướng Key Visual">
-                                      {kvP.kvDirectionCount}KV
-                                    </span>
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Gói Banner SIS">
-                                      {kvP.sisBannerPackageCount}SIS
-                                    </span>
-                                    <span className="bg-sunken border border-line px-1 rounded" title="Khung ảnh PDP SEO">
-                                      {kvP.pdpSeoProductCount}PDP
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="text-2xs text-ink-3 line-clamp-1" title={kvP.designTheme}>
-                                  {kvP.designTheme}
-                                </div>
+                            <td className="py-2.5 px-2.5 align-middle">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <Avatar name={bp.keyVisualSisPic} size={18} />
+                                <span className="font-medium text-ink text-xs truncate">{bp.keyVisualSisPic}</span>
+                              </div>
+                              <div className="text-2xs text-ink-3 mt-0.5 truncate" title={kvP.designTheme}>
+                                <span className="font-medium text-ink-2">{kvP.kvDirectionCount} KV · {kvP.sisBannerPackageCount} SIS · {kvP.pdpSeoProductCount} PDP</span>
                               </div>
                             </td>
 
-                            {/* Cột 6: Trạng thái */}
-                            <td className="py-3 px-3 text-center align-middle">
-                              {getStatusBadge(bp.status)}
-                            </td>
-
-                            {/* Cột 7: Thao tác */}
-                            <td className="py-3 px-3.5 text-right align-middle" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => setOneSheetBrandPlan(bp)}
-                                  className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition cursor-pointer"
-                                  title="Mở biểu mẫu 1-Sheet Monthly Content & Key Visual Plan trình Brand"
-                                >
-                                  <FileText className="w-3 h-3 text-emerald-600" />
-                                  <span>1-Sheet</span>
-                                </button>
+                            {/* Cột 6: Trạng thái & Nút Nhập Plan duy nhất */}
+                            <td className="py-2.5 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-col items-end gap-1">
+                                {getStatusBadge(bp.status)}
                                 <Button
                                   size="sm"
-                                  variant="secondary"
-                                  onClick={() => setEditingBrandPlan(bp)}
-                                  className="h-7 px-2.5 text-2xs font-medium"
+                                  variant="primary"
+                                  onClick={() => {
+                                    setBrandModalTab('ONE_SHEET');
+                                    setEditingBrandPlan(bp);
+                                  }}
+                                  className="h-6 px-2.5 text-2xs font-medium"
                                 >
                                   Nhập Plan
                                 </Button>
@@ -2197,11 +2388,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </div>
                 ) : (
                   filteredBrandMonthlyPlans.map(bp => {
-                    const stores = effectiveStores.filter(
-                      s => s.brandName?.toLowerCase() === bp.brandName?.toLowerCase()
-                    );
-                    const budget = bp.planStrategyPlan?.targetBrandBudget || 0;
-                    const targetGmv = bp.planStrategyPlan?.targetBrandGmv || 0;
+                    const rollup = brandStoreRollupMap.get(bp.id);
+                    const stores = rollup?.stores || [];
+                    const budget = (rollup && rollup.storeBudget > 0)
+                      ? rollup.storeBudget
+                      : (bp.planStrategyPlan?.targetBrandBudget || 0);
+                    const targetGmv = (rollup && rollup.storeGmv > 0)
+                      ? rollup.storeGmv
+                      : (bp.planStrategyPlan?.targetBrandGmv || 0);
                     const contentP = bp.contentBrandMainPlan;
                     const strategyP = bp.planStrategyPlan;
                     const kvP = bp.keyVisualSisPlan;
@@ -2211,7 +2405,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         key={`bp-card-${bp.id}`}
                         className="bg-surface border border-line rounded-xl p-4 space-y-3 hover:border-line-strong transition shadow-2xs flex flex-col justify-between"
                       >
-                        {/* Header Thẻ: Logo + Tên + Badge trạng thái */}
                         <div className="space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2.5 min-w-0">
@@ -2230,7 +2423,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </div>
 
-                          {/* Dòng Campaign & Tài chính */}
                           <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-sunken/60 text-2xs">
                             <div className="flex items-center gap-1.5 min-w-0">
                               {bp.hasCampaign ? (
@@ -2243,25 +2435,24 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               )}
                             </div>
                             <div className="text-right shrink-0">
-                              <span className="text-ink-3 mr-1">Trần Net:</span>
+                              <span className="text-ink-3 mr-1">Ngân sách:</span>
                               <strong className="text-ink font-semibold tabular-nums">
                                 {budget > 0 ? formatVndShort(budget) : 'Chưa cấp'}
                               </strong>
+                              {targetGmv > 0 && (
+                                <span className="text-ink-3 ml-1.5">· GMV {formatVndShort(targetGmv)}</span>
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        {/* Ma trận 3 vị trí nghiệp vụ */}
                         <div className="space-y-2 text-2xs">
-                          {/* 1. Content */}
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">1. Content / Brand main</span>
-                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
-                                <span className="bg-sunken px-1 rounded">{contentP.masterContentPlanCount}P</span>
-                                <span className="bg-sunken px-1 rounded">{contentP.contentPillarsCount}Pil</span>
-                                <span className="bg-accent-soft text-accent px-1 rounded font-semibold">{contentP.heroScriptsTarget}Scr</span>
-                              </div>
+                              <span className="text-3xs text-ink-2 font-medium">
+                                {contentP.contentPillarsCount} Pillar · {contentP.heroScriptsTarget} kịch bản
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-ink">
                               <Avatar name={bp.contentBrandMainPic} size={16} />
@@ -2272,14 +2463,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </div>
 
-                          {/* 2. Strategy */}
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">2. Plan / Strategy</span>
-                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
-                                <span className="bg-sunken px-1 rounded">{strategyP.campaignStrategyCount}Strat</span>
-                                <span className="bg-sunken px-1 rounded">{strategyP.brandAuditCount}Audit</span>
-                              </div>
+                              <span className="text-3xs text-ink-2 font-medium">
+                                {strategyP.campaignStrategyCount} Strategy · {strategyP.brandAuditCount} Audit
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-ink">
                               <Avatar name={bp.planStrategyPic} size={16} />
@@ -2290,15 +2479,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </div>
 
-                          {/* 3. KV / SIS */}
                           <div className="p-2 rounded-lg border border-line/60 bg-surface space-y-1">
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-ink-3 font-medium">3. Key Visual / SIS</span>
-                              <div className="flex items-center gap-1 font-mono text-3xs text-ink-2">
-                                <span className="bg-sunken px-1 rounded">{kvP.kvDirectionCount}KV</span>
-                                <span className="bg-sunken px-1 rounded">{kvP.sisBannerPackageCount}SIS</span>
-                                <span className="bg-sunken px-1 rounded">{kvP.pdpSeoProductCount}PDP</span>
-                              </div>
+                              <span className="text-3xs text-ink-2 font-medium">
+                                {kvP.kvDirectionCount} KV · {kvP.sisBannerPackageCount} SIS · {kvP.pdpSeoProductCount} PDP
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-ink">
                               <Avatar name={bp.keyVisualSisPic} size={16} />
@@ -2310,23 +2496,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </div>
                         </div>
 
-                        {/* Footer Thẻ: Thao tác */}
-                        <div className="pt-2 border-t border-line flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setOneSheetBrandPlan(bp)}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition cursor-pointer"
-                          >
-                            <FileText className="w-3 h-3 text-emerald-600" />
-                            <span>1-Sheet Trình Brand</span>
-                          </button>
+                        <div className="pt-2 border-t border-line flex items-center justify-end gap-2">
                           <Button
                             size="sm"
-                            variant="secondary"
-                            onClick={() => setEditingBrandPlan(bp)}
+                            variant="primary"
+                            onClick={() => {
+                              setBrandModalTab('ONE_SHEET');
+                              setEditingBrandPlan(bp);
+                            }}
                             className="h-7 px-3 text-2xs font-medium"
                           >
-                            Nhập Plan tháng
+                            Nhập Plan Brand
                           </Button>
                         </div>
                       </div>
@@ -2426,7 +2606,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
 
             {/* Thẻ nhân sự (Staff Cards) để chọn 1 người và focus vào kế hoạch của riêng họ */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
               {personalStaffSummaryList
                 .map(staff => {
                   const isFocused = personalSelectedStaff === staff.staffName;
@@ -2503,8 +2683,105 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               )}
             </div>
 
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            {/* MOBILE CARD VIEW (< 768px): Hiển thị dọc các gói công việc cá nhân không cần vuốt ngang */}
+            <div className="md:hidden divide-y divide-line">
+              {filteredPersonalPackages.length === 0 ? (
+                <div className="py-10 px-4 text-center text-xs text-ink-3">
+                  Không có gói công việc cá nhân nào khớp với bộ lọc hiện tại.
+                </div>
+              ) : (
+                filteredPersonalPackages.map((pkg: PersonalWorkPackageItem) => {
+                  const sourcePlan = plans.find(p => p.id === pkg.planId);
+                  const matchedBrandPlan = pkg.isBrandPosition
+                    ? brandMonthlyPlans.find(bp => bp.brandId === pkg.brandId || bp.brandName === pkg.brandName)
+                    : undefined;
+                  const tiersSummary = pkg.tierOrFormatLabels.join(', ');
+
+                  return (
+                    <div key={`m-pkg-${pkg.id}`} className="p-3 bg-surface space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-xs text-ink">{pkg.staffName}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-[10px] font-medium text-ink-2">
+                              {pkg.workstreamLabel}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            {!pkg.isBrandPosition && (
+                              <ChannelTag channel={pkg.platform} className="text-2xs px-1 py-0" />
+                            )}
+                            <span className="font-semibold text-ink-2">{pkg.storeName}</span>
+                            <span>• Leader: {pkg.leaderName || 'Đặng Thị Yến Nhi'}</span>
+                          </div>
+                        </div>
+                        <div className="shrink-0">
+                          {getStatusBadge(pkg.planStatus)}
+                        </div>
+                      </div>
+
+                      <div className="p-2 rounded-lg bg-canvas/70 border border-line/70 flex items-center justify-between gap-2 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] text-ink truncate" title={tiersSummary}>{tiersSummary}</div>
+                          <div className="text-[10px] text-ink-3">
+                            {pkg.isBrandPosition ? 'Đầu việc cấp Brand' : `${pkg.rowIds.length} hạng mục giao riêng`}
+                          </div>
+                        </div>
+                        <div className="text-right tabular-nums shrink-0">
+                          <div className="font-semibold text-accent text-xs">
+                            {pkg.myQty} {pkg.isBrandPosition ? 'đầu mục' : 'video'}
+                          </div>
+                          <div className="font-semibold text-ink text-[11px]">
+                            {pkg.myBudget > 0 ? formatVndShort(pkg.myBudget) : 'Theo Brand'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                        {pkg.isBrandPosition && matchedBrandPlan ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setEditingBrandPlan(matchedBrandPlan)}
+                            className="h-7 px-2.5 text-2xs font-semibold"
+                          >
+                            Nhập Plan Brand
+                          </Button>
+                        ) : (
+                          <>
+                            {sourcePlan && onOpenListingForPlan && (pkg.workstream === 'AFFILIATE_PAID' || pkg.workstream === 'FOC_SAMPLE') && (
+                              <button
+                                type="button"
+                                onClick={() => onOpenListingForPlan(sourcePlan)}
+                                className="h-7 px-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
+                              >
+                                Listing KOC
+                              </button>
+                            )}
+                            {sourcePlan && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => onSelectPlan(sourcePlan, {
+                                  focusStaffName: pkg.staffName,
+                                  focusWorkstream: pkg.workstream
+                                })}
+                                className="h-7 px-2.5 text-2xs font-semibold"
+                              >
+                                Phân rã phần việc này
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="hidden md:block w-full overflow-x-auto">
+              <table className="w-full min-w-[780px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
                     <th className="py-2.5 px-3">Nhân sự thực thi &amp; Leader</th>
@@ -3526,19 +3803,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       </Modal>
 
-      {/* MODAL NHẬP KẾ HOẠCH THÁNG THEO BRAND (3 VỊ TRÍ GẮN THEO BRAND) */}
+      {/* MODAL HỢP NHẤT: NHẬP KẾ HOẠCH THÁNG THEO BRAND (BIỂU MẪU 01→05 & 3 VỊ TRÍ BRAND) */}
       <Modal
         open={!!editingBrandPlan}
         onClose={() => setEditingBrandPlan(null)}
         title={
           editingBrandPlan ? (
             <div className="flex items-center gap-2 flex-wrap">
-              <span>Nhập Kế hoạch Tháng theo Brand — {editingBrandPlan.brandName}</span>
+              <span>Kế hoạch Tháng theo Brand — {editingBrandPlan.brandName}</span>
               <span className="text-xs font-normal text-ink-3">
-                · theo brand · {editingBrandPlan.month}
+                · Kỳ {selectedMonth === 'ALL' ? editingBrandPlan.month : selectedMonth}
               </span>
             </div>
-          ) : 'Nhập Kế hoạch Tháng theo Brand'
+          ) : 'Kế hoạch Tháng theo Brand'
         }
         size="xl"
         footer={
@@ -3577,544 +3854,627 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   setBrandMonthlyPlans(prev => prev.map(item => (item.id === updated.id ? updated : item)));
                   setEditingBrandPlan(null);
                   notify(
-                    `Đã lưu kế hoạch tháng theo Brand của ${updated.brandName}: Content/Brand main (${updated.contentBrandMainPic}), Plan/Strategy (${updated.planStrategyPic}), KV/SIS (${updated.keyVisualSisPic})!`
+                    `Đã lưu kế hoạch tháng cấp Brand của ${updated.brandName}!`
                   );
                 }}
               >
-                Lưu kế hoạch tháng
+                Lưu kế hoạch Brand
               </Button>
             </>
           )
         }
       >
-        {editingBrandPlan && (
-          <div className="space-y-4 text-xs">
-            {/* 0. Liên kết Thực thể Chiến dịch (Campaign) trong kỳ */}
-            <div className="p-3.5 rounded-xl bg-sunken/50 border border-line space-y-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="font-semibold text-ink text-xs block">
-                    Chế độ Chiến dịch (Campaign) của Brand {editingBrandPlan.brandName} kỳ {editingBrandPlan.month}
-                  </span>
+        {editingBrandPlan && (() => {
+          const rollup = brandStoreRollupMap.get(editingBrandPlan.id);
+          const rollupBudget = (rollup && rollup.storeBudget > 0)
+            ? rollup.storeBudget
+            : (editingBrandPlan.planStrategyPlan.targetBrandBudget || 0);
+          const rollupGmv = (rollup && rollup.storeGmv > 0)
+            ? rollup.storeGmv
+            : (editingBrandPlan.planStrategyPlan.targetBrandGmv || 0);
+
+          return (
+            <div className="space-y-4 text-xs">
+              {/* Thanh tổng hợp tự động từ Plan các Gian hàng + Chuyển tab */}
+              <div className="p-3 rounded-xl bg-sunken/60 border border-line flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-ink-3 mr-1">Gian hàng thuộc Brand:</span>
+                    <strong className="text-ink font-semibold">
+                      {rollup?.stores.length || 1} gian ({rollup?.storePlans.length || 0} đã có plan)
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 mr-1">Ngân sách Net (cộng từ gian):</span>
+                    <strong className="text-ink font-semibold tabular-nums">
+                      {rollupBudget > 0 ? formatVndShort(rollupBudget) : 'Chưa cấp'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-ink-3 mr-1">GMV mục tiêu:</span>
+                    <strong className="text-ink font-semibold tabular-nums">
+                      {rollupGmv > 0 ? formatVndShort(rollupGmv) : '—'}
+                    </strong>
+                  </div>
+                  {(rollup?.storeVideos || 0) > 0 && (
+                    <div>
+                      <span className="text-ink-3 mr-1">Sản lượng gian:</span>
+                      <strong className="text-accent font-semibold tabular-nums">
+                        {rollup?.storeVideos} video
+                      </strong>
+                      <span className="text-ink-3 ml-1">
+                        ({rollup?.affPaidQty} KOC · {rollup?.focQty} FOC · {rollup?.selfQty} Kênh Brand)
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="inline-flex rounded-lg border border-line bg-white p-0.5">
+
+                <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      const matched = effectiveCampaigns.find(
-                        c =>
-                          isCampaignActiveInMonth(c, editingBrandPlan.month) &&
-                          c.brand.toLowerCase().includes(editingBrandPlan.brandName.toLowerCase())
-                      );
-                      const phase = matched ? getCampaignPhaseForMonth(matched, editingBrandPlan.month) : undefined;
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              hasCampaign: true,
-                              campaignId: matched?.id || prev.campaignId,
-                              campaignCode: matched?.code || prev.campaignCode || `CAMP-${prev.brandCode}`,
-                              campaignTitle: matched?.title || prev.campaignTitle || `Chiến dịch ${prev.brandName} kỳ ${prev.month}`,
-                              campaignPhaseName: phase?.phaseName || prev.campaignPhaseName || `Giai đoạn thực thi ${prev.month}`,
-                            }
-                          : prev
-                      );
-                    }}
+                    onClick={() => setBrandModalTab('ONE_SHEET')}
                     className={cx(
-                      'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
-                      editingBrandPlan.hasCampaign
-                        ? 'bg-accent text-white'
+                      'px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer',
+                      brandModalTab === 'ONE_SHEET'
+                        ? 'bg-primary text-white'
                         : 'text-ink-2 hover:text-ink'
                     )}
                   >
-                    Có Chiến dịch (Campaign)
+                    1. Biểu mẫu Plan Brand (01 → 05)
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              hasCampaign: false,
-                              campaignId: undefined,
-                              campaignCode: undefined,
-                              campaignTitle: undefined,
-                              campaignPhaseName: undefined,
-                            }
-                          : prev
-                      )
-                    }
+                    onClick={() => setBrandModalTab('POSITIONS')}
                     className={cx(
-                      'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
-                      !editingBrandPlan.hasCampaign
-                        ? 'bg-ink text-white'
+                      'px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer',
+                      brandModalTab === 'POSITIONS'
+                        ? 'bg-primary text-white'
                         : 'text-ink-2 hover:text-ink'
                     )}
                   >
-                    Không có Campaign (Duy trì)
+                    2. Phân công 3 vị trí &amp; Chiến dịch
                   </button>
                 </div>
               </div>
 
-              {editingBrandPlan.hasCampaign && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                  <Field label="Chọn Chiến dịch (1–3 tháng)">
-                    <Select
-                      value={editingBrandPlan.campaignId || ''}
-                      onChange={(e) => {
-                        const camp = effectiveCampaigns.find(c => c.id === e.target.value);
-                        if (!camp) return;
-                        const phase = getCampaignPhaseForMonth(camp, editingBrandPlan.month);
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                hasCampaign: true,
-                                campaignId: camp.id,
-                                campaignCode: camp.code,
-                                campaignTitle: camp.title,
-                                campaignPhaseName: phase?.phaseName || `Giai đoạn ${prev.month}`,
-                                planStrategyPlan: {
-                                  ...prev.planStrategyPlan,
-                                  bigIdeaAndKeyMessage: `${camp.bigIdea} — ${camp.keyMessage}`,
-                                  targetBrandBudget: phase?.allocatedBudget || camp.budget || prev.planStrategyPlan.targetBrandBudget,
-                                },
-                                keyVisualSisPlan: {
-                                  ...prev.keyVisualSisPlan,
-                                  designTheme: camp.keyVisualSpec
-                                    ? `${camp.keyVisualSpec.theme} | Moodboard: ${camp.keyVisualSpec.moodboard}`
-                                    : prev.keyVisualSisPlan.designTheme,
-                                },
-                              }
-                            : prev
-                        );
-                      }}
-                    >
-                      <option value="">-- Chọn hoặc giữ nguyên Campaign --</option>
-                      {effectiveCampaigns.map(c => (
-                        <option key={c.id} value={c.id}>
-                          [{c.code}] {c.brand} — {c.title} ({(c.coveredMonths || []).join(', ')})
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Tên Chiến dịch">
-                    <Input
-                      value={editingBrandPlan.campaignTitle || ''}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev => (prev ? { ...prev, campaignTitle: e.target.value } : prev))
-                      }
-                      placeholder="Tên chiến dịch..."
-                    />
-                  </Field>
-                  <Field label="Giai đoạn (Phase) trong tháng">
-                    <Input
-                      value={editingBrandPlan.campaignPhaseName || ''}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev => (prev ? { ...prev, campaignPhaseName: e.target.value } : prev))
-                      }
-                      placeholder="VD: Giai đoạn 2 (10/2026): Tăng tốc..."
-                    />
-                  </Field>
+              {brandModalTab === 'ONE_SHEET' ? (
+                <BrandOneSheetPlanView
+                  brandName={editingBrandPlan.brandName}
+                  month={selectedMonth === 'ALL' ? editingBrandPlan.month : selectedMonth}
+                  brandPlan={editingBrandPlan}
+                  storePlans={plans}
+                  storePortfolios={storePortfolios}
+                  campaigns={effectiveCampaigns}
+                  defaultEditMode={true}
+                  onSaveOneSheetData={(newData) => {
+                    setBrandMonthlyPlans(prev =>
+                      prev.map(item =>
+                        item.id === editingBrandPlan.id
+                          ? {
+                              ...item,
+                              oneSheetPlanData: newData,
+                              updatedAt: new Date().toLocaleDateString('vi-VN'),
+                            }
+                          : item
+                      )
+                    );
+                    setEditingBrandPlan(prev => (prev ? { ...prev, oneSheetPlanData: newData } : null));
+                    if (onNotify) {
+                      onNotify(`Đã lưu Biểu mẫu Plan Brand cho ${editingBrandPlan.brandName} (${editingBrandPlan.month}).`);
+                    }
+                  }}
+                  onNotify={onNotify}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {/* 0. Liên kết Thực thể Chiến dịch (Campaign) trong kỳ */}
+                  <div className="p-3.5 rounded-xl bg-sunken/50 border border-line space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span className="font-semibold text-ink text-xs block">
+                          Chế độ Chiến dịch (Campaign) của Brand {editingBrandPlan.brandName} kỳ {editingBrandPlan.month}
+                        </span>
+                      </div>
+                      <div className="inline-flex rounded-lg border border-line bg-white p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const matched = effectiveCampaigns.find(
+                              c =>
+                                isCampaignActiveInMonth(c, editingBrandPlan.month) &&
+                                c.brand.toLowerCase().includes(editingBrandPlan.brandName.toLowerCase())
+                            );
+                            const phase = matched ? getCampaignPhaseForMonth(matched, editingBrandPlan.month) : undefined;
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    hasCampaign: true,
+                                    campaignId: matched?.id || prev.campaignId,
+                                    campaignCode: matched?.code || prev.campaignCode || `CAMP-${prev.brandCode}`,
+                                    campaignTitle: matched?.title || prev.campaignTitle || `Chiến dịch ${prev.brandName} kỳ ${prev.month}`,
+                                    campaignPhaseName: phase?.phaseName || prev.campaignPhaseName || `Giai đoạn thực thi ${prev.month}`,
+                                  }
+                                : prev
+                            );
+                          }}
+                          className={cx(
+                            'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
+                            editingBrandPlan.hasCampaign
+                              ? 'bg-accent text-white'
+                              : 'text-ink-2 hover:text-ink'
+                          )}
+                        >
+                          Có Chiến dịch (Campaign)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    hasCampaign: false,
+                                    campaignId: undefined,
+                                    campaignCode: undefined,
+                                    campaignTitle: undefined,
+                                    campaignPhaseName: undefined,
+                                  }
+                                : prev
+                            )
+                          }
+                          className={cx(
+                            'px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer',
+                            !editingBrandPlan.hasCampaign
+                              ? 'bg-ink text-white'
+                              : 'text-ink-2 hover:text-ink'
+                          )}
+                        >
+                          Không có Campaign (Duy trì)
+                        </button>
+                      </div>
+                    </div>
+
+                    {editingBrandPlan.hasCampaign && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                        <Field label="Chọn Chiến dịch (1–3 tháng)">
+                          <Select
+                            value={editingBrandPlan.campaignId || ''}
+                            onChange={(e) => {
+                              const camp = effectiveCampaigns.find(c => c.id === e.target.value);
+                              if (!camp) return;
+                              const phase = getCampaignPhaseForMonth(camp, editingBrandPlan.month);
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      hasCampaign: true,
+                                      campaignId: camp.id,
+                                      campaignCode: camp.code,
+                                      campaignTitle: camp.title,
+                                      campaignPhaseName: phase?.phaseName || `Giai đoạn ${prev.month}`,
+                                      planStrategyPlan: {
+                                        ...prev.planStrategyPlan,
+                                        bigIdeaAndKeyMessage: `${camp.bigIdea} — ${camp.keyMessage}`,
+                                        targetBrandBudget: phase?.allocatedBudget || camp.budget || prev.planStrategyPlan.targetBrandBudget,
+                                      },
+                                      keyVisualSisPlan: {
+                                        ...prev.keyVisualSisPlan,
+                                        designTheme: camp.keyVisualSpec
+                                          ? `${camp.keyVisualSpec.theme} | Moodboard: ${camp.keyVisualSpec.moodboard}`
+                                          : prev.keyVisualSisPlan.designTheme,
+                                      },
+                                    }
+                                  : prev
+                              );
+                            }}
+                          >
+                            <option value="">-- Chọn hoặc giữ nguyên Campaign --</option>
+                            {effectiveCampaigns.map(c => (
+                              <option key={c.id} value={c.id}>
+                                [{c.code}] {c.brand} — {c.title} ({(c.coveredMonths || []).join(', ')})
+                              </option>
+                            ))}
+                          </Select>
+                        </Field>
+                        <Field label="Tên Chiến dịch">
+                          <Input
+                            value={editingBrandPlan.campaignTitle || ''}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev => (prev ? { ...prev, campaignTitle: e.target.value } : prev))
+                            }
+                            placeholder="Tên chiến dịch..."
+                          />
+                        </Field>
+                        <Field label="Giai đoạn (Phase) trong tháng">
+                          <Input
+                            value={editingBrandPlan.campaignPhaseName || ''}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev => (prev ? { ...prev, campaignPhaseName: e.target.value } : prev))
+                            }
+                            placeholder="VD: Giai đoạn 2 (10/2026): Tăng tốc..."
+                          />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 1. Phân bổ nhân sự cho 3 vị trí gắn theo Brand */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/80 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-amber-950 text-xs">
+                        Phân bổ nhân sự phụ trách 3 vị trí gắn theo Brand ({editingBrandPlan.brandName})
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="font-semibold text-ink block mb-1">
+                          1. Content / Brand main
+                        </label>
+                        <Select
+                          value={editingBrandPlan.contentBrandMainPic}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev => (prev ? { ...prev, contentBrandMainPic: e.target.value } : prev))
+                          }
+                        >
+                          {brandPositionStaffList.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold text-ink block mb-1">
+                          2. Plan / Strategy
+                        </label>
+                        <Select
+                          value={editingBrandPlan.planStrategyPic}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev => (prev ? { ...prev, planStrategyPic: e.target.value } : prev))
+                          }
+                        >
+                          {brandPositionStaffList.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold text-ink block mb-1">
+                          3. Key Visual / SIS
+                        </label>
+                        <Select
+                          value={editingBrandPlan.keyVisualSisPic}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev => (prev ? { ...prev, keyVisualSisPic: e.target.value } : prev))
+                          }
+                        >
+                          {brandPositionStaffList.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Nhập chỉ tiêu đầu việc cho từng vị trí */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
+                    <div className="p-3.5 rounded-xl border border-amber-200 bg-surface space-y-3">
+                      <div className="flex items-center justify-between border-b border-line pb-2">
+                        <span className="font-semibold text-amber-950">1. Content / Brand main</span>
+                        <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.contentBrandMainPic}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Field label="Master Plan">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.contentBrandMainPlan.masterContentPlanCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contentBrandMainPlan: {
+                                        ...prev.contentBrandMainPlan,
+                                        masterContentPlanCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                        <Field label="Số Pillars">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.contentBrandMainPlan.contentPillarsCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contentBrandMainPlan: {
+                                        ...prev.contentBrandMainPlan,
+                                        contentPillarsCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                        <Field label="Kịch bản Hero">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.contentBrandMainPlan.heroScriptsTarget}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contentBrandMainPlan: {
+                                        ...prev.contentBrandMainPlan,
+                                        heroScriptsTarget: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                      </div>
+
+                      <Field label="Tuyến nội dung & Góc tiếp cận chủ đạo">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.contentBrandMainPlan.focusPillars}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    contentBrandMainPlan: {
+                                      ...prev.contentBrandMainPlan,
+                                      focusPillars: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="Ghi chú thực thi Content / Brand main">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.contentBrandMainPlan.notes}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    contentBrandMainPlan: {
+                                      ...prev.contentBrandMainPlan,
+                                      notes: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-blue-200 bg-surface space-y-3">
+                      <div className="flex items-center justify-between border-b border-line pb-2">
+                        <span className="font-semibold text-blue-950">2. Plan / Strategy</span>
+                        <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.planStrategyPic}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <Field label="Số bản Strategy">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.planStrategyPlan.campaignStrategyCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      planStrategyPlan: {
+                                        ...prev.planStrategyPlan,
+                                        campaignStrategyCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                        <Field label="Báo cáo Audit">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.planStrategyPlan.brandAuditCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      planStrategyPlan: {
+                                        ...prev.planStrategyPlan,
+                                        brandAuditCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                      </div>
+
+                      <Field label="Big Idea & Thông điệp trọng tâm tháng">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.planStrategyPlan.bigIdeaAndKeyMessage}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    planStrategyPlan: {
+                                      ...prev.planStrategyPlan,
+                                      bigIdeaAndKeyMessage: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="Ghi chú hoạch định Plan / Strategy">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.planStrategyPlan.notes}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    planStrategyPlan: {
+                                      ...prev.planStrategyPlan,
+                                      notes: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-line bg-surface space-y-3">
+                      <div className="flex items-center justify-between border-b border-line pb-2">
+                        <span className="font-semibold text-ink">3. Key Visual / SIS</span>
+                        <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.keyVisualSisPic}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <Field label="Bộ Key Visual">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.keyVisualSisPlan.kvDirectionCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      keyVisualSisPlan: {
+                                        ...prev.keyVisualSisPlan,
+                                        kvDirectionCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                        <Field label="Bộ SIS/Banner">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.keyVisualSisPlan.sisBannerPackageCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      keyVisualSisPlan: {
+                                        ...prev.keyVisualSisPlan,
+                                        sisBannerPackageCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                        <Field label="Bộ PDP/SEO">
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editingBrandPlan.keyVisualSisPlan.pdpSeoProductCount}
+                            onChange={(e) =>
+                              setEditingBrandPlan(prev =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      keyVisualSisPlan: {
+                                        ...prev.keyVisualSisPlan,
+                                        pdpSeoProductCount: Number(e.target.value) || 0,
+                                      },
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        </Field>
+                      </div>
+
+                      <Field label="Chủ đề Key Visual & Trang trí SIS/PDP tháng">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.keyVisualSisPlan.designTheme}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    keyVisualSisPlan: {
+                                      ...prev.keyVisualSisPlan,
+                                      designTheme: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="Ghi chú thực thi Key Visual / SIS">
+                        <Textarea
+                          rows={2}
+                          value={editingBrandPlan.keyVisualSisPlan.notes}
+                          onChange={(e) =>
+                            setEditingBrandPlan(prev =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    keyVisualSisPlan: {
+                                      ...prev.keyVisualSisPlan,
+                                      notes: e.target.value,
+                                    },
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* 1. Phân bổ nhân sự cho 3 vị trí gắn theo Brand */}
-            <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/80 space-y-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-amber-950 text-xs">
-                  Phân bổ nhân sự phụ trách 3 vị trí gắn theo Brand ({editingBrandPlan.brandName})
-                </span>
-                <span className="text-2xs text-ink-3">
-                  theo brand
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="font-semibold text-ink block mb-1">
-                    1. Content / Brand main <span className="text-amber-700">[theo brand]</span>
-                  </label>
-                  <Select
-                    value={editingBrandPlan.contentBrandMainPic}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev => (prev ? { ...prev, contentBrandMainPic: e.target.value } : prev))
-                    }
-                  >
-                    {brandPositionStaffList.map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-ink block mb-1">
-                    2. Plan / Strategy <span className="text-amber-700">[theo brand]</span>
-                  </label>
-                  <Select
-                    value={editingBrandPlan.planStrategyPic}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev => (prev ? { ...prev, planStrategyPic: e.target.value } : prev))
-                    }
-                  >
-                    {brandPositionStaffList.map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-ink block mb-1">
-                    3. Key Visual / SIS <span className="text-amber-700">[theo brand]</span>
-                  </label>
-                  <Select
-                    value={editingBrandPlan.keyVisualSisPic}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev => (prev ? { ...prev, keyVisualSisPic: e.target.value } : prev))
-                    }
-                  >
-                    {brandPositionStaffList.map(st => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Nhập kế hoạch tháng cho từng vị trí */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-              {/* Khối 1: Content / Brand main [theo brand] */}
-              <div className="p-3.5 rounded-xl border border-amber-200 bg-surface space-y-3">
-                <div className="flex items-center justify-between border-b border-line pb-2">
-                  <div>
-                    <span className="font-semibold text-amber-950 block">1. Content / Brand main</span>
-                    <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.contentBrandMainPic}</span>
-                  </div>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Field label="Master Plan">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.contentBrandMainPlan.masterContentPlanCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                contentBrandMainPlan: {
-                                  ...prev.contentBrandMainPlan,
-                                  masterContentPlanCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field label="Số Pillars">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.contentBrandMainPlan.contentPillarsCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                contentBrandMainPlan: {
-                                  ...prev.contentBrandMainPlan,
-                                  contentPillarsCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field label="Kịch bản Hero">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.contentBrandMainPlan.heroScriptsTarget}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                contentBrandMainPlan: {
-                                  ...prev.contentBrandMainPlan,
-                                  heroScriptsTarget: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Tuyến nội dung & Góc tiếp cận chủ đạo (Content Pillars / Angles)">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.contentBrandMainPlan.focusPillars}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              contentBrandMainPlan: {
-                                ...prev.contentBrandMainPlan,
-                                focusPillars: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-
-                <Field label="Ghi chú thực thi Content / Brand main">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.contentBrandMainPlan.notes}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              contentBrandMainPlan: {
-                                ...prev.contentBrandMainPlan,
-                                notes: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-              </div>
-
-              {/* Khối 2: Plan / Strategy [theo brand] */}
-              <div className="p-3.5 rounded-xl border border-blue-200 bg-surface space-y-3">
-                <div className="flex items-center justify-between border-b border-line pb-2">
-                  <div>
-                    <span className="font-semibold text-blue-950 block">2. Plan / Strategy</span>
-                    <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.planStrategyPic}</span>
-                  </div>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <Field label="Số bản Strategy">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.planStrategyPlan.campaignStrategyCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                planStrategyPlan: {
-                                  ...prev.planStrategyPlan,
-                                  campaignStrategyCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field label="Báo cáo Audit">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.planStrategyPlan.brandAuditCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                planStrategyPlan: {
-                                  ...prev.planStrategyPlan,
-                                  brandAuditCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Big Idea & Thông điệp trọng tâm tháng">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.planStrategyPlan.bigIdeaAndKeyMessage}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              planStrategyPlan: {
-                                ...prev.planStrategyPlan,
-                                bigIdeaAndKeyMessage: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-
-                <Field label="Ghi chú hoạch định Plan / Strategy">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.planStrategyPlan.notes}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              planStrategyPlan: {
-                                ...prev.planStrategyPlan,
-                                notes: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-              </div>
-
-              {/* Khối 3: Key Visual / SIS [theo brand] */}
-              <div className="p-3.5 rounded-xl border border-line bg-surface space-y-3">
-                <div className="flex items-center justify-between border-b border-line pb-2">
-                  <div>
-                    <span className="font-semibold text-ink block">3. Key Visual / SIS</span>
-                    <span className="text-2xs text-ink-3">PIC: {editingBrandPlan.keyVisualSisPic}</span>
-                  </div>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <Field label="Bộ Key Visual">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.keyVisualSisPlan.kvDirectionCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                keyVisualSisPlan: {
-                                  ...prev.keyVisualSisPlan,
-                                  kvDirectionCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field label="Bộ SIS/Banner">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.keyVisualSisPlan.sisBannerPackageCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                keyVisualSisPlan: {
-                                  ...prev.keyVisualSisPlan,
-                                  sisBannerPackageCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                  <Field label="Bộ PDP/SEO">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={editingBrandPlan.keyVisualSisPlan.pdpSeoProductCount}
-                      onChange={(e) =>
-                        setEditingBrandPlan(prev =>
-                          prev
-                            ? {
-                                ...prev,
-                                keyVisualSisPlan: {
-                                  ...prev.keyVisualSisPlan,
-                                  pdpSeoProductCount: Number(e.target.value) || 0,
-                                },
-                              }
-                            : prev
-                        )
-                      }
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Chủ đề Key Visual & Trang trí SIS/PDP tháng">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.keyVisualSisPlan.designTheme}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              keyVisualSisPlan: {
-                                ...prev.keyVisualSisPlan,
-                                designTheme: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-
-                <Field label="Ghi chú thực thi Key Visual / SIS">
-                  <Textarea
-                    rows={2}
-                    value={editingBrandPlan.keyVisualSisPlan.notes}
-                    onChange={(e) =>
-                      setEditingBrandPlan(prev =>
-                        prev
-                          ? {
-                              ...prev,
-                              keyVisualSisPlan: {
-                                ...prev.keyVisualSisPlan,
-                                notes: e.target.value,
-                              },
-                            }
-                          : prev
-                      )
-                    }
-                  />
-                </Field>
-              </div>
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Modal: Biểu mẫu 1-Sheet Trình Brand (Monthly Content & Key Visual Plan — Template 1 Sheet) */}

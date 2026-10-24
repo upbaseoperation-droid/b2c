@@ -3417,7 +3417,176 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             </div>
           )}
 
-          <div className="w-full overflow-x-auto">
+          {/* MOBILE (< 768px): DẠNG THẺ DỌC CHO BƯỚC 2 (KHÔNG CẦN KÉO NGANG) */}
+          <div className="md:hidden divide-y divide-slate-200">
+            {visibleItems.map((item) => {
+              const itemBudgetPct = totalAllocatedBudget > 0 ? (item.totalBudget / totalAllocatedBudget) * 100 : 0;
+              const isSplitRow = item.id.includes('-split-');
+              const klMatch = item.tierCode.toUpperCase().match(/^KL[1-7]$/);
+              const rowSalaryGrade = klMatch ? (klMatch[0] as SalaryGrade) : undefined;
+
+              return (
+                <div key={`mob-${item.id}`} className="p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-2xs font-code px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold shrink-0">
+                          {item.tierCode === 'Video AI' ? 'Giọng máy' : item.tierCode}
+                        </span>
+                        <span className="font-semibold text-slate-900 text-xs truncate">
+                          {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right font-mono shrink-0">
+                      <span className="text-xs font-semibold text-blue-700 block">
+                        {formatVndShort(item.totalBudget)}
+                      </span>
+                      <span className="text-2xs text-slate-400 block">
+                        {itemBudgetPct.toFixed(0)}% ngân sách
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-2xs text-slate-500 block mb-0.5">Định dạng video</span>
+                      <select
+                        value={item.contentFormat}
+                        onChange={(e) => handleUpdateItemFormat(item.id, e.target.value)}
+                        className="w-full h-8 text-xs font-medium px-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 truncate"
+                      >
+                        {CONTENT_FORMAT_OPTIONS.map(fmt => (
+                          <option key={fmt} value={fmt}>{fmt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <span className="text-2xs text-slate-500 block mb-0.5">Nhân sự thực thi</span>
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={item.assignedStaff || planState.pic}
+                          onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                          className={`flex-1 min-w-0 h-8 text-xs font-semibold px-2 rounded-lg border truncate ${
+                            item.assignedStaff && item.assignedStaff !== planState.pic
+                              ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                              : 'bg-white border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          {PIC_OPTIONS.map(staff => (
+                            <option key={staff} value={staff}>
+                              {staff} {staff === planState.pic ? '(PIC)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        {!isPlanLocked && (
+                          <button
+                            type="button"
+                            onClick={() => handleSplitRowForCoWorker(item.id)}
+                            className="h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-2xs font-semibold shrink-0 cursor-pointer"
+                          >
+                            +Chia
+                          </button>
+                        )}
+                        {!isPlanLocked && isSplitRow && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSplitRow(item.id)}
+                            className="h-8 px-2 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-2xs font-semibold shrink-0 cursor-pointer"
+                          >
+                            Gộp
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 items-end pt-0.5">
+                    <div>
+                      <span className="text-2xs text-slate-500 block mb-0.5">Số lượng video</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAdjustItemQty(item.id, -1)}
+                          className="w-7 h-7 rounded border border-slate-200 bg-white text-slate-700 font-semibold flex items-center justify-center shrink-0"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <input
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) => handleUpdateItemQty(item.id, Number(e.target.value))}
+                          className="w-12 h-7 text-center text-xs font-semibold font-mono border border-slate-200 rounded bg-white text-slate-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAdjustItemQty(item.id, 1)}
+                          className="w-7 h-7 rounded border border-slate-200 bg-white text-slate-700 font-semibold flex items-center justify-center shrink-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAdjustItemQty(item.id, 5)}
+                          className="h-7 text-2xs font-semibold px-1.5 rounded border border-slate-200 bg-slate-50 text-slate-600 shrink-0"
+                        >
+                          +5
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-2xs text-slate-500 block mb-0.5">Đơn giá Net (VNĐ)</span>
+                      <div className="flex items-center justify-end gap-1">
+                        <FormattedNumberInput
+                          disabled={isPlanLocked}
+                          value={item.unitCost}
+                          onChange={(val) => handleUpdateItemCost(item.id, val)}
+                          className="w-full h-7 text-right text-xs font-mono font-medium px-2 bg-white border border-slate-200 rounded text-slate-800"
+                        />
+                        {item.unitCost !== item.benchmarkCost && (
+                          <button
+                            type="button"
+                            onClick={() => handleResetItemToBenchmark(item.id)}
+                            className="text-slate-400 hover:text-blue-600 p-1 shrink-0"
+                            title={`Khôi phục đơn giá định mức: ${formatVndShort(item.benchmarkCost)}`}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(onOpenListingForPlan && rowSalaryGrade) || contentHeadroom > 0 ? (
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      {onOpenListingForPlan && rowSalaryGrade && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenListingForPlan(planState, rowSalaryGrade)}
+                          className="text-2xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 cursor-pointer"
+                        >
+                          List KOC ({rowSalaryGrade})
+                        </button>
+                      )}
+                      {contentHeadroom > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleFillRemainingToItem(item.id)}
+                          className="text-2xs font-semibold text-blue-600 bg-white px-2.5 py-1 rounded-md border border-blue-200"
+                        >
+                          Điền +{contentHeadroom} video thiếu
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block w-full overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-2xs">

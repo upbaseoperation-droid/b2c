@@ -858,7 +858,83 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* MOBILE (< 768px): DẠNG THẺ TỔNG QUAN 4.1 & 4.1.1 (KHÔNG CẦN KÉO NGANG) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {overviewMatrixRows.map(row => {
+            const qtyDiff = row.plannedQty - row.refQty;
+            const budDiff = row.plannedBudgetNet - row.refBudgetNet;
+            const isQtyMatched = qtyDiff === 0;
+            const isBudMatched = Math.abs(budDiff) <= Math.max(1000, row.refBudgetNet * 0.005);
+            const isAllMatched = isQtyMatched && isBudMatched;
+            const isEmpty = row.plannedQty === 0 && row.refQty === 0 && row.plannedBudgetNet === 0 && row.refBudgetNet === 0;
+            const isFocused = activeTab === row.id;
+
+            return (
+              <div
+                key={`mob-ov-${row.id}`}
+                onClick={() => handleSelectWorkstreamFromOverview(row.id)}
+                className={`p-3 space-y-1.5 cursor-pointer transition ${
+                  isFocused ? 'bg-indigo-50/60' : 'hover:bg-slate-50/70'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-xs font-semibold text-slate-900 truncate">{row.title}</span>
+                    {row.extraTag && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-2xs font-medium text-slate-600 shrink-0">
+                        {row.extraTag}
+                      </span>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {isEmpty ? (
+                      <span className="text-2xs text-slate-300">—</span>
+                    ) : isAllMatched ? (
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Khớp
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-2xs font-semibold text-amber-700">
+                        {!isQtyMatched && `${qtyDiff > 0 ? `+${fmt(qtyDiff)}` : fmt(qtyDiff)} ${row.unitLabel}`}
+                        {!isQtyMatched && !isBudMatched && ' · '}
+                        {!isBudMatched && `${budDiff > 0 ? `+${fmt(budDiff)}đ` : `${fmt(budDiff)}đ`}`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-2xs text-slate-500">
+                  Phụ trách: <strong className="text-slate-800">{row.picText}</strong>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-2xs tabular-nums pt-0.5">
+                  <div className="rounded-lg bg-slate-50 border border-slate-200/80 px-2.5 py-1.5 flex items-center justify-between">
+                    <span className="text-slate-500">SL (4.1 / 4.1.1):</span>
+                    <span>
+                      <span className="text-slate-600">{fmt(row.refQty)}</span>
+                      <span className="text-slate-300 mx-1">/</span>
+                      <strong className="text-indigo-700">{fmt(row.plannedQty)}</strong>
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-indigo-50/30 border border-indigo-100 px-2.5 py-1.5 flex items-center justify-between">
+                    <span className="text-slate-500">Net:</span>
+                    <strong className="text-indigo-950">
+                      {row.plannedBudgetNet > 0 ? `${fmt(row.plannedBudgetNet)}đ` : row.refBudgetNet > 0 ? `${fmt(row.refBudgetNet)}đ` : '0đ'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div className="p-3 bg-slate-50/90 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-900">
+            <span>Tổng 4.1.1 / 4.1: {fmt(overviewGrandTotals.plannedQty)} / {fmt(overviewGrandTotals.refQty)}</span>
+            <span className="text-indigo-700 tabular-nums">
+              {fmt(overviewGrandTotals.plannedBudgetNet)}đ / {fmt(overviewGrandTotals.refBudgetNet)}đ
+            </span>
+          </div>
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/50 text-2xs font-semibold text-slate-500">
@@ -1167,7 +1243,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
                   <tr>
                     <th
                       rowSpan={2}
-                      className="sticky left-0 z-20 min-w-[190px] border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left font-bold text-slate-800"
+                      className="sticky left-0 z-20 min-w-[130px] sm:min-w-[190px] max-w-[145px] sm:max-w-none border-b border-r border-slate-200 bg-slate-50 px-2.5 sm:px-3 py-2 text-left font-bold text-slate-800"
                     >
                       Hạng mục
                     </th>
@@ -1263,7 +1339,7 @@ export const PlanWeeklyBreakdown: React.FC<PlanWeeklyBreakdownProps> = ({
 
                           return (
                             <tr key={def.id} className="border-b border-slate-100 hover:bg-slate-50/40">
-                              <td className="sticky left-0 z-10 border-r border-slate-200 bg-white px-3 py-1 font-medium text-slate-800">
+                              <td className="sticky left-0 z-10 max-w-[145px] sm:max-w-none truncate border-r border-slate-200 bg-white px-2.5 sm:px-3 py-1 font-medium text-slate-800" title={def.label}>
                                 {def.label}
                               </td>
                               <td className="border-r border-slate-200 px-2 py-1 text-right tabular-nums text-2xs text-slate-400">
