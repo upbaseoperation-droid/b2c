@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Menu, Building2, PanelLeftOpen, PanelLeftClose, LogOut, Loader2 } from 'lucide-react';
+import { Menu, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
 import { resolveNavGroupTabKey } from '../lib/navGroups';
@@ -36,8 +36,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onToggleMobileSidebar,
   isSidebarCollapsed = false,
   onToggleSidebarCollapse,
-  onLogout,
-  isLoggingOut,
   userScopeSummary,
 }) => {
   return (
@@ -92,8 +90,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
 
-      {/* Khối phải: Phạm vi phân quyền, Thao tác trang & Đăng xuất */}
-      <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto">
+      {/* Khối phải: Phạm vi phân quyền & Thao tác trang */}
+      <div className="flex items-center justify-end gap-1.5 shrink-0 ml-auto empty:hidden">
         {activeTab !== 'tiktok-crawler' && activeTab !== 'input-plan' && (
           currentUser.role === 'BRAND_PARTNER' ? (
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20 shrink-0">
@@ -120,23 +118,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <PageActionsSlot />
-
-        {onLogout && (
-          <button
-            type="button"
-            onClick={onLogout}
-            disabled={isLoggingOut}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-            title="Đăng xuất"
-            aria-label="Đăng xuất"
-          >
-            {isLoggingOut ? (
-              <Loader2 className="w-4 h-4 animate-spin text-accent" />
-            ) : (
-              <LogOut className="w-4 h-4" strokeWidth={1.75} />
-            )}
-          </button>
-        )}
       </div>
     </header>
   );

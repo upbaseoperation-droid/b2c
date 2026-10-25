@@ -938,6 +938,25 @@ Tài liệu này hệ thống hóa toàn bộ các lỗi kỹ thuật, lỗi hi�
 - **Phạm vi rà soát mở rộng sang phần khác:** Áp dụng **RULE-PERF-01** cho toàn bộ các API đọc `AppSharedRecord` và các màn hình bảng biểu lớn trong hệ thống.
 
 ---
+
+### BUG-050 — Thẻ Chỉ Số Kế Hoạch Tháng Không Đổi Số Liệu Khi Chuyển Kỳ Tháng & Khối Thẩm Định 4 Chặng Chiếm Diện Tích Làm Rối Bảng Gian Hàng
+- **Ngày phát hiện:** 25/10/2026 (Người dùng phản ánh trên màn hình *Kế hoạch tháng* rằng phần thẻ chỉ số không thay đổi khi đổi tháng và khối thông tin 4 chặng để trực tiếp trên đầu bảng bị rối, cần nhấn nút để mở xem).
+- **Phân hệ / File liên quan:** `web-admin/src/components/views/MonthlyPlanHub.tsx`.
+- **Triệu chứng & Nguyên nhân gốc (Root Cause):**
+  1. **Khi chuyển giữa `Tất cả (137)` và `2026/11 (66)`, hoặc sang `2026/09 (3)`, `2026/08 (2)`, nhiều chỉ số không đổi:**
+     - Ở chế độ `selectedMonth === 'ALL'`, điều kiện `hasFullMonth41Batch` bị chặn bởi `selectedMonth !== 'ALL'`, khiến danh sách rơi vào `buildPlanLookupMap(scopedPlans, 'ALL')`. Hàm này ghi đè kế hoạch theo `storeSlug`, làm 66 bản kế hoạch `2026/11` (nằm sau trong mảng) đè lên 66 bản `2026/10`. Do đó `Tất cả 137` và `2026/11 66` hiển thị cùng 1 bộ số liệu (`3,77 tỷ`, `8.330 video`).
+     - Ở `getB2cPlanBreakdown(plan, store)`, khi gian hàng chưa có kế hoạch trong kỳ (`plan === null` tại `2026/09` hoặc `2026/08`), hàm vẫn fallback lấy `store.monthlyBudget`, `store.budgetAffiliate`, `store.targetFocVideos`, làm 5 ô KPI cộng dồn hạn mức tĩnh của 64 gian hàng không có plan.
+     - `brandMonthlyPlans` (`Kế hoạch theo Brand 42`) và `allPersonalPackages` (`Kế hoạch theo nhân sự 131`) chỉ gắn cứng `month: '2026/10'` mà không lọc theo các thương hiệu có kế hoạch hoạt động trong `selectedMonth`.
+  2. **Khối Scorecard 4 chặng (`1. Plan Tổng`, `2. Plan Chi Tiết`, `3. Kiểm Định Hợp Lệ`, `4. Phê Duyệt & Triển Khai`) đặt cố định ngay trên bảng `Ma trận gian hàng`:**
+     - Chiếm nhiều diện tích dọc và hiển thị quá nhiều nút lọc con cùng lúc trên màn hình chính, gây rối mắt khi thao tác bảng.
+- **Cách khắc phục:**
+  1. Trong `getB2cPlanBreakdown(plan, store)`: trả về toàn bộ giá trị `0` ngay khi `!plan`; bổ sung fallback `reference41.multiPlatform` cho `otherQty` và `otherBudget`.
+  2. Trong `storeGovernanceList`: bỏ chặn `selectedMonth !== 'ALL'` ở `hasFullMonth41Batch` và tạo khóa định danh dòng riêng theo kỳ tháng khi xem `Tất cả`, giúp `Tất cả (137)`, `2026/10 (66)`, `2026/11 (66)`, `2026/09 (3)`, `2026/08 (2)` hiển thị đúng số liệu từng kỳ.
+  3. Bổ sung `monthScopedBrandMonthlyPlans` lọc và đồng bộ `month: selectedMonth` cho `brandPlanKpis`, `filteredBrandMonthlyPlans` và `allPersonalPackages`.
+  4. Thu gọn phần đầu bảng `Ma trận gian hàng` thành 1 dòng tóm tắt + 5 ô KPI đầu việc B2C + nút **`Tiến độ & Kiểm định 4 chặng`**, đưa toàn bộ Scorecard 4 chặng, ma trận điểm nghẽn theo PIC và tác vụ duyệt/chia tuần hàng loạt vào hộp thoại `<Modal>` mở khi nhấn nút.
+- **Phạm vi rà soát mở rộng sang phần khác:** Đã đối soát toàn bộ các bộ lọc tháng trên `MonthlyPlanHub.tsx` và kiểm tra `npm run build` đạt `0 errors`.
+
+---
 ## 3. Quy trình cập nhật Sổ đăng ký lỗi (Bắt buộc)
 
 Mỗi khi người dùng phản ánh một lỗi mới hoặc trợ lý phát hiện bất thường trong quá trình kiểm tra:

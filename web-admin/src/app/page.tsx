@@ -1501,8 +1501,6 @@ export default function App() {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebarCollapse={handleToggleSidebarCollapse}
-          onLogout={handleLogout}
-          isLoggingOut={isLoggingOut}
           userScopeSummary={userScopeSummary}
         />
 

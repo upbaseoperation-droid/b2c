@@ -259,7 +259,7 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 - Phía trên tab chỉ được một hàng chỉ số (`StatRow`, tối đa 4 ô) và chỉ khi các số đó dùng cho mọi tab. Hàng chỉ số nằm trên tab hoặc bảng dùng `StatRow size="sm"`. Không xếp chồng thẻ cảnh báo + thẻ chỉ số lớn + biểu mẫu trước nội dung chính: nội dung chính phải bắt đầu trong nửa trên màn 1440×900.
 - Không thêm tiêu đề lớn thứ hai trong trang. Không thêm thẻ “giới thiệu phân hệ”.
 - Lề trang `px-3 sm:px-4 lg:px-6`, khoảng cách giữa các khối `space-y-5`.
-- Không hiển thị ô chọn chuyển đổi tài khoản / vai trò trên thanh trên (`TopHeader`) hay các màn hình nghiệp vụ; người dùng đăng xuất và đăng nhập tài khoản tại `/login`.
+- Không hiển thị ô chọn chuyển đổi tài khoản / vai trò hay nút đăng xuất trùng lặp trên thanh trên (`TopHeader`) hoặc các màn hình nghiệp vụ; thông tin tài khoản và nút đăng xuất chỉ đặt tại chân menu trái (`Sidebar`).
 - **Thiết kế đáp ứng thiết bị di động & máy tính bảng (Mobile & Tablet Responsive):**
   - **Khung nhìn & Vùng an toàn (`Viewport & Safe-Area`):** Cấu hình `viewportFit: "cover"`, `min-h-dvh` và đệm đáy `env(safe-area-inset-bottom)` trên `RootLayout`, `Sidebar`, `Modal` và `ToastStack`. Tự động áp dụng `font-size: 16px` cho ô nhập liệu trên màn hình cảm ứng `< 640px` để ngăn Safari iOS tự phóng to trang.
   - **Menu trái (`Sidebar`) & Thanh tiêu đề (`TopHeader`):** Trên màn hình `< 1024px` (`lg`), menu trái chuyển thành ngăn kéo trượt (`w-64 max-w-[85vw] z-50`), tự khóa cuộn nền (`overflow: hidden`), đóng khi bấm nền mờ hoặc phím `Escape`. Tiêu đề trang tự co chữ (`text-base sm:text-xl`) và các khe `PageHeaderNavSlot` / `PageActionsSlot` tự xuống dòng (`flex-wrap`) khi hẹp.
