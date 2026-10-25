@@ -6,6 +6,7 @@ import type { InputPlanBreakdownState, KocItem, KocListingItem, ListingBatchCycl
 import { Button, Field, Input, Modal, Select, Status, Textarea } from '../ui';
 import { KL_TIERS, klBaseCost, type KlCode } from '../../lib/klTiers';
 import { useListingBoard } from '../../lib/useListingBoard';
+import { hasBrandApprovalBasis } from '../../lib/listingBoardGuard';
 import { fetchClientMonthlyPlans, getCachedClientMonthlyPlans } from '../../lib/useMonthlyPlanSync';
 import type { ContentSlot } from '../../lib/contentPlanRules';
 import {
@@ -347,7 +348,29 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
       setDropTarget(item);
       return;
     }
+    // Brand duyệt bằng tay (không qua Sheet): phải ghi bằng chứng, máy chủ chặn nếu thiếu
+    const entering = (to === 'NEGOTIATING' || to === 'CONFIRMED') && ['DRAFT', 'WAIT_BRAND'].includes(columnOf(item));
+    if (entering && !item.brandApprovedAt && !hasBrandApprovalBasis(item)) {
+      setEvidenceText(item.brandApprovalEvidence || '');
+      setEvidenceTarget({ item, to });
+      return;
+    }
     applyMove(id, to);
+  };
+
+  // --- bằng chứng Brand duyệt khi không lấy kết quả từ Sheet ---
+  const [evidenceTarget, setEvidenceTarget] = useState<{ item: KocListingItem; to: BoardColumn } | null>(null);
+  const [evidenceText, setEvidenceText] = useState('');
+  const confirmEvidence = () => {
+    if (!evidenceTarget || !evidenceText.trim()) return;
+    const withEvidence = { ...evidenceTarget.item, brandApprovalEvidence: evidenceText.trim() };
+    const r = moveItem(withEvidence, evidenceTarget.to, currentUserName);
+    if (r.error || !r.item) {
+      notify(r.error || 'Không chuyển được.', 'warning');
+      return;
+    }
+    update(items.map(i => (i.id === withEvidence.id ? r.item! : i)));
+    setEvidenceTarget(null);
   };
 
   // --- thêm KOC ---
@@ -1473,6 +1496,41 @@ export const PlanListingBoard: React.FC<PlanListingBoardProps> = ({ kocs, curren
                 })}
               />
             </Field>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={!!evidenceTarget}
+        onClose={() => setEvidenceTarget(null)}
+        title="Bằng chứng Brand duyệt"
+        size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEvidenceTarget(null)}>
+              Hủy
+            </Button>
+            <Button variant="primary" disabled={!evidenceText.trim()} onClick={confirmEvidence}>
+              Ghi nhận Brand duyệt
+            </Button>
+          </>
+        }
+      >
+        {evidenceTarget && (
+          <div className="space-y-3 text-sm">
+            <p className="text-ink-2">
+              KOC <span className="font-medium text-ink">{evidenceTarget.item.kocHandle || evidenceTarget.item.kocName}</span> chưa có kết quả Brand duyệt từ Google Sheet.
+              Nếu Brand duyệt qua kênh khác (Zalo, email, KOL Brand chỉ định), dán link hoặc mô tả bằng chứng để lưu lại.
+            </p>
+            <Field label="Link / mô tả bằng chứng">
+              <Textarea
+                rows={3}
+                value={evidenceText}
+                placeholder="VD: https://… ảnh chụp tin nhắn Brand xác nhận ngày 25/10"
+                onChange={e => setEvidenceText(e.target.value)}
+              />
+            </Field>
+            <p className="text-2xs text-ink-3">Cách được khuyến nghị: Đẩy lên Google Sheet rồi Lấy kết quả Brand duyệt.</p>
           </div>
         )}
       </Modal>

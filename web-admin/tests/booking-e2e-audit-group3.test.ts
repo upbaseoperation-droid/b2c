@@ -502,6 +502,9 @@ test('API Server Guards (L1, L3, D1, D5, S4, S6): Kiểm tra khóa sửa giá, c
                   confirmedAt: '2026-10-11',
                   confirmNote: 'OK',
                 },
+                // Đề nghị thanh toán Job có phí cần đối soát Account + Kế toán Đạt và BBNT đã ký
+                closingAudit: { accountStatus: 'PASSED', financeStatus: 'PASSED' },
+                bbntUrl: 'https://drive.google.com/file/d/bbnt-g3-01/view',
                 payment: {
                   status: 'REQUESTED',
                   amount: 2500000,

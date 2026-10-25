@@ -3911,6 +3911,7 @@ export interface KocListingItem {
   staffComment?: string;
   brandApprovedAt?: string;
   brandApprovedBy?: string;
+  brandApprovalEvidence?: string; // Bằng chứng Brand duyệt khi không lấy từ Sheet (link tin nhắn / email / ảnh chụp)
   
   // Tiến trình song song 2: KOC Negotiation
   kocNegotiationStatus: KocNegotiationStatus;

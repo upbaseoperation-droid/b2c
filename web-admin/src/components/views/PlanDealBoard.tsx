@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Camera, ChevronDown, ChevronRight, FileText, Plus, Search, Send, Trash2 } from 'lucide-react';
 import type { BookingDealItem, InputPlanBreakdownState, KocItem } from '../../lib/types';
+import { isPersonInField } from '../../lib/staffIdentity';
 import { getVietnamDateYmd } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
 import { findSavedScreenshotsForContext } from '../../lib/acceptanceScreenshotStore';
@@ -238,6 +239,29 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
   const plan = useMemo(() => plans.find(p => p.id === selectedId) || null, [plans, selectedId]);
 
   const { data, status, update, saveNow } = usePlanRecord<DealBoardData>('/api/deal-board', plan?.id ?? null, EMPTY_DEAL_BOARD, msg => notify(msg, 'warning'));
+  // Vị trí của người dùng trên gian (máy chủ là nơi chặn; giao diện chỉ khóa sẵn cho dễ dùng)
+  const [boardAccess, setBoardAccess] = useState<{ global: boolean; positions: string[]; isAccountPic: boolean; storeCodes: Record<string, string>; me: { id: string; name: string; staffCode?: string; role: string } } | null>(null);
+  useEffect(() => {
+    if (!plan?.id) return;
+    let alive = true;
+    fetch(`/api/deal-board?planId=${encodeURIComponent(plan.id)}&view=access`, { cache: 'no-store' })
+      .then(res => (res.ok ? res.json() : null))
+      .then(body => alive && setBoardAccess(body))
+      .catch(() => alive && setBoardAccess(null));
+    return () => {
+      alive = false;
+    };
+  }, [plan?.id]);
+  const canEditDealFields = (d: PlanDeal): boolean => {
+    if (!boardAccess) return true;
+    const pos = new Set(boardAccess.positions);
+    if (boardAccess.global || pos.has('BOOKING_MAIN') || pos.has('LEADER')) return true;
+    // Pháp chế / Kế toán / Account PIC sửa phần duyệt của mình trên mọi deal (máy chủ giới hạn đúng trường)
+    if (boardAccess.isAccountPic || /^(LEGAL|FINANCE)$/.test(boardAccess.me?.role || '')) return true;
+    if (!pos.has('BOOKING_CO') && !pos.has('BACKUP')) return false;
+    const mine = (name?: string) => isPersonInField(boardAccess.me, name, boardAccess.storeCodes);
+    return mine(d.pic) || (d.jobs || []).some(j => mine(j.pic));
+  };
   const { items } = useListingBoard(plan?.id ?? null, msg => notify(msg, 'warning'));
   const deals = data.deals;
 
@@ -941,8 +965,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       finalAmount: effectiveAmount,
       postedDate: job.airedAt || getVietnamDateYmd(),
       postDate: job.airedAt || getVietnamDateYmd(),
-      contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
-      signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
+      contractScanUrl: job.appendixUrl || fw?.fileUrl || '',
+      signedContractUrl: job.appendixUrl || fw?.fileUrl || '',
     };
 
     const payee = resolveJobPayee(d, job, matchedKoc);
@@ -957,19 +981,19 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         body: JSON.stringify({
           requestType: 'SETTLEMENT',
           deals: [dealPayload],
+          planJobRefs: [{ planId: plan.id, dealId: d.id, jobId: job.id }],
           kocs: matchedKoc ? [matchedKoc] : [],
           sharedPayeeOverride: {
             bankName,
             bankAccount,
             bankHolder,
             legalId,
-            hasIdCardScan: true,
             linkAir: job.airLink.trim(),
             postedDate: job.airedAt || getVietnamDateYmd(),
-            sparkAdsCode: job.sparkAdsCode || 'DA_NGHIEM_THU',
+            sparkAdsCode: job.sparkAdsCode || '',
             adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-            contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
-            bbntUrl: `BBNT-${job.code}`,
+            contractUrl: job.appendixUrl || fw?.fileUrl || '',
+            bbntUrl: job.bbntUrl || '',
           },
           actorName: currentUserName,
           month: plan.month,
@@ -1037,8 +1061,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       ...bookingDeal,
       advanceAmount: advAmt,
       finalAmount: advAmt,
-      contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
-      signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
+      contractScanUrl: job.appendixUrl || fw?.fileUrl || '',
+      signedContractUrl: job.appendixUrl || fw?.fileUrl || '',
     };
     const payee = resolveJobPayee(d, job, matchedKoc);
     if (!payee) return;
@@ -1052,14 +1076,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         body: JSON.stringify({
           requestType: 'ADVANCE',
           deals: [dealPayload],
+          planJobRefs: [{ planId: plan.id, dealId: d.id, jobId: job.id }],
           kocs: matchedKoc ? [matchedKoc] : [],
           sharedPayeeOverride: {
             bankName,
             bankAccount,
             bankHolder,
             legalId,
-            hasIdCardScan: true,
-            contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
+            contractUrl: job.appendixUrl || fw?.fileUrl || '',
           },
           actorName: currentUserName,
           month: plan.month,
@@ -1132,10 +1156,10 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       overridesByDealId[bookingDeal.id] = {
         linkAir: job.airLink.trim(),
         postedDate: job.airedAt || getVietnamDateYmd(),
-        sparkAdsCode: job.sparkAdsCode || 'DA_NGHIEM_THU',
+        sparkAdsCode: job.sparkAdsCode || '',
         adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
-        contractUrl: job.appendixUrl || fw?.fileUrl || `PL-${job.appendixNo}`,
-        bbntUrl: `BBNT-${job.code}`,
+        contractUrl: job.appendixUrl || fw?.fileUrl || '',
+        bbntUrl: job.bbntUrl || '',
       };
       return {
         ...bookingDeal,
@@ -1144,8 +1168,8 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         finalAmount: effectiveAmount,
         postedDate: job.airedAt || getVietnamDateYmd(),
         postDate: job.airedAt || getVietnamDateYmd(),
-        contractScanUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
-        signedContractUrl: job.appendixUrl || fw?.fileUrl || `https://drive.google.com/drive/folders/${job.appendixNo}`,
+        contractScanUrl: job.appendixUrl || fw?.fileUrl || '',
+        signedContractUrl: job.appendixUrl || fw?.fileUrl || '',
       };
     });
 
@@ -1161,13 +1185,13 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
         body: JSON.stringify({
           requestType: 'SETTLEMENT',
           deals: dealPayloads,
+          planJobRefs: selectedPairs.map(p => ({ planId: plan.id, dealId: p.deal.id, jobId: p.job.id })),
           kocs: matchedKoc ? [matchedKoc] : [],
           sharedPayeeOverride: {
             bankName,
             bankAccount,
             bankHolder,
             legalId,
-            hasIdCardScan: true,
           },
           overridesByDealId,
           actorName: currentUserName,
@@ -3082,6 +3106,14 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
             <Field label="Mã Spark Ads (nếu có)">
               <Input value={job.sparkAdsCode} placeholder="#SparkAds..." onChange={e => setJob(x => ({ ...x, sparkAdsCode: e.target.value }))} />
             </Field>
+            <Field label={job.bbntSigned ? 'Link BBNT đã ký (đồng bộ từ Hợp đồng)' : 'Link BBNT đã ký (bắt buộc trước khi đề nghị thanh toán)'}>
+              <Input
+                value={job.bbntUrl || ''}
+                disabled={Boolean(job.bbntContractId && job.bbntSigned)}
+                placeholder="https://… (file BBNT đã ký)"
+                onChange={e => setJob(x => ({ ...x, bbntUrl: e.target.value }))}
+              />
+            </Field>
           </div>
 
           {job.acceptance.status !== 'PENDING' && (
@@ -3189,7 +3221,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                         ...x,
                         invoiceCheck: {
                           draftInvoiceUrl: x.invoiceCheck?.draftInvoiceUrl || '',
-                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'APPROVED',
+                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'PENDING',
                           officialInvoiceNo: e.target.value,
                           officialInvoiceDate: x.invoiceCheck?.officialInvoiceDate || '',
                           officialInvoiceUrl: x.invoiceCheck?.officialInvoiceUrl || '',
@@ -3208,7 +3240,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                         ...x,
                         invoiceCheck: {
                           draftInvoiceUrl: x.invoiceCheck?.draftInvoiceUrl || '',
-                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'APPROVED',
+                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'PENDING',
                           officialInvoiceNo: x.invoiceCheck?.officialInvoiceNo || '',
                           officialInvoiceDate: x.invoiceCheck?.officialInvoiceDate || '',
                           officialInvoiceUrl: x.invoiceCheck?.officialInvoiceUrl || '',
@@ -3227,7 +3259,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                         ...x,
                         invoiceCheck: {
                           draftInvoiceUrl: x.invoiceCheck?.draftInvoiceUrl || '',
-                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'APPROVED',
+                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'PENDING',
                           officialInvoiceNo: x.invoiceCheck?.officialInvoiceNo || '',
                           officialInvoiceDate: e.target.value,
                           officialInvoiceUrl: x.invoiceCheck?.officialInvoiceUrl || '',
@@ -3246,7 +3278,7 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
                         ...x,
                         invoiceCheck: {
                           draftInvoiceUrl: x.invoiceCheck?.draftInvoiceUrl || '',
-                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'APPROVED',
+                          draftInvoiceStatus: x.invoiceCheck?.draftInvoiceStatus || 'PENDING',
                           officialInvoiceNo: x.invoiceCheck?.officialInvoiceNo || '',
                           officialInvoiceDate: x.invoiceCheck?.officialInvoiceDate || '',
                           officialInvoiceUrl: e.target.value,
@@ -4036,7 +4068,16 @@ export const PlanDealBoard: React.FC<PlanDealBoardProps> = ({ kocs = [], current
       </section>
 
       <Modal open={Boolean(openDeal)} onClose={() => setOpenDealId(null)} title={openDeal ? `Quản lý Deal ${openDeal.code} & các Job` : 'Deal'} size="xl">
-        {openDeal && renderDealModal(openDeal)}
+        {openDeal && !canEditDealFields(openDeal) && (
+          <div className="mb-3 rounded-lg border border-line bg-sunken px-3 py-2 text-xs text-ink-2">
+            Deal do {openDeal.pic || 'người khác'} phụ trách — bạn chỉ xem. Booking chính / Leader của gian sửa được mọi deal.
+          </div>
+        )}
+        {openDeal && (
+          <fieldset disabled={!canEditDealFields(openDeal)} className="min-w-0 border-0 p-0 m-0">
+            {renderDealModal(openDeal)}
+          </fieldset>
+        )}
       </Modal>
 
       <Modal

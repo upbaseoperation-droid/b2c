@@ -1,4 +1,5 @@
 import { UserProfile, BrandDetail, StorePortfolioItem, InputPlanBreakdownState, BookingDealItem } from './types';
+import { isPersonInField } from './staffIdentity';
 
 /** Tất cả người được phân việc trong một kế hoạch tháng: là PIC tham gia gian trong tháng đó. */
 function planParticipantNames(plan: InputPlanBreakdownState): string[] {
@@ -42,6 +43,7 @@ export function isStaffGlobalAdminOrManager(user: UserProfile | null | undefined
 
 interface UserScopeBase {
   key: string;
+  user: UserProfile;
   isGlobal: boolean;
   userNameLower: string;
   assignedBrands: string[];
@@ -107,6 +109,7 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
 
   const base: UserScopeBase = {
     key,
+    user,
     isGlobal,
     userNameLower,
     assignedBrands: Array.from(assignedBrandsSet),
@@ -118,7 +121,7 @@ function getUserScopeBase(user: UserProfile): UserScopeBase {
 }
 
 function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): boolean {
-  const { userNameLower, allowedStoresLower } = base;
+  const { userNameLower, allowedStoresLower, user } = base;
 
   if (allowedStoresLower.size > 0) {
     if (
@@ -130,27 +133,16 @@ function checkStoreDirectMatch(store: StorePortfolioItem, base: UserScopeBase): 
     }
   }
 
-  if (!userNameLower) return false;
+  if (!userNameLower && !user.staffCode) return false;
 
-  if (
-    hasUserInPicField(store.b2cOwnerName, userNameLower) ||
-    hasUserInPicField(store.primaryPic, userNameLower) ||
-    hasUserInPicField(store.assignedStaff, userNameLower) ||
-    hasUserInPicField(store.accountOwnerName, userNameLower) ||
-    hasUserInPicField(store.bookingLeader, userNameLower) ||
-    hasUserInPicField(store.contentPic, userNameLower) ||
-    hasUserInPicField(store.backupOwnerName, userNameLower)
-  ) {
-    return true;
-  }
-
-  if (Array.isArray(store.b2cOwners)) {
-    for (const owner of store.b2cOwners) {
-      if (hasUserInPicField(owner, userNameLower)) return true;
-    }
-  }
-
-  return false;
+  // Nhận người theo mã nhân sự lưu kèm gian (tên trùng / đổi tên không làm sai quyền)
+  const codes = store.staffCodes;
+  const fields = [
+    store.b2cOwnerName, store.primaryPic, store.assignedStaff, store.assignedPic, store.accountOwnerName,
+    store.bookingLeader, store.contentPic, store.backupOwnerName,
+    ...(store.b2cOwners || []), ...(store.assignedMembers || []),
+  ];
+  return fields.some(f => isPersonInField(user, f, codes));
 }
 
 function getStoreScopeIndex(user: UserProfile, allStores: StorePortfolioItem[]): StoreScopeIndex {
@@ -221,15 +213,11 @@ export function isBrandManagedByUser(
 
   // 2. Nếu là đối tượng BrandDetail, kiểm tra các chức danh PIC gắn trực tiếp trên Brand
   if (typeof brand !== 'string') {
-    const { userNameLower, allowedStoresLower } = base;
+    const { allowedStoresLower, user: scopeUser } = base;
+    const codes = brand.staffCodes;
     if (
-      userNameLower &&
-      (hasUserInPicField(brand.brandPicName, userNameLower) ||
-        hasUserInPicField(brand.accountPic, userNameLower) ||
-        hasUserInPicField(brand.bookingPicLead, userNameLower) ||
-        hasUserInPicField(brand.contentBrandMainPic, userNameLower) ||
-        hasUserInPicField(brand.planStrategyPic, userNameLower) ||
-        hasUserInPicField(brand.keyVisualSisPic, userNameLower))
+      [brand.brandPicName, brand.accountPic, brand.bookingPicLead, brand.contentBrandMainPic, brand.planStrategyPic, brand.keyVisualSisPic]
+        .some(f => isPersonInField(scopeUser, f, codes))
     ) {
       return true;
     }

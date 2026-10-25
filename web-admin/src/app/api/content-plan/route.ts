@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
+import { assertPlanIdAccess, listMonthlyPlans, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { guardContentPlanSave } from '@/lib/contentPlanGuard';
+import { DealGuardError } from '@/lib/dealBoardGuard';
 import type { ContentPlanData, ContentSlot } from '@/lib/contentPlanRules';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
@@ -73,16 +75,24 @@ export async function PUT(request: NextRequest) {
     if (body.data.slots.length > MAX_SLOTS) {
       return NextResponse.json({ error: `Tối đa ${MAX_SLOTS} content mỗi kế hoạch.` }, { status: 400 });
     }
-    await assertPlanIdAccess(body.planId, actor, 'write');
+    const ctx = await resolvePlanContext(body.planId, actor);
     const next: ContentPlanData = {
       slots: body.data.slots as ContentSlot[],
       sheetUrl: typeof body.data.sheetUrl === 'string' ? body.data.sheetUrl.slice(0, 500) : undefined,
       tabName: typeof body.data.tabName === 'string' ? body.data.tabName.slice(0, 100) : undefined,
       lastPush: body.data.lastPush,
     };
-    const saved = await updateRecord<ContentPlanData>(keyOf(body.planId), { slots: [] }, body.revision, () => next);
+    const saved = await updateRecord<ContentPlanData>(keyOf(body.planId), { slots: [] }, body.revision, previous => {
+      guardContentPlanSave(previous.slots || [], next.slots, ctx);
+      if (!ctx.global && !ctx.positions.has('BOOKING_MAIN')) {
+        // Chỉ Booking chính đổi link Sheet / lần đẩy Sheet của kế hoạch content
+        return { ...next, sheetUrl: previous.sheetUrl, tabName: previous.tabName, lastPush: previous.lastPush };
+      }
+      return next;
+    });
     return NextResponse.json({ data: saved.data, revision: saved.revision });
   } catch (err) {
+    if (err instanceof DealGuardError) return NextResponse.json({ error: err.message, code: 'FORBIDDEN_CHANGE' }, { status: err.status });
     if (err instanceof RecordError) return NextResponse.json({ error: err.message, code: err.status === 409 ? 'CONFLICT' : undefined }, { status: err.status });
     return handlePlanError(err);
   }

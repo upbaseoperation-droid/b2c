@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, readRecordsBatch, updateRecord, RecordError } from '@/lib/server/sharedRecords';
 import { selfChannelBoardKey } from '@/lib/server/boardKeys';
-import { assertPlanIdAccess, listMonthlyPlans } from '@/lib/server/monthlyPlanStore';
+import { assertPlanIdAccess, listMonthlyPlans, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
 import {
   EMPTY_SELF_CHANNEL_BOARD,
   sanitizeSelfChannelBoard,
@@ -83,7 +83,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Dữ liệu gửi lên không hợp lệ.' }, { status: 400 });
     }
 
-    await assertPlanIdAccess(body.planId, actor, 'write');
+    // Bảng Video kênh Brand: PIC Kênh tự sở hữu, Booking chính, Leader hoặc Giám đốc
+    const ctx = await resolvePlanContext(body.planId, actor);
+    if (!ctx.global && !['SELF_CHANNEL', 'BOOKING_MAIN', 'LEADER'].some(p => ctx.positions.has(p as never))) {
+      return NextResponse.json({ error: 'Chỉ PIC Kênh tự sở hữu, Booking chính hoặc Leader của gian được sửa bảng Video kênh Brand.' }, { status: 403 });
+    }
     const incoming = sanitizeSelfChannelBoard(body.data);
 
     const saved = await updateRecord<SelfChannelBoardData>(

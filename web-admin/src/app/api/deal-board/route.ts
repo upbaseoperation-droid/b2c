@@ -20,6 +20,8 @@ import {
   type PlanDeal,
 } from '@/lib/dealBoardRules';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
+import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { DealGuardError, guardDealBoardSave } from '@/lib/dealBoardGuard';
 
 export const dynamic = 'force-dynamic';
 
@@ -198,8 +200,24 @@ export async function GET(request: NextRequest) {
   }
   const planId = request.nextUrl.searchParams.get('planId') || '';
   if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
+  // GET /api/deal-board?planId=...&view=access — vị trí của người dùng trên gian để giao diện khóa sẵn deal không phải của mình
+  if (request.nextUrl.searchParams.get('view') === 'access') {
+    try {
+      const ctx = await resolvePlanContext(planId, actor);
+      return NextResponse.json({
+        global: ctx.global,
+        positions: [...ctx.positions],
+        isAccountPic: ctx.isAccountPic,
+        storeCodes: ctx.store?.staffCodes || {},
+        selfAirAllowed: Boolean(ctx.brand?.selfAirAllowed),
+        me: { id: actor.id, name: actor.name, staffCode: actor.staffCode, role: actor.role },
+      });
+    } catch (err) {
+      return handlePlanError(err);
+    }
+  }
   try {
-    await assertPlanIdAccess(planId, actor, 'read');
+    assertCanViewBooking(await resolvePlanContext(planId, actor));
     const rec = await readRecord<DealBoardData>(keyOf(planId), EMPTY_DEAL_BOARD);
     return NextResponse.json({ data: sanitizeDealBoard(rec.data), revision: rec.revision });
   } catch (err) {
@@ -217,10 +235,22 @@ export async function PUT(request: NextRequest) {
     if (!body.planId || !body.data || typeof body.revision !== 'number') {
       return NextResponse.json({ error: 'Dữ liệu gửi lên không hợp lệ.' }, { status: 400 });
     }
-    await assertPlanIdAccess(body.planId, actor, 'write');
-    const incoming = sanitizeDealBoard(body.data);
+    const ctx = await resolvePlanContext(body.planId, actor);
+    assertCanViewBooking(ctx);
+    const sanitized = sanitizeDealBoard(body.data);
     const saved = await updateRecord<DealBoardData>(keyOf(body.planId), EMPTY_DEAL_BOARD, body.revision, async previous => {
-      const before = new Map(sanitizeDealBoard(previous).deals.map(d => [d.id, d]));
+      const prevBoard = sanitizeDealBoard(previous);
+      // Quyền theo người sở hữu deal, vai trò và trạng thái (khóa sổ, khóa link Air, kịch bản 2 vòng, tự Air)
+      const incoming = guardDealBoardSave(prevBoard, sanitized, {
+        actor,
+        global: ctx.global,
+        positions: ctx.positions,
+        isAccountPic: ctx.isAccountPic,
+        storeCodes: ctx.store?.staffCodes,
+        planMonth: ctx.plan.month,
+        selfAirAllowed: Boolean(ctx.brand?.selfAirAllowed),
+      });
+      const before = new Map(prevBoard.deals.map(d => [d.id, d]));
       const codes = new Set<string>();
       const deals = incoming.deals.map(d => {
         const old = before.get(d.id);
@@ -247,38 +277,6 @@ export async function PUT(request: NextRequest) {
             }
           }
 
-          // S6: Kiểm soát vai trò trên máy chủ đối với các trạng thái phê duyệt nhạy cảm
-          if (j.legalReviewStatus === 'APPROVED' && oldJob?.legalReviewStatus !== 'APPROVED') {
-            if (!['LEGAL', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role)) {
-              throw new RecordError('Chỉ Pháp chế hoặc Quản lý mới có quyền duyệt thẩm định Pháp chế.', 403);
-            }
-          }
-          if (j.financeReviewStatus === 'APPROVED' && oldJob?.financeReviewStatus !== 'APPROVED') {
-            if (!['FINANCE', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role) && !actor.permissions?.includes('canApprovePayment')) {
-              throw new RecordError('Chỉ Kế toán hoặc Quản lý mới có quyền duyệt thẩm định Tài chính.', 403);
-            }
-          }
-          if (j.payment.status === 'PAID' && oldJob?.payment.status !== 'PAID') {
-            if (!['FINANCE', 'ADMIN', 'DIRECTOR', 'LEADER'].includes(actor.role) && !actor.permissions?.includes('canApprovePayment')) {
-              throw new RecordError('Chỉ Kế toán hoặc cấp Phê duyệt mới có quyền xác nhận Đã thanh toán (PAID).', 403);
-            }
-          }
-          const wasLeadConfirmed = Boolean(
-            oldJob?.lateSigningExplanation?.leadConfirmed ||
-              oldJob?.lateSigningExplanation?.confirmedByLead?.trim() ||
-              oldJob?.lateSigningExplanation?.leadConfirmedBy?.trim()
-          );
-          const isLeadConfirmed = Boolean(
-            j.lateSigningExplanation?.leadConfirmed ||
-              j.lateSigningExplanation?.confirmedByLead?.trim() ||
-              j.lateSigningExplanation?.leadConfirmedBy?.trim()
-          );
-          if (isLeadConfirmed && !wasLeadConfirmed) {
-            if (!['LEADER', 'ADMIN', 'DIRECTOR'].includes(actor.role)) {
-              throw new RecordError('Chỉ Trưởng nhóm (Leader) hoặc Quản lý mới có quyền xác nhận Giải trình ký muộn.', 403);
-            }
-          }
-
           // Đề nghị hoặc ghi nhận thanh toán theo Job: phải qua nghiệm thu của Job đó và có HĐNT/Phụ lục nếu có phí (D1)
           const payChanged = j.payment.status !== (oldJob?.payment.status ?? 'NONE');
           if (payChanged && j.payment.status !== 'NONE') {
@@ -289,14 +287,16 @@ export async function PUT(request: NextRequest) {
             if (reason) throw new RecordError(`Job ${j.code} chưa thanh toán được: ${reason}`, 400);
           }
 
-          // Nếu đổi link air thì xóa xác nhận nghiệm thu cũ để bắt buộc nghiệm thu lại
+          // Nếu đổi link air thì xóa kết quả và xác nhận nghiệm thu cũ để bắt buộc nghiệm thu lại video mới
           const airLinkChanged = Boolean(oldJob && j.airLink.trim() !== oldJob.airLink.trim());
           if (airLinkChanged) {
             return {
               ...j,
               acceptance: {
                 ...j.acceptance,
-                status: j.airLink.trim() ? j.acceptance.status : 'PENDING',
+                status: 'PENDING' as const,
+                checks: [],
+                checkedAt: '',
                 confirmedBy: '',
                 confirmedAt: '',
                 confirmNote: '',
@@ -370,6 +370,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ data: saved.data, revision: saved.revision });
   } catch (err) {
+    if (err instanceof DealGuardError) return NextResponse.json({ error: err.message, code: 'FORBIDDEN_CHANGE' }, { status: err.status });
     if (err instanceof RecordError) return NextResponse.json({ error: err.message, code: err.status === 409 ? 'CONFLICT' : undefined }, { status: err.status });
     return handlePlanError(err);
   }

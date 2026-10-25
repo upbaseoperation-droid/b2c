@@ -345,6 +345,14 @@ export interface DealJob {
   appendixNo: string;
   appendixDate: string;
   appendixUrl: string;
+  /** Link Biên bản nghiệm thu (BBNT) đã ký của Job; bắt buộc trước khi lập đề nghị thanh toán Job có phí */
+  bbntUrl?: string;
+  /** Hồ sơ Hợp đồng (module Hợp đồng) của Phụ lục SOW / BBNT gắn với Job, để đồng bộ trạng thái ký */
+  sowContractId?: string;
+  bbntContractId?: string;
+  /** Trạng thái ký lấy từ module Hợp đồng (weSign) */
+  sowSigned?: boolean;
+  bbntSigned?: boolean;
   /** Đánh dấu sử dụng mẫu hợp đồng ngoài hoặc có sửa điều khoản (kích hoạt Pháp chế 24h & Tài chính 48h) */
   isCustomContractTemplate?: boolean;
   legalReviewStatus?: ContractReviewStatus;
@@ -633,10 +641,12 @@ export function getMonthlyClosingStatus(
     };
   }
   // AUTO: Kiểm tra nếu đã sang ngày mùng 2 của tháng kế tiếp
-  const m = planMonth.match(/^(\d{1,2})\/(\d{4})$/) || planMonth.match(/^(\d{4})-(\d{1,2})$/);
-  if (!m) return { locked: false, phaseLabel: 'Đang trong kỳ vận hành tháng', canAccountingEdit: true };
-  const monthNum = planMonth.includes('/') ? Number(m[1]) : Number(m[2]);
-  const yearNum = planMonth.includes('/') ? Number(m[2]) : Number(m[1]);
+  // Nhận cả "YYYY/MM" (định dạng kế hoạch tháng), "YYYY-MM" và "MM/YYYY"
+  const ym = planMonth.trim().match(/^(\d{4})[/-](\d{1,2})$/);
+  const my = planMonth.trim().match(/^(\d{1,2})\/(\d{4})$/);
+  if (!ym && !my) return { locked: false, phaseLabel: 'Đang trong kỳ vận hành tháng', canAccountingEdit: true };
+  const monthNum = ym ? Number(ym[2]) : Number(my![1]);
+  const yearNum = ym ? Number(ym[1]) : Number(my![2]);
   const nextMonthYear = monthNum === 12 ? yearNum + 1 : yearNum;
   const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
   const lockDate = new Date(Date.UTC(nextMonthYear, nextMonth - 1, 2, 0, 0, 0));
@@ -1147,6 +1157,9 @@ export function jobPaymentBlocker(job: DealJob): string {
   if (job.closingAudit?.accountStatus === 'RETURNED' || job.closingAudit?.financeStatus === 'RETURNED') {
     return 'Hồ sơ nghiệm thu của Job đang bị Account / Kế toán trả lỗi (Pipeline 14.3) — cần khắc phục trước khi thanh toán.';
   }
+  if (!isFoc && job.closingAudit?.accountStatus !== 'PASSED') return 'Account PIC chưa đối soát Đạt số liệu Brand của Job.';
+  if (!isFoc && job.closingAudit?.financeStatus !== 'PASSED') return 'Kế toán chưa đối soát Đạt chứng từ của Job.';
+  if (!isFoc && !(job.bbntUrl || '').trim()) return 'Chưa có link Biên bản nghiệm thu (BBNT) đã ký của Job.';
   if (!job.airLink.trim() && job.productionMode !== 'PRODUCTION_ONLY') return 'Job chưa có link video lên sóng (link air).';
   const videoCleared = job.acceptance.status === 'PASSED' || Boolean(job.acceptance.confirmedBy);
   if (!videoCleared) return job.acceptance.status === 'PENDING' ? 'Chưa nghiệm thu video của Job.' : 'Video chưa đạt, cần người có quyền xác nhận nghiệm thu.';
@@ -1830,6 +1843,11 @@ export function sanitizeDealBoard(input: Partial<DealBoardData> | undefined): De
           appendixNo: s(j?.appendixNo, 80),
           appendixDate: day(j?.appendixDate),
           appendixUrl: s(j?.appendixUrl, 1000),
+          bbntUrl: s(j?.bbntUrl, 1000) || undefined,
+          sowContractId: s(j?.sowContractId, 120) || undefined,
+          bbntContractId: s(j?.bbntContractId, 120) || undefined,
+          sowSigned: j?.sowSigned === true ? true : undefined,
+          bbntSigned: j?.bbntSigned === true ? true : undefined,
           isCustomContractTemplate: Boolean(j?.isCustomContractTemplate),
           legalReviewStatus: oneOf(j?.legalReviewStatus, ['NOT_NEEDED', 'NOT_REQUIRED', 'PENDING', 'APPROVED', 'CHANGES'] as const, 'NOT_NEEDED'),
           financeReviewStatus: oneOf(j?.financeReviewStatus, ['NOT_NEEDED', 'NOT_REQUIRED', 'PENDING', 'APPROVED', 'CHANGES'] as const, 'NOT_NEEDED'),

@@ -14,7 +14,10 @@ import type {
   StorePortfolioItem,
   UserProfile
 } from '../types';
-import { brandPlanSectionsOf, FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess } from '../brandPlanAccess';
+import { FULL_BRAND_PLAN_ACCESS, type BrandPlanAccess, type BrandPlanSection } from '../brandPlanAccess';
+import { storePositionsOf, storeLeader, storeMainBooking, type StorePosition } from '../storePositions';
+import { isPersonInField } from '../staffIdentity';
+import type { BrandDetail } from '../types';
 import { INITIAL_MONTHLY_PLANS } from '../monthlyPlanData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from '../realLarkPlans202610';
 import { REAL_MONTHLY_PLANS_NOV_2026 } from '../realLarkPlans202611';
@@ -182,27 +185,53 @@ function sameValue(a: unknown, b: unknown) {
   return stableStringify(a) === stableStringify(b);
 }
 
+type CatalogView = { stores: StorePortfolioItem[]; brands: { name: string }[] };
+
+export function planStoreOf(plan: InputPlanBreakdownState, catalog: CatalogView): StorePortfolioItem | undefined {
+  return catalog.stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
+}
+
+export function planBrandOf(plan: InputPlanBreakdownState, catalog: CatalogView, store?: StorePortfolioItem): BrandDetail | undefined {
+  const name = store?.brandName || plan.brandName || plan.parentBrand || '';
+  return name ? (catalog.brands.find(b => brandKey(b.name) === brandKey(name)) as BrandDetail | undefined) : undefined;
+}
+
+/** Vị trí của người dùng trên gian của kế hoạch (lấy từ Dữ liệu gốc tại thời điểm kiểm tra). */
+export function planPositionsWithCatalog(plan: InputPlanBreakdownState, actor: UserProfile, catalog: CatalogView): Set<StorePosition> {
+  const store = planStoreOf(plan, catalog);
+  const brand = planBrandOf(plan, catalog, store);
+  if (store) return storePositionsOf(actor, store, brand);
+  // Kế hoạch chưa gắn gian: chỉ xét PIC Plan / KV của nhãn
+  const out = new Set<StorePosition>();
+  if (brand && isPersonInField(actor, brand.planStrategyPic, brand.staffCodes)) out.add('PLAN_STRATEGY');
+  if (brand && isPersonInField(actor, brand.keyVisualSisPic, brand.staffCodes)) out.add('KEY_VISUAL');
+  return out;
+}
+
+/** Xem kế hoạch: trong phạm vi cũ (PIC gian / nhãn / người tham gia tháng) hoặc đang giữ một vị trí trên gian, kể cả vị trí cấp nhãn. */
+export function canReadPlanWithCatalog(plan: InputPlanBreakdownState, actor: UserProfile, catalog: CatalogView): boolean {
+  return isPlanManagedByUser(plan, actor, catalog.stores) || planPositionsWithCatalog(plan, actor, catalog).size > 0;
+}
+
+/**
+ * Quyền với kế hoạch tháng:
+ * - Xem: phạm vi gian / nhãn hoặc giữ vị trí trên gian.
+ * - Sửa / gửi duyệt: Booking chính của gian (Leader chỉ sơ duyệt, xử lý ở bước lưu), hoặc Giám đốc / Admin.
+ */
 function checkPlanAccessWithCatalog(
   plan: InputPlanBreakdownState,
   actor: UserProfile,
   action: 'read' | 'write' | 'approve',
-  catalog: { stores: StorePortfolioItem[]; brands: { name: string }[] },
+  catalog: CatalogView,
   allowed: boolean
 ) {
-  if (!isPlanManagedByUser(plan, actor, catalog.stores) || !allowed) {
+  if (!allowed || !canReadPlanWithCatalog(plan, actor, catalog)) {
     throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
   }
-  if (action !== 'read' && !isStaffGlobalAdminOrManager(actor)) {
-    const targetStore = plan.storeId || plan.storeName;
-    if (targetStore) {
-      const store = catalog.stores.find(s => s.id === plan.storeId || s.storeName === plan.storeName);
-      if (!store || !isStoreManagedByUser(store, actor)) throw new PlanStoreError('FORBIDDEN', 'Gian hàng không thuộc phạm vi được giao.');
-    }
-    const targetBrand = plan.brandName || plan.parentBrand;
-    if (targetBrand) {
-      const brand = catalog.brands.find(b => brandKey(b.name) === brandKey(targetBrand));
-      if (!brand || !isBrandManagedByUser(brand as never, actor, catalog.stores)) throw new PlanStoreError('FORBIDDEN', 'Thương hiệu không thuộc phạm vi được giao.');
-    }
+  if (action === 'read' || isStaffGlobalAdminOrManager(actor)) return;
+  const positions = planPositionsWithCatalog(plan, actor, catalog);
+  if (!positions.has('BOOKING_MAIN') && !positions.has('LEADER')) {
+    throw new PlanStoreError('FORBIDDEN', 'Chỉ Booking chính của gian (hoặc Leader khi sơ duyệt) được sửa kế hoạch.');
   }
 }
 
@@ -229,6 +258,43 @@ export async function assertPlanIdAccess(id: string, actor: UserProfile, action:
   await assertPlanAccess(stored.plan, actor, action);
   return stored.plan;
 }
+
+/** Bối cảnh quyền trên một kế hoạch: vị trí của người dùng trên gian, nhãn, Account PIC. Dùng cho các bảng làm việc theo người sở hữu. */
+export interface PlanContext {
+  plan: InputPlanBreakdownState;
+  store?: StorePortfolioItem;
+  brand?: BrandDetail;
+  positions: Set<StorePosition>;
+  global: boolean;
+  isAccountPic: boolean;
+}
+
+export async function resolvePlanContext(id: string, actor: UserProfile): Promise<PlanContext> {
+  const [stored, { data: catalog }, allowed] = await Promise.all([
+    getStoredPlanByIdFast(id),
+    readMasterCatalog(),
+    actionAllowed(actor, 'plan_target_month', 'read'),
+  ]);
+  if (!stored) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  checkPlanAccessWithCatalog(stored.plan, actor, 'read', catalog, allowed);
+  const store = planStoreOf(stored.plan, catalog);
+  return {
+    plan: stored.plan,
+    store,
+    brand: planBrandOf(stored.plan, catalog, store),
+    positions: planPositionsWithCatalog(stored.plan, actor, catalog),
+    global: isStaffGlobalAdminOrManager(actor),
+    isAccountPic: Boolean(store && isPersonInField(actor, store.accountOwnerName, store.staffCodes)),
+  };
+}
+
+/** Xem Listing / Deal / ngân sách booking: PIC Kênh tự sở hữu (không kiêm Booking) không xem. */
+export function assertCanViewBooking(ctx: PlanContext) {
+  const onlySelfChannel = ctx.positions.size > 0 && [...ctx.positions].every(p => p === 'SELF_CHANNEL');
+  if (!ctx.global && onlySelfChannel) {
+    throw new PlanStoreError('FORBIDDEN', 'PIC Kênh tự sở hữu không xem Listing / Deal của gian (trừ khi kiêm Booking).');
+  }
+}
 /**
  * Quyền với Plan tháng của Brand của một kế hoạch: PIC gian / quản lý sửa cả plan;
  * người chỉ giữ vị trí Plan / Strategy hoặc Key Visual / SIS của gian sửa đúng phần đó; còn lại chỉ xem nếu có quyền xem.
@@ -246,8 +312,10 @@ function brandPlanAccessSync(
   } catch (err) {
     if (!(err instanceof PlanStoreError) || err.code !== 'FORBIDDEN') throw err;
   }
-  const store = catalog.stores.find(s => (plan.storeId && s.id === plan.storeId) || (plan.storeName && s.storeName === plan.storeName));
-  const sections = brandPlanSectionsOf(store, actor.name);
+  const positions = planPositionsWithCatalog(plan, actor, catalog);
+  const sections: BrandPlanSection[] = [];
+  if (positions.has('PLAN_STRATEGY')) sections.push('STRATEGY');
+  if (positions.has('KEY_VISUAL')) sections.push('KEY_VISUAL');
   if (sections.length > 0) return { full: false, sections };
   checkPlanAccessWithCatalog(plan, actor, 'read', catalog, canRead);
   return { full: false, sections: [] };
@@ -343,7 +411,7 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
     actionAllowed(actor, 'plan_target_month', 'read')
   ]);
   if (!allowed) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');
-  return storedList.filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
+  return storedList.filter(row => canReadPlanWithCatalog(row.plan, actor, data));
 }
 
 async function syncRealLarkPlans(plansToSync = [...REAL_MONTHLY_PLANS_OCT_2026, ...REAL_MONTHLY_PLANS_NOV_2026]) {
@@ -455,6 +523,9 @@ export async function saveMonthlyPlan(
     const stored = toStored(existing).plan;
     await assertPlanAccess(stored, actor, 'write');
     await assertPlanAccess(plan, actor, 'write');
+    const { data: catalog } = await readMasterCatalog();
+    const positions = planPositionsWithCatalog(stored, actor, catalog);
+    const planStore = planStoreOf(stored, catalog);
 
     // Gửi duyệt: bảng phân rã phải hợp lệ và đã giải trình nếu lệch số bảng 4.1
     if (['PENDING_PRE_APPROVAL', 'PENDING_APPROVAL'].includes(plan.status || '') && plan.status !== stored.status) {
@@ -466,16 +537,27 @@ export async function saveMonthlyPlan(
     const nameKey = (v?: string) => (v || '').trim().toLowerCase();
     const fromStatus = stored.status || 'DRAFT';
     const toStatus = plan.status || 'DRAFT';
-    const leaderName = stored.hasBookingLeader !== false ? stored.bookingLeader : undefined;
+    // Leader lấy từ Dữ liệu gốc lúc duyệt (không dùng bản chụp trên kế hoạch); gian không còn Leader thì trình thẳng Giám đốc
+    const leaderName = planStore ? storeLeader(planStore) : (stored.hasBookingLeader !== false ? stored.bookingLeader : undefined);
+    // Leader kiêm Booking chính: bỏ bước sơ duyệt
+    const leaderIsMain = Boolean(planStore && leaderName && nameKey(leaderName) === nameKey(storeMainBooking(planStore)));
     const isGlobalManager = isStaffGlobalAdminOrManager(actor);
-    const isPlanLeader = Boolean(leaderName) && nameKey(actor.name) === nameKey(leaderName);
-    if (leaderName && toStatus === 'PENDING_APPROVAL' && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !isGlobalManager) {
+    const isPlanLeader = planStore ? positions.has('LEADER') : Boolean(leaderName) && nameKey(actor.name) === nameKey(leaderName);
+    if (leaderName && !leaderIsMain && toStatus === 'PENDING_APPROVAL' && ['DRAFT', 'REVISION_REQUESTED'].includes(fromStatus) && !isGlobalManager) {
       throw new PlanStoreError('INVALID', 'Gian có Trưởng nhóm: kế hoạch phải qua sơ duyệt trước khi lên Giám đốc.');
     }
     if (fromStatus === 'PENDING_PRE_APPROVAL' && toStatus === 'PENDING_APPROVAL' && !isGlobalManager && !isPlanLeader) {
       throw new PlanStoreError('FORBIDDEN', 'Chỉ Trưởng nhóm của gian hàng hoặc quản lý được sơ duyệt.');
     }
     const isLeaderStep = isPlanLeader && fromStatus === 'PENDING_PRE_APPROVAL' && ['PENDING_APPROVAL', 'REVISION_REQUESTED'].includes(toStatus);
+    // Leader (không kiêm Booking chính) chỉ sơ duyệt, không sửa nội dung kế hoạch
+    if (!isGlobalManager && !positions.has('BOOKING_MAIN') && !isLeaderStep) {
+      throw new PlanStoreError('FORBIDDEN', 'Leader chỉ sơ duyệt kế hoạch; nội dung do Booking chính sửa.');
+    }
+    if (isLeaderStep && !positions.has('BOOKING_MAIN')) {
+      const changed = LOCKED_FIELDS.filter(f => !sameValue(plan[f], stored[f]));
+      if (changed.length) throw new PlanStoreError('FORBIDDEN', `Leader chỉ sơ duyệt, không sửa số liệu kế hoạch (${changed.slice(0, 3).join(', ')}).`);
+    }
 
     if (existing.revision !== expectedRevision) {
       throw new PlanStoreError(

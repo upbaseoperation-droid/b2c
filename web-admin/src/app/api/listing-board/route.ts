@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readRecord, updateRecord, RecordError } from '@/lib/server/sharedRecords';
-import { listingBoardKey } from '@/lib/server/boardKeys';
-import { assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
-import { columnOf, isDirectConfirmEligible, itemFee } from '@/lib/listingBoardRules';
+import { dealBoardKey, listingBoardKey } from '@/lib/server/boardKeys';
+import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { columnOf, itemFee } from '@/lib/listingBoardRules';
+import { guardListingSave } from '@/lib/listingBoardGuard';
+import { DealGuardError } from '@/lib/dealBoardGuard';
+import { EMPTY_DEAL_BOARD, type DealBoardData } from '@/lib/dealBoardRules';
 import type { KocListingItem } from '@/lib/types';
 import { getPlanActor, handlePlanError, unauthorized } from '../monthly-plans/_shared';
 
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
   const planId = request.nextUrl.searchParams.get('planId') || '';
   if (!planId) return NextResponse.json({ error: 'Thiếu mã kế hoạch.' }, { status: 400 });
   try {
-    await assertPlanIdAccess(planId, actor, 'read');
+    assertCanViewBooking(await resolvePlanContext(planId, actor));
     const rec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
     const items = rec.data.items || [];
     return NextResponse.json({ items, data: { items }, revision: rec.revision });
@@ -46,14 +49,25 @@ export async function PUT(request: NextRequest) {
     if (body.items.length > MAX_ITEMS) {
       return NextResponse.json({ error: `Tối đa ${MAX_ITEMS} KOC mỗi kế hoạch.` }, { status: 400 });
     }
-    await assertPlanIdAccess(body.planId, actor, 'write');
+    const ctx = await resolvePlanContext(body.planId, actor);
+    assertCanViewBooking(ctx);
     const planId = body.planId;
     const existingRec = await readRecord<ListingBoardData>(keyOf(planId), { items: [] });
     const prevById = new Map<string, KocListingItem>(
       (existingRec.data.items || []).map(it => [it.id, it])
     );
+    const dealBoard = await readRecord<DealBoardData>(dealBoardKey(planId), EMPTY_DEAL_BOARD);
+    const itemsWithDeal = new Set((dealBoard.data.deals || []).map(d => d.listingItemId).filter(Boolean));
+    // Quyền theo người phụ trách KOC, căn cứ Brand duyệt, KOC đã có Deal
+    const guarded = guardListingSave(existingRec.data.items || [], body.items, {
+      actor,
+      global: ctx.global,
+      positions: ctx.positions,
+      storeCodes: ctx.store?.staffCodes,
+      itemsWithDeal,
+    });
 
-    const items = body.items.map(raw => {
+    const items = guarded.map(raw => {
       const i: KocListingItem = { ...raw, sourcePlanId: planId };
       const prev = prevById.get(i.id);
       if (prev) {
@@ -69,26 +83,13 @@ export async function PUT(request: NextRequest) {
             lastSheetDecisionAt: undefined,
           };
         }
-        // Chặn nhảy cóc từ DRAFT/WAIT_BRAND sang CONFIRMED nếu không đủ điều kiện FOC/KOL chỉ định (L2)
-        const prevCol = columnOf(prev);
-        if (
-          (prevCol === 'DRAFT' || prevCol === 'WAIT_BRAND') &&
-          columnOf(i) === 'CONFIRMED' &&
-          !isDirectConfirmEligible(i) &&
-          !prev.brandApprovedAt
-        ) {
-          return {
-            ...i,
-            overallStatus: 'SUBMITTED' as const,
-            brandApprovalStatus: 'BRAND_PENDING' as const,
-          };
-        }
       }
       return i;
     });
     const saved = await updateRecord<ListingBoardData>(keyOf(planId), { items: [] }, body.revision, () => ({ items }));
     return NextResponse.json({ items: saved.data.items, data: { items: saved.data.items }, revision: saved.revision });
   } catch (err) {
+    if (err instanceof DealGuardError) return NextResponse.json({ error: err.message, code: 'FORBIDDEN_CHANGE' }, { status: err.status });
     if (err instanceof RecordError) return NextResponse.json({ error: err.message, code: err.status === 409 ? 'CONFLICT' : undefined }, { status: err.status });
     return handlePlanError(err);
   }

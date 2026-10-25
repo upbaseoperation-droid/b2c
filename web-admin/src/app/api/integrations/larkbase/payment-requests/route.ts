@@ -10,7 +10,11 @@ import {
 } from '@/lib/larkPaymentRequestEngine';
 import type { BookingDealItem, KocItem } from '@/lib/types';
 import { ledgerByDealCode, listPaymentSlips, mutatePaymentSlips } from '@/lib/server/paymentSlipStore';
-import { RecordError } from '@/lib/server/sharedRecords';
+import { readRecord, RecordError } from '@/lib/server/sharedRecords';
+import { dealBoardKey } from '@/lib/server/boardKeys';
+import { assertCanViewBooking, resolvePlanContext } from '@/lib/server/monthlyPlanStore';
+import { EMPTY_DEAL_BOARD, jobPaymentBlocker, sanitizeDealBoard, type DealBoardData, type DealJob } from '@/lib/dealBoardRules';
+import { getPlanActor } from '@/app/api/monthly-plans/_shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -259,6 +263,8 @@ export async function POST(request: NextRequest) {
       deals?: BookingDealItem[];
       kocs?: KocItem[];
       overridesByDealId?: Record<string, DealPaymentOverrides>;
+      /** Job trên bảng Deal tương ứng từng dòng deals (cùng thứ tự): máy chủ đối chiếu lại dữ liệu thật */
+      planJobRefs?: Array<{ planId: string; dealId: string; jobId: string }>;
       sharedPayeeOverride?: DealPaymentOverrides;
       actorName?: string;
       note?: string;
@@ -313,6 +319,55 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Đối chiếu Job trên dữ liệu thật của bảng Deal: không tin trạng thái / link do trình duyệt gửi lên
+    const refs = Array.isArray(body.planJobRefs) ? body.planJobRefs : [];
+    if (refs.length && refs.length !== deals.length) {
+      return NextResponse.json({ success: false, error: 'REFS_MISMATCH', message: 'Danh sách Job không khớp danh sách mã đơn.' }, { status: 400 });
+    }
+    if (refs.length) {
+      const planActor = await getPlanActor(request);
+      if (!planActor) return NextResponse.json({ success: false, error: 'UNAUTHORIZED', message: 'Phiên đăng nhập hết hạn.' }, { status: 401 });
+      const overrides: Record<string, DealPaymentOverrides> = { ...(body.overridesByDealId || {}) };
+      const boards = new Map<string, DealBoardData>();
+      for (let i = 0; i < refs.length; i++) {
+        const ref = refs[i];
+        try {
+          assertCanViewBooking(await resolvePlanContext(ref.planId, planActor));
+        } catch {
+          return NextResponse.json({ success: false, error: 'FORBIDDEN', message: 'Bạn không có quyền với kế hoạch của Job này.' }, { status: 403 });
+        }
+        if (!boards.has(ref.planId)) boards.set(ref.planId, sanitizeDealBoard((await readRecord<DealBoardData>(dealBoardKey(ref.planId), EMPTY_DEAL_BOARD)).data));
+        const job: DealJob | undefined = boards.get(ref.planId)!.deals.find(d => d.id === ref.dealId)?.jobs.find(j => j.id === ref.jobId);
+        if (!job) return NextResponse.json({ success: false, error: 'JOB_NOT_FOUND', message: 'Không tìm thấy Job trên bảng Deal (có thể chưa lưu).' }, { status: 404 });
+        if (requestType === 'SETTLEMENT') {
+          if (job.payment.status !== 'NONE') {
+            return NextResponse.json({ success: false, error: 'ALREADY_REQUESTED', message: `Job ${job.code} đã có đề nghị thanh toán.` }, { status: 409 });
+          }
+          const blocker = jobPaymentBlocker(job);
+          if (blocker) return NextResponse.json({ success: false, error: 'JOB_NOT_READY', message: `Job ${job.code}: ${blocker}` }, { status: 422 });
+        } else {
+          if (['REQUESTED', 'APPROVED', 'PAID'].includes(job.advancePayment?.status || 'NONE')) {
+            return NextResponse.json({ success: false, error: 'ALREADY_REQUESTED', message: `Job ${job.code} đã có phiếu tạm ứng.` }, { status: 409 });
+          }
+          if (!job.appendixNo.trim()) return NextResponse.json({ success: false, error: 'JOB_NOT_READY', message: `Job ${job.code} chưa có Phụ lục SOW.` }, { status: 422 });
+        }
+        // Link / mã chứng từ lấy từ Job thật, ghi đè giá trị trình duyệt gửi
+        overrides[deals[i].id] = {
+          ...(overrides[deals[i].id] || {}),
+          linkAir: job.airLink.trim(),
+          postedDate: job.airedAt || undefined,
+          sparkAdsCode: job.sparkAdsCode.trim(),
+          contractUrl: job.appendixUrl.trim(),
+          bbntUrl: (job.bbntUrl || '').trim(),
+        };
+      }
+      body.overridesByDealId = overrides;
+      if (body.sharedPayeeOverride) {
+        const { linkAir: _a, sparkAdsCode: _s, contractUrl: _c, bbntUrl: _b, ...rest } = body.sharedPayeeOverride;
+        body.sharedPayeeOverride = rest;
+      }
     }
 
     // S4: Kiểm tra phạm vi thương hiệu / PIC đối với chuyên viên lập phiếu
